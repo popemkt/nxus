@@ -1,0 +1,5 @@
+{
+  "remote.autoForwardPorts": true,
+  "remote.autoForwardPortsSource": "process",
+  "remote.forwardOnOpen": true
+}
