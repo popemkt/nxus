@@ -8,7 +8,9 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@nx/devkit": "^22.3.3",
     "@nx/js": "22.3.3",
+    "@nx/plugin": "22.3.3",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
