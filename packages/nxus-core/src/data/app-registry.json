@@ -10,7 +10,11 @@
       "homepage": "https://example.com",
       "thumbnail": "/thumbnails/sample-html.png",
       "metadata": {
-        "tags": ["demo", "html", "sample"],
+        "tags": [
+          "demo",
+          "html",
+          "sample"
+        ],
         "category": "examples",
         "createdAt": "2024-01-01T00:00:00.000Z",
         "updatedAt": "2024-01-01T00:00:00.000Z",
@@ -18,6 +22,61 @@
         "author": "Nxus Team"
       },
       "status": "available"
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Remote Example App",
+      "description": "A demonstration of remote repository integration",
+      "type": "remote-repo",
+      "path": "https://github.com/example/remote-app.git",
+      "homepage": "https://github.com/example/remote-app",
+      "installConfig": {
+        "script": "install.sh",
+        "platform": [
+          "linux",
+          "macos",
+          "windows"
+        ],
+        "dependencies": [
+          "node",
+          "npm"
+        ]
+      },
+      "metadata": {
+        "tags": [
+          "remote",
+          "git",
+          "example"
+        ],
+        "category": "examples",
+        "createdAt": "2024-01-02T00:00:00.000Z",
+        "updatedAt": "2024-01-02T00:00:00.000Z",
+        "version": "1.0.0",
+        "author": "Example Team"
+      },
+      "status": "not-installed"
+    },
+    {
+      "id": "b3c4d5e6-f7a8-4012-a123-4b3456789012",
+      "name": "Chrome New Tab",
+      "description": "A clean and functional new tab page for Chrome with productivity tools",
+      "type": "remote-repo",
+      "path": "https://github.com/popemkt/chrome-new-tab.git",
+      "homepage": "https://github.com/popemkt/chrome-new-tab",
+      "metadata": {
+        "tags": [
+          "chrome",
+          "extension",
+          "productivity",
+          "typescript"
+        ],
+        "category": "extensions",
+        "createdAt": "2024-12-23T00:00:00.000Z",
+        "updatedAt": "2024-12-23T00:00:00.000Z",
+        "version": "1.0.0",
+        "author": "popemkt"
+      },
+      "status": "not-installed"
     }
   ]
 }

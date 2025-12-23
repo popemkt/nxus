@@ -14,12 +14,14 @@
 ## Architecture Overview
 
 ### Monorepo Structure
+
 - **nxus-core**: Main application (React + TanStack Router + Vite)
 - **Future packages**: Additional tools, shared libraries, CLI utilities
 
 ### Technology Stack
 
 #### Frontend
+
 - **React 19**: UI framework
 - **TanStack Router**: Type-safe routing with file-based routing
 - **TailwindCSS v4**: Styling with modern CSS
@@ -27,11 +29,13 @@
 - **Phosphor Icons**: Icon system
 
 #### Type Safety & Validation
+
 - **TypeScript 5.7+**: Strict mode enabled
 - **Zod**: Runtime schema validation (parse, don't validate)
 - **Type-safe APIs**: End-to-end type safety
 
 #### Backend/Services
+
 - **Vite**: Build tool and dev server
 - **Node.js**: For script execution and file system operations
 - **Future**: Tauri or Electron for desktop app capabilities
@@ -67,24 +71,28 @@ Apps are defined in a JSON registry with the following structure:
 ## Development Principles
 
 ### 1. Type Safety First
+
 - Use TypeScript for all logic
 - Define schemas with Zod for runtime validation
 - Parse external data, don't assume validity
 - Leverage discriminated unions for app types
 
 ### 2. Clear Code Flow
+
 - Single Responsibility Principle
 - Pure functions where possible
 - Explicit error handling (Result types or explicit throws)
 - Avoid implicit behavior
 
 ### 3. Functional Programming Patterns
+
 - Immutable data structures
 - Composition over inheritance
 - Higher-order functions for reusability
 - Avoid side effects in business logic
 
 ### 4. File Organization
+
 ```
 packages/nxus-core/
 ├── src/
@@ -101,12 +109,14 @@ packages/nxus-core/
 ```
 
 ### 5. Component Design
+
 - Small, focused components
 - Props interfaces defined with TypeScript
 - Use composition for flexibility
 - Separate presentation from logic
 
 ### 6. State Management
+
 - React hooks for local state
 - TanStack Query for server state (future)
 - Context for global app state (minimal usage)
@@ -115,6 +125,7 @@ packages/nxus-core/
 ## Feature Roadmap
 
 ### Phase 1: Single HTML App Support (Current)
+
 - [ ] App registry JSON structure
 - [ ] Type-safe app configuration
 - [ ] Gallery view with cards
@@ -123,6 +134,7 @@ packages/nxus-core/
 - [ ] App metadata display
 
 ### Phase 2: Installation & Scripts
+
 - [ ] Script execution service
 - [ ] Platform detection
 - [ ] Install/uninstall workflows
@@ -130,12 +142,14 @@ packages/nxus-core/
 - [ ] Error handling and rollback
 
 ### Phase 3: Multi-Type App Support
+
 - [ ] TypeScript app integration
 - [ ] Remote repository cloning
 - [ ] Script tool management
 - [ ] Custom app type plugins
 
 ### Phase 4: Advanced Features
+
 - [ ] Command palette for quick actions
 - [ ] Favorites and collections
 - [ ] App templates
@@ -145,6 +159,7 @@ packages/nxus-core/
 ## Coding Standards
 
 ### TypeScript
+
 ```typescript
 // ✅ Good: Explicit types, parse don't validate
 import { z } from 'zod';
@@ -168,9 +183,10 @@ function parseApp(data: any) {
 ```
 
 ### Error Handling
+
 ```typescript
 // ✅ Good: Explicit Result type
-type Result<T, E = Error> = 
+type Result<T, E = Error> =
   | { success: true; data: T }
   | { success: false; error: E };
 
@@ -194,6 +210,7 @@ async function installApp(id: string) {
 ```
 
 ### React Components
+
 ```typescript
 // ✅ Good: Clear props, typed, focused
 interface AppCardProps {
@@ -225,11 +242,13 @@ When working on Nxus, AI assistants should:
 1. **Always validate inputs**: Use Zod schemas for any external data
 2. **Maintain type safety**: Never use `any` without explicit justification
 3. **Follow the architecture**: Respect the separation of concerns
-4. **Write tests**: Include unit tests for business logic
-5. **Document complex logic**: Add JSDoc comments for non-obvious code
-6. **Consider edge cases**: Handle errors, empty states, loading states
-7. **Keep it simple**: Don't over-engineer, start with the simplest solution
-8. **Incremental development**: Build features step by step, test as you go
+4. **Action Dialog Pattern**: Clicking on app items should open an `AlertDialog` (Base UI) for actions. Avoid adding many buttons directly to the card.
+5. **Server Functions**: Use TanStack Start's `createServerFn` for any local system operations (filesystem, git, shell commands).
+6. **Base UI**: Always prioritize using Base UI components for interactive elements like dialogs, popovers, and menus.
+7. **Document complex logic**: Add JSDoc comments for non-obvious code
+8. **Consider edge cases**: Handle errors, empty states, loading states
+9. **Keep it simple**: Don't over-engineer, start with the simplest solution
+10. **Incremental development**: Build features step by step, test as you go
 
 ## Questions to Ask Before Implementing
 
