@@ -249,6 +249,10 @@ When working on Nxus, AI assistants should:
 8. **Consider edge cases**: Handle errors, empty states, loading states
 9. **Keep it simple**: Don't over-engineer, start with the simplest solution
 10. **Incremental development**: Build features step by step, test as you go
+11. **State Management Service Pattern**: When implementing complex client-side state (especially if it involves persistence), usage of a **Service Facade** is required.
+    - **Internal**: Use Zustand (or other libs) inside `services/` but DO NOT export the store directly.
+    - **Public API**: Export _Hooks_ (e.g. `useAppCheck`) for reactive reads and a _Service Object_ (e.g. `appStateService`) for async actions.
+    - **Async Actions**: Service actions should return `Promise<void>` to allow for future migration to async backends (e.g. Convex, DB) without breaking component contracts.
 
 ## Questions to Ask Before Implementing
 

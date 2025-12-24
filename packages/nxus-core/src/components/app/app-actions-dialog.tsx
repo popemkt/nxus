@@ -6,8 +6,9 @@ import {
   EyeIcon,
   GithubLogoIcon,
   XCircleIcon,
+  TrashIcon,
 } from '@phosphor-icons/react'
-import type {App} from '@/types/app';
+import type { App } from '@/types/app'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { installAppServerFn } from '@/services/install.server'
+import { useAppCheck, appStateService } from '@/services/app-state'
 
 interface AppActionsDialogProps {
   app: App
@@ -38,13 +40,22 @@ export function AppActionsDialog({
   onOpen,
 }: AppActionsDialogProps) {
   const [step, setStep] = React.useState<DialogStep>('actions')
+  const { isInstalled, path: savedPath } = useAppCheck(app.id)
+
   const [installPath, setInstallPath] = React.useState(
-    '/home/popemkt/nxus-apps',
+    savedPath || '/home/popemkt/nxus-apps',
   )
   const [installResult, setInstallResult] = React.useState<{
     success: boolean
     message: string
   } | null>(null)
+
+  // Update default path if saved path exists
+  React.useEffect(() => {
+    if (savedPath) {
+      setInstallPath(savedPath)
+    }
+  }, [savedPath])
 
   const handleInstall = async () => {
     setStep('installing')
@@ -61,6 +72,8 @@ export function AppActionsDialog({
 
       if (result.success) {
         setInstallResult({ success: true, message: result.data.message })
+        // Persist to store
+        await appStateService.markAsInstalled(app.id, result.data.path)
       } else {
         setInstallResult({ success: false, message: result.error })
       }
@@ -77,10 +90,22 @@ export function AppActionsDialog({
     setStep('result')
   }
 
+  const handleUninstall = async () => {
+    if (
+      confirm(
+        'Are you sure you want to forget this installation? (Files will remain on disk)',
+      )
+    ) {
+      await appStateService.removeInstallation(app.id)
+    }
+  }
+
   const resetDialog = () => {
     setStep('actions')
     setInstallResult(null)
   }
+
+  const effectiveStatus = isInstalled ? 'installed' : app.status
 
   return (
     <AlertDialog onOpenChange={(open) => !open && resetDialog()}>
@@ -93,7 +118,7 @@ export function AppActionsDialog({
               <AlertDialogDescription>{app.description}</AlertDialogDescription>
             </AlertDialogHeader>
             <div className="grid gap-2 py-4">
-              {app.status === 'installed' && onOpen && (
+              {effectiveStatus === 'installed' && onOpen && (
                 <Button
                   onClick={() => onOpen(app)}
                   className="w-full justify-start"
@@ -102,15 +127,27 @@ export function AppActionsDialog({
                   Open Application
                 </Button>
               )}
-              {app.type === 'remote-repo' && app.status !== 'installed' && (
+              {effectiveStatus === 'installed' && (
                 <Button
-                  onClick={() => setStep('configure-install')}
-                  className="w-full justify-start"
+                  onClick={handleUninstall}
+                  variant="outline"
+                  className="w-full justify-start text-destructive hover:text-destructive"
                 >
-                  <DownloadIcon data-icon="inline-start" />
-                  Install locally
+                  <TrashIcon data-icon="inline-start" />
+                  Forget Installation
                 </Button>
               )}
+
+              {app.type === 'remote-repo' &&
+                effectiveStatus !== 'installed' && (
+                  <Button
+                    onClick={() => setStep('configure-install')}
+                    className="w-full justify-start"
+                  >
+                    <DownloadIcon data-icon="inline-start" />
+                    Install locally
+                  </Button>
+                )}
               {app.homepage && (
                 <Button
                   variant="outline"
