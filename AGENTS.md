@@ -253,6 +253,11 @@ When working on Nxus, AI assistants should:
     - **Internal**: Use Zustand (or other libs) inside `services/` but DO NOT export the store directly.
     - **Public API**: Export _Hooks_ (e.g. `useAppCheck`) for reactive reads and a _Service Object_ (e.g. `appStateService`) for async actions.
     - **Async Actions**: Service actions should return `Promise<void>` to allow for future migration to async backends (e.g. Convex, DB) without breaking component contracts.
+12. **Server Function Isolator Pattern**: To prevent Bundler Errors (like "Module `node:fs` has been externalized"):
+    - **Boundary File**: The file exporting the `createServerFn` must NOT have any static Node.js imports (`child_process`, `fs`). It should only contain Zod Schemas and dynamic imports.
+    - **Logic File**: Move all Node.js logic to a separate file (e.g., `installation-logic.ts`) marked with `"use server"`.
+    - **Integration**: The boundary file should import the logic file dynamically: `const logic = await import('./logic')`.
+    - **Result**: This allows the Client to import the Boundary File (for types/validation) without dragging in Node.js modules.
 
 ## Questions to Ask Before Implementing
 
