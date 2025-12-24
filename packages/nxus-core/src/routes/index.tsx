@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import type { App } from '@/types/app'
 import { AppGalleryWithSearch } from '@/components/app/app-gallery'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { ThemeToggle } from '@/components/theme-toggle'
-import type { App } from '@/types/app'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 

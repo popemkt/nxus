@@ -1,5 +1,13 @@
 import * as React from 'react'
-import { type App } from '@/types/app'
+import {
+  ActivityIcon,
+  CheckCircleIcon,
+  DownloadIcon,
+  EyeIcon,
+  GithubLogoIcon,
+  XCircleIcon,
+} from '@phosphor-icons/react'
+import type {App} from '@/types/app';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,14 +22,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
-import {
-  EyeIcon,
-  DownloadIcon,
-  GithubLogoIcon,
-  ActivityIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react'
 import { installAppServerFn } from '@/services/install.server'
 
 interface AppActionsDialogProps {

@@ -1,32 +1,27 @@
-import { useState } from "react";
-import type { App } from "@/types/app";
-import { AppCard } from "./app-card";
-import { Input } from "@/components/ui/input";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { useState } from 'react'
+import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { AppCard } from './app-card'
+import type { App } from '@/types/app'
+import { Input } from '@/components/ui/input'
 
 interface AppGalleryProps {
-  apps: App[];
-  onOpen?: (app: App) => void;
-  onInstall?: (app: App) => void;
+  apps: Array<App>
+  onOpen?: (app: App) => void
+  onInstall?: (app: App) => void
 }
 
 export function AppGallery({ apps, onOpen, onInstall }: AppGalleryProps) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {apps.map((app) => (
-        <AppCard
-          key={app.id}
-          app={app}
-          onOpen={onOpen}
-          onInstall={onInstall}
-        />
+        <AppCard key={app.id} app={app} onOpen={onOpen} onInstall={onInstall} />
       ))}
     </div>
-  );
+  )
 }
 
 interface AppGalleryWithSearchProps extends AppGalleryProps {
-  onSearchChange?: (query: string) => void;
+  onSearchChange?: (query: string) => void
 }
 
 export function AppGalleryWithSearch({
@@ -35,12 +30,12 @@ export function AppGalleryWithSearch({
   onInstall,
   onSearchChange,
 }: AppGalleryWithSearchProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('')
 
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    onSearchChange?.(value);
-  };
+    setSearchQuery(value)
+    onSearchChange?.(value)
+  }
 
   return (
     <div className="space-y-6">
@@ -63,8 +58,8 @@ export function AppGalleryWithSearch({
             </p>
             <p className="text-sm text-muted-foreground">
               {searchQuery
-                ? "Try adjusting your search query"
-                : "Add apps to get started"}
+                ? 'Try adjusting your search query'
+                : 'Add apps to get started'}
             </p>
           </div>
         </div>
@@ -72,5 +67,5 @@ export function AppGalleryWithSearch({
         <AppGallery apps={apps} onOpen={onOpen} onInstall={onInstall} />
       )}
     </div>
-  );
+  )
 }

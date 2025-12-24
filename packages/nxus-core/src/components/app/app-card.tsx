@@ -1,3 +1,11 @@
+import {
+  CodeIcon,
+  DotsThreeVerticalIcon,
+  FileIcon,
+  FolderOpenIcon,
+  TerminalWindowIcon,
+} from '@phosphor-icons/react'
+import { AppActionsDialog } from './app-actions-dialog'
 import type { App } from '@/types/app'
 import {
   Card,
@@ -9,14 +17,6 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  FileIcon,
-  CodeIcon,
-  FolderOpenIcon,
-  TerminalWindowIcon,
-  DotsThreeVerticalIcon,
-} from '@phosphor-icons/react'
-import { AppActionsDialog } from './app-actions-dialog'
 
 interface AppCardProps {
   app: App

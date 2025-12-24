@@ -1,99 +1,99 @@
-import { useState, useEffect, useMemo } from "react";
-import type { App, AppType, AppStatus } from "../types/app";
-import { appRegistryService } from "../services/app-registry.service";
+import { useEffect, useMemo, useState } from 'react'
+import { appRegistryService } from '../services/app-registry.service'
+import type { App, AppStatus, AppType } from '../types/app'
 
 interface UseAppRegistryOptions {
-  searchQuery?: string;
-  filterType?: AppType;
-  filterStatus?: AppStatus;
-  filterCategory?: string;
-  filterTags?: string[];
+  searchQuery?: string
+  filterType?: AppType
+  filterStatus?: AppStatus
+  filterCategory?: string
+  filterTags?: Array<string>
 }
 
 interface UseAppRegistryReturn {
-  apps: App[];
-  loading: boolean;
-  error: Error | null;
-  categories: string[];
-  tags: string[];
-  refetch: () => void;
+  apps: Array<App>
+  loading: boolean
+  error: Error | null
+  categories: Array<string>
+  tags: Array<string>
+  refetch: () => void
 }
 
 /**
  * React hook for accessing and filtering the app registry
  */
 export function useAppRegistry(
-  options: UseAppRegistryOptions = {}
+  options: UseAppRegistryOptions = {},
 ): UseAppRegistryReturn {
-  const [apps, setApps] = useState<App[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [apps, setApps] = useState<Array<App>>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [categories, setCategories] = useState<Array<string>>([])
+  const [tags, setTags] = useState<Array<string>>([])
 
   const loadApps = () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
-    const result = appRegistryService.getAllApps();
+    const result = appRegistryService.getAllApps()
 
     if (!result.success) {
-      setError(result.error);
-      setApps([]);
-      setLoading(false);
-      return;
+      setError(result.error)
+      setApps([])
+      setLoading(false)
+      return
     }
 
-    setApps(result.data);
+    setApps(result.data)
 
-    const categoriesResult = appRegistryService.getCategories();
+    const categoriesResult = appRegistryService.getCategories()
     if (categoriesResult.success) {
-      setCategories(categoriesResult.data);
+      setCategories(categoriesResult.data)
     }
 
-    const tagsResult = appRegistryService.getTags();
+    const tagsResult = appRegistryService.getTags()
     if (tagsResult.success) {
-      setTags(tagsResult.data);
+      setTags(tagsResult.data)
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   useEffect(() => {
-    loadApps();
-  }, []);
+    loadApps()
+  }, [])
 
   const filteredApps = useMemo(() => {
-    let filtered = apps;
+    let filtered = apps
 
     if (options.searchQuery) {
-      const result = appRegistryService.searchApps(options.searchQuery);
+      const result = appRegistryService.searchApps(options.searchQuery)
       if (result.success) {
-        filtered = result.data;
+        filtered = result.data
       }
     }
 
     if (options.filterType) {
-      filtered = filtered.filter((app) => app.type === options.filterType);
+      filtered = filtered.filter((app) => app.type === options.filterType)
     }
 
     if (options.filterStatus) {
-      filtered = filtered.filter((app) => app.status === options.filterStatus);
+      filtered = filtered.filter((app) => app.status === options.filterStatus)
     }
 
     if (options.filterCategory) {
       filtered = filtered.filter(
-        (app) => app.metadata.category === options.filterCategory
-      );
+        (app) => app.metadata.category === options.filterCategory,
+      )
     }
 
     if (options.filterTags && options.filterTags.length > 0) {
       filtered = filtered.filter((app) =>
-        options.filterTags!.some((tag) => app.metadata.tags.includes(tag))
-      );
+        options.filterTags!.some((tag) => app.metadata.tags.includes(tag)),
+      )
     }
 
-    return filtered;
+    return filtered
   }, [
     apps,
     options.searchQuery,
@@ -101,7 +101,7 @@ export function useAppRegistry(
     options.filterStatus,
     options.filterCategory,
     options.filterTags,
-  ]);
+  ])
 
   return {
     apps: filteredApps,
@@ -110,32 +110,32 @@ export function useAppRegistry(
     categories,
     tags,
     refetch: loadApps,
-  };
+  }
 }
 
 /**
  * Hook to get a single app by ID
  */
 export function useApp(id: string) {
-  const [app, setApp] = useState<App | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [app, setApp] = useState<App | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
-    const result = appRegistryService.getAppById(id);
+    const result = appRegistryService.getAppById(id)
 
     if (!result.success) {
-      setError(result.error);
-      setApp(null);
+      setError(result.error)
+      setApp(null)
     } else {
-      setApp(result.data);
+      setApp(result.data)
     }
 
-    setLoading(false);
-  }, [id]);
+    setLoading(false)
+  }, [id])
 
-  return { app, loading, error };
+  return { app, loading, error }
 }

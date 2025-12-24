@@ -1,9 +1,9 @@
-import { createServerFn } from '@tanstack/react-start'
+import { exec } from 'node:child_process'
+import { promisify } from 'node:util'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { z } from 'zod'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import fs from 'fs/promises'
-import path from 'path'
+import { createServerFn } from '@tanstack/react-start'
 
 const execAsync = promisify(exec)
 
@@ -17,11 +17,10 @@ const InstallParamsSchema = z.object({
 /**
  * Server function to install a remote repository app
  */
-export const installAppServerFn = createServerFn({ method: 'POST' }).handler(
-  async (ctx) => {
-    // Manually cast data since .validator() builder might have issues in some TS setups
-    const data = ctx.data as z.infer<typeof InstallParamsSchema>
-    const { name, url, targetPath } = data
+export const installAppServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(InstallParamsSchema)
+  .handler(async (ctx) => {
+    const { name, url, targetPath } = ctx.data
 
     try {
       // Ensure the target directory exists
@@ -62,5 +61,4 @@ export const installAppServerFn = createServerFn({ method: 'POST' }).handler(
             : 'Unknown error during installation',
       }
     }
-  },
-)
+  })

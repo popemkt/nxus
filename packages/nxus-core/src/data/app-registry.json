@@ -10,11 +10,7 @@
       "homepage": "https://example.com",
       "thumbnail": "/thumbnails/sample-html.png",
       "metadata": {
-        "tags": [
-          "demo",
-          "html",
-          "sample"
-        ],
+        "tags": ["demo", "html", "sample"],
         "category": "examples",
         "createdAt": "2024-01-01T00:00:00.000Z",
         "updatedAt": "2024-01-01T00:00:00.000Z",
@@ -32,22 +28,11 @@
       "homepage": "https://github.com/example/remote-app",
       "installConfig": {
         "script": "install.sh",
-        "platform": [
-          "linux",
-          "macos",
-          "windows"
-        ],
-        "dependencies": [
-          "node",
-          "npm"
-        ]
+        "platform": ["linux", "macos", "windows"],
+        "dependencies": ["node", "npm"]
       },
       "metadata": {
-        "tags": [
-          "remote",
-          "git",
-          "example"
-        ],
+        "tags": ["remote", "git", "example"],
         "category": "examples",
         "createdAt": "2024-01-02T00:00:00.000Z",
         "updatedAt": "2024-01-02T00:00:00.000Z",
@@ -64,12 +49,7 @@
       "path": "https://github.com/popemkt/chrome-new-tab.git",
       "homepage": "https://github.com/popemkt/chrome-new-tab",
       "metadata": {
-        "tags": [
-          "chrome",
-          "extension",
-          "productivity",
-          "typescript"
-        ],
+        "tags": ["chrome", "extension", "productivity", "typescript"],
         "category": "extensions",
         "createdAt": "2024-12-23T00:00:00.000Z",
         "updatedAt": "2024-12-23T00:00:00.000Z",
