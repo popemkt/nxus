@@ -10,7 +10,11 @@
       "homepage": "https://example.com",
       "thumbnail": "/thumbnails/sample-html.png",
       "metadata": {
-        "tags": ["demo", "html", "sample"],
+        "tags": [
+          "demo",
+          "html",
+          "sample"
+        ],
         "category": "examples",
         "createdAt": "2024-01-01T00:00:00.000Z",
         "updatedAt": "2024-01-01T00:00:00.000Z",
@@ -28,11 +32,22 @@
       "homepage": "https://github.com/example/remote-app",
       "installConfig": {
         "script": "install.sh",
-        "platform": ["linux", "macos", "windows"],
-        "dependencies": ["node", "npm"]
+        "platform": [
+          "linux",
+          "macos",
+          "windows"
+        ],
+        "dependencies": [
+          "node",
+          "npm"
+        ]
       },
       "metadata": {
-        "tags": ["remote", "git", "example"],
+        "tags": [
+          "remote",
+          "git",
+          "example"
+        ],
         "category": "examples",
         "createdAt": "2024-01-02T00:00:00.000Z",
         "updatedAt": "2024-01-02T00:00:00.000Z",
@@ -49,12 +64,55 @@
       "path": "https://github.com/popemkt/chrome-new-tab.git",
       "homepage": "https://github.com/popemkt/chrome-new-tab",
       "metadata": {
-        "tags": ["chrome", "extension", "productivity", "typescript"],
+        "tags": [
+          "chrome",
+          "extension",
+          "productivity",
+          "typescript"
+        ],
         "category": "extensions",
         "createdAt": "2024-12-23T00:00:00.000Z",
         "updatedAt": "2024-12-23T00:00:00.000Z",
         "version": "1.0.0",
         "author": "popemkt"
+      },
+      "status": "not-installed"
+    },
+    {
+      "id": "c5d6e7f8-a9b0-4123-b234-5c4567890123",
+      "name": "AutoMaker",
+      "description": "An autonomous AI development studio that transforms how you build software. Orchestrate AI agents powered by Claude Agent SDK to implement features automatically.",
+      "type": "remote-repo",
+      "path": "https://github.com/AutoMaker-Org/automaker.git",
+      "homepage": "https://github.com/AutoMaker-Org/automaker",
+      "installConfig": {
+        "script": "npm install",
+        "platform": [
+          "linux",
+          "macos",
+          "windows"
+        ],
+        "dependencies": [
+          "node",
+          "npm",
+          "git"
+        ]
+      },
+      "metadata": {
+        "tags": [
+          "ai",
+          "development",
+          "automation",
+          "electron",
+          "react",
+          "typescript",
+          "claude"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-25T13:43:00.000Z",
+        "updatedAt": "2025-12-25T13:43:00.000Z",
+        "version": "1.0.0",
+        "author": "AutoMaker-Org"
       },
       "status": "not-installed"
     }
