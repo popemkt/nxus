@@ -1,11 +1,11 @@
 import {
   CodeIcon,
-  DotsThreeVerticalIcon,
+  ArrowRightIcon,
   FileIcon,
   FolderOpenIcon,
   TerminalWindowIcon,
 } from '@phosphor-icons/react'
-import { AppActionsDialog } from './app-actions-dialog'
+import { Link } from '@tanstack/react-router'
 import type { App } from '@/types/app'
 import {
   Card,
@@ -44,7 +44,7 @@ const STATUS_VARIANTS = {
   available: 'outline',
 } as const
 
-export function AppCard({ app, onOpen }: AppCardProps) {
+export function AppCard({ app }: AppCardProps) {
   const TypeIcon = APP_TYPE_ICONS[app.type]
 
   return (
@@ -87,19 +87,15 @@ export function AppCard({ app, onOpen }: AppCardProps) {
       </CardContent>
 
       <CardFooter>
-        <AppActionsDialog
-          app={app}
-          onOpen={onOpen}
-          trigger={
-            <Button
-              variant="ghost"
-              className="w-full text-muted-foreground hover:text-foreground"
-            >
-              <DotsThreeVerticalIcon className="h-5 w-5" />
-              Actions
-            </Button>
-          }
-        />
+        <Link to="/apps/$appId" params={{ appId: app.id }} className="w-full">
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground hover:text-foreground"
+          >
+            <ArrowRightIcon className="h-5 w-5" />
+            View Details
+          </Button>
+        </Link>
       </CardFooter>
     </Card>
   )
