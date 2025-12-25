@@ -9,9 +9,6 @@ import {
   GithubLogoIcon,
   TerminalWindowIcon,
   TrashIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ActivityIcon,
   CalendarIcon,
   TagIcon,
   UserIcon,
@@ -21,6 +18,7 @@ import {
   FolderIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
+import { useCommandExecution } from '@/hooks/use-command-execution'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -32,7 +30,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { installAppServerFn } from '@/services/install.server'
+import { CommandLogViewer } from '@/components/app/command-log-viewer'
 import { useAppCheck, appStateService } from '@/services/app-state'
 import type { App } from '@/types/app'
 
@@ -60,7 +58,7 @@ const STATUS_VARIANTS = {
   available: 'outline',
 } as const
 
-type InstallStep = 'idle' | 'configuring' | 'installing' | 'success' | 'error'
+type InstallStep = 'idle' | 'configuring' | 'installing'
 
 function AppDetailPage() {
   const { appId } = Route.useParams()
@@ -73,7 +71,21 @@ function AppDetailPage() {
   const [installPath, setInstallPath] = useState(
     savedPath || '/home/popemkt/nxus-apps',
   )
-  const [installMessage, setInstallMessage] = useState('')
+
+  // Command execution hook for streaming logs
+  const { logs, isRunning, executeCommand, clearLogs } = useCommandExecution({
+    onComplete: async () => {
+      // Mark as installed after successful clone
+      const repoName = app?.name.toLowerCase().replace(/\s+/g, '-') || 'app'
+      const fullPath = `${installPath}/${repoName}`
+      if (app) {
+        await appStateService.markAsInstalled(app.id, fullPath)
+      }
+    },
+    onError: (error) => {
+      console.error('Installation failed:', error)
+    },
+  })
 
   if (loading) {
     return (
@@ -105,32 +117,18 @@ function AppDetailPage() {
   const handleInstall = async () => {
     setInstallStep('installing')
 
-    try {
-      const result = await installAppServerFn({
-        data: {
-          id: app.id,
-          name: app.name,
-          url: app.path,
-          targetPath: installPath,
-        },
-      })
+    // Clone the repository with streaming logs
+    const repoName = app.name.toLowerCase().replace(/\s+/g, '-')
+    await executeCommand('git', [
+      'clone',
+      app.path,
+      `${installPath}/${repoName}`,
+    ])
+  }
 
-      if (result.success) {
-        setInstallMessage(result.data.message)
-        await appStateService.markAsInstalled(app.id, result.data.path)
-        setInstallStep('success')
-      } else {
-        setInstallMessage(result.error)
-        setInstallStep('error')
-      }
-    } catch (error) {
-      setInstallMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unexpected error during installation',
-      )
-      setInstallStep('error')
-    }
+  const handleCloseInstall = () => {
+    setInstallStep('idle')
+    clearLogs()
   }
 
   const handleUninstall = async () => {
@@ -307,52 +305,12 @@ function AppDetailPage() {
           )}
 
           {installStep === 'installing' && (
-            <Card className="border-primary">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <ActivityIcon className="h-16 w-16 animate-spin text-primary mb-4" />
-                <h3 className="text-xl font-semibold mb-2">
-                  Installing {app.name}...
-                </h3>
-                <p className="text-muted-foreground">
-                  Cloning repository and preparing files. This might take a
-                  moment.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {installStep === 'success' && (
-            <Card className="border-green-500">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">
-                  Installation Complete
-                </h3>
-                <p className="text-muted-foreground italic">{installMessage}</p>
-                <Button onClick={() => setInstallStep('idle')} className="mt-4">
-                  Done
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {installStep === 'error' && (
-            <Card className="border-destructive">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <XCircleIcon className="h-16 w-16 text-destructive mb-4" />
-                <h3 className="text-xl font-semibold mb-2">
-                  Installation Failed
-                </h3>
-                <p className="text-muted-foreground italic">{installMessage}</p>
-                <Button
-                  onClick={() => setInstallStep('idle')}
-                  variant="outline"
-                  className="mt-4"
-                >
-                  Close
-                </Button>
-              </CardContent>
-            </Card>
+            <CommandLogViewer
+              title={`Installing ${app.name}`}
+              logs={logs}
+              isRunning={isRunning}
+              onClose={!isRunning ? handleCloseInstall : undefined}
+            />
           )}
 
           {/* Installation Configuration */}
