@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist, devtools } from 'zustand/middleware'
+import type { Platform } from '@/types/app'
 
 // --- Internal Store (Implementation Detail) ---
 
@@ -12,9 +13,15 @@ interface InstalledAppRecord {
 
 interface AppState {
   installedApps: Record<string, InstalledAppRecord>
+  osInfo: { platform: Platform; arch: string; homeDir: string } | null
   actions: {
     markAsInstalled: (appId: string, path: string) => void
     removeInstallation: (appId: string) => void
+    setOsInfo: (info: {
+      platform: Platform
+      arch: string
+      homeDir: string
+    }) => void
   }
 }
 
@@ -23,6 +30,7 @@ const useStore = create<AppState>()(
     persist(
       (set) => ({
         installedApps: {},
+        osInfo: null,
         actions: {
           markAsInstalled: (appId, path) =>
             set((state) => ({
@@ -40,10 +48,18 @@ const useStore = create<AppState>()(
               const { [appId]: _, ...rest } = state.installedApps
               return { installedApps: rest }
             }),
+          setOsInfo: (info) => set({ osInfo: info }),
         },
       }),
       {
-        name: 'nxus-app-storage',
+        name: 'nxus-app-storage-v2',
+        partialize: (state) => ({ installedApps: state.installedApps }), // Don't persist osInfo
+        version: 1,
+        merge: (persistedState, currentState) => ({
+          ...currentState,
+          ...(persistedState as object),
+          actions: currentState.actions, // Force actions to always be the implementation
+        }),
       },
     ),
   ),
@@ -62,12 +78,15 @@ export const appStateService = {
   removeInstallation: async (id: string): Promise<void> => {
     useStore.getState().actions.removeInstallation(id)
   },
+  setOsInfo: (info: {
+    platform: Platform
+    arch: string
+    homeDir: string
+  }) => {
+    useStore.getState().actions.setOsInfo(info)
+  },
 }
 
-/**
- * Hook to check if an app is installed.
- * Returns a reactive object with installation status and path.
- */
 /**
  * Hook to check if an app is installed.
  * Returns a reactive object with installation status and path.
@@ -87,4 +106,11 @@ export const useAppCheck = (appId: string) => {
  */
 export const useInstalledApps = () => {
   return useStore((state) => state.installedApps)
+}
+
+/**
+ * Hook to get OS info
+ */
+export const useOsInfo = () => {
+  return useStore((state) => state.osInfo)
 }

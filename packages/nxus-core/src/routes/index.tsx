@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { App } from '@/types/app'
 import { AppGalleryWithSearch } from '@/components/app/app-gallery'
 import { useAppRegistry } from '@/hooks/use-app-registry'
+import { OsBadge } from '@/components/os-badge'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export const Route = createFileRoute('/')({ component: AppManager })
@@ -57,7 +58,10 @@ function AppManager() {
             Command the chaos
           </p>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <OsBadge />
+          <ThemeToggle />
+        </div>
       </header>
 
       <AppGalleryWithSearch

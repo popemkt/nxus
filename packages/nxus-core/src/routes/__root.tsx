@@ -1,6 +1,9 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { useEffect } from 'react'
+import { getOsInfoServerFn } from '@/services/os-info.server'
+import { appStateService } from '@/services/app-state'
 
 import appCss from '../styles.css?url'
 
@@ -25,11 +28,19 @@ export const Route = createRootRoute({
       },
     ],
   }),
-
+  loader: () => getOsInfoServerFn(),
   shellComponent: RootDocument,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const osInfo = Route.useLoaderData()
+
+  useEffect(() => {
+    if (osInfo) {
+      appStateService.setOsInfo(osInfo)
+    }
+  }, [osInfo])
+
   return (
     <html lang="en">
       <head>

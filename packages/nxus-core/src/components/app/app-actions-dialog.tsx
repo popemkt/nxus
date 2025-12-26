@@ -24,7 +24,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { installAppServerFn } from '@/services/install.server'
-import { useAppCheck, appStateService } from '@/services/app-state'
+import {
+  useAppCheck,
+  appStateService,
+  useOsInfo,
+} from '@/services/app-state'
 
 interface AppActionsDialogProps {
   app: App
@@ -41,21 +45,32 @@ export function AppActionsDialog({
 }: AppActionsDialogProps) {
   const [step, setStep] = React.useState<DialogStep>('actions')
   const { isInstalled, path: savedPath } = useAppCheck(app.id)
+  const osInfo = useOsInfo()
 
-  const [installPath, setInstallPath] = React.useState(
-    savedPath || '/home/popemkt/nxus-apps',
-  )
+  const getDefaultPath = () => {
+    if (savedPath) return savedPath
+    if (!osInfo) return '/home/popemkt/nxus-apps'
+
+    if (osInfo.platform === 'windows') {
+      return 'C:\\workspace\\_playground'
+    }
+    return `${osInfo.homeDir}/nxus-apps`
+  }
+
+  const [installPath, setInstallPath] = React.useState(getDefaultPath())
   const [installResult, setInstallResult] = React.useState<{
     success: boolean
     message: string
   } | null>(null)
 
-  // Update default path if saved path exists
+  // Update default path if saved path exists or osInfo loads
   React.useEffect(() => {
     if (savedPath) {
       setInstallPath(savedPath)
+    } else if (osInfo && installPath === '/home/popemkt/nxus-apps') {
+      setInstallPath(getDefaultPath())
     }
-  }, [savedPath])
+  }, [savedPath, osInfo])
 
   const handleInstall = async () => {
     setStep('installing')
@@ -70,12 +85,21 @@ export function AppActionsDialog({
         },
       })
 
-      if (result.success) {
+      if (result.success && result.data) {
         setInstallResult({ success: true, message: result.data.message })
         // Persist to store
-        await appStateService.markAsInstalled(app.id, result.data.path)
+        if (result.data.path) {
+          await appStateService.markAsInstalled(app.id, result.data.path)
+        }
       } else {
-        setInstallResult({ success: false, message: result.error })
+        let message = 'Unknown error'
+        if (!result.success) {
+          message = result.error ?? 'Unknown error'
+        }
+        setInstallResult({
+          success: false,
+          message,
+        })
       }
     } catch (error) {
       setInstallResult({
@@ -109,7 +133,7 @@ export function AppActionsDialog({
 
   return (
     <AlertDialog onOpenChange={(open) => !open && resetDialog()}>
-      <AlertDialogTrigger render={trigger} />
+      <AlertDialogTrigger>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         {step === 'actions' && (
           <>

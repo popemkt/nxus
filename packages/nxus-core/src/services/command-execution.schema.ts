@@ -7,7 +7,7 @@ export const ExecuteCommandSchema = z.object({
   command: z.string().describe('Command to execute'),
   args: z.array(z.string()).optional().describe('Command arguments'),
   cwd: z.string().optional().describe('Working directory'),
-  env: z.record(z.string()).optional().describe('Environment variables'),
+  env: z.record(z.string(), z.string()).optional().describe('Environment variables'),
 })
 
 export type ExecuteCommandInput = z.infer<typeof ExecuteCommandSchema>
