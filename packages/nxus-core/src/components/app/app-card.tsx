@@ -1,10 +1,4 @@
-import {
-  CodeIcon,
-  ArrowRightIcon,
-  FileIcon,
-  FolderOpenIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react'
+import { ArrowRightIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import type { App } from '@/types/app'
 import {
@@ -17,32 +11,17 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  APP_TYPE_ICONS,
+  APP_TYPE_LABELS_SHORT,
+  STATUS_VARIANTS,
+} from '@/lib/app-constants'
 
 interface AppCardProps {
   app: App
   onOpen?: (app: App) => void
   onInstall?: (app: App) => void
 }
-
-const APP_TYPE_ICONS = {
-  html: FileIcon,
-  typescript: CodeIcon,
-  'remote-repo': FolderOpenIcon,
-  'script-tool': TerminalWindowIcon,
-}
-
-const APP_TYPE_LABELS = {
-  html: 'HTML',
-  typescript: 'TypeScript',
-  'remote-repo': 'Repository',
-  'script-tool': 'Script',
-}
-
-const STATUS_VARIANTS = {
-  installed: 'default',
-  'not-installed': 'secondary',
-  available: 'outline',
-} as const
 
 export function AppCard({ app }: AppCardProps) {
   const TypeIcon = APP_TYPE_ICONS[app.type]
@@ -74,7 +53,7 @@ export function AppCard({ app }: AppCardProps) {
           <Badge variant={STATUS_VARIANTS[app.status]}>
             {app.status.replace('-', ' ')}
           </Badge>
-          <Badge variant="secondary">{APP_TYPE_LABELS[app.type]}</Badge>
+          <Badge variant="secondary">{APP_TYPE_LABELS_SHORT[app.type]}</Badge>
           {app.metadata.tags.slice(0, 2).map((tag) => (
             <Badge key={tag} variant="outline">
               {tag}

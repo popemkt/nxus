@@ -53,3 +53,32 @@ Start with the simplest structure. Only add additional layers (e.g., `domain/`, 
 - Unit testing becomes difficult due to tight coupling
 
 **Recommended approach:** Colocation over separation until you feel real pain.
+
+## Real-World Examples
+
+### Example 1: Path Resolution
+
+**Problem:** OS-specific default paths were duplicated in `apps.$appId.tsx` and `app-actions-dialog.tsx`.
+
+**Solution:**
+
+- Created `lib/path-resolver.ts` with pure `getOsDefaultWorkspacePath(osInfo)` function
+- Created `hooks/use-install-path.ts` to compose the pure function with React state
+- Components now use the shared hook
+
+**Benefits:** Single source of truth, easier to test, consistent behavior.
+
+### Example 2: App Constants
+
+**Problem:** App type icons, labels, and status variants were duplicated in `app-card.tsx` and `apps.$appId.tsx`.
+
+**Solution:**
+
+- Created `lib/app-constants.ts` with:
+  - `APP_TYPE_ICONS` - Icon mapping for each app type
+  - `APP_TYPE_LABELS_SHORT` / `APP_TYPE_LABELS_LONG` - Short and long labels
+  - `STATUS_VARIANTS` - Badge variant mapping
+- Created `lib/app-actions.ts` with `openApp(app)` utility
+- Components import from centralized location
+
+**Benefits:** Consistency across UI, easier to add new app types, type-safe constants.

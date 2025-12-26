@@ -24,5 +24,5 @@ export function getOsDefaultWorkspacePath(osInfo: OsInfo | null): string {
   }
 
   // Linux/MacOS
-  return '/stuff/WorkSpace'
+  return '/stuff/WorkSpace/_playground'
 }

@@ -2,12 +2,9 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   ArrowLeftIcon,
-  CodeIcon,
   DownloadIcon,
-  FileIcon,
   FolderOpenIcon,
   GithubLogoIcon,
-  TerminalWindowIcon,
   TrashIcon,
   CalendarIcon,
   TagIcon,
@@ -34,30 +31,16 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '@/components/app/command-log-viewer'
 import { useAppCheck, appStateService } from '@/services/app-state'
 import type { App } from '@/types/app'
+import {
+  APP_TYPE_ICONS,
+  APP_TYPE_LABELS_LONG,
+  STATUS_VARIANTS,
+} from '@/lib/app-constants'
+import { openApp } from '@/lib/app-actions'
 
 export const Route = createFileRoute('/apps/$appId')({
   component: AppDetailPage,
 })
-
-const APP_TYPE_ICONS = {
-  html: FileIcon,
-  typescript: CodeIcon,
-  'remote-repo': FolderOpenIcon,
-  'script-tool': TerminalWindowIcon,
-}
-
-const APP_TYPE_LABELS = {
-  html: 'HTML Application',
-  typescript: 'TypeScript Application',
-  'remote-repo': 'Remote Repository',
-  'script-tool': 'Script Tool',
-}
-
-const STATUS_VARIANTS = {
-  installed: 'default',
-  'not-installed': 'secondary',
-  available: 'outline',
-} as const
 
 type InstallStep = 'idle' | 'configuring' | 'installing'
 
@@ -142,9 +125,7 @@ function AppDetailPage() {
   }
 
   const handleOpen = () => {
-    if (app.type === 'html') {
-      window.open(app.path, '_blank')
-    }
+    openApp(app)
   }
 
   return (
@@ -184,7 +165,9 @@ function AppDetailPage() {
               <Badge variant={STATUS_VARIANTS[effectiveStatus]}>
                 {effectiveStatus.replace('-', ' ')}
               </Badge>
-              <Badge variant="secondary">{APP_TYPE_LABELS[app.type]}</Badge>
+              <Badge variant="secondary">
+                {APP_TYPE_LABELS_LONG[app.type]}
+              </Badge>
               {app.metadata.tags.map((tag) => (
                 <Badge key={tag} variant="outline">
                   {tag}

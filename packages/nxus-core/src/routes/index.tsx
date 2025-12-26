@@ -5,6 +5,7 @@ import { AppGalleryWithSearch } from '@/components/app/app-gallery'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { OsBadge } from '@/components/os-badge'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { openApp } from '@/lib/app-actions'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
@@ -13,9 +14,7 @@ function AppManager() {
   const { apps, loading, error } = useAppRegistry({ searchQuery })
 
   const handleOpen = (app: App) => {
-    if (app.type === 'html') {
-      window.open(app.path, '_blank')
-    }
+    openApp(app)
   }
 
   const handleInstall = (app: App) => {
