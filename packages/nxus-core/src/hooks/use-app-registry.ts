@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { appRegistryService } from '../services/app-registry.service'
 import type { App, AppStatus, AppType } from '../types/app'
 
@@ -21,50 +21,66 @@ interface UseAppRegistryReturn {
 
 /**
  * React hook for accessing and filtering the app registry
+ * Uses lazy initialization - no useEffect needed for synchronous data
  */
 export function useAppRegistry(
   options: UseAppRegistryOptions = {},
 ): UseAppRegistryReturn {
-  const [apps, setApps] = useState<Array<App>>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [categories, setCategories] = useState<Array<string>>([])
-  const [tags, setTags] = useState<Array<string>>([])
-
-  const loadApps = () => {
-    setLoading(true)
-    setError(null)
-
+  // ✅ Lazy initialization - load data on first render
+  const [state, setState] = useState(() => {
     const result = appRegistryService.getAllApps()
 
     if (!result.success) {
-      setError(result.error)
-      setApps([])
-      setLoading(false)
+      return {
+        apps: [],
+        loading: false,
+        error: result.error,
+        categories: [],
+        tags: [],
+      }
+    }
+
+    const categoriesResult = appRegistryService.getCategories()
+    const tagsResult = appRegistryService.getTags()
+
+    return {
+      apps: result.data,
+      loading: false,
+      error: null,
+      categories: categoriesResult.success ? categoriesResult.data : [],
+      tags: tagsResult.success ? tagsResult.data : [],
+    }
+  })
+
+  // Refetch function for manual refresh
+  const refetch = useCallback(() => {
+    const result = appRegistryService.getAllApps()
+
+    if (!result.success) {
+      setState({
+        apps: [],
+        loading: false,
+        error: result.error,
+        categories: [],
+        tags: [],
+      })
       return
     }
 
-    setApps(result.data)
-
     const categoriesResult = appRegistryService.getCategories()
-    if (categoriesResult.success) {
-      setCategories(categoriesResult.data)
-    }
-
     const tagsResult = appRegistryService.getTags()
-    if (tagsResult.success) {
-      setTags(tagsResult.data)
-    }
 
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    loadApps()
+    setState({
+      apps: result.data,
+      loading: false,
+      error: null,
+      categories: categoriesResult.success ? categoriesResult.data : [],
+      tags: tagsResult.success ? tagsResult.data : [],
+    })
   }, [])
 
   const filteredApps = useMemo(() => {
-    let filtered = apps
+    let filtered = state.apps
 
     if (options.searchQuery) {
       const result = appRegistryService.searchApps(options.searchQuery)
@@ -95,7 +111,7 @@ export function useAppRegistry(
 
     return filtered
   }, [
-    apps,
+    state.apps,
     options.searchQuery,
     options.filterType,
     options.filterStatus,
@@ -105,37 +121,37 @@ export function useAppRegistry(
 
   return {
     apps: filteredApps,
-    loading,
-    error,
-    categories,
-    tags,
-    refetch: loadApps,
+    loading: state.loading,
+    error: state.error,
+    categories: state.categories,
+    tags: state.tags,
+    refetch,
   }
 }
 
 /**
  * Hook to get a single app by ID
+ * Uses lazy initialization - no useEffect needed for synchronous lookup
  */
 export function useApp(id: string) {
-  const [app, setApp] = useState<App | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  useEffect(() => {
-    setLoading(true)
-    setError(null)
-
+  // ✅ Lazy initialization - lookup happens once on first render
+  const [state] = useState(() => {
     const result = appRegistryService.getAppById(id)
 
     if (!result.success) {
-      setError(result.error)
-      setApp(null)
-    } else {
-      setApp(result.data)
+      return {
+        app: null,
+        loading: false,
+        error: result.error,
+      }
     }
 
-    setLoading(false)
-  }, [id])
+    return {
+      app: result.data,
+      loading: false,
+      error: null,
+    }
+  })
 
-  return { app, loading, error }
+  return state
 }
