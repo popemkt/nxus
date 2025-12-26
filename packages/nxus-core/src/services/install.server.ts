@@ -16,6 +16,6 @@ export const installAppServerFn = createServerFn({ method: 'POST' })
   .inputValidator(InstallParamsSchema)
   .handler(async (ctx) => {
     // Dynamic import to strictly isolate server logic from client bundle
-    const { installRepo } = await import('./installation-logic')
-    return installRepo(ctx.data)
+    const { installRepository } = await import('./installation-logic')
+    return installRepository(ctx.data)
   })

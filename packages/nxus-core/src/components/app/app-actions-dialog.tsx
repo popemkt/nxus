@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { installAppServerFn } from '@/services/install.server'
+import { getOSInfoServerFn, type OSType } from '@/services/os-info.server'
 import { useAppCheck, appStateService } from '@/services/app-state'
 
 interface AppActionsDialogProps {
@@ -34,6 +35,18 @@ interface AppActionsDialogProps {
 
 type DialogStep = 'actions' | 'configure-install' | 'installing' | 'result'
 
+function getDefaultPathForOS(osType: OSType): string {
+  switch (osType) {
+    case 'windows':
+      return 'C:\\workspace\\_playground'
+    case 'linux':
+    case 'darwin':
+      return '/stuff/WorkSpace'
+    default:
+      return '/stuff/WorkSpace'
+  }
+}
+
 export function AppActionsDialog({
   app,
   trigger,
@@ -41,6 +54,7 @@ export function AppActionsDialog({
 }: AppActionsDialogProps) {
   const [step, setStep] = React.useState<DialogStep>('actions')
   const { isInstalled, path: savedPath } = useAppCheck(app.id)
+  const [osType, setOsType] = React.useState<OSType>('unknown')
 
   const [installPath, setInstallPath] = React.useState(
     savedPath || '/home/popemkt/nxus-apps',
@@ -50,12 +64,23 @@ export function AppActionsDialog({
     message: string
   } | null>(null)
 
-  // Update default path if saved path exists
+  // Fetch OS info on mount and set default path
   React.useEffect(() => {
+    // Set initial path from saved path if available
     if (savedPath) {
       setInstallPath(savedPath)
     }
-  }, [savedPath])
+
+    // Fetch OS info and set default if no saved path
+    getOSInfoServerFn().then((result) => {
+      setOsType(result.osType)
+      // Only set default path based on OS if no saved path exists
+      if (!savedPath) {
+        setInstallPath(getDefaultPathForOS(result.osType))
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
 
   const handleInstall = async () => {
     setStep('installing')
@@ -184,7 +209,7 @@ export function AppActionsDialog({
                   id="install-path"
                   value={installPath}
                   onChange={(e) => setInstallPath(e.target.value)}
-                  placeholder="/path/to/apps"
+                  placeholder={getDefaultPathForOS(osType)}
                 />
               </Field>
             </div>

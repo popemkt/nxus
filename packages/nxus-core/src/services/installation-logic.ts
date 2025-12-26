@@ -12,7 +12,7 @@ type InstallParams = z.infer<typeof InstallParamsSchema>
 
 const execAsync = promisify(exec)
 
-export async function installRepo(params: InstallParams) {
+export async function installRepository(params: InstallParams) {
   const { name, url, targetPath } = params
 
   try {
