@@ -5,24 +5,28 @@ import type { Platform } from '@/types/app'
 // --- Internal Store (Implementation Detail) ---
 
 interface InstalledAppRecord {
+  id: string // Unique ID for each installation
   appId: string
   installPath: string
   installedAt: number
-  // Potentially other metadata like version
 }
 
 interface AppState {
-  installedApps: Record<string, InstalledAppRecord>
+  installedApps: Record<string, InstalledAppRecord[]> // Array of installations per app
   osInfo: { platform: Platform; arch: string; homeDir: string } | null
   actions: {
-    markAsInstalled: (appId: string, path: string) => void
-    removeInstallation: (appId: string) => void
+    addInstallation: (appId: string, path: string) => string // Returns installation ID
+    removeInstallation: (appId: string, installationId: string) => void
     setOsInfo: (info: {
       platform: Platform
       arch: string
       homeDir: string
     }) => void
   }
+}
+
+function generateId(): string {
+  return crypto.randomUUID()
 }
 
 const useStore = create<AppState>()(
@@ -32,33 +36,85 @@ const useStore = create<AppState>()(
         installedApps: {},
         osInfo: null,
         actions: {
-          markAsInstalled: (appId, path) =>
+          addInstallation: (appId, path) => {
+            const id = generateId()
             set((state) => ({
               installedApps: {
                 ...state.installedApps,
-                [appId]: {
-                  appId,
-                  installPath: path,
-                  installedAt: Date.now(),
-                },
+                [appId]: [
+                  ...(state.installedApps[appId] || []),
+                  {
+                    id,
+                    appId,
+                    installPath: path,
+                    installedAt: Date.now(),
+                  },
+                ],
               },
-            })),
-          removeInstallation: (appId) =>
+            }))
+            return id
+          },
+          removeInstallation: (appId, installationId) =>
             set((state) => {
-              const { [appId]: _, ...rest } = state.installedApps
-              return { installedApps: rest }
+              const installations = state.installedApps[appId] || []
+              const filtered = installations.filter(
+                (i) => i.id !== installationId,
+              )
+
+              if (filtered.length === 0) {
+                // Remove the key entirely if no installations left
+                const { [appId]: _, ...rest } = state.installedApps
+                return { installedApps: rest }
+              }
+
+              return {
+                installedApps: {
+                  ...state.installedApps,
+                  [appId]: filtered,
+                },
+              }
             }),
           setOsInfo: (info) => set({ osInfo: info }),
         },
       }),
       {
-        name: 'nxus-app-storage-v2',
-        partialize: (state) => ({ installedApps: state.installedApps }), // Don't persist osInfo
-        version: 1,
+        name: 'nxus-app-storage-v3', // Bumped version for new schema
+        partialize: (state) => ({ installedApps: state.installedApps }),
+        version: 2,
+        migrate: (persistedState: unknown, version: number) => {
+          // Migration from v1 (single install per app) to v2 (array of installs)
+          if (version < 2) {
+            const oldState = persistedState as {
+              installedApps?: Record<
+                string,
+                { appId: string; installPath: string; installedAt: number }
+              >
+            }
+            const newInstalledApps: Record<string, InstalledAppRecord[]> = {}
+
+            if (oldState.installedApps) {
+              for (const [appId, record] of Object.entries(
+                oldState.installedApps,
+              )) {
+                newInstalledApps[appId] = [
+                  {
+                    id: generateId(),
+                    appId: record.appId,
+                    installPath: record.installPath,
+                    installedAt: record.installedAt,
+                  },
+                ]
+              }
+            }
+
+            return { installedApps: newInstalledApps }
+          }
+          return persistedState as object
+        },
         merge: (persistedState, currentState) => ({
           ...currentState,
           ...(persistedState as object),
-          actions: currentState.actions, // Force actions to always be the implementation
+          actions: currentState.actions,
         }),
       },
     ),
@@ -72,33 +128,53 @@ const useStore = create<AppState>()(
  * Returns Promises to allow for future migration to async backends (e.g., Convex, DB).
  */
 export const appStateService = {
-  markAsInstalled: async (id: string, path: string): Promise<void> => {
-    useStore.getState().actions.markAsInstalled(id, path)
+  addInstallation: async (appId: string, path: string): Promise<string> => {
+    return useStore.getState().actions.addInstallation(appId, path)
   },
-  removeInstallation: async (id: string): Promise<void> => {
-    useStore.getState().actions.removeInstallation(id)
+  /** @deprecated Use addInstallation instead */
+  markAsInstalled: async (appId: string, path: string): Promise<void> => {
+    useStore.getState().actions.addInstallation(appId, path)
   },
-  setOsInfo: (info: {
-    platform: Platform
-    arch: string
-    homeDir: string
-  }) => {
+  removeInstallation: async (
+    appId: string,
+    installationId: string,
+  ): Promise<void> => {
+    useStore.getState().actions.removeInstallation(appId, installationId)
+  },
+  setOsInfo: (info: { platform: Platform; arch: string; homeDir: string }) => {
     useStore.getState().actions.setOsInfo(info)
   },
 }
 
+// Stable empty array to prevent infinite re-renders from new array references
+const EMPTY_INSTALLATIONS: InstalledAppRecord[] = []
+
 /**
- * Hook to check if an app is installed.
- * Returns a reactive object with installation status and path.
+ * Hook to get all installations for an app
+ */
+export const useAppInstallations = (appId: string): InstalledAppRecord[] => {
+  const installations = useStore((state) => state.installedApps[appId])
+  return installations ?? EMPTY_INSTALLATIONS
+}
+
+/**
+ * Hook to check if an app is installed (has at least one installation).
+ * Returns a reactive object with installation status.
  */
 export const useAppCheck = (appId: string) => {
-  const isInstalled = useStore((state) => !!state.installedApps[appId])
-  const path = useStore((state) => state.installedApps[appId]?.installPath)
-  const installedAt = useStore(
-    (state) => state.installedApps[appId]?.installedAt,
-  )
+  const installations = useStore((state) => state.installedApps[appId])
+  const safeInstallations = installations ?? EMPTY_INSTALLATIONS
+  const isInstalled = safeInstallations.length > 0
+  // For backwards compatibility, return the first installation's path
+  const path = safeInstallations[0]?.installPath
+  const installedAt = safeInstallations[0]?.installedAt
 
-  return { isInstalled, path, installedAt }
+  return {
+    isInstalled,
+    path,
+    installedAt,
+    installationCount: safeInstallations.length,
+  }
 }
 
 /**
@@ -114,3 +190,6 @@ export const useInstalledApps = () => {
 export const useOsInfo = () => {
   return useStore((state) => state.osInfo)
 }
+
+// Re-export type for external use
+export type { InstalledAppRecord }

@@ -1,18 +1,15 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   ArrowLeftIcon,
-  DownloadIcon,
   FolderOpenIcon,
   GithubLogoIcon,
-  TrashIcon,
   CalendarIcon,
   TagIcon,
   UserIcon,
   GlobeIcon,
   PackageIcon,
   PlayIcon,
-  FolderIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
@@ -29,8 +26,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '@/components/app/command-log-viewer'
+import { InstallationsCard } from '@/components/app/installations-card'
 import { useAppCheck, appStateService } from '@/services/app-state'
-import type { App } from '@/types/app'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_LONG,
@@ -46,10 +43,9 @@ type InstallStep = 'idle' | 'configuring' | 'installing'
 
 function AppDetailPage() {
   const { appId } = Route.useParams()
-  const navigate = useNavigate()
   const { apps, loading } = useAppRegistry({})
   const app = apps.find((a) => a.id === appId)
-  const { isInstalled, path: savedPath } = useAppCheck(appId)
+  const { isInstalled } = useAppCheck(appId)
   const { installPath, setInstallPath } = useInstallPath(appId)
 
   const [installStep, setInstallStep] = useState<InstallStep>('idle')
@@ -61,7 +57,7 @@ function AppDetailPage() {
       const repoName = app?.name.toLowerCase().replace(/\s+/g, '-') || 'app'
       const fullPath = `${installPath}/${repoName}`
       if (app) {
-        await appStateService.markAsInstalled(app.id, fullPath)
+        await appStateService.addInstallation(app.id, fullPath)
       }
     },
     onError: (error) => {
@@ -113,16 +109,7 @@ function AppDetailPage() {
     clearLogs()
   }
 
-  const handleUninstall = async () => {
-    if (
-      confirm(
-        'Are you sure you want to forget this installation? (Files will remain on disk)',
-      )
-    ) {
-      await appStateService.removeInstallation(app.id)
-      setInstallStep('idle')
-    }
-  }
+  // Uninstall is now handled by InstallationsCard component
 
   const handleOpen = () => {
     openApp(app)
@@ -181,56 +168,25 @@ function AppDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Installations */}
+          <InstallationsCard
+            appId={appId}
+            canInstall={app.type === 'remote-repo'}
+            onInstallClick={() => setInstallStep('configuring')}
+            isInstalling={installStep === 'installing'}
+          />
+
           {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Manage and interact with this application
-              </CardDescription>
+              <CardDescription>Interact with this application</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {effectiveStatus === 'installed' && app.type === 'html' && (
                 <Button onClick={handleOpen} className="w-full justify-start">
                   <PlayIcon data-icon="inline-start" />
                   Open Application
-                </Button>
-              )}
-
-              {effectiveStatus === 'installed' && savedPath && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    // Open file manager at path
-                    window.open(`file://${savedPath}`, '_blank')
-                  }}
-                >
-                  <FolderIcon data-icon="inline-start" />
-                  Open in File Manager
-                </Button>
-              )}
-
-              {app.type === 'remote-repo' &&
-                effectiveStatus !== 'installed' && (
-                  <Button
-                    onClick={() => setInstallStep('configuring')}
-                    className="w-full justify-start"
-                    disabled={installStep === 'installing'}
-                  >
-                    <DownloadIcon data-icon="inline-start" />
-                    Install Locally
-                  </Button>
-                )}
-
-              {effectiveStatus === 'installed' && (
-                <Button
-                  onClick={handleUninstall}
-                  variant="outline"
-                  className="w-full justify-start text-destructive hover:text-destructive"
-                >
-                  <TrashIcon data-icon="inline-start" />
-                  Forget Installation
                 </Button>
               )}
 
@@ -399,18 +355,6 @@ function AppDetailPage() {
                     <p className="text-sm font-medium">Category</p>
                     <p className="text-sm text-muted-foreground capitalize">
                       {app.metadata.category.replace('-', ' ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {savedPath && (
-                <div className="flex items-start gap-3">
-                  <FolderIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Installed At</p>
-                    <p className="text-sm text-muted-foreground font-mono break-all">
-                      {savedPath}
                     </p>
                   </div>
                 </div>

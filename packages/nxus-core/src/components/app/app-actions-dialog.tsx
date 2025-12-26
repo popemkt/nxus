@@ -6,7 +6,6 @@ import {
   EyeIcon,
   GithubLogoIcon,
   XCircleIcon,
-  TrashIcon,
 } from '@phosphor-icons/react'
 import type { App } from '@/types/app'
 import {
@@ -63,9 +62,9 @@ export function AppActionsDialog({
 
       if (result.success && result.data) {
         setInstallResult({ success: true, message: result.data.message })
-        // Persist to store
+        // Persist to store using new addInstallation API
         if (result.data.path) {
-          await appStateService.markAsInstalled(app.id, result.data.path)
+          await appStateService.addInstallation(app.id, result.data.path)
         }
       } else {
         let message = 'Unknown error'
@@ -88,16 +87,6 @@ export function AppActionsDialog({
     }
 
     setStep('result')
-  }
-
-  const handleUninstall = async () => {
-    if (
-      confirm(
-        'Are you sure you want to forget this installation? (Files will remain on disk)',
-      )
-    ) {
-      await appStateService.removeInstallation(app.id)
-    }
   }
 
   const resetDialog = () => {
@@ -125,16 +114,6 @@ export function AppActionsDialog({
                 >
                   <EyeIcon data-icon="inline-start" />
                   Open Application
-                </Button>
-              )}
-              {effectiveStatus === 'installed' && (
-                <Button
-                  onClick={handleUninstall}
-                  variant="outline"
-                  className="w-full justify-start text-destructive hover:text-destructive"
-                >
-                  <TrashIcon data-icon="inline-start" />
-                  Forget Installation
                 </Button>
               )}
 
