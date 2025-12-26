@@ -24,11 +24,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { installAppServerFn } from '@/services/install.server'
-import {
-  useAppCheck,
-  appStateService,
-  useOsInfo,
-} from '@/services/app-state'
+import { useAppCheck, appStateService } from '@/services/app-state'
+import { useInstallPath } from '@/hooks/use-install-path'
 
 interface AppActionsDialogProps {
   app: App
@@ -44,34 +41,12 @@ export function AppActionsDialog({
   onOpen,
 }: AppActionsDialogProps) {
   const [step, setStep] = React.useState<DialogStep>('actions')
-  const { isInstalled, path: savedPath } = useAppCheck(app.id)
-  const osInfo = useOsInfo()
-
-  const getDefaultPath = () => {
-    if (savedPath) return savedPath
-    if (!osInfo) return '/home/popemkt/nxus-apps'
-
-    if (osInfo.platform === 'windows') {
-      return 'C:\\workspace\\_playground'
-    }
-    // Linux/MacOS
-    return '/stuff/WorkSpace'
-  }
-
-  const [installPath, setInstallPath] = React.useState(getDefaultPath())
+  const { isInstalled } = useAppCheck(app.id)
+  const { installPath, setInstallPath } = useInstallPath(app.id)
   const [installResult, setInstallResult] = React.useState<{
     success: boolean
     message: string
   } | null>(null)
-
-  // Update default path if saved path exists or osInfo loads
-  React.useEffect(() => {
-    if (savedPath) {
-      setInstallPath(savedPath)
-    } else if (osInfo && installPath === '/home/popemkt/nxus-apps') {
-      setInstallPath(getDefaultPath())
-    }
-  }, [savedPath, osInfo])
 
   const handleInstall = async () => {
     setStep('installing')
