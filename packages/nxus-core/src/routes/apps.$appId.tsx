@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ArrowLeftIcon,
   CodeIcon,
@@ -31,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '@/components/app/command-log-viewer'
-import { useAppCheck, appStateService } from '@/services/app-state'
+import { useAppCheck, appStateService, useOsInfo } from '@/services/app-state'
 import type { App } from '@/types/app'
 
 export const Route = createFileRoute('/apps/$appId')({
@@ -66,11 +66,31 @@ function AppDetailPage() {
   const { apps, loading } = useAppRegistry({})
   const app = apps.find((a) => a.id === appId)
   const { isInstalled, path: savedPath } = useAppCheck(appId)
+  const osInfo = useOsInfo()
 
   const [installStep, setInstallStep] = useState<InstallStep>('idle')
-  const [installPath, setInstallPath] = useState(
-    savedPath || '/home/popemkt/nxus-apps',
-  )
+
+  const getDefaultPath = () => {
+    if (savedPath) return savedPath
+    if (!osInfo) return '/home/popemkt/nxus-apps'
+
+    if (osInfo.platform === 'windows') {
+      return 'C:\\workspace\\_playground'
+    }
+    // Linux/MacOS
+    return '/stuff/WorkSpace'
+  }
+
+  const [installPath, setInstallPath] = useState(getDefaultPath())
+
+  useEffect(() => {
+    if (savedPath) {
+      setInstallPath(savedPath)
+    } else if (osInfo && installPath === '/home/popemkt/nxus-apps') {
+      setInstallPath(getDefaultPath())
+    }
+  }, [savedPath, osInfo])
+
 
   // Command execution hook for streaming logs
   const { logs, isRunning, executeCommand, clearLogs } = useCommandExecution({

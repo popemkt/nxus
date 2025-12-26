@@ -54,7 +54,8 @@ export function AppActionsDialog({
     if (osInfo.platform === 'windows') {
       return 'C:\\workspace\\_playground'
     }
-    return `${osInfo.homeDir}/nxus-apps`
+    // Linux/MacOS
+    return '/stuff/WorkSpace'
   }
 
   const [installPath, setInstallPath] = React.useState(getDefaultPath())
