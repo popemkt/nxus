@@ -1,23 +1,28 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import fs from 'fs/promises'
+import path from 'path'
 
 export const UninstallParamsSchema = z.object({
   installPath: z.string(),
   deleteFromDisk: z.boolean().default(false),
 })
 
+type UninstallResult =
+  | { success: true; data: { message: string } }
+  | { success: false; error: string }
+
 /**
  * Server function to uninstall an app.
  * Uses Node.js fs.rm() for OS-agnostic folder deletion.
- * Dynamically imports fs to keep this isolated from client bundle.
+ * Top-level imports with explicit Promise return type.
  */
 export const uninstallAppServerFn = createServerFn({ method: 'POST' })
   .inputValidator(UninstallParamsSchema)
-  .handler(async (ctx) => {
+  .handler(async (ctx): Promise<UninstallResult> => {
     const { installPath, deleteFromDisk } = ctx.data
 
     if (!deleteFromDisk) {
-      // Just forget, don't delete files
       return {
         success: true,
         data: { message: 'Installation forgotten (files remain on disk)' },
@@ -25,10 +30,6 @@ export const uninstallAppServerFn = createServerFn({ method: 'POST' })
     }
 
     try {
-      // Dynamic import to ensure Node modules stay server-side
-      const fs = await import('fs/promises')
-      const path = await import('path')
-
       // Verify path exists before attempting deletion
       const stats = await fs.stat(installPath).catch(() => null)
       if (!stats) {
