@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instance Selector - UX Mockup</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #12121a;
+        --bg-tertiary: #1a1a24;
+        --bg-card: rgba(26, 26, 36, 0.8);
+        --border-color: rgba(139, 92, 246, 0.15);
+        --border-active: rgba(139, 92, 246, 0.5);
+        --text-primary: #f4f4f5;
+        --text-secondary: #a1a1aa;
+        --text-muted: #71717a;
+        --accent: #8b5cf6;
+        --accent-bg: rgba(139, 92, 246, 0.15);
+        --success: #22c55e;
+        --destructive: #ef4444;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        padding: 40px;
+      }
+
+      .mockup-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        margin-bottom: 48px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent) 0%, #c4b5fd 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 12px;
+      }
+
+      .header p {
+        color: var(--text-secondary);
+        font-size: 1.125rem;
+      }
+
+      .section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+      }
+
+      .mockups-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+      }
+
+      .mockup-section {
+        flex: 1;
+      }
+
+      /* Card base styles */
+      .card {
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      /* Compact Mode */
+      .compact-card {
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .compact-card:hover {
+        border-color: var(--border-active);
+        box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+      }
+
+      .folder-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--accent-bg);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+
+      .instance-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .instance-path {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.875rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .instance-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .badge {
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: var(--accent-bg);
+        color: var(--accent);
+      }
+
+      .badge.secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+      }
+
+      .meta-text {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .compact-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+      }
+
+      .icon-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .expand-btn {
+        color: var(--text-muted);
+      }
+
+      /* Full Mode */
+      .full-card {
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .card-header {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .card-title {
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+
+      .card-title span {
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+
+      /* Instance List */
+      .instance-list {
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .instance-item {
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .instance-item:last-child {
+        border-bottom: none;
+      }
+
+      .instance-item:hover {
+        background: var(--bg-tertiary);
+      }
+
+      .instance-item.active {
+        background: var(--accent-bg);
+        border-left: 2px solid var(--accent);
+        padding-left: 14px;
+      }
+
+      .radio {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid var(--text-muted);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .instance-item.active .radio {
+        border-color: var(--accent);
+      }
+
+      .radio-inner {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.15s ease;
+      }
+
+      .instance-item.active .radio-inner {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .instance-item .instance-info {
+        flex: 1;
+      }
+
+      .item-actions {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      .instance-item:hover .item-actions,
+      .instance-item.active .item-actions {
+        opacity: 1;
+      }
+
+      .icon-btn.destructive:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--destructive);
+      }
+
+      /* Add Instance Button */
+      .add-instance-btn {
+        width: 100%;
+        padding: 12px 16px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.15s ease;
+        border-top: 1px dashed var(--border-color);
+      }
+
+      .add-instance-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      /* Actions Panel */
+      .actions-panel {
+        padding: 16px;
+        background: var(--bg-secondary);
+      }
+
+      .actions-label {
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+      }
+
+      .primary-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .action-btn {
+        padding: 14px 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .action-btn:hover {
+        border-color: var(--border-active);
+        background: var(--accent-bg);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+      }
+
+      .action-icon {
+        font-size: 1.5rem;
+      }
+
+      .action-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+
+      .secondary-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .secondary-btn {
+        flex: 1;
+        padding: 10px 12px;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+      }
+
+      .secondary-btn:hover {
+        border-color: var(--text-muted);
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+      }
+
+      /* Empty State */
+      .empty-state-section {
+        margin-top: 48px;
+      }
+
+      .empty-card {
+        padding: 32px;
+        text-align: center;
+      }
+
+      .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      .empty-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .empty-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 20px;
+      }
+
+      .empty-btn {
+        padding: 12px 24px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+      }
+
+      .empty-btn:hover {
+        background: #7c4dd4;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+      }
+
+      /* Action States Demo */
+      .states-section {
+        margin-top: 48px;
+      }
+
+      .states-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .action-btn.running {
+        border-color: var(--accent);
+        background: var(--accent-bg);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 8px rgba(139, 92, 246, 0);
+        }
+      }
+
+      .action-btn.success {
+        border-color: var(--success);
+        background: rgba(34, 197, 94, 0.15);
+      }
+
+      .action-btn.success .action-icon {
+        color: var(--success);
+      }
+
+      .action-btn.error {
+        border-color: var(--destructive);
+        background: rgba(239, 68, 68, 0.15);
+      }
+
+      .action-btn.error .action-icon {
+        color: var(--destructive);
+      }
+
+      .state-label {
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-align: center;
+        margin-top: 8px;
+        color: var(--text-muted);
+      }
+
+      /* Responsive */
+      @media (max-width: 900px) {
+        .mockups-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-container">
+      <header class="header">
+        <h1>Instance Selector</h1>
+        <p>
+          A reimagined interface for managing app instances with contextual
+          actions
+        </p>
+      </header>
+
+      <div class="mockups-grid">
+        <!-- Compact Mode -->
+        <div class="mockup-section">
+          <div class="section-title">Compact Mode (Default)</div>
+          <div class="card compact-card">
+            <div class="folder-icon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                ></path>
+              </svg>
+            </div>
+            <div class="instance-info">
+              <div class="instance-path">~/Projects/my-app</div>
+              <div class="instance-meta">
+                <span class="badge">TypeScript</span>
+                <span class="meta-text">Installed Dec 25</span>
+              </div>
+            </div>
+            <div class="compact-actions">
+              <button class="icon-btn" title="Refresh">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+              </button>
+              <button class="icon-btn" title="Open Folder">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                  ></path>
+                </svg>
+              </button>
+              <button class="icon-btn" title="More actions">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="1"></circle>
+                  <circle cx="12" cy="5" r="1"></circle>
+                  <circle cx="12" cy="19" r="1"></circle>
+                </svg>
+              </button>
+            </div>
+            <button class="icon-btn expand-btn" title="Expand">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Full/Expanded Mode -->
+        <div class="mockup-section">
+          <div class="section-title">Full Mode (Expanded)</div>
+          <div class="card full-card">
+            <div class="card-header">
+              <h3 class="card-title">Instances <span>(3)</span></h3>
+              <button class="icon-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <div class="instance-list">
+              <div class="instance-item active">
+                <div class="radio">
+                  <div class="radio-inner"></div>
+                </div>
+                <div class="folder-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="instance-info">
+                  <div class="instance-path">~/Projects/my-app</div>
+                  <div class="instance-meta">
+                    <span class="badge">Active</span>
+                    <span class="meta-text">Installed Dec 25, 2024</span>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <button class="icon-btn" title="Open Folder">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                      ></path>
+                    </svg>
+                  </button>
+                  <button class="icon-btn destructive" title="Remove">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="instance-item">
+                <div class="radio">
+                  <div class="radio-inner"></div>
+                </div>
+                <div class="folder-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="instance-info">
+                  <div class="instance-path">~/Work/my-app-fork</div>
+                  <div class="instance-meta">
+                    <span class="meta-text">Installed Dec 20, 2024</span>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <button class="icon-btn" title="Open Folder">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                      ></path>
+                    </svg>
+                  </button>
+                  <button class="icon-btn destructive" title="Remove">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="instance-item">
+                <div class="radio">
+                  <div class="radio-inner"></div>
+                </div>
+                <div class="folder-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="instance-info">
+                  <div class="instance-path">/tmp/my-app-test</div>
+                  <div class="instance-meta">
+                    <span class="meta-text">Installed Dec 27, 2024</span>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <button class="icon-btn" title="Open Folder">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                      ></path>
+                    </svg>
+                  </button>
+                  <button class="icon-btn destructive" title="Remove">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <button class="add-instance-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Instance
+              </button>
+            </div>
+
+            <div class="actions-panel">
+              <div class="actions-label">Actions for Active Instance</div>
+              <div class="primary-actions">
+                <button class="action-btn">
+                  <span class="action-icon">📦</span>
+                  <span class="action-label">Install Deps</span>
+                </button>
+                <button class="action-btn">
+                  <span class="action-icon">🔨</span>
+                  <span class="action-label">Build</span>
+                </button>
+                <button class="action-btn">
+                  <span class="action-icon">▶️</span>
+                  <span class="action-label">Start</span>
+                </button>
+              </div>
+              <div class="secondary-actions">
+                <button class="secondary-btn">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                    ></path>
+                  </svg>
+                  Open Folder
+                </button>
+                <button class="secondary-btn">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="4 17 10 11 4 5"></polyline>
+                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                  </svg>
+                  Terminal
+                </button>
+                <button class="secondary-btn">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                  IDE
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-section">
+        <div class="section-title">Empty State</div>
+        <div class="card empty-card" style="max-width: 400px">
+          <div class="empty-icon">⬡</div>
+          <h4 class="empty-title">No instances yet</h4>
+          <p class="empty-text">Add your first instance to get started</p>
+          <button class="empty-btn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Instance
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Button States -->
+      <div class="states-section">
+        <div class="section-title">Action Button States</div>
+        <div class="states-grid">
+          <div>
+            <button class="action-btn">
+              <span class="action-icon">📦</span>
+              <span class="action-label">Install Deps</span>
+            </button>
+            <div class="state-label">Idle</div>
+          </div>
+          <div>
+            <button class="action-btn running">
+              <span class="action-icon">⏳</span>
+              <span class="action-label">Installing...</span>
+            </button>
+            <div class="state-label">Running</div>
+          </div>
+          <div>
+            <button class="action-btn success">
+              <span class="action-icon">✓</span>
+              <span class="action-label">Installed</span>
+            </button>
+            <div class="state-label">Success</div>
+          </div>
+          <div>
+            <button class="action-btn error">
+              <span class="action-icon">✗</span>
+              <span class="action-label">Failed</span>
+            </button>
+            <div class="state-label">Error</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

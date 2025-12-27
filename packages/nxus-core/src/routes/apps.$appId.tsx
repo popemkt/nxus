@@ -26,8 +26,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '@/components/app/command-log-viewer'
-import { InstallationsCard } from '@/components/app/installations-card'
-import { useAppCheck, appStateService } from '@/services/state/app-state'
+import { InstanceSelector } from '@/components/app/instance-selector'
+import { InstanceActionsPanel } from '@/components/app/instance-actions-panel'
+import {
+  useAppCheck,
+  appStateService,
+  type InstalledAppRecord,
+} from '@/services/state/app-state'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_LONG,
@@ -49,6 +54,8 @@ function AppDetailPage() {
   const { installPath, setInstallPath } = useInstallPath(appId)
 
   const [installStep, setInstallStep] = useState<InstallStep>('idle')
+  const [selectedInstance, setSelectedInstance] =
+    useState<InstalledAppRecord | null>(null)
 
   // Command execution hook for streaming logs
   const { logs, isRunning, executeCommand, clearLogs } = useCommandExecution({
@@ -168,12 +175,13 @@ function AppDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Installations */}
-          <InstallationsCard
+          {/* Instance Selector */}
+          <InstanceSelector
             appId={appId}
-            canInstall={app.type === 'remote-repo'}
-            onInstallClick={() => setInstallStep('configuring')}
-            isInstalling={installStep === 'installing'}
+            canAddInstance={app.type === 'remote-repo'}
+            onAddInstanceClick={() => setInstallStep('configuring')}
+            isAddingInstance={installStep === 'installing'}
+            onInstanceSelect={setSelectedInstance}
           />
 
           {/* Quick Actions */}
@@ -298,6 +306,17 @@ function AppDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Instance Actions Panel */}
+          <InstanceActionsPanel
+            instance={selectedInstance}
+            appType={app.type}
+            appId={appId}
+            onRunCommand={(command, cwd) => {
+              // TODO: Integrate with command execution
+              console.log('Run command:', command, 'in', cwd)
+            }}
+          />
+
           {/* Metadata */}
           <Card>
             <CardHeader>
