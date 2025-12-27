@@ -11,10 +11,13 @@ import {
   PackageIcon,
   PlayIcon,
   ImageIcon,
+  WarningIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { useInstallPath } from '@/hooks/use-install-path'
+import { useDependencyCheck } from '@/hooks/use-dependency-check'
+import { DEPENDENCY_IDS } from '@/types/dependency'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -116,6 +119,94 @@ function DetailThumbnail({
         style={{ viewTransitionName: `app-thumbnail-${appId}` }}
       />
     </div>
+  )
+}
+
+/**
+ * Generate Thumbnail button with dependency checking
+ * Disabled with warning if Gemini CLI is not installed
+ */
+function GenerateThumbnailButton({
+  appId,
+  appName,
+  appDescription,
+  isGenerating,
+  onGenerate,
+}: {
+  appId: string
+  appName: string
+  appDescription: string
+  isGenerating: boolean
+  onGenerate: (command: string, args: string[]) => Promise<void>
+}) {
+  const { isLoading, allMet, unmetDependencies } = useDependencyCheck([
+    DEPENDENCY_IDS.GEMINI_CLI,
+  ])
+
+  const handleClick = async () => {
+    const thumbnailsDir = 'packages/nxus-core/public/thumbnails'
+    // Sanitize description for shell safety
+    const safeDescription = appDescription
+      .replace(/[()]/g, '')
+      .replace(/"/g, '')
+      .replace(/'/g, '')
+    const prompt = `"Generate an SVG image for this application thumbnail. App: ${appName}. Description: ${safeDescription}. Style: Modern, vibrant colors, simple iconic design representing the app concept. Make it 800x450 aspect ratio. No text or labels. Save it as an SVG file named ${appId}.svg in the directory ${thumbnailsDir}."`
+
+    await onGenerate('gemini', ['-y', prompt])
+  }
+
+  const isDisabled = isLoading || !allMet || isGenerating
+
+  // Show unmet dependency warning
+  if (!isLoading && !allMet && unmetDependencies.length > 0) {
+    const dep = unmetDependencies[0]
+    return (
+      <div className="space-y-2">
+        <Button
+          variant="outline"
+          className="w-full justify-start opacity-50"
+          disabled
+        >
+          <ImageIcon data-icon="inline-start" />
+          Generate Thumbnail
+        </Button>
+        <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-md p-2">
+          <WarningIcon className="h-4 w-4 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium">Missing: {dep.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {dep.installInstructions}
+            </p>
+            {dep.installUrl && (
+              <a
+                href={dep.installUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                View installation guide →
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Button
+      variant="outline"
+      className="w-full justify-start"
+      onClick={handleClick}
+      disabled={isDisabled}
+    >
+      <ImageIcon data-icon="inline-start" />
+      {isLoading
+        ? 'Checking...'
+        : isGenerating
+          ? 'Generating...'
+          : 'Generate Thumbnail'}
+    </Button>
   )
 }
 
@@ -308,25 +399,13 @@ function AppDetailPage() {
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={async () => {
-                  const thumbnailsDir = 'packages/nxus-core/public/thumbnails'
-                  // Sanitize description for shell safety
-                  const safeDescription = app.description
-                    .replace(/[()]/g, '')
-                    .replace(/"/g, '')
-                    .replace(/'/g, '')
-                  const prompt = `"Generate an SVG image for this application thumbnail. App: ${app.name}. Description: ${safeDescription}. Style: Modern, vibrant colors, simple iconic design representing the app concept. Make it 800x450 aspect ratio. No text or labels. Save it as an SVG file named ${appId}.svg in the directory ${thumbnailsDir}."`
-
-                  await executeThumbnailCommand('gemini', ['-y', prompt])
-                }}
-                disabled={isGeneratingThumbnail}
-              >
-                <ImageIcon data-icon="inline-start" />
-                {isGeneratingThumbnail ? 'Generating...' : 'Generate Thumbnail'}
-              </Button>
+              <GenerateThumbnailButton
+                appId={appId}
+                appName={app.name}
+                appDescription={app.description}
+                isGenerating={isGeneratingThumbnail}
+                onGenerate={executeThumbnailCommand}
+              />
             </CardContent>
           </Card>
 
