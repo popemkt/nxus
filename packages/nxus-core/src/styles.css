@@ -127,3 +127,16 @@
     @apply font-sans;
   }
 }
+
+/* View Transitions API Customization */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.1s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth morphing for thumbnails and titles */
+::view-transition-group(*) {
+  animation-duration: 0.2s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -10,6 +10,7 @@ import {
   GlobeIcon,
   PackageIcon,
   PlayIcon,
+  ImageIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
@@ -40,6 +41,84 @@ import {
 } from '@/lib/app-constants'
 import { openApp } from '@/lib/app-actions'
 
+// Component that tries to load thumbnail from registry or fallback paths
+// Compact design - small square next to title
+function DetailThumbnail({
+  appId,
+  appName,
+  registryThumbnail,
+}: {
+  appId: string
+  appName: string
+  registryThumbnail?: string
+}) {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
+    'loading',
+  )
+  const [src, setSrc] = useState(
+    registryThumbnail || `/thumbnails/${appId}.svg`,
+  )
+
+  // Common styles for the container
+  const containerClass =
+    'w-32 aspect-[16/9] rounded-md overflow-hidden bg-muted shrink-0 ring-2 ring-border'
+
+  // If registry has thumbnail, show it directly (no loading needed)
+  if (registryThumbnail) {
+    return (
+      <div className={containerClass}>
+        <img
+          src={registryThumbnail}
+          alt={appName}
+          className="w-full h-full object-cover"
+          style={{ viewTransitionName: `app-thumbnail-${appId}` }}
+        />
+      </div>
+    )
+  }
+
+  // Loading state - render a placeholder with the transition name to prevent flash
+  if (status === 'loading') {
+    return (
+      <div
+        className={containerClass}
+        style={{ viewTransitionName: `app-thumbnail-${appId}` }}
+      >
+        <img
+          src={src}
+          alt={appName}
+          className="w-full h-full object-cover"
+          onLoad={() => setStatus('loaded')}
+          onError={() => {
+            if (src.endsWith('.svg')) {
+              setSrc(`/thumbnails/${appId}.png`)
+            } else {
+              setStatus('error')
+            }
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Error state - hide completely
+  if (status === 'error') {
+    return null
+  }
+
+  // Loaded state
+  return (
+    <div className={containerClass}>
+      <img
+        src={src}
+        alt={appName}
+        className="w-full h-full object-cover"
+        style={{ viewTransitionName: `app-thumbnail-${appId}` }}
+      />
+    </div>
+  )
+}
+
 export const Route = createFileRoute('/apps/$appId')({
   component: AppDetailPage,
 })
@@ -69,6 +148,24 @@ function AppDetailPage() {
     },
     onError: (error) => {
       console.error('Installation failed:', error)
+    },
+  })
+
+  // Thumbnail generation using streaming command execution
+  const {
+    logs: thumbnailLogs,
+    isRunning: isGeneratingThumbnail,
+    executeCommand: executeThumbnailCommand,
+    clearLogs: clearThumbnailLogs,
+  } = useCommandExecution({
+    onComplete: async () => {
+      // Update app registry with the generated thumbnail path
+      const thumbnailPath = `/thumbnails/${appId}.svg`
+      // TODO: Update the registry JSON file or refetch the app data
+      console.log('Thumbnail generated:', thumbnailPath)
+    },
+    onError: (error) => {
+      console.error('Thumbnail generation failed:', error)
     },
   })
 
@@ -126,49 +223,48 @@ function AppDetailPage() {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
-        <Link to="/">
+        <Link to="/" viewTransition>
           <Button variant="ghost" className="mb-4 -ml-2">
             <ArrowLeftIcon data-icon="inline-start" />
             Back to Gallery
           </Button>
         </Link>
 
-        <div className="flex items-start gap-6">
-          {app.thumbnail && (
-            <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted shrink-0 ring-2 ring-border">
-              <img
-                src={app.thumbnail}
-                alt={app.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+        {/* Header with thumbnail, title, and description */}
+        <div className="flex items-start gap-5 mb-4">
+          {/* Compact thumbnail - inline with title */}
+          <DetailThumbnail
+            appId={appId}
+            appName={app.name}
+            registryThumbnail={app.thumbnail}
+          />
 
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">{app.name}</h1>
-                <p className="text-lg text-muted-foreground mb-4">
-                  {app.description}
-                </p>
-              </div>
-              <TypeIcon className="h-8 w-8 text-muted-foreground shrink-0" />
+              <h1
+                className="text-3xl font-bold mb-2"
+                style={{ viewTransitionName: `app-title-${appId}` }}
+              >
+                {app.name}
+              </h1>
+              <TypeIcon className="h-7 w-7 text-muted-foreground shrink-0" />
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Badge variant={STATUS_VARIANTS[effectiveStatus]}>
-                {effectiveStatus.replace('-', ' ')}
-              </Badge>
-              <Badge variant="secondary">
-                {APP_TYPE_LABELS_LONG[app.type]}
-              </Badge>
-              {app.metadata.tags.map((tag) => (
-                <Badge key={tag} variant="outline">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
+            <p className="text-muted-foreground line-clamp-2">
+              {app.description}
+            </p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Badge variant={STATUS_VARIANTS[effectiveStatus]}>
+            {effectiveStatus.replace('-', ' ')}
+          </Badge>
+          <Badge variant="secondary">{APP_TYPE_LABELS_LONG[app.type]}</Badge>
+          {app.metadata.tags.map((tag) => (
+            <Badge key={tag} variant="outline">
+              {tag}
+            </Badge>
+          ))}
         </div>
       </div>
 
@@ -210,6 +306,26 @@ function AppDetailPage() {
                   View on GitHub
                 </Button>
               )}
+
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={async () => {
+                  const thumbnailsDir = 'packages/nxus-core/public/thumbnails'
+                  // Sanitize description for shell safety
+                  const safeDescription = app.description
+                    .replace(/[()]/g, '')
+                    .replace(/"/g, '')
+                    .replace(/'/g, '')
+                  const prompt = `"Generate an SVG image for this application thumbnail. App: ${app.name}. Description: ${safeDescription}. Style: Modern, vibrant colors, simple iconic design representing the app concept. Make it 800x450 aspect ratio. No text or labels. Save it as an SVG file named ${appId}.svg in the directory ${thumbnailsDir}."`
+
+                  await executeThumbnailCommand('gemini', ['-y', prompt])
+                }}
+                disabled={isGeneratingThumbnail}
+              >
+                <ImageIcon data-icon="inline-start" />
+                {isGeneratingThumbnail ? 'Generating...' : 'Generate Thumbnail'}
+              </Button>
             </CardContent>
           </Card>
 
@@ -256,6 +372,16 @@ function AppDetailPage() {
               logs={logs}
               isRunning={isRunning}
               onClose={!isRunning ? handleCloseInstall : undefined}
+            />
+          )}
+
+          {/* Thumbnail generation log viewer */}
+          {(isGeneratingThumbnail || thumbnailLogs.length > 0) && (
+            <CommandLogViewer
+              title="Generating Thumbnail"
+              logs={thumbnailLogs}
+              isRunning={isGeneratingThumbnail}
+              onClose={!isGeneratingThumbnail ? clearThumbnailLogs : undefined}
             />
           )}
 

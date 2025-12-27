@@ -1,7 +1,8 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { useEffect } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { getOsInfoServerFn } from '@/services/shell/os-info.server'
 import { appStateService } from '@/services/state/app-state'
 
@@ -35,6 +36,9 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: React.ReactNode }) {
   const osInfo = Route.useLoaderData()
 
+  // Create QueryClient instance (stable across re-renders)
+  const [queryClient] = useState(() => new QueryClient())
+
   useEffect(() => {
     if (osInfo) {
       appStateService.setOsInfo(osInfo)
@@ -64,7 +68,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body>
-        {children}
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
