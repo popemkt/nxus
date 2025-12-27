@@ -33,6 +33,32 @@ interface InstanceSelectorProps {
  * - Expanded mode: Shows all instances to choose from
  * - Collapses back to compact after selection
  */
+// Animation Variants
+const variants = {
+  empty: {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -10 },
+    transition: { duration: 0.2 },
+  },
+  compact: {
+    initial: { opacity: 0, y: -10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -10 },
+    transition: { duration: 0.2, ease: 'easeOut' },
+  },
+  expanded: {
+    initial: { opacity: 0, height: 0 },
+    animate: { opacity: 1, height: 'auto' },
+    exit: { opacity: 0, height: 0 },
+    transition: { duration: 0.3, ease: 'easeInOut' },
+  },
+  item: {
+    initial: { opacity: 0, x: -20 },
+    animate: { opacity: 1, x: 0 },
+  },
+}
+
 export function InstanceSelector({
   appId,
   canAddInstance,
@@ -74,164 +100,214 @@ export function InstanceSelector({
     setIsExpanded(false) // Collapse after selection
   }
 
-  // Empty state
-  if (instances.length === 0 && !canAddInstance) {
+  // Pre-calculate common props
+  const isEmpty = instances.length === 0
+
+  if (isEmpty && !canAddInstance) {
     return null
   }
 
   return (
     <AnimatePresence mode="wait">
-      {instances.length === 0 ? (
-        <motion.div
+      {isEmpty ? (
+        <EmptyView
           key="empty"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Instances</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-6">
-                <FolderIcon className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground mb-4">
-                  No instances yet
-                </p>
-                <Button
-                  onClick={onAddInstanceClick}
-                  disabled={isAddingInstance}
-                >
-                  <DownloadIcon data-icon="inline-start" />
-                  Add First Instance
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+          onAdd={onAddInstanceClick}
+          disabled={isAddingInstance}
+        />
       ) : !isExpanded ? (
-        <motion.div
+        <CompactView
           key="compact"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="space-y-1"
-        >
-          <p className="text-xs font-medium text-muted-foreground px-1">
-            Instance
-          </p>
-          <button
-            type="button"
-            onClick={() => setIsExpanded(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 ring-1 ring-border hover:ring-primary/50 hover:bg-muted/50 transition-all text-left group"
-          >
-            <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
-                {selectedInstance?.installPath}
-              </p>
-            </div>
-            {instances.length > 1 && (
-              <span className="text-xs text-muted-foreground shrink-0">
-                1/{instances.length}
-              </span>
-            )}
-            <CaretDownIcon className="h-3 w-3 text-muted-foreground shrink-0" />
-          </button>
-        </motion.div>
+          selectedInstance={selectedInstance}
+          instanceCount={instances.length}
+          onExpand={() => setIsExpanded(true)}
+        />
       ) : (
-        <motion.div
+        <ExpandedView
           key="expanded"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
-          className="overflow-hidden"
-        >
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  Instances
-                  <span className="text-muted-foreground font-normal text-sm">
-                    ({instances.length})
-                  </span>
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsExpanded(false)}
-                  className="h-8 w-8"
-                >
-                  <CaretUpIcon className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {instances.map((instance, index) => {
-                const isSelected = instance.id === selectedId
-                return (
-                  <motion.button
-                    key={instance.id}
-                    type="button"
-                    onClick={() => handleSelect(instance)}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      duration: 0.2,
-                      delay: index * 0.05,
-                      ease: 'easeOut',
-                    }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg ring-1 transition-all text-left ${
-                      isSelected
-                        ? 'bg-primary/10 ring-primary'
-                        : 'bg-muted/50 ring-border hover:ring-primary/50 hover:bg-muted'
-                    }`}
-                  >
-                    {isSelected ? (
-                      <CheckIcon
-                        className="h-5 w-5 text-primary shrink-0"
-                        weight="bold"
-                      />
-                    ) : (
-                      <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-mono truncate">
-                        {instance.installPath}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Installed {formatDate(instance.installedAt)}
-                      </p>
-                    </div>
-                  </motion.button>
-                )
-              })}
-
-              {canAddInstance && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2, delay: instances.length * 0.05 }}
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-muted-foreground"
-                    onClick={onAddInstanceClick}
-                    disabled={isAddingInstance}
-                  >
-                    <PlusIcon data-icon="inline-start" />
-                    Add Another Instance
-                  </Button>
-                </motion.div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+          instances={instances}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          onCollapse={() => setIsExpanded(false)}
+          canAdd={canAddInstance}
+          onAdd={onAddInstanceClick}
+          isAdding={isAddingInstance}
+        />
       )}
     </AnimatePresence>
+  )
+}
+
+// Sub-components
+
+function EmptyView({
+  onAdd,
+  disabled,
+}: {
+  onAdd: () => void
+  disabled?: boolean
+}) {
+  return (
+    <motion.div key="empty" {...variants.empty}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Instances</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6">
+            <FolderIcon className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+            <p className="text-sm text-muted-foreground mb-4">
+              No instances yet
+            </p>
+            <Button onClick={onAdd} disabled={disabled}>
+              <DownloadIcon data-icon="inline-start" />
+              Add First Instance
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
+function CompactView({
+  selectedInstance,
+  instanceCount,
+  onExpand,
+}: {
+  selectedInstance: InstalledAppRecord | null
+  instanceCount: number
+  onExpand: () => void
+}) {
+  return (
+    <motion.div key="compact" {...variants.compact} className="space-y-1">
+      <p className="text-xs font-medium text-muted-foreground px-1">Instance</p>
+      <button
+        type="button"
+        onClick={onExpand}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 ring-1 ring-border hover:ring-primary/50 hover:bg-muted/50 transition-all text-left group"
+      >
+        <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
+            {selectedInstance?.installPath}
+          </p>
+        </div>
+        {instanceCount > 1 && (
+          <span className="text-xs text-muted-foreground shrink-0">
+            1/{instanceCount}
+          </span>
+        )}
+        <CaretDownIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+      </button>
+    </motion.div>
+  )
+}
+
+function ExpandedView({
+  instances,
+  selectedId,
+  onSelect,
+  onCollapse,
+  canAdd,
+  onAdd,
+  isAdding,
+}: {
+  instances: InstalledAppRecord[]
+  selectedId: string | null
+  onSelect: (instance: InstalledAppRecord) => void
+  onCollapse: () => void
+  canAdd: boolean
+  onAdd: () => void
+  isAdding?: boolean
+}) {
+  return (
+    <motion.div
+      key="expanded"
+      {...variants.expanded}
+      className="overflow-hidden"
+    >
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              Instances
+              <span className="text-muted-foreground font-normal text-sm">
+                ({instances.length})
+              </span>
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCollapse}
+              className="h-8 w-8"
+            >
+              <CaretUpIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {instances.map((instance, index) => {
+            const isSelected = instance.id === selectedId
+            return (
+              <motion.button
+                key={instance.id}
+                type="button"
+                onClick={() => onSelect(instance)}
+                initial="initial"
+                animate="animate"
+                variants={variants.item}
+                transition={{
+                  duration: 0.2,
+                  delay: index * 0.05,
+                  ease: 'easeOut',
+                }}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg ring-1 transition-all text-left ${
+                  isSelected
+                    ? 'bg-primary/10 ring-primary'
+                    : 'bg-muted/50 ring-border hover:ring-primary/50 hover:bg-muted'
+                }`}
+              >
+                {isSelected ? (
+                  <CheckIcon
+                    className="h-5 w-5 text-primary shrink-0"
+                    weight="bold"
+                  />
+                ) : (
+                  <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-mono truncate">
+                    {instance.installPath}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Installed {formatDate(instance.installedAt)}
+                  </p>
+                </div>
+              </motion.button>
+            )
+          })}
+
+          {canAdd && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: instances.length * 0.05 }}
+            >
+              <Button
+                variant="outline"
+                className="w-full justify-start text-muted-foreground"
+                onClick={onAdd}
+                disabled={isAdding}
+              >
+                <PlusIcon data-icon="inline-start" />
+                Add Another Instance
+              </Button>
+            </motion.div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 
