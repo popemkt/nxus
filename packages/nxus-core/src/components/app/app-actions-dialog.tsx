@@ -22,8 +22,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { installAppServerFn } from '@/services/install.server'
-import { useAppCheck, appStateService } from '@/services/app-state'
+import { installAppServerFn } from '@/services/apps/install.server'
+import { useAppCheck, appStateService } from '@/services/state/app-state'
 import { useInstallPath } from '@/hooks/use-install-path'
 
 interface AppActionsDialogProps {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAppCheck, useOsInfo } from '@/services/app-state'
+import { useAppCheck, useOsInfo } from '@/services/state/app-state'
 import { getOsDefaultWorkspacePath } from '@/lib/path-resolver'
 
 /**

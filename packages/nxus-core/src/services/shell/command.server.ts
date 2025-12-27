@@ -1,7 +1,13 @@
 import { spawn } from 'child_process'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import type { CommandResult } from './command-execution.schema'
+
+export type CommandResult = {
+  exitCode: number
+  signal: string | null
+  stdout: string
+  stderr: string
+}
 
 const ExecuteCommandInputSchema = z.object({
   command: z.string(),

@@ -14,6 +14,8 @@ export const InstallParamsSchema = z.object({
   targetPath: z.string(),
 })
 
+export type InstallParams = z.infer<typeof InstallParamsSchema>
+
 type InstallResult =
   | { success: true; data: { path: string; message: string } }
   | { success: false; error: string }

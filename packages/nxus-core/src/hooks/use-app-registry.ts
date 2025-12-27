@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react'
-import { appRegistryService } from '../services/app-registry.service'
+import { appRegistryService } from '../services/apps/registry.service'
 import type { App, AppStatus, AppType } from '../types/app'
 
 interface UseAppRegistryOptions {

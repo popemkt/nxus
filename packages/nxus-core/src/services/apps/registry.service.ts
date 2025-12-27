@@ -1,6 +1,12 @@
-import { parseAppRegistry } from '../types/app'
-import appRegistryData from '../data/app-registry.json'
-import type { App, AppRegistry, AppStatus, AppType, Result } from '../types/app'
+import { parseAppRegistry } from '../../types/app'
+import appRegistryData from '../../data/app-registry.json'
+import type {
+  App,
+  AppRegistry,
+  AppStatus,
+  AppType,
+  Result,
+} from '../../types/app'
 
 /**
  * Service for managing the app registry

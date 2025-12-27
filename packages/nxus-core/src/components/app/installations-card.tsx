@@ -31,8 +31,10 @@ import {
   useAppInstallations,
   appStateService,
   type InstalledAppRecord,
-} from '@/services/app-state'
-import { uninstallAppServerFn } from '@/services/uninstall.server'
+} from '@/services/state/app-state'
+import { uninstallAppServerFn } from '@/services/apps/uninstall.server'
+
+import { openPathServerFn } from '@/services/shell/open-path.server'
 
 interface InstallationsCardProps {
   appId: string
@@ -123,8 +125,17 @@ function InstallationItem({
   const [deleteFromDisk, setDeleteFromDisk] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const handleOpenFolder = () => {
-    window.open(`file://${installation.installPath}`, '_blank')
+  const handleOpenFolder = async () => {
+    try {
+      const result = await openPathServerFn({
+        data: { path: installation.installPath },
+      })
+      if (!result.success) {
+        setError(result.error || 'Failed to open folder')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    }
   }
 
   const handleRemove = async () => {

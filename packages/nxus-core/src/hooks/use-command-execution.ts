@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import type { LogEntry } from '../services/command-execution.schema'
-import { executeCommandServerFn } from '../services/command-execution.server'
+import type { LogEntry } from '../services/shell/command.schema'
+import { executeCommandServerFn } from '../services/shell/command.server'
 
 export interface UseCommandExecutionOptions {
   onComplete?: () => void

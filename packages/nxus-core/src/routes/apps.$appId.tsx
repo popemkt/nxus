@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '@/components/app/command-log-viewer'
 import { InstallationsCard } from '@/components/app/installations-card'
-import { useAppCheck, appStateService } from '@/services/app-state'
+import { useAppCheck, appStateService } from '@/services/state/app-state'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_LONG,
