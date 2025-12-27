@@ -7,11 +7,14 @@ import {
   CheckIcon,
   PlusIcon,
   DownloadIcon,
+  PencilSimpleIcon,
 } from '@phosphor-icons/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   useAppInstallations,
+  appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
 
@@ -190,7 +193,7 @@ function CompactView({
         <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
-            {selectedInstance?.installPath}
+            {selectedInstance?.name || selectedInstance?.installPath}
           </p>
         </div>
         {instanceCount > 1 && (
@@ -221,6 +224,38 @@ function ExpandedView({
   onAdd: () => void
   isAdding?: boolean
 }) {
+  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [editValue, setEditValue] = React.useState('')
+
+  const handleStartEdit = (
+    e: React.MouseEvent,
+    instance: InstalledAppRecord,
+  ) => {
+    e.stopPropagation() // Prevent selection
+    setEditingId(instance.id)
+    setEditValue(instance.name || '')
+  }
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (editingId) {
+      const instance = instances.find((i) => i.id === editingId)
+      if (instance) {
+        appStateService.updateInstallationName(
+          instance.appId,
+          instance.id,
+          editValue.trim(),
+        )
+      }
+      setEditingId(null)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditValue('')
+  }
+
   return (
     <motion.div
       key="expanded"
@@ -249,11 +284,11 @@ function ExpandedView({
         <CardContent className="space-y-2">
           {instances.map((instance, index) => {
             const isSelected = instance.id === selectedId
+            const isEditing = editingId === instance.id
+
             return (
-              <motion.button
+              <motion.div
                 key={instance.id}
-                type="button"
-                onClick={() => onSelect(instance)}
                 initial="initial"
                 animate="animate"
                 variants={variants.item}
@@ -262,29 +297,76 @@ function ExpandedView({
                   delay: index * 0.05,
                   ease: 'easeOut',
                 }}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg ring-1 transition-all text-left ${
+                className={`w-full relative group rounded-lg ring-1 transition-all text-left ${
                   isSelected
                     ? 'bg-primary/10 ring-primary'
                     : 'bg-muted/50 ring-border hover:ring-primary/50 hover:bg-muted'
                 }`}
               >
-                {isSelected ? (
-                  <CheckIcon
-                    className="h-5 w-5 text-primary shrink-0"
-                    weight="bold"
-                  />
+                {isEditing ? (
+                  <form
+                    onSubmit={handleSaveEdit}
+                    className="flex items-center gap-2 p-2"
+                  >
+                    <Input
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      placeholder="Instance Name"
+                      className="h-8 text-sm"
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (e.key === 'Escape') handleCancelEdit()
+                        e.stopPropagation()
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Button type="submit" size="sm" variant="ghost">
+                      Save
+                    </Button>
+                  </form>
                 ) : (
-                  <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <button
+                    type="button"
+                    onClick={() => onSelect(instance)}
+                    className="w-full flex items-center gap-3 p-3 text-left"
+                  >
+                    {isSelected ? (
+                      <CheckIcon
+                        className="h-5 w-5 text-primary shrink-0"
+                        weight="bold"
+                      />
+                    ) : (
+                      <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-sm font-medium ${instance.name ? '' : 'italic text-muted-foreground'}`}
+                        >
+                          {instance.name || 'Unnamed Instance'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground/70 font-mono truncate">
+                        {instance.installPath}
+                      </p>
+                    </div>
+                  </button>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-mono truncate">
-                    {instance.installPath}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Installed {formatDate(instance.installedAt)}
-                  </p>
-                </div>
-              </motion.button>
+
+                {!isEditing && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => handleStartEdit(e, instance)}
+                      title="Rename Instance"
+                    >
+                      <PencilSimpleIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
             )
           })}
 

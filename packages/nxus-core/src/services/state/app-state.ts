@@ -9,6 +9,7 @@ interface InstalledAppRecord {
   appId: string
   installPath: string
   installedAt: number
+  name?: string // Optional user-defined name
 }
 
 interface AppState {
@@ -17,6 +18,11 @@ interface AppState {
   actions: {
     addInstallation: (appId: string, path: string) => string // Returns installation ID
     removeInstallation: (appId: string, installationId: string) => void
+    updateInstallationName: (
+      appId: string,
+      installationId: string,
+      name: string,
+    ) => void
     setOsInfo: (info: {
       platform: Platform
       arch: string
@@ -74,13 +80,27 @@ const useStore = create<AppState>()(
                 },
               }
             }),
+          updateInstallationName: (appId, installationId, name) =>
+            set((state) => {
+              const installations = state.installedApps[appId] || []
+              const updated = installations.map((i) =>
+                i.id === installationId ? { ...i, name } : i,
+              )
+
+              return {
+                installedApps: {
+                  ...state.installedApps,
+                  [appId]: updated,
+                },
+              }
+            }),
           setOsInfo: (info) => set({ osInfo: info }),
         },
       }),
       {
         name: 'nxus-app-storage-v3', // Bumped version for new schema
         partialize: (state) => ({ installedApps: state.installedApps }),
-        version: 2,
+        version: 3,
         migrate: (persistedState: unknown, version: number) => {
           // Migration from v1 (single install per app) to v2 (array of installs)
           if (version < 2) {
@@ -108,6 +128,11 @@ const useStore = create<AppState>()(
             }
 
             return { installedApps: newInstalledApps }
+          }
+          // Migration from v2 to v3 (optional name field - no data change needed as it's optional)
+          if (version < 3) {
+            // Just return valid v2 state, name is optional
+            return persistedState as object
           }
           return persistedState as object
         },
@@ -140,6 +165,15 @@ export const appStateService = {
     installationId: string,
   ): Promise<void> => {
     useStore.getState().actions.removeInstallation(appId, installationId)
+  },
+  updateInstallationName: async (
+    appId: string,
+    installationId: string,
+    name: string,
+  ): Promise<void> => {
+    useStore
+      .getState()
+      .actions.updateInstallationName(appId, installationId, name)
   },
   setOsInfo: (info: { platform: Platform; arch: string; homeDir: string }) => {
     useStore.getState().actions.setOsInfo(info)
