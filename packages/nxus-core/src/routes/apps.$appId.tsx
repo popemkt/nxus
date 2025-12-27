@@ -223,7 +223,8 @@ function AppDetailPage() {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
-        <Link to="/" viewTransition>
+        {/* TODO: viewTransition disabled due to white flash issues */}
+        <Link to="/">
           <Button variant="ghost" className="mb-4 -ml-2">
             <ArrowLeftIcon data-icon="inline-start" />
             Back to Gallery

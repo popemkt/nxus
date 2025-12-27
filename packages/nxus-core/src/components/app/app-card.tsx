@@ -133,12 +133,8 @@ export function AppCard({ app }: AppCardProps) {
       </CardContent>
 
       <CardFooter>
-        <Link
-          to="/apps/$appId"
-          params={{ appId: app.id }}
-          viewTransition
-          className="w-full"
-        >
+        {/* TODO: viewTransition disabled due to white flash issues */}
+        <Link to="/apps/$appId" params={{ appId: app.id }} className="w-full">
           <Button
             variant="ghost"
             className="w-full text-muted-foreground hover:text-foreground"
