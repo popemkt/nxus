@@ -1,0 +1,62 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A237E" />
+      <stop offset="100%" stop-color="#4A148C" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg)" />
+  
+  <!-- Connecting Lines -->
+  <g stroke="#ffffff" stroke-width="2" stroke-dasharray="5,5" opacity="0.3">
+    <line x1="400" y1="225" x2="250" y2="150" />
+    <line x1="400" y1="225" x2="550" y2="150" />
+    <line x1="400" y1="225" x2="250" y2="300" />
+    <line x1="400" y1="225" x2="550" y2="300" />
+    <line x1="400" y1="225" x2="400" y2="100" />
+  </g>
+
+  <!-- Central DB Icon (Stack) -->
+  <g transform="translate(360, 185)" filter="url(#glow)">
+    <!-- Bottom layer -->
+    <path d="M0,50 v20 a40,15 0 0,0 80,0 v-20" fill="#00B8D4" opacity="0.6"/>
+    <ellipse cx="40" cy="70" rx="40" ry="15" fill="#00E5FF" opacity="0.8"/>
+    
+    <!-- Middle layer -->
+    <path d="M0,25 v20 a40,15 0 0,0 80,0 v-20" fill="#00B8D4" opacity="0.6"/>
+    <ellipse cx="40" cy="45" rx="40" ry="15" fill="#00E5FF" opacity="0.8"/>
+    
+    <!-- Top layer -->
+    <path d="M0,0 v20 a40,15 0 0,0 80,0 v-20" fill="#00B8D4" opacity="0.6"/>
+    <ellipse cx="40" cy="20" rx="40" ry="15" fill="#00E5FF" opacity="0.8"/>
+    
+    <!-- Top Cap -->
+    <ellipse cx="40" cy="0" rx="40" ry="15" fill="#E0F7FA"/> 
+  </g>
+
+  <!-- Satellite Nodes -->
+  <!-- 1. Firestore (Orange) -->
+  <circle cx="250" cy="150" r="25" fill="#FF5722" filter="url(#glow)"/>
+  
+  <!-- 2. AWS (Yellow) -->
+  <circle cx="550" cy="150" r="25" fill="#FFC107" filter="url(#glow)"/>
+  
+  <!-- 3. PouchDB (Green) -->
+  <circle cx="250" cy="300" r="25" fill="#4CAF50" filter="url(#glow)"/>
+  
+  <!-- 4. RxDB (Pink) -->
+  <circle cx="550" cy="300" r="25" fill="#E91E63" filter="url(#glow)"/>
+  
+  <!-- 5. WatermelonDB (Red) -->
+  <circle cx="400" cy="100" r="25" fill="#F44336" filter="url(#glow)"/>
+
+</svg>

@@ -115,6 +115,51 @@
         "author": "AutoMaker-Org"
       },
       "status": "not-installed"
+    },
+    {
+      "id": "d6e7f8a9-b0c1-4234-8345-6d5678901234",
+      "name": "Client Side Databases",
+      "description": "An implementation of the exact same app in Firestore, AWS Datastore, PouchDB, RxDB and WatermelonDB.",
+      "type": "remote-repo",
+      "path": "https://github.com/pubkey/client-side-databases.git",
+      "homepage": "https://github.com/pubkey/client-side-databases",
+      "metadata": {
+        "tags": [
+          "database",
+          "comparison",
+          "firestore",
+          "rxdb",
+          "pouchdb"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-29T02:25:00.000Z",
+        "updatedAt": "2025-12-29T02:25:00.000Z",
+        "version": "1.0.0",
+        "author": "pubkey"
+      },
+      "status": "not-installed"
+    },
+    {
+      "id": "e7f8a9b0-c1d2-4345-8456-7e6789012345",
+      "name": "Linkwarden",
+      "description": "Self-hosted collaborative bookmark manager to collect, read, annotate, and fully preserve what matters, all in one place.",
+      "type": "remote-repo",
+      "path": "https://github.com/linkwarden/linkwarden.git",
+      "homepage": "https://github.com/linkwarden/linkwarden",
+      "metadata": {
+        "tags": [
+          "bookmark-manager",
+          "self-hosted",
+          "collaboration",
+          "typescript"
+        ],
+        "category": "productivity",
+        "createdAt": "2025-12-29T02:25:00.000Z",
+        "updatedAt": "2025-12-29T02:25:00.000Z",
+        "version": "1.0.0",
+        "author": "linkwarden"
+      },
+      "status": "not-installed"
     }
   ]
 }
