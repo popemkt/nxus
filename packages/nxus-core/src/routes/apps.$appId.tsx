@@ -3,6 +3,7 @@ import { useState } from 'react'
 import {
   ArrowLeftIcon,
   FolderOpenIcon,
+  FolderIcon,
   GithubLogoIcon,
   CalendarIcon,
   TagIcon,
@@ -43,6 +44,7 @@ import {
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
 import { openApp } from '@/lib/app-actions'
+import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 
 // Component that tries to load thumbnail from registry or fallback paths
 // Compact design - small square next to title
@@ -144,7 +146,7 @@ function GenerateThumbnailButton({
   ])
 
   const handleClick = async () => {
-    const thumbnailsDir = 'packages/nxus-core/public/thumbnails'
+    const thumbnailsDir = 'nxus-core/public/thumbnails'
     // Sanitize description for shell safety
     const safeDescription = appDescription
       .replace(/[()]/g, '')
@@ -423,12 +425,33 @@ function AppDetailPage() {
                   <FieldLabel htmlFor="install-path">
                     Installation Path
                   </FieldLabel>
-                  <Input
-                    id="install-path"
-                    value={installPath}
-                    onChange={(e) => setInstallPath(e.target.value)}
-                    placeholder="/path/to/apps"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="install-path"
+                      value={installPath}
+                      onChange={(e) => setInstallPath(e.target.value)}
+                      placeholder="/path/to/apps"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        const result = await openFolderPickerServerFn({
+                          data: {
+                            startPath: installPath,
+                            title: 'Select Installation Folder',
+                          },
+                        })
+                        if (result.success && result.path) {
+                          setInstallPath(result.path)
+                        }
+                      }}
+                      aria-label="Browse for folder"
+                    >
+                      <FolderIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </Field>
                 <div className="flex gap-2">
                   <Button

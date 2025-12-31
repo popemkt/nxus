@@ -45,6 +45,18 @@ export const dependencyRegistry: Dependency[] = [
       'Install from your package manager (apt install git, brew install git)',
     installUrl: 'https://git-scm.com/downloads',
   },
+  {
+    id: DEPENDENCY_IDS.PYTHON3,
+    name: 'Python 3',
+    description: 'Python interpreter for running OpenRecall and related tools',
+    checkConfig: {
+      type: 'cli-exists',
+      command: 'python3',
+    },
+    installInstructions:
+      'Install from python.org or your package manager (apt install python3, brew install python)',
+    installUrl: 'https://www.python.org/downloads/',
+  },
 ]
 
 /**

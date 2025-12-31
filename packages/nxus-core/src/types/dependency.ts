@@ -8,6 +8,7 @@ export const DEPENDENCY_IDS = {
   GEMINI_CLI: 'gemini-cli',
   POWERSHELL_CORE: 'powershell-core',
   GIT: 'git',
+  PYTHON3: 'python3',
 } as const
 
 export type DependencyId = (typeof DEPENDENCY_IDS)[keyof typeof DEPENDENCY_IDS]
