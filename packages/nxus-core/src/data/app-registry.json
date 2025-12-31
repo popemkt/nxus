@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "apps": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "id": "sample-html",
       "name": "Sample HTML App",
       "description": "A simple HTML application demonstrating single-file app support",
       "type": "html",
@@ -24,7 +24,7 @@
       "status": "available"
     },
     {
-      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "id": "remote-example",
       "name": "Remote Example App",
       "description": "A demonstration of remote repository integration",
       "type": "remote-repo",
@@ -57,7 +57,7 @@
       "status": "not-installed"
     },
     {
-      "id": "b3c4d5e6-f7a8-4012-a123-4b3456789012",
+      "id": "chrome-new-tab",
       "name": "Chrome New Tab",
       "description": "A clean and functional new tab page for Chrome with productivity tools",
       "type": "remote-repo",
@@ -79,7 +79,7 @@
       "status": "not-installed"
     },
     {
-      "id": "c5d6e7f8-a9b0-4123-b234-5c4567890123",
+      "id": "automaker",
       "name": "AutoMaker",
       "description": "An autonomous AI development studio that transforms how you build software. Orchestrate AI agents powered by Claude Agent SDK to implement features automatically.",
       "type": "remote-repo",
@@ -117,7 +117,7 @@
       "status": "not-installed"
     },
     {
-      "id": "d6e7f8a9-b0c1-4234-8345-6d5678901234",
+      "id": "client-side-databases",
       "name": "Client Side Databases",
       "description": "An implementation of the exact same app in Firestore, AWS Datastore, PouchDB, RxDB and WatermelonDB.",
       "type": "remote-repo",
@@ -160,7 +160,7 @@
       ]
     },
     {
-      "id": "e7f8a9b0-c1d2-4345-8456-7e6789012345",
+      "id": "linkwarden",
       "name": "Linkwarden",
       "description": "Self-hosted collaborative bookmark manager to collect, read, annotate, and fully preserve what matters, all in one place.",
       "type": "remote-repo",
@@ -241,7 +241,7 @@
       ]
     },
     {
-      "id": "f5e6d7c8-b9a0-4123-8c34-5d4567890123",
+      "id": "openrecall",
       "name": "OpenRecall",
       "description": "Open-source, privacy-focused alternative to Windows Recall. Capture, search, and retrieve your digital history locally.",
       "type": "remote-repo",

@@ -82,7 +82,7 @@ export type AppCommand = z.infer<typeof AppCommandSchema>
  * Base app configuration schema
  */
 const BaseAppSchema = z.object({
-  id: z.string().uuid().describe('Unique identifier'),
+  id: z.string().describe('Unique identifier'),
   name: z.string().min(1).describe('Display name'),
   description: z.string().describe('App description'),
   type: AppTypeSchema,

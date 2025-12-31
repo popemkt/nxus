@@ -108,24 +108,19 @@ const useStore = create<AppState>()(
         },
       }),
       {
-        name: 'nxus-app-storage-v3', // Bumped version for new schema
+        name: 'nxus-app-storage-v4', // Bumped version for slug IDs
         partialize: (state) => ({ installedApps: state.installedApps }),
-        version: 3,
+        version: 4,
         migrate: (persistedState: unknown, version: number) => {
-          // Migration from v1 (single install per app) to v2 (array of installs)
-          if (version < 2) {
-            const oldState = persistedState as {
-              installedApps?: Record<
-                string,
-                { appId: string; installPath: string; installedAt: number }
-              >
-            }
-            const newInstalledApps: Record<string, InstalledAppRecord[]> = {}
+          let state = persistedState as any
 
-            if (oldState.installedApps) {
+          // Migration from v1 to v2
+          if (version < 2) {
+            const newInstalledApps: Record<string, InstalledAppRecord[]> = {}
+            if (state.installedApps) {
               for (const [appId, record] of Object.entries(
-                oldState.installedApps,
-              )) {
+                state.installedApps,
+              ) as any) {
                 newInstalledApps[appId] = [
                   {
                     id: generateId(),
@@ -136,15 +131,39 @@ const useStore = create<AppState>()(
                 ]
               }
             }
+            state = { ...state, installedApps: newInstalledApps }
+          }
 
-            return { installedApps: newInstalledApps }
+          // Migration to v4 (UUID to slug IDs)
+          if (version < 4) {
+            const ID_MAP: Record<string, string> = {
+              '550e8400-e29b-41d4-a716-446655440001': 'sample-html',
+              'a1b2c3d4-e5f6-7890-abcd-ef1234567890': 'remote-example',
+              'b3c4d5e6-f7a8-4012-a123-4b3456789012': 'chrome-new-tab',
+              'c5d6e7f8-a9b0-4123-b234-5c4567890123': 'automaker',
+              'd6e7f8a9-b0c1-4234-8345-6d5678901234': 'client-side-databases',
+              'e7f8a9b0-c1d2-4345-8456-7e6789012345': 'linkwarden',
+              'f5e6d7c8-b9a0-4123-8c34-5d4567890123': 'openrecall',
+            }
+
+            const migratedApps: Record<string, InstalledAppRecord[]> = {}
+            if (state.installedApps) {
+              for (const [appId, installations] of Object.entries(
+                state.installedApps,
+              )) {
+                const newId = ID_MAP[appId] || appId
+                migratedApps[newId] = (
+                  installations as InstalledAppRecord[]
+                ).map((i) => ({
+                  ...i,
+                  appId: newId,
+                }))
+              }
+            }
+            state = { ...state, installedApps: migratedApps }
           }
-          // Migration from v2 to v3 (optional name field - no data change needed as it's optional)
-          if (version < 3) {
-            // Just return valid v2 state, name is optional
-            return persistedState as object
-          }
-          return persistedState as object
+
+          return state
         },
         merge: (persistedState, currentState) => ({
           ...currentState,
