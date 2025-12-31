@@ -58,3 +58,17 @@ export interface CommandExecutionResult {
   error?: string
   data?: unknown
 }
+
+/**
+ * TypeScript handler command - requires code implementation in _commands/
+ * Used for custom integrations (e.g., push to Notion)
+ */
+export interface TSCommand {
+  id: string
+  name: string
+  description?: string
+  icon: string
+  category: string
+  target: 'app' | 'instance'
+  handler: string
+}

@@ -57,6 +57,28 @@ export const AppMetadataSchema = z.object({
 export type AppMetadata = z.infer<typeof AppMetadataSchema>
 
 /**
+ * Command target - what scope the command operates on
+ */
+export const CommandTargetSchema = z.enum(['app', 'instance'])
+export type CommandTarget = z.infer<typeof CommandTargetSchema>
+
+/**
+ * Config-driven command defined in app-registry.json
+ * For shell/script commands with different parameters per app
+ */
+export const AppCommandSchema = z.object({
+  id: z.string().describe('Unique command identifier'),
+  name: z.string().describe('Display name'),
+  description: z.string().optional(),
+  icon: z.string().describe('Phosphor icon name'),
+  category: z.string().describe('Grouping for UI'),
+  target: CommandTargetSchema.describe('What scope this operates on'),
+  command: z.string().describe('Shell command to execute'),
+  override: z.string().optional().describe('ID of default command to override'),
+})
+export type AppCommand = z.infer<typeof AppCommandSchema>
+
+/**
  * Base app configuration schema
  */
 const BaseAppSchema = z.object({
@@ -70,6 +92,10 @@ const BaseAppSchema = z.object({
   installConfig: InstallConfigSchema.optional(),
   metadata: AppMetadataSchema,
   status: AppStatusSchema.default('not-installed'),
+  commands: z
+    .array(AppCommandSchema)
+    .optional()
+    .describe('Config-driven commands'),
 })
 
 /**

@@ -137,7 +137,27 @@
         "version": "1.0.0",
         "author": "pubkey"
       },
-      "status": "not-installed"
+      "status": "not-installed",
+      "commands": [
+        {
+          "id": "run-firestore",
+          "name": "Run Firestore",
+          "description": "Start the Firestore implementation",
+          "icon": "Fire",
+          "category": "Run",
+          "target": "instance",
+          "command": "npm run start:firestore"
+        },
+        {
+          "id": "run-rxdb",
+          "name": "Run RxDB",
+          "description": "Start the RxDB implementation",
+          "icon": "Database",
+          "category": "Run",
+          "target": "instance",
+          "command": "npm run start:rxdb"
+        }
+      ]
     },
     {
       "id": "e7f8a9b0-c1d2-4345-8456-7e6789012345",
@@ -159,7 +179,66 @@
         "version": "1.0.0",
         "author": "linkwarden"
       },
-      "status": "not-installed"
+      "status": "not-installed",
+      "commands": [
+        {
+          "id": "install-deps-pnpm",
+          "name": "Install Dependencies",
+          "description": "pnpm install",
+          "icon": "Package",
+          "category": "Development",
+          "target": "instance",
+          "command": "pnpm install",
+          "override": "install-deps"
+        },
+        {
+          "id": "build-pnpm",
+          "name": "Build",
+          "description": "pnpm run build",
+          "icon": "Hammer",
+          "category": "Development",
+          "target": "instance",
+          "command": "pnpm run build",
+          "override": "build"
+        },
+        {
+          "id": "start-pnpm",
+          "name": "Start Dev Server",
+          "description": "pnpm run dev",
+          "icon": "Play",
+          "category": "Development",
+          "target": "instance",
+          "command": "pnpm run dev",
+          "override": "start"
+        },
+        {
+          "id": "docker-up",
+          "name": "Start Docker Stack",
+          "description": "Start all containers via docker-compose",
+          "icon": "CubeTransparent",
+          "category": "Infrastructure",
+          "target": "instance",
+          "command": "docker compose up -d"
+        },
+        {
+          "id": "docker-down",
+          "name": "Stop Docker Stack",
+          "description": "Stop all containers",
+          "icon": "Stop",
+          "category": "Infrastructure",
+          "target": "instance",
+          "command": "docker compose down"
+        },
+        {
+          "id": "migrate-db",
+          "name": "Run Migrations",
+          "description": "Execute Prisma migrations",
+          "icon": "Database",
+          "category": "Database",
+          "target": "instance",
+          "command": "npx prisma migrate dev"
+        }
+      ]
     },
     {
       "id": "f5e6d7c8-b9a0-4123-8c34-5d4567890123",

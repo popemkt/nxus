@@ -269,6 +269,14 @@ function AppDetailPage() {
     },
   })
 
+  // Instance action commands execution
+  const {
+    logs: instanceLogs,
+    isRunning: isRunningInstanceCommand,
+    executeCommand: executeInstanceCommand,
+    clearLogs: clearInstanceLogs,
+  } = useCommandExecution()
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -518,6 +526,18 @@ function AppDetailPage() {
             />
           )}
 
+          {/* Instance command execution log viewer */}
+          {(isRunningInstanceCommand || instanceLogs.length > 0) && (
+            <CommandLogViewer
+              title="Running Command"
+              logs={instanceLogs}
+              isRunning={isRunningInstanceCommand}
+              onClose={
+                !isRunningInstanceCommand ? clearInstanceLogs : undefined
+              }
+            />
+          )}
+
           {/* Installation Configuration */}
           {app.installConfig && (
             <Card>
@@ -568,11 +588,13 @@ function AppDetailPage() {
           {/* Instance Actions Panel */}
           <InstanceActionsPanel
             instance={selectedInstance}
-            appType={app.type}
-            appId={appId}
-            onRunCommand={(command, cwd) => {
-              // TODO: Integrate with command execution
-              console.log('Run command:', command, 'in', cwd)
+            app={app}
+            onRunCommand={async (command, cwd) => {
+              // Parse command into parts for executeCommand
+              const parts = command.split(' ')
+              const cmd = parts[0]
+              const args = parts.slice(1)
+              await executeInstanceCommand(cmd, args, { cwd })
             }}
           />
 

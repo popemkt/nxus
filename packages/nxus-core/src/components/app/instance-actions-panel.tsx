@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   FolderOpenIcon,
   TerminalWindowIcon,
@@ -9,6 +10,7 @@ import {
   HammerIcon,
   ArrowsClockwiseIcon,
   WarningIcon,
+  QuestionIcon,
 } from '@phosphor-icons/react'
 import {
   Card,
@@ -38,7 +40,29 @@ import {
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
-import type { AppType } from '@/types/app'
+import type { App, AppType } from '@/types/app'
+
+/**
+ * Dynamic icon component that renders Phosphor icons by name
+ * Falls back to QuestionIcon if the icon is not found
+ */
+function CommandIcon({ iconName }: { iconName: string }) {
+  // Try to find the icon in Phosphor (add "Icon" suffix if not present)
+  const iconKey = iconName.endsWith('Icon') ? iconName : `${iconName}Icon`
+  const IconComponent = (
+    PhosphorIcons as unknown as Record<
+      string,
+      React.ComponentType<{ 'data-icon'?: string }>
+    >
+  )[iconKey]
+
+  if (IconComponent) {
+    return <IconComponent data-icon="inline-start" />
+  }
+
+  // Fallback
+  return <QuestionIcon data-icon="inline-start" />
+}
 
 interface InstanceAction {
   id: string
@@ -52,8 +76,7 @@ interface InstanceAction {
 
 interface InstanceActionsPanelProps {
   instance: InstalledAppRecord | null
-  appType: AppType
-  appId: string
+  app: App
   onRunCommand?: (command: string, cwd: string) => void
 }
 
@@ -63,8 +86,7 @@ interface InstanceActionsPanelProps {
  */
 export function InstanceActionsPanel({
   instance,
-  appType,
-  appId,
+  app,
   onRunCommand,
 }: InstanceActionsPanelProps) {
   const [error, setError] = React.useState<string | null>(null)
@@ -72,7 +94,40 @@ export function InstanceActionsPanel({
   const [deleteFromDisk, setDeleteFromDisk] = React.useState(false)
 
   // Get type-specific actions
-  const actions = React.useMemo(() => getActionsForType(appType), [appType])
+  const defaultActions = React.useMemo(
+    () => getActionsForType(app.type),
+    [app.type],
+  )
+
+  // Get custom commands from app config
+  const customCommands = app.commands ?? []
+
+  // Merge defaults with custom commands, applying overrides
+  const actions = React.useMemo(() => {
+    const merged = { ...defaultActions }
+
+    // Apply overrides from custom commands to default actions
+    customCommands.forEach((cmd) => {
+      if (cmd.override) {
+        // Find the default action to override
+        const primaryIndex = merged.primary.findIndex(
+          (a) => a.id === cmd.override,
+        )
+        if (primaryIndex !== -1) {
+          // Replace with custom command
+          merged.primary[primaryIndex] = {
+            id: cmd.id,
+            label: cmd.name,
+            description: cmd.description,
+            icon: HammerIcon, // Will use CommandIcon dynamically
+            command: cmd.command,
+          }
+        }
+      }
+    })
+
+    return merged
+  }, [defaultActions, customCommands, app.type])
 
   if (!instance) {
     return (
@@ -133,7 +188,7 @@ export function InstanceActionsPanel({
         }
       }
 
-      await appStateService.removeInstallation(appId, instance.id)
+      await appStateService.removeInstallation(app.id, instance.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -213,6 +268,39 @@ export function InstanceActionsPanel({
                     </motion.div>
                   )
                 })}
+              </div>
+            )}
+
+            {/* Custom Commands from app config */}
+            {customCommands.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Custom Commands
+                </p>
+                {customCommands
+                  .filter((cmd) => cmd.target === 'instance' && !cmd.override)
+                  .map((cmd, index) => (
+                    <motion.div
+                      key={cmd.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.15, delay: index * 0.05 }}
+                    >
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => handleRunCommand(cmd.command)}
+                      >
+                        <CommandIcon iconName={cmd.icon} />
+                        <span className="flex-1 text-left">{cmd.name}</span>
+                        {cmd.description && (
+                          <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
+                            {cmd.description}
+                          </span>
+                        )}
+                      </Button>
+                    </motion.div>
+                  ))}
               </div>
             )}
 
