@@ -1,0 +1,38 @@
+{
+    "id": "automaker",
+    "name": "AutoMaker",
+    "description": "An autonomous AI development studio that transforms how you build software. Orchestrate AI agents powered by Claude Agent SDK to implement features automatically.",
+    "type": "remote-repo",
+    "path": "https://github.com/AutoMaker-Org/automaker.git",
+    "homepage": "https://github.com/AutoMaker-Org/automaker",
+    "installConfig": {
+        "script": "npm install",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ],
+        "dependencies": [
+            "node",
+            "npm",
+            "git"
+        ]
+    },
+    "metadata": {
+        "tags": [
+            "ai",
+            "development",
+            "automation",
+            "electron",
+            "react",
+            "typescript",
+            "claude"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-25T13:43:00.000Z",
+        "updatedAt": "2025-12-25T13:43:00.000Z",
+        "version": "1.0.0",
+        "author": "AutoMaker-Org"
+    },
+    "status": "not-installed"
+}

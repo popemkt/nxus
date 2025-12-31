@@ -1,0 +1,43 @@
+{
+    "id": "client-side-databases",
+    "name": "Client Side Databases",
+    "description": "An implementation of the exact same app in Firestore, AWS Datastore, PouchDB, RxDB and WatermelonDB.",
+    "type": "remote-repo",
+    "path": "https://github.com/pubkey/client-side-databases.git",
+    "homepage": "https://github.com/pubkey/client-side-databases",
+    "metadata": {
+        "tags": [
+            "database",
+            "comparison",
+            "firestore",
+            "rxdb",
+            "pouchdb"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-29T02:25:00.000Z",
+        "updatedAt": "2025-12-29T02:25:00.000Z",
+        "version": "1.0.0",
+        "author": "pubkey"
+    },
+    "status": "not-installed",
+    "commands": [
+        {
+            "id": "run-firestore",
+            "name": "Run Firestore",
+            "description": "Start the Firestore implementation",
+            "icon": "Fire",
+            "category": "Run",
+            "target": "instance",
+            "command": "npm run start:firestore"
+        },
+        {
+            "id": "run-rxdb",
+            "name": "Run RxDB",
+            "description": "Start the RxDB implementation",
+            "icon": "Database",
+            "category": "Run",
+            "target": "instance",
+            "command": "npm run start:rxdb"
+        }
+    ]
+}

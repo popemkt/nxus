@@ -1,0 +1,81 @@
+{
+    "id": "linkwarden",
+    "name": "Linkwarden",
+    "description": "Self-hosted collaborative bookmark manager to collect, read, annotate, and fully preserve what matters, all in one place.",
+    "type": "remote-repo",
+    "path": "https://github.com/linkwarden/linkwarden.git",
+    "homepage": "https://github.com/linkwarden/linkwarden",
+    "metadata": {
+        "tags": [
+            "bookmark-manager",
+            "self-hosted",
+            "collaboration",
+            "typescript"
+        ],
+        "category": "productivity",
+        "createdAt": "2025-12-29T02:25:00.000Z",
+        "updatedAt": "2025-12-29T02:25:00.000Z",
+        "version": "1.0.0",
+        "author": "linkwarden"
+    },
+    "status": "not-installed",
+    "commands": [
+        {
+            "id": "install-deps-pnpm",
+            "name": "Install Dependencies",
+            "description": "pnpm install",
+            "icon": "Package",
+            "category": "Development",
+            "target": "instance",
+            "command": "pnpm install",
+            "override": "install-deps"
+        },
+        {
+            "id": "build-pnpm",
+            "name": "Build",
+            "description": "pnpm run build",
+            "icon": "Hammer",
+            "category": "Development",
+            "target": "instance",
+            "command": "pnpm run build",
+            "override": "build"
+        },
+        {
+            "id": "start-pnpm",
+            "name": "Start Dev Server",
+            "description": "pnpm run dev",
+            "icon": "Play",
+            "category": "Development",
+            "target": "instance",
+            "command": "pnpm run dev",
+            "override": "start"
+        },
+        {
+            "id": "docker-up",
+            "name": "Start Docker Stack",
+            "description": "Start all containers via docker-compose",
+            "icon": "CubeTransparent",
+            "category": "Infrastructure",
+            "target": "instance",
+            "command": "docker compose up -d"
+        },
+        {
+            "id": "docker-down",
+            "name": "Stop Docker Stack",
+            "description": "Stop all containers",
+            "icon": "Stop",
+            "category": "Infrastructure",
+            "target": "instance",
+            "command": "docker compose down"
+        },
+        {
+            "id": "migrate-db",
+            "name": "Run Migrations",
+            "description": "Execute Prisma migrations",
+            "icon": "Database",
+            "category": "Database",
+            "target": "instance",
+            "command": "npx prisma migrate dev"
+        }
+    ]
+}

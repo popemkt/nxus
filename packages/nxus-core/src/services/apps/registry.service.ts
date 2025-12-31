@@ -1,5 +1,4 @@
-import { parseAppRegistry } from '../../types/app'
-import appRegistryData from '../../data/app-registry.json'
+import { parseApp } from '../../types/app'
 import type {
   App,
   AppRegistry,
@@ -7,6 +6,12 @@ import type {
   AppType,
   Result,
 } from '../../types/app'
+
+// Use Vite glob import to dynamically discover all app JSON files
+const appModules = import.meta.glob<App>('../../data/apps/*.json', {
+  eager: true,
+  import: 'default',
+})
 
 /**
  * Service for managing the app registry
@@ -16,14 +21,26 @@ export class AppRegistryService {
   private registry: AppRegistry | null = null
 
   /**
-   * Load and parse the app registry
+   * Load and parse all app data from individual files
    */
   loadRegistry(): Result<AppRegistry> {
-    const result = parseAppRegistry(appRegistryData)
-    if (result.success) {
-      this.registry = result.data
+    const apps: App[] = []
+
+    for (const [path, data] of Object.entries(appModules)) {
+      const result = parseApp(data)
+      if (result.success) {
+        apps.push(result.data)
+      } else {
+        console.error(`Failed to parse app at ${path}:`, result.error)
+      }
     }
-    return result
+
+    this.registry = {
+      version: '1.0.0', // Standard version
+      apps,
+    }
+
+    return { success: true, data: this.registry }
   }
 
   /**
