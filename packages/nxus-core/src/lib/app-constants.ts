@@ -3,6 +3,7 @@ import {
   FileIcon,
   FolderOpenIcon,
   TerminalWindowIcon,
+  WrenchIcon,
 } from '@phosphor-icons/react'
 import type { App } from '@/types/app'
 
@@ -15,6 +16,7 @@ export const APP_TYPE_ICONS = {
   typescript: CodeIcon,
   'remote-repo': FolderOpenIcon,
   'script-tool': TerminalWindowIcon,
+  tool: WrenchIcon,
 } as const
 
 /**
@@ -26,6 +28,7 @@ export const APP_TYPE_LABELS_SHORT = {
   typescript: 'TypeScript',
   'remote-repo': 'Repository',
   'script-tool': 'Script',
+  tool: 'Tool',
 } as const
 
 /**
@@ -37,6 +40,7 @@ export const APP_TYPE_LABELS_LONG = {
   typescript: 'TypeScript Application',
   'remote-repo': 'Remote Repository',
   'script-tool': 'Script Tool',
+  tool: 'Tool / Dependency',
 } as const
 
 /**

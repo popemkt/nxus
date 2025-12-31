@@ -1,0 +1,30 @@
+{
+    "id": "npm",
+    "name": "npm",
+    "description": "Node package manager",
+    "type": "tool",
+    "path": "https://www.npmjs.com",
+    "homepage": "https://www.npmjs.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "npm --version",
+    "dependencies": [
+        "node"
+    ],
+    "installInstructions": "npm is included with Node.js installation",
+    "metadata": {
+        "tags": [
+            "package-manager",
+            "javascript"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2025-12-31T16:48:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}

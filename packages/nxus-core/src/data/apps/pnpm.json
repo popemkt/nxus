@@ -1,0 +1,30 @@
+{
+    "id": "pnpm",
+    "name": "pnpm",
+    "description": "Fast, disk space efficient package manager",
+    "type": "tool",
+    "path": "https://pnpm.io",
+    "homepage": "https://pnpm.io",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "pnpm --version",
+    "dependencies": [
+        "node"
+    ],
+    "installInstructions": "Run: npm install -g pnpm",
+    "metadata": {
+        "tags": [
+            "package-manager",
+            "javascript"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2025-12-31T16:48:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}

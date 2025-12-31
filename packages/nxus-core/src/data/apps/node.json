@@ -1,0 +1,28 @@
+{
+    "id": "node",
+    "name": "Node.js",
+    "description": "JavaScript runtime built on Chrome's V8 engine",
+    "type": "tool",
+    "path": "https://nodejs.org",
+    "homepage": "https://nodejs.org",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "node --version",
+    "installInstructions": "Visit https://nodejs.org to download and install Node.js for your platform",
+    "metadata": {
+        "tags": [
+            "runtime",
+            "javascript",
+            "backend"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2025-12-31T16:48:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}

@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from '@phosphor-icons/react'
+import { ArrowRightIcon, CheckCircle, XCircle } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { App } from '@/types/app'
@@ -17,6 +17,8 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
+import { useToolHealth } from '@/services/state/tool-health-state'
+import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
 
 // Component that tries to load thumbnail from fallback paths
 function ThumbnailWithFallback({
@@ -84,6 +86,11 @@ interface AppCardProps {
 export function AppCard({ app }: AppCardProps) {
   const TypeIcon = APP_TYPE_ICONS[app.type]
 
+  // Health check for tools
+  const isTool = app.type === 'tool'
+  useSingleToolHealthCheck(app, isTool)
+  const healthCheck = useToolHealth(app.id)
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:ring-2 hover:ring-primary/20">
       {/* Show thumbnail only if explicitly defined or fallback exists */}
@@ -121,12 +128,42 @@ export function AppCard({ app }: AppCardProps) {
             {app.status.replace('-', ' ')}
           </Badge>
           <Badge variant="secondary">{APP_TYPE_LABELS_SHORT[app.type]}</Badge>
-          {app.metadata.tags.slice(0, 2).map((tag) => (
-            <Badge key={tag} variant="outline">
-              {tag}
+
+          {/* Health check status for tools */}
+          {isTool && healthCheck && (
+            <Badge
+              variant={healthCheck.isInstalled ? 'default' : 'destructive'}
+              className="flex items-center gap-1"
+            >
+              {healthCheck.isInstalled ? (
+                <>
+                  <CheckCircle className="h-3 w-3" weight="fill" />
+                  Installed
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-3 w-3" weight="fill" />
+                  Not Found
+                </>
+              )}
             </Badge>
-          ))}
-          {app.metadata.tags.length > 2 && (
+          )}
+
+          {/* Show version for installed tools */}
+          {isTool && healthCheck?.isInstalled && healthCheck.version && (
+            <Badge variant="outline" className="font-mono text-xs">
+              {healthCheck.version}
+            </Badge>
+          )}
+
+          {/* Tags */}
+          {!isTool &&
+            app.metadata.tags.slice(0, 2).map((tag) => (
+              <Badge key={tag} variant="outline">
+                {tag}
+              </Badge>
+            ))}
+          {!isTool && app.metadata.tags.length > 2 && (
             <Badge variant="outline">+{app.metadata.tags.length - 2}</Badge>
           )}
         </div>

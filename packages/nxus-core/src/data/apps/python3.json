@@ -1,0 +1,28 @@
+{
+    "id": "python3",
+    "name": "Python 3",
+    "description": "Python programming language interpreter",
+    "type": "tool",
+    "path": "https://www.python.org",
+    "homepage": "https://www.python.org",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "python3 --version",
+    "installInstructions": "Visit https://www.python.org to download and install Python 3 for your platform",
+    "metadata": {
+        "tags": [
+            "runtime",
+            "python",
+            "programming"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2025-12-31T16:48:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}

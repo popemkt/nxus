@@ -9,17 +9,20 @@ import {
   TagIcon,
   UserIcon,
   GlobeIcon,
-  PackageIcon,
   PlayIcon,
   ImageIcon,
   WarningIcon,
   CodeIcon,
+  CheckCircleIcon,
+  XCircleIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { useInstallPath } from '@/hooks/use-install-path'
-import { useDependencyCheck } from '@/hooks/use-dependency-check'
-import { DEPENDENCY_IDS } from '@/types/dependency'
+import { appRegistryService } from '@/services/apps/registry.service'
+import { DependencyList } from '@/components/app/dependency-list'
+import { useToolHealth } from '@/services/state/tool-health-state'
+import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -143,13 +146,14 @@ function GenerateThumbnailButton({
   isGenerating: boolean
   onGenerate: (command: string, args: string[]) => Promise<void>
 }) {
-  const { isLoading, allMet, unmetDependencies } = useDependencyCheck([
-    DEPENDENCY_IDS.GEMINI_CLI,
-  ])
+  const geminiTool = appRegistryService.getAppById('gemini-cli')
+  const tool = geminiTool.success ? geminiTool.data : null
+
+  useSingleToolHealthCheck(tool!, !!tool)
+  const health = useToolHealth('gemini-cli')
 
   const handleClick = async () => {
     const thumbnailsDir = 'nxus-core/public/thumbnails'
-    // Sanitize description for shell safety
     const safeDescription = appDescription
       .replace(/[()]/g, '')
       .replace(/"/g, '')
@@ -159,11 +163,11 @@ function GenerateThumbnailButton({
     await onGenerate('gemini', ['-y', prompt])
   }
 
+  const isLoading = !health
+  const allMet = health?.isInstalled
   const isDisabled = isLoading || !allMet || isGenerating
 
-  // Show unmet dependency warning
-  if (!isLoading && !allMet && unmetDependencies.length > 0) {
-    const dep = unmetDependencies[0]
+  if (!isLoading && !allMet && tool) {
     return (
       <div className="space-y-2">
         <Button
@@ -174,19 +178,19 @@ function GenerateThumbnailButton({
           <ImageIcon data-icon="inline-start" />
           Generate Thumbnail
         </Button>
-        <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-md p-2">
+        <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-md p-3">
           <WarningIcon className="h-4 w-4 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium">Missing: {dep.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {dep.installInstructions}
+          <div className="flex-1">
+            <p className="font-medium">Missing: {tool.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {tool.type === 'tool' && tool.installInstructions}
             </p>
-            {dep.installUrl && (
+            {tool.homepage && (
               <a
-                href={dep.installUrl}
+                href={tool.homepage}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-primary hover:underline"
+                className="text-xs text-primary hover:underline mt-2 inline-block"
               >
                 View installation guide →
               </a>
@@ -227,6 +231,11 @@ function AppDetailPage() {
   const { isInstalled } = useAppCheck(appId)
   const { installPath, setInstallPath } = useInstallPath(appId)
   const devInfo = useDevInfo()
+
+  // Health check for the tool itself
+  const isTool = app.type === 'tool'
+  useSingleToolHealthCheck(app, isTool)
+  const healthCheck = useToolHealth(app.id)
 
   const [installStep, setInstallStep] = useState<InstallStep>('idle')
   const [selectedInstance, setSelectedInstance] =
@@ -368,6 +377,33 @@ function AppDetailPage() {
             {effectiveStatus.replace('-', ' ')}
           </Badge>
           <Badge variant="secondary">{APP_TYPE_LABELS_LONG[app.type]}</Badge>
+
+          {/* Health check status for tools in header */}
+          {isTool && healthCheck && (
+            <Badge
+              variant={healthCheck.isInstalled ? 'default' : 'destructive'}
+              className="flex items-center gap-1"
+            >
+              {healthCheck.isInstalled ? (
+                <>
+                  <CheckCircleIcon className="h-3 w-3" weight="fill" />
+                  Installed
+                </>
+              ) : (
+                <>
+                  <XCircleIcon className="h-3 w-3" weight="fill" />
+                  Not Found
+                </>
+              )}
+            </Badge>
+          )}
+
+          {isTool && healthCheck?.isInstalled && healthCheck.version && (
+            <Badge variant="outline" className="font-mono">
+              {healthCheck.version}
+            </Badge>
+          )}
+
           {app.metadata.tags.map((tag) => (
             <Badge key={tag} variant="outline">
               {tag}
@@ -538,49 +574,44 @@ function AppDetailPage() {
             />
           )}
 
-          {/* Installation Configuration */}
-          {app.installConfig && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Installation Requirements</CardTitle>
-                <CardDescription>
-                  System requirements and dependencies
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <GlobeIcon className="h-4 w-4" />
-                    Supported Platforms
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {app.installConfig.platform.map((platform) => (
-                      <Badge key={platform} variant="outline">
-                        {platform}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {app.installConfig.dependencies &&
-                  app.installConfig.dependencies.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <PackageIcon className="h-4 w-4" />
-                        Dependencies
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {app.installConfig.dependencies.map((dep) => (
-                          <Badge key={dep} variant="outline">
-                            {dep}
-                          </Badge>
-                        ))}
-                      </div>
+          {/* Unified Requirements List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Requirements & Dependencies</CardTitle>
+              <CardDescription>
+                Everything needed to run or use this item
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                {/* Platforms */}
+                {app.installConfig && (
+                  <div className="flex items-center justify-between pb-4 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <GlobeIcon className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-medium">Platforms</span>
                     </div>
-                  )}
-              </CardContent>
-            </Card>
-          )}
+                    <div className="flex gap-1">
+                      {app.installConfig.platform.map((p) => (
+                        <Badge key={p} variant="outline" className="capitalize">
+                          {p}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dependencies List */}
+                <DependencyList
+                  dependencies={
+                    appRegistryService.getDependencies(app.id).success
+                      ? appRegistryService.getDependencies(app.id).data
+                      : []
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}

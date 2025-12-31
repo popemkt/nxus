@@ -5,16 +5,16 @@
     "type": "remote-repo",
     "path": "https://github.com/openrecall/openrecall.git",
     "homepage": "https://github.com/openrecall/openrecall",
+    "dependencies": [
+        "python3",
+        "git"
+    ],
     "installConfig": {
         "script": "python3 -m pip install --upgrade --no-cache-dir git+https://github.com/openrecall/openrecall.git",
         "platform": [
             "linux",
             "macos",
             "windows"
-        ],
-        "dependencies": [
-            "python3",
-            "git"
         ]
     },
     "metadata": {

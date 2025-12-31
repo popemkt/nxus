@@ -7,12 +7,16 @@ import { OsBadge } from '@/components/os-badge'
 import { DevModeBadge } from '@/components/dev-mode-badge'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { openApp } from '@/lib/app-actions'
+import { useToolHealthCheck } from '@/hooks/use-tool-health-check'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
 function AppManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const { apps, loading, error } = useAppRegistry({ searchQuery })
+
+  // Trigger health checks for all tools
+  useToolHealthCheck(apps)
 
   const handleOpen = (app: App) => {
     openApp(app)
@@ -70,6 +74,7 @@ function AppManager() {
         onOpen={handleOpen}
         onInstall={handleInstall}
         onSearchChange={setSearchQuery}
+        groupByType={true}
       />
     </div>
   )

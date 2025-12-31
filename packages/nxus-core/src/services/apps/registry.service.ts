@@ -193,6 +193,91 @@ export class AppRegistryService {
     const tags = new Set(appsResult.data.flatMap((app) => app.metadata.tags))
     return { success: true, data: Array.from(tags).sort() }
   }
+
+  /**
+   * Get all tool-type items
+   */
+  getTools(): Result<Array<App>> {
+    const appsResult = this.getAllApps()
+    if (!appsResult.success) {
+      return appsResult
+    }
+
+    const tools = appsResult.data.filter((app) => app.type === 'tool')
+    return { success: true, data: tools }
+  }
+
+  /**
+   * Get all non-tool items (repos/apps)
+   */
+  getRepos(): Result<Array<App>> {
+    const appsResult = this.getAllApps()
+    if (!appsResult.success) {
+      return appsResult
+    }
+
+    const repos = appsResult.data.filter((app) => app.type !== 'tool')
+    return { success: true, data: repos }
+  }
+
+  /**
+   * Get dependencies for an item
+   */
+  getDependencies(itemId: string): Result<Array<App>> {
+    const itemResult = this.getAppById(itemId)
+    if (!itemResult.success) {
+      return itemResult
+    }
+
+    const item = itemResult.data
+    if (!item.dependencies || item.dependencies.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    const deps: App[] = []
+    for (const depId of item.dependencies) {
+      const depResult = this.getAppById(depId)
+      if (depResult.success) {
+        deps.push(depResult.data)
+      } else {
+        console.warn(`Dependency ${depId} not found for item ${itemId}`)
+      }
+    }
+
+    return { success: true, data: deps }
+  }
+
+  /**
+   * Get dependency tree (recursive)
+   */
+  getDependencyTree(
+    itemId: string,
+    visited = new Set<string>(),
+  ): Result<Array<App>> {
+    if (visited.has(itemId)) {
+      return { success: true, data: [] } // Circular dependency protection
+    }
+
+    visited.add(itemId)
+
+    const depsResult = this.getDependencies(itemId)
+    if (!depsResult.success) {
+      return depsResult
+    }
+
+    const allDeps: App[] = [...depsResult.data]
+
+    for (const dep of depsResult.data) {
+      const nestedResult = this.getDependencyTree(dep.id, visited)
+      if (nestedResult.success) {
+        allDeps.push(...nestedResult.data)
+      }
+    }
+
+    // Remove duplicates
+    const unique = Array.from(new Map(allDeps.map((d) => [d.id, d])).values())
+    return { success: true, data: unique }
+  }
 }
 
 /**

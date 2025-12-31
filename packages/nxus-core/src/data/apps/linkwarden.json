@@ -5,6 +5,11 @@
     "type": "remote-repo",
     "path": "https://github.com/linkwarden/linkwarden.git",
     "homepage": "https://github.com/linkwarden/linkwarden",
+    "dependencies": [
+        "pnpm",
+        "git",
+        "docker"
+    ],
     "metadata": {
         "tags": [
             "bookmark-manager",

@@ -14,6 +14,7 @@ export const AppTypeSchema = z.enum([
   'typescript',
   'remote-repo',
   'script-tool',
+  'tool',
 ])
 export type AppType = z.infer<typeof AppTypeSchema>
 
@@ -33,10 +34,6 @@ export type AppStatus = z.infer<typeof AppStatusSchema>
 export const InstallConfigSchema = z.object({
   script: z.string().describe('Path to installation script'),
   platform: z.array(PlatformSchema).describe('Supported platforms'),
-  dependencies: z
-    .array(z.string())
-    .optional()
-    .describe('Required dependencies'),
   preInstallCommands: z.array(z.string()).optional(),
   postInstallCommands: z.array(z.string()).optional(),
 })
@@ -92,6 +89,10 @@ const BaseAppSchema = z.object({
   installConfig: InstallConfigSchema.optional(),
   metadata: AppMetadataSchema,
   status: AppStatusSchema.default('not-installed'),
+  dependencies: z
+    .array(z.string())
+    .optional()
+    .describe('Item IDs this item depends on'),
   commands: z
     .array(AppCommandSchema)
     .optional()
@@ -151,6 +152,24 @@ export const ScriptToolAppSchema = BaseAppSchema.extend({
 export type ScriptToolApp = z.infer<typeof ScriptToolAppSchema>
 
 /**
+ * Tool app - installable tools/dependencies like node, npm, git
+ */
+export const ToolAppSchema = BaseAppSchema.extend({
+  type: z.literal('tool'),
+  path: z.string().describe('Installation source or package name'),
+  installInstructions: z
+    .string()
+    .optional()
+    .describe('How to install this tool'),
+  checkCommand: z
+    .string()
+    .optional()
+    .describe('Command to check if installed (e.g., "node --version")'),
+  platform: z.array(PlatformSchema).describe('Supported platforms'),
+})
+export type ToolApp = z.infer<typeof ToolAppSchema>
+
+/**
  * Discriminated union of all app types
  */
 export const AppSchema = z.discriminatedUnion('type', [
@@ -158,6 +177,7 @@ export const AppSchema = z.discriminatedUnion('type', [
   TypeScriptAppSchema,
   RemoteRepoAppSchema,
   ScriptToolAppSchema,
+  ToolAppSchema,
 ])
 export type App = z.infer<typeof AppSchema>
 

@@ -1,0 +1,32 @@
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="450" fill="#1A1A1A"/>
+
+<!-- Central shared store representation -->
+<defs>
+  <g id="package-hexagon">
+    <path d="M30 0 L60 17.32 L60 51.96 L30 69.28 L0 51.96 L0 17.32 Z" fill="#F9AD00"/>
+  </g>
+</defs>
+
+<g transform="translate(340, 158)">
+  <use href="#package-hexagon" x="0" y="0" opacity="0.8"/>
+  <use href="#package-hexagon" x="70" y="0" opacity="0.8"/>
+  <use href="#package-hexagon" x="35" y="60" opacity="0.8"/>
+  <use href="#package-hexagon" x="105" y="60" opacity="0.8"/>
+</g>
+
+<!-- Project representations -->
+<circle cx="150" cy="225" r="40" fill="#4A90E2"/>
+<rect x="620" y="100" width="80" height="80" rx="15" fill="#50E3C2"/>
+<path d="M660 325 L700 395 L620 395 Z" fill="#BD10E0"/>
+
+<!-- Connections -->
+<line x1="190" y1="225" x2="355" y2="248" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+<line x1="190" y1="225" x2="380" y2="175" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+
+<line x1="620" y1="140" x2="455" y2="180" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+<line x1="620" y1="140" x2="420" y2="235" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+
+<line x1="640" y1="350" x2="450" y2="240" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+<line x1="640" y1="350" x2="480" y2="290" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+</svg>

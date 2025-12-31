@@ -8,14 +8,66 @@ interface AppGalleryProps {
   apps: Array<App>
   onOpen?: (app: App) => void
   onInstall?: (app: App) => void
+  groupByType?: boolean
 }
 
-export function AppGallery({ apps, onOpen, onInstall }: AppGalleryProps) {
+export function AppGallery({
+  apps,
+  onOpen,
+  onInstall,
+  groupByType = false,
+}: AppGalleryProps) {
+  if (!groupByType) {
+    return (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {apps.map((app) => (
+          <AppCard
+            key={app.id}
+            app={app}
+            onOpen={onOpen}
+            onInstall={onInstall}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const tools = apps.filter((app) => app.type === 'tool')
+  const repos = apps.filter((app) => app.type !== 'tool')
+
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {apps.map((app) => (
-        <AppCard key={app.id} app={app} onOpen={onOpen} onInstall={onInstall} />
-      ))}
+    <div className="space-y-8">
+      {tools.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-xl font-semibold">Tools & Dependencies</h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {tools.map((app) => (
+              <AppCard
+                key={app.id}
+                app={app}
+                onOpen={onOpen}
+                onInstall={onInstall}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {repos.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-xl font-semibold">Applications</h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {repos.map((app) => (
+              <AppCard
+                key={app.id}
+                app={app}
+                onOpen={onOpen}
+                onInstall={onInstall}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
@@ -29,6 +81,7 @@ export function AppGalleryWithSearch({
   onOpen,
   onInstall,
   onSearchChange,
+  groupByType = false,
 }: AppGalleryWithSearchProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -64,7 +117,12 @@ export function AppGalleryWithSearch({
           </div>
         </div>
       ) : (
-        <AppGallery apps={apps} onOpen={onOpen} onInstall={onInstall} />
+        <AppGallery
+          apps={apps}
+          onOpen={onOpen}
+          onInstall={onInstall}
+          groupByType={groupByType}
+        />
       )}
     </div>
   )

@@ -5,17 +5,17 @@
     "type": "remote-repo",
     "path": "https://github.com/AutoMaker-Org/automaker.git",
     "homepage": "https://github.com/AutoMaker-Org/automaker",
+    "dependencies": [
+        "node",
+        "npm",
+        "git"
+    ],
     "installConfig": {
         "script": "npm install",
         "platform": [
             "linux",
             "macos",
             "windows"
-        ],
-        "dependencies": [
-            "node",
-            "npm",
-            "git"
         ]
     },
     "metadata": {

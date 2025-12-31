@@ -1,0 +1,27 @@
+{
+    "id": "git",
+    "name": "Git",
+    "description": "Distributed version control system",
+    "type": "tool",
+    "path": "https://git-scm.com",
+    "homepage": "https://git-scm.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "git --version",
+    "installInstructions": "Visit https://git-scm.com to download and install Git for your platform",
+    "metadata": {
+        "tags": [
+            "version-control",
+            "development"
+        ],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2025-12-31T16:48:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}

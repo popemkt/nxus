@@ -1,0 +1,29 @@
+{
+    "id": "gemini-cli",
+    "name": "Gemini CLI",
+    "description": "Multi-modal AI CLI powered by Gemini Pro. Used for thumbnail generation and AI workflows.",
+    "type": "tool",
+    "path": "https://github.com/google-gemini/gemini-cli",
+    "homepage": "https://github.com/google-gemini/gemini-cli",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "gemini --version",
+    "installInstructions": "Install via npm: npm install -g @google/gemini-cli",
+    "metadata": {
+        "tags": [
+            "ai",
+            "cli",
+            "gemini",
+            "google"
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "version": "1.0.0",
+        "author": "Google"
+    },
+    "status": "not-installed"
+}
