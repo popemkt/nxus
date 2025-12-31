@@ -4,6 +4,7 @@ import type { App } from '@/types/app'
 import { AppGalleryWithSearch } from '@/components/app/app-gallery'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { OsBadge } from '@/components/os-badge'
+import { DevModeBadge } from '@/components/dev-mode-badge'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { openApp } from '@/lib/app-actions'
 
@@ -58,6 +59,7 @@ function AppManager() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <DevModeBadge />
           <OsBadge />
           <ThemeToggle />
         </div>

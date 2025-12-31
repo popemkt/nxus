@@ -8,12 +8,15 @@ import {
   PlusIcon,
   DownloadIcon,
   PencilSimpleIcon,
+  CodeIcon,
 } from '@phosphor-icons/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   useAppInstallations,
+  useDevInfo,
+  isDevReferencePath,
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
@@ -182,20 +185,43 @@ function CompactView({
   instanceCount: number
   onExpand: () => void
 }) {
+  const devInfo = useDevInfo()
+  const isDevReference =
+    selectedInstance &&
+    isDevReferencePath(selectedInstance.installPath, devInfo)
   return (
     <motion.div key="compact" {...variants.compact} className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground px-1">Instance</p>
       <button
         type="button"
         onClick={onExpand}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 ring-1 ring-border hover:ring-primary/50 hover:bg-muted/50 transition-all text-left group"
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ring-1 hover:bg-muted/50 transition-all text-left group ${
+          isDevReference
+            ? 'bg-amber-50/30 dark:bg-amber-950/20 ring-amber-500/50 hover:ring-amber-500'
+            : 'bg-muted/30 ring-border hover:ring-primary/50'
+        }`}
       >
-        <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+        {isDevReference ? (
+          <CodeIcon className="h-4 w-4 text-amber-500 shrink-0" />
+        ) : (
+          <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+        )}
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
+          <p
+            className={`text-xs font-mono truncate group-hover:text-foreground transition-colors ${
+              isDevReference
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-muted-foreground'
+            }`}
+          >
             {selectedInstance?.name || selectedInstance?.installPath}
           </p>
         </div>
+        {isDevReference && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 shrink-0">
+            DEV
+          </span>
+        )}
         {instanceCount > 1 && (
           <span className="text-xs text-muted-foreground shrink-0">
             1/{instanceCount}
@@ -224,6 +250,7 @@ function ExpandedView({
   onAdd: () => void
   isAdding?: boolean
 }) {
+  const devInfo = useDevInfo()
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [editValue, setEditValue] = React.useState('')
 
@@ -285,6 +312,22 @@ function ExpandedView({
           {instances.map((instance, index) => {
             const isSelected = instance.id === selectedId
             const isEditing = editingId === instance.id
+            const isDevRef = isDevReferencePath(instance.installPath, devInfo)
+
+            // Build class name based on selection and dev reference status
+            let itemClass =
+              'w-full relative group rounded-lg ring-1 transition-all text-left '
+            if (isSelected && isDevRef) {
+              itemClass += 'bg-amber-50/50 dark:bg-amber-950/30 ring-amber-500'
+            } else if (isSelected) {
+              itemClass += 'bg-primary/10 ring-primary'
+            } else if (isDevRef) {
+              itemClass +=
+                'bg-amber-50/30 dark:bg-amber-950/20 ring-amber-300/50 hover:ring-amber-500/50 hover:bg-amber-50/50 dark:hover:bg-amber-950/30'
+            } else {
+              itemClass +=
+                'bg-muted/50 ring-border hover:ring-primary/50 hover:bg-muted'
+            }
 
             return (
               <motion.div
@@ -297,11 +340,7 @@ function ExpandedView({
                   delay: index * 0.05,
                   ease: 'easeOut',
                 }}
-                className={`w-full relative group rounded-lg ring-1 transition-all text-left ${
-                  isSelected
-                    ? 'bg-primary/10 ring-primary'
-                    : 'bg-muted/50 ring-border hover:ring-primary/50 hover:bg-muted'
-                }`}
+                className={itemClass}
               >
                 {isEditing ? (
                   <form
@@ -332,9 +371,11 @@ function ExpandedView({
                   >
                     {isSelected ? (
                       <CheckIcon
-                        className="h-5 w-5 text-primary shrink-0"
+                        className={`h-5 w-5 shrink-0 ${isDevRef ? 'text-amber-500' : 'text-primary'}`}
                         weight="bold"
                       />
+                    ) : isDevRef ? (
+                      <CodeIcon className="h-5 w-5 text-amber-500 shrink-0" />
                     ) : (
                       <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
                     )}
@@ -345,6 +386,11 @@ function ExpandedView({
                         >
                           {instance.name || 'Unnamed Instance'}
                         </span>
+                        {isDevRef && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
+                            DEV
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground/70 font-mono truncate">
                         {instance.installPath}

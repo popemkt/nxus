@@ -13,6 +13,7 @@ import {
   PlayIcon,
   ImageIcon,
   WarningIcon,
+  CodeIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
@@ -35,6 +36,7 @@ import { InstanceSelector } from '@/components/app/instance-selector'
 import { InstanceActionsPanel } from '@/components/app/instance-actions-panel'
 import {
   useAppCheck,
+  useDevInfo,
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
@@ -224,17 +226,22 @@ function AppDetailPage() {
   const app = apps.find((a) => a.id === appId)
   const { isInstalled } = useAppCheck(appId)
   const { installPath, setInstallPath } = useInstallPath(appId)
+  const devInfo = useDevInfo()
 
   const [installStep, setInstallStep] = useState<InstallStep>('idle')
   const [selectedInstance, setSelectedInstance] =
     useState<InstalledAppRecord | null>(null)
 
+  // Folder name for the cloned repository (defaults to repo name)
+  const defaultFolderName =
+    app?.name.toLowerCase().replace(/\s+/g, '-') || 'app'
+  const [folderName, setFolderName] = useState(defaultFolderName)
+
   // Command execution hook for streaming logs
   const { logs, isRunning, executeCommand, clearLogs } = useCommandExecution({
     onComplete: async () => {
       // Mark as installed after successful clone
-      const repoName = app?.name.toLowerCase().replace(/\s+/g, '-') || 'app'
-      const fullPath = `${installPath}/${repoName}`
+      const fullPath = `${installPath}/${folderName}`
       if (app) {
         await appStateService.addInstallation(app.id, fullPath)
       }
@@ -292,12 +299,11 @@ function AppDetailPage() {
   const handleInstall = async () => {
     setInstallStep('installing')
 
-    // Clone the repository with streaming logs
-    const repoName = app.name.toLowerCase().replace(/\s+/g, '-')
+    // Clone the repository with streaming logs using custom folder name
     await executeCommand('git', [
       'clone',
       app.path,
-      `${installPath}/${repoName}`,
+      `${installPath}/${folderName}`,
     ])
   }
 
@@ -433,6 +439,16 @@ function AppDetailPage() {
                       placeholder="/path/to/apps"
                       className="flex-1"
                     />
+                    {devInfo?.isDevMode && devInfo.devReposPath && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setInstallPath(devInfo.devReposPath!)}
+                        title="Use dev repos folder"
+                      >
+                        <CodeIcon className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
@@ -453,6 +469,20 @@ function AppDetailPage() {
                     </Button>
                   </div>
                 </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="folder-name">Folder Name</FieldLabel>
+                  <Input
+                    id="folder-name"
+                    value={folderName}
+                    onChange={(e) => setFolderName(e.target.value)}
+                    placeholder={defaultFolderName}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The name of the folder git will clone into
+                  </p>
+                </Field>
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"

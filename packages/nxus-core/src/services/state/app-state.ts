@@ -12,9 +12,16 @@ interface InstalledAppRecord {
   name?: string // Optional user-defined name
 }
 
+interface DevInfo {
+  isDevMode: boolean
+  devReposPath: string | null
+  nxusRootPath: string | null
+}
+
 interface AppState {
   installedApps: Record<string, InstalledAppRecord[]> // Array of installations per app
   osInfo: { platform: Platform; arch: string; homeDir: string } | null
+  devInfo: DevInfo | null
   actions: {
     addInstallation: (appId: string, path: string) => string // Returns installation ID
     removeInstallation: (appId: string, installationId: string) => void
@@ -28,6 +35,7 @@ interface AppState {
       arch: string
       homeDir: string
     }) => void
+    setDevInfo: (info: DevInfo) => void
   }
 }
 
@@ -41,6 +49,7 @@ const useStore = create<AppState>()(
       (set) => ({
         installedApps: {},
         osInfo: null,
+        devInfo: null,
         actions: {
           addInstallation: (appId, path) => {
             const id = generateId()
@@ -95,6 +104,7 @@ const useStore = create<AppState>()(
               }
             }),
           setOsInfo: (info) => set({ osInfo: info }),
+          setDevInfo: (info) => set({ devInfo: info }),
         },
       }),
       {
@@ -178,6 +188,9 @@ export const appStateService = {
   setOsInfo: (info: { platform: Platform; arch: string; homeDir: string }) => {
     useStore.getState().actions.setOsInfo(info)
   },
+  setDevInfo: (info: DevInfo) => {
+    useStore.getState().actions.setDevInfo(info)
+  },
 }
 
 // Stable empty array to prevent infinite re-renders from new array references
@@ -225,5 +238,26 @@ export const useOsInfo = () => {
   return useStore((state) => state.osInfo)
 }
 
-// Re-export type for external use
-export type { InstalledAppRecord }
+/**
+ * Hook to get dev mode info
+ */
+export const useDevInfo = () => {
+  return useStore((state) => state.devInfo)
+}
+
+/**
+ * Helper function to check if an installation path is a dev reference
+ * (i.e., installed in the packages/repos folder for AI buildout reference)
+ */
+export function isDevReferencePath(
+  installPath: string,
+  devInfo: DevInfo | null,
+): boolean {
+  if (!devInfo?.isDevMode || !devInfo.devReposPath) {
+    return false
+  }
+  return installPath.startsWith(devInfo.devReposPath)
+}
+
+// Re-export types for external use
+export type { InstalledAppRecord, DevInfo }

@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { getOsInfoServerFn } from '@/services/shell/os-info.server'
+import { getDevInfoServerFn } from '@/services/shell/dev-info.server'
 import { appStateService } from '@/services/state/app-state'
 
 import appCss from '../styles.css?url'
@@ -29,12 +30,18 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  loader: () => getOsInfoServerFn(),
+  loader: async () => {
+    const [osInfo, devInfo] = await Promise.all([
+      getOsInfoServerFn(),
+      getDevInfoServerFn(),
+    ])
+    return { osInfo, devInfo }
+  },
   shellComponent: RootDocument,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const osInfo = Route.useLoaderData()
+  const { osInfo, devInfo } = Route.useLoaderData()
 
   // Create QueryClient instance (stable across re-renders)
   const [queryClient] = useState(() => new QueryClient())
@@ -43,7 +50,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     if (osInfo) {
       appStateService.setOsInfo(osInfo)
     }
-  }, [osInfo])
+    if (devInfo) {
+      appStateService.setDevInfo(devInfo)
+    }
+  }, [osInfo, devInfo])
 
   return (
     <html lang="en">
