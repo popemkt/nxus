@@ -10,6 +10,8 @@ import { DevModeBadge } from '@/components/dev-mode-badge'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { openApp } from '@/lib/app-actions'
 import { useToolHealthCheck } from '@/hooks/use-tool-health-check'
+import { GlitchText } from '@/components/ui/glitch-text'
+import { DecodeText } from '@/components/ui/decode-text'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
@@ -55,16 +57,16 @@ function AppManager() {
         <div className="container mx-auto px-4 py-6">
           <div className="mb-6 flex items-start justify-between">
             <div>
-              <h1
+              <GlitchText
+                text="> nXus_"
                 className="text-4xl font-mono text-green-500 
                     [text-shadow:0_0_8px_rgba(34,197,94,0.4),2px_0_rgba(239,68,68,0.7),-2px_0_rgba(59,130,246,0.7)] 
-                    tracking-tight hover:text-white transition-colors cursor-default select-none"
-              >
-                &gt; nXus_
-              </h1>
-              <p className="text-muted-foreground mt-2 font-medium tracking-wide">
-                Command the chaos
-              </p>
+                    tracking-tight hover:text-white transition-colors cursor-default select-none font-bold"
+              />
+              <DecodeText
+                text="Command the chaos"
+                className="text-muted-foreground mt-2 font-medium tracking-wide font-mono"
+              />
             </div>
             <div className="flex items-center gap-2">
               <DevModeBadge />
