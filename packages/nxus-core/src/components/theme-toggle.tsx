@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { MoonIcon, SunIcon } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 
@@ -46,17 +47,38 @@ export function ThemeToggle() {
 
   return (
     <Button
-      variant="secondary"
+      variant="ghost"
       size="icon"
       onClick={toggleTheme}
       aria-label="Toggle theme"
-      className="rounded-full"
+      className="rounded-full overflow-hidden relative cursor-pointer"
+      asChild
     >
-      {theme === 'light' ? (
-        <MoonIcon className="h-5 w-5" />
-      ) : (
-        <SunIcon className="h-5 w-5" />
-      )}
+      <motion.button whileTap={{ scale: 0.9 }}>
+        <AnimatePresence mode="wait" initial={false}>
+          {theme === 'light' ? (
+            <motion.div
+              key="moon"
+              initial={{ scale: 0, rotate: -90, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              exit={{ scale: 0, rotate: 90, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              <MoonIcon className="h-6 w-6 text-foreground" weight="fill" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="sun"
+              initial={{ scale: 0, rotate: -90, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              exit={{ scale: 0, rotate: 90, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              <SunIcon className="h-6 w-6 text-yellow-400" weight="fill" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
     </Button>
   )
 }
