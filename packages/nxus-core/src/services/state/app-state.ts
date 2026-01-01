@@ -108,9 +108,13 @@ const useStore = create<AppState>()(
         },
       }),
       {
-        name: 'nxus-app-storage-v4', // Bumped version for slug IDs
-        partialize: (state) => ({ installedApps: state.installedApps }),
-        version: 4,
+        name: 'nxus-app-storage-v5', // Bumped version for persisting osInfo/devInfo
+        partialize: (state) => ({
+          installedApps: state.installedApps,
+          osInfo: state.osInfo,
+          devInfo: state.devInfo,
+        }),
+        version: 5,
         migrate: (persistedState: unknown, _version: number) => {
           return persistedState as any
         },

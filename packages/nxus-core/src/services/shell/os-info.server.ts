@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import os from 'os'
 import type { Platform } from '../../types/app'
 
-type OsInfo = {
+export type OsInfo = {
   platform: Platform
   arch: string
   homeDir: string

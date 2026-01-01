@@ -2,10 +2,8 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
-import { getOsInfoServerFn } from '@/services/shell/os-info.server'
-import { getDevInfoServerFn } from '@/services/shell/dev-info.server'
-import { appStateService } from '@/services/state/app-state'
+import { useState } from 'react'
+import { useSystemInfo } from '@/hooks/use-system-info'
 
 import appCss from '../styles.css?url'
 
@@ -30,30 +28,21 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  loader: async () => {
-    const [osInfo, devInfo] = await Promise.all([
-      getOsInfoServerFn(),
-      getDevInfoServerFn(),
-    ])
-    return { osInfo, devInfo }
-  },
   shellComponent: RootDocument,
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {
-  const { osInfo, devInfo } = Route.useLoaderData()
+/**
+ * System info loader component - fetches OS/dev info on mount
+ */
+function SystemInfoLoader() {
+  // This hook fetches and persists system info via React Query
+  useSystemInfo()
+  return null
+}
 
+function RootDocument({ children }: { children: React.ReactNode }) {
   // Create QueryClient instance (stable across re-renders)
   const [queryClient] = useState(() => new QueryClient())
-
-  useEffect(() => {
-    if (osInfo) {
-      appStateService.setOsInfo(osInfo)
-    }
-    if (devInfo) {
-      appStateService.setDevInfo(devInfo)
-    }
-  }, [osInfo, devInfo])
 
   return (
     <html lang="en">
@@ -79,6 +68,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
+          <SystemInfoLoader />
           {children}
         </QueryClientProvider>
         <TanStackDevtools

@@ -1,24 +1,34 @@
 import { useEffect, useState } from 'react'
-import { Moon, Sun } from '@phosphor-icons/react'
+import { MoonIcon, SunIcon } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    // Check if theme is stored in localStorage
-    if (typeof window !== 'undefined') {
-      const storedTheme = localStorage.getItem('theme') as
-        | 'light'
-        | 'dark'
-        | null
-      if (storedTheme) return storedTheme
+// Apply theme immediately to prevent flash
+function getInitialTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light'
 
-      // Check system preference
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark'
-      }
-    }
-    return 'light'
-  })
+  const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+  if (storedTheme) return storedTheme
+
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
+  }
+
+  return 'light'
+}
+
+// Apply theme to DOM immediately
+if (typeof window !== 'undefined') {
+  const initialTheme = getInitialTheme()
+  const root = window.document.documentElement
+  if (initialTheme === 'dark') {
+    root.classList.add('dark')
+  } else {
+    root.classList.remove('dark')
+  }
+}
+
+export function ThemeToggle() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme)
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -43,9 +53,9 @@ export function ThemeToggle() {
       className="rounded-full"
     >
       {theme === 'light' ? (
-        <Moon className="h-5 w-5" />
+        <MoonIcon className="h-5 w-5" />
       ) : (
-        <Sun className="h-5 w-5" />
+        <SunIcon className="h-5 w-5" />
       )}
     </Button>
   )
