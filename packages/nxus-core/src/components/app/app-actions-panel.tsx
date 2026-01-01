@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useToolHealth } from '@/services/state/tool-health-state'
 import type { App } from '@/types/app'
 
 /**
@@ -43,6 +44,10 @@ interface AppActionsPanelProps {
  */
 export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   const [error, setError] = React.useState<string | null>(null)
+
+  // Get health check for this tool
+  const healthCheck = useToolHealth(app.id)
+  const isInstalled = healthCheck?.isInstalled ?? false
 
   // Get app-level commands
   const appCommands = React.useMemo(
@@ -87,6 +92,22 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
     }
   }
 
+  // Determine if a command should be disabled based on health check
+  const isCommandDisabled = (commandId: string): boolean => {
+    // Install command: only enabled when NOT installed
+    if (commandId.startsWith('install-')) {
+      return isInstalled
+    }
+
+    // Update/Uninstall commands: only enabled when installed
+    if (commandId.startsWith('update-') || commandId.startsWith('uninstall-')) {
+      return !isInstalled
+    }
+
+    // All other commands (docs, etc): always enabled
+    return false
+  }
+
   if (appCommands.length === 0) {
     return null
   }
@@ -105,30 +126,35 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {category}
             </p>
-            {commands.map((cmd, index) => (
-              <motion.div
-                key={cmd.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.15, delay: index * 0.05 }}
-              >
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() =>
-                    handleCommandClick(cmd.command, cmd.mode || 'execute')
-                  }
+            {commands.map((cmd, index) => {
+              const disabled = isCommandDisabled(cmd.id)
+
+              return (
+                <motion.div
+                  key={cmd.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.15, delay: index * 0.05 }}
                 >
-                  <CommandIcon iconName={cmd.icon} />
-                  <span className="flex-1 text-left">{cmd.name}</span>
-                  {cmd.description && (
-                    <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
-                      {cmd.description}
-                    </span>
-                  )}
-                </Button>
-              </motion.div>
-            ))}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() =>
+                      handleCommandClick(cmd.command, cmd.mode || 'execute')
+                    }
+                    disabled={disabled}
+                  >
+                    <CommandIcon iconName={cmd.icon} />
+                    <span className="flex-1 text-left">{cmd.name}</span>
+                    {cmd.description && (
+                      <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
+                        {cmd.description}
+                      </span>
+                    )}
+                  </Button>
+                </motion.div>
+              )
+            })}
           </div>
         ))}
       </CardContent>
