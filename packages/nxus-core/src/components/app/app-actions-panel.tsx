@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { motion } from 'framer-motion'
 import * as PhosphorIcons from '@phosphor-icons/react'
-import { QuestionIcon, ArrowsClockwiseIcon } from '@phosphor-icons/react'
+import { QuestionIcon, WarningIcon } from '@phosphor-icons/react'
 import {
   Card,
   CardContent,
@@ -10,11 +10,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  useToolHealth,
-  toolHealthService,
-} from '@/services/state/tool-health-state'
-import type { App } from '@/types/app'
+import { useToolHealth } from '@/services/state/tool-health-state'
+import { useToolConfigured } from '@/services/state/tool-config-state'
+import { ConfigModal } from '@/components/app/config-modal'
+import type { App, ToolApp } from '@/types/app'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -44,13 +43,30 @@ interface AppActionsPanelProps {
 /**
  * App-level actions panel for tools and app-scoped commands
  * Shows commands with target === 'app'
+ *
+ * Command States:
+ * - Disabled: Liveness check failed (tool not installed)
+ * - Needs Attention: Liveness OK but readiness failed (not configured)
+ * - Ready: Both checks pass
  */
 export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   const [error, setError] = React.useState<string | null>(null)
+  const [configModalOpen, setConfigModalOpen] = React.useState(false)
 
-  // Get health check for this tool
+  // Get health check for this tool (liveness)
   const healthCheck = useToolHealth(app.id)
   const isInstalled = healthCheck?.isInstalled ?? false
+
+  // Get configuration status (readiness)
+  const requiredFields = React.useMemo(() => {
+    if (app.type !== 'tool') return []
+    return (
+      (app as ToolApp).configSchema?.fields
+        .filter((f) => f.required)
+        .map((f) => f.key) ?? []
+    )
+  }, [app])
+  const isConfigured = useToolConfigured(app.id, requiredFields)
 
   // Get app-level commands
   const appCommands = React.useMemo(
@@ -70,7 +86,11 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
     return groups
   }, [appCommands])
 
-  const handleCommandClick = (command: string, mode: string) => {
+  const handleCommandClick = (
+    commandId: string,
+    command: string,
+    mode: string,
+  ) => {
     setError(null)
 
     switch (mode) {
@@ -78,37 +98,59 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
         onRunCommand?.(command)
         break
       case 'copy':
-        // TODO: Show modal with copyable text
         navigator.clipboard.writeText(command)
         alert(`Copied to clipboard:\n\n${command}`)
         break
       case 'terminal':
-        // TODO: Open terminal with command pre-filled
         alert(`Terminal mode not yet implemented:\n\n${command}`)
         break
       case 'docs':
-        // Open URL in new tab
         window.open(command, '_blank', 'noopener,noreferrer')
+        break
+      case 'configure':
+        setConfigModalOpen(true)
         break
       default:
         setError(`Unknown command mode: ${mode}`)
     }
   }
 
-  // Determine if a command should be disabled based on health check
-  const isCommandDisabled = (commandId: string): boolean => {
+  /**
+   * Determine command state based on liveness and readiness checks
+   * Returns: 'disabled' | 'needs-attention' | 'ready'
+   */
+  const getCommandState = (
+    commandId: string,
+  ): 'disabled' | 'needs-attention' | 'ready' => {
     // Install command: only enabled when NOT installed
     if (commandId.startsWith('install-')) {
-      return isInstalled
+      return isInstalled ? 'disabled' : 'ready'
     }
 
     // Update/Uninstall commands: only enabled when installed
     if (commandId.startsWith('update-') || commandId.startsWith('uninstall-')) {
-      return !isInstalled
+      return !isInstalled ? 'disabled' : 'ready'
     }
 
-    // All other commands (docs, etc): always enabled
-    return false
+    // Configure command: needs attention if not configured
+    if (commandId === 'configure' || commandId.startsWith('configure-')) {
+      if (!isConfigured) return 'needs-attention'
+      return 'ready'
+    }
+
+    // Commands that depend on configuration (like env setup)
+    if (
+      commandId.includes('glm') ||
+      commandId.includes('env') ||
+      commandId.includes('setup')
+    ) {
+      if (!isInstalled) return 'disabled'
+      if (!isConfigured) return 'needs-attention'
+      return 'ready'
+    }
+
+    // All other commands: check liveness only
+    return 'ready'
   }
 
   if (appCommands.length === 0) {
@@ -116,51 +158,78 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>App Actions</CardTitle>
-        <CardDescription>Manage and configure this tool</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && <p className="text-xs text-destructive">{error}</p>}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>App Actions</CardTitle>
+          <CardDescription>Manage and configure this tool</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
-        {Object.entries(commandsByCategory).map(([category, commands]) => (
-          <div key={category} className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {category}
-            </p>
-            {commands.map((cmd, index) => {
-              const disabled = isCommandDisabled(cmd.id)
+          {Object.entries(commandsByCategory).map(([category, commands]) => (
+            <div key={category} className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {category}
+              </p>
+              {commands.map((cmd, index) => {
+                const state = getCommandState(cmd.id)
+                const isDisabled = state === 'disabled'
+                const needsAttention = state === 'needs-attention'
 
-              return (
-                <motion.div
-                  key={cmd.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.15, delay: index * 0.05 }}
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() =>
-                      handleCommandClick(cmd.command, cmd.mode || 'execute')
-                    }
-                    disabled={disabled}
+                return (
+                  <motion.div
+                    key={cmd.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.15, delay: index * 0.05 }}
                   >
-                    <CommandIcon iconName={cmd.icon} />
-                    <span className="flex-1 text-left">{cmd.name}</span>
-                    {cmd.description && (
-                      <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
-                        {cmd.description}
-                      </span>
-                    )}
-                  </Button>
-                </motion.div>
-              )
-            })}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+                    <Button
+                      variant={needsAttention ? 'outline' : 'outline'}
+                      className={`w-full justify-start ${
+                        needsAttention
+                          ? 'border-amber-500/50 hover:border-amber-500'
+                          : ''
+                      }`}
+                      onClick={() =>
+                        handleCommandClick(
+                          cmd.id,
+                          cmd.command,
+                          cmd.mode || 'execute',
+                        )
+                      }
+                      disabled={isDisabled}
+                    >
+                      <CommandIcon iconName={cmd.icon} />
+                      <span className="flex-1 text-left">{cmd.name}</span>
+                      {needsAttention && (
+                        <WarningIcon
+                          className="h-4 w-4 text-amber-500"
+                          weight="fill"
+                        />
+                      )}
+                      {cmd.description && !needsAttention && (
+                        <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
+                          {cmd.description}
+                        </span>
+                      )}
+                    </Button>
+                  </motion.div>
+                )
+              })}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Config Modal */}
+      {app.type === 'tool' && (app as ToolApp).configSchema && (
+        <ConfigModal
+          app={app as ToolApp}
+          open={configModalOpen}
+          onOpenChange={setConfigModalOpen}
+        />
+      )}
+    </>
   )
 }

@@ -65,8 +65,15 @@ export type CommandTarget = z.infer<typeof CommandTargetSchema>
  * - copy: Show popup with copyable command text
  * - terminal: Open terminal with command pre-filled
  * - docs: Open documentation URL
+ * - configure: Open configuration modal
  */
-export const CommandModeSchema = z.enum(['execute', 'copy', 'terminal', 'docs'])
+export const CommandModeSchema = z.enum([
+  'execute',
+  'copy',
+  'terminal',
+  'docs',
+  'configure',
+])
 export type CommandMode = z.infer<typeof CommandModeSchema>
 
 /**
@@ -165,6 +172,27 @@ export const ScriptToolAppSchema = BaseAppSchema.extend({
 export type ScriptToolApp = z.infer<typeof ScriptToolAppSchema>
 
 /**
+ * Configuration field schema for tools that need configuration
+ */
+export const ConfigFieldSchema = z.object({
+  key: z.string().describe('Config key (e.g., ANTHROPIC_API_KEY)'),
+  label: z.string().describe('Display label'),
+  type: z.enum(['text', 'password', 'url']).describe('Input field type'),
+  required: z.boolean().default(false).describe('Whether field is required'),
+  defaultValue: z.string().optional().describe('Default value'),
+  placeholder: z.string().optional().describe('Input placeholder text'),
+})
+export type ConfigField = z.infer<typeof ConfigFieldSchema>
+
+/**
+ * Configuration schema for tools
+ */
+export const ConfigSchemaSchema = z.object({
+  fields: z.array(ConfigFieldSchema),
+})
+export type ConfigSchema = z.infer<typeof ConfigSchemaSchema>
+
+/**
  * Tool app - installable tools/dependencies like node, npm, git
  */
 export const ToolAppSchema = BaseAppSchema.extend({
@@ -179,6 +207,9 @@ export const ToolAppSchema = BaseAppSchema.extend({
     .optional()
     .describe('Command to check if installed (e.g., "node --version")'),
   platform: z.array(PlatformSchema).describe('Supported platforms'),
+  configSchema: ConfigSchemaSchema.optional().describe(
+    'Configuration fields for this tool (e.g., API keys)',
+  ),
 })
 export type ToolApp = z.infer<typeof ToolAppSchema>
 

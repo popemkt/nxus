@@ -15,12 +15,41 @@
     "dependencies": [
         "claude-code"
     ],
+    "configSchema": {
+        "fields": [
+            {
+                "key": "ANTHROPIC_API_KEY",
+                "label": "Z.AI API Key",
+                "type": "password",
+                "required": true,
+                "placeholder": "Enter your Z.AI API key"
+            },
+            {
+                "key": "ANTHROPIC_BASE_URL",
+                "label": "API Base URL",
+                "type": "url",
+                "required": false,
+                "defaultValue": "https://open.bigmodel.cn/api/paas/v4/",
+                "placeholder": "API endpoint URL"
+            }
+        ]
+    },
     "commands": [
         {
-            "id": "configure-glm-permanent-bash",
-            "name": "Configure GLM (Bash Profile)",
-            "description": "Add GLM config to ~/.bashrc for permanent use",
+            "id": "configure",
+            "name": "Configure API Keys",
+            "description": "Set up Z.AI API credentials",
             "icon": "Gear",
+            "category": "Setup",
+            "target": "app",
+            "mode": "configure",
+            "command": ""
+        },
+        {
+            "id": "configure-glm-permanent-bash",
+            "name": "Apply to Bash Profile",
+            "description": "Add config to ~/.bashrc",
+            "icon": "Terminal",
             "category": "Setup",
             "target": "app",
             "mode": "terminal",
@@ -28,9 +57,9 @@
         },
         {
             "id": "configure-glm-permanent-zsh",
-            "name": "Configure GLM (Zsh Profile)",
-            "description": "Add GLM config to ~/.zshrc for permanent use",
-            "icon": "Gear",
+            "name": "Apply to Zsh Profile",
+            "description": "Add config to ~/.zshrc",
+            "icon": "Terminal",
             "category": "Setup",
             "target": "app",
             "mode": "terminal",
@@ -38,8 +67,8 @@
         },
         {
             "id": "configure-glm-session",
-            "name": "Configure GLM (Session)",
-            "description": "Copy env vars to paste in terminal for current session",
+            "name": "Copy Session Vars",
+            "description": "Copy env vars to clipboard",
             "icon": "Copy",
             "category": "Setup",
             "target": "app",
@@ -49,7 +78,7 @@
         {
             "id": "docs-glm",
             "name": "Z.AI Documentation",
-            "description": "Open Z.AI GLM documentation",
+            "description": "Open Z.AI GLM docs",
             "icon": "BookOpen",
             "category": "Help",
             "target": "app",
@@ -67,7 +96,7 @@
         ],
         "category": "development-tools",
         "createdAt": "2026-01-01T15:32:00.000Z",
-        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "updatedAt": "2026-01-02T00:00:00.000Z",
         "version": "1.0.0",
         "author": "nxus"
     },
