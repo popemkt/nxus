@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { motion } from 'framer-motion'
 import * as PhosphorIcons from '@phosphor-icons/react'
-import { QuestionIcon } from '@phosphor-icons/react'
+import { QuestionIcon, ArrowsClockwiseIcon } from '@phosphor-icons/react'
 import {
   Card,
   CardContent,
@@ -10,7 +10,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useToolHealth } from '@/services/state/tool-health-state'
+import {
+  useToolHealth,
+  toolHealthService,
+} from '@/services/state/tool-health-state'
 import type { App } from '@/types/app'
 
 /**

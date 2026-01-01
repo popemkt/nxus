@@ -15,6 +15,7 @@ import {
   CodeIcon,
   CheckCircleIcon,
   XCircleIcon,
+  ArrowsClockwiseIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
@@ -474,6 +475,30 @@ function AppDetailPage() {
                 isGenerating={isGeneratingThumbnail}
                 onGenerate={executeThumbnailCommand}
               />
+
+              {/* Refresh Status button for tools */}
+              {app.type === 'tool' && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => toolHealthService.clearHealthCheck(app.id)}
+                >
+                  <ArrowsClockwiseIcon data-icon="inline-start" />
+                  Refresh Status
+                </Button>
+              )}
+
+              {/* Refresh Git Status button for remote repos */}
+              {app.type === 'remote-repo' && selectedInstance && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setGitStatusRefreshKey((k) => k + 1)}
+                >
+                  <ArrowsClockwiseIcon data-icon="inline-start" />
+                  Refresh Git Status
+                </Button>
+              )}
             </CardContent>
           </Card>
 

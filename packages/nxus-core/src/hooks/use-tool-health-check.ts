@@ -44,7 +44,9 @@ export function useToolHealthCheck(tools: App[], enabled = true) {
 
 /**
  * Hook to check health of a single tool
- * Re-runs automatically when the cached result is cleared (invalidated)
+ * Re-runs automatically when:
+ * 1. Cache is missing (invalidated)
+ * 2. Cache is stale (>5 minutes old)
  */
 export function useSingleToolHealthCheck(tool: App, enabled = true) {
   // Subscribe to current health check result - this creates reactivity
@@ -53,9 +55,13 @@ export function useSingleToolHealthCheck(tool: App, enabled = true) {
   useEffect(() => {
     if (!enabled || tool.type !== 'tool' || !tool.checkCommand) return
 
-    // Only run check if we don't have a cached result
-    // This triggers on: 1) initial mount, 2) after cache is cleared
-    if (currentHealth?.isInstalled !== undefined) return
+    // Run check if:
+    // 1. No cached result exists (isInstalled is undefined)
+    // 2. Cache is stale (>5 minutes old)
+    const shouldCheck =
+      currentHealth?.isInstalled === undefined || currentHealth?.isStale
+
+    if (!shouldCheck) return
 
     const checkHealth = async () => {
       try {
@@ -87,5 +93,6 @@ export function useSingleToolHealthCheck(tool: App, enabled = true) {
     tool.checkCommand,
     enabled,
     currentHealth?.isInstalled,
+    currentHealth?.isStale,
   ])
 }
