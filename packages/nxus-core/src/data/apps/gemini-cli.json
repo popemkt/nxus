@@ -12,6 +12,38 @@
     ],
     "checkCommand": "gemini --version",
     "installInstructions": "Install via npm: npm install -g @google/gemini-cli",
+    "commands": [
+        {
+            "id": "install-gemini-cli",
+            "name": "Install",
+            "description": "Install Gemini CLI globally",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "app",
+            "mode": "execute",
+            "command": "npm install -g @google/gemini-cli"
+        },
+        {
+            "id": "update-gemini-cli",
+            "name": "Update",
+            "description": "Update to latest version",
+            "icon": "ArrowsClockwise",
+            "category": "Maintenance",
+            "target": "app",
+            "mode": "execute",
+            "command": "npm update -g @google/gemini-cli"
+        },
+        {
+            "id": "uninstall-gemini-cli",
+            "name": "Uninstall",
+            "description": "Remove Gemini CLI",
+            "icon": "Trash",
+            "category": "Setup",
+            "target": "app",
+            "mode": "execute",
+            "command": "npm uninstall -g @google/gemini-cli"
+        }
+    ],
     "metadata": {
         "tags": [
             "ai",
@@ -21,7 +53,7 @@
         ],
         "category": "development-tools",
         "createdAt": "2026-01-01T00:00:00.000Z",
-        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
         "version": "1.0.0",
         "author": "Google"
     },

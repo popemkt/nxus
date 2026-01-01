@@ -37,6 +37,7 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '@/components/app/command-log-viewer'
 import { InstanceSelector } from '@/components/app/instance-selector'
 import { InstanceActionsPanel } from '@/components/app/instance-actions-panel'
+import { AppActionsPanel } from '@/components/app/app-actions-panel'
 import {
   useAppCheck,
   useDevInfo,
@@ -616,6 +617,20 @@ function AppDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* App Actions Panel (for tools) */}
+          {app.type === 'tool' && (
+            <AppActionsPanel
+              app={app}
+              onRunCommand={async (command) => {
+                // Parse command into parts for executeCommand
+                const parts = command.split(' ')
+                const cmd = parts[0]
+                const args = parts.slice(1)
+                await executeInstanceCommand(cmd, args)
+              }}
+            />
+          )}
+
           {/* Instance Actions Panel */}
           <InstanceActionsPanel
             instance={selectedInstance}

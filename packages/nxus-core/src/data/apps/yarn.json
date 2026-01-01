@@ -15,6 +15,38 @@
         "node"
     ],
     "installInstructions": "Run: npm install -g yarn",
+    "commands": [
+        {
+            "id": "install-yarn",
+            "name": "Install",
+            "description": "Install Yarn globally",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "app",
+            "mode": "execute",
+            "command": "npm install -g yarn"
+        },
+        {
+            "id": "update-yarn",
+            "name": "Update",
+            "description": "Update to latest version",
+            "icon": "ArrowsClockwise",
+            "category": "Maintenance",
+            "target": "app",
+            "mode": "execute",
+            "command": "npm update -g yarn"
+        },
+        {
+            "id": "uninstall-yarn",
+            "name": "Uninstall",
+            "description": "Remove Yarn",
+            "icon": "Trash",
+            "category": "Setup",
+            "target": "app",
+            "mode": "execute",
+            "command": "npm uninstall -g yarn"
+        }
+    ],
     "metadata": {
         "tags": [
             "package-manager",
@@ -22,7 +54,7 @@
         ],
         "category": "development-tools",
         "createdAt": "2026-01-01T01:09:00.000Z",
-        "updatedAt": "2026-01-01T01:09:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
         "version": "1.0.0",
         "author": "nxus"
     },

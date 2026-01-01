@@ -12,6 +12,38 @@
     ],
     "checkCommand": "node --version",
     "installInstructions": "Visit https://nodejs.org to download and install Node.js for your platform",
+    "commands": [
+        {
+            "id": "install-node-fedora",
+            "name": "Install (Fedora)",
+            "description": "Install Node.js via dnf",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "app",
+            "mode": "terminal",
+            "command": "sudo dnf install nodejs"
+        },
+        {
+            "id": "install-node-windows",
+            "name": "Install (Windows)",
+            "description": "Install Node.js via winget",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "app",
+            "mode": "copy",
+            "command": "winget install OpenJS.NodeJS"
+        },
+        {
+            "id": "docs-node",
+            "name": "Documentation",
+            "description": "Open Node.js documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "app",
+            "mode": "docs",
+            "command": "https://nodejs.org/docs"
+        }
+    ],
     "metadata": {
         "tags": [
             "runtime",
@@ -20,7 +52,7 @@
         ],
         "category": "development-tools",
         "createdAt": "2025-12-31T16:48:00.000Z",
-        "updatedAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
         "version": "1.0.0",
         "author": "nxus"
     },

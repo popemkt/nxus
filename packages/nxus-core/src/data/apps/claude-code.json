@@ -1,59 +1,58 @@
 {
-    "id": "pnpm",
-    "name": "pnpm",
-    "description": "Fast, disk space efficient package manager",
+    "id": "claude-code",
+    "name": "Claude Code",
+    "description": "Anthropic's agentic AI coding assistant for the terminal",
     "type": "tool",
-    "path": "https://pnpm.io",
-    "homepage": "https://pnpm.io",
+    "path": "https://claude.ai/code",
+    "homepage": "https://claude.ai/code",
     "platform": [
         "linux",
         "macos",
         "windows"
     ],
-    "checkCommand": "pnpm --version",
-    "dependencies": [
-        "node"
-    ],
-    "installInstructions": "Run: npm install -g pnpm",
+    "checkCommand": "claude --version",
+    "installInstructions": "npm install -g @anthropic-ai/claude-code",
     "commands": [
         {
-            "id": "install-pnpm",
+            "id": "install-claude-code",
             "name": "Install",
-            "description": "Install pnpm globally",
+            "description": "Install Claude Code globally",
             "icon": "Download",
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm install -g pnpm"
+            "command": "npm install -g @anthropic-ai/claude-code"
         },
         {
-            "id": "update-pnpm",
+            "id": "update-claude-code",
             "name": "Update",
             "description": "Update to latest version",
             "icon": "ArrowsClockwise",
             "category": "Maintenance",
             "target": "app",
             "mode": "execute",
-            "command": "npm update -g pnpm"
+            "command": "npm update -g @anthropic-ai/claude-code"
         },
         {
-            "id": "uninstall-pnpm",
+            "id": "uninstall-claude-code",
             "name": "Uninstall",
-            "description": "Remove pnpm",
+            "description": "Remove Claude Code",
             "icon": "Trash",
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm uninstall -g pnpm"
+            "command": "npm uninstall -g @anthropic-ai/claude-code"
         }
     ],
     "metadata": {
         "tags": [
-            "package-manager",
-            "javascript"
+            "ai",
+            "coding",
+            "anthropic",
+            "cli"
         ],
         "category": "development-tools",
-        "createdAt": "2025-12-31T16:48:00.000Z",
+        "createdAt": "2026-01-01T15:32:00.000Z",
         "updatedAt": "2026-01-01T22:37:00.000Z",
         "version": "1.0.0",
         "author": "nxus"

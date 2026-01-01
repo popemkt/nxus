@@ -60,6 +60,16 @@ export const CommandTargetSchema = z.enum(['app', 'instance'])
 export type CommandTarget = z.infer<typeof CommandTargetSchema>
 
 /**
+ * Command mode - how the command should be executed
+ * - execute: Run command directly in background
+ * - copy: Show popup with copyable command text
+ * - terminal: Open terminal with command pre-filled
+ * - docs: Open documentation URL
+ */
+export const CommandModeSchema = z.enum(['execute', 'copy', 'terminal', 'docs'])
+export type CommandMode = z.infer<typeof CommandModeSchema>
+
+/**
  * Config-driven command defined in app-registry.json
  * For shell/script commands with different parameters per app
  */
@@ -70,7 +80,10 @@ export const AppCommandSchema = z.object({
   icon: z.string().describe('Phosphor icon name'),
   category: z.string().describe('Grouping for UI'),
   target: CommandTargetSchema.describe('What scope this operates on'),
-  command: z.string().describe('Shell command to execute'),
+  mode: CommandModeSchema.default('execute').describe(
+    'How to execute this command',
+  ),
+  command: z.string().describe('Shell command to execute or URL for docs mode'),
   override: z.string().optional().describe('ID of default command to override'),
 })
 export type AppCommand = z.infer<typeof AppCommandSchema>

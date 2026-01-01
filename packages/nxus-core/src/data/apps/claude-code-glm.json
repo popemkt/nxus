@@ -1,0 +1,75 @@
+{
+    "id": "claude-code-glm",
+    "name": "Claude Code (GLM)",
+    "description": "Claude Code configured to use Z.AI's GLM model",
+    "type": "tool",
+    "path": "https://z.ai",
+    "homepage": "https://z.ai",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "claude --version",
+    "installInstructions": "Set environment variables before running claude:\nexport ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"your_z_ai_key\"",
+    "dependencies": [
+        "claude-code"
+    ],
+    "commands": [
+        {
+            "id": "configure-glm-permanent-bash",
+            "name": "Configure GLM (Bash Profile)",
+            "description": "Add GLM config to ~/.bashrc for permanent use",
+            "icon": "Gear",
+            "category": "Setup",
+            "target": "app",
+            "mode": "terminal",
+            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.bashrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.bashrc && source ~/.bashrc && echo 'GLM environment configured in ~/.bashrc'"
+        },
+        {
+            "id": "configure-glm-permanent-zsh",
+            "name": "Configure GLM (Zsh Profile)",
+            "description": "Add GLM config to ~/.zshrc for permanent use",
+            "icon": "Gear",
+            "category": "Setup",
+            "target": "app",
+            "mode": "terminal",
+            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.zshrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.zshrc && source ~/.zshrc && echo 'GLM environment configured in ~/.zshrc'"
+        },
+        {
+            "id": "configure-glm-session",
+            "name": "Configure GLM (Session)",
+            "description": "Copy env vars to paste in terminal for current session",
+            "icon": "Copy",
+            "category": "Setup",
+            "target": "app",
+            "mode": "copy",
+            "command": "export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\""
+        },
+        {
+            "id": "docs-glm",
+            "name": "Z.AI Documentation",
+            "description": "Open Z.AI GLM documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "app",
+            "mode": "docs",
+            "command": "https://open.bigmodel.cn/dev/api"
+        }
+    ],
+    "metadata": {
+        "tags": [
+            "ai",
+            "coding",
+            "glm",
+            "z.ai",
+            "cli"
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-01T15:32:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}

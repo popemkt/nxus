@@ -1,0 +1,28 @@
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#2C0A4F"/>
+            <stop offset="1" stop-color="#01152D"/>
+        </linearGradient>
+        <linearGradient id="grad" x1="150" y1="100" x2="650" y2="350" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00F0FF"/>
+            <stop offset="1" stop-color="#FF00B8"/>
+        </linearGradient>
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="15" result="blur"/>
+            <feFlood flood-color="#FF00B8" flood-opacity="0.5" result="color"/>
+            <feComposite in="color" in2="blur" operator="in" result="glow"/>
+            <feMerge>
+                <feMergeNode in="glow"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+    <rect width="800" height="450" fill="url(#bg)"/>
+    <g filter="url(#glow)">
+        <!-- Stylized '>' -->
+        <path d="M 200 100 L 400 225 L 200 350" stroke="url(#grad)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Stylized 'C' -->
+        <path d="M 600 100 A 125 125 0 1 0 600 350" stroke="url(#grad)" stroke-width="60" stroke-linecap="round"/>
+    </g>
+</svg>
