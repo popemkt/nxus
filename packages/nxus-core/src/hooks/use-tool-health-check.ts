@@ -4,6 +4,7 @@ import { batchCheckToolInstallation } from '@/services/apps/health-check.server'
 import {
   toolHealthService,
   useAllToolHealth,
+  useToolHealth,
 } from '@/services/state/tool-health-state'
 
 /**
@@ -43,10 +44,18 @@ export function useToolHealthCheck(tools: App[], enabled = true) {
 
 /**
  * Hook to check health of a single tool
+ * Re-runs automatically when the cached result is cleared (invalidated)
  */
 export function useSingleToolHealthCheck(tool: App, enabled = true) {
+  // Subscribe to current health check result - this creates reactivity
+  const currentHealth = useToolHealth(tool.id)
+
   useEffect(() => {
     if (!enabled || tool.type !== 'tool' || !tool.checkCommand) return
+
+    // Only run check if we don't have a cached result
+    // This triggers on: 1) initial mount, 2) after cache is cleared
+    if (currentHealth?.isInstalled !== undefined) return
 
     const checkHealth = async () => {
       try {
@@ -71,5 +80,12 @@ export function useSingleToolHealthCheck(tool: App, enabled = true) {
     }
 
     checkHealth()
-  }, [tool.id, tool.type, tool.checkCommand, enabled])
+  }, [
+    tool.id,
+    tool.name,
+    tool.type,
+    tool.checkCommand,
+    enabled,
+    currentHealth?.isInstalled,
+  ])
 }

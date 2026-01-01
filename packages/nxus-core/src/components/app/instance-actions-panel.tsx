@@ -83,6 +83,8 @@ interface InstanceActionsPanelProps {
   instance: InstalledAppRecord | null
   app: App
   onRunCommand?: (command: string, cwd: string) => void
+  /** Increment this to trigger git status refresh (e.g., after git pull) */
+  gitStatusRefreshKey?: number
 }
 
 /**
@@ -93,6 +95,7 @@ export function InstanceActionsPanel({
   instance,
   app,
   onRunCommand,
+  gitStatusRefreshKey = 0,
 }: InstanceActionsPanelProps) {
   const [error, setError] = React.useState<string | null>(null)
   const [isRemoving, setIsRemoving] = React.useState(false)
@@ -136,7 +139,7 @@ export function InstanceActionsPanel({
     return merged
   }, [defaultActions, customCommands, app.type])
 
-  // Check git status when instance changes (for remote-repo types)
+  // Check git status when instance changes or refresh key increments
   React.useEffect(() => {
     if (!instance || app.type !== 'remote-repo') {
       setGitStatus(null)
@@ -159,7 +162,7 @@ export function InstanceActionsPanel({
     }
 
     checkGit()
-  }, [instance, app.type])
+  }, [instance, app.type, gitStatusRefreshKey])
 
   if (!instance) {
     return (

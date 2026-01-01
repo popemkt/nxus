@@ -44,6 +44,7 @@ import {
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
+import { toolHealthService } from '@/services/state/tool-health-state'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_LONG,
@@ -242,6 +243,9 @@ function AppDetailPage() {
   const [selectedInstance, setSelectedInstance] =
     useState<InstalledAppRecord | null>(null)
 
+  // Refresh key for git status - increment to trigger re-check
+  const [gitStatusRefreshKey, setGitStatusRefreshKey] = useState(0)
+
   // Folder name for the cloned repository (defaults to repo name)
   const defaultFolderName =
     app?.name.toLowerCase().replace(/\s+/g, '-') || 'app'
@@ -285,7 +289,18 @@ function AppDetailPage() {
     isRunning: isRunningInstanceCommand,
     executeCommand: executeInstanceCommand,
     clearLogs: clearInstanceLogs,
-  } = useCommandExecution()
+  } = useCommandExecution({
+    onComplete: () => {
+      // Clear health check cache if this is a tool - triggers automatic re-check
+      if (app?.type === 'tool') {
+        toolHealthService.clearHealthCheck(app.id)
+      }
+      // Increment git status refresh key to trigger re-check for remote repos
+      if (app?.type === 'remote-repo') {
+        setGitStatusRefreshKey((k) => k + 1)
+      }
+    },
+  })
 
   if (loading) {
     return (
@@ -635,6 +650,7 @@ function AppDetailPage() {
           <InstanceActionsPanel
             instance={selectedInstance}
             app={app}
+            gitStatusRefreshKey={gitStatusRefreshKey}
             onRunCommand={async (command, cwd) => {
               // Parse command into parts for executeCommand
               const parts = command.split(' ')
