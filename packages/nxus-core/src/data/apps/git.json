@@ -5,6 +5,7 @@
     "type": "tool",
     "path": "https://git-scm.com",
     "homepage": "https://git-scm.com",
+    "thumbnail": "/thumbnails/git.svg",
     "platform": [
         "linux",
         "macos",
