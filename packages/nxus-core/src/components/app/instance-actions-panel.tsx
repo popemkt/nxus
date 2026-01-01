@@ -35,11 +35,16 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { openPathServerFn } from '@/services/shell/open-path.server'
+import { openTerminalServerFn } from '@/services/shell/open-terminal.server'
 import { uninstallAppServerFn } from '@/services/apps/uninstall.server'
 import {
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
+import {
+  checkGitStatusServerFn,
+  type GitStatus,
+} from '@/services/apps/git-status.server'
 import type { App, AppType } from '@/types/app'
 
 /**
@@ -92,6 +97,8 @@ export function InstanceActionsPanel({
   const [error, setError] = React.useState<string | null>(null)
   const [isRemoving, setIsRemoving] = React.useState(false)
   const [deleteFromDisk, setDeleteFromDisk] = React.useState(false)
+  const [gitStatus, setGitStatus] = React.useState<GitStatus | null>(null)
+  const [checkingGit, setCheckingGit] = React.useState(false)
 
   // Get type-specific actions
   const defaultActions = React.useMemo(
@@ -129,6 +136,31 @@ export function InstanceActionsPanel({
     return merged
   }, [defaultActions, customCommands, app.type])
 
+  // Check git status when instance changes (for remote-repo types)
+  React.useEffect(() => {
+    if (!instance || app.type !== 'remote-repo') {
+      setGitStatus(null)
+      return
+    }
+
+    const checkGit = async () => {
+      setCheckingGit(true)
+      try {
+        const status = await checkGitStatusServerFn({
+          data: { path: instance.installPath },
+        })
+        setGitStatus(status)
+      } catch (err) {
+        console.error('Failed to check git status:', err)
+        setGitStatus(null)
+      } finally {
+        setCheckingGit(false)
+      }
+    }
+
+    checkGit()
+  }, [instance, app.type])
+
   if (!instance) {
     return (
       <Card>
@@ -158,6 +190,20 @@ export function InstanceActionsPanel({
       })
       if (!result.success) {
         setError(result.error || 'Failed to open folder')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    }
+  }
+
+  const handleOpenTerminal = async () => {
+    setError(null)
+    try {
+      const result = await openTerminalServerFn({
+        data: { path: instance.installPath },
+      })
+      if (!result.success) {
+        setError(result.error || 'Failed to open terminal')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -271,6 +317,67 @@ export function InstanceActionsPanel({
               </div>
             )}
 
+            {/* Git Updates for remote repos */}
+            {app.type === 'remote-repo' && actions.secondary.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Updates
+                </p>
+                {actions.secondary.map((action, index) => {
+                  const Icon = action.icon
+                  const hasUpdates =
+                    gitStatus?.behindBy && gitStatus.behindBy > 0
+                  const isGitPull = action.id === 'git-pull'
+
+                  return (
+                    <motion.div
+                      key={action.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.15, delay: index * 0.05 }}
+                    >
+                      <Button
+                        variant={
+                          hasUpdates && isGitPull ? 'default' : 'outline'
+                        }
+                        className="w-full justify-start"
+                        onClick={() => handleAction(action)}
+                        disabled={
+                          checkingGit || (isGitPull && !gitStatus?.gitInstalled)
+                        }
+                      >
+                        <Icon data-icon="inline-start" />
+                        <span className="flex-1 text-left">{action.label}</span>
+                        {checkingGit && isGitPull && (
+                          <span className="text-xs text-muted-foreground">
+                            Checking...
+                          </span>
+                        )}
+                        {!checkingGit && hasUpdates && isGitPull && (
+                          <span className="text-xs font-mono">
+                            {gitStatus.behindBy} behind
+                          </span>
+                        )}
+                        {!checkingGit && gitStatus?.isUpToDate && isGitPull && (
+                          <span className="text-xs text-muted-foreground">
+                            Up to date
+                          </span>
+                        )}
+                        {!checkingGit &&
+                          gitStatus &&
+                          !gitStatus.gitInstalled &&
+                          isGitPull && (
+                            <span className="text-xs text-destructive">
+                              Git not installed
+                            </span>
+                          )}
+                      </Button>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
+
             {/* Custom Commands from app config */}
             {customCommands.length > 0 && (
               <div className="space-y-2">
@@ -323,8 +430,7 @@ export function InstanceActionsPanel({
                   variant="ghost"
                   size="sm"
                   className="justify-start"
-                  onClick={() => handleRunCommand('')}
-                  disabled={!onRunCommand}
+                  onClick={handleOpenTerminal}
                 >
                   <TerminalWindowIcon data-icon="inline-start" />
                   Terminal

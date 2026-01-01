@@ -30,5 +30,16 @@
         "version": "1.0.0",
         "author": "openrecall"
     },
-    "status": "not-installed"
+    "status": "not-installed",
+    "commands": [
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "command": "git pull"
+        }
+    ]
 }

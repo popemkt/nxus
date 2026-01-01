@@ -34,5 +34,81 @@
         "version": "1.0.0",
         "author": "AutoMaker-Org"
     },
-    "status": "not-installed"
+    "status": "not-installed",
+    "commands": [
+        {
+            "id": "dev",
+            "name": "Start Development",
+            "description": "Interactive launcher - choose web or electron mode",
+            "icon": "Play",
+            "category": "Development",
+            "target": "instance",
+            "command": "npm run dev",
+            "override": "start"
+        },
+        {
+            "id": "dev-electron",
+            "name": "Start Electron (Dev)",
+            "description": "Start in Electron desktop app mode",
+            "icon": "Desktop",
+            "category": "Development",
+            "target": "instance",
+            "command": "npm run dev:electron"
+        },
+        {
+            "id": "dev-web",
+            "name": "Start Web (Dev)",
+            "description": "Start in web browser mode",
+            "icon": "Globe",
+            "category": "Development",
+            "target": "instance",
+            "command": "npm run dev:web"
+        },
+        {
+            "id": "build",
+            "name": "Build for Web",
+            "description": "Build production web application",
+            "icon": "Hammer",
+            "category": "Build",
+            "target": "instance",
+            "command": "npm run build",
+            "override": "build"
+        },
+        {
+            "id": "build-electron",
+            "name": "Build Electron App",
+            "description": "Build desktop application for current platform",
+            "icon": "Package",
+            "category": "Build",
+            "target": "instance",
+            "command": "npm run build:electron"
+        },
+        {
+            "id": "test",
+            "name": "Run Tests",
+            "description": "Run end-to-end tests (headless)",
+            "icon": "TestTube",
+            "category": "Testing",
+            "target": "instance",
+            "command": "npm run test"
+        },
+        {
+            "id": "lint",
+            "name": "Lint Code",
+            "description": "Run ESLint on codebase",
+            "icon": "MagnifyingGlass",
+            "category": "Quality",
+            "target": "instance",
+            "command": "npm run lint"
+        },
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "command": "git pull"
+        }
+    ]
 }

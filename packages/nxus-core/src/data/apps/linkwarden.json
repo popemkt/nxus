@@ -6,10 +6,18 @@
     "path": "https://github.com/linkwarden/linkwarden.git",
     "homepage": "https://github.com/linkwarden/linkwarden",
     "dependencies": [
-        "pnpm",
+        "yarn",
         "git",
         "docker"
     ],
+    "installConfig": {
+        "script": "yarn install",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ]
+    },
     "metadata": {
         "tags": [
             "bookmark-manager",
@@ -26,34 +34,61 @@
     "status": "not-installed",
     "commands": [
         {
-            "id": "install-deps-pnpm",
+            "id": "install-deps-yarn",
             "name": "Install Dependencies",
-            "description": "pnpm install",
+            "description": "yarn install",
             "icon": "Package",
             "category": "Development",
             "target": "instance",
-            "command": "pnpm install",
+            "command": "yarn install",
             "override": "install-deps"
         },
         {
-            "id": "build-pnpm",
-            "name": "Build",
-            "description": "pnpm run build",
-            "icon": "Hammer",
-            "category": "Development",
-            "target": "instance",
-            "command": "pnpm run build",
-            "override": "build"
-        },
-        {
-            "id": "start-pnpm",
-            "name": "Start Dev Server",
-            "description": "pnpm run dev",
+            "id": "dev-web",
+            "name": "Dev: Web App",
+            "description": "Start web app in development mode",
             "icon": "Play",
             "category": "Development",
             "target": "instance",
-            "command": "pnpm run dev",
+            "command": "yarn web:dev",
             "override": "start"
+        },
+        {
+            "id": "dev-worker",
+            "name": "Dev: Worker",
+            "description": "Start worker in development mode",
+            "icon": "Gear",
+            "category": "Development",
+            "target": "instance",
+            "command": "yarn worker:dev"
+        },
+        {
+            "id": "dev-all",
+            "name": "Dev: Web + Worker",
+            "description": "Start both web and worker concurrently",
+            "icon": "Lightning",
+            "category": "Development",
+            "target": "instance",
+            "command": "yarn concurrently:dev"
+        },
+        {
+            "id": "build-web",
+            "name": "Build: Web App",
+            "description": "Build web app for production",
+            "icon": "Hammer",
+            "category": "Build",
+            "target": "instance",
+            "command": "yarn web:build",
+            "override": "build"
+        },
+        {
+            "id": "start-production",
+            "name": "Start: Production",
+            "description": "Start web and worker in production mode",
+            "icon": "RocketLaunch",
+            "category": "Production",
+            "target": "instance",
+            "command": "yarn concurrently:start"
         },
         {
             "id": "docker-up",
@@ -80,7 +115,25 @@
             "icon": "Database",
             "category": "Database",
             "target": "instance",
-            "command": "npx prisma migrate dev"
+            "command": "yarn prisma:dev"
+        },
+        {
+            "id": "prisma-studio",
+            "name": "Prisma Studio",
+            "description": "Open Prisma Studio to manage database",
+            "icon": "Table",
+            "category": "Database",
+            "target": "instance",
+            "command": "yarn prisma:studio"
+        },
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "command": "git pull"
         }
     ]
 }

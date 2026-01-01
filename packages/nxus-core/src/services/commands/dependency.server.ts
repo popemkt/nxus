@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { spawn } from 'child_process'
 import { z } from 'zod'
 import { existsSync } from 'fs'
+import { getPlatformCommands } from '@/lib/platform-commands'
 import type { DependencyCheckResult, DependencyId } from '@/types/dependency'
 
 const CheckDependencyInputSchema = z.object({
@@ -21,7 +22,7 @@ const CheckDependencyInputSchema = z.object({
  */
 function checkCliExists(command: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const whichCommand = process.platform === 'win32' ? 'where' : 'which'
+    const whichCommand = getPlatformCommands().whichCommand
     const child = spawn(whichCommand, [command], { shell: true })
 
     child.on('close', (code) => {

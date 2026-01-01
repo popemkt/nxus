@@ -5,6 +5,19 @@
     "type": "remote-repo",
     "path": "https://github.com/popemkt/chrome-new-tab.git",
     "homepage": "https://github.com/popemkt/chrome-new-tab",
+    "dependencies": [
+        "node",
+        "npm",
+        "git"
+    ],
+    "installConfig": {
+        "script": "npm install",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ]
+    },
     "metadata": {
         "tags": [
             "chrome",
@@ -18,5 +31,16 @@
         "version": "1.0.0",
         "author": "popemkt"
     },
-    "status": "not-installed"
+    "status": "not-installed",
+    "commands": [
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "command": "git pull"
+        }
+    ]
 }

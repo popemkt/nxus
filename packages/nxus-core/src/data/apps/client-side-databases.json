@@ -5,6 +5,19 @@
     "type": "remote-repo",
     "path": "https://github.com/pubkey/client-side-databases.git",
     "homepage": "https://github.com/pubkey/client-side-databases",
+    "dependencies": [
+        "node",
+        "npm",
+        "git"
+    ],
+    "installConfig": {
+        "script": "npm install && npm run build",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ]
+    },
     "metadata": {
         "tags": [
             "database",
@@ -22,6 +35,26 @@
     "status": "not-installed",
     "commands": [
         {
+            "id": "install-deps",
+            "name": "Install Dependencies",
+            "description": "npm install",
+            "icon": "Package",
+            "category": "Development",
+            "target": "instance",
+            "command": "npm install",
+            "override": "install-deps"
+        },
+        {
+            "id": "build-all",
+            "name": "Build All Projects",
+            "description": "Build all database implementations",
+            "icon": "Hammer",
+            "category": "Development",
+            "target": "instance",
+            "command": "npm run build",
+            "override": "build"
+        },
+        {
             "id": "run-firestore",
             "name": "Run Firestore",
             "description": "Start the Firestore implementation",
@@ -38,6 +71,42 @@
             "category": "Run",
             "target": "instance",
             "command": "npm run start:rxdb"
+        },
+        {
+            "id": "run-pouchdb",
+            "name": "Run PouchDB",
+            "description": "Start the PouchDB implementation",
+            "icon": "Database",
+            "category": "Run",
+            "target": "instance",
+            "command": "npm run start:pouchdb"
+        },
+        {
+            "id": "run-watermelondb",
+            "name": "Run WatermelonDB",
+            "description": "Start the WatermelonDB implementation",
+            "icon": "Database",
+            "category": "Run",
+            "target": "instance",
+            "command": "npm run start:watermelondb"
+        },
+        {
+            "id": "run-aws",
+            "name": "Run AWS Datastore",
+            "description": "Start the AWS Datastore implementation",
+            "icon": "CloudArrowUp",
+            "category": "Run",
+            "target": "instance",
+            "command": "npm run start:aws"
+        },
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "command": "git pull"
         }
     ]
 }

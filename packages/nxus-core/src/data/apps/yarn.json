@@ -1,0 +1,30 @@
+{
+    "id": "yarn",
+    "name": "Yarn",
+    "description": "Fast, reliable, and secure dependency management",
+    "type": "tool",
+    "path": "https://yarnpkg.com",
+    "homepage": "https://yarnpkg.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "yarn --version",
+    "dependencies": [
+        "node"
+    ],
+    "installInstructions": "Run: npm install -g yarn",
+    "metadata": {
+        "tags": [
+            "package-manager",
+            "javascript"
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-01T01:09:00.000Z",
+        "updatedAt": "2026-01-01T01:09:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
+}
