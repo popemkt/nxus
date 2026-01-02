@@ -48,10 +48,20 @@ export const genericCommands: GenericCommand[] = [
   {
     id: 'go-to-inbox',
     name: 'Go to Inbox',
-    icon: 'Inbox',
+    icon: 'Tray',
     needsTarget: false,
     execute: () => {
       window.location.href = '/inbox'
+    },
+  },
+  {
+    id: 'add-to-inbox',
+    name: 'Add to Inbox',
+    icon: 'Plus',
+    needsTarget: false,
+    execute: async () => {
+      const { inboxModalService } = await import('@/stores/inbox-modal.store')
+      inboxModalService.open()
     },
   },
   {

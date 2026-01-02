@@ -7,6 +7,7 @@ import { useSystemInfo } from '@/hooks/use-system-info'
 import { CommandPalette } from '@/components/command-palette'
 import { TerminalPanel } from '@/components/terminal-panel'
 import { ConfigureModal } from '@/components/configure-modal'
+import { InboxModal } from '@/components/inbox-modal'
 
 import appCss from '../styles.css?url'
 
@@ -76,6 +77,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <CommandPalette />
           <TerminalPanel />
           <ConfigureModal />
+          <InboxModal />
         </QueryClientProvider>
         <TanStackDevtools
           config={{

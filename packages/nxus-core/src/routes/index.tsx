@@ -12,6 +12,7 @@ import { openApp } from '@/lib/app-actions'
 import { useToolHealthCheck } from '@/hooks/use-tool-health-check'
 import { GlitchText } from '@/components/ui/glitch-text'
 import { DecodeText } from '@/components/ui/decode-text'
+import { InboxButton } from '@/components/inbox-button'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
@@ -72,9 +73,11 @@ function AppManager() {
               <DevModeBadge />
               <OsBadge />
               <ThemeToggle />
+              <InboxButton />
               <Link
                 to="/settings"
                 className="rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                title="Settings"
               >
                 <GearIcon className="h-5 w-5" />
               </Link>

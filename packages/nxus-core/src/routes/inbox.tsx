@@ -1,31 +1,23 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
 import {
   TrayIcon,
   PlusIcon,
   ClipboardIcon,
   CheckIcon,
   TrashIcon,
+  ArrowLeftIcon,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Field, FieldLabel } from '@/components/ui/field'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   getInboxItemsServerFn,
-  addInboxItemServerFn,
   updateInboxItemServerFn,
   deleteInboxItemServerFn,
   type InboxItem,
 } from '@/services/inbox/inbox.server'
+import { useInboxModalStore } from '@/stores/inbox-modal.store'
 
 export const Route = createFileRoute('/inbox')({
   component: InboxPage,
@@ -38,35 +30,27 @@ export const Route = createFileRoute('/inbox')({
 function InboxPage() {
   const items = Route.useLoaderData()
   const [localItems, setLocalItems] = useState<InboxItem[]>(items)
-  const [isAdding, setIsAdding] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newNotes, setNewNotes] = useState('')
+  const { isOpen } = useInboxModalStore()
+
+  // Refresh items when modal closes (in case new item was added)
+  useEffect(() => {
+    if (!isOpen) {
+      getInboxItemsServerFn().then((result) => {
+        if (result.success) {
+          setLocalItems(result.data)
+        }
+      })
+    }
+  }, [isOpen])
 
   const pendingItems = localItems.filter((i) => i.status === 'pending')
   const processingItems = localItems.filter((i) => i.status === 'processing')
   const doneItems = localItems.filter((i) => i.status === 'done')
 
-  const handleAdd = async () => {
-    if (!newTitle.trim()) return
-
-    const result = await addInboxItemServerFn({
-      data: { title: newTitle, notes: newNotes || undefined },
-    })
-
-    if (result.success) {
-      setLocalItems([result.data, ...localItems])
-      setNewTitle('')
-      setNewNotes('')
-      setIsAdding(false)
-    }
-  }
-
   const handleCopyAndProcess = async (item: InboxItem) => {
-    // Copy item details to clipboard for manual workflow
     const text = `Add this item to Nxus registry:\n\nTitle: ${item.title}\n${item.notes ? `Notes: ${item.notes}` : ''}`
     await navigator.clipboard.writeText(text)
 
-    // Mark as processing
     const result = await updateInboxItemServerFn({
       data: { id: item.id, status: 'processing' },
     })
@@ -97,8 +81,20 @@ function InboxPage() {
     }
   }
 
+  const openModal = () => {
+    useInboxModalStore.getState().open()
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Back Button */}
+      <Link to="/">
+        <Button variant="ghost" className="mb-6 -ml-2">
+          <ArrowLeftIcon data-icon="inline-start" />
+          Back to Gallery
+        </Button>
+      </Link>
+
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <TrayIcon className="h-8 w-8 text-primary" />
@@ -109,51 +105,11 @@ function InboxPage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
+        <Button onClick={openModal}>
           <PlusIcon data-icon="inline-start" />
           Add Item
         </Button>
       </div>
-
-      {/* Quick Add Form */}
-      {isAdding && (
-        <Card className="mb-6 border-primary">
-          <CardHeader>
-            <CardTitle>Add to Inbox</CardTitle>
-            <CardDescription>Quick note for later processing</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Field>
-              <FieldLabel htmlFor="title">Title</FieldLabel>
-              <Input
-                id="title"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="e.g., Add Cursor IDE"
-                autoFocus
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="notes">Notes (optional)</FieldLabel>
-              <Textarea
-                id="notes"
-                value={newNotes}
-                onChange={(e) => setNewNotes(e.target.value)}
-                placeholder="Any context, URLs, or details..."
-                rows={3}
-              />
-            </Field>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsAdding(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAdd} disabled={!newTitle.trim()}>
-                Add to Inbox
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Pending Items */}
       <div className="space-y-4 mb-8">
