@@ -46,6 +46,15 @@ export const genericCommands: GenericCommand[] = [
     },
   },
   {
+    id: 'go-to-inbox',
+    name: 'Go to Inbox',
+    icon: 'Inbox',
+    needsTarget: false,
+    execute: () => {
+      window.location.href = '/inbox'
+    },
+  },
+  {
     id: 'go-to-app',
     name: 'Go to App',
     icon: 'ArrowSquareOut',
