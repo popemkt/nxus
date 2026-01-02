@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
@@ -40,6 +40,8 @@ function DynamicIcon({
 export function CommandPalette() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+
   const {
     isOpen,
     step,
@@ -80,8 +82,14 @@ export function CommandPalette() {
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50)
+      setSelectedIndex(0) // Auto-select first item
     }
   }, [isOpen, step])
+
+  // Reset selection when query changes
+  useEffect(() => {
+    setSelectedIndex(0)
+  }, [query])
 
   // Search results
   const results = useMemo(() => {
@@ -98,6 +106,53 @@ export function CommandPalette() {
     }
     return commandRegistry.search(query)
   }, [query, step])
+
+  // Flatten results for keyboard navigation
+  const items = useMemo(() => {
+    if (step === 'target') {
+      return results as ReturnType<
+        typeof commandRegistry.getAppsForTargetSelection
+      >
+    }
+    const searchResults = results as ReturnType<typeof commandRegistry.search>
+    return [...searchResults.genericCommands, ...searchResults.appCommands]
+  }, [results, step])
+
+  // Keyboard navigation handler
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex((prev: number) => (prev + 1) % items.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(
+        (prev: number) => (prev - 1 + items.length) % items.length,
+      )
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (items.length === 0) return
+
+      const selectedItem = items[selectedIndex]
+      if (step === 'target') {
+        executeGenericCommand((selectedItem as any).id)
+      } else {
+        // Check if it's a generic command or app command
+        if ('needsTarget' in selectedItem) {
+          // Generic command
+          const cmd = selectedItem as any
+          if (cmd.needsTarget) {
+            selectGenericCommand(cmd)
+          } else {
+            close()
+            cmd.execute()
+          }
+        } else {
+          // App command
+          executeAppCommand(selectedItem as any)
+        }
+      }
+    }
+  }
 
   // Execute app command
   const executeAppCommand = async (cmd: PaletteCommand) => {
@@ -177,22 +232,13 @@ export function CommandPalette() {
     if (!selectedGenericCommand) return
     close()
 
-    switch (selectedGenericCommand.id) {
-      case 'generate-thumbnail':
-        navigate({
-          to: `/apps/${appId}`,
-          search: { action: 'generate-thumbnail' },
-        })
-        break
-      case 'open-folder': {
-        // Note: For proper implementation, this should prompt for instance selection
-        // For now, navigating to app page
-        navigate({ to: `/apps/${appId}`, search: { action: 'open-folder' } })
-        break
-      }
-      case 'open-terminal':
-        // TODO: implement terminal opening
-        break
+    // Find the full command object from registry
+    const fullCommand = commandRegistry
+      .getGenericCommands()
+      .find((c) => c.id === selectedGenericCommand.id)
+
+    if (fullCommand) {
+      fullCommand.execute(appId)
     }
   }
 
@@ -221,6 +267,7 @@ export function CommandPalette() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={
               step === 'target'
                 ? `Select target for "${selectedGenericCommand?.name}"...`
@@ -246,7 +293,7 @@ export function CommandPalette() {
                   </p>
                   {(
                     results as ReturnType<typeof commandRegistry.search>
-                  ).genericCommands.map((cmd) => (
+                  ).genericCommands.map((cmd, idx) => (
                     <button
                       key={cmd.id}
                       onClick={() => {
@@ -257,15 +304,21 @@ export function CommandPalette() {
                           cmd.execute()
                         }
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted text-left"
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
+                        selectedIndex === idx
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-muted'
+                      }`}
                     >
                       <DynamicIcon
                         name={cmd.icon}
-                        className="h-4 w-4 text-muted-foreground"
+                        className={`h-4 w-4 ${selectedIndex === idx ? 'text-primary-foreground' : 'text-muted-foreground'}`}
                       />
                       <span>{cmd.name}</span>
                       {cmd.needsTarget && (
-                        <span className="ml-auto text-xs text-muted-foreground">
+                        <span
+                          className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                        >
                           → select {cmd.needsTarget}
                         </span>
                       )}
@@ -283,27 +336,44 @@ export function CommandPalette() {
                   </p>
                   {(
                     results as ReturnType<typeof commandRegistry.search>
-                  ).appCommands.map((cmd) => (
-                    <button
-                      key={cmd.id}
-                      onClick={() => executeAppCommand(cmd)}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted text-left"
-                    >
-                      <DynamicIcon
-                        name={cmd.icon}
-                        className="h-4 w-4 text-muted-foreground"
-                      />
-                      <span className="text-muted-foreground">
-                        {cmd.appName}:
-                      </span>
-                      <span>{cmd.name}</span>
-                      {cmd.description && (
-                        <span className="ml-auto text-xs text-muted-foreground truncate max-w-[150px]">
-                          {cmd.description}
+                  ).appCommands.map((cmd, idx) => {
+                    const globalIdx =
+                      (results as ReturnType<typeof commandRegistry.search>)
+                        .genericCommands.length + idx
+                    return (
+                      <button
+                        key={cmd.id}
+                        onClick={() => executeAppCommand(cmd)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
+                          selectedIndex === globalIdx
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-muted'
+                        }`}
+                      >
+                        <DynamicIcon
+                          name={cmd.icon}
+                          className={`h-4 w-4 ${selectedIndex === globalIdx ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+                        />
+                        <span
+                          className={
+                            selectedIndex === globalIdx
+                              ? ''
+                              : 'text-muted-foreground'
+                          }
+                        >
+                          {cmd.appName}:
                         </span>
-                      )}
-                    </button>
-                  ))}
+                        <span>{cmd.name}</span>
+                        {cmd.description && (
+                          <span
+                            className={`ml-auto text-xs truncate max-w-[150px] ${selectedIndex === globalIdx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                          >
+                            {cmd.description}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               )}
 
@@ -326,14 +396,20 @@ export function CommandPalette() {
                 results as ReturnType<
                   typeof commandRegistry.getAppsForTargetSelection
                 >
-              ).map((app) => (
+              ).map((app, idx) => (
                 <button
                   key={app.id}
                   onClick={() => executeGenericCommand(app.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted text-left"
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
+                    selectedIndex === idx
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted'
+                  }`}
                 >
                   <span>{app.name}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
+                  <span
+                    className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                  >
                     {app.type}
                   </span>
                 </button>
