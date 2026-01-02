@@ -95,8 +95,10 @@ export function CommandPalette() {
   // Search results
   const results = useMemo(() => {
     if (step === 'target') {
-      // Show apps or instances for target selection
-      const apps = commandRegistry.getAppsForTargetSelection()
+      // Show apps or instances for target selection, filtered by command
+      const apps = commandRegistry.getAppsForTargetSelection(
+        selectedGenericCommand ?? undefined,
+      )
       const lowerQuery = query.toLowerCase()
       return apps.filter(
         (app) =>
@@ -106,7 +108,7 @@ export function CommandPalette() {
       )
     }
     return commandRegistry.search(query)
-  }, [query, step])
+  }, [query, step, selectedGenericCommand])
 
   // Flatten results for keyboard navigation
   const items = useMemo(() => {

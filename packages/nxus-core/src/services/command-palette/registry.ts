@@ -1,4 +1,6 @@
 import { appRegistryService } from '@/services/apps/registry.service'
+import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
+import { openPathServerFn } from '@/services/shell/open-path.server'
 import type { App, CommandMode } from '@/types/app'
 
 /**
@@ -25,7 +27,9 @@ export interface GenericCommand {
   name: string
   icon: string
   needsTarget?: 'app' | 'instance' | false
-  execute: (targetId?: string, targetPath?: string) => void
+  /** Optional filter for target selection (e.g., only show remote-repo apps) */
+  targetFilter?: (app: App) => boolean
+  execute: (targetId?: string, targetPath?: string) => void | Promise<void>
 }
 
 /**
@@ -57,6 +61,51 @@ export const genericCommands: GenericCommand[] = [
     needsTarget: 'app',
     execute: (appId) => {
       window.location.href = `/apps/${appId}?action=generate-thumbnail`
+    },
+  },
+  {
+    id: 'edit-manifest',
+    name: 'Edit Manifest',
+    icon: 'PencilSimple',
+    needsTarget: 'app',
+    execute: async (appId) => {
+      if (!appId) return
+      const paths = await getAppManifestPathServerFn({ data: { appId } })
+      await openPathServerFn({ data: { path: paths.manifestPath } })
+    },
+  },
+  {
+    id: 'edit-docs',
+    name: 'Edit Docs',
+    icon: 'BookOpen',
+    needsTarget: 'app',
+    execute: async (appId) => {
+      if (!appId) return
+      const paths = await getAppManifestPathServerFn({ data: { appId } })
+      if (paths.docsPath) {
+        await openPathServerFn({ data: { path: paths.docsPath } })
+      }
+    },
+  },
+  {
+    id: 'add-instance',
+    name: 'Add Instance',
+    icon: 'Plus',
+    needsTarget: 'app',
+    targetFilter: (app) => app.type === 'remote-repo',
+    execute: async (appId) => {
+      if (!appId) return
+      // Import dynamically to avoid circular deps
+      const { installModalService } = await import(
+        '@/stores/install-modal.store'
+      )
+      const { appRegistryService } = await import(
+        '@/services/apps/registry.service'
+      )
+      const result = appRegistryService.getAppById(appId)
+      if (result.success && result.data.type === 'remote-repo') {
+        installModalService.open(result.data)
+      }
     },
   },
   {
@@ -153,11 +202,17 @@ class CommandRegistry {
   }
 
   /**
-   * Get apps for target selection
+   * Get apps for target selection, optionally filtered by command
    */
-  getAppsForTargetSelection(): App[] {
+  getAppsForTargetSelection(command?: GenericCommand): App[] {
     const result = appRegistryService.getAllApps()
-    return result.success ? result.data : []
+    if (!result.success) return []
+
+    // Apply command's target filter if present
+    if (command?.targetFilter) {
+      return result.data.filter(command.targetFilter)
+    }
+    return result.data
   }
 
   /**
