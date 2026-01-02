@@ -269,8 +269,11 @@ function AppConfigSettings({ searchQuery }: { searchQuery: string }) {
   )
 }
 
+// Stable empty object to prevent infinite re-renders
+const EMPTY_CONFIG = {}
+
 function AppConfigCard({ app }: { app: ToolApp }) {
-  const config = useToolConfigStore((s) => s.configs[app.id] ?? {})
+  const config = useToolConfigStore((s) => s.configs[app.id]) || EMPTY_CONFIG
 
   const handleChange = (key: string, value: string) => {
     useToolConfigStore.getState().actions.setConfig(app.id, key, value)
