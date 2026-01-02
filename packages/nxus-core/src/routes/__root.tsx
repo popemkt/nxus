@@ -4,6 +4,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSystemInfo } from '@/hooks/use-system-info'
+import { CommandPalette } from '@/components/command-palette'
+import { TerminalPanel } from '@/components/terminal-panel'
 
 import appCss from '../styles.css?url'
 
@@ -70,6 +72,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <SystemInfoLoader />
           {children}
+          <CommandPalette />
+          <TerminalPanel />
         </QueryClientProvider>
         <TanStackDevtools
           config={{
