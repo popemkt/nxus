@@ -6,7 +6,7 @@ This guide will help you configure Claude Code to work with Z.AI's GLM model.
 
 Before you begin, ensure Claude Code is installed:
 
-{{command:install-claude-code}}
+{{command:claude-code:install-claude-code}}
 
 ## Step 1: Get Your API Key
 

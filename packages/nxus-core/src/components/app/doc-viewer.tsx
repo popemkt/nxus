@@ -1,6 +1,7 @@
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import { getDocContentServerFn } from '@/services/apps/docs.server'
+import { appRegistryService } from '@/services/apps/registry.service'
 import { CommandButton } from '@/components/app/command-button'
 import type { App, AppCommand } from '@/types/app'
 
@@ -69,15 +70,54 @@ export function DocViewer({
     return map
   }, [app.commands])
 
-  // Process content to replace {{command:id}} with placeholders
-  // and render them as CommandButton components
+  // Process content to replace {{command:id}} or {{command:app-id:command-id}} with buttons
   const processedContent = React.useMemo(() => {
     if (!content) return null
 
-    // Split content by command syntax
-    const parts = content.split(/(\{\{command:[\w-]+\}\})/g)
+    // Split content by command syntax - supports both formats:
+    // {{command:command-id}} - looks up in current app
+    // {{command:app-id:command-id}} - looks up in specified app
+    const parts = content.split(/(\{\{command:[\w-]+(?::[\w-]+)?\}\})/g)
 
     return parts.map((part, index) => {
+      // Try cross-app format first: {{command:app-id:command-id}}
+      const crossAppMatch = part.match(/^\{\{command:([\w-]+):([\w-]+)\}\}$/)
+      if (crossAppMatch) {
+        const targetAppId = crossAppMatch[1]
+        const commandId = crossAppMatch[2]
+
+        // Look up the target app
+        const targetAppResult = appRegistryService.getAppById(targetAppId)
+        if (targetAppResult.success) {
+          const targetApp = targetAppResult.data
+          const command = targetApp.commands?.find(
+            (c: AppCommand) => c.id === commandId,
+          )
+          if (command) {
+            return (
+              <span key={index} className="inline-block my-1">
+                <CommandButton
+                  command={command}
+                  app={targetApp}
+                  compact
+                  onExecute={onExecuteCommand}
+                />
+              </span>
+            )
+          }
+        }
+
+        return (
+          <span
+            key={index}
+            className="inline-block px-2 py-1 text-xs bg-destructive/10 text-destructive rounded"
+          >
+            Unknown command: {targetAppId}:{commandId}
+          </span>
+        )
+      }
+
+      // Try current-app format: {{command:command-id}}
       const match = part.match(/^\{\{command:([\w-]+)\}\}$/)
       if (match) {
         const commandId = match[1]

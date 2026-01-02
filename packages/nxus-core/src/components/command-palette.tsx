@@ -15,6 +15,7 @@ import {
   type PaletteCommand,
 } from '@/services/command-palette/registry'
 import { executeCommandServerFn } from '@/services/shell/command.server'
+import { configureModalService } from '@/stores/configure-modal.store'
 
 function DynamicIcon({
   name,
@@ -168,6 +169,9 @@ export function CommandPalette() {
         break
       case 'copy':
         await navigator.clipboard.writeText(action.text)
+        break
+      case 'configure':
+        configureModalService.open(action.appId, action.commandId)
         break
       case 'execute': {
         // Run in terminal panel

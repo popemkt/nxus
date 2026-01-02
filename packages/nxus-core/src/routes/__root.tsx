@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useSystemInfo } from '@/hooks/use-system-info'
 import { CommandPalette } from '@/components/command-palette'
 import { TerminalPanel } from '@/components/terminal-panel'
+import { ConfigureModal } from '@/components/configure-modal'
 
 import appCss from '../styles.css?url'
 
@@ -74,6 +75,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           {children}
           <CommandPalette />
           <TerminalPanel />
+          <ConfigureModal />
         </QueryClientProvider>
         <TanStackDevtools
           config={{

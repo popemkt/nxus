@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useToolHealth } from '@/services/state/tool-health-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { useCommandExecution } from '@/hooks/use-command-execution'
+import { configureModalService } from '@/stores/configure-modal.store'
 import type { AppCommand, ToolApp, App } from '@/types/app'
 
 /**
@@ -92,7 +93,7 @@ export function CommandButton({
         window.open(command.command, '_blank', 'noopener,noreferrer')
         break
       case 'configure':
-        // TODO: Open config modal - would need to lift state
+        configureModalService.open(app.id, command.id)
         break
       default:
         if (onExecute) {

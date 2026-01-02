@@ -169,12 +169,14 @@ class CommandRegistry {
     | { type: 'navigate'; url: string }
     | { type: 'execute'; command: string }
     | { type: 'copy'; text: string }
-    | { type: 'docs'; url: string } {
+    | { type: 'docs'; url: string }
+    | { type: 'configure'; appId: string; commandId: string } {
     switch (cmd.mode) {
       case 'configure':
         return {
-          type: 'navigate',
-          url: `/apps/${cmd.appId}?action=${cmd.commandId}`,
+          type: 'configure',
+          appId: cmd.appId,
+          commandId: cmd.commandId,
         }
       case 'docs':
         return { type: 'docs', url: cmd.command }
