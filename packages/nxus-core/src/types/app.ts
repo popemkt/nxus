@@ -96,6 +96,17 @@ export const AppCommandSchema = z.object({
 export type AppCommand = z.infer<typeof AppCommandSchema>
 
 /**
+ * Documentation entry for an app
+ */
+export const DocEntrySchema = z.object({
+  id: z.string().describe('Unique doc identifier'),
+  title: z.string().describe('Display title for tab'),
+  file: z.string().describe('Markdown filename (e.g., setup.md)'),
+  icon: z.string().optional().describe('Phosphor icon name'),
+})
+export type DocEntry = z.infer<typeof DocEntrySchema>
+
+/**
  * Base app configuration schema
  */
 const BaseAppSchema = z.object({
@@ -117,6 +128,10 @@ const BaseAppSchema = z.object({
     .array(AppCommandSchema)
     .optional()
     .describe('Config-driven commands'),
+  docs: z
+    .array(DocEntrySchema)
+    .optional()
+    .describe('Documentation files for this app'),
 })
 
 /**

@@ -16,6 +16,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ArrowsClockwiseIcon,
+  PencilSimpleIcon,
+  BookOpenIcon,
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useCommandExecution } from '@/hooks/use-command-execution'
@@ -39,6 +41,10 @@ import { CommandLogViewer } from '@/components/app/command-log-viewer'
 import { InstanceSelector } from '@/components/app/instance-selector'
 import { InstanceActionsPanel } from '@/components/app/instance-actions-panel'
 import { AppActionsPanel } from '@/components/app/app-actions-panel'
+import { DocViewer } from '@/components/app/doc-viewer'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
+import { openPathServerFn } from '@/services/shell/open-path.server'
 import {
   useAppCheck,
   useDevInfo,
@@ -427,232 +433,319 @@ function AppDetailPage() {
             </Badge>
           ))}
         </div>
+
+        {/* Edit buttons */}
+        <div className="flex gap-2 mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              const paths = await getAppManifestPathServerFn({
+                data: { appId },
+              })
+              await openPathServerFn({ data: { path: paths.manifestPath } })
+            }}
+          >
+            <PencilSimpleIcon data-icon="inline-start" />
+            Edit Manifest
+          </Button>
+          {app.docs && app.docs.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                const paths = await getAppManifestPathServerFn({
+                  data: { appId },
+                })
+                await openPathServerFn({ data: { path: paths.docsPath } })
+              }}
+            >
+              <BookOpenIcon data-icon="inline-start" />
+              Edit Docs
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Instance Selector */}
-          <InstanceSelector
-            appId={appId}
-            canAddInstance={app.type === 'remote-repo'}
-            onAddInstanceClick={() => setInstallStep('configuring')}
-            isAddingInstance={installStep === 'installing'}
-            onInstanceSelect={setSelectedInstance}
-          />
+          <Tabs defaultValue="overview">
+            <TabsList className="mb-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              {app.docs?.map((doc) => (
+                <TabsTrigger key={doc.id} value={doc.id}>
+                  {doc.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Interact with this application</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {effectiveStatus === 'installed' && app.type === 'html' && (
-                <Button onClick={handleOpen} className="w-full justify-start">
-                  <PlayIcon data-icon="inline-start" />
-                  Open Application
-                </Button>
-              )}
-
-              {app.homepage && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  render={
-                    <a href={app.homepage} target="_blank" rel="noreferrer" />
-                  }
-                >
-                  <GithubLogoIcon data-icon="inline-start" />
-                  View on GitHub
-                </Button>
-              )}
-
-              <GenerateThumbnailButton
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-6">
+              {/* Instance Selector */}
+              <InstanceSelector
                 appId={appId}
-                appName={app.name}
-                appDescription={app.description}
-                isGenerating={isGeneratingThumbnail}
-                onGenerate={executeThumbnailCommand}
+                canAddInstance={app.type === 'remote-repo'}
+                onAddInstanceClick={() => setInstallStep('configuring')}
+                isAddingInstance={installStep === 'installing'}
+                onInstanceSelect={setSelectedInstance}
               />
 
-              {/* Refresh Status button for tools */}
-              {app.type === 'tool' && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => toolHealthService.clearHealthCheck(app.id)}
-                >
-                  <ArrowsClockwiseIcon data-icon="inline-start" />
-                  Refresh Status
-                </Button>
-              )}
-
-              {/* Refresh Git Status button for remote repos */}
-              {app.type === 'remote-repo' && selectedInstance && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setGitStatusRefreshKey((k) => k + 1)}
-                >
-                  <ArrowsClockwiseIcon data-icon="inline-start" />
-                  Refresh Git Status
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Installation Panel */}
-          {installStep === 'configuring' && (
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle>Configure Installation</CardTitle>
-                <CardDescription>
-                  Choose where you want to clone this repository
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Field>
-                  <FieldLabel htmlFor="install-path">
-                    Installation Path
-                  </FieldLabel>
-                  <div className="flex gap-2">
-                    <Input
-                      id="install-path"
-                      value={installPath}
-                      onChange={(e) => setInstallPath(e.target.value)}
-                      placeholder="/path/to/apps"
-                      className="flex-1"
-                    />
-                    {devInfo?.isDevMode && devInfo.devReposPath && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setInstallPath(devInfo.devReposPath!)}
-                        title="Use dev repos folder"
-                      >
-                        <CodeIcon className="h-4 w-4" />
-                      </Button>
-                    )}
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>
+                    Interact with this application
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {effectiveStatus === 'installed' && app.type === 'html' && (
                     <Button
-                      type="button"
-                      variant="outline"
-                      onClick={async () => {
-                        const result = await openFolderPickerServerFn({
-                          data: {
-                            startPath: installPath,
-                            title: 'Select Installation Folder',
-                          },
-                        })
-                        if (result.success && result.path) {
-                          setInstallPath(result.path)
-                        }
-                      }}
-                      aria-label="Browse for folder"
+                      onClick={handleOpen}
+                      className="w-full justify-start"
                     >
-                      <FolderIcon className="h-4 w-4" />
+                      <PlayIcon data-icon="inline-start" />
+                      Open Application
                     </Button>
-                  </div>
-                </Field>
+                  )}
 
-                <Field>
-                  <FieldLabel htmlFor="folder-name">Folder Name</FieldLabel>
-                  <Input
-                    id="folder-name"
-                    value={folderName}
-                    onChange={(e) => setFolderName(e.target.value)}
-                    placeholder={defaultFolderName}
+                  {app.homepage && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      render={
+                        <a
+                          href={app.homepage}
+                          target="_blank"
+                          rel="noreferrer"
+                        />
+                      }
+                    >
+                      <GithubLogoIcon data-icon="inline-start" />
+                      View on GitHub
+                    </Button>
+                  )}
+
+                  <GenerateThumbnailButton
+                    appId={appId}
+                    appName={app.name}
+                    appDescription={app.description}
+                    isGenerating={isGeneratingThumbnail}
+                    onGenerate={executeThumbnailCommand}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    The name of the folder git will clone into
-                  </p>
-                </Field>
 
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setInstallStep('idle')}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleInstall} className="flex-1">
-                    Start Installation
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  {/* Refresh Status button for tools */}
+                  {app.type === 'tool' && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => toolHealthService.clearHealthCheck(app.id)}
+                    >
+                      <ArrowsClockwiseIcon data-icon="inline-start" />
+                      Refresh Status
+                    </Button>
+                  )}
 
-          {installStep === 'installing' && (
-            <CommandLogViewer
-              title={`Installing ${app.name}`}
-              logs={logs}
-              isRunning={isRunning}
-              onClose={!isRunning ? handleCloseInstall : undefined}
-            />
-          )}
+                  {/* Refresh Git Status button for remote repos */}
+                  {app.type === 'remote-repo' && selectedInstance && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => setGitStatusRefreshKey((k) => k + 1)}
+                    >
+                      <ArrowsClockwiseIcon data-icon="inline-start" />
+                      Refresh Git Status
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Thumbnail generation log viewer */}
-          {(isGeneratingThumbnail || thumbnailLogs.length > 0) && (
-            <CommandLogViewer
-              title="Generating Thumbnail"
-              logs={thumbnailLogs}
-              isRunning={isGeneratingThumbnail}
-              onClose={!isGeneratingThumbnail ? clearThumbnailLogs : undefined}
-            />
-          )}
+              {/* Installation Panel */}
+              {installStep === 'configuring' && (
+                <Card className="border-primary">
+                  <CardHeader>
+                    <CardTitle>Configure Installation</CardTitle>
+                    <CardDescription>
+                      Choose where you want to clone this repository
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Field>
+                      <FieldLabel htmlFor="install-path">
+                        Installation Path
+                      </FieldLabel>
+                      <div className="flex gap-2">
+                        <Input
+                          id="install-path"
+                          value={installPath}
+                          onChange={(e) => setInstallPath(e.target.value)}
+                          placeholder="/path/to/apps"
+                          className="flex-1"
+                        />
+                        {devInfo?.isDevMode && devInfo.devReposPath && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              setInstallPath(devInfo.devReposPath!)
+                            }
+                            title="Use dev repos folder"
+                          >
+                            <CodeIcon className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={async () => {
+                            const result = await openFolderPickerServerFn({
+                              data: {
+                                startPath: installPath,
+                                title: 'Select Installation Folder',
+                              },
+                            })
+                            if (result.success && result.path) {
+                              setInstallPath(result.path)
+                            }
+                          }}
+                          aria-label="Browse for folder"
+                        >
+                          <FolderIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Field>
 
-          {/* Instance command execution log viewer */}
-          {(isRunningInstanceCommand || instanceLogs.length > 0) && (
-            <CommandLogViewer
-              title="Running Command"
-              logs={instanceLogs}
-              isRunning={isRunningInstanceCommand}
-              onClose={
-                !isRunningInstanceCommand ? clearInstanceLogs : undefined
-              }
-            />
-          )}
+                    <Field>
+                      <FieldLabel htmlFor="folder-name">Folder Name</FieldLabel>
+                      <Input
+                        id="folder-name"
+                        value={folderName}
+                        onChange={(e) => setFolderName(e.target.value)}
+                        placeholder={defaultFolderName}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        The name of the folder git will clone into
+                      </p>
+                    </Field>
 
-          {/* Unified Requirements List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Requirements & Dependencies</CardTitle>
-              <CardDescription>
-                Everything needed to run or use this item
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                {/* Platforms */}
-                {app.installConfig && (
-                  <div className="flex items-center justify-between pb-4 border-b border-border">
-                    <div className="flex items-center gap-2">
-                      <GlobeIcon className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm font-medium">Platforms</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setInstallStep('idle')}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleInstall} className="flex-1">
+                        Start Installation
+                      </Button>
                     </div>
-                    <div className="flex gap-1">
-                      {app.installConfig.platform.map((p) => (
-                        <Badge key={p} variant="outline" className="capitalize">
-                          {p}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
+              )}
 
-                {/* Dependencies List */}
-                <DependencyList
-                  dependencies={
-                    appRegistryService.getDependencies(app.id).success
-                      ? appRegistryService.getDependencies(app.id).data
-                      : []
+              {installStep === 'installing' && (
+                <CommandLogViewer
+                  title={`Installing ${app.name}`}
+                  logs={logs}
+                  isRunning={isRunning}
+                  onClose={!isRunning ? handleCloseInstall : undefined}
+                />
+              )}
+
+              {/* Thumbnail generation log viewer */}
+              {(isGeneratingThumbnail || thumbnailLogs.length > 0) && (
+                <CommandLogViewer
+                  title="Generating Thumbnail"
+                  logs={thumbnailLogs}
+                  isRunning={isGeneratingThumbnail}
+                  onClose={
+                    !isGeneratingThumbnail ? clearThumbnailLogs : undefined
                   }
                 />
-              </div>
-            </CardContent>
-          </Card>
+              )}
+
+              {/* Instance command execution log viewer */}
+              {(isRunningInstanceCommand || instanceLogs.length > 0) && (
+                <CommandLogViewer
+                  title="Running Command"
+                  logs={instanceLogs}
+                  isRunning={isRunningInstanceCommand}
+                  onClose={
+                    !isRunningInstanceCommand ? clearInstanceLogs : undefined
+                  }
+                />
+              )}
+
+              {/* Unified Requirements List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Requirements & Dependencies</CardTitle>
+                  <CardDescription>
+                    Everything needed to run or use this item
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    {/* Platforms */}
+                    {app.installConfig && (
+                      <div className="flex items-center justify-between pb-4 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <GlobeIcon className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm font-medium">Platforms</span>
+                        </div>
+                        <div className="flex gap-1">
+                          {app.installConfig.platform.map((p) => (
+                            <Badge
+                              key={p}
+                              variant="outline"
+                              className="capitalize"
+                            >
+                              {p}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dependencies List */}
+                    <DependencyList
+                      dependencies={
+                        appRegistryService.getDependencies(app.id).success
+                          ? appRegistryService.getDependencies(app.id).data
+                          : []
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Documentation Tabs */}
+            {app.docs?.map((doc) => (
+              <TabsContent key={doc.id} value={doc.id}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{doc.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DocViewer
+                      appId={appId}
+                      fileName={doc.file}
+                      app={app}
+                      onExecuteCommand={(command) => {
+                        const parts = command.split(' ')
+                        const cmd = parts[0]
+                        const args = parts.slice(1)
+                        executeInstanceCommand(cmd, args)
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
         </div>
 
         {/* Sidebar */}

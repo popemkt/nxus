@@ -86,6 +86,20 @@
             "command": "https://open.bigmodel.cn/dev/api"
         }
     ],
+    "docs": [
+        {
+            "id": "setup",
+            "title": "Setup Guide",
+            "file": "setup.md",
+            "icon": "Book"
+        },
+        {
+            "id": "quirks",
+            "title": "Quirks & Tips",
+            "file": "quirks.md",
+            "icon": "Lightbulb"
+        }
+    ],
     "metadata": {
         "tags": [
             "ai",

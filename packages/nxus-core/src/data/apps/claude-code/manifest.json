@@ -44,6 +44,14 @@
             "command": "npm uninstall -g @anthropic-ai/claude-code"
         }
     ],
+    "docs": [
+        {
+            "id": "quickstart",
+            "title": "Quick Start",
+            "file": "quickstart.md",
+            "icon": "Play"
+        }
+    ],
     "metadata": {
         "tags": [
             "ai",

@@ -7,8 +7,8 @@ import type {
   Result,
 } from '../../types/app'
 
-// Use Vite glob import to dynamically discover all app JSON files
-const appModules = import.meta.glob<App>('../../data/apps/*.json', {
+// Use Vite glob import to dynamically discover all app manifest files
+const appModules = import.meta.glob<App>('../../data/apps/*/manifest.json', {
   eager: true,
   import: 'default',
 })
