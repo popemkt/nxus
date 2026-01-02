@@ -7,7 +7,7 @@ interface CommandPaletteState {
   selectedGenericCommand: {
     id: string
     name: string
-    needsTarget: 'app' | 'instance'
+    needsTarget?: 'app' | 'instance' | false
   } | null
 }
 

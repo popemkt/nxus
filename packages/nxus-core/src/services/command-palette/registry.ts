@@ -18,14 +18,14 @@ export interface PaletteCommand {
 }
 
 /**
- * Generic command that needs target selection
+ * Generic command that may need target selection
  */
 export interface GenericCommand {
   id: string
   name: string
   icon: string
-  needsTarget: 'app' | 'instance'
-  execute: (targetId: string, targetPath?: string) => void
+  needsTarget?: 'app' | 'instance' | false
+  execute: (targetId?: string, targetPath?: string) => void
 }
 
 /**
@@ -33,12 +33,29 @@ export interface GenericCommand {
  */
 export const genericCommands: GenericCommand[] = [
   {
+    id: 'go-to-settings',
+    name: 'Settings',
+    icon: 'Gear',
+    needsTarget: false,
+    execute: () => {
+      window.location.href = '/settings'
+    },
+  },
+  {
+    id: 'go-to-app',
+    name: 'Go to App',
+    icon: 'ArrowSquareOut',
+    needsTarget: 'app',
+    execute: (appId) => {
+      window.location.href = `/apps/${appId}`
+    },
+  },
+  {
     id: 'generate-thumbnail',
     name: 'Generate Thumbnail',
     icon: 'Image',
     needsTarget: 'app',
     execute: (appId) => {
-      // Navigate to app and trigger thumbnail generation
       window.location.href = `/apps/${appId}?action=generate-thumbnail`
     },
   },

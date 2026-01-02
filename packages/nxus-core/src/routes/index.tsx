@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { MagnifyingGlassIcon, GearIcon } from '@phosphor-icons/react'
 import type { App } from '@/types/app'
 import { AppGallery } from '@/components/app/app-gallery'
 import { Input } from '@/components/ui/input'
@@ -72,6 +72,12 @@ function AppManager() {
               <DevModeBadge />
               <OsBadge />
               <ThemeToggle />
+              <Link
+                to="/settings"
+                className="rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <GearIcon className="h-5 w-5" />
+              </Link>
             </div>
           </div>
 

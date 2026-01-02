@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react'
 import { useCommandPaletteStore } from '@/stores/command-palette.store'
 import { useTerminalStore } from '@/stores/terminal.store'
+import { useSettingsStore, matchesKeybinding } from '@/stores/settings.store'
 import {
   commandRegistry,
   type PaletteCommand,
@@ -53,9 +54,13 @@ export function CommandPalette() {
   const { createTab, addLog, setStatus } = useTerminalStore()
 
   // Global keyboard shortcut
+  const commandPaletteBinding = useSettingsStore(
+    (s) => s.keybindings.commandPalette,
+  )
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+      if (matchesKeybinding(e, commandPaletteBinding)) {
         e.preventDefault()
         toggle()
       }
@@ -69,7 +74,7 @@ export function CommandPalette() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [toggle, close, isOpen, step, reset])
+  }, [toggle, close, isOpen, step, reset, commandPaletteBinding])
 
   // Focus input when opened
   useEffect(() => {
@@ -244,7 +249,14 @@ export function CommandPalette() {
                   ).genericCommands.map((cmd) => (
                     <button
                       key={cmd.id}
-                      onClick={() => selectGenericCommand(cmd)}
+                      onClick={() => {
+                        if (cmd.needsTarget) {
+                          selectGenericCommand(cmd)
+                        } else {
+                          close()
+                          cmd.execute()
+                        }
+                      }}
                       className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted text-left"
                     >
                       <DynamicIcon
@@ -252,9 +264,11 @@ export function CommandPalette() {
                         className="h-4 w-4 text-muted-foreground"
                       />
                       <span>{cmd.name}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        → select {cmd.needsTarget}
-                      </span>
+                      {cmd.needsTarget && (
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          → select {cmd.needsTarget}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
