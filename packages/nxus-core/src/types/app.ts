@@ -66,6 +66,8 @@ export type CommandTarget = z.infer<typeof CommandTargetSchema>
  * - terminal: Open terminal with command pre-filled
  * - docs: Open documentation URL
  * - configure: Open configuration modal
+ * - script: Run a script file (supports preview button)
+ * - preview: View content in a modal (for standalone preview commands)
  */
 export const CommandModeSchema = z.enum([
   'execute',
@@ -73,6 +75,8 @@ export const CommandModeSchema = z.enum([
   'terminal',
   'docs',
   'configure',
+  'script',
+  'preview',
 ])
 export type CommandMode = z.infer<typeof CommandModeSchema>
 
@@ -106,6 +110,8 @@ export const AppCommandSchema = z.object({
   ),
   command: z.string().describe('Shell command to execute or URL for docs mode'),
   override: z.string().optional().describe('ID of default command to override'),
+  /** Platforms where this command is available */
+  platforms: z.array(PlatformSchema).optional(),
   /** Declarative requirements - what this command needs to run */
   requires: CommandRequirementsSchema.optional(),
 })

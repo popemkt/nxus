@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { motion } from 'framer-motion'
 import * as PhosphorIcons from '@phosphor-icons/react'
-import { QuestionIcon, WarningIcon } from '@phosphor-icons/react'
+import { QuestionIcon, WarningIcon, CodeIcon } from '@phosphor-icons/react'
 import {
   Card,
   CardContent,
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { useItemStatus } from '@/services/state/item-status-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
+import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
 import type { App, ToolApp } from '@/types/app'
 
 /**
@@ -52,6 +53,10 @@ interface AppActionsPanelProps {
 export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   const [error, setError] = React.useState<string | null>(null)
   const [configModalOpen, setConfigModalOpen] = React.useState(false)
+  const [previewOpen, setPreviewOpen] = React.useState(false)
+  const [previewScriptPath, setPreviewScriptPath] = React.useState<
+    string | null
+  >(null)
 
   // Get health check for this tool (liveness)
   const healthCheck = useItemStatus(app.id)
@@ -96,6 +101,11 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
     switch (mode) {
       case 'execute':
         onRunCommand?.(command)
+        break
+      case 'script':
+        // Script mode: command contains relative path, build full path and run with pwsh
+        const fullScriptPath = `/stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/${app.id}/${command}`
+        onRunCommand?.(`pwsh ${fullScriptPath}`)
         break
       case 'copy':
         navigator.clipboard.writeText(command)
@@ -176,6 +186,10 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                 const state = getCommandState(cmd.id)
                 const isDisabled = state === 'disabled'
                 const needsAttention = state === 'needs-attention'
+                const isScriptMode = cmd.mode === 'script'
+                const scriptPath = isScriptMode
+                  ? `file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/${app.id}/${cmd.command}`
+                  : null
 
                 return (
                   <motion.div
@@ -184,36 +198,54 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.15, delay: index * 0.05 }}
                   >
-                    <Button
-                      variant={needsAttention ? 'outline' : 'outline'}
-                      className={`w-full justify-start ${
-                        needsAttention
-                          ? 'border-amber-500/50 hover:border-amber-500'
-                          : ''
-                      }`}
-                      onClick={() =>
-                        handleCommandClick(
-                          cmd.id,
-                          cmd.command,
-                          cmd.mode || 'execute',
-                        )
-                      }
-                      disabled={isDisabled}
-                    >
-                      <CommandIcon iconName={cmd.icon} />
-                      <span className="flex-1 text-left">{cmd.name}</span>
-                      {needsAttention && (
-                        <WarningIcon
-                          className="h-4 w-4 text-amber-500"
-                          weight="fill"
-                        />
+                    <div className="flex w-full">
+                      <Button
+                        variant="outline"
+                        className={`flex-1 justify-start ${
+                          isScriptMode ? 'rounded-r-none border-r-0' : ''
+                        } ${
+                          needsAttention
+                            ? 'border-amber-500/50 hover:border-amber-500'
+                            : ''
+                        }`}
+                        onClick={() =>
+                          handleCommandClick(
+                            cmd.id,
+                            cmd.command,
+                            cmd.mode || 'execute',
+                          )
+                        }
+                        disabled={isDisabled}
+                      >
+                        <CommandIcon iconName={cmd.icon} />
+                        <span className="flex-1 text-left">{cmd.name}</span>
+                        {needsAttention && (
+                          <WarningIcon
+                            className="h-4 w-4 text-amber-500"
+                            weight="fill"
+                          />
+                        )}
+                        {cmd.description && !needsAttention && (
+                          <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
+                            {cmd.description}
+                          </span>
+                        )}
+                      </Button>
+                      {isScriptMode && scriptPath && (
+                        <Button
+                          variant="outline"
+                          className="px-2 rounded-l-none"
+                          onClick={() => {
+                            setPreviewScriptPath(scriptPath)
+                            setPreviewOpen(true)
+                          }}
+                          disabled={isDisabled}
+                          title="View script"
+                        >
+                          <CodeIcon className="h-4 w-4" />
+                        </Button>
                       )}
-                      {cmd.description && !needsAttention && (
-                        <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
-                          {cmd.description}
-                        </span>
-                      )}
-                    </Button>
+                    </div>
                   </motion.div>
                 )
               })}
@@ -228,6 +260,15 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
           app={app as ToolApp}
           open={configModalOpen}
           onOpenChange={setConfigModalOpen}
+        />
+      )}
+
+      {/* Script Preview Modal */}
+      {previewScriptPath && (
+        <ScriptPreviewModal
+          scriptPath={previewScriptPath}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
         />
       )}
     </>
