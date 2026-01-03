@@ -7,6 +7,7 @@ import { useToolConfigured } from '@/services/state/tool-config-state'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { configureModalService } from '@/stores/configure-modal.store'
 import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
+import { handleCommandMode } from '@/lib/command-utils'
 import type { AppCommand, ToolApp, App } from '@/types/app'
 
 /**
@@ -76,50 +77,28 @@ export function CommandButton({
   // Check if command uses script mode
   const isScriptMode = command.mode === 'script'
 
-  // Build full script path from app.id and relative command path
-  const scriptPath = React.useMemo(() => {
-    if (!isScriptMode) return null
-    // command.command contains relative path like "install.ps1"
-    // Build full path: data/apps/{appId}/{command.command}
-    return `file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/${app.id}/${command.command}`
-  }, [isScriptMode, app.id, command.command])
-
   const handleClick = async () => {
-    switch (command.mode) {
-      case 'execute':
-        if (onExecute) {
-          onExecute(command.command)
-        } else {
-          const parts = command.command.split(' ')
-          const cmd = parts[0]
-          const args = parts.slice(1)
-          await executeCommand(cmd, args)
-        }
-        break
-      case 'script':
-        // Run the script via pwsh with full path
-        if (onExecute) {
-          const fullPath = `/stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/${app.id}/${command.command}`
-          onExecute(`pwsh ${fullPath}`)
-        }
-        // TODO: open terminal with script
-        break
-      case 'copy':
-        await navigator.clipboard.writeText(command.command)
-        break
-      case 'terminal':
-        // TODO: Implement terminal opening
-        break
-      case 'docs':
-        window.open(command.command, '_blank', 'noopener,noreferrer')
-        break
-      case 'configure':
-        configureModalService.open(app.id, command.id)
-        break
-      default:
-        if (onExecute) {
-          onExecute(command.command)
-        }
+    // Use shared handler for most modes
+    const result = handleCommandMode(
+      command.mode || 'execute',
+      command.command,
+      app.id,
+      {
+        onExecute:
+          onExecute ??
+          ((cmd) => {
+            const parts = cmd.split(' ')
+            const cmdName = parts[0]
+            const args = parts.slice(1)
+            executeCommand(cmdName, args)
+          }),
+        onConfigure: () => configureModalService.open(app.id, command.id),
+      },
+    )
+
+    // If not handled by shared utility, it's an unknown mode
+    if (!result.handled) {
+      console.warn(result.error)
     }
   }
 
@@ -177,9 +156,10 @@ export function CommandButton({
             </Button>
           )}
         </div>
-        {isScriptMode && scriptPath && (
+        {isScriptMode && (
           <ScriptPreviewModal
-            scriptPath={scriptPath}
+            appId={app.id}
+            scriptPath={command.command}
             open={previewOpen}
             onOpenChange={setPreviewOpen}
           />
@@ -223,9 +203,10 @@ export function CommandButton({
           </Button>
         )}
       </div>
-      {isScriptMode && scriptPath && (
+      {isScriptMode && (
         <ScriptPreviewModal
-          scriptPath={scriptPath}
+          appId={app.id}
+          scriptPath={command.command}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
         />

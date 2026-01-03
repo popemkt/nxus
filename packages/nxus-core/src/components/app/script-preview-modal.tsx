@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { CodeIcon, XIcon, CopyIcon, CheckIcon } from '@phosphor-icons/react'
+import { CodeIcon, CopyIcon, CheckIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button'
 import { readScriptFileServerFn } from '@/services/shell/read-script.server'
 
 interface ScriptPreviewModalProps {
-  scriptPath: string
+  appId: string
+  scriptPath: string // Relative path like "install.ps1"
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -22,6 +23,7 @@ interface ScriptPreviewModalProps {
  * Modal to preview script content before execution
  */
 export function ScriptPreviewModal({
+  appId,
   scriptPath,
   open,
   onOpenChange,
@@ -33,7 +35,7 @@ export function ScriptPreviewModal({
 
   // Extract filename from path
   const fileName = React.useMemo(() => {
-    const parts = scriptPath.replace('file://', '').split('/')
+    const parts = scriptPath.split('/')
     return parts[parts.length - 1] || 'script'
   }, [scriptPath])
 
@@ -45,9 +47,7 @@ export function ScriptPreviewModal({
     setError(null)
     setContent('')
 
-    const filePath = scriptPath.replace('file://', '')
-
-    readScriptFileServerFn({ data: { path: filePath } })
+    readScriptFileServerFn({ data: { appId, scriptPath } })
       .then((result) => {
         if (result.success) {
           setContent(result.content)
@@ -60,7 +60,7 @@ export function ScriptPreviewModal({
         setError(err.message)
         setLoading(false)
       })
-  }, [open, scriptPath])
+  }, [open, appId, scriptPath])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content)
@@ -119,31 +119,4 @@ export function ScriptPreviewModal({
       </AlertDialogContent>
     </AlertDialog>
   )
-}
-
-/**
- * Helper to detect if a command runs a script file
- */
-export function isScriptCommand(command: string): boolean {
-  const scriptExtensions = ['.ps1', '.sh', '.bash', '.py', '.rb', '.js']
-  return scriptExtensions.some((ext) => command.includes(ext))
-}
-
-/**
- * Extract script path from command string
- * e.g., "pwsh /path/to/script.ps1" -> "file:///path/to/script.ps1"
- */
-export function extractScriptPath(command: string): string | null {
-  const match = command.match(
-    /(?:pwsh|bash|sh|python|ruby|node)\s+(.+\.(?:ps1|sh|bash|py|rb|js))/,
-  )
-  if (match) {
-    return `file://${match[1].trim()}`
-  }
-  // Check for direct path
-  const directMatch = command.match(/^(\/[^\s]+\.(?:ps1|sh|bash|py|rb|js))$/)
-  if (directMatch) {
-    return `file://${directMatch[1]}`
-  }
-  return null
 }

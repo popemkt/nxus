@@ -14,6 +14,7 @@ import { useItemStatus } from '@/services/state/item-status-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
 import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
+import { handleCommandMode } from '@/lib/command-utils'
 import type { App, ToolApp } from '@/types/app'
 
 /**
@@ -98,30 +99,13 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   ) => {
     setError(null)
 
-    switch (mode) {
-      case 'execute':
-        onRunCommand?.(command)
-        break
-      case 'script':
-        // Script mode: command contains relative path, build full path and run with pwsh
-        const fullScriptPath = `/stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/${app.id}/${command}`
-        onRunCommand?.(`pwsh ${fullScriptPath}`)
-        break
-      case 'copy':
-        navigator.clipboard.writeText(command)
-        alert(`Copied to clipboard:\n\n${command}`)
-        break
-      case 'terminal':
-        alert(`Terminal mode not yet implemented:\n\n${command}`)
-        break
-      case 'docs':
-        window.open(command, '_blank', 'noopener,noreferrer')
-        break
-      case 'configure':
-        setConfigModalOpen(true)
-        break
-      default:
-        setError(`Unknown command mode: ${mode}`)
+    const result = handleCommandMode(mode, command, app.id, {
+      onExecute: onRunCommand,
+      onConfigure: () => setConfigModalOpen(true),
+    })
+
+    if (!result.handled && result.error) {
+      setError(result.error)
     }
   }
 
@@ -187,9 +171,6 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                 const isDisabled = state === 'disabled'
                 const needsAttention = state === 'needs-attention'
                 const isScriptMode = cmd.mode === 'script'
-                const scriptPath = isScriptMode
-                  ? `file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/${app.id}/${cmd.command}`
-                  : null
 
                 return (
                   <motion.div
@@ -231,12 +212,12 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                           </span>
                         )}
                       </Button>
-                      {isScriptMode && scriptPath && (
+                      {isScriptMode && (
                         <Button
                           variant="outline"
                           className="px-2 rounded-l-none"
                           onClick={() => {
-                            setPreviewScriptPath(scriptPath)
+                            setPreviewScriptPath(cmd.command)
                             setPreviewOpen(true)
                           }}
                           disabled={isDisabled}
@@ -266,6 +247,7 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
       {/* Script Preview Modal */}
       {previewScriptPath && (
         <ScriptPreviewModal
+          appId={app.id}
           scriptPath={previewScriptPath}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
