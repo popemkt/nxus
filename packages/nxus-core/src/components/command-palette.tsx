@@ -7,8 +7,16 @@ import {
   CommandIcon,
   QuestionIcon,
   WarningCircleIcon,
+  PlayIcon,
+  EyeIcon,
+  CopyIcon,
+  TerminalWindowIcon,
+  CaretRightIcon,
 } from '@phosphor-icons/react'
-import { useCommandPaletteStore } from '@/stores/command-palette.store'
+import {
+  useCommandPaletteStore,
+  type ActionPanelCommand,
+} from '@/stores/command-palette.store'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { useSettingsStore, matchesKeybinding } from '@/stores/settings.store'
 import {
@@ -42,6 +50,120 @@ function DynamicIcon({
   )
 }
 
+/**
+ * Get available actions for a command based on its mode
+ */
+function getActionsForCommand(cmd: ActionPanelCommand) {
+  const actions = []
+
+  // Run is always available for executable commands
+  if (['execute', 'script', 'terminal'].includes(cmd.mode)) {
+    actions.push({
+      id: 'run',
+      name: cmd.mode === 'terminal' ? 'Run in Terminal' : 'Run',
+      icon: cmd.mode === 'terminal' ? TerminalWindowIcon : PlayIcon,
+      shortcut: '↵',
+    })
+  }
+
+  // Preview/View Script
+  if (['execute', 'script', 'terminal'].includes(cmd.mode)) {
+    actions.push({
+      id: 'preview',
+      name: cmd.mode === 'script' ? 'View Script' : 'Preview Command',
+      icon: EyeIcon,
+      shortcut: '⌘P',
+    })
+  }
+
+  // Copy
+  if (cmd.command) {
+    actions.push({
+      id: 'copy',
+      name: 'Copy Command',
+      icon: CopyIcon,
+      shortcut: '⌘C',
+    })
+  }
+
+  return actions
+}
+
+/**
+ * ActionPanel - Shows auxiliary actions for a selected command
+ */
+function ActionPanel({
+  command,
+  onAction,
+  onBack,
+}: {
+  command: ActionPanelCommand
+  onAction: (actionId: string) => void
+  onBack: () => void
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const actions = getActionsForCommand(command)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex((prev) => (prev + 1) % actions.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex((prev) => (prev - 1 + actions.length) % actions.length)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      onAction(actions[selectedIndex].id)
+    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+      e.preventDefault()
+      onBack()
+    }
+  }
+
+  return (
+    <div className="p-2" onKeyDown={handleKeyDown} tabIndex={0}>
+      <div className="flex items-center gap-2 px-2 py-1 mb-2">
+        <button
+          onClick={onBack}
+          className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+        </button>
+        <span className="text-xs font-medium text-muted-foreground uppercase">
+          Actions for
+        </span>
+        <span className="text-xs font-medium truncate">{command.name}</span>
+      </div>
+
+      {actions.map((action, idx) => {
+        const Icon = action.icon
+        const isSelected = selectedIndex === idx
+        return (
+          <button
+            key={action.id}
+            onClick={() => onAction(action.id)}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
+              isSelected
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            <Icon
+              className={`h-4 w-4 ${isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+            />
+            <span>{action.name}</span>
+            <span
+              className={`ml-auto text-xs ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+            >
+              {action.shortcut}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function CommandPalette() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -53,10 +175,13 @@ export function CommandPalette() {
     step,
     query,
     selectedGenericCommand,
+    actionPanelCommand,
     close,
     toggle,
     setQuery,
     selectGenericCommand,
+    openActions,
+    closeActions,
     reset,
   } = useCommandPaletteStore()
   const { createTab, addLog, setStatus } = useTerminalStore()
@@ -179,6 +304,14 @@ export function CommandPalette() {
 
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle ArrowLeft/Escape in actions step to go back
+    if (step === 'actions' && (e.key === 'ArrowLeft' || e.key === 'Escape')) {
+      e.preventDefault()
+      e.stopPropagation()
+      closeActions()
+      return
+    }
+
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setSelectedIndex((prev: number) => {
@@ -191,6 +324,24 @@ export function CommandPalette() {
         const nextIndex = (prev - 1 + items.length) % items.length
         return findNextEnabledIndex(nextIndex, 'backward')
       })
+    } else if (e.key === 'Tab' || e.key === 'ArrowRight') {
+      // Open action panel for app commands
+      e.preventDefault()
+      if (step !== 'command' || items.length === 0) return
+
+      const selectedItem = items[selectedIndex]
+      // Only app commands have auxiliary actions, not generic commands
+      if (!('needsTarget' in selectedItem) && 'command' in selectedItem) {
+        const cmd = selectedItem as PaletteCommand
+        openActions({
+          id: cmd.id,
+          name: cmd.name,
+          appId: cmd.appId,
+          appName: cmd.appName,
+          mode: cmd.mode || 'execute',
+          command: cmd.command || '',
+        })
+      }
     } else if (e.key === 'Enter') {
       e.preventDefault()
       if (items.length === 0) return
@@ -198,6 +349,9 @@ export function CommandPalette() {
       const selectedItem = items[selectedIndex]
       if (step === 'target') {
         executeGenericCommand((selectedItem as any).id)
+      } else if (step === 'actions') {
+        // Actions panel handles its own Enter key
+        return
       } else {
         // Check if it's a generic command or app command
         if ('needsTarget' in selectedItem) {
@@ -299,6 +453,40 @@ export function CommandPalette() {
 
     if (fullCommand) {
       fullCommand.execute(appId)
+    }
+  }
+
+  // Handle action panel action execution
+  const handleActionPanelAction = async (actionId: string) => {
+    if (!actionPanelCommand) return
+
+    switch (actionId) {
+      case 'run': {
+        // Execute the command normally
+        const cmd = commandRegistry
+          .search('')
+          .appCommands.find(
+            (c) =>
+              c.appId === actionPanelCommand.appId &&
+              c.id === actionPanelCommand.id,
+          )
+        if (cmd) {
+          executeAppCommand(cmd)
+        }
+        break
+      }
+      case 'preview': {
+        // For now, copy to clipboard with a "preview" message
+        // In the future, this could open a preview modal
+        close()
+        alert(`Command: ${actionPanelCommand.command}`)
+        break
+      }
+      case 'copy': {
+        close()
+        await navigator.clipboard.writeText(actionPanelCommand.command)
+        break
+      }
     }
   }
 
@@ -450,13 +638,24 @@ export function CommandPalette() {
                             <WarningCircleIcon className="h-3 w-3" />
                             {availability.reason}
                           </span>
-                        ) : cmd.description ? (
+                        ) : (
                           <span
-                            className={`ml-auto text-xs truncate max-w-[150px] ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                            className={`ml-auto flex items-center gap-2 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
                           >
-                            {cmd.description}
+                            {cmd.description && (
+                              <span className="text-xs truncate max-w-[120px]">
+                                {cmd.description}
+                              </span>
+                            )}
+                            {/* Tab indicator for actions */}
+                            {isSelected && (
+                              <span className="flex items-center gap-1 text-xs opacity-70">
+                                <CaretRightIcon className="h-3 w-3" />
+                                <span className="hidden sm:inline">Tab</span>
+                              </span>
+                            )}
                           </span>
-                        ) : null}
+                        )}
                       </button>
                     )
                   })}
@@ -472,6 +671,13 @@ export function CommandPalette() {
                   </div>
                 )}
             </>
+          ) : step === 'actions' && actionPanelCommand ? (
+            // Action panel for selected command
+            <ActionPanel
+              command={actionPanelCommand}
+              onAction={handleActionPanelAction}
+              onBack={closeActions}
+            />
           ) : (
             // Target selection step
             <div className="p-2">
