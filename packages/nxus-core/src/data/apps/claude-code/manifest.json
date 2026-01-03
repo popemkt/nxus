@@ -21,7 +21,10 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm install -g @anthropic-ai/claude-code"
+            "command": "npm install -g @anthropic-ai/claude-code",
+            "requires": {
+                "selfNotInstalled": true
+            }
         },
         {
             "id": "update-claude-code",

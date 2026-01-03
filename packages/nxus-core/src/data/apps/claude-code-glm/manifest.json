@@ -53,7 +53,12 @@
             "category": "Setup",
             "target": "app",
             "mode": "terminal",
-            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.bashrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.bashrc && source ~/.bashrc && echo 'GLM environment configured in ~/.bashrc'"
+            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.bashrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.bashrc && source ~/.bashrc && echo 'GLM environment configured in ~/.bashrc'",
+            "requires": {
+                "tools": [
+                    "claude-code"
+                ]
+            }
         },
         {
             "id": "configure-glm-permanent-zsh",
@@ -63,7 +68,12 @@
             "category": "Setup",
             "target": "app",
             "mode": "terminal",
-            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.zshrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.zshrc && source ~/.zshrc && echo 'GLM environment configured in ~/.zshrc'"
+            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.zshrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.zshrc && source ~/.zshrc && echo 'GLM environment configured in ~/.zshrc'",
+            "requires": {
+                "tools": [
+                    "claude-code"
+                ]
+            }
         },
         {
             "id": "configure-glm-session",

@@ -24,7 +24,13 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm install -g yarn"
+            "command": "npm install -g yarn",
+            "requires": {
+                "selfNotInstalled": true,
+                "tools": [
+                    "npm"
+                ]
+            }
         },
         {
             "id": "update-yarn",
@@ -34,7 +40,13 @@
             "category": "Maintenance",
             "target": "app",
             "mode": "execute",
-            "command": "npm update -g yarn"
+            "command": "npm update -g yarn",
+            "requires": {
+                "selfInstalled": true,
+                "tools": [
+                    "npm"
+                ]
+            }
         },
         {
             "id": "uninstall-yarn",
@@ -44,7 +56,13 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm uninstall -g yarn"
+            "command": "npm uninstall -g yarn",
+            "requires": {
+                "selfInstalled": true,
+                "tools": [
+                    "npm"
+                ]
+            }
         }
     ],
     "metadata": {

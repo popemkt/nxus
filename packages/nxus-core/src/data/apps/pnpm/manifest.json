@@ -24,7 +24,13 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm install -g pnpm"
+            "command": "npm install -g pnpm",
+            "requires": {
+                "selfNotInstalled": true,
+                "tools": [
+                    "npm"
+                ]
+            }
         },
         {
             "id": "update-pnpm",
@@ -34,7 +40,13 @@
             "category": "Maintenance",
             "target": "app",
             "mode": "execute",
-            "command": "npm update -g pnpm"
+            "command": "npm update -g pnpm",
+            "requires": {
+                "selfInstalled": true,
+                "tools": [
+                    "npm"
+                ]
+            }
         },
         {
             "id": "uninstall-pnpm",
@@ -44,7 +56,13 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm uninstall -g pnpm"
+            "command": "npm uninstall -g pnpm",
+            "requires": {
+                "selfInstalled": true,
+                "tools": [
+                    "npm"
+                ]
+            }
         }
     ],
     "metadata": {

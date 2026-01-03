@@ -21,7 +21,10 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm install -g @google/gemini-cli"
+            "command": "npm install -g @google/gemini-cli",
+            "requires": {
+                "selfNotInstalled": true
+            }
         },
         {
             "id": "update-gemini-cli",

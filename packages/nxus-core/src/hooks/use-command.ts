@@ -103,7 +103,7 @@ function resolveRequirements(
     }
   }
 
-  // Check if tool itself must be installed
+  // Check if tool itself must be installed (for uninstall/update)
   if (requirements.selfInstalled) {
     const health = healthChecks[context.appId]
     if (health === undefined) {
@@ -117,6 +117,24 @@ function resolveRequirements(
       return {
         canExecute: false,
         reason: 'Not installed',
+      }
+    }
+  }
+
+  // Check if tool must NOT be installed (for install commands)
+  if (requirements.selfNotInstalled) {
+    const health = healthChecks[context.appId]
+    if (health === undefined) {
+      return {
+        canExecute: false,
+        isChecking: true,
+        reason: 'Checking...',
+      }
+    }
+    if (health.isInstalled) {
+      return {
+        canExecute: false,
+        reason: 'Already installed',
       }
     }
   }

@@ -83,8 +83,10 @@ export type CommandMode = z.infer<typeof CommandModeSchema>
 export const CommandRequirementsSchema = z.object({
   /** Tool IDs that must be installed (e.g., ['git', 'node']) */
   tools: z.array(z.string()).optional(),
-  /** Whether the tool itself must be installed (for tool app commands) */
+  /** Whether the tool itself must be installed (for uninstall/update commands) */
   selfInstalled: z.boolean().optional(),
+  /** Whether the tool must NOT be installed (for install commands) */
+  selfNotInstalled: z.boolean().optional(),
 })
 export type CommandRequirements = z.infer<typeof CommandRequirementsSchema>
 
