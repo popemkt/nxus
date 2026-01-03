@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useToolHealth } from '@/services/state/item-status-state'
+import { useItemStatus } from '@/services/state/item-status-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
 import type { App, ToolApp } from '@/types/app'
@@ -54,7 +54,7 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   const [configModalOpen, setConfigModalOpen] = React.useState(false)
 
   // Get health check for this tool (liveness)
-  const healthCheck = useToolHealth(app.id)
+  const healthCheck = useItemStatus(app.id)
   const isInstalled = healthCheck?.isInstalled ?? false
 
   // Get configuration status (readiness)

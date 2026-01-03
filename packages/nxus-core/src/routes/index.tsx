@@ -9,7 +9,7 @@ import { OsBadge } from '@/components/os-badge'
 import { DevModeBadge } from '@/components/dev-mode-badge'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { openApp } from '@/lib/app-actions'
-import { useToolHealthCheck } from '@/hooks/use-tool-health-check'
+import { useBatchItemStatus } from '@/hooks/use-item-status-check'
 import { GlitchText } from '@/components/ui/glitch-text'
 import { DecodeText } from '@/components/ui/decode-text'
 import { InboxButton } from '@/components/inbox-button'
@@ -21,7 +21,7 @@ function AppManager() {
   const { apps, loading, error } = useAppRegistry({ searchQuery })
 
   // Trigger health checks for all tools
-  useToolHealthCheck(apps)
+  useBatchItemStatus(apps)
 
   const handleOpen = (app: App) => {
     openApp(app)

@@ -1,8 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useSystemInfo } from '@/hooks/use-system-info'
 import { CommandPalette } from '@/components/command-palette'
 import { TerminalPanel } from '@/components/terminal-panel'
@@ -44,9 +43,10 @@ function SystemInfoLoader() {
   return null
 }
 
+import { queryClient } from '@/lib/query-client'
+
 function RootDocument({ children }: { children: React.ReactNode }) {
-  // Create QueryClient instance (stable across re-renders)
-  const [queryClient] = useState(() => new QueryClient())
+  // Use the global singleton instance (stable across re-renders)
 
   return (
     <html lang="en">

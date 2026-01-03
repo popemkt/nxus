@@ -28,8 +28,8 @@
  */
 
 import { useMemo, useCallback } from 'react'
-import { useAllToolHealth } from '@/services/state/item-status-state'
-import { toolHealthService } from '@/services/state/item-status-state'
+import { useAllItemStatus } from '@/services/state/item-status-state'
+import { itemStatusService } from '@/services/state/item-status-state'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import type { AppCommand, AppType, CommandRequirements } from '@/types/app'
@@ -75,7 +75,7 @@ export interface UseCommandResult {
 function resolveRequirements(
   requirements: CommandRequirements | undefined,
   context: CommandContext,
-  healthChecks: Record<string, { isInstalled: boolean } | undefined>,
+  itemStatuses: Record<string, { isInstalled: boolean } | undefined>,
 ): CommandAvailability {
   // No requirements = always runnable
   if (!requirements) {
@@ -85,7 +85,7 @@ function resolveRequirements(
   // Check tool dependencies
   if (requirements.tools && requirements.tools.length > 0) {
     for (const toolId of requirements.tools) {
-      const health = healthChecks[toolId]
+      const health = itemStatuses[toolId]
       if (health === undefined) {
         // Still checking
         return {
@@ -105,7 +105,7 @@ function resolveRequirements(
 
   // Check if tool itself must be installed (for uninstall/update)
   if (requirements.selfInstalled) {
-    const health = healthChecks[context.appId]
+    const health = itemStatuses[context.appId]
     if (health === undefined) {
       return {
         canExecute: false,
@@ -123,7 +123,7 @@ function resolveRequirements(
 
   // Check if tool must NOT be installed (for install commands)
   if (requirements.selfNotInstalled) {
-    const health = healthChecks[context.appId]
+    const health = itemStatuses[context.appId]
     if (health === undefined) {
       return {
         canExecute: false,
@@ -155,15 +155,15 @@ export function useCommand(
   context: CommandContext,
 ): UseCommandResult {
   // Subscribe to all health checks for reactivity
-  const healthChecks = useAllToolHealth()
+  const itemStatuses = useAllItemStatus()
 
   // Get terminal store for execution
   const { createTab, addLog, setStatus } = useTerminalStore()
 
   // Resolve availability from declarative requirements
   const availability = useMemo(() => {
-    return resolveRequirements(command.requires, context, healthChecks)
-  }, [command.requires, context, healthChecks])
+    return resolveRequirements(command.requires, context, itemStatuses)
+  }, [command.requires, context, itemStatuses])
 
   // Execute function
   const execute = useCallback(async () => {
@@ -213,21 +213,21 @@ export function checkCommandAvailability(
   context: CommandContext,
 ): CommandAvailability {
   // Build health checks record from current state
-  const healthChecks: Record<string, { isInstalled: boolean } | undefined> = {}
+  const itemStatuses: Record<string, { isInstalled: boolean } | undefined> = {}
 
   // Check required tools
   if (command.requires?.tools) {
     for (const toolId of command.requires.tools) {
-      healthChecks[toolId] = toolHealthService.getHealthCheck(toolId)
+      itemStatuses[toolId] = itemStatusService.getItemStatus(toolId)
     }
   }
 
   // Check self (for both selfInstalled and selfNotInstalled)
   if (command.requires?.selfInstalled || command.requires?.selfNotInstalled) {
-    healthChecks[context.appId] = toolHealthService.getHealthCheck(
+    itemStatuses[context.appId] = itemStatusService.getItemStatus(
       context.appId,
     )
   }
 
-  return resolveRequirements(command.requires, context, healthChecks)
+  return resolveRequirements(command.requires, context, itemStatuses)
 }

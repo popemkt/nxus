@@ -1,28 +1,28 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ItemStatusResult } from '../apps/health-check.server'
+import type { ItemStatusResult } from '../apps/item-status.server'
 
 /**
- * State for tool health check results
+ * State for item status results
  */
 interface ItemStatusState {
-  healthChecks: Record<string, ItemStatusResult>
+  itemStatuses: Record<string, ItemStatusResult>
   lastChecked: Record<string, number>
   /** Maps checkCommand → itemIds for shared caching */
-  commandToTools: Record<string, string[]>
+  commandToItems: Record<string, string[]>
   actions: {
-    updateHealthCheck: (itemId: string, result: ItemStatusResult) => void
-    /** Register a tool's checkCommand for deduplication */
-    registerToolCommand: (itemId: string, checkCommand: string) => void
-    /** Update all tools that share a checkCommand */
-    updateHealthChecksByCommand: (
+    updateItemStatus: (itemId: string, result: ItemStatusResult) => void
+    /** Register an item's checkCommand for deduplication */
+    registerItemCommand: (itemId: string, checkCommand: string) => void
+    /** Update all items that share a checkCommand */
+    updateStatusesByCommand: (
       checkCommand: string,
       result: ItemStatusResult,
     ) => void
-    clearHealthCheck: (itemId: string) => void
-    /** Clear all tools that share a checkCommand */
-    clearHealthChecksByCommand: (checkCommand: string) => void
-    clearAllHealthChecks: () => void
+    clearItemStatus: (itemId: string) => void
+    /** Clear all items that share a checkCommand */
+    clearStatusesByCommand: (checkCommand: string) => void
+    clearAllItemStatuses: () => void
   }
 }
 
@@ -32,21 +32,21 @@ interface ItemStatusState {
 const CACHE_TTL = 5 * 60 * 1000
 
 /**
- * Store for tool health check results
- * Keeps track of which tools are installed and their versions
+ * Store for item status results
+ * Keeps track of which items are ready/installed and their versions
  * Persisted to localStorage with TTL
  */
 export const useItemStatusStore = create<ItemStatusState>()(
   persist(
     (set, get) => ({
-      healthChecks: {},
+      itemStatuses: {},
       lastChecked: {},
-      commandToTools: {},
+      commandToItems: {},
       actions: {
-        updateHealthCheck: (itemId, result) =>
+        updateItemStatus: (itemId, result) =>
           set((state) => ({
-            healthChecks: {
-              ...state.healthChecks,
+            itemStatuses: {
+              ...state.itemStatuses,
               [itemId]: result,
             },
             lastChecked: {
@@ -54,59 +54,59 @@ export const useItemStatusStore = create<ItemStatusState>()(
               [itemId]: Date.now(),
             },
           })),
-        registerToolCommand: (itemId, checkCommand) =>
+        registerItemCommand: (itemId, checkCommand) =>
           set((state) => {
-            const existing = state.commandToTools[checkCommand] || []
+            const existing = state.commandToItems[checkCommand] || []
             if (existing.includes(itemId)) return state
             return {
-              commandToTools: {
-                ...state.commandToTools,
+              commandToItems: {
+                ...state.commandToItems,
                 [checkCommand]: [...existing, itemId],
               },
             }
           }),
-        updateHealthChecksByCommand: (checkCommand, result) => {
-          const itemIds = get().commandToTools[checkCommand] || []
+        updateStatusesByCommand: (checkCommand, result) => {
+          const itemIds = get().commandToItems[checkCommand] || []
           if (itemIds.length === 0) return
 
           const now = Date.now()
           set((state) => {
-            const healthChecks = { ...state.healthChecks }
+            const itemStatuses = { ...state.itemStatuses }
             const lastChecked = { ...state.lastChecked }
 
             itemIds.forEach((itemId) => {
-              healthChecks[itemId] = result
+              itemStatuses[itemId] = result
               lastChecked[itemId] = now
             })
 
-            return { healthChecks, lastChecked }
+            return { itemStatuses, lastChecked }
           })
         },
-        clearHealthCheck: (itemId) =>
+        clearItemStatus: (itemId) =>
           set((state) => {
-            const { [itemId]: _, ...healthChecks } = state.healthChecks
+            const { [itemId]: _, ...itemStatuses } = state.itemStatuses
             const { [itemId]: __, ...lastChecked } = state.lastChecked
-            return { healthChecks, lastChecked }
+            return { itemStatuses, lastChecked }
           }),
-        clearHealthChecksByCommand: (checkCommand) => {
-          const itemIds = get().commandToTools[checkCommand] || []
+        clearStatusesByCommand: (checkCommand) => {
+          const itemIds = get().commandToItems[checkCommand] || []
           if (itemIds.length === 0) return
 
           set((state) => {
-            const healthChecks = { ...state.healthChecks }
+            const itemStatuses = { ...state.itemStatuses }
             const lastChecked = { ...state.lastChecked }
 
             itemIds.forEach((itemId) => {
-              delete healthChecks[itemId]
+              delete itemStatuses[itemId]
               delete lastChecked[itemId]
             })
 
-            return { healthChecks, lastChecked }
+            return { itemStatuses, lastChecked }
           })
         },
-        clearAllHealthChecks: () =>
+        clearAllItemStatuses: () =>
           set({
-            healthChecks: {},
+            itemStatuses: {},
             lastChecked: {},
           }),
       },
@@ -114,90 +114,85 @@ export const useItemStatusStore = create<ItemStatusState>()(
     {
       name: 'item-status-storage',
       partialize: (state) => ({
-        healthChecks: state.healthChecks,
+        itemStatuses: state.itemStatuses,
         lastChecked: state.lastChecked,
-        commandToTools: state.commandToTools,
+        commandToItems: state.commandToItems,
       }),
     },
   ),
 )
 
 /**
- * Hook to get health check result for a tool
+ * Hook to get status result for an item
  * Returns undefined if cache is stale (>5 minutes old)
  */
 export const useItemStatus = (itemId: string) => {
-  const healthCheck = useItemStatusStore((state) => state.healthChecks[itemId])
+  const status = useItemStatusStore((state) => state.itemStatuses[itemId])
   const lastChecked = useItemStatusStore((state) => state.lastChecked[itemId])
 
   // Check if cache is stale
   const isStale = lastChecked && Date.now() - lastChecked > CACHE_TTL
 
   return {
-    ...healthCheck,
+    ...status,
     lastChecked,
     isStale,
   }
 }
 
 /**
- * Hook to get all health check results
+ * Hook to get all item status results
  */
 export const useAllItemStatus = () => {
-  return useItemStatusStore((state) => state.healthChecks)
+  return useItemStatusStore((state) => state.itemStatuses)
 }
 
 /**
  * Service object for imperative actions
  */
 export const itemStatusService = {
-  updateHealthCheck: (itemId: string, result: ItemStatusResult) => {
-    useItemStatusStore.getState().actions.updateHealthCheck(itemId, result)
+  updateItemStatus: (itemId: string, result: ItemStatusResult) => {
+    useItemStatusStore.getState().actions.updateItemStatus(itemId, result)
   },
-  registerToolCommand: (itemId: string, checkCommand: string) => {
+  registerItemCommand: (itemId: string, checkCommand: string) => {
     useItemStatusStore
       .getState()
-      .actions.registerToolCommand(itemId, checkCommand)
+      .actions.registerItemCommand(itemId, checkCommand)
   },
-  updateHealthChecksByCommand: (
-    checkCommand: string,
-    result: ItemStatusResult,
-  ) => {
+  updateStatusesByCommand: (checkCommand: string, result: ItemStatusResult) => {
     useItemStatusStore
       .getState()
-      .actions.updateHealthChecksByCommand(checkCommand, result)
+      .actions.updateStatusesByCommand(checkCommand, result)
   },
-  clearHealthCheck: (itemId: string) => {
-    useItemStatusStore.getState().actions.clearHealthCheck(itemId)
+  clearItemStatus: (itemId: string) => {
+    useItemStatusStore.getState().actions.clearItemStatus(itemId)
   },
-  clearHealthChecksByCommand: (checkCommand: string) => {
-    useItemStatusStore
-      .getState()
-      .actions.clearHealthChecksByCommand(checkCommand)
+  clearStatusesByCommand: (checkCommand: string) => {
+    useItemStatusStore.getState().actions.clearStatusesByCommand(checkCommand)
   },
-  clearAllHealthChecks: () => {
-    useItemStatusStore.getState().actions.clearAllHealthChecks()
+  clearAllItemStatuses: () => {
+    useItemStatusStore.getState().actions.clearAllItemStatuses()
   },
   /**
-   * Get health check result for a tool
+   * Get status result for an item
    */
-  getHealthCheck: (itemId: string): ItemStatusResult | undefined => {
-    return useItemStatusStore.getState().healthChecks[itemId]
+  getItemStatus: (itemId: string): ItemStatusResult | undefined => {
+    return useItemStatusStore.getState().itemStatuses[itemId]
   },
   /**
-   * Get checkCommand for a tool (if registered)
+   * Get item readiness (if registered)
    */
-  getToolCommand: (itemId: string): string | undefined => {
-    const commandToTools = useItemStatusStore.getState().commandToTools
-    for (const [cmd, itemIds] of Object.entries(commandToTools)) {
+  getCheckCommand: (itemId: string): string | undefined => {
+    const commandToItems = useItemStatusStore.getState().commandToItems
+    for (const [cmd, itemIds] of Object.entries(commandToItems)) {
       if (itemIds.includes(itemId)) return cmd
     }
     return undefined
   },
   /**
-   * Get stale health checks (older than TTL)
+   * Get stale item statuses (older than TTL)
    */
-  getStaleHealthChecks: (): string[] => {
+  getStaleStatuses: (): string[] => {
     const state = useItemStatusStore.getState()
     const now = Date.now()
     return Object.entries(state.lastChecked)
@@ -205,13 +200,3 @@ export const itemStatusService = {
       .map(([itemId]) => itemId)
   },
 }
-
-// Deprecated aliases for backward compatibility
-/** @deprecated Use itemStatusService instead */
-export const toolHealthService = itemStatusService
-/** @deprecated Use useItemStatus instead */
-export const useToolHealth = useItemStatus
-/** @deprecated Use useAllItemStatus instead */
-export const useAllToolHealth = useAllItemStatus
-/** @deprecated Use useItemStatusStore instead */
-export const useToolHealthStore = useItemStatusStore

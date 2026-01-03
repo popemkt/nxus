@@ -2,8 +2,8 @@ import type { App } from '@/types/app'
 import { Link } from '@tanstack/react-router'
 import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
-import { useToolHealth } from '@/services/state/item-status-state'
-import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
+import { useItemStatus } from '@/services/state/item-status-state'
+import { useItemStatusCheck } from '@/hooks/use-item-status-check'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface DependencyListProps {
@@ -45,8 +45,8 @@ function DependencyItem({ dependency, onInstall }: DependencyItemProps) {
   const { isInstalled: isRepoInstalled } = useAppCheck(dependency.id)
 
   // Health check for tools
-  useSingleToolHealthCheck(dependency, isTool)
-  const healthCheck = useToolHealth(dependency.id)
+  useItemStatusCheck(dependency, isTool)
+  const healthCheck = useItemStatus(dependency.id)
 
   // Determine loading state - for tools, we need to wait for health check
   const isCheckingHealth =

@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import { QuestionIcon, WarningIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { useToolHealth } from '@/services/state/item-status-state'
+import { useItemStatus } from '@/services/state/item-status-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { configureModalService } from '@/stores/configure-modal.store'
@@ -57,7 +57,7 @@ export function CommandButton({
   const { executeCommand } = useCommandExecution({})
 
   // Get health check for tools
-  const healthCheck = useToolHealth(app.id)
+  const healthCheck = useItemStatus(app.id)
   const isInstalled = healthCheck?.isInstalled ?? true // Default true for non-tools
 
   // Get configuration status

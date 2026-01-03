@@ -14,7 +14,7 @@
  * ```
  */
 
-import { toolHealthService } from '@/services/state/item-status-state'
+import { itemStatusService } from '@/services/state/item-status-state'
 import { appRegistryService } from '@/services/apps/registry.service'
 import type { AppType } from '@/types/app'
 import type { InstalledAppRecord } from '@/services/state/app-state'
@@ -51,7 +51,7 @@ export interface AvailabilityContext {
  * Check if a tool is installed and healthy
  */
 function checkToolHealth(appId: string): CommandAvailability {
-  const health = toolHealthService.getHealthCheck(appId)
+  const health = itemStatusService.getItemStatus(appId)
 
   // Still checking
   if (health === undefined) {
@@ -104,7 +104,7 @@ function checkDependencies(appId: string): CommandAvailability {
   for (const dep of depsResult.data) {
     // Only check tool dependencies
     if (dep.type === 'tool') {
-      const health = toolHealthService.getHealthCheck(dep.id)
+      const health = itemStatusService.getItemStatus(dep.id)
       if (health === undefined) {
         // Still checking
         return {
@@ -139,7 +139,7 @@ function checkCommandSpecificRequirements(
 ): CommandAvailability {
   // Git commands require git to be installed
   if (commandId === 'git-pull' || commandId.startsWith('git-')) {
-    const gitHealth = toolHealthService.getHealthCheck('git')
+    const gitHealth = itemStatusService.getItemStatus('git')
     if (gitHealth === undefined) {
       return {
         canExecute: false,

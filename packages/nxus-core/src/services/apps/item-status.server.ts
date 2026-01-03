@@ -21,14 +21,11 @@ export interface ItemStatusResult {
   error?: string
 }
 
-/** @deprecated Use ItemStatusResult instead */
-export type ToolHealthCheckResult = ItemStatusResult
-
 /**
- * Server function to check if an item is installed
+ * Server function to check if an item is ready
  * Runs the checkCommand and parses the result
  */
-export const checkToolInstallation = createServerFn({ method: 'GET' })
+export const checkItemStatus = createServerFn({ method: 'GET' })
   .inputValidator(CheckItemStatusInputSchema)
   .handler(async ({ data }): Promise<ItemStatusResult> => {
     const { checkCommand } = data
@@ -38,7 +35,6 @@ export const checkToolInstallation = createServerFn({ method: 'GET' })
         timeout: 5000, // 5 second timeout
       })
 
-      // If the command succeeds, the item is installed
       const output = stdout.trim() || stderr.trim()
 
       return {
@@ -46,7 +42,6 @@ export const checkToolInstallation = createServerFn({ method: 'GET' })
         version: output,
       }
     } catch (error: any) {
-      // Command failed - item is not installed or not in PATH
       return {
         isInstalled: false,
         error: error.message,
@@ -58,7 +53,7 @@ export const checkToolInstallation = createServerFn({ method: 'GET' })
  * Input schema for batch checking multiple items
  */
 const BatchCheckItemsInputSchema = z.object({
-  tools: z
+  items: z
     .array(
       z.object({
         id: z.string(),
@@ -75,34 +70,30 @@ export interface BatchItemStatusResult {
   results: Record<string, ItemStatusResult>
 }
 
-/** @deprecated Use BatchItemStatusResult instead */
-export type BatchToolHealthCheckResult = BatchItemStatusResult
-
 /**
  * Server function to check multiple items at once
- * More efficient than checking one by one
  */
-export const batchCheckToolInstallation = createServerFn({ method: 'POST' })
+export const batchCheckItemStatus = createServerFn({ method: 'POST' })
   .inputValidator(BatchCheckItemsInputSchema)
   .handler(async ({ data }): Promise<BatchItemStatusResult> => {
-    const { tools } = data
+    const { items } = data
     const results: Record<string, ItemStatusResult> = {}
 
-    // Check all tools in parallel
+    // Check all items in parallel
     await Promise.all(
-      tools.map(async (tool) => {
+      items.map(async (item) => {
         try {
-          const { stdout, stderr } = await execAsync(tool.checkCommand, {
+          const { stdout, stderr } = await execAsync(item.checkCommand, {
             timeout: 5000,
           })
 
           const output = stdout.trim() || stderr.trim()
-          results[tool.id] = {
+          results[item.id] = {
             isInstalled: true,
             version: output,
           }
         } catch (error: any) {
-          results[tool.id] = {
+          results[item.id] = {
             isInstalled: false,
             error: error.message,
           }

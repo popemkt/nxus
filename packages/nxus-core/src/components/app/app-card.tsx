@@ -17,8 +17,8 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
-import { useToolHealth } from '@/services/state/item-status-state'
-import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
+import { useItemStatus } from '@/services/state/item-status-state'
+import { useItemStatusCheck } from '@/hooks/use-item-status-check'
 
 // Component that tries to load thumbnail from fallback paths
 function ThumbnailWithFallback({
@@ -88,8 +88,8 @@ export function AppCard({ app }: AppCardProps) {
 
   // Health check for tools
   const isTool = app.type === 'tool'
-  useSingleToolHealthCheck(app, isTool)
-  const healthCheck = useToolHealth(app.id)
+  useItemStatusCheck(app, isTool)
+  const healthCheck = useItemStatus(app.id)
 
   // Determine if health check is still loading
   const isCheckingHealth = isTool && healthCheck?.isInstalled === undefined

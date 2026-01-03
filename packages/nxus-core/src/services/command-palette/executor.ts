@@ -22,7 +22,9 @@
  */
 
 import { executeCommandServerFn } from '@/services/shell/command.server'
-import { toolHealthService } from '@/services/state/item-status-state'
+import { itemStatusService } from '@/services/state/item-status-state'
+import { queryClient } from '@/lib/query-client'
+import { itemStatusKeys } from '@/hooks/use-item-status-query'
 import type { AppType } from '@/types/app'
 import type { LogEntry } from '@/services/shell/command.schema'
 
@@ -214,13 +216,19 @@ export const commandExecutor = {
     // Clear health check for tools so they get re-checked
     // Use command-based clearing so all tools with same checkCommand update
     if (appType === 'tool') {
-      const checkCommand = toolHealthService.getToolCommand(appId)
+      const checkCommand = itemStatusService.getCheckCommand(appId)
       if (checkCommand) {
-        // Clear all tools that share this command
-        toolHealthService.clearHealthChecksByCommand(checkCommand)
+        // 1. Clear Zustand (immediate UI update if subscribed)
+        itemStatusService.clearStatusesByCommand(checkCommand)
+        // 2. Invalidate Query Cache (triggers refetch)
+        await queryClient.invalidateQueries({
+          queryKey: itemStatusKeys.command(checkCommand),
+        })
       } else {
         // Fallback to single tool clear
-        toolHealthService.clearHealthCheck(appId)
+        itemStatusService.clearItemStatus(appId)
+        // Note: We can't easily invalidate Query here without the command,
+        // but getCheckCommand should usually return something if registered.
       }
     }
 

@@ -19,7 +19,7 @@ import { configureModalService } from '@/stores/configure-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { appRegistryService } from '@/services/apps/registry.service'
-import { useAllToolHealth } from '@/services/state/item-status-state'
+import { useAllItemStatus } from '@/services/state/item-status-state'
 
 function DynamicIcon({
   name,
@@ -62,7 +62,7 @@ export function CommandPalette() {
 
   // Subscribe to health changes so command availability updates reactively
   // This is used by getCommandAvailability to trigger re-renders when health changes
-  const _healthChecks = useAllToolHealth()
+  const _itemStatuses = useAllItemStatus()
 
   // Global keyboard shortcut
   const commandPaletteBinding = useSettingsStore(

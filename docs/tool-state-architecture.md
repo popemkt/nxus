@@ -28,10 +28,10 @@ Tools have two independent state checks that determine command visibility and be
 
 ## State Stores
 
-| Store                 | File                                                                                                                 | Cleared on Refresh? | Purpose                      |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------- |
-| `tool-health-storage` | [tool-health-state.ts](file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/services/state/tool-health-state.ts) | ✅ Yes              | Installation status, version |
-| `tool-config-storage` | [tool-config-state.ts](file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/services/state/tool-config-state.ts) | ❌ Never            | API keys, URLs, user config  |
+| Store                 | File                                                                                                                 | Cleared on Refresh? | Purpose                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------- |
+| `item-status-storage` | [item-status-state.ts](file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/services/state/item-status-state.ts) | ✅ Yes              | Installation status (See [Item Status Arch](./item-status-architecture.md)) |
+| `tool-config-storage` | [tool-config-state.ts](file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/services/state/tool-config-state.ts) | ❌ Never            | API keys, URLs, user config                                                 |
 
 ## Command States
 
