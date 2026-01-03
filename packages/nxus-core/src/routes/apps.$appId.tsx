@@ -478,7 +478,9 @@ function AppDetailPage() {
 
   // Health check for the tool itself
   const isTool = app?.type === 'tool'
-  useItemStatusCheck(app!, isTool)
+  const hasCheckCommand =
+    isTool && app && 'checkCommand' in app && !!app.checkCommand
+  useItemStatusCheck(app!, hasCheckCommand)
   const healthCheck = useItemStatus(app?.id ?? '')
 
   const [selectedInstance, setSelectedInstance] =
@@ -587,7 +589,7 @@ function AppDetailPage() {
           <Badge variant="secondary">{APP_TYPE_LABELS_LONG[app.type]}</Badge>
 
           {/* Health check status for tools in header */}
-          {isTool && healthCheck?.isInstalled === undefined && (
+          {hasCheckCommand && healthCheck?.isInstalled === undefined && (
             <Badge
               variant="outline"
               className="flex items-center gap-1.5 animate-pulse"
@@ -597,7 +599,7 @@ function AppDetailPage() {
             </Badge>
           )}
 
-          {isTool && healthCheck?.isInstalled !== undefined && (
+          {hasCheckCommand && healthCheck?.isInstalled !== undefined && (
             <Badge
               variant={healthCheck.isInstalled ? 'default' : 'destructive'}
               className="flex items-center gap-1 animate-fade-in status-transition"
@@ -616,11 +618,13 @@ function AppDetailPage() {
             </Badge>
           )}
 
-          {isTool && healthCheck?.isInstalled && healthCheck.version && (
-            <Badge variant="outline" className="font-mono animate-fade-in">
-              {healthCheck.version}
-            </Badge>
-          )}
+          {hasCheckCommand &&
+            healthCheck?.isInstalled &&
+            healthCheck.version && (
+              <Badge variant="outline" className="font-mono animate-fade-in">
+                {healthCheck.version}
+              </Badge>
+            )}
 
           {app.metadata.tags.map((tag) => (
             <Badge key={tag} variant="outline">

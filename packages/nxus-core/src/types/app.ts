@@ -13,7 +13,6 @@ export const AppTypeSchema = z.enum([
   'html',
   'typescript',
   'remote-repo',
-  'script-tool',
   'tool',
 ])
 export type AppType = z.infer<typeof AppTypeSchema>
@@ -188,27 +187,6 @@ export const RemoteRepoAppSchema = BaseAppSchema.extend({
 export type RemoteRepoApp = z.infer<typeof RemoteRepoAppSchema>
 
 /**
- * Script tool - executable scripts with parameters
- */
-export const ScriptToolAppSchema = BaseAppSchema.extend({
-  type: z.literal('script-tool'),
-  path: z.string().describe('Path to script file'),
-  parameters: z
-    .array(
-      z.object({
-        name: z.string(),
-        type: z.enum(['string', 'number', 'boolean', 'select']),
-        description: z.string(),
-        required: z.boolean().default(false),
-        default: z.union([z.string(), z.number(), z.boolean()]).optional(),
-        options: z.array(z.string()).optional().describe('For select type'),
-      }),
-    )
-    .optional(),
-})
-export type ScriptToolApp = z.infer<typeof ScriptToolAppSchema>
-
-/**
  * Configuration field schema for tools that need configuration
  */
 export const ConfigFieldSchema = z.object({
@@ -257,7 +235,6 @@ export const AppSchema = z.discriminatedUnion('type', [
   HtmlAppSchema,
   TypeScriptAppSchema,
   RemoteRepoAppSchema,
-  ScriptToolAppSchema,
   ToolAppSchema,
 ])
 export type App = z.infer<typeof AppSchema>

@@ -14,8 +14,11 @@ import { useItemStatus } from '@/services/state/item-status-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
 import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
-import { handleCommandMode } from '@/lib/command-utils'
-import type { App, ToolApp } from '@/types/app'
+import { ScriptParamsModal } from '@/components/app/script-params-modal'
+import { handleCommandMode, buildScriptCommand } from '@/lib/command-utils'
+import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.server'
+import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
+import type { App, ToolApp, AppCommand } from '@/types/app'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -59,6 +62,12 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
     string | null
   >(null)
 
+  // Script params modal state
+  const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
+  const [scriptParams, setScriptParams] = React.useState<ScriptParam[]>([])
+  const [pendingScriptCommand, setPendingScriptCommand] =
+    React.useState<AppCommand | null>(null)
+
   // Get health check for this tool (liveness)
   const healthCheck = useItemStatus(app.id)
   const isInstalled = healthCheck?.isInstalled ?? false
@@ -92,21 +101,72 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
     return groups
   }, [appCommands])
 
-  const handleCommandClick = (
-    commandId: string,
-    command: string,
-    mode: string,
-  ) => {
+  const handleCommandClick = async (cmd: AppCommand) => {
     setError(null)
 
-    const result = handleCommandMode(mode, command, app.id, {
-      onExecute: onRunCommand,
-      onConfigure: () => setConfigModalOpen(true),
-    })
+    // For script mode, check if script has parameters
+    if (cmd.mode === 'script') {
+      try {
+        const result = await parseScriptParamsServerFn({
+          data: { appId: app.id, scriptPath: cmd.command },
+        })
+
+        if (result.success && result.params.length > 0) {
+          // Has parameters - show modal
+          setScriptParams(result.params)
+          setPendingScriptCommand(cmd)
+          setParamsModalOpen(true)
+          return
+        }
+
+        // No parameters - execute directly
+        const fullCommand = buildScriptCommand(app.id, cmd.command)
+        onRunCommand?.(fullCommand)
+        return
+      } catch (err) {
+        setError(`Failed to parse script parameters: ${(err as Error).message}`)
+        return
+      }
+    }
+
+    // Other modes handled by shared utility
+    const result = handleCommandMode(
+      cmd.mode || 'execute',
+      cmd.command,
+      app.id,
+      {
+        onExecute: onRunCommand,
+        onConfigure: () => setConfigModalOpen(true),
+      },
+    )
 
     if (!result.handled && result.error) {
       setError(result.error)
     }
+  }
+
+  // Handle script execution with parameters
+  const handleScriptRun = (
+    values: Record<string, string | number | boolean>,
+  ) => {
+    if (!pendingScriptCommand) return
+
+    // Build command with parameters
+    const params = Object.entries(values)
+      .filter(([, v]) => v !== '' && v !== undefined)
+      .map(([key, value]) => {
+        if (typeof value === 'boolean') {
+          return value ? `-${key}` : ''
+        }
+        return `-${key} "${value}"`
+      })
+      .filter(Boolean)
+      .join(' ')
+
+    const fullCommand =
+      buildScriptCommand(app.id, pendingScriptCommand.command) + ' ' + params
+    onRunCommand?.(fullCommand)
+    setPendingScriptCommand(null)
   }
 
   /**
@@ -189,13 +249,7 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                             ? 'border-amber-500/50 hover:border-amber-500'
                             : ''
                         }`}
-                        onClick={() =>
-                          handleCommandClick(
-                            cmd.id,
-                            cmd.command,
-                            cmd.mode || 'execute',
-                          )
-                        }
+                        onClick={() => handleCommandClick(cmd)}
                         disabled={isDisabled}
                       >
                         <CommandIcon iconName={cmd.icon} />
@@ -251,6 +305,17 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
           scriptPath={previewScriptPath}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
+        />
+      )}
+
+      {/* Script Parameters Modal */}
+      {pendingScriptCommand && (
+        <ScriptParamsModal
+          scriptName={pendingScriptCommand.command}
+          params={scriptParams}
+          open={paramsModalOpen}
+          onOpenChange={setParamsModalOpen}
+          onRun={handleScriptRun}
         />
       )}
     </>

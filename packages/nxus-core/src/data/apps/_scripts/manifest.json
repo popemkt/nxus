@@ -2,7 +2,7 @@
     "id": "_scripts",
     "name": "My Scripts",
     "description": "Collection of custom scripts for generic automation tasks",
-    "type": "script-tool",
+    "type": "tool",
     "path": ".",
     "platform": [
         "linux",

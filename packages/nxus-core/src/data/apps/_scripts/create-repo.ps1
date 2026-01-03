@@ -1,10 +1,16 @@
 # Script: Create GitHub Repo & Initialize Local Folder
 # Description: Creates a new GitHub repository and sets up the local git folder
-# Usage: ./create-repo.ps1 [-RepoName <name>] [-LocalFolder <path>]
+# Usage: ./create-repo.ps1 -RepoName <name> -LocalPath <path> [-Private]
 
 param (
+    [Parameter(Mandatory = $true, HelpMessage = "Name of the repository to create")]
     [string]$RepoName,
-    [string]$LocalFolder
+    
+    [Parameter(Mandatory = $true, HelpMessage = "Local folder path for the repository")]
+    [string]$LocalPath,
+    
+    [Parameter(Mandatory = $false, HelpMessage = "Create as private repository")]
+    [switch]$Private = $true
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,23 +36,24 @@ if ([string]::IsNullOrWhiteSpace($RepoName)) {
     $RepoName = Read-Host "Enter repository name"
 }
 
-if ([string]::IsNullOrWhiteSpace($LocalFolder)) {
-    $LocalFolder = Read-Host "Enter local folder path"
+if ([string]::IsNullOrWhiteSpace($LocalPath)) {
+    $LocalPath = Read-Host "Enter local folder path"
 }
 
 # Resolve ~ to home if needed (simple check)
-if ($LocalFolder.StartsWith("~")) {
-    $LocalFolder = $LocalFolder.Replace("~", $HOME)
+if ($LocalPath.StartsWith("~")) {
+    $LocalPath = $LocalPath.Replace("~", $HOME)
 }
-$LocalFolder = [System.IO.Path]::GetFullPath($LocalFolder)
+$LocalPath = [System.IO.Path]::GetFullPath($LocalPath)
 
 Write-Info "Creating repository: $RepoName"
-Write-Info "Local folder: $LocalFolder"
+Write-Info "Local folder: $LocalPath"
 
 # Create GitHub Repo
 Write-Info "Creating GitHub repository..."
 try {
-    gh repo create "$RepoName" --private --confirm
+    $visibility = if ($Private) { "--private" } else { "--public" }
+    gh repo create "$RepoName" $visibility --confirm
     Write-Success "Repository created on GitHub"
 } catch {
     Write-Error "Failed to create repository: $_"
@@ -54,15 +61,15 @@ try {
 }
 
 # Create local folder
-if (-not (Test-Path $LocalFolder)) {
+if (-not (Test-Path $LocalPath)) {
     Write-Info "Creating local folder..."
-    New-Item -ItemType Directory -Path $LocalFolder -Force | Out-Null
-    Write-Success "Folder created: $LocalFolder"
+    New-Item -ItemType Directory -Path $LocalPath -Force | Out-Null
+    Write-Success "Folder created: $LocalPath"
 } else {
     Write-Info "Folder already exists"
 }
 
-Set-Location $LocalFolder
+Set-Location $LocalPath
 
 # Initialize git
 if (-not (Test-Path ".git")) {
@@ -123,4 +130,4 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Success "All done! Repository setup complete."
 Write-Info "Repository URL: https://github.com/${GH_USERNAME}/${RepoName}"
-Write-Info "Local path: $LocalFolder"
+Write-Info "Local path: $LocalPath"

@@ -88,11 +88,13 @@ export function AppCard({ app }: AppCardProps) {
 
   // Health check for tools
   const isTool = app.type === 'tool'
-  useItemStatusCheck(app, isTool)
+  const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
+  useItemStatusCheck(app, hasCheckCommand)
   const healthCheck = useItemStatus(app.id)
 
-  // Determine if health check is still loading
-  const isCheckingHealth = isTool && healthCheck?.isInstalled === undefined
+  // Determine if health check is still loading (only if tool has checkCommand)
+  const isCheckingHealth =
+    hasCheckCommand && healthCheck?.isInstalled === undefined
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:ring-2 hover:ring-primary/20">
@@ -143,7 +145,7 @@ export function AppCard({ app }: AppCardProps) {
             </Badge>
           )}
 
-          {isTool && !isCheckingHealth && healthCheck && (
+          {hasCheckCommand && !isCheckingHealth && healthCheck && (
             <Badge
               variant={healthCheck.isInstalled ? 'default' : 'destructive'}
               className="flex items-center gap-1 animate-fade-in status-transition"
@@ -163,14 +165,16 @@ export function AppCard({ app }: AppCardProps) {
           )}
 
           {/* Show version for installed tools */}
-          {isTool && healthCheck?.isInstalled && healthCheck.version && (
-            <Badge
-              variant="outline"
-              className="font-mono text-xs animate-fade-in"
-            >
-              {healthCheck.version}
-            </Badge>
-          )}
+          {hasCheckCommand &&
+            healthCheck?.isInstalled &&
+            healthCheck.version && (
+              <Badge
+                variant="outline"
+                className="font-mono text-xs animate-fade-in"
+              >
+                {healthCheck.version}
+              </Badge>
+            )}
 
           {/* Tags */}
           {!isTool &&

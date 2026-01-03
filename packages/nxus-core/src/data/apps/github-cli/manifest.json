@@ -38,6 +38,22 @@
             }
         },
         {
+            "id": "uninstall-gh-cli",
+            "name": "Uninstall",
+            "description": "Remove GitHub CLI from system",
+            "icon": "Trash",
+            "category": "Setup",
+            "target": "app",
+            "mode": "execute",
+            "command": "sudo dnf remove -y gh",
+            "platforms": [
+                "linux"
+            ],
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
             "id": "gh-auth-login",
             "name": "Authenticate",
             "description": "Login to GitHub account",
