@@ -4,7 +4,7 @@ description: Update or add a new item (app/tool) to the registry
 
 # Update or Add Item Workflow
 
-This workflow guides you through adding a new item (app or tool) to the Nxus registry, or updating an existing one. It covers the specific "quirks" and features of the system.
+This workflow guides you through adding a new item (app or tool) to the Nxus registry, or updating an existing one. It covers the specific "quirks" and features of the system. Remember, always be thoughtful.
 
 ## 1. Understand the Item Type
 
