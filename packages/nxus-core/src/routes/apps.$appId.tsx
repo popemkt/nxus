@@ -20,7 +20,7 @@ import {
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { DependencyList } from '@/components/app/dependency-list'
-import { useToolHealth } from '@/services/state/tool-health-state'
+import { useToolHealth } from '@/services/state/item-status-state'
 import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,7 @@ import {
   useAppCheck,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
-import { toolHealthService } from '@/services/state/tool-health-state'
+import { toolHealthService } from '@/services/state/item-status-state'
 import { installModalService } from '@/stores/install-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import {

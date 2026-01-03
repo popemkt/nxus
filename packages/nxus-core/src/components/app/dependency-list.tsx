@@ -2,7 +2,7 @@ import type { App } from '@/types/app'
 import { Link } from '@tanstack/react-router'
 import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
-import { useToolHealth } from '@/services/state/tool-health-state'
+import { useToolHealth } from '@/services/state/item-status-state'
 import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 

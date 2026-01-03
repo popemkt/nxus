@@ -19,7 +19,7 @@ import { configureModalService } from '@/stores/configure-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { appRegistryService } from '@/services/apps/registry.service'
-import { useAllToolHealth } from '@/services/state/tool-health-state'
+import { useAllToolHealth } from '@/services/state/item-status-state'
 
 function DynamicIcon({
   name,

@@ -17,7 +17,7 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
-import { useToolHealth } from '@/services/state/tool-health-state'
+import { useToolHealth } from '@/services/state/item-status-state'
 import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
 
 // Component that tries to load thumbnail from fallback paths

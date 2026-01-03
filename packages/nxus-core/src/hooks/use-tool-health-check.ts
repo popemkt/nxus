@@ -5,7 +5,8 @@ import {
   toolHealthService,
   useAllToolHealth,
   useToolHealth,
-} from '@/services/state/tool-health-state'
+} from '@/services/state/item-status-state'
+import { useHealthCheckQuery } from './use-health-check-query'
 
 /**
  * Hook to check health of all tools
@@ -16,6 +17,13 @@ export function useToolHealthCheck(tools: App[], enabled = true) {
 
   useEffect(() => {
     if (!enabled || tools.length === 0) return
+
+    // Register all tools for command deduplication
+    tools
+      .filter((tool) => tool.type === 'tool' && tool.checkCommand)
+      .forEach((tool) => {
+        toolHealthService.registerToolCommand(tool.id, tool.checkCommand!)
+      })
 
     const toolsToCheck = tools
       .filter((tool) => tool.type === 'tool' && tool.checkCommand)
@@ -43,56 +51,28 @@ export function useToolHealthCheck(tools: App[], enabled = true) {
 }
 
 /**
- * Hook to check health of a single tool
- * Re-runs automatically when:
- * 1. Cache is missing (invalidated)
- * 2. Cache is stale (>5 minutes old)
+ * Hook to check health of a single tool using TanStack Query
+ *
+ * Key features:
+ * - Query keyed by checkCommand for deduplication
+ * - Tools with same checkCommand share cache
+ * - Syncs to Zustand for unified state
  */
 export function useSingleToolHealthCheck(tool: App, enabled = true) {
-  // Subscribe to current health check result - this creates reactivity
+  // Use the Query-based hook
+  const query = useHealthCheckQuery(
+    tool.id,
+    tool.type === 'tool' ? tool.checkCommand : undefined,
+    { enabled: enabled && tool.type === 'tool' },
+  )
+
+  // Also subscribe to Zustand for immediate access
   const currentHealth = useToolHealth(tool.id)
 
-  useEffect(() => {
-    if (!enabled || tool.type !== 'tool' || !tool.checkCommand) return
-
-    // Run check if:
-    // 1. No cached result exists (isInstalled is undefined)
-    // 2. Cache is stale (>5 minutes old)
-    const shouldCheck =
-      currentHealth?.isInstalled === undefined || currentHealth?.isStale
-
-    if (!shouldCheck) return
-
-    const checkHealth = async () => {
-      try {
-        const result = await batchCheckToolInstallation({
-          data: {
-            tools: [
-              {
-                id: tool.id,
-                checkCommand: tool.checkCommand!,
-              },
-            ],
-          },
-        })
-
-        const healthResult = result.results[tool.id]
-        if (healthResult) {
-          toolHealthService.updateHealthCheck(tool.id, healthResult)
-        }
-      } catch (error) {
-        console.error(`Failed to check health for ${tool.name}:`, error)
-      }
-    }
-
-    checkHealth()
-  }, [
-    tool.id,
-    tool.name,
-    tool.type,
-    tool.checkCommand,
-    enabled,
-    currentHealth?.isInstalled,
-    currentHealth?.isStale,
-  ])
+  return {
+    ...currentHealth,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
+  }
 }

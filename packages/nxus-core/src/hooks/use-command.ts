@@ -28,8 +28,8 @@
  */
 
 import { useMemo, useCallback } from 'react'
-import { useAllToolHealth } from '@/services/state/tool-health-state'
-import { toolHealthService } from '@/services/state/tool-health-state'
+import { useAllToolHealth } from '@/services/state/item-status-state'
+import { toolHealthService } from '@/services/state/item-status-state'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import type { AppCommand, AppType, CommandRequirements } from '@/types/app'

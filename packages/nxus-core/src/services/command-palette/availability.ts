@@ -14,7 +14,7 @@
  * ```
  */
 
-import { toolHealthService } from '@/services/state/tool-health-state'
+import { toolHealthService } from '@/services/state/item-status-state'
 import { appRegistryService } from '@/services/apps/registry.service'
 import type { AppType } from '@/types/app'
 import type { InstalledAppRecord } from '@/services/state/app-state'

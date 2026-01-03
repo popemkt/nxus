@@ -6,28 +6,31 @@ import { promisify } from 'util'
 const execAsync = promisify(exec)
 
 /**
- * Input schema for checking tool installation status
+ * Input schema for checking item installation status
  */
-const CheckToolInputSchema = z.object({
-  checkCommand: z.string().describe('Command to check if tool is installed'),
+const CheckItemStatusInputSchema = z.object({
+  checkCommand: z.string().describe('Command to check if item is ready'),
 })
 
 /**
- * Result of a tool health check
+ * Result of an item status check
  */
-export interface ToolHealthCheckResult {
+export interface ItemStatusResult {
   isInstalled: boolean
   version?: string
   error?: string
 }
 
+/** @deprecated Use ItemStatusResult instead */
+export type ToolHealthCheckResult = ItemStatusResult
+
 /**
- * Server function to check if a tool is installed
+ * Server function to check if an item is installed
  * Runs the checkCommand and parses the result
  */
 export const checkToolInstallation = createServerFn({ method: 'GET' })
-  .inputValidator(CheckToolInputSchema)
-  .handler(async ({ data }): Promise<ToolHealthCheckResult> => {
+  .inputValidator(CheckItemStatusInputSchema)
+  .handler(async ({ data }): Promise<ItemStatusResult> => {
     const { checkCommand } = data
 
     try {
@@ -35,7 +38,7 @@ export const checkToolInstallation = createServerFn({ method: 'GET' })
         timeout: 5000, // 5 second timeout
       })
 
-      // If the command succeeds, the tool is installed
+      // If the command succeeds, the item is installed
       const output = stdout.trim() || stderr.trim()
 
       return {
@@ -43,7 +46,7 @@ export const checkToolInstallation = createServerFn({ method: 'GET' })
         version: output,
       }
     } catch (error: any) {
-      // Command failed - tool is not installed or not in PATH
+      // Command failed - item is not installed or not in PATH
       return {
         isInstalled: false,
         error: error.message,
@@ -52,9 +55,9 @@ export const checkToolInstallation = createServerFn({ method: 'GET' })
   })
 
 /**
- * Input schema for batch checking multiple tools
+ * Input schema for batch checking multiple items
  */
-const BatchCheckToolsInputSchema = z.object({
+const BatchCheckItemsInputSchema = z.object({
   tools: z
     .array(
       z.object({
@@ -62,25 +65,28 @@ const BatchCheckToolsInputSchema = z.object({
         checkCommand: z.string(),
       }),
     )
-    .describe('Array of tools to check'),
+    .describe('Array of items to check'),
 })
 
 /**
- * Result of batch tool health checks
+ * Result of batch item status checks
  */
-export interface BatchToolHealthCheckResult {
-  results: Record<string, ToolHealthCheckResult>
+export interface BatchItemStatusResult {
+  results: Record<string, ItemStatusResult>
 }
 
+/** @deprecated Use BatchItemStatusResult instead */
+export type BatchToolHealthCheckResult = BatchItemStatusResult
+
 /**
- * Server function to check multiple tools at once
+ * Server function to check multiple items at once
  * More efficient than checking one by one
  */
 export const batchCheckToolInstallation = createServerFn({ method: 'POST' })
-  .inputValidator(BatchCheckToolsInputSchema)
-  .handler(async ({ data }): Promise<BatchToolHealthCheckResult> => {
+  .inputValidator(BatchCheckItemsInputSchema)
+  .handler(async ({ data }): Promise<BatchItemStatusResult> => {
     const { tools } = data
-    const results: Record<string, ToolHealthCheckResult> = {}
+    const results: Record<string, ItemStatusResult> = {}
 
     // Check all tools in parallel
     await Promise.all(

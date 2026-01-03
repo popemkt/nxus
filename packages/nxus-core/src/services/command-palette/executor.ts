@@ -22,7 +22,7 @@
  */
 
 import { executeCommandServerFn } from '@/services/shell/command.server'
-import { toolHealthService } from '@/services/state/tool-health-state'
+import { toolHealthService } from '@/services/state/item-status-state'
 import type { AppType } from '@/types/app'
 import type { LogEntry } from '@/services/shell/command.schema'
 
@@ -212,8 +212,16 @@ export const commandExecutor = {
     exitCode: number,
   ): Promise<void> {
     // Clear health check for tools so they get re-checked
+    // Use command-based clearing so all tools with same checkCommand update
     if (appType === 'tool') {
-      toolHealthService.clearHealthCheck(appId)
+      const checkCommand = toolHealthService.getToolCommand(appId)
+      if (checkCommand) {
+        // Clear all tools that share this command
+        toolHealthService.clearHealthChecksByCommand(checkCommand)
+      } else {
+        // Fallback to single tool clear
+        toolHealthService.clearHealthCheck(appId)
+      }
     }
 
     // Run registered callbacks
