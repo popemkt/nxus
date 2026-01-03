@@ -45,6 +45,7 @@ function DynamicIcon({
 export function CommandPalette() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const selectedItemRef = useRef<HTMLButtonElement>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   const {
@@ -87,19 +88,6 @@ export function CommandPalette() {
     return () => window.removeEventListener('keydown', handler)
   }, [toggle, close, isOpen, step, reset, commandPaletteBinding])
 
-  // Focus input when opened
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50)
-      setSelectedIndex(0) // Auto-select first item
-    }
-  }, [isOpen, step])
-
-  // Reset selection when query changes
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [query])
-
   // Search results
   const results = useMemo(() => {
     if (step === 'target') {
@@ -129,16 +117,80 @@ export function CommandPalette() {
     return [...searchResults.genericCommands, ...searchResults.appCommands]
   }, [results, step])
 
+  // Helper function to find the next enabled item index
+  const findNextEnabledIndex = (
+    startIndex: number,
+    direction: 'forward' | 'backward',
+  ): number => {
+    if (step !== 'command' || items.length === 0) return startIndex
+
+    let currentIndex = startIndex
+    let iterations = 0
+    const maxIterations = items.length
+
+    while (iterations < maxIterations) {
+      const item = items[currentIndex]
+      // Check if it's an app command and if it's disabled
+      if ('appId' in item) {
+        const availability = getCommandAvailability(item as PaletteCommand)
+        if (availability.canExecute) return currentIndex
+      } else {
+        // Generic commands are never disabled
+        return currentIndex
+      }
+
+      // Move to next/previous index
+      if (direction === 'forward') {
+        currentIndex = (currentIndex + 1) % items.length
+      } else {
+        currentIndex = (currentIndex - 1 + items.length) % items.length
+      }
+      iterations++
+    }
+
+    // If all items are disabled, return the start index
+    return startIndex
+  }
+
+  // Focus input when opened and select first enabled item
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 50)
+      const firstEnabledIndex = findNextEnabledIndex(0, 'forward')
+      setSelectedIndex(firstEnabledIndex)
+    }
+  }, [isOpen, step])
+
+  // Reset selection to first enabled item when query changes
+  useEffect(() => {
+    const firstEnabledIndex = findNextEnabledIndex(0, 'forward')
+    setSelectedIndex(firstEnabledIndex)
+  }, [query])
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedItemRef.current) {
+      selectedItemRef.current.scrollIntoView({
+        block: 'nearest',
+        behavior: 'auto', // Instant scroll, no animation
+      })
+    }
+  }, [selectedIndex])
+
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setSelectedIndex((prev: number) => (prev + 1) % items.length)
+      setSelectedIndex((prev: number) => {
+        const nextIndex = (prev + 1) % items.length
+        return findNextEnabledIndex(nextIndex, 'forward')
+      })
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setSelectedIndex(
-        (prev: number) => (prev - 1 + items.length) % items.length,
-      )
+      setSelectedIndex((prev: number) => {
+        const nextIndex = (prev - 1 + items.length) % items.length
+        return findNextEnabledIndex(nextIndex, 'backward')
+      })
     } else if (e.key === 'Enter') {
       e.preventDefault()
       if (items.length === 0) return
@@ -304,6 +356,7 @@ export function CommandPalette() {
                   ).genericCommands.map((cmd, idx) => (
                     <button
                       key={cmd.id}
+                      ref={selectedIndex === idx ? selectedItemRef : null}
                       onClick={() => {
                         if (cmd.needsTarget) {
                           selectGenericCommand(cmd)
@@ -312,7 +365,7 @@ export function CommandPalette() {
                           cmd.execute()
                         }
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
                         selectedIndex === idx
                           ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-muted'
@@ -355,9 +408,10 @@ export function CommandPalette() {
                     return (
                       <button
                         key={cmd.id}
+                        ref={isSelected ? selectedItemRef : null}
                         onClick={() => !isDisabled && executeAppCommand(cmd)}
                         disabled={isDisabled}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
                           isDisabled
                             ? 'opacity-50 cursor-not-allowed'
                             : isSelected
@@ -431,8 +485,9 @@ export function CommandPalette() {
               ).map((app, idx) => (
                 <button
                   key={app.id}
+                  ref={selectedIndex === idx ? selectedItemRef : null}
                   onClick={() => executeGenericCommand(app.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
                     selectedIndex === idx
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted'

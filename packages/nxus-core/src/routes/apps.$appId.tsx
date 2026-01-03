@@ -640,6 +640,7 @@ function AppDetailPage() {
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 {app.docs.map((doc) => (
                   <TabsTrigger key={doc.id} value={doc.id}>
+                    <BookOpenIcon className="h-4 w-4 mr-1.5" />
                     {doc.title}
                   </TabsTrigger>
                 ))}

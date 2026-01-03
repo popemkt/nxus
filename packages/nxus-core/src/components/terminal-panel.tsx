@@ -167,6 +167,13 @@ export function TerminalPanel() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
             onClick={() => setActiveTab(tab.id)}
+            onAuxClick={(e) => {
+              // Middle mouse button (button 1)
+              if (e.button === 1) {
+                e.preventDefault()
+                closeTab(tab.id)
+              }
+            }}
           >
             <StatusIcon status={tab.status} />
             <span className="truncate max-w-[120px]">{tab.label}</span>
