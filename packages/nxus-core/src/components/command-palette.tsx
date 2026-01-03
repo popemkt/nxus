@@ -17,7 +17,7 @@ import {
 } from '@/services/command-palette/registry'
 import { configureModalService } from '@/stores/configure-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
-import { commandAvailability } from '@/services/command-palette/availability'
+import { checkCommandAvailability } from '@/hooks/use-command'
 import { appRegistryService } from '@/services/apps/registry.service'
 
 function DynamicIcon({
@@ -160,20 +160,31 @@ export function CommandPalette() {
     }
   }
 
-  // Check command availability
+  // Check command availability using declarative requirements
   const getCommandAvailability = (cmd: PaletteCommand) => {
     const appResult = appRegistryService.getAppById(cmd.appId)
     if (!appResult.success) {
       return { canExecute: false, reason: 'App not found' }
     }
 
-    return commandAvailability.check(cmd.commandId, {
-      appId: cmd.appId,
-      appType: appResult.data.type,
-      // Instance commands from palette don't have instance context
-      requiresInstance: cmd.target === 'instance',
-      instance: null,
-    })
+    // Use the command's declared requirements (not app dependencies)
+    // This is the key change - commands only check their own requirements
+    const appCommand = appResult.data.commands?.find(
+      (c) => c.id === cmd.commandId,
+    )
+
+    return checkCommandAvailability(
+      {
+        ...cmd,
+        mode: cmd.mode ?? 'execute',
+        category: '',
+        requires: appCommand?.requires,
+      },
+      {
+        appId: cmd.appId,
+        appType: appResult.data.type,
+      },
+    )
   }
 
   // Execute app command

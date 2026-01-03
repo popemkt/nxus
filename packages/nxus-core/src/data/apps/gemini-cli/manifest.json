@@ -31,7 +31,10 @@
             "category": "Maintenance",
             "target": "app",
             "mode": "execute",
-            "command": "npm update -g @google/gemini-cli"
+            "command": "npm update -g @google/gemini-cli",
+            "requires": {
+                "selfInstalled": true
+            }
         },
         {
             "id": "uninstall-gemini-cli",
@@ -41,7 +44,10 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm uninstall -g @google/gemini-cli"
+            "command": "npm uninstall -g @google/gemini-cli",
+            "requires": {
+                "selfInstalled": true
+            }
         }
     ],
     "metadata": {

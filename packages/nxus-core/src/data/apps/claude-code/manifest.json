@@ -31,7 +31,10 @@
             "category": "Maintenance",
             "target": "app",
             "mode": "execute",
-            "command": "npm update -g @anthropic-ai/claude-code"
+            "command": "npm update -g @anthropic-ai/claude-code",
+            "requires": {
+                "selfInstalled": true
+            }
         },
         {
             "id": "uninstall-claude-code",
@@ -41,7 +44,10 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "npm uninstall -g @anthropic-ai/claude-code"
+            "command": "npm uninstall -g @anthropic-ai/claude-code",
+            "requires": {
+                "selfInstalled": true
+            }
         }
     ],
     "docs": [

@@ -77,6 +77,18 @@ export const CommandModeSchema = z.enum([
 export type CommandMode = z.infer<typeof CommandModeSchema>
 
 /**
+ * Command requirements - declarative dependencies for command execution
+ * Commands declare what they need, the system resolves availability
+ */
+export const CommandRequirementsSchema = z.object({
+  /** Tool IDs that must be installed (e.g., ['git', 'node']) */
+  tools: z.array(z.string()).optional(),
+  /** Whether the tool itself must be installed (for tool app commands) */
+  selfInstalled: z.boolean().optional(),
+})
+export type CommandRequirements = z.infer<typeof CommandRequirementsSchema>
+
+/**
  * Config-driven command defined in app-registry.json
  * For shell/script commands with different parameters per app
  */
@@ -92,6 +104,8 @@ export const AppCommandSchema = z.object({
   ),
   command: z.string().describe('Shell command to execute or URL for docs mode'),
   override: z.string().optional().describe('ID of default command to override'),
+  /** Declarative requirements - what this command needs to run */
+  requires: CommandRequirementsSchema.optional(),
 })
 export type AppCommand = z.infer<typeof AppCommandSchema>
 
