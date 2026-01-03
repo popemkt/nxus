@@ -26,6 +26,7 @@ import {
   streamCommandServerFn,
   type StreamChunk,
 } from '@/services/shell/command-stream.server'
+import { createPtySessionServerFn } from '@/services/shell/pty.server'
 import { itemStatusService } from '@/services/state/item-status-state'
 import { queryClient } from '@/lib/query-client'
 import { itemStatusKeys } from '@/hooks/use-item-status-query'
@@ -35,6 +36,7 @@ import type { LogEntry } from '@/services/shell/command.schema'
 // Terminal store interface matching the actual store
 type TerminalStore = {
   createTab: (name: string) => string
+  createInteractiveTab: (name: string, ptySessionId: string) => string
   addLog: (tabId: string, log: LogEntry) => void
   setStatus: (
     tabId: string,
@@ -70,6 +72,8 @@ export interface CommandExecutionResult {
   stderr?: string
   error?: string
   tabId?: string
+  /** PTY session ID for interactive terminals */
+  ptySessionId?: string
 }
 
 /**
@@ -389,6 +393,66 @@ export const commandExecutor = {
       const index = postExecutionCallbacks.indexOf(callback)
       if (index > -1) {
         postExecutionCallbacks.splice(index, 1)
+      }
+    }
+  },
+
+  /**
+   * Execute an interactive terminal command
+   *
+   * Creates a PTY session and an interactive terminal tab.
+   * Unlike execute/executeStreaming, this doesn't wait for completion -
+   * the user interacts with the terminal directly.
+   */
+  async executeInteractive(
+    options: CommandExecutionOptions,
+  ): Promise<CommandExecutionResult> {
+    const { command, cwd, tabName, terminalStore } = options
+
+    if (!terminalStore) {
+      return {
+        success: false,
+        error: 'Terminal store required for interactive execution',
+      }
+    }
+
+    // Parse command - for interactive, we may run a specific command or just open a shell
+    const parts = command ? command.split(' ') : []
+    const cmd = parts[0] || undefined
+    const args = parts.slice(1)
+
+    try {
+      // Create PTY session
+      const result = await createPtySessionServerFn({
+        data: {
+          cwd,
+          command: cmd,
+          args: args.length > 0 ? args : undefined,
+        },
+      })
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error,
+        }
+      }
+
+      // Create interactive terminal tab
+      const tabId = terminalStore.createInteractiveTab(
+        tabName ?? command ?? 'Terminal',
+        result.sessionId,
+      )
+
+      return {
+        success: true,
+        tabId,
+        ptySessionId: result.sessionId,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   },

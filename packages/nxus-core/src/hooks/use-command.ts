@@ -158,7 +158,8 @@ export function useCommand(
   const itemStatuses = useAllItemStatus()
 
   // Get terminal store for execution
-  const { createTab, addLog, setStatus } = useTerminalStore()
+  const { createTab, createInteractiveTab, addLog, setStatus } =
+    useTerminalStore()
 
   // Resolve availability from declarative requirements
   const availability = useMemo(() => {
@@ -175,14 +176,24 @@ export function useCommand(
     // Execute based on mode
     switch (command.mode) {
       case 'execute':
-      case 'terminal':
         await commandExecutor.executeStreaming({
           command: command.command,
           cwd: context.cwd,
           appId: context.appId,
           appType: context.appType,
           tabName: command.name,
-          terminalStore: { createTab, addLog, setStatus },
+          terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+        })
+        break
+
+      case 'terminal':
+        await commandExecutor.executeInteractive({
+          command: command.command,
+          cwd: context.cwd,
+          appId: context.appId,
+          appType: context.appType,
+          tabName: command.name,
+          terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
         })
         break
 
@@ -199,7 +210,15 @@ export function useCommand(
         // This is because it requires the commandId as well
         break
     }
-  }, [availability.canExecute, command, context, createTab, addLog, setStatus])
+  }, [
+    availability.canExecute,
+    command,
+    context,
+    createTab,
+    createInteractiveTab,
+    addLog,
+    setStatus,
+  ])
 
   return { availability, execute }
 }

@@ -43,6 +43,7 @@ function CommandIcon({ iconName }: { iconName: string }) {
 interface AppActionsPanelProps {
   app: App
   onRunCommand?: (command: string) => void
+  onTerminal?: (command: string) => void
 }
 
 /**
@@ -54,7 +55,11 @@ interface AppActionsPanelProps {
  * - Needs Attention: Liveness OK but readiness failed (not configured)
  * - Ready: Both checks pass
  */
-export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
+export function AppActionsPanel({
+  app,
+  onRunCommand,
+  onTerminal,
+}: AppActionsPanelProps) {
   const [error, setError] = React.useState<string | null>(null)
   const [configModalOpen, setConfigModalOpen] = React.useState(false)
   const [previewOpen, setPreviewOpen] = React.useState(false)
@@ -137,6 +142,7 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
       app.id,
       {
         onExecute: onRunCommand,
+        onTerminal: onTerminal,
         onConfigure: () => setConfigModalOpen(true),
       },
     )
@@ -269,14 +275,18 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                           </span>
                         )}
                       </Button>
-                      {/* Show command preview button for script and execute modes - always enabled as auxiliary action */}
-                      {(isScriptMode || cmd.mode === 'execute') && (
+                      {/* Show command preview button for script, execute, and terminal modes - always enabled as auxiliary action */}
+                      {(isScriptMode ||
+                        cmd.mode === 'execute' ||
+                        cmd.mode === 'terminal') && (
                         <Button
                           variant="outline"
                           className="px-2 rounded-l-none"
                           onClick={() => {
                             setPreviewScriptPath(cmd.command)
-                            setPreviewIsInline(cmd.mode === 'execute')
+                            setPreviewIsInline(
+                              cmd.mode === 'execute' || cmd.mode === 'terminal',
+                            )
                             setPreviewOpen(true)
                           }}
                           title={isScriptMode ? 'View script' : 'View command'}

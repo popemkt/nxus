@@ -7,6 +7,10 @@ export interface TerminalTab {
   logs: LogEntry[]
   status: 'running' | 'success' | 'error' | 'idle'
   createdAt: number
+  /** Tab mode: readonly for execute commands, interactive for terminal commands */
+  mode: 'readonly' | 'interactive'
+  /** PTY session ID for interactive terminals */
+  ptySessionId?: string
 }
 
 interface TerminalState {
@@ -14,13 +18,17 @@ interface TerminalState {
   activeTabId: string | null
   isOpen: boolean
   isMinimized: boolean
+  /** Panel height in pixels for resize functionality */
+  panelHeight: number
 }
 
 interface TerminalActions {
   // Tab management
   createTab: (label: string) => string
+  createInteractiveTab: (label: string, ptySessionId: string) => string
   closeTab: (id: string) => void
   setActiveTab: (id: string) => void
+  setPtySessionId: (tabId: string, ptySessionId: string) => void
 
   // Log management
   addLog: (tabId: string, log: LogEntry) => void
@@ -33,6 +41,9 @@ interface TerminalActions {
   toggle: () => void
   minimize: () => void
   maximize: () => void
+
+  // Panel resize
+  setPanelHeight: (height: number) => void
 }
 
 export const useTerminalStore = create<TerminalState & TerminalActions>(
@@ -41,6 +52,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
     activeTabId: null,
     isOpen: false,
     isMinimized: false,
+    panelHeight: 256, // Default height (h-64)
 
     createTab: (label) => {
       const id = `terminal-${Date.now()}`
@@ -50,6 +62,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
         logs: [],
         status: 'idle',
         createdAt: Date.now(),
+        mode: 'readonly',
       }
 
       set((state) => ({
@@ -111,6 +124,40 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
       })),
     minimize: () => set({ isMinimized: true }),
     maximize: () => set({ isMinimized: false }),
+
+    createInteractiveTab: (label, ptySessionId) => {
+      const id = `terminal-${Date.now()}`
+      const tab: TerminalTab = {
+        id,
+        label,
+        logs: [],
+        status: 'running',
+        createdAt: Date.now(),
+        mode: 'interactive',
+        ptySessionId,
+      }
+
+      set((state) => ({
+        tabs: [...state.tabs, tab],
+        activeTabId: id,
+        isOpen: true,
+        isMinimized: false,
+      }))
+
+      return id
+    },
+
+    setPtySessionId: (tabId, ptySessionId) => {
+      set((state) => ({
+        tabs: state.tabs.map((t) =>
+          t.id === tabId ? { ...t, ptySessionId } : t,
+        ),
+      }))
+    },
+
+    setPanelHeight: (height) => {
+      set({ panelHeight: Math.max(100, Math.min(600, height)) })
+    },
   }),
 )
 

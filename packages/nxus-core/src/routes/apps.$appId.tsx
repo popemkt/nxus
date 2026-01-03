@@ -501,7 +501,8 @@ function AppDetailPage() {
   const [gitStatusRefreshKey, setGitStatusRefreshKey] = useState(0)
 
   // Terminal store for running commands
-  const { createTab, addLog, setStatus } = useTerminalStore()
+  const { createTab, createInteractiveTab, addLog, setStatus } =
+    useTerminalStore()
 
   // Execute command in terminal panel using centralized executor
   const executeInstanceCommand = async (
@@ -517,13 +518,24 @@ function AppDetailPage() {
       appId: app?.id,
       appType: app?.type,
       tabName: fullCommand,
-      terminalStore: { createTab, addLog, setStatus },
+      terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
     })
 
     // Increment git status refresh key for remote repos after successful command
     if (result.success && app?.type === 'remote-repo') {
       setGitStatusRefreshKey((k) => k + 1)
     }
+  }
+
+  // Execute interactive terminal command
+  const executeInteractiveCommand = async (command: string) => {
+    await commandExecutor.executeInteractive({
+      command,
+      appId: app?.id,
+      appType: app?.type,
+      tabName: command || 'Terminal',
+      terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+    })
   }
 
   // Use delayed loading to prevent flash
@@ -729,6 +741,7 @@ function AppDetailPage() {
                 const args = parts.slice(1)
                 await executeInstanceCommand(cmd, args)
               }}
+              onTerminal={executeInteractiveCommand}
             />
           )}
 

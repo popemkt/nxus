@@ -32,6 +32,14 @@ const config = defineConfig({
       ],
     },
   },
+  optimizeDeps: {
+    exclude: ['node-pty'],
+  },
+  build: {
+    rollupOptions: {
+      external: ['node-pty'],
+    },
+  },
 })
 
 export default config

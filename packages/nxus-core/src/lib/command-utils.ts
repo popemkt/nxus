@@ -39,6 +39,7 @@ export function handleCommandMode(
   appId: string,
   callbacks: {
     onExecute?: (cmd: string) => void
+    onTerminal?: (cmd: string) => void
     onConfigure?: () => void
   },
 ): { handled: boolean; error?: string } {
@@ -57,7 +58,8 @@ export function handleCommandMode(
       return { handled: true }
 
     case 'terminal':
-      // TODO: Implement terminal opening
+      // Interactive terminal mode
+      callbacks.onTerminal?.(command)
       return { handled: true }
 
     case 'docs':

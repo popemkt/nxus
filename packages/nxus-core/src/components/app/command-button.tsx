@@ -74,10 +74,11 @@ export function CommandButton({
   }, [app])
   const isConfigured = useToolConfigured(app.id, requiredFields)
 
-  // Check if command uses script or execute mode
+  // Check if command uses script, execute, or terminal mode
   const isScriptMode = command.mode === 'script'
   const isExecuteMode = command.mode === 'execute'
-  const showPreviewButton = isScriptMode || isExecuteMode
+  const isTerminalMode = command.mode === 'terminal'
+  const showPreviewButton = isScriptMode || isExecuteMode || isTerminalMode
 
   const handleClick = async () => {
     // Use shared handler for most modes
@@ -164,7 +165,7 @@ export function CommandButton({
             scriptPath={command.command}
             open={previewOpen}
             onOpenChange={setPreviewOpen}
-            isInlineCommand={isExecuteMode}
+            isInlineCommand={isExecuteMode || isTerminalMode}
           />
         )}
       </>
@@ -212,7 +213,7 @@ export function CommandButton({
           scriptPath={command.command}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
-          isInlineCommand={isExecuteMode}
+          isInlineCommand={isExecuteMode || isTerminalMode}
         />
       )}
     </>

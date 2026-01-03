@@ -1,8 +1,21 @@
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="800" height="450" fill="#111827"/>
-<g transform="translate(337.5, 162.5)">
-    <path d="M125 0C125 69.0356 69.0356 125 0 125C-69.0356 125 -125 69.0356 -125 0C-125 -69.0356 -69.0356 -125 0 -125C69.0356 -125 125 -69.0356 125 0Z" stroke="#8B5CF6" stroke-width="40"/>
-    <path d="M250 125C250 194.036 194.036 250 125 250C55.9644 250 0 194.036 0 125C0 55.9644 55.9644 0 125 0C194.036 0 250 55.9644 250 125Z" stroke="#EC4899" stroke-width="40"/>
-    <path d="M0 125C-27.2345 125 -52.9694 135.531 -70.7107 153.272C-88.452 171.014 -98.9831 196.749 -98.9831 223.983" stroke="#3B82F6" stroke-width="40" stroke-linecap="round"/>
-</g>
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#f0f2f5"/>
+  <g transform="translate(400, 225)">
+    <!-- Main yarn ball / core dependency -->
+    <circle cx="0" cy="0" r="100" fill="#60b5ff" opacity="0.8"/>
+    <circle cx="0" cy="0" r="80" fill="#4fa5f5" opacity="0.9"/>
+    <circle cx="0" cy="0" r="60" fill="#3e95e5"/>
+
+    <!-- Interconnected smaller dependencies -->
+    <circle cx="180" cy="-50" r="40" fill="#8aff8a" opacity="0.7"/>
+    <circle cx="-160" cy="70" r="50" fill="#ffb38a" opacity="0.7"/>
+    <circle cx="0" cy="-190" r="35" fill="#e066ff" opacity="0.7"/>
+    <circle cx="100" cy="170" r="45" fill="#ffe066" opacity="0.7"/>
+
+    <!-- Connecting lines -->
+    <line x1="0" y1="0" x2="180" y2="-50" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="0" y1="0" x2="-160" y2="70" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="0" y1="0" x2="0" y2="-190" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="0" y1="0" x2="100" y2="170" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  </g>
 </svg>
