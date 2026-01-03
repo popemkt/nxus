@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import type { LogEntry } from '../services/shell/command.schema'
-import { executeCommandServerFn } from '../services/shell/command.server'
+import { streamCommandServerFn } from '../services/shell/command-stream.server'
 
 export interface UseCommandExecutionOptions {
   onComplete?: () => void
@@ -36,7 +36,7 @@ export function useCommandExecution(options?: UseCommandExecutionOptions) {
           message: `$ ${command} ${args.join(' ')}\n`,
         })
 
-        const result = await executeCommandServerFn({
+        const stream = await streamCommandServerFn({
           data: {
             command,
             args,
@@ -45,56 +45,57 @@ export function useCommandExecution(options?: UseCommandExecutionOptions) {
           },
         })
 
-        if (result.success) {
-          // Split output into lines and add as logs
-          const stdoutLines = result.data.stdout.split('\n')
-          for (const line of stdoutLines) {
-            if (line.trim()) {
+        let exitCode = 0
+
+        for await (const chunk of stream) {
+          switch (chunk.type) {
+            case 'stdout':
               addLog({
                 timestamp: Date.now(),
                 type: 'stdout',
-                message: line + '\n',
+                message: chunk.data,
               })
-            }
-          }
+              break
 
-          const stderrLines = result.data.stderr.split('\n')
-          for (const line of stderrLines) {
-            if (line.trim()) {
+            case 'stderr':
               addLog({
                 timestamp: Date.now(),
                 type: 'stderr',
-                message: line + '\n',
+                message: chunk.data,
               })
-            }
-          }
+              break
 
-          if (result.data.exitCode === 0) {
-            addLog({
-              timestamp: Date.now(),
-              type: 'success',
-              message: `\n✓ Command completed successfully (exit code: ${result.data.exitCode})\n`,
-            })
-            options?.onComplete?.()
-          } else {
-            addLog({
-              timestamp: Date.now(),
-              type: 'error',
-              message: `\n✗ Command failed with exit code: ${result.data.exitCode}\n`,
-            })
-            options?.onError?.(
-              new Error(
-                `Command failed with exit code: ${result.data.exitCode}`,
-              ),
-            )
+            case 'exit':
+              exitCode = chunk.exitCode
+              break
+
+            case 'error':
+              addLog({
+                timestamp: Date.now(),
+                type: 'error',
+                message: `\n✗ ${chunk.message}\n`,
+              })
+              options?.onError?.(new Error(chunk.message))
+              return
           }
+        }
+
+        if (exitCode === 0) {
+          addLog({
+            timestamp: Date.now(),
+            type: 'success',
+            message: `\n✓ Command completed successfully (exit code: ${exitCode})\n`,
+          })
+          options?.onComplete?.()
         } else {
           addLog({
             timestamp: Date.now(),
             type: 'error',
-            message: `\n✗ ${result.error}\n`,
+            message: `\n✗ Command failed with exit code: ${exitCode}\n`,
           })
-          options?.onError?.(new Error(result.error))
+          options?.onError?.(
+            new Error(`Command failed with exit code: ${exitCode}`),
+          )
         }
       } catch (error) {
         addLog({

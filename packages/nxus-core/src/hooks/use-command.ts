@@ -176,7 +176,7 @@ export function useCommand(
     switch (command.mode) {
       case 'execute':
       case 'terminal':
-        await commandExecutor.execute({
+        await commandExecutor.executeStreaming({
           command: command.command,
           cwd: context.cwd,
           appId: context.appId,
@@ -224,9 +224,7 @@ export function checkCommandAvailability(
 
   // Check self (for both selfInstalled and selfNotInstalled)
   if (command.requires?.selfInstalled || command.requires?.selfNotInstalled) {
-    itemStatuses[context.appId] = itemStatusService.getItemStatus(
-      context.appId,
-    )
+    itemStatuses[context.appId] = itemStatusService.getItemStatus(context.appId)
   }
 
   return resolveRequirements(command.requires, context, itemStatuses)

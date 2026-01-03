@@ -511,7 +511,7 @@ function AppDetailPage() {
   ) => {
     const fullCommand = `${command} ${args.join(' ')}`.trim()
 
-    const result = await commandExecutor.execute({
+    const result = await commandExecutor.executeStreaming({
       command: fullCommand,
       cwd: options?.cwd,
       appId: app?.id,

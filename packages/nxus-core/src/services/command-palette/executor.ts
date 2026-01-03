@@ -22,6 +22,10 @@
  */
 
 import { executeCommandServerFn } from '@/services/shell/command.server'
+import {
+  streamCommandServerFn,
+  type StreamChunk,
+} from '@/services/shell/command-stream.server'
 import { itemStatusService } from '@/services/state/item-status-state'
 import { queryClient } from '@/lib/query-client'
 import { itemStatusKeys } from '@/hooks/use-item-status-query'
@@ -92,6 +96,8 @@ export const commandExecutor = {
    * 2. Executes the command
    * 3. Logs output
    * 4. Runs post-execution effects
+   *
+   * @deprecated Use executeStreaming instead for real-time output feedback.
    */
   async execute(
     options: CommandExecutionOptions,
@@ -181,6 +187,133 @@ export const commandExecutor = {
       }
     } catch (error) {
       // Exception during execution
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
+
+      if (terminalStore && tabId) {
+        terminalStore.setStatus(tabId, 'error')
+        terminalStore.addLog(tabId, {
+          timestamp: Date.now(),
+          type: 'error',
+          message: `\n✗ ${errorMessage}\n`,
+        })
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        tabId,
+      }
+    }
+  },
+
+  /**
+   * Execute a command with streaming output
+   *
+   * Similar to execute(), but streams stdout/stderr chunks in real-time
+   * to the terminal panel instead of waiting for the command to complete.
+   */
+  async executeStreaming(
+    options: CommandExecutionOptions,
+  ): Promise<CommandExecutionResult> {
+    const { command, cwd, appId, appType, tabName, terminalStore } = options
+
+    // Parse command into parts
+    const parts = command.split(' ')
+    const cmd = parts[0]
+    const args = parts.slice(1)
+
+    // Create terminal tab if store provided
+    let tabId: string | undefined
+    if (terminalStore) {
+      tabId = terminalStore.createTab(tabName ?? command)
+      terminalStore.setStatus(tabId, 'running')
+      terminalStore.addLog(tabId, {
+        timestamp: Date.now(),
+        type: 'info',
+        message: `$ ${command}${cwd ? ` (in ${cwd})` : ''}\n`,
+      })
+    }
+
+    let exitCode = 0
+    let stdout = ''
+    let stderr = ''
+
+    try {
+      const stream = await streamCommandServerFn({
+        data: { command: cmd, args, cwd },
+      })
+
+      // Consume the async iterable stream
+      for await (const chunk of stream) {
+        switch (chunk.type) {
+          case 'stdout':
+            stdout += chunk.data
+            if (terminalStore && tabId) {
+              terminalStore.addLog(tabId, {
+                timestamp: Date.now(),
+                type: 'stdout',
+                message: chunk.data,
+              })
+            }
+            break
+
+          case 'stderr':
+            stderr += chunk.data
+            if (terminalStore && tabId) {
+              terminalStore.addLog(tabId, {
+                timestamp: Date.now(),
+                type: 'stderr',
+                message: chunk.data,
+              })
+            }
+            break
+
+          case 'exit':
+            exitCode = chunk.exitCode
+            break
+
+          case 'error':
+            if (terminalStore && tabId) {
+              terminalStore.setStatus(tabId, 'error')
+              terminalStore.addLog(tabId, {
+                timestamp: Date.now(),
+                type: 'error',
+                message: `\n✗ ${chunk.message}\n`,
+              })
+            }
+            return {
+              success: false,
+              error: chunk.message,
+              tabId,
+            }
+        }
+      }
+
+      // Set final status
+      const isSuccess = exitCode === 0
+      if (terminalStore && tabId) {
+        terminalStore.setStatus(tabId, isSuccess ? 'success' : 'error')
+        terminalStore.addLog(tabId, {
+          timestamp: Date.now(),
+          type: isSuccess ? 'success' : 'error',
+          message: `\n${isSuccess ? '✓' : '✗'} Exit code: ${exitCode}\n`,
+        })
+      }
+
+      // Run post-execution effects
+      if (appId && appType) {
+        await this.handlePostExecution(appId, appType, exitCode)
+      }
+
+      return {
+        success: isSuccess,
+        exitCode,
+        stdout,
+        stderr,
+        tabId,
+      }
+    } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
 

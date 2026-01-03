@@ -275,7 +275,7 @@ export function CommandPalette() {
         const appType = appResult.success ? appResult.data.type : undefined
 
         // Use centralized executor
-        await commandExecutor.execute({
+        await commandExecutor.executeStreaming({
           command: action.command,
           appId: cmd.appId,
           appType,

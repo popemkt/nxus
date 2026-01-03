@@ -17,7 +17,7 @@ import { useTerminalStore } from '@/stores/terminal.store'
 import { useInstallPath } from '@/hooks/use-install-path'
 import { useDevInfo, appStateService } from '@/services/state/app-state'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
-import { executeCommandServerFn } from '@/services/shell/command.server'
+import { commandExecutor } from '@/services/command-palette/executor'
 
 /**
  * Install Modal for cloning remote repositories
@@ -49,73 +49,17 @@ export function InstallModal() {
     const fullPath = `${installPath}/${folderName}`
     close()
 
-    // Create terminal tab for installation
-    const tabId = createTab(`Installing ${app.name}`)
-    setStatus(tabId, 'running')
-
-    addLog(tabId, {
-      timestamp: Date.now(),
-      type: 'info',
-      message: `$ git clone ${app.path} ${fullPath}\n`,
+    const result = await commandExecutor.executeStreaming({
+      command: `git clone ${app.path} ${fullPath}`,
+      appId: app.id,
+      appType: app.type,
+      tabName: `Installing ${app.name}`,
+      terminalStore: { createTab, addLog, setStatus },
     })
 
-    try {
-      const result = await executeCommandServerFn({
-        data: {
-          command: 'git',
-          args: ['clone', app.path!, fullPath],
-        },
-      })
-
-      if (result.success) {
-        if (result.data.stdout) {
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'stdout',
-            message: result.data.stdout,
-          })
-        }
-        if (result.data.stderr) {
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'stderr',
-            message: result.data.stderr,
-          })
-        }
-
-        if (result.data.exitCode === 0) {
-          setStatus(tabId, 'success')
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'success',
-            message: '\n✓ Repository cloned successfully\n',
-          })
-
-          // Register the installation
-          await appStateService.addInstallation(app.id, fullPath)
-        } else {
-          setStatus(tabId, 'error')
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'error',
-            message: `\n✗ Clone failed with exit code: ${result.data.exitCode}\n`,
-          })
-        }
-      } else {
-        setStatus(tabId, 'error')
-        addLog(tabId, {
-          timestamp: Date.now(),
-          type: 'error',
-          message: `\n✗ ${result.error}\n`,
-        })
-      }
-    } catch (error) {
-      setStatus(tabId, 'error')
-      addLog(tabId, {
-        timestamp: Date.now(),
-        type: 'error',
-        message: `\n✗ ${error instanceof Error ? error.message : 'Unknown error'}\n`,
-      })
+    if (result.success) {
+      // Register the installation
+      await appStateService.addInstallation(app.id, fullPath)
     }
   }
 

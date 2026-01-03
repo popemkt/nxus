@@ -19,6 +19,8 @@ const ExecuteCommandInputSchema = z.object({
 /**
  * Execute a command and return the complete result
  * For non-streaming use cases
+ *
+ * @deprecated Use streamCommandServerFn instead for real-time output feedback.
  */
 export const executeCommandServerFn = createServerFn({ method: 'POST' })
   .inputValidator(ExecuteCommandInputSchema)
