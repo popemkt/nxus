@@ -222,8 +222,8 @@ export function checkCommandAvailability(
     }
   }
 
-  // Check self
-  if (command.requires?.selfInstalled) {
+  // Check self (for both selfInstalled and selfNotInstalled)
+  if (command.requires?.selfInstalled || command.requires?.selfNotInstalled) {
     healthChecks[context.appId] = toolHealthService.getHealthCheck(
       context.appId,
     )
