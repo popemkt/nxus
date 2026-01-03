@@ -46,6 +46,7 @@ import {
 } from '@/services/state/app-state'
 import { toolHealthService } from '@/services/state/tool-health-state'
 import { installModalService } from '@/stores/install-modal.store'
+import { commandExecutor } from '@/services/command-palette/executor'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_LONG,
@@ -489,74 +490,26 @@ function AppDetailPage() {
   // Terminal store for running commands
   const { createTab, addLog, setStatus } = useTerminalStore()
 
-  // Execute command in terminal panel
+  // Execute command in terminal panel using centralized executor
   const executeInstanceCommand = async (
     command: string,
     args: string[],
     options?: { cwd?: string },
   ) => {
-    const tabId = createTab(`${command} ${args.join(' ')}`)
-    setStatus(tabId, 'running')
+    const fullCommand = `${command} ${args.join(' ')}`.trim()
 
-    addLog(tabId, {
-      timestamp: Date.now(),
-      type: 'info',
-      message: `$ ${command} ${args.join(' ')}\n`,
+    const result = await commandExecutor.execute({
+      command: fullCommand,
+      cwd: options?.cwd,
+      appId: app?.id,
+      appType: app?.type,
+      tabName: fullCommand,
+      terminalStore: { createTab, addLog, setStatus },
     })
 
-    try {
-      const { executeCommandServerFn } = await import(
-        '@/services/shell/command.server'
-      )
-      const result = await executeCommandServerFn({
-        data: { command, args, cwd: options?.cwd },
-      })
-
-      if (result.success) {
-        if (result.data.stdout) {
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'stdout',
-            message: result.data.stdout,
-          })
-        }
-        if (result.data.stderr) {
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'stderr',
-            message: result.data.stderr,
-          })
-        }
-        setStatus(tabId, result.data.exitCode === 0 ? 'success' : 'error')
-        addLog(tabId, {
-          timestamp: Date.now(),
-          type: result.data.exitCode === 0 ? 'success' : 'error',
-          message: `\n${result.data.exitCode === 0 ? '✓' : '✗'} Exit code: ${result.data.exitCode}\n`,
-        })
-
-        // Clear health check cache if this is a tool
-        if (app?.type === 'tool') {
-          toolHealthService.clearHealthCheck(app.id)
-        }
-        // Increment git status refresh key for remote repos
-        if (app?.type === 'remote-repo') {
-          setGitStatusRefreshKey((k) => k + 1)
-        }
-      } else {
-        setStatus(tabId, 'error')
-        addLog(tabId, {
-          timestamp: Date.now(),
-          type: 'error',
-          message: `\n✗ ${result.error}\n`,
-        })
-      }
-    } catch (error) {
-      setStatus(tabId, 'error')
-      addLog(tabId, {
-        timestamp: Date.now(),
-        type: 'error',
-        message: `\n✗ ${error instanceof Error ? error.message : 'Unknown error'}\n`,
-      })
+    // Increment git status refresh key for remote repos after successful command
+    if (result.success && app?.type === 'remote-repo') {
+      setGitStatusRefreshKey((k) => k + 1)
     }
   }
 

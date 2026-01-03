@@ -18,6 +18,20 @@ const config = defineConfig({
     tailwindcss(),
     viteReact(),
   ],
+  server: {
+    watch: {
+      // Exclude unnecessary folders from file watching to prevent "too many open files" error
+      ignored: [
+        '**/packages/repos/**',
+        '**/.git/**',
+        '**/node_modules/**',
+        '**/.turbo/**',
+        '**/dist/**',
+        '**/.next/**',
+        '**/build/**',
+      ],
+    },
+  },
 })
 
 export default config

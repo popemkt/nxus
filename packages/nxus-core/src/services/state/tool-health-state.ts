@@ -104,6 +104,12 @@ export const toolHealthService = {
     useToolHealthStore.getState().actions.clearAllHealthChecks()
   },
   /**
+   * Get health check result for a tool
+   */
+  getHealthCheck: (toolId: string): ToolHealthCheckResult | undefined => {
+    return useToolHealthStore.getState().healthChecks[toolId]
+  },
+  /**
    * Get stale health checks (older than TTL)
    */
   getStaleHealthChecks: (): string[] => {

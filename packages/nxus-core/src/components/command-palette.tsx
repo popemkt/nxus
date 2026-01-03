@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   CommandIcon,
   QuestionIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react'
 import { useCommandPaletteStore } from '@/stores/command-palette.store'
 import { useTerminalStore } from '@/stores/terminal.store'
@@ -14,8 +15,10 @@ import {
   commandRegistry,
   type PaletteCommand,
 } from '@/services/command-palette/registry'
-import { executeCommandServerFn } from '@/services/shell/command.server'
 import { configureModalService } from '@/stores/configure-modal.store'
+import { commandExecutor } from '@/services/command-palette/executor'
+import { commandAvailability } from '@/services/command-palette/availability'
+import { appRegistryService } from '@/services/apps/registry.service'
 
 function DynamicIcon({
   name,
@@ -157,8 +160,31 @@ export function CommandPalette() {
     }
   }
 
+  // Check command availability
+  const getCommandAvailability = (cmd: PaletteCommand) => {
+    const appResult = appRegistryService.getAppById(cmd.appId)
+    if (!appResult.success) {
+      return { canExecute: false, reason: 'App not found' }
+    }
+
+    return commandAvailability.check(cmd.commandId, {
+      appId: cmd.appId,
+      appType: appResult.data.type,
+      // Instance commands from palette don't have instance context
+      requiresInstance: cmd.target === 'instance',
+      instance: null,
+    })
+  }
+
   // Execute app command
   const executeAppCommand = async (cmd: PaletteCommand) => {
+    // Check availability first
+    const availability = getCommandAvailability(cmd)
+    if (!availability.canExecute) {
+      // Don't execute disabled commands
+      return
+    }
+
     const action = commandRegistry.getExecutionAction(cmd)
     close()
 
@@ -176,58 +202,18 @@ export function CommandPalette() {
         configureModalService.open(action.appId, action.commandId)
         break
       case 'execute': {
-        // Run in terminal panel
-        const tabId = createTab(`${cmd.appName}: ${cmd.name}`)
-        setStatus(tabId, 'running')
-        addLog(tabId, {
-          timestamp: Date.now(),
-          type: 'info',
-          message: `$ ${action.command}\n`,
+        // Get app info for post-execution effects
+        const appResult = appRegistryService.getAppById(cmd.appId)
+        const appType = appResult.success ? appResult.data.type : undefined
+
+        // Use centralized executor
+        await commandExecutor.execute({
+          command: action.command,
+          appId: cmd.appId,
+          appType,
+          tabName: `${cmd.appName}: ${cmd.name}`,
+          terminalStore: { createTab, addLog, setStatus },
         })
-
-        try {
-          const parts = action.command.split(' ')
-          const result = await executeCommandServerFn({
-            data: { command: parts[0], args: parts.slice(1) },
-          })
-
-          if (result.success) {
-            if (result.data.stdout) {
-              addLog(tabId, {
-                timestamp: Date.now(),
-                type: 'stdout',
-                message: result.data.stdout,
-              })
-            }
-            if (result.data.stderr) {
-              addLog(tabId, {
-                timestamp: Date.now(),
-                type: 'stderr',
-                message: result.data.stderr,
-              })
-            }
-            setStatus(tabId, result.data.exitCode === 0 ? 'success' : 'error')
-            addLog(tabId, {
-              timestamp: Date.now(),
-              type: result.data.exitCode === 0 ? 'success' : 'error',
-              message: `\n${result.data.exitCode === 0 ? '✓' : '✗'} Exit code: ${result.data.exitCode}\n`,
-            })
-          } else {
-            setStatus(tabId, 'error')
-            addLog(tabId, {
-              timestamp: Date.now(),
-              type: 'error',
-              message: `\n✗ ${result.error}\n`,
-            })
-          }
-        } catch (error) {
-          setStatus(tabId, 'error')
-          addLog(tabId, {
-            timestamp: Date.now(),
-            type: 'error',
-            message: `\n✗ ${error instanceof Error ? error.message : 'Unknown error'}\n`,
-          })
-        }
         break
       }
     }
@@ -346,37 +332,61 @@ export function CommandPalette() {
                     const globalIdx =
                       (results as ReturnType<typeof commandRegistry.search>)
                         .genericCommands.length + idx
+                    const availability = getCommandAvailability(cmd)
+                    const isDisabled = !availability.canExecute
+                    const isSelected = selectedIndex === globalIdx
+
                     return (
                       <button
                         key={cmd.id}
-                        onClick={() => executeAppCommand(cmd)}
+                        onClick={() => !isDisabled && executeAppCommand(cmd)}
+                        disabled={isDisabled}
                         className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left transition-colors ${
-                          selectedIndex === globalIdx
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-muted'
+                          isDisabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted'
                         }`}
+                        title={isDisabled ? availability.reason : undefined}
                       >
                         <DynamicIcon
                           name={cmd.icon}
-                          className={`h-4 w-4 ${selectedIndex === globalIdx ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+                          className={`h-4 w-4 ${
+                            isDisabled
+                              ? 'text-muted-foreground'
+                              : isSelected
+                                ? 'text-primary-foreground'
+                                : 'text-muted-foreground'
+                          }`}
                         />
                         <span
                           className={
-                            selectedIndex === globalIdx
+                            isSelected && !isDisabled
                               ? ''
                               : 'text-muted-foreground'
                           }
                         >
                           {cmd.appName}:
                         </span>
-                        <span>{cmd.name}</span>
-                        {cmd.description && (
+                        <span
+                          className={isDisabled ? 'text-muted-foreground' : ''}
+                        >
+                          {cmd.name}
+                        </span>
+                        {/* Show disabled reason OR description */}
+                        {isDisabled ? (
+                          <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                            <WarningCircleIcon className="h-3 w-3" />
+                            {availability.reason}
+                          </span>
+                        ) : cmd.description ? (
                           <span
-                            className={`ml-auto text-xs truncate max-w-[150px] ${selectedIndex === globalIdx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                            className={`ml-auto text-xs truncate max-w-[150px] ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
                           >
                             {cmd.description}
                           </span>
-                        )}
+                        ) : null}
                       </button>
                     )
                   })}
