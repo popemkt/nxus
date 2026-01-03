@@ -1,5 +1,6 @@
 import { useOsInfo } from '@/services/state/app-state'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   WindowsLogo,
   AppleLogo,
@@ -10,18 +11,31 @@ import {
 export function OsBadge() {
   const osInfo = useOsInfo()
 
-  if (!osInfo) return null
+  // Show skeleton while loading
+  if (!osInfo) {
+    return (
+      <Badge
+        variant="outline"
+        className="flex items-center gap-1.5 px-3 py-1 bg-background/50 backdrop-blur-sm"
+      >
+        <Skeleton className="h-3.5 w-3.5 rounded" />
+        <Skeleton className="h-3 w-16" />
+      </Badge>
+    )
+  }
 
   const getIcon = () => {
     switch (osInfo.platform) {
       case 'windows':
-        return <WindowsLogo className="size-3.5" weight="fill" />
+        return (
+          <WindowsLogo className="size-3.5 animate-fade-in" weight="fill" />
+        )
       case 'macos':
-        return <AppleLogo className="size-3.5" weight="fill" />
+        return <AppleLogo className="size-3.5 animate-fade-in" weight="fill" />
       case 'linux':
-        return <LinuxLogo className="size-3.5" weight="fill" />
+        return <LinuxLogo className="size-3.5 animate-fade-in" weight="fill" />
       default:
-        return <Desktop className="size-3.5" weight="fill" />
+        return <Desktop className="size-3.5 animate-fade-in" weight="fill" />
     }
   }
 
@@ -38,7 +52,7 @@ export function OsBadge() {
       className="flex items-center gap-1.5 px-3 py-1 bg-background/50 backdrop-blur-sm"
     >
       {getIcon()}
-      <span>{getLabel()}</span>
+      <span className="animate-fade-in">{getLabel()}</span>
     </Badge>
   )
 }

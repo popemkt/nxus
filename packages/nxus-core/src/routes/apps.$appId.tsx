@@ -3,7 +3,6 @@ import { useState } from 'react'
 import {
   ArrowLeftIcon,
   FolderOpenIcon,
-  FolderIcon,
   GithubLogoIcon,
   CalendarIcon,
   TagIcon,
@@ -12,7 +11,6 @@ import {
   PlayIcon,
   ImageIcon,
   WarningIcon,
-  CodeIcon,
   CheckCircleIcon,
   XCircleIcon,
   ArrowsClockwiseIcon,
@@ -54,6 +52,92 @@ import {
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
 import { openApp } from '@/lib/app-actions'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useDelayedLoading } from '@/hooks/use-delayed-loading'
+
+/**
+ * Skeleton loading state for app detail page
+ */
+function AppDetailSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl animate-pulse">
+      {/* Back button skeleton */}
+      <div className="mb-8">
+        <Skeleton className="h-9 w-32 mb-4" />
+
+        {/* Header with thumbnail, title, and description */}
+        <div className="flex items-start gap-5 mb-4">
+          {/* Thumbnail skeleton */}
+          <Skeleton className="w-32 aspect-[16/9] rounded-md shrink-0" />
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4">
+              <Skeleton className="h-8 w-48 mb-2" />
+              <Skeleton className="h-7 w-7 rounded" />
+            </div>
+            <Skeleton className="h-4 w-full mt-2" />
+            <Skeleton className="h-4 w-2/3 mt-2" />
+          </div>
+        </div>
+
+        {/* Badges skeleton */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Instance Selector skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-4 w-48 mt-1" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Information skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-24" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <Skeleton className="h-5 w-5 rounded mt-0.5" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-16 mb-1" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Component that tries to load thumbnail from registry or fallback paths
 // Compact design - small square next to title
@@ -476,12 +560,11 @@ function AppDetailPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading...</p>
-      </div>
-    )
+  // Use delayed loading to prevent flash
+  const showLoading = useDelayedLoading(loading, 150)
+
+  if (loading && showLoading) {
+    return <AppDetailSkeleton />
   }
 
   if (!app) {
@@ -551,10 +634,20 @@ function AppDetailPage() {
           <Badge variant="secondary">{APP_TYPE_LABELS_LONG[app.type]}</Badge>
 
           {/* Health check status for tools in header */}
-          {isTool && healthCheck && (
+          {isTool && healthCheck?.isInstalled === undefined && (
+            <Badge
+              variant="outline"
+              className="flex items-center gap-1.5 animate-pulse"
+            >
+              <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-ping" />
+              Checking
+            </Badge>
+          )}
+
+          {isTool && healthCheck?.isInstalled !== undefined && (
             <Badge
               variant={healthCheck.isInstalled ? 'default' : 'destructive'}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 animate-fade-in status-transition"
             >
               {healthCheck.isInstalled ? (
                 <>
@@ -571,7 +664,7 @@ function AppDetailPage() {
           )}
 
           {isTool && healthCheck?.isInstalled && healthCheck.version && (
-            <Badge variant="outline" className="font-mono">
+            <Badge variant="outline" className="font-mono animate-fade-in">
               {healthCheck.version}
             </Badge>
           )}

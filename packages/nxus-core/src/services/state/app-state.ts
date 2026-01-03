@@ -22,6 +22,7 @@ interface AppState {
   installedApps: Record<string, InstalledAppRecord[]> // Array of installations per app
   osInfo: { platform: Platform; arch: string; homeDir: string } | null
   devInfo: DevInfo | null
+  _hasHydrated: boolean
   actions: {
     addInstallation: (appId: string, path: string) => string // Returns installation ID
     removeInstallation: (appId: string, installationId: string) => void
@@ -36,6 +37,7 @@ interface AppState {
       homeDir: string
     }) => void
     setDevInfo: (info: DevInfo) => void
+    setHasHydrated: (hasHydrated: boolean) => void
   }
 }
 
@@ -50,6 +52,7 @@ const useStore = create<AppState>()(
         installedApps: {},
         osInfo: null,
         devInfo: null,
+        _hasHydrated: false,
         actions: {
           addInstallation: (appId, path) => {
             const id = generateId()
@@ -105,6 +108,7 @@ const useStore = create<AppState>()(
             }),
           setOsInfo: (info) => set({ osInfo: info }),
           setDevInfo: (info) => set({ devInfo: info }),
+          setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),
         },
       }),
       {
@@ -123,6 +127,10 @@ const useStore = create<AppState>()(
           ...(persistedState as object),
           actions: currentState.actions,
         }),
+        onRehydrateStorage: () => (state) => {
+          // Called when hydration is finished
+          state?.actions.setHasHydrated(true)
+        },
       },
     ),
   ),
@@ -215,6 +223,14 @@ export const useOsInfo = () => {
  */
 export const useDevInfo = () => {
   return useStore((state) => state.devInfo)
+}
+
+/**
+ * Hook to check if the store has hydrated from localStorage
+ * Useful for knowing when persisted data is available
+ */
+export const useHasHydrated = () => {
+  return useStore((state) => state._hasHydrated)
 }
 
 /**

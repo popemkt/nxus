@@ -31,24 +31,48 @@ function AppManager() {
     console.log('Install app:', app)
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading apps...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg font-medium text-destructive">
-            Error loading apps
-          </p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
+  // Render content based on state
+  const renderContent = () => {
+    // Show error state
+    if (error) {
+      return (
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium text-destructive">
+              Error loading apps
+            </p>
+            <p className="text-sm text-muted-foreground">{error.message}</p>
+          </div>
         </div>
-      </div>
+      )
+    }
+
+    // Show empty state (only when not loading)
+    if (!loading && apps.length === 0) {
+      return (
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium text-muted-foreground">
+              No apps found
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {searchQuery
+                ? 'Try adjusting your search query'
+                : 'Add apps to get started'}
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    // Show gallery (even during loading to prevent flash)
+    return (
+      <AppGallery
+        apps={apps}
+        onOpen={handleOpen}
+        onInstall={handleInstall}
+        groupByType={false}
+      />
     )
   }
 
@@ -98,29 +122,7 @@ function AppManager() {
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-6">
-          {apps.length === 0 ? (
-            <div className="flex min-h-[400px] items-center justify-center">
-              <div className="text-center">
-                <p className="text-lg font-medium text-muted-foreground">
-                  No apps found
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {searchQuery
-                    ? 'Try adjusting your search query'
-                    : 'Add apps to get started'}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <AppGallery
-              apps={apps}
-              onOpen={handleOpen}
-              onInstall={handleInstall}
-              groupByType={false}
-            />
-          )}
-        </div>
+        <div className="container mx-auto px-4 py-6">{renderContent()}</div>
       </div>
     </div>
   )

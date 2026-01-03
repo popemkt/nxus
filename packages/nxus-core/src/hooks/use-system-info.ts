@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
 import { getOsInfoServerFn, type OsInfo } from '@/services/shell/os-info.server'
 import {
   getDevInfoServerFn,
@@ -9,7 +7,9 @@ import {
   appStateService,
   useOsInfo,
   useDevInfo,
+  useHasHydrated,
 } from '@/services/state/app-state'
+import { useCachedQuery } from '@/lib/cached-query'
 
 /**
  * Query keys for system info
@@ -20,68 +20,70 @@ export const systemInfoKeys = {
 }
 
 /**
- * Hook to fetch and cache OS info using React Query
- * Also persists to Zustand for offline access
+ * Hook to fetch and cache OS info
+ *
+ * Uses the hydration-aware cached query pattern to:
+ * 1. Wait for Zustand hydration before checking cache
+ * 2. Use persisted data from localStorage when available
+ * 3. Only fetch from server when no cached data exists
+ *
+ * @see lib/cached-query.ts for pattern documentation
  */
 export function useSystemOsInfo() {
+  const hasHydrated = useHasHydrated()
   const cachedOsInfo = useOsInfo()
 
-  const query = useQuery<OsInfo>({
+  const result = useCachedQuery<OsInfo>({
     queryKey: systemInfoKeys.osInfo,
     queryFn: () => getOsInfoServerFn(),
-    // Never refetch - OS info doesn't change
-    staleTime: Infinity,
-    gcTime: Infinity,
-    // Use cached value from Zustand as initial data
-    initialData: cachedOsInfo ?? undefined,
-    // Only fetch if not already cached
-    enabled: !cachedOsInfo,
+    cachedValue: cachedOsInfo,
+    hasHydrated,
+    onFetched: (data) => appStateService.setOsInfo(data),
+    queryOptions: {
+      // Never refetch - OS info doesn't change
+      staleTime: Infinity,
+      gcTime: Infinity,
+    },
   })
 
-  // Persist to Zustand when fetched
-  useEffect(() => {
-    if (query.data && !cachedOsInfo) {
-      appStateService.setOsInfo(query.data)
-    }
-  }, [query.data, cachedOsInfo])
-
   return {
-    osInfo: query.data ?? cachedOsInfo,
-    isLoading: query.isLoading && !cachedOsInfo,
-    error: query.error,
+    osInfo: result.data,
+    isLoading: result.isLoading,
+    error: result.error,
   }
 }
 
 /**
- * Hook to fetch and cache dev info using React Query
- * Also persists to Zustand for offline access
+ * Hook to fetch and cache dev info
+ *
+ * Uses the hydration-aware cached query pattern to:
+ * 1. Wait for Zustand hydration before checking cache
+ * 2. Use persisted data from localStorage when available
+ * 3. Only fetch from server when no cached data exists
+ *
+ * @see lib/cached-query.ts for pattern documentation
  */
 export function useSystemDevInfo() {
+  const hasHydrated = useHasHydrated()
   const cachedDevInfo = useDevInfo()
 
-  const query = useQuery<DevInfo>({
+  const result = useCachedQuery<DevInfo>({
     queryKey: systemInfoKeys.devInfo,
     queryFn: () => getDevInfoServerFn(),
-    // Never refetch - dev info doesn't change during session
-    staleTime: Infinity,
-    gcTime: Infinity,
-    // Use cached value from Zustand as initial data
-    initialData: cachedDevInfo ?? undefined,
-    // Only fetch if not already cached
-    enabled: !cachedDevInfo,
+    cachedValue: cachedDevInfo,
+    hasHydrated,
+    onFetched: (data) => appStateService.setDevInfo(data),
+    queryOptions: {
+      // Never refetch - dev info doesn't change during session
+      staleTime: Infinity,
+      gcTime: Infinity,
+    },
   })
 
-  // Persist to Zustand when fetched
-  useEffect(() => {
-    if (query.data && !cachedDevInfo) {
-      appStateService.setDevInfo(query.data)
-    }
-  }, [query.data, cachedDevInfo])
-
   return {
-    devInfo: query.data ?? cachedDevInfo,
-    isLoading: query.isLoading && !cachedDevInfo,
-    error: query.error,
+    devInfo: result.data,
+    isLoading: result.isLoading,
+    error: result.error,
   }
 }
 

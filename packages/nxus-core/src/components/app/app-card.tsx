@@ -91,6 +91,9 @@ export function AppCard({ app }: AppCardProps) {
   useSingleToolHealthCheck(app, isTool)
   const healthCheck = useToolHealth(app.id)
 
+  // Determine if health check is still loading
+  const isCheckingHealth = isTool && healthCheck?.isInstalled === undefined
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:ring-2 hover:ring-primary/20">
       {/* Show thumbnail only if explicitly defined or fallback exists */}
@@ -129,11 +132,21 @@ export function AppCard({ app }: AppCardProps) {
           </Badge>
           <Badge variant="secondary">{APP_TYPE_LABELS_SHORT[app.type]}</Badge>
 
-          {/* Health check status for tools */}
-          {isTool && healthCheck && (
+          {/* Health check status for tools - with loading state */}
+          {isTool && isCheckingHealth && (
+            <Badge
+              variant="outline"
+              className="flex items-center gap-1.5 animate-pulse"
+            >
+              <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-ping" />
+              Checking
+            </Badge>
+          )}
+
+          {isTool && !isCheckingHealth && healthCheck && (
             <Badge
               variant={healthCheck.isInstalled ? 'default' : 'destructive'}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 animate-fade-in status-transition"
             >
               {healthCheck.isInstalled ? (
                 <>
@@ -151,7 +164,10 @@ export function AppCard({ app }: AppCardProps) {
 
           {/* Show version for installed tools */}
           {isTool && healthCheck?.isInstalled && healthCheck.version && (
-            <Badge variant="outline" className="font-mono text-xs">
+            <Badge
+              variant="outline"
+              className="font-mono text-xs animate-fade-in"
+            >
               {healthCheck.version}
             </Badge>
           )}

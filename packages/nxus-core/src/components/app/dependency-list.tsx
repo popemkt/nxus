@@ -4,6 +4,7 @@ import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
 import { useToolHealth } from '@/services/state/tool-health-state'
 import { useSingleToolHealthCheck } from '@/hooks/use-tool-health-check'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface DependencyListProps {
   dependencies: App[]
@@ -47,16 +48,40 @@ function DependencyItem({ dependency, onInstall }: DependencyItemProps) {
   useSingleToolHealthCheck(dependency, isTool)
   const healthCheck = useToolHealth(dependency.id)
 
+  // Determine loading state - for tools, we need to wait for health check
+  const isCheckingHealth =
+    isTool &&
+    !healthCheck?.isInstalled &&
+    healthCheck?.isInstalled === undefined
   const isInstalled = isTool ? healthCheck?.isInstalled : isRepoInstalled
 
+  // Render status icon with smooth transitions
+  const renderStatusIcon = () => {
+    if (isCheckingHealth) {
+      return <LoadingSpinner size="sm" className="shrink-0" />
+    }
+
+    if (isInstalled) {
+      return (
+        <CheckCircle
+          className="h-5 w-5 text-green-500 shrink-0 animate-fade-in"
+          weight="fill"
+        />
+      )
+    }
+
+    return (
+      <XCircle
+        className="h-5 w-5 text-destructive shrink-0 animate-fade-in"
+        weight="fill"
+      />
+    )
+  }
+
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-card p-3">
+    <li className="flex items-center justify-between rounded-md border border-border bg-card p-3 status-transition">
       <div className="flex items-center gap-3">
-        {isInstalled ? (
-          <CheckCircle className="h-5 w-5 text-green-500" weight="fill" />
-        ) : (
-          <XCircle className="h-5 w-5 text-destructive" weight="fill" />
-        )}
+        {renderStatusIcon()}
         <div className="flex flex-col">
           <Link
             to="/apps/$appId"
@@ -66,16 +91,16 @@ function DependencyItem({ dependency, onInstall }: DependencyItemProps) {
             {dependency.name}
           </Link>
           {isTool && healthCheck?.version && (
-            <span className="text-[10px] font-mono text-muted-foreground">
+            <span className="text-[10px] font-mono text-muted-foreground animate-fade-in">
               {healthCheck.version}
             </span>
           )}
         </div>
       </div>
-      {!isInstalled && onInstall && (
+      {!isInstalled && !isCheckingHealth && onInstall && (
         <button
           onClick={() => onInstall(dependency)}
-          className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
+          className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 animate-fade-in"
         >
           Install
         </button>

@@ -8,7 +8,7 @@ import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
  * Used in the header for quick access to inbox
  */
 export function InboxButton() {
-  const { data: result } = useQuery({
+  const { data: result, isLoading } = useQuery({
     queryKey: ['inbox-pending-count'],
     queryFn: async () => {
       return await getPendingInboxItemsServerFn()
@@ -26,8 +26,18 @@ export function InboxButton() {
       title={`Inbox${pendingCount > 0 ? ` (${pendingCount} pending)` : ''}`}
     >
       <TrayIcon className="h-5 w-5" />
-      {pendingCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+
+      {/* Loading pulse indicator */}
+      {isLoading && (
+        <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-muted-foreground/40" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-muted-foreground/30" />
+        </span>
+      )}
+
+      {/* Pending count badge */}
+      {!isLoading && pendingCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1 animate-fade-in">
           {pendingCount > 9 ? '9+' : pendingCount}
         </span>
       )}
