@@ -74,8 +74,10 @@ export function CommandButton({
   }, [app])
   const isConfigured = useToolConfigured(app.id, requiredFields)
 
-  // Check if command uses script mode
+  // Check if command uses script or execute mode
   const isScriptMode = command.mode === 'script'
+  const isExecuteMode = command.mode === 'execute'
+  const showPreviewButton = isScriptMode || isExecuteMode
 
   const handleClick = async () => {
     // Use shared handler for most modes
@@ -131,7 +133,7 @@ export function CommandButton({
             variant="outline"
             size="sm"
             className={`inline-flex gap-1.5 h-7 px-2 ${
-              isScriptMode ? 'rounded-r-none border-r-0' : ''
+              showPreviewButton ? 'rounded-r-none border-r-0' : ''
             } ${
               needsAttention ? 'border-amber-500/50 hover:border-amber-500' : ''
             } ${className ?? ''}`}
@@ -144,24 +146,25 @@ export function CommandButton({
               <WarningIcon className="h-3 w-3 text-amber-500" weight="fill" />
             )}
           </Button>
-          {isScriptMode && (
+          {showPreviewButton && (
             <Button
               variant="outline"
               size="sm"
               className="h-7 px-1.5 rounded-l-none"
               onClick={() => setPreviewOpen(true)}
-              title="View script"
+              title={isScriptMode ? 'View script' : 'View command'}
             >
               <CodeIcon className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
-        {isScriptMode && (
+        {showPreviewButton && (
           <ScriptPreviewModal
             appId={app.id}
             scriptPath={command.command}
             open={previewOpen}
             onOpenChange={setPreviewOpen}
+            isInlineCommand={isExecuteMode}
           />
         )}
       </>
@@ -174,7 +177,7 @@ export function CommandButton({
         <Button
           variant="outline"
           className={`flex-1 justify-start ${
-            isScriptMode ? 'rounded-r-none border-r-0' : ''
+            showPreviewButton ? 'rounded-r-none border-r-0' : ''
           } ${
             needsAttention ? 'border-amber-500/50 hover:border-amber-500' : ''
           } ${className ?? ''}`}
@@ -192,23 +195,24 @@ export function CommandButton({
             </span>
           )}
         </Button>
-        {isScriptMode && (
+        {showPreviewButton && (
           <Button
             variant="outline"
             className="px-2 rounded-l-none"
             onClick={() => setPreviewOpen(true)}
-            title="View script"
+            title={isScriptMode ? 'View script' : 'View command'}
           >
             <CodeIcon className="h-4 w-4" />
           </Button>
         )}
       </div>
-      {isScriptMode && (
+      {showPreviewButton && (
         <ScriptPreviewModal
           appId={app.id}
           scriptPath={command.command}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
+          isInlineCommand={isExecuteMode}
         />
       )}
     </>

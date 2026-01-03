@@ -319,6 +319,7 @@ function OverviewContent({
   setSelectedInstance,
   handleOpen,
   setGitStatusRefreshKey,
+  onExecuteCommand,
 }: {
   app: ReturnType<typeof useAppRegistry>['apps'][0]
   appId: string
@@ -327,6 +328,7 @@ function OverviewContent({
   setSelectedInstance: (instance: InstalledAppRecord | null) => void
   handleOpen: () => void
   setGitStatusRefreshKey: (fn: (k: number) => number) => void
+  onExecuteCommand: (command: string, args: string[]) => Promise<void>
 }) {
   return (
     <>
@@ -377,6 +379,15 @@ function OverviewContent({
               Refresh Git Status
             </Button>
           )}
+
+          {/* Generate Thumbnail for all app types */}
+          <GenerateThumbnailButton
+            appId={appId}
+            appName={app.name}
+            appDescription={app.description}
+            isGenerating={false}
+            onGenerate={onExecuteCommand}
+          />
 
           {/* Secondary Actions - compact row */}
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
@@ -660,6 +671,7 @@ function AppDetailPage() {
                   setSelectedInstance={setSelectedInstance}
                   handleOpen={handleOpen}
                   setGitStatusRefreshKey={setGitStatusRefreshKey}
+                  onExecuteCommand={executeInstanceCommand}
                 />
               </TabsContent>
 
@@ -698,6 +710,7 @@ function AppDetailPage() {
                 setSelectedInstance={setSelectedInstance}
                 handleOpen={handleOpen}
                 setGitStatusRefreshKey={setGitStatusRefreshKey}
+                onExecuteCommand={executeInstanceCommand}
               />
             </div>
           )}

@@ -61,6 +61,7 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
   const [previewScriptPath, setPreviewScriptPath] = React.useState<
     string | null
   >(null)
+  const [previewIsInline, setPreviewIsInline] = React.useState(false)
 
   // Script params modal state
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
@@ -243,7 +244,9 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                       <Button
                         variant="outline"
                         className={`flex-1 justify-start ${
-                          isScriptMode ? 'rounded-r-none border-r-0' : ''
+                          isScriptMode || cmd.mode === 'execute'
+                            ? 'rounded-r-none border-r-0'
+                            : ''
                         } ${
                           needsAttention
                             ? 'border-amber-500/50 hover:border-amber-500'
@@ -266,16 +269,17 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
                           </span>
                         )}
                       </Button>
-                      {isScriptMode && (
+                      {/* Show command preview button for script and execute modes - always enabled as auxiliary action */}
+                      {(isScriptMode || cmd.mode === 'execute') && (
                         <Button
                           variant="outline"
                           className="px-2 rounded-l-none"
                           onClick={() => {
                             setPreviewScriptPath(cmd.command)
+                            setPreviewIsInline(cmd.mode === 'execute')
                             setPreviewOpen(true)
                           }}
-                          disabled={isDisabled}
-                          title="View script"
+                          title={isScriptMode ? 'View script' : 'View command'}
                         >
                           <CodeIcon className="h-4 w-4" />
                         </Button>
@@ -298,13 +302,14 @@ export function AppActionsPanel({ app, onRunCommand }: AppActionsPanelProps) {
         />
       )}
 
-      {/* Script Preview Modal */}
+      {/* Script/Command Preview Modal */}
       {previewScriptPath && (
         <ScriptPreviewModal
           appId={app.id}
           scriptPath={previewScriptPath}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
+          isInlineCommand={previewIsInline}
         />
       )}
 

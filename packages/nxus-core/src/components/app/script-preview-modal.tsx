@@ -14,35 +14,48 @@ import { readScriptFileServerFn } from '@/services/shell/read-script.server'
 
 interface ScriptPreviewModalProps {
   appId: string
-  scriptPath: string // Relative path like "install.ps1"
+  scriptPath: string // Relative path like "install.ps1" OR inline command for execute mode
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** If true, scriptPath is an inline command to display directly (not a file to read) */
+  isInlineCommand?: boolean
 }
 
 /**
- * Modal to preview script content before execution
+ * Modal to preview script content or inline command before execution
  */
 export function ScriptPreviewModal({
   appId,
   scriptPath,
   open,
   onOpenChange,
+  isInlineCommand = false,
 }: ScriptPreviewModalProps) {
   const [content, setContent] = React.useState<string>('')
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [copied, setCopied] = React.useState(false)
 
-  // Extract filename from path
+  // Extract filename from path (or use "command" for inline)
   const fileName = React.useMemo(() => {
+    if (isInlineCommand) return 'Command'
     const parts = scriptPath.split('/')
     return parts[parts.length - 1] || 'script'
-  }, [scriptPath])
+  }, [scriptPath, isInlineCommand])
 
-  // Load script content when modal opens
+  // Load script content when modal opens (or set inline command directly)
   React.useEffect(() => {
     if (!open) return
 
+    // For inline commands, just display the command directly
+    if (isInlineCommand) {
+      setContent(scriptPath)
+      setLoading(false)
+      setError(null)
+      return
+    }
+
+    // For script files, read from disk
     setLoading(true)
     setError(null)
     setContent('')
@@ -60,7 +73,7 @@ export function ScriptPreviewModal({
         setError(err.message)
         setLoading(false)
       })
-  }, [open, appId, scriptPath])
+  }, [open, appId, scriptPath, isInlineCommand])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content)
@@ -79,7 +92,9 @@ export function ScriptPreviewModal({
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription>
-            Review the script content before running.
+            {isInlineCommand
+              ? 'Review the command that will be executed.'
+              : 'Review the script content before running.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
