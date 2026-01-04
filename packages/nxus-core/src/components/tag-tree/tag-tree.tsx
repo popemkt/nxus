@@ -6,7 +6,7 @@ import {
   Plus,
   X,
   MagnifyingGlass,
-  DotsSixVertical,
+  TreeStructure,
 } from '@phosphor-icons/react'
 import {
   useTagDataStore,
@@ -96,29 +96,38 @@ function TagTreeItem({
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
       >
-        {/* Drag handle (editor mode only) */}
-        {mode === 'editor' && level === 0 && (
-          <DotsSixVertical
-            size={14}
-            className="text-muted-foreground/50 group-hover:text-muted-foreground cursor-grab active:cursor-grabbing"
-            weight="bold"
-          />
-        )}
-
-        {/* Expand/collapse caret */}
-        <button
-          className={cn(
-            'p-0.5 rounded hover:bg-accent',
-            !hasChildren && 'invisible',
-          )}
-          onClick={handleExpandClick}
-        >
-          {isExpanded ? (
-            <CaretDown size={14} weight="bold" />
+        {/* Icon with optional expand overlay */}
+        <div className="relative flex items-center justify-center w-5 h-5">
+          {/* Tag icon - TreeStructure for parents, Tag for leaves */}
+          {hasChildren ? (
+            <TreeStructure
+              size={14}
+              weight="duotone"
+              style={{ color: tag.color || 'currentColor' }}
+              className="group-hover:opacity-0 transition-opacity"
+            />
           ) : (
-            <CaretRight size={14} weight="bold" />
+            <Tag
+              size={14}
+              weight="duotone"
+              style={{ color: tag.color || 'currentColor' }}
+            />
           )}
-        </button>
+
+          {/* Expand button - appears on hover over icon for parent items */}
+          {hasChildren && (
+            <button
+              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-accent"
+              onClick={handleExpandClick}
+            >
+              {isExpanded ? (
+                <CaretDown size={12} weight="bold" />
+              ) : (
+                <CaretRight size={12} weight="bold" />
+              )}
+            </button>
+          )}
+        </div>
 
         {/* Checkbox (filter mode only) */}
         {mode === 'filter' && (
@@ -130,13 +139,6 @@ function TagTreeItem({
             onClick={(e) => e.stopPropagation()}
           />
         )}
-
-        {/* Tag icon */}
-        <Tag
-          size={14}
-          weight="duotone"
-          style={{ color: tag.color || 'currentColor' }}
-        />
 
         {/* Tag name */}
         <span className="text-sm truncate">{tag.name}</span>
