@@ -104,9 +104,11 @@ export const deleteTagServerFn = createServerFn({ method: 'POST' })
 export const moveTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(MoveTagInputSchema)
   .handler(async (ctx) => {
+    console.log('[moveTagServerFn] Received:', ctx.data)
+
     const db = await initDatabase()
 
-    await db
+    const result = await db
       .update(tags)
       .set({
         parentId: ctx.data.newParentId,
@@ -115,7 +117,10 @@ export const moveTagServerFn = createServerFn({ method: 'POST' })
       })
       .where(eq(tags.id, ctx.data.id))
 
+    console.log('[moveTagServerFn] Update result:', result)
+
     saveDatabase()
+    console.log('[moveTagServerFn] Database saved')
 
     return { success: true }
   })

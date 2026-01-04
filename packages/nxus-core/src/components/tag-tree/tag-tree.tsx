@@ -15,7 +15,27 @@ import {
 } from '@/stores/tag-data.store'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { cn } from '@/lib/utils'
-import { TagDndContext, SortableTagItem } from './use-tag-dnd'
+import {
+  TagDndContext,
+  SortableTagItem,
+  useTagDndDropIndicator,
+} from './use-tag-dnd'
+
+// Wrapper that connects SortableTagItem to the drop indicator context
+function SortableTagItemWithIndicator({
+  id,
+  children,
+}: {
+  id: string
+  children: React.ReactNode
+}) {
+  const { dropIndicator } = useTagDndDropIndicator()
+  return (
+    <SortableTagItem id={id} dropIndicator={dropIndicator}>
+      {children}
+    </SortableTagItem>
+  )
+}
 
 interface TagTreeItemProps {
   node: TagTreeNode
@@ -142,7 +162,11 @@ function TagTreeItem({
 
   // Only wrap root-level items in sortable for now
   if (mode === 'editor' && level === 0) {
-    return <SortableTagItem id={tag.id}>{content}</SortableTagItem>
+    return (
+      <SortableTagItemWithIndicator id={tag.id}>
+        {content}
+      </SortableTagItemWithIndicator>
+    )
   }
 
   return content
