@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
-import { MagnifyingGlassIcon, GearIcon } from '@phosphor-icons/react'
+import { useState, useMemo } from 'react'
+import {
+  MagnifyingGlassIcon,
+  GearIcon,
+  SidebarSimple,
+} from '@phosphor-icons/react'
 import type { App } from '@/types/app'
 import { AppGallery } from '@/components/app/app-gallery'
 import { Input } from '@/components/ui/input'
@@ -13,12 +17,41 @@ import { useBatchItemStatus } from '@/hooks/use-item-status-check'
 import { GlitchText } from '@/components/ui/glitch-text'
 import { DecodeText } from '@/components/ui/decode-text'
 import { InboxButton } from '@/components/inbox-button'
+import { TagTree, TagFilterBar } from '@/components/tag-tree'
+import { useTagUIStore } from '@/stores/tag-ui.store'
+import { useTagDataStore } from '@/stores/tag-data.store'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
 function AppManager() {
   const [searchQuery, setSearchQuery] = useState('')
-  const { apps, loading, error } = useAppRegistry({ searchQuery })
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  // Get selected tag filters
+  const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
+  const includeSubTags = useTagUIStore((s) => s.includeSubTags)
+  const getDescendants = useTagDataStore((s) => s.getDescendants)
+  const tags = useTagDataStore((s) => s.tags)
+
+  // Build tag filter list including descendants if needed
+  const filterTags = useMemo(() => {
+    if (selectedTagIds.size === 0) return undefined
+
+    const tagNames: string[] = []
+    for (const tagId of selectedTagIds) {
+      const tag = tags.get(tagId)
+      if (tag) tagNames.push(tag.name)
+      if (includeSubTags.get(tagId)) {
+        const descendants = getDescendants(tagId)
+        for (const desc of descendants) {
+          tagNames.push(desc.name)
+        }
+      }
+    }
+    return tagNames.length > 0 ? tagNames : undefined
+  }, [selectedTagIds, includeSubTags, getDescendants, tags])
+
+  const { apps, loading, error } = useAppRegistry({ searchQuery, filterTags })
 
   // Trigger health checks for all tools
   useBatchItemStatus(apps)
@@ -94,6 +127,13 @@ function AppManager() {
               />
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                title={sidebarOpen ? 'Hide tags' : 'Show tags'}
+              >
+                <SidebarSimple className="h-5 w-5" />
+              </button>
               <DevModeBadge />
               <OsBadge />
               <ThemeToggle />
@@ -121,8 +161,22 @@ function AppManager() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-6">{renderContent()}</div>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Tag Sidebar */}
+        {sidebarOpen && (
+          <aside className="w-64 border-r bg-background flex-shrink-0 overflow-y-auto">
+            <TagTree mode="editor" />
+          </aside>
+        )}
+
+        {/* Main content */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          {/* Filter bar */}
+          <TagFilterBar />
+          <div className="container mx-auto px-4 py-6 flex-1">
+            {renderContent()}
+          </div>
+        </div>
       </div>
     </div>
   )

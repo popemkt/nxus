@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const dataDir = resolve(__dirname, '../../data')
-const dbPath = resolve(dataDir, 'inbox.db')
+const dbPath = resolve(dataDir, 'nxus.db')
 
 // Ensure data directory exists
 if (!existsSync(dataDir)) {
@@ -44,6 +44,19 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
       title TEXT NOT NULL,
       notes TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `)
+
+  sqliteDb.run(`
+    CREATE TABLE IF NOT EXISTS tags (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      parent_id TEXT,
+      "order" INTEGER NOT NULL DEFAULT 0,
+      color TEXT,
+      icon TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )

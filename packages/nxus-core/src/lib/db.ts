@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie'
 import type { Command } from '@/types/command'
 import type { Dependency, DependencyCheckResult } from '@/types/dependency'
 import type { App } from '@/types/app'
+import type { Tag } from '@/types/tag'
 
 /**
  * Sync status for optimistic updates
@@ -65,6 +66,14 @@ export interface Installation {
 }
 
 /**
+ * Cached tag with sync status
+ */
+export interface CachedTag extends Tag {
+  _syncStatus: SyncStatus
+  _updatedAt: number
+}
+
+/**
  * NxusDB - Client-side IndexedDB database
  *
  * Provides instant reads with background sync to server.
@@ -75,6 +84,7 @@ export class NxusDB extends Dexie {
   commands!: Table<CachedCommand, string>
   dependencyChecks!: Table<CachedDependencyCheck, string>
   installations!: Table<Installation, string>
+  tags!: Table<CachedTag, string>
 
   constructor() {
     super('NxusDB')
@@ -87,6 +97,15 @@ export class NxusDB extends Dexie {
       commands: 'id, category, *dependencies, _syncStatus',
       dependencyChecks: 'dependencyId, checkedAt, _expiresAt',
       installations: 'id, itemId, _syncStatus',
+    })
+
+    // Version 2: Add tags table
+    this.version(2).stores({
+      galleryItems: 'id, type, *tags, _syncStatus',
+      commands: 'id, category, *dependencies, _syncStatus',
+      dependencyChecks: 'dependencyId, checkedAt, _expiresAt',
+      installations: 'id, itemId, _syncStatus',
+      tags: 'id, parentId, order, _syncStatus',
     })
   }
 }
@@ -102,6 +121,7 @@ export async function clearAllCaches(): Promise<void> {
   await db.commands.clear()
   await db.dependencyChecks.clear()
   await db.installations.clear()
+  await db.tags.clear()
 }
 
 /**
