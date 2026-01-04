@@ -33,6 +33,7 @@ const StreamCommandInputSchema = z.object({
 export const streamCommandServerFn = createServerFn({ method: 'POST' })
   .inputValidator(StreamCommandInputSchema)
   .handler(async function* (ctx) {
+    console.log('[streamCommandServerFn] Input:', ctx.data)
     const { command, args = [], cwd, env } = ctx.data
 
     // Queue for incoming chunks
@@ -57,12 +58,14 @@ export const streamCommandServerFn = createServerFn({ method: 'POST' })
     })
 
     child.on('close', (exitCode, signal) => {
+      console.log('[streamCommandServerFn] Success:', command, exitCode)
       chunks.push({ type: 'exit', exitCode: exitCode || 0, signal })
       done = true
       resolveChunk?.()
     })
 
     child.on('error', (error) => {
+      console.error('[streamCommandServerFn] Error:', command, error.message)
       chunks.push({ type: 'error', message: error.message })
       done = true
       resolveChunk?.()

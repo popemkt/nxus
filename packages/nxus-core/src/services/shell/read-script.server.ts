@@ -25,13 +25,20 @@ const ReadScriptSchema = z.object({
 export const readScriptFileServerFn = createServerFn({ method: 'GET' })
   .inputValidator(ReadScriptSchema)
   .handler(async (ctx) => {
+    console.log('[readScriptFileServerFn] Input:', ctx.data)
     const { appId, scriptPath } = ctx.data
     const fullPath = path.join(getAppDataPath(appId), scriptPath)
 
     try {
       const content = await fs.readFile(fullPath, 'utf-8')
+      console.log('[readScriptFileServerFn] Success:', fullPath)
       return { success: true as const, content, fullPath }
     } catch (error) {
+      console.log(
+        '[readScriptFileServerFn] Failed:',
+        fullPath,
+        (error as Error).message,
+      )
       return {
         success: false as const,
         error: `Failed to read script: ${(error as Error).message}`,
@@ -50,8 +57,11 @@ const GetScriptPathSchema = z.object({
 export const getScriptFullPathServerFn = createServerFn({ method: 'GET' })
   .inputValidator(GetScriptPathSchema)
   .handler(async (ctx) => {
+    console.log('[getScriptFullPathServerFn] Input:', ctx.data)
     const { appId, scriptPath } = ctx.data
-    return {
+    const result = {
       fullPath: path.join(getAppDataPath(appId), scriptPath),
     }
+    console.log('[getScriptFullPathServerFn] Result:', result.fullPath)
+    return result
   })

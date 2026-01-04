@@ -6,7 +6,6 @@ import {
   SidebarSimple,
 } from '@phosphor-icons/react'
 import type { App } from '@/types/app'
-import { AppGallery } from '@/components/app/app-gallery'
 import { Input } from '@/components/ui/input'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { OsBadge } from '@/components/os-badge'
@@ -20,13 +19,24 @@ import { InboxButton } from '@/components/inbox-button'
 import { TagTree, TagFilterBar } from '@/components/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
+import { useViewModeStore } from '@/stores/view-mode.store'
 import { cn } from '@/lib/utils'
+import {
+  GalleryView,
+  TableView,
+  GraphView,
+  ViewModeSwitcher,
+} from '@/components/item-views'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
 function AppManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  // View mode state
+  const viewMode = useViewModeStore((s) => s.viewMode)
+  const galleryMode = useViewModeStore((s) => s.galleryMode)
 
   // Get selected tag filters
   const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
@@ -65,7 +75,7 @@ function AppManager() {
     console.log('Install app:', app)
   }
 
-  // Render content based on state
+  // Render content based on view mode
   const renderContent = () => {
     // Show error state
     if (error) {
@@ -99,15 +109,18 @@ function AppManager() {
       )
     }
 
-    // Show gallery (even during loading to prevent flash)
-    return (
-      <AppGallery
-        apps={apps}
-        onOpen={handleOpen}
-        onInstall={handleInstall}
-        groupByType={false}
-      />
-    )
+    // Render based on view mode
+    switch (viewMode) {
+      case 'table':
+        return <TableView items={apps} />
+      case 'graph':
+        return <GraphView items={apps} searchQuery={searchQuery} />
+      case 'gallery':
+      default:
+        return (
+          <GalleryView items={apps} mode={galleryMode} groupByType={false} />
+        )
+    }
   }
 
   return (
@@ -128,6 +141,7 @@ function AppManager() {
               />
             </div>
             <div className="flex items-center gap-2">
+              <ViewModeSwitcher />
               <DevModeBadge />
               <OsBadge />
               <ThemeToggle />
@@ -182,10 +196,20 @@ function AppManager() {
         </button>
 
         {/* Main content */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div
+          className={cn(
+            'flex-1 flex flex-col',
+            viewMode !== 'graph' && 'overflow-y-auto',
+          )}
+        >
           {/* Filter bar */}
           <TagFilterBar />
-          <div className="container mx-auto px-4 py-6 flex-1">
+          <div
+            className={cn(
+              'container mx-auto px-4 py-6 flex-1',
+              viewMode === 'graph' && 'p-0 max-w-none',
+            )}
+          >
             {renderContent()}
           </div>
         </div>

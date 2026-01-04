@@ -29,6 +29,7 @@ export interface GitStatus {
 export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
   .inputValidator(GitStatusSchema)
   .handler(async (ctx): Promise<GitStatus> => {
+    console.log('[checkGitStatusServerFn] Input:', ctx.data)
     const { path } = ctx.data
 
     const defaultStatus: GitStatus = {
@@ -47,6 +48,7 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
         await execAsync('git --version')
         defaultStatus.gitInstalled = true
       } catch {
+        console.log('[checkGitStatusServerFn] Git not installed')
         return { ...defaultStatus, error: 'Git is not installed' }
       }
 
@@ -55,6 +57,7 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
         await execAsync('git rev-parse --git-dir', { cwd: path })
         defaultStatus.isGitRepo = true
       } catch {
+        console.log('[checkGitStatusServerFn] Not a git repository:', path)
         return { ...defaultStatus, error: 'Not a git repository' }
       }
 
@@ -74,6 +77,7 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
         const { stdout } = await execAsync('git remote -v', { cwd: path })
         defaultStatus.hasRemote = stdout.trim().length > 0
       } catch {
+        console.log('[checkGitStatusServerFn] No remote:', path)
         return {
           ...defaultStatus,
           error: 'No remote repository configured',
@@ -81,6 +85,7 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
       }
 
       if (!defaultStatus.hasRemote) {
+        console.log('[checkGitStatusServerFn] No remote:', path)
         return { ...defaultStatus, error: 'No remote repository configured' }
       }
 
@@ -91,6 +96,7 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
         })
         defaultStatus.remoteBranch = stdout.trim()
       } catch {
+        console.log('[checkGitStatusServerFn] No upstream configured:', path)
         return {
           ...defaultStatus,
           error: 'No upstream branch configured',
@@ -134,6 +140,10 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
       // 9. Determine if up to date
       defaultStatus.isUpToDate = defaultStatus.behindBy === 0
 
+      console.log('[checkGitStatusServerFn] Success:', path, {
+        isUpToDate: defaultStatus.isUpToDate,
+        behindBy: defaultStatus.behindBy,
+      })
       return defaultStatus
     } catch (error) {
       console.error('Git status check failed:', error)

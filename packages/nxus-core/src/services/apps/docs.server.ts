@@ -25,13 +25,20 @@ const GetDocContentSchema = z.object({
 export const getDocContentServerFn = createServerFn({ method: 'GET' })
   .inputValidator(GetDocContentSchema)
   .handler(async (ctx) => {
+    console.log('[getDocContentServerFn] Input:', ctx.data)
     const { appId, fileName } = ctx.data
     const docPath = path.join(getAppDataPath(appId), fileName)
 
     try {
       const content = await fs.readFile(docPath, 'utf-8')
+      console.log('[getDocContentServerFn] Success:', docPath)
       return { success: true as const, content }
     } catch (error) {
+      console.log(
+        '[getDocContentServerFn] Failed:',
+        docPath,
+        (error as Error).message,
+      )
       return {
         success: false as const,
         error: `Failed to load doc: ${(error as Error).message}`,
@@ -49,6 +56,7 @@ const ListAppDocsSchema = z.object({
 export const listAppDocsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(ListAppDocsSchema)
   .handler(async (ctx) => {
+    console.log('[listAppDocsServerFn] Input:', ctx.data)
     const { appId } = ctx.data
     const appDir = getAppDataPath(appId)
 
@@ -57,8 +65,10 @@ export const listAppDocsServerFn = createServerFn({ method: 'GET' })
       const mdFiles = files.filter(
         (f) => f.endsWith('.md') && f !== 'manifest.json',
       )
+      console.log('[listAppDocsServerFn] Success:', appId, mdFiles.length)
       return { success: true as const, files: mdFiles }
     } catch {
+      console.log('[listAppDocsServerFn] No docs found:', appId)
       return { success: true as const, files: [] }
     }
   })
@@ -73,9 +83,12 @@ const GetAppManifestPathSchema = z.object({
 export const getAppManifestPathServerFn = createServerFn({ method: 'GET' })
   .inputValidator(GetAppManifestPathSchema)
   .handler(async (ctx) => {
+    console.log('[getAppManifestPathServerFn] Input:', ctx.data)
     const { appId } = ctx.data
-    return {
+    const result = {
       manifestPath: path.join(getAppDataPath(appId), 'manifest.json'),
       docsPath: getAppDataPath(appId),
     }
+    console.log('[getAppManifestPathServerFn] Result:', result)
+    return result
   })

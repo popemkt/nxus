@@ -59,6 +59,7 @@ function checkEnvVar(variable: string, expectedValue?: string): boolean {
 export const checkDependencyServerFn = createServerFn({ method: 'POST' })
   .inputValidator(CheckDependencyInputSchema)
   .handler(async (ctx): Promise<DependencyCheckResult> => {
+    console.log('[checkDependencyServerFn] Input:', ctx.data)
     const { dependencyId, checkConfig } = ctx.data
     const checkedAt = Date.now()
 
@@ -94,12 +95,18 @@ export const checkDependencyServerFn = createServerFn({ method: 'POST' })
           break
       }
 
+      console.log(
+        '[checkDependencyServerFn] Result:',
+        dependencyId,
+        isInstalled,
+      )
       return {
         dependencyId: dependencyId as DependencyId,
         isInstalled,
         checkedAt,
       }
     } catch (error) {
+      console.error('[checkDependencyServerFn] Error:', dependencyId, error)
       return {
         dependencyId: dependencyId as DependencyId,
         isInstalled: false,
@@ -122,6 +129,10 @@ export const checkMultipleDependenciesServerFn = createServerFn({
 })
   .inputValidator(CheckMultipleDependenciesInputSchema)
   .handler(async (ctx): Promise<DependencyCheckResult[]> => {
+    console.log(
+      '[checkMultipleDependenciesServerFn] Checking:',
+      ctx.data.checks.length,
+    )
     const { checks } = ctx.data
 
     const results = await Promise.all(
@@ -133,5 +144,6 @@ export const checkMultipleDependenciesServerFn = createServerFn({
       }),
     )
 
+    console.log('[checkMultipleDependenciesServerFn] Completed')
     return results
   })

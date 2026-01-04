@@ -41,8 +41,10 @@ const CreatePtySessionInputSchema = z.object({
 export const createPtySessionServerFn = createServerFn({ method: 'POST' })
   .inputValidator(CreatePtySessionInputSchema)
   .handler(async (ctx) => {
+    console.log('[createPtySessionServerFn] Input:', ctx.data)
     try {
       const session = createPtySession(ctx.data)
+      console.log('[createPtySessionServerFn] Success:', session.id)
       return {
         success: true as const,
         sessionId: session.id,
@@ -50,6 +52,7 @@ export const createPtySessionServerFn = createServerFn({ method: 'POST' })
         cwd: session.cwd,
       }
     } catch (error) {
+      console.error('[createPtySessionServerFn] Failed:', error)
       return {
         success: false as const,
         error:
@@ -74,6 +77,7 @@ export const writePtySessionServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const { sessionId, data } = ctx.data
     const success = writePtySession(sessionId, data)
+    if (!success) console.warn('[writePtySessionServerFn] Failed:', sessionId)
     return { success }
   })
 
@@ -156,6 +160,7 @@ const ResizePtySessionInputSchema = z.object({
 export const resizePtySessionServerFn = createServerFn({ method: 'POST' })
   .inputValidator(ResizePtySessionInputSchema)
   .handler(async (ctx) => {
+    console.log('[resizePtySessionServerFn] Input:', ctx.data)
     const { sessionId, cols, rows } = ctx.data
     const success = resizePtySession(sessionId, cols, rows)
     return { success }
@@ -172,6 +177,7 @@ const ClosePtySessionInputSchema = z.object({
 export const closePtySessionServerFn = createServerFn({ method: 'POST' })
   .inputValidator(ClosePtySessionInputSchema)
   .handler(async (ctx) => {
+    console.log('[closePtySessionServerFn] Input:', ctx.data)
     const { sessionId } = ctx.data
     const success = closePtySession(sessionId)
     return { success }

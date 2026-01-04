@@ -89,6 +89,7 @@ const ParseParamsSchema = z.object({
 export const parsePowerShellParamsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(ParseParamsSchema)
   .handler(async (ctx): Promise<ParseScriptParamsResult> => {
+    console.log('[parsePowerShellParamsServerFn] Input:', ctx.data)
     const { scriptPath } = ctx.data
 
     let tempFile = ''
@@ -110,6 +111,7 @@ export const parsePowerShellParamsServerFn = createServerFn({ method: 'GET' })
       await fs.unlink(tempFile).catch(() => {})
 
       if (stderr && !stdout) {
+        console.error('[parsePowerShellParamsServerFn] Stderr:', stderr)
         return { success: false, error: stderr }
       }
 
@@ -132,14 +134,20 @@ export const parsePowerShellParamsServerFn = createServerFn({ method: 'GET' })
           name: p.Name,
           type: mapPowerShellType(p.Type, p.Name, p.ValidateSet),
           required: p.IsMandatory,
-          defaultValue: p.HasDefault ? p.DefaultValue : undefined,
+          defaultValue: p.HasDefault ? (p.DefaultValue as any) : undefined,
           options: p.ValidateSet ?? undefined,
           description: p.HelpMessage ?? undefined,
         }),
       )
 
+      console.log(
+        '[parsePowerShellParamsServerFn] Success:',
+        scriptPath,
+        params.length,
+      )
       return { success: true, params }
     } catch (error) {
+      console.error('[parsePowerShellParamsServerFn] Failed:', error)
       // Cleanup on error
       if (tempFile) {
         await fs.unlink(tempFile).catch(() => {})

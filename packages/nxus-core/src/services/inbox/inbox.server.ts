@@ -9,11 +9,13 @@ import { eq, desc } from 'drizzle-orm'
  */
 export const getInboxItemsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
+    console.log('[getInboxItemsServerFn] Fetching all items')
     const db = await initDatabase()
     const items = await db
       .select()
       .from(inboxItems)
       .orderBy(desc(inboxItems.createdAt))
+    console.log('[getInboxItemsServerFn] Found:', items.length)
     return { success: true, data: items }
   },
 )
@@ -24,12 +26,14 @@ export const getInboxItemsServerFn = createServerFn({ method: 'GET' }).handler(
 export const getPendingInboxItemsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
+  console.log('[getPendingInboxItemsServerFn] Fetching pending items')
   const db = await initDatabase()
   const items = await db
     .select()
     .from(inboxItems)
     .where(eq(inboxItems.status, 'pending'))
     .orderBy(desc(inboxItems.createdAt))
+  console.log('[getPendingInboxItemsServerFn] Found:', items.length)
   return { success: true, data: items }
 })
 
@@ -44,6 +48,7 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
+    console.log('[addInboxItemServerFn] Input:', ctx.data)
     const { title, notes } = ctx.data
     const db = await initDatabase()
     const now = new Date()
@@ -60,6 +65,7 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
       .returning()
 
     saveDatabase()
+    console.log('[addInboxItemServerFn] Success:', result[0].id)
     return { success: true, data: result[0] }
   })
 
@@ -76,6 +82,7 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
+    console.log('[updateInboxItemServerFn] Input:', ctx.data)
     const { id, ...updates } = ctx.data
     const db = await initDatabase()
 
@@ -89,10 +96,12 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
       .returning()
 
     if (result.length === 0) {
+      console.log('[updateInboxItemServerFn] Not found:', id)
       return { success: false as const, error: 'Item not found' }
     }
 
     saveDatabase()
+    console.log('[updateInboxItemServerFn] Success:', id)
     return { success: true as const, data: result[0] }
   })
 
@@ -102,6 +111,7 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
 export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
+    console.log('[deleteInboxItemServerFn] Input:', ctx.data)
     const { id } = ctx.data
     const db = await initDatabase()
 
@@ -111,10 +121,12 @@ export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
       .returning()
 
     if (result.length === 0) {
+      console.log('[deleteInboxItemServerFn] Not found:', id)
       return { success: false as const, error: 'Item not found' }
     }
 
     saveDatabase()
+    console.log('[deleteInboxItemServerFn] Success:', id)
     return { success: true as const }
   })
 
@@ -124,6 +136,7 @@ export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
 export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
+    console.log('[markAsProcessingServerFn] Input:', ctx.data)
     const db = await initDatabase()
     const result = await db
       .update(inboxItems)
@@ -132,6 +145,7 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
       .returning()
 
     saveDatabase()
+    console.log('[markAsProcessingServerFn] Success:', ctx.data.id)
     return { success: true, data: result[0] }
   })
 
@@ -141,6 +155,7 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
 export const markAsDoneServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
+    console.log('[markAsDoneServerFn] Input:', ctx.data)
     const db = await initDatabase()
     const result = await db
       .update(inboxItems)
@@ -149,6 +164,7 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
       .returning()
 
     saveDatabase()
+    console.log('[markAsDoneServerFn] Success:', ctx.data.id)
     return { success: true, data: result[0] }
   })
 

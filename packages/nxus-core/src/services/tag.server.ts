@@ -40,6 +40,7 @@ const MoveTagInputSchema = z.object({
 export const createTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(CreateTagInputSchema)
   .handler(async (ctx) => {
+    console.log('[createTagServerFn] Input:', ctx.data)
     const db = await initDatabase()
     const now = new Date()
 
@@ -55,6 +56,7 @@ export const createTagServerFn = createServerFn({ method: 'POST' })
     })
 
     saveDatabase()
+    console.log('[createTagServerFn] Success:', ctx.data.id)
 
     return { success: true, id: ctx.data.id }
   })
@@ -65,6 +67,7 @@ export const createTagServerFn = createServerFn({ method: 'POST' })
 export const updateTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(UpdateTagInputSchema)
   .handler(async (ctx) => {
+    console.log('[updateTagServerFn] Input:', ctx.data)
     const db = await initDatabase()
     const { id, ...updates } = ctx.data
 
@@ -77,6 +80,7 @@ export const updateTagServerFn = createServerFn({ method: 'POST' })
       .where(eq(tags.id, id))
 
     saveDatabase()
+    console.log('[updateTagServerFn] Success:', id)
 
     return { success: true }
   })
@@ -87,6 +91,7 @@ export const updateTagServerFn = createServerFn({ method: 'POST' })
 export const deleteTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(DeleteTagInputSchema)
   .handler(async (ctx) => {
+    console.log('[deleteTagServerFn] Input:', ctx.data)
     const db = await initDatabase()
 
     // TODO: Handle cascade deletion of children
@@ -94,6 +99,7 @@ export const deleteTagServerFn = createServerFn({ method: 'POST' })
     await db.delete(tags).where(eq(tags.id, ctx.data.id))
 
     saveDatabase()
+    console.log('[deleteTagServerFn] Success:', ctx.data.id)
 
     return { success: true }
   })
@@ -130,8 +136,10 @@ export const moveTagServerFn = createServerFn({ method: 'POST' })
  */
 export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
+    console.log('[getTagsServerFn] Fetching all tags')
     const db = await initDatabase()
     const allTags = await db.select().from(tags)
+    console.log('[getTagsServerFn] Found:', allTags.length)
     return { success: true, data: allTags }
   },
 )

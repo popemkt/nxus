@@ -19,7 +19,7 @@ export const getOsInfoServerFn = createServerFn({ method: 'GET' }).handler(
       mappedPlatform = 'macos'
     }
 
-    console.log('OS Info:', {
+    console.log('[getOsInfoServerFn] Info:', {
       platform,
       mappedPlatform,
       arch: os.arch(),

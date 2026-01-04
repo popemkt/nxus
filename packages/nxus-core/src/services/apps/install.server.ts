@@ -27,6 +27,7 @@ type InstallResult =
 export const installAppServerFn = createServerFn({ method: 'POST' })
   .inputValidator(InstallParamsSchema)
   .handler(async (ctx): Promise<InstallResult> => {
+    console.log('[installAppServerFn] Input:', ctx.data)
     const { name, url, targetPath } = ctx.data
 
     try {
@@ -41,6 +42,7 @@ export const installAppServerFn = createServerFn({ method: 'POST' })
       // Skip if already exists
       const stats = await fs.stat(appDir).catch(() => null)
       if (stats) {
+        console.log('[installAppServerFn] Failed: Path exists', appDir)
         return {
           success: false,
           error: `Target directory already exists: ${appDir}`,
@@ -48,9 +50,10 @@ export const installAppServerFn = createServerFn({ method: 'POST' })
       }
 
       // Clone the repository
-      console.log(`Cloning ${url} into ${appDir}...`)
+      console.log(`[installAppServerFn] Cloning ${url} into ${appDir}...`)
       await execAsync(`git clone ${url} ${appDir}`)
 
+      console.log('[installAppServerFn] Success:', appDir)
       return {
         success: true,
         data: {
@@ -59,7 +62,7 @@ export const installAppServerFn = createServerFn({ method: 'POST' })
         },
       }
     } catch (error) {
-      console.error('Installation failed:', error)
+      console.error('[installAppServerFn] Failed:', error)
       return {
         success: false,
         error:

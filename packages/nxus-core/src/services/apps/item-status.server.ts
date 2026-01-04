@@ -28,6 +28,7 @@ export interface ItemStatusResult {
 export const checkItemStatus = createServerFn({ method: 'GET' })
   .inputValidator(CheckItemStatusInputSchema)
   .handler(async ({ data }): Promise<ItemStatusResult> => {
+    console.log('[checkItemStatus] Input:', data)
     const { checkCommand } = data
 
     try {
@@ -36,12 +37,14 @@ export const checkItemStatus = createServerFn({ method: 'GET' })
       })
 
       const output = stdout.trim() || stderr.trim()
+      console.log('[checkItemStatus] Success:', checkCommand, output)
 
       return {
         isInstalled: true,
         version: output,
       }
     } catch (error: any) {
+      console.log('[checkItemStatus] Failed:', checkCommand, error.message)
       return {
         isInstalled: false,
         error: error.message,
@@ -76,6 +79,7 @@ export interface BatchItemStatusResult {
 export const batchCheckItemStatus = createServerFn({ method: 'POST' })
   .inputValidator(BatchCheckItemsInputSchema)
   .handler(async ({ data }): Promise<BatchItemStatusResult> => {
+    console.log('[batchCheckItemStatus] Checking items:', data.items.length)
     const { items } = data
     const results: Record<string, ItemStatusResult> = {}
 
@@ -101,5 +105,6 @@ export const batchCheckItemStatus = createServerFn({ method: 'POST' })
       }),
     )
 
+    console.log('[batchCheckItemStatus] Completed checks')
     return { results }
   })

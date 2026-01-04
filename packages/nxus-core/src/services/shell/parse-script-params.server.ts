@@ -26,24 +26,36 @@ const ParseScriptParamsSchema = z.object({
 export const parseScriptParamsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(ParseScriptParamsSchema)
   .handler(async (ctx): Promise<ParseScriptParamsResult> => {
+    console.log('[parseScriptParamsServerFn] Input:', ctx.data)
     const { appId, scriptPath } = ctx.data
     const fullPath = path.join(getAppDataPath(appId), scriptPath)
     const ext = path.extname(scriptPath).toLowerCase()
 
+    let result: ParseScriptParamsResult
     switch (ext) {
       case '.ps1':
-        return parsePowerShellParamsServerFn({
+        result = await parsePowerShellParamsServerFn({
           data: { scriptPath: fullPath },
         })
+        break
 
       case '.sh':
       case '.bash':
         // TODO: Implement bash adapter
-        return { success: true, params: [] }
+        result = { success: true, params: [] }
+        break
 
       default:
-        return { success: true, params: [] }
+        result = { success: true, params: [] }
+        break
     }
+
+    console.log(
+      '[parseScriptParamsServerFn] Success:',
+      scriptPath,
+      result.params?.length,
+    )
+    return result
   })
 
 // Re-export types

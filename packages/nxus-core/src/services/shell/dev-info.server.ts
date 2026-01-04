@@ -38,10 +38,12 @@ export const getDevInfoServerFn = createServerFn({ method: 'GET' }).handler(
       }
     }
 
-    return {
+    const result = {
       isDevMode: isDev,
       devReposPath,
       nxusRootPath,
     }
+    console.log('[getDevInfoServerFn] Result:', result)
+    return result
   },
 )

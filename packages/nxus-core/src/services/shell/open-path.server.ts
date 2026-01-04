@@ -16,16 +16,17 @@ export const openPathServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const { path } = ctx.data
 
-    console.log(`Opening path: ${path}`)
+    console.log(`[openPathServerFn] Opening path: ${path}`)
 
     return new Promise<{ success: boolean; error?: string }>((resolve) => {
       const command = getPlatformCommands().openFolder(path)
 
       exec(command, (error) => {
         if (error) {
-          console.error(`Failed to open path: ${error.message}`)
+          console.error(`[openPathServerFn] Failed: ${error.message}`)
           resolve({ success: false, error: error.message })
         } else {
+          console.log('[openPathServerFn] Success')
           resolve({ success: true })
         }
       })

@@ -16,16 +16,17 @@ export const openTerminalServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const { path } = ctx.data
 
-    console.log(`Opening terminal at: ${path}`)
+    console.log(`[openTerminalServerFn] Opening terminal at: ${path}`)
 
     return new Promise<{ success: boolean; error?: string }>((resolve) => {
       const command = getPlatformCommands().openTerminal(path)
 
       exec(command, (error) => {
         if (error) {
-          console.error(`Failed to open terminal: ${error.message}`)
+          console.error(`[openTerminalServerFn] Failed: ${error.message}`)
           resolve({ success: false, error: error.message })
         } else {
+          console.log('[openTerminalServerFn] Success')
           resolve({ success: true })
         }
       })

@@ -20,9 +20,14 @@ type UninstallResult =
 export const uninstallAppServerFn = createServerFn({ method: 'POST' })
   .inputValidator(UninstallParamsSchema)
   .handler(async (ctx): Promise<UninstallResult> => {
+    console.log('[uninstallAppServerFn] Input:', ctx.data)
     const { installPath, deleteFromDisk } = ctx.data
 
     if (!deleteFromDisk) {
+      console.log(
+        '[uninstallAppServerFn] Success (no disk deletion):',
+        installPath,
+      )
       return {
         success: true,
         data: { message: 'Installation forgotten (files remain on disk)' },
@@ -44,6 +49,7 @@ export const uninstallAppServerFn = createServerFn({ method: 'POST' })
       // Delete recursively - this is OS-agnostic
       await fs.rm(installPath, { recursive: true, force: true })
 
+      console.log('[uninstallAppServerFn] Success (disk deleted):', installPath)
       return {
         success: true,
         data: {

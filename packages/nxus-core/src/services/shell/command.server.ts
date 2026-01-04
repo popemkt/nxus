@@ -30,6 +30,7 @@ export const executeCommandServerFn = createServerFn({ method: 'POST' })
     ): Promise<
       { success: true; data: CommandResult } | { success: false; error: string }
     > => {
+      console.log('[executeCommandServerFn] Input:', ctx.data)
       try {
         const { command, args = [], cwd, env } = ctx.data
 
@@ -52,6 +53,7 @@ export const executeCommandServerFn = createServerFn({ method: 'POST' })
           })
 
           child.on('close', (exitCode, signal) => {
+            console.log('[executeCommandServerFn] Success:', command, exitCode)
             resolve({
               success: true,
               data: {
@@ -64,6 +66,11 @@ export const executeCommandServerFn = createServerFn({ method: 'POST' })
           })
 
           child.on('error', (error) => {
+            console.error(
+              '[executeCommandServerFn] Error:',
+              command,
+              error.message,
+            )
             resolve({
               success: false,
               error: `Failed to execute command: ${error.message}`,
@@ -71,6 +78,7 @@ export const executeCommandServerFn = createServerFn({ method: 'POST' })
           })
         })
       } catch (error) {
+        console.error('[executeCommandServerFn] Catch:', error)
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

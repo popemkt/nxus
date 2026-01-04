@@ -25,7 +25,9 @@ export const openFolderPickerServerFn = createServerFn({ method: 'POST' })
     const homeDir = os.homedir()
     const initialDir = startPath || homeDir
 
-    console.log(`Opening folder picker, starting at: ${initialDir}`)
+    console.log(
+      `[openFolderPickerServerFn] Opening folder picker, starting at: ${initialDir}`,
+    )
 
     return new Promise<{ success: boolean; path?: string; error?: string }>(
       (resolve) => {
@@ -41,15 +43,21 @@ export const openFolderPickerServerFn = createServerFn({ method: 'POST' })
             // User cancelled or dialog failed
             if (error.killed || error.code === 1 || error.code === 5) {
               // Code 1/5 = user cancelled
+              console.log('[openFolderPickerServerFn] Cancelled')
               resolve({ success: true, path: undefined })
             } else {
-              console.error(`Folder picker error: ${error.message}`, stderr)
+              console.error(
+                `[openFolderPickerServerFn] Error: ${error.message}`,
+                stderr,
+              )
               resolve({ success: false, error: error.message })
             }
           } else if (selectedPath) {
+            console.log('[openFolderPickerServerFn] Success:', selectedPath)
             resolve({ success: true, path: selectedPath })
           } else {
             // Empty output = cancelled
+            console.log('[openFolderPickerServerFn] Cancelled (empty output)')
             resolve({ success: true, path: undefined })
           }
         })
