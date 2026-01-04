@@ -20,6 +20,7 @@ import { InboxButton } from '@/components/inbox-button'
 import { TagTree, TagFilterBar } from '@/components/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
@@ -127,13 +128,6 @@ function AppManager() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                title={sidebarOpen ? 'Hide tags' : 'Show tags'}
-              >
-                <SidebarSimple className="h-5 w-5" />
-              </button>
               <DevModeBadge />
               <OsBadge />
               <ThemeToggle />
@@ -161,13 +155,31 @@ function AppManager() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Tag Sidebar */}
-        {sidebarOpen && (
-          <aside className="w-64 border-r bg-background flex-shrink-0 overflow-y-auto">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Collapsible Filter Sidebar */}
+        <aside
+          className={cn(
+            'border-r bg-background flex-shrink-0 transition-all duration-200 overflow-hidden',
+            sidebarOpen ? 'w-64' : 'w-0',
+          )}
+        >
+          {/* Sidebar content */}
+          <div className="w-64 h-full overflow-y-auto">
             <TagTree mode="editor" />
-          </aside>
-        )}
+          </div>
+        </aside>
+
+        {/* Unified pill toggle - always visible, position depends on sidebar state */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={cn(
+            'absolute top-1/2 -translate-y-1/2 z-10 bg-muted/80 hover:bg-muted border rounded-full p-1.5 cursor-pointer transition-all shadow-sm',
+            sidebarOpen ? 'left-60' : 'left-0 rounded-l-none border-l-0',
+          )}
+          title={sidebarOpen ? 'Hide filters' : 'Show filters'}
+        >
+          <SidebarSimple className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto flex flex-col">

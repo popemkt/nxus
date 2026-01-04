@@ -1,23 +1,16 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, createContext, useContext } from 'react'
 import {
   DndContext,
-  DragOverlay,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
+  useDraggable,
   type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
-  type UniqueIdentifier,
+  type DragMoveEvent,
 } from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { cn } from '@/lib/utils'
@@ -34,9 +27,24 @@ interface DropIndicator {
   type: DropType
 }
 
+// Context for sharing drop indicator state
+interface TagDndDropContextValue {
+  dropIndicator: DropIndicator
+  activeId: string | null
+}
+
+const TagDndDropContext = createContext<TagDndDropContextValue>({
+  dropIndicator: { overId: null, type: null },
+  activeId: null,
+})
+
+export function useTagDndDropIndicator() {
+  return useContext(TagDndDropContext)
+}
+
 /**
  * Hook for tag tree drag and drop functionality
- * Supports both reordering (drop between) and nesting (drop on center)
+ * Uses raw @dnd-kit/core (not sortable) to prevent automatic transforms
  */
 export function useTagDnd(options?: UseTagDndOptions) {
   const moveTag = useTagDataStore((s) => s.moveTag)
@@ -48,6 +56,10 @@ export function useTagDnd(options?: UseTagDndOptions) {
     overId: null,
     type: null,
   })
+  const [currentPointer, setCurrentPointer] = useState<{
+    x: number
+    y: number
+  } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -55,47 +67,59 @@ export function useTagDnd(options?: UseTagDndOptions) {
         distance: 8,
       },
     }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
   )
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
   }
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) {
-      setDropIndicator({ overId: null, type: null })
-      return
-    }
+  // Track pointer position during drag
+  const handleDragMove = useCallback(
+    (event: DragMoveEvent) => {
+      // Get delta from event and calculate current position
+      const { delta } = event
+      if (event.activatorEvent instanceof MouseEvent) {
+        setCurrentPointer({
+          x: event.activatorEvent.clientX + delta.x,
+          y: event.activatorEvent.clientY + delta.y,
+        })
+      }
 
-    const overRect = over.rect
-    const activeRect = active.rect.current.translated
+      const { over } = event
+      if (!over || event.active.id === over.id) {
+        setDropIndicator({ overId: null, type: null })
+        return
+      }
 
-    if (!overRect || !activeRect) {
-      setDropIndicator({ overId: over.id as string, type: 'nest' })
-      return
-    }
+      const overRect = over.rect
+      if (!overRect || !currentPointer) {
+        setDropIndicator({ overId: over.id as string, type: null })
+        return
+      }
 
-    // Calculate position within the target
-    const overCenterY = overRect.top + overRect.height / 2
-    const activeCenterY = activeRect.top + activeRect.height / 2
+      const pointerY = currentPointer.y
+      const pointerX = currentPointer.x
 
-    // Top 25% = before, bottom 25% = after, middle 50% = nest
-    const topThreshold = overRect.top + overRect.height * 0.25
-    const bottomThreshold = overRect.top + overRect.height * 0.75
+      // Tight zones: top/bottom 20% for reorder
+      const topThreshold = overRect.top + overRect.height * 0.2
+      const bottomThreshold = overRect.top + overRect.height * 0.8
+      const rightHalfStart = overRect.left + overRect.width * 0.5
 
-    let type: DropType = 'nest'
-    if (activeCenterY < topThreshold) {
-      type = 'before'
-    } else if (activeCenterY > bottomThreshold) {
-      type = 'after'
-    }
+      let type: DropType = null
 
-    setDropIndicator({ overId: over.id as string, type })
-  }, [])
+      if (pointerY < topThreshold) {
+        type = 'before'
+      } else if (pointerY > bottomThreshold) {
+        type = 'after'
+      } else if (pointerX > rightHalfStart) {
+        // Right 50% of middle = nest
+        type = 'nest'
+      }
+
+      setDropIndicator({ overId: over.id as string, type })
+    },
+    [currentPointer],
+  )
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
@@ -103,8 +127,9 @@ export function useTagDnd(options?: UseTagDndOptions) {
 
     setActiveId(null)
     setDropIndicator({ overId: null, type: null })
+    setCurrentPointer(null)
 
-    if (!over || active.id === over.id) return
+    if (!over || active.id === over.id || currentIndicator.type === null) return
 
     const activeTagId = active.id as string
     const overTagId = over.id as string
@@ -120,7 +145,10 @@ export function useTagDnd(options?: UseTagDndOptions) {
       await moveTag(activeTagId, overTagId, targetChildren.length)
       options?.onMoveTag?.(activeTagId, overTagId, targetChildren.length)
       options?.onExpandParent?.(overTagId)
-    } else {
+    } else if (
+      currentIndicator.type === 'before' ||
+      currentIndicator.type === 'after'
+    ) {
       // Reorder within same parent level
       const parentId = overTag.parentId
       const siblings = getChildren(parentId)
@@ -138,6 +166,7 @@ export function useTagDnd(options?: UseTagDndOptions) {
   const handleDragCancel = () => {
     setActiveId(null)
     setDropIndicator({ overId: null, type: null })
+    setCurrentPointer(null)
   }
 
   return {
@@ -145,51 +174,59 @@ export function useTagDnd(options?: UseTagDndOptions) {
     activeId,
     dropIndicator,
     handleDragStart,
-    handleDragOver,
+    handleDragMove,
     handleDragEnd,
     handleDragCancel,
   }
 }
 
-interface SortableTagItemProps {
+interface DraggableTagItemProps {
   id: string
   children: React.ReactNode
-  disabled?: boolean
-  dropIndicator?: DropIndicator
 }
 
 /**
- * Wrapper component to make tag items sortable with drop indicators
+ * Draggable wrapper using raw @dnd-kit/core (no automatic transforms on siblings)
  */
-export function SortableTagItem({
-  id,
-  children,
-  disabled,
-  dropIndicator,
-}: SortableTagItemProps) {
+export function DraggableTagItem({ id, children }: DraggableTagItemProps) {
+  const { dropIndicator, activeId } = useTagDndDropIndicator()
+
   const {
     attributes,
     listeners,
-    setNodeRef,
+    setNodeRef: setDragRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({ id, disabled })
+  } = useDraggable({ id })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id })
 
-  const isOverThis = dropIndicator?.overId === id
-  const dropType = isOverThis ? dropIndicator?.type : null
+  // Combine refs
+  const setNodeRef = useCallback(
+    (node: HTMLElement | null) => {
+      setDragRef(node)
+      setDropRef(node)
+    },
+    [setDragRef, setDropRef],
+  )
+
+  const isOverThis = dropIndicator.overId === id
+  const dropType = isOverThis ? dropIndicator.type : null
+
+  // Only the dragged item gets transform
+  const style = isDragging
+    ? {
+        transform: CSS.Translate.toString(transform),
+        opacity: 0.6,
+        zIndex: 100,
+      }
+    : undefined
 
   return (
     <div className="relative">
-      {/* Before drop indicator */}
+      {/* Before drop indicator - thin blue line */}
       {dropType === 'before' && (
-        <div className="absolute -top-0.5 left-0 right-0 h-0.5 bg-primary rounded z-10" />
+        <div className="absolute -top-0.5 left-0 right-0 h-1 bg-primary rounded-full z-10" />
       )}
 
       <div
@@ -198,16 +235,17 @@ export function SortableTagItem({
         {...attributes}
         {...listeners}
         className={cn(
-          isDragging && 'z-50',
-          dropType === 'nest' && 'ring-2 ring-primary bg-primary/10 rounded-md',
+          isDragging && 'cursor-grabbing shadow-lg',
+          dropType === 'nest' &&
+            'ring-2 ring-yellow-500 bg-yellow-500/10 rounded-md',
         )}
       >
         {children}
       </div>
 
-      {/* After drop indicator */}
+      {/* After drop indicator - thin blue line */}
       {dropType === 'after' && (
-        <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-primary rounded z-10" />
+        <div className="absolute -bottom-0.5 left-0 right-0 h-1 bg-primary rounded-full z-10" />
       )}
     </div>
   )
@@ -222,6 +260,7 @@ interface TagDndContextProps {
 
 /**
  * Context provider for tag drag and drop
+ * Uses raw DndContext (not SortableContext) to prevent automatic sibling transforms
  */
 export function TagDndContext({
   children,
@@ -234,54 +273,38 @@ export function TagDndContext({
     activeId,
     dropIndicator,
     handleDragStart,
-    handleDragOver,
+    handleDragMove,
     handleDragEnd,
     handleDragCancel,
   } = useTagDnd({ onMoveTag, onExpandParent })
-
-  const tags = useTagDataStore((s) => s.tags)
-  const activeTag = activeId ? tags.get(activeId) : null
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <SortableContext items={items} strategy={verticalListSortingStrategy}>
-        {/* Pass dropIndicator to children */}
-        <TagDndDropContext.Provider value={{ dropIndicator }}>
-          {children}
-        </TagDndDropContext.Provider>
-      </SortableContext>
-
-      <DragOverlay>
-        {activeTag && (
-          <div className="px-3 py-1.5 bg-background border rounded-md shadow-lg text-sm">
-            {activeTag.name}
-          </div>
-        )}
-      </DragOverlay>
+      <TagDndDropContext.Provider value={{ dropIndicator, activeId }}>
+        {children}
+      </TagDndDropContext.Provider>
     </DndContext>
   )
 }
 
-// Context to pass drop indicator to children
-import { createContext, useContext } from 'react'
-
-interface TagDndDropContextValue {
-  dropIndicator: DropIndicator
+// Legacy export for compatibility (will be replaced)
+export function SortableTagItem({
+  id,
+  children,
+  dropIndicator,
+}: {
+  id: string
+  children: React.ReactNode
+  dropIndicator?: DropIndicator
+}) {
+  return <DraggableTagItem id={id}>{children}</DraggableTagItem>
 }
 
-const TagDndDropContext = createContext<TagDndDropContextValue>({
-  dropIndicator: { overId: null, type: null },
-})
-
-export function useTagDndDropIndicator() {
-  return useContext(TagDndDropContext)
-}
-
-export { DndContext, SortableContext }
+export { DndContext }

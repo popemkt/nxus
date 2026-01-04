@@ -160,8 +160,8 @@ function TagTreeItem({
     </div>
   )
 
-  // Only wrap root-level items in sortable for now
-  if (mode === 'editor' && level === 0) {
+  // Wrap ALL levels in DraggableTagItem in editor mode for multi-level nesting
+  if (mode === 'editor') {
     return (
       <SortableTagItemWithIndicator id={tag.id}>
         {content}
