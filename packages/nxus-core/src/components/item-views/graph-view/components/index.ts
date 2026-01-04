@@ -1,4 +1,5 @@
 export { ItemNode } from './item-node'
 export { CommandNode } from './command-node'
+export { SimpleNode } from './simple-node'
 export { DependencyEdge } from './dependency-edge'
-export { GraphControls } from './graph-controls'
+export { GraphControls, GraphLegend } from './graph-controls'

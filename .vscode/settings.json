@@ -1,5 +1,11 @@
 {
   "remote.autoForwardPorts": true,
   "remote.autoForwardPortsSource": "process",
-  "remote.forwardOnOpen": true
+  "remote.forwardOnOpen": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "packages/repos/**": true
+  }
 }

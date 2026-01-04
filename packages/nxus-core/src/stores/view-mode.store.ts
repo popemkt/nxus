@@ -5,11 +5,15 @@ export type ViewMode = 'gallery' | 'table' | 'graph'
 export type GalleryMode = 'default' | 'compact'
 export type GraphLayout = 'hierarchical' | 'force'
 export type GraphFilterMode = 'highlight' | 'show-only'
+export type GraphNodeStyle = 'detailed' | 'simple'
 
 export interface GraphOptions {
   showCommands: boolean
   filterMode: GraphFilterMode
   layout: GraphLayout
+  nodeStyle: GraphNodeStyle
+  nodesLocked: boolean
+  showLabels: boolean
 }
 
 interface ViewModeState {
@@ -23,9 +27,7 @@ interface ViewModeState {
 
   // Graph options
   graphOptions: GraphOptions
-  setGraphShowCommands: (show: boolean) => void
-  setGraphFilterMode: (mode: GraphFilterMode) => void
-  setGraphLayout: (layout: GraphLayout) => void
+  setGraphOptions: (options: Partial<GraphOptions>) => void
 }
 
 export const useViewModeStore = create<ViewModeState>()(
@@ -44,18 +46,13 @@ export const useViewModeStore = create<ViewModeState>()(
         showCommands: false,
         filterMode: 'highlight',
         layout: 'hierarchical',
+        nodeStyle: 'detailed',
+        nodesLocked: false,
+        showLabels: true,
       },
-      setGraphShowCommands: (show) =>
+      setGraphOptions: (options) =>
         set((state) => ({
-          graphOptions: { ...state.graphOptions, showCommands: show },
-        })),
-      setGraphFilterMode: (mode) =>
-        set((state) => ({
-          graphOptions: { ...state.graphOptions, filterMode: mode },
-        })),
-      setGraphLayout: (layout) =>
-        set((state) => ({
-          graphOptions: { ...state.graphOptions, layout: layout },
+          graphOptions: { ...state.graphOptions, ...options },
         })),
     }),
     {

@@ -1,20 +1,11 @@
 import { Button } from '@/components/ui/button'
-import {
-  SquaresFour,
-  Table,
-  Graph,
-  GridFour,
-  Command,
-  Funnel,
-  FunnelSimple,
-} from '@phosphor-icons/react'
+import { SquaresFour, Table, Graph, GridFour } from '@phosphor-icons/react'
 import { useViewModeStore } from '@/stores/view-mode.store'
 import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -23,13 +14,10 @@ export function ViewModeSwitcher() {
   const setViewMode = useViewModeStore((s) => s.setViewMode)
   const galleryMode = useViewModeStore((s) => s.galleryMode)
   const setGalleryMode = useViewModeStore((s) => s.setGalleryMode)
-  const graphOptions = useViewModeStore((s) => s.graphOptions)
-  const setGraphShowCommands = useViewModeStore((s) => s.setGraphShowCommands)
-  const setGraphFilterMode = useViewModeStore((s) => s.setGraphFilterMode)
 
   return (
     <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border">
-      {/* Gallery */}
+      {/* Gallery with dropdown for mode */}
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
@@ -82,49 +70,22 @@ export function ViewModeSwitcher() {
         <span className="text-xs">Table</span>
       </Button>
 
-      {/* Graph */}
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn(
-            'inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-md transition-colors',
-            'hover:bg-accent hover:text-accent-foreground',
-            viewMode === 'graph' && 'bg-background shadow-sm',
-          )}
-          onClick={() => {
-            if (viewMode !== 'graph') setViewMode('graph')
-          }}
-        >
-          <Graph
-            className="h-4 w-4"
-            weight={viewMode === 'graph' ? 'fill' : 'regular'}
-          />
-          <span className="text-xs">Graph</span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuCheckboxItem
-            checked={graphOptions.showCommands}
-            onCheckedChange={setGraphShowCommands}
-          >
-            <Command className="h-4 w-4 mr-2" />
-            Show Commands
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={graphOptions.filterMode === 'highlight'}
-            onCheckedChange={() => setGraphFilterMode('highlight')}
-          >
-            <FunnelSimple className="h-4 w-4 mr-2" />
-            Highlight Matches
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={graphOptions.filterMode === 'show-only'}
-            onCheckedChange={() => setGraphFilterMode('show-only')}
-          >
-            <Funnel className="h-4 w-4 mr-2" />
-            Show Only Matches
-          </DropdownMenuCheckboxItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Graph - simple button, options are in the graph view */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          'gap-1.5 px-2.5',
+          viewMode === 'graph' && 'bg-background shadow-sm',
+        )}
+        onClick={() => setViewMode('graph')}
+      >
+        <Graph
+          className="h-4 w-4"
+          weight={viewMode === 'graph' ? 'fill' : 'regular'}
+        />
+        <span className="text-xs">Graph</span>
+      </Button>
     </div>
   )
 }
