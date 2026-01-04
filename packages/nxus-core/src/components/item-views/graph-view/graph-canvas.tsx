@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo, useEffect, useRef } from 'react'
+import { useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -9,7 +9,6 @@ import {
   ReactFlowProvider,
   SelectionMode,
   useReactFlow,
-  StraightEdge,
   type Node,
   type Edge,
 } from '@xyflow/react'
@@ -21,6 +20,8 @@ import {
   CommandNode,
   SimpleNode,
   DependencyEdge,
+  ForceArrowEdge,
+  ForceArrowMarkerDefs,
   GraphControls,
   GraphLegend,
 } from './components'
@@ -57,10 +58,10 @@ const nodeTypes: Record<string, React.ComponentType<any>> = {
   simple: SimpleNode,
 }
 
-// Edge types - use straight lines for force layout
+// Edge types
 const edgeTypes: Record<string, React.ComponentType<any>> = {
   dependency: DependencyEdge,
-  straight: StraightEdge,
+  forceArrow: ForceArrowEdge,
 }
 
 const NODE_WIDTH = 240
@@ -73,17 +74,32 @@ interface GraphCanvasProps {
   className?: string
 }
 
-// Create nodes from items based on style
-function createNodesAndEdges(
+// Force simulation interface
+interface ForceNode extends SimulationNodeDatum {
+  id: string
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Create nodes from items. Node data includes isForceLayout flag.
+ */
+function createNodes(
   items: App[],
   matchedIds: Set<string>,
   hasActiveFilter: boolean,
-  graphOptions: GraphOptions,
-): { nodes: Node[]; edges: Edge[] } {
-  const { filterMode, nodeStyle, showLabels } = graphOptions
+  options: {
+    nodeStyle: GraphNodeStyle
+    filterMode: string
+    showLabels: boolean
+    isForceLayout: boolean
+  },
+): Node[] {
+  const { nodeStyle, filterMode, showLabels, isForceLayout } = options
 
-  // Build item nodes
-  const nodes: Node[] = items
+  return items
     .filter((item) => {
       if (
         hasActiveFilter &&
@@ -112,6 +128,7 @@ function createNodesAndEdges(
             isDimmed,
             dependencyCount,
             showLabel: showLabels,
+            isForceLayout,
           },
         } as Node
       }
@@ -132,9 +149,17 @@ function createNodesAndEdges(
         },
       } as Node
     })
+}
 
-  // Build edges from dependencies
-  const visibleIds = new Set(nodes.map((n) => n.id))
+/**
+ * Create edges from item dependencies.
+ */
+function createEdges(
+  items: App[],
+  visibleIds: Set<string>,
+  matchedIds: Set<string>,
+  edgeType: 'dependency' | 'forceArrow',
+): Edge[] {
   const edges: Edge[] = []
 
   items.forEach((item) => {
@@ -146,7 +171,7 @@ function createNodesAndEdges(
             id: `${depId}->${item.id}`,
             source: depId,
             target: item.id,
-            type: 'dependency', // Will be overridden for force layout
+            type: edgeType,
             data: { isMatched },
           })
         }
@@ -154,10 +179,12 @@ function createNodesAndEdges(
     }
   })
 
-  return { nodes, edges }
+  return edges
 }
 
-// Apply dagre hierarchical layout
+/**
+ * Apply dagre hierarchical layout to nodes.
+ */
 function applyDagreLayout(
   nodes: Node[],
   edges: Edge[],
@@ -165,9 +192,9 @@ function applyDagreLayout(
 ): Node[] {
   if (nodes.length === 0) return []
 
-  const dagreGraph = new dagre.graphlib.Graph()
-  dagreGraph.setDefaultEdgeLabel(() => ({}))
-  dagreGraph.setGraph({
+  const g = new dagre.graphlib.Graph()
+  g.setDefaultEdgeLabel(() => ({}))
+  g.setGraph({
     rankdir: 'LR',
     nodesep: nodeStyle === 'simple' ? 40 : 60,
     ranksep: nodeStyle === 'simple' ? 100 : 120,
@@ -176,54 +203,55 @@ function applyDagreLayout(
   })
 
   nodes.forEach((node) => {
-    const size = nodeStyle === 'simple' ? SIMPLE_NODE_SIZE + 60 : NODE_WIDTH // Extra space for labels
+    const width = nodeStyle === 'simple' ? SIMPLE_NODE_SIZE + 60 : NODE_WIDTH
     const height = nodeStyle === 'simple' ? SIMPLE_NODE_SIZE + 30 : NODE_HEIGHT
-    dagreGraph.setNode(node.id, { width: size, height })
+    g.setNode(node.id, { width, height })
   })
 
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target)
+    g.setEdge(edge.source, edge.target)
   })
 
-  dagre.layout(dagreGraph)
+  dagre.layout(g)
 
   return nodes.map((node) => {
-    const pos = dagreGraph.node(node.id)
-    const size = nodeStyle === 'simple' ? SIMPLE_NODE_SIZE : NODE_WIDTH
+    const pos = g.node(node.id)
+    const width = nodeStyle === 'simple' ? SIMPLE_NODE_SIZE : NODE_WIDTH
     const height = nodeStyle === 'simple' ? SIMPLE_NODE_SIZE : NODE_HEIGHT
     return {
       ...node,
-      position: { x: pos.x - size / 2, y: pos.y - height / 2 },
-      targetPosition: 'left',
-      sourcePosition: 'right',
-    } as Node
+      position: { x: pos.x - width / 2, y: pos.y - height / 2 },
+    }
   })
 }
 
-// Force simulation interface
-interface ForceNode extends SimulationNodeDatum {
-  id: string
-}
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
   const navigate = useNavigate()
-  const hasInitialized = useRef(false)
-  const prevLayoutRef = useRef<GraphLayout>('hierarchical')
-  const prevNodeStyleRef = useRef<GraphNodeStyle>('detailed')
+
+  // Refs for tracking state
+  const isInitializedRef = useRef(false)
+  const currentLayoutRef = useRef<GraphLayout>('hierarchical')
+  const currentNodeStyleRef = useRef<GraphNodeStyle>('detailed')
   const simulationRef = useRef<Simulation<
     ForceNode,
     SimulationLinkDatum<ForceNode>
   > | null>(null)
+  const nodesRef = useRef<Node[]>([])
 
-  // View mode store - read current options directly
+  // Store subscriptions
   const graphOptions = useViewModeStore((s) => s.graphOptions)
   const setGraphOptions = useViewModeStore((s) => s.setGraphOptions)
-
-  // Tag filter state
   const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
   const tags = useTagDataStore((s) => s.tags)
 
-  // Compute matched IDs based on filters
+  // ============================================================================
+  // COMPUTED VALUES
+  // ============================================================================
+
   const matchedIds = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase().trim()
     const hasActiveFilter = lowerQuery !== '' || selectedTagIds.size > 0
@@ -240,19 +268,15 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
 
     const matched = new Set<string>()
     items.forEach((item) => {
-      let matchesSearch = true
-      let matchesTags = true
+      const matchesSearch =
+        !lowerQuery ||
+        item.name.toLowerCase().includes(lowerQuery) ||
+        item.description.toLowerCase().includes(lowerQuery) ||
+        item.metadata.tags.some((t) => t.toLowerCase().includes(lowerQuery))
 
-      if (lowerQuery) {
-        matchesSearch =
-          item.name.toLowerCase().includes(lowerQuery) ||
-          item.description.toLowerCase().includes(lowerQuery) ||
-          item.metadata.tags.some((t) => t.toLowerCase().includes(lowerQuery))
-      }
-
-      if (tagNamesSet.size > 0) {
-        matchesTags = item.metadata.tags.some((t) => tagNamesSet.has(t))
-      }
+      const matchesTags =
+        tagNamesSet.size === 0 ||
+        item.metadata.tags.some((t) => tagNamesSet.has(t))
 
       if (matchesSearch && matchesTags) {
         matched.add(item.id)
@@ -264,26 +288,30 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
 
   const hasActiveFilter = searchQuery.trim() !== '' || selectedTagIds.size > 0
 
-  // Create a stable key for the current set of items
-  const itemsKey = useMemo(() => {
-    return items
-      .map((i) => i.id)
-      .sort()
-      .join(',')
-  }, [items])
+  // ============================================================================
+  // INITIAL DATA
+  // ============================================================================
 
-  // Initial nodes/edges - always start with hierarchical
   const initialData = useMemo(() => {
-    const { nodes, edges } = createNodesAndEdges(
-      items,
-      matchedIds,
-      hasActiveFilter,
-      graphOptions,
-    )
-    return {
-      nodes: applyDagreLayout(nodes, edges, graphOptions.nodeStyle),
-      edges,
-    }
+    const { nodeStyle, filterMode, showLabels, layout } = graphOptions
+    const isForce = layout === 'force'
+
+    const nodes = createNodes(items, matchedIds, hasActiveFilter, {
+      nodeStyle,
+      filterMode,
+      showLabels,
+      isForceLayout: isForce && nodeStyle === 'simple',
+    })
+
+    const visibleIds = new Set(nodes.map((n) => n.id))
+    const edgeType =
+      isForce && nodeStyle === 'simple' ? 'forceArrow' : 'dependency'
+    const edges = createEdges(items, visibleIds, matchedIds, edgeType)
+
+    const layoutedNodes = applyDagreLayout(nodes, edges, nodeStyle)
+
+    return { nodes: layoutedNodes, edges }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only on mount
 
   // React Flow state
@@ -291,7 +319,15 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges)
   const { fitView } = useReactFlow()
 
-  // Stop any running simulation
+  // Keep nodesRef updated
+  useEffect(() => {
+    nodesRef.current = nodes
+  }, [nodes])
+
+  // ============================================================================
+  // SIMULATION MANAGEMENT
+  // ============================================================================
+
   const stopSimulation = useCallback(() => {
     if (simulationRef.current) {
       simulationRef.current.stop()
@@ -299,18 +335,18 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
     }
   }, [])
 
-  // Start interactive force simulation
   const startForceSimulation = useCallback(
-    (nodesToSimulate: Node[], edgesToSimulate: Edge[]) => {
+    (initialNodes: Node[], edgeData: Edge[]) => {
       stopSimulation()
 
-      const forceNodes: ForceNode[] = nodesToSimulate.map((node) => ({
+      // Create force nodes from current positions
+      const forceNodes: ForceNode[] = initialNodes.map((node) => ({
         id: node.id,
         x: node.position.x,
         y: node.position.y,
       }))
 
-      const forceLinks: SimulationLinkDatum<ForceNode>[] = edgesToSimulate.map(
+      const forceLinks: SimulationLinkDatum<ForceNode>[] = edgeData.map(
         (edge) => ({
           source: edge.source,
           target: edge.target,
@@ -322,22 +358,24 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
           'link',
           forceLink<ForceNode, SimulationLinkDatum<ForceNode>>(forceLinks)
             .id((d) => d.id)
-            .distance(80)
-            .strength(0.5),
+            .distance(100)
+            .strength(0.4),
         )
         .force('charge', forceManyBody().strength(-200))
-        .force('center', forceCenter(400, 300))
-        .force('collide', forceCollide().radius(40).strength(0.8))
+        .force('center', forceCenter(400, 300).strength(0.05))
+        .force('collide', forceCollide().radius(50).strength(0.7))
         .force('x', forceX(400).strength(0.02))
         .force('y', forceY(300).strength(0.02))
-        .alphaDecay(0.02) // Slower decay for smoother animation
-        .velocityDecay(0.3) // More friction
+        .alphaDecay(0.015)
+        .velocityDecay(0.35)
+
+      // Create a stable node ID to ForceNode reference map
+      const forceNodeMap = new Map(forceNodes.map((n) => [n.id, n]))
 
       simulation.on('tick', () => {
-        const nodeMap = new Map(forceNodes.map((n) => [n.id, n]))
-        setNodes((current) =>
-          current.map((node) => {
-            const forceNode = nodeMap.get(node.id)
+        setNodes((currentNodes) =>
+          currentNodes.map((node) => {
+            const forceNode = forceNodeMap.get(node.id)
             if (
               forceNode &&
               forceNode.x !== undefined &&
@@ -358,139 +396,210 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
     [stopSimulation, setNodes],
   )
 
-  // Apply layout based on current options
-  const applyLayout = useCallback(
-    (layout: GraphLayout, nodeStyle: GraphNodeStyle) => {
-      setNodes((currentNodes) => {
-        const currentEdges =
-          useViewModeStore.getState().graphOptions.layout === 'force'
-            ? edges.map((e) => ({ ...e, type: 'straight' })) // straight lines for force
-            : edges
-
-        if (layout === 'force') {
-          // Start interactive simulation
-          setTimeout(() => {
-            startForceSimulation(currentNodes, currentEdges)
-          }, 0)
-          // Update edge types to straight
-          setEdges(edges.map((e) => ({ ...e, type: 'straight' })))
-          return currentNodes // Don't change positions yet, simulation will
-        } else {
-          stopSimulation()
-          // Update edge types to dependency (bezier)
-          setEdges(edges.map((e) => ({ ...e, type: 'dependency' })))
-          return applyDagreLayout(currentNodes, edges, nodeStyle)
-        }
-      })
-      setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100)
-    },
-    [edges, setNodes, setEdges, startForceSimulation, stopSimulation, fitView],
-  )
-
-  // Handle initial mount and changes
+  // Cleanup on unmount
   useEffect(() => {
-    const { layout, nodeStyle, showLabels } = graphOptions
-    const layoutChanged = prevLayoutRef.current !== layout
-    const nodeStyleChanged = prevNodeStyleRef.current !== nodeStyle
+    return () => stopSimulation()
+  }, [stopSimulation])
 
-    // Create fresh nodes/edges
-    const { nodes: newNodes, edges: newEdges } = createNodesAndEdges(
-      items,
-      matchedIds,
-      hasActiveFilter,
-      graphOptions,
-    )
+  // ============================================================================
+  // MODE CHANGE HANDLER
+  // ============================================================================
 
-    if (!hasInitialized.current) {
-      // First render
-      const layouted = applyDagreLayout(newNodes, newEdges, nodeStyle)
-      setNodes(layouted)
+  useEffect(() => {
+    const { layout, nodeStyle, filterMode, showLabels } = graphOptions
+    const layoutChanged = currentLayoutRef.current !== layout
+    const nodeStyleChanged = currentNodeStyleRef.current !== nodeStyle
+
+    // Determine if we're in force mode (only for simple nodes)
+    const isForceMode = layout === 'force' && nodeStyle === 'simple'
+    const wasForceMode =
+      currentLayoutRef.current === 'force' &&
+      currentNodeStyleRef.current === 'simple'
+
+    // First initialization
+    if (!isInitializedRef.current) {
+      const newNodes = createNodes(items, matchedIds, hasActiveFilter, {
+        nodeStyle,
+        filterMode,
+        showLabels,
+        isForceLayout: isForceMode,
+      })
+      const visibleIds = new Set(newNodes.map((n) => n.id))
+      const edgeType = isForceMode ? 'forceArrow' : 'dependency'
+      const newEdges = createEdges(items, visibleIds, matchedIds, edgeType)
+      const layoutedNodes = applyDagreLayout(newNodes, newEdges, nodeStyle)
+
+      setNodes(layoutedNodes)
       setEdges(newEdges)
-      hasInitialized.current = true
-      prevLayoutRef.current = layout
-      prevNodeStyleRef.current = nodeStyle
+
+      currentLayoutRef.current = layout
+      currentNodeStyleRef.current = nodeStyle
+      isInitializedRef.current = true
+
       setTimeout(() => fitView({ padding: 0.2 }), 100)
       return
     }
 
+    // ========================================
+    // NODE STYLE CHANGED - Full rebuild
+    // ========================================
     if (nodeStyleChanged) {
-      // Node style changed - need to recreate nodes with new type
       stopSimulation()
-      const layouted = applyDagreLayout(newNodes, newEdges, nodeStyle)
-      setNodes(layouted)
-      setEdges(newEdges.map((e) => ({ ...e, type: 'dependency' })))
-      prevNodeStyleRef.current = nodeStyle
-      prevLayoutRef.current = 'hierarchical' // Reset to hierarchical on style change
-      setGraphOptions({ layout: 'hierarchical' })
+
+      // When node style changes, reset to hierarchical layout
+      const newLayout: GraphLayout = 'hierarchical'
+      const newNodes = createNodes(items, matchedIds, hasActiveFilter, {
+        nodeStyle,
+        filterMode,
+        showLabels,
+        isForceLayout: false, // Always false when resetting
+      })
+      const visibleIds = new Set(newNodes.map((n) => n.id))
+      const newEdges = createEdges(items, visibleIds, matchedIds, 'dependency')
+      const layoutedNodes = applyDagreLayout(newNodes, newEdges, nodeStyle)
+
+      setNodes(layoutedNodes)
+      setEdges(newEdges)
+
+      // Update store to hierarchical if it wasn't already
+      if (layout !== 'hierarchical') {
+        setGraphOptions({ layout: 'hierarchical' })
+      }
+
+      currentNodeStyleRef.current = nodeStyle
+      currentLayoutRef.current = 'hierarchical'
+
       setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100)
       return
     }
 
+    // ========================================
+    // LAYOUT CHANGED
+    // ========================================
     if (layoutChanged) {
-      // Layout changed - apply new layout
+      // Can only use force layout with simple nodes
+      if (layout === 'force' && nodeStyle !== 'simple') {
+        // Invalid state - force with detailed nodes, reset to hierarchical
+        setGraphOptions({ layout: 'hierarchical' })
+        return
+      }
+
       if (layout === 'force') {
-        setEdges(newEdges.map((e) => ({ ...e, type: 'straight' })))
-        startForceSimulation(nodes, newEdges)
+        // Switching TO force mode
+        const newNodes = createNodes(items, matchedIds, hasActiveFilter, {
+          nodeStyle,
+          filterMode,
+          showLabels,
+          isForceLayout: true,
+        })
+        const visibleIds = new Set(newNodes.map((n) => n.id))
+        const newEdges = createEdges(
+          items,
+          visibleIds,
+          matchedIds,
+          'forceArrow',
+        )
+
+        // Preserve current positions for smooth transition
+        const currentPositions = new Map(
+          nodesRef.current.map((n) => [n.id, n.position]),
+        )
+        const positionedNodes = newNodes.map((n) => ({
+          ...n,
+          position: currentPositions.get(n.id) || n.position,
+        }))
+
+        setNodes(positionedNodes)
+        setEdges(newEdges)
+
+        // Start simulation with positioned nodes
+        setTimeout(() => {
+          startForceSimulation(positionedNodes, newEdges)
+        }, 50)
       } else {
+        // Switching TO hierarchical mode
         stopSimulation()
-        const layouted = applyDagreLayout(nodes, newEdges, nodeStyle)
-        setNodes(layouted)
-        setEdges(newEdges.map((e) => ({ ...e, type: 'dependency' })))
+
+        const newNodes = createNodes(items, matchedIds, hasActiveFilter, {
+          nodeStyle,
+          filterMode,
+          showLabels,
+          isForceLayout: false,
+        })
+        const visibleIds = new Set(newNodes.map((n) => n.id))
+        const newEdges = createEdges(
+          items,
+          visibleIds,
+          matchedIds,
+          'dependency',
+        )
+        const layoutedNodes = applyDagreLayout(newNodes, newEdges, nodeStyle)
+
+        setNodes(layoutedNodes)
+        setEdges(newEdges)
+
         setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100)
       }
-      prevLayoutRef.current = layout
+
+      currentLayoutRef.current = layout
       return
     }
 
-    // Just update node data (for filter/label changes) - preserve positions
-    setNodes((current) => {
-      const newNodeMap = new Map(newNodes.map((n) => [n.id, n]))
-      const currentIds = new Set(current.map((n) => n.id))
-      const newIds = new Set(newNodes.map((n) => n.id))
-
-      // Check if nodes added/removed
-      const structureChanged =
-        currentIds.size !== newIds.size ||
-        [...newIds].some((id) => !currentIds.has(id))
-
-      if (structureChanged) {
-        stopSimulation()
-        return applyDagreLayout(newNodes, newEdges, nodeStyle)
-      }
-
-      return current.map((node) => {
-        const newNode = newNodeMap.get(node.id)
-        if (newNode) {
-          return { ...node, data: newNode.data }
-        }
-        return node
-      })
+    // ========================================
+    // ONLY DATA CHANGED (filters, labels, etc.)
+    // ========================================
+    const newNodes = createNodes(items, matchedIds, hasActiveFilter, {
+      nodeStyle,
+      filterMode,
+      showLabels,
+      isForceLayout: isForceMode,
     })
-    setEdges(
-      newEdges.map((e) => ({
-        ...e,
-        type: graphOptions.layout === 'force' ? 'straight' : 'dependency',
-      })),
-    )
+    const visibleIds = new Set(newNodes.map((n) => n.id))
+    const edgeType = isForceMode ? 'forceArrow' : 'dependency'
+    const newEdges = createEdges(items, visibleIds, matchedIds, edgeType)
+
+    // Check if structure changed
+    const currentIds = new Set(nodesRef.current.map((n) => n.id))
+    const newIds = new Set(newNodes.map((n) => n.id))
+    const structureChanged =
+      currentIds.size !== newIds.size ||
+      [...newIds].some((id) => !currentIds.has(id))
+
+    if (structureChanged) {
+      // Structure changed - need full relayout
+      stopSimulation()
+      const layoutedNodes = applyDagreLayout(newNodes, newEdges, nodeStyle)
+      setNodes(layoutedNodes)
+      setEdges(newEdges)
+      setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100)
+    } else {
+      // Just update data without changing positions
+      setNodes((current) => {
+        const nodeDataMap = new Map(newNodes.map((n) => [n.id, n.data]))
+        return current.map((node) => ({
+          ...node,
+          data: nodeDataMap.get(node.id) || node.data,
+        }))
+      })
+      setEdges(newEdges)
+    }
   }, [
     items,
-    itemsKey,
     matchedIds,
     hasActiveFilter,
     graphOptions,
     setNodes,
     setEdges,
+    setGraphOptions,
     fitView,
     startForceSimulation,
     stopSimulation,
   ])
 
-  // Cleanup simulation on unmount
-  useEffect(() => {
-    return () => stopSimulation()
-  }, [stopSimulation])
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
-  // Handle node double click
   const handleNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       if (node.type === 'item' || node.type === 'simple') {
@@ -500,11 +609,46 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
     [navigate],
   )
 
-  // Manual re-layout
   const handleRunLayout = useCallback(() => {
-    const { layout, nodeStyle } = useViewModeStore.getState().graphOptions
-    applyLayout(layout, nodeStyle)
-  }, [applyLayout])
+    const { layout, nodeStyle, filterMode, showLabels } =
+      useViewModeStore.getState().graphOptions
+    const isForceMode = layout === 'force' && nodeStyle === 'simple'
+
+    const newNodes = createNodes(items, matchedIds, hasActiveFilter, {
+      nodeStyle,
+      filterMode,
+      showLabels,
+      isForceLayout: isForceMode,
+    })
+    const visibleIds = new Set(newNodes.map((n) => n.id))
+    const edgeType = isForceMode ? 'forceArrow' : 'dependency'
+    const newEdges = createEdges(items, visibleIds, matchedIds, edgeType)
+
+    if (isForceMode) {
+      // Start fresh force simulation
+      const layoutedNodes = applyDagreLayout(newNodes, newEdges, nodeStyle)
+      setNodes(layoutedNodes)
+      setEdges(newEdges)
+      setTimeout(() => {
+        startForceSimulation(layoutedNodes, newEdges)
+      }, 50)
+    } else {
+      stopSimulation()
+      const layoutedNodes = applyDagreLayout(newNodes, newEdges, nodeStyle)
+      setNodes(layoutedNodes)
+      setEdges(newEdges)
+      setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100)
+    }
+  }, [
+    items,
+    matchedIds,
+    hasActiveFilter,
+    setNodes,
+    setEdges,
+    fitView,
+    startForceSimulation,
+    stopSimulation,
+  ])
 
   const handleFitView = useCallback(() => {
     fitView({ padding: 0.2, duration: 300 })
@@ -534,8 +678,12 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
       : 'var(--muted-foreground)'
   }, [])
 
-  // Lock nodes - prevent dragging when locked
+  // Lock handling
   const handleNodesChange = graphOptions.nodesLocked ? undefined : onNodesChange
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className={cn('w-full h-full min-h-[500px]', className)}>
@@ -578,6 +726,8 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
           onRunLayout={handleRunLayout}
         />
         <GraphLegend nodeStyle={graphOptions.nodeStyle} />
+        {/* Arrow marker definitions for force layout */}
+        <ForceArrowMarkerDefs />
       </ReactFlow>
     </div>
   )
