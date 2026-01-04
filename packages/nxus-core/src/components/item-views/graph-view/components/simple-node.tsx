@@ -62,7 +62,7 @@ export const SimpleNode = memo(function SimpleNode({
           'rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg relative',
           colors.bg,
           STATUS_STYLES[status],
-          selected && 'ring-2 ring-white ring-offset-2 ring-offset-background',
+          selected && 'ring-2 ring-primary',
           isDimmed && 'opacity-30',
         )}
         style={{

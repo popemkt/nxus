@@ -99,6 +99,17 @@ function createNodes(
 ): Node[] {
   const { nodeStyle, filterMode, showLabels, isForceLayout } = options
 
+  // Calculate how many items depend on each item (dependents count)
+  // This makes "foundation" items like git larger since more things depend on them
+  const dependentsCount = new Map<string, number>()
+  items.forEach((item) => {
+    if (item.dependencies) {
+      item.dependencies.forEach((depId) => {
+        dependentsCount.set(depId, (dependentsCount.get(depId) || 0) + 1)
+      })
+    }
+  })
+
   return items
     .filter((item) => {
       if (
@@ -114,7 +125,8 @@ function createNodes(
       const isMatched = matchedIds.has(item.id)
       const isDimmed =
         hasActiveFilter && filterMode === 'highlight' && !isMatched
-      const dependencyCount = item.dependencies?.length || 0
+      // Use dependents count for node size - more dependents = larger node (more important)
+      const nodeImportance = dependentsCount.get(item.id) || 0
 
       if (nodeStyle === 'simple') {
         return {
@@ -126,7 +138,7 @@ function createNodes(
             status: item.status,
             label: item.name,
             isDimmed,
-            dependencyCount,
+            dependencyCount: nodeImportance, // Renamed semantically but keeping prop name for SimpleNode compat
             showLabel: showLabels,
             isForceLayout,
           },
@@ -167,10 +179,11 @@ function createEdges(
       item.dependencies.forEach((depId) => {
         if (visibleIds.has(depId)) {
           const isMatched = matchedIds.has(item.id) && matchedIds.has(depId)
+          // Edge goes FROM dependent TO dependency (repos -> git means "repos depends on git")
           edges.push({
-            id: `${depId}->${item.id}`,
-            source: depId,
-            target: item.id,
+            id: `${item.id}->${depId}`,
+            source: item.id, // The dependent (repos)
+            target: depId, // The dependency (git)
             type: edgeType,
             data: { isMatched },
           })

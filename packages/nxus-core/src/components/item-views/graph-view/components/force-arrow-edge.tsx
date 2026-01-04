@@ -1,7 +1,10 @@
 import { memo } from 'react'
-import { BaseEdge, type EdgeProps, getStraightPath } from '@xyflow/react'
+import { BaseEdge, type EdgeProps } from '@xyflow/react'
 
-// Arrow edge for force-directed layout - straight line with arrowhead pointing to target
+// Node radius constant - should match SimpleNode baseSize / 2
+const NODE_RADIUS = 12
+
+// Arrow edge for force-directed layout - straight line with arrowhead, stops at node edge
 export const ForceArrowEdge = memo(function ForceArrowEdge({
   id,
   sourceX,
@@ -14,20 +17,36 @@ export const ForceArrowEdge = memo(function ForceArrowEdge({
 }: EdgeProps) {
   const isDimmed = data && (data as { isMatched?: boolean }).isMatched === false
 
-  // Get straight path (shortened slightly so arrow doesn't go into node)
-  const [edgePath] = getStraightPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-  })
+  // Calculate direction vector
+  const dx = targetX - sourceX
+  const dy = targetY - sourceY
+  const length = Math.sqrt(dx * dx + dy * dy)
 
-  // Use BaseEdge with markerEnd
+  // Don't render if nodes are overlapping
+  if (length < NODE_RADIUS * 2) {
+    return null
+  }
+
+  // Normalize direction
+  const nx = dx / length
+  const ny = dy / length
+
+  // Shorten both ends by node radius so edges stop at circle edge
+  const adjustedSourceX = sourceX + nx * NODE_RADIUS
+  const adjustedSourceY = sourceY + ny * NODE_RADIUS
+  const adjustedTargetX = targetX - nx * (NODE_RADIUS + 4) // Extra 4px for arrow head
+  const adjustedTargetY = targetY - ny * (NODE_RADIUS + 4)
+
+  // Build straight path
+  const edgePath = `M ${adjustedSourceX} ${adjustedSourceY} L ${adjustedTargetX} ${adjustedTargetY}`
+
   return (
     <BaseEdge
       id={id}
       path={edgePath}
-      markerEnd="url(#force-arrow-marker)"
+      markerEnd={
+        isDimmed ? 'url(#force-arrow-marker-dim)' : 'url(#force-arrow-marker)'
+      }
       style={{
         stroke: selected
           ? 'var(--primary)'
@@ -35,7 +54,7 @@ export const ForceArrowEdge = memo(function ForceArrowEdge({
             ? 'var(--muted)'
             : 'var(--muted-foreground)',
         strokeWidth: selected ? 2 : 1.5,
-        opacity: isDimmed ? 0.3 : 0.7,
+        opacity: isDimmed ? 0.3 : 1, // Solid for normal, dim only when filtered
         ...style,
       }}
     />
@@ -50,26 +69,22 @@ export function ForceArrowMarkerDefs() {
         <marker
           id="force-arrow-marker"
           viewBox="0 0 10 10"
-          refX="8"
+          refX="10"
           refY="5"
           markerWidth="6"
           markerHeight="6"
-          orient="auto-start-reverse"
+          orient="auto"
         >
-          <path
-            d="M 0 0 L 10 5 L 0 10 z"
-            fill="var(--muted-foreground)"
-            opacity={0.7}
-          />
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted-foreground)" />
         </marker>
         <marker
           id="force-arrow-marker-dim"
           viewBox="0 0 10 10"
-          refX="8"
+          refX="10"
           refY="5"
           markerWidth="6"
           markerHeight="6"
-          orient="auto-start-reverse"
+          orient="auto"
         >
           <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)" opacity={0.3} />
         </marker>

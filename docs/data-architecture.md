@@ -121,10 +121,38 @@ UI Action → Zustand (instant) → Dexie (persist) → Server Fn (SQLite, async
 | 3. localStorage Stores | ✅ Done | Tool health, config, installations      |
 | 4. SQLite Backend      | ✅ Done | nxus.db with inbox_items + tags tables  |
 
-## Future: Full SQLite Migration
+## Future Strategy: TanStack DB
 
-Eventually, all Dexie data will migrate to localStorage for simplicity:
+To eliminate the complexity of manual sync layers (Dexie + Zustand + sync logic), the architecture will migrate to **TanStack DB** (currently in beta).
 
-- Gallery items, commands → localStorage (via Zustand persist)
-- SQLite becomes the only server-side persistence
-- Dexie layer removed to reduce complexity
+### Why
+
+- **Merges Persistence & State**: Replaces both Dexie (disk) and Data Stores (memory) with a single reactive layer.
+- **Automated Sync**: Handles optimistic updates, background sync, and conflict resolution automatically.
+- **Backend Agnostic**: Integrates natively with our existing TanStack Start server functions and SQLite.
+
+### Migration Plan (Phase 5)
+
+1.  **Replace Data Stores**:
+    - Delete `tag-data.store.ts`, `cache.store.ts`
+    - Create TanStack DB `Collections` for `tags`, `apps`, `commands`
+2.  **Update UI Components**:
+    - Replace `useTagDataStore((s) => s.tags)` selectors
+    - With `useQuery(tagCollection.getAll())`
+3.  **Keep UI Stores**:
+    - Retain lightweight Zustand stores for ephemeral UI state (`tag-ui.store.ts`, `sidebar.store.ts`)
+    - These do not need persistence or sync.
+
+### Architecture Shift
+
+**From (Current):**
+
+```
+React UI -> Zustand Store (Memory) <-> Dexie (Disk) <-> [Manual Sync] <-> SQLite (Server)
+```
+
+**To (TanStack DB):**
+
+```
+React UI -> TanStack DB (Memory + Disk + Sync) <-> SQLite (Server)
+```

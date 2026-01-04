@@ -7,6 +7,7 @@ import {
   updateTagServerFn,
   deleteTagServerFn,
   moveTagServerFn,
+  getTagsServerFn,
 } from '@/services/tag.server'
 
 /**
@@ -45,21 +46,68 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   isInitialized: false,
   isLoading: false,
 
-  // Initialize from Dexie
+  // Initialize from Dexie, seeding from SQLite if empty
   initialize: async () => {
     if (get().isInitialized) return
 
     set({ isLoading: true })
 
     try {
-      const tags = await db.tags.toArray()
-      set({
-        tags: new Map(tags.map((t) => [t.id, t])),
-        isInitialized: true,
-        isLoading: false,
-      })
+      // First try to load from Dexie (instant)
+      const localTags = await db.tags.toArray()
+
+      if (localTags.length > 0) {
+        // Have local data, use it
+        set({
+          tags: new Map(localTags.map((t) => [t.id, t])),
+          isInitialized: true,
+          isLoading: false,
+        })
+        console.log(
+          '[TagDataStore] Loaded',
+          localTags.length,
+          'tags from Dexie',
+        )
+      } else {
+        // No local data - fetch from SQLite and seed Dexie
+        console.log('[TagDataStore] Dexie empty, fetching from SQLite...')
+        const result = await getTagsServerFn()
+
+        if (result.success && result.data.length > 0) {
+          const now = Date.now()
+          const cachedTags: CachedTag[] = result.data.map((tag) => ({
+            ...tag,
+            createdAt: tag.createdAt?.toString() ?? new Date(now).toISOString(),
+            updatedAt: tag.updatedAt?.toString() ?? new Date(now).toISOString(),
+            _syncStatus: 'synced' as const,
+            _updatedAt: now,
+          }))
+
+          // Bulk insert to Dexie for future reads
+          await db.tags.bulkPut(cachedTags)
+
+          set({
+            tags: new Map(cachedTags.map((t) => [t.id, t])),
+            isInitialized: true,
+            isLoading: false,
+          })
+          console.log(
+            '[TagDataStore] Seeded',
+            cachedTags.length,
+            'tags from SQLite',
+          )
+        } else {
+          // No tags in SQLite either, just initialize empty
+          set({
+            tags: new Map(),
+            isInitialized: true,
+            isLoading: false,
+          })
+          console.log('[TagDataStore] No tags found, initialized empty')
+        }
+      }
     } catch (error) {
-      console.error('[TagDataStore] Failed to initialize from Dexie:', error)
+      console.error('[TagDataStore] Failed to initialize:', error)
       set({ isLoading: false, isInitialized: true })
     }
   },

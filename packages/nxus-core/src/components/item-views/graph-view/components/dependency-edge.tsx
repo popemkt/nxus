@@ -14,6 +14,7 @@ interface DependencyEdgeProps {
   selected?: boolean
 }
 
+// Automaker style: bezier curves without arrows
 export const DependencyEdge = memo(function DependencyEdge({
   id,
   sourceX,
@@ -46,8 +47,9 @@ export const DependencyEdge = memo(function DependencyEdge({
         isDimmed && 'opacity-30',
       )}
       style={{
-        stroke: selected ? 'var(--primary)' : 'var(--border)',
+        stroke: selected ? 'var(--primary)' : 'var(--muted-foreground)',
         strokeWidth: selected ? 2 : 1.5,
+        opacity: isDimmed ? 0.3 : 1,
       }}
     />
   )
