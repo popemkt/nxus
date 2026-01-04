@@ -11,6 +11,7 @@ export interface ItemNodeData extends Record<string, unknown> {
   status: App['status']
   isMatched: boolean
   isDimmed: boolean
+  isHighlighted?: boolean // True when matched with active filter
   app: App
   TypeIcon: React.ComponentType<{ className?: string }>
 }

@@ -8,7 +8,7 @@ interface GraphViewProps {
 
 export function GraphView({ items, searchQuery }: GraphViewProps) {
   return (
-    <div className="h-[calc(100vh-220px)]">
+    <div className="h-full w-full">
       <GraphCanvas items={items} searchQuery={searchQuery} />
     </div>
   )

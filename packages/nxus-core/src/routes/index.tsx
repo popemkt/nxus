@@ -62,10 +62,13 @@ function AppManager() {
     return tagNames.length > 0 ? tagNames : undefined
   }, [selectedTagIds, includeSubTags, getDescendants, tags])
 
-  const { apps, loading, error } = useAppRegistry({ searchQuery, filterTags })
+  const { apps, allApps, loading, error } = useAppRegistry({
+    searchQuery,
+    filterTags,
+  })
 
   // Trigger health checks for all tools
-  useBatchItemStatus(apps)
+  useBatchItemStatus(allApps)
 
   const handleOpen = (app: App) => {
     openApp(app)
@@ -114,7 +117,8 @@ function AppManager() {
       case 'table':
         return <TableView items={apps} />
       case 'graph':
-        return <GraphView items={apps} searchQuery={searchQuery} />
+        // Pass allApps for graph so highlight mode can show all nodes (dimmed)
+        return <GraphView items={allApps} searchQuery={searchQuery} />
       case 'gallery':
       default:
         return (

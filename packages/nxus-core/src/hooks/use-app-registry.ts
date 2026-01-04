@@ -11,7 +11,8 @@ interface UseAppRegistryOptions {
 }
 
 interface UseAppRegistryReturn {
-  apps: Array<App>
+  apps: Array<App> // Filtered apps based on options
+  allApps: Array<App> // All apps (unfiltered) - useful for graph highlight mode
   loading: boolean
   error: Error | null
   categories: Array<string>
@@ -121,6 +122,7 @@ export function useAppRegistry(
 
   return {
     apps: filteredApps,
+    allApps: state.apps,
     loading: state.loading,
     error: state.error,
     categories: state.categories,

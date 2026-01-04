@@ -23,6 +23,7 @@ interface SimpleNodeData {
   status: App['status']
   label: string
   isDimmed: boolean
+  isHighlighted?: boolean // True when matched with active filter
   dependencyCount: number
   showLabel?: boolean
   isForceLayout?: boolean
@@ -42,6 +43,7 @@ export const SimpleNode = memo(function SimpleNode({
     status,
     label,
     isDimmed,
+    isHighlighted = false,
     dependencyCount,
     showLabel = true,
     isForceLayout = false,
@@ -63,6 +65,7 @@ export const SimpleNode = memo(function SimpleNode({
           colors.bg,
           STATUS_STYLES[status],
           selected && 'ring-2 ring-primary',
+          isHighlighted && !selected && 'ring-2 ring-primary/70',
           isDimmed && 'opacity-30',
         )}
         style={{

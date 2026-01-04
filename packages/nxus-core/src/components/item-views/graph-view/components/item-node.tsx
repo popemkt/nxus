@@ -14,13 +14,15 @@ export const ItemNode = memo(function ItemNode({
   data,
   selected,
 }: ItemNodeProps) {
-  const { label, description, status, TypeIcon, isDimmed, app } = data
+  const { label, description, status, TypeIcon, isDimmed, isHighlighted, app } =
+    data
 
   return (
     <div
       className={cn(
         'px-4 py-3 rounded-lg border bg-card shadow-md min-w-[200px] max-w-[280px] transition-all',
         selected && 'ring-2 ring-primary',
+        isHighlighted && !selected && 'ring-2 ring-primary/70',
         isDimmed && 'opacity-40',
       )}
     >

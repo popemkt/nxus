@@ -138,7 +138,8 @@ function createNodes(
             status: item.status,
             label: item.name,
             isDimmed,
-            dependencyCount: nodeImportance, // Renamed semantically but keeping prop name for SimpleNode compat
+            isHighlighted: hasActiveFilter && isMatched && !isDimmed,
+            dependencyCount: nodeImportance,
             showLabel: showLabels,
             isForceLayout,
           },
@@ -156,6 +157,7 @@ function createNodes(
           status: item.status,
           isMatched,
           isDimmed,
+          isHighlighted: hasActiveFilter && isMatched && !isDimmed,
           app: item,
           TypeIcon: APP_TYPE_ICONS[item.type],
         },
