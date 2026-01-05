@@ -1,38 +1,30 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
-import {
-  MagnifyingGlassIcon,
-  GearIcon,
-  SidebarSimple,
-} from '@phosphor-icons/react'
+import { X } from '@phosphor-icons/react'
 import type { App } from '@/types/app'
-import { Input } from '@/components/ui/input'
 import { useAppRegistry } from '@/hooks/use-app-registry'
-import { OsBadge } from '@/components/os-badge'
-import { DevModeBadge } from '@/components/dev-mode-badge'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { openApp } from '@/lib/app-actions'
 import { useBatchItemStatus } from '@/hooks/use-item-status-check'
-import { GlitchText } from '@/components/ui/glitch-text'
-import { DecodeText } from '@/components/ui/decode-text'
-import { InboxButton } from '@/components/inbox-button'
-import { TagTree, TagFilterBar } from '@/components/tag-tree'
+import { TagTree } from '@/components/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useViewModeStore } from '@/stores/view-mode.store'
 import { cn } from '@/lib/utils'
+import { useQuery } from '@tanstack/react-query'
+import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
+import { GalleryView, TableView, GraphView } from '@/components/item-views'
 import {
-  GalleryView,
-  TableView,
-  GraphView,
-  ViewModeSwitcher,
-} from '@/components/item-views'
+  FloatingHud,
+  FloatingFilterRow,
+  FloatingThemeToggle,
+  SystemTray,
+} from '@/components/hud'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
 function AppManager() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // View mode state
   const viewMode = useViewModeStore((s) => s.viewMode)
@@ -70,17 +62,19 @@ function AppManager() {
   // Trigger health checks for all tools
   useBatchItemStatus(allApps)
 
-  const handleOpen = (app: App) => {
-    openApp(app)
-  }
-
-  const handleInstall = (app: App) => {
-    console.log('Install app:', app)
-  }
+  // Fetch inbox count for HUD
+  const { data: inboxResult } = useQuery({
+    queryKey: ['inbox-pending-count'],
+    queryFn: async () => {
+      return await getPendingInboxItemsServerFn()
+    },
+    staleTime: 30000,
+    refetchInterval: 60000,
+  })
+  const inboxCount = inboxResult?.success ? inboxResult.data.length : 0
 
   // Render content based on view mode
   const renderContent = () => {
-    // Show error state
     if (error) {
       return (
         <div className="flex min-h-[400px] items-center justify-center">
@@ -94,7 +88,6 @@ function AppManager() {
       )
     }
 
-    // Show empty state (only when not loading)
     if (!loading && apps.length === 0) {
       return (
         <div className="flex min-h-[400px] items-center justify-center">
@@ -112,12 +105,10 @@ function AppManager() {
       )
     }
 
-    // Render based on view mode
     switch (viewMode) {
       case 'table':
         return <TableView items={apps} />
       case 'graph':
-        // Pass allApps for graph so highlight mode can show all nodes (dimmed)
         return <GraphView items={allApps} searchQuery={searchQuery} />
       case 'gallery':
       default:
@@ -128,94 +119,73 @@ function AppManager() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6">
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <GlitchText
-                text="> nXus_"
-                className="text-4xl font-mono text-green-500 
-                    [text-shadow:0_0_8px_rgba(34,197,94,0.4),2px_0_rgba(239,68,68,0.7),-2px_0_rgba(59,130,246,0.7)] 
-                    tracking-tight hover:text-white transition-colors cursor-default select-none font-bold"
-              />
-              <DecodeText
-                text="Command the chaos"
-                className="text-muted-foreground mt-2 font-medium tracking-wide font-mono"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <ViewModeSwitcher />
-              <DevModeBadge />
-              <OsBadge />
-              <ThemeToggle />
-              <InboxButton />
-              <Link
-                to="/settings"
-                className="rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                title="Settings"
-              >
-                <GearIcon className="h-5 w-5" />
-              </Link>
-            </div>
-          </div>
+    <div className="relative h-screen bg-background overflow-hidden">
+      {/* Floating HUD */}
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-50 pointer-events-none">
+        <FloatingHud
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sidebarOpen={sidebarOpen}
+          onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+          inboxCount={inboxCount}
+        />
+        <FloatingFilterRow resultCount={apps.length} />
+      </div>
 
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search apps by name, description, or tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      {/* System Tray */}
+      <SystemTray />
+
+      {/* Floating Theme Toggle (right side) */}
+      <FloatingThemeToggle />
+
+      {/* Floating Tag Panel (overlay, not taking layout space) */}
+      <div
+        className={cn(
+          'fixed top-[100px] left-6 bottom-20 w-[280px] bg-card backdrop-blur-xl border border-border rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.25),inset_0_0_0_1px_rgba(255,255,255,0.05)] z-50 flex flex-col overflow-hidden transition-all duration-300',
+          sidebarOpen
+            ? 'opacity-100 translate-x-0'
+            : 'opacity-0 -translate-x-5 pointer-events-none',
+        )}
+      >
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Tags
+          </span>
+          <button
+            className="w-7 h-7 flex items-center justify-center rounded-lg bg-transparent text-muted-foreground cursor-pointer transition-all hover:bg-muted hover:text-foreground border-none"
+            onClick={() => setSidebarOpen(false)}
+            title="Close"
+          >
+            <X className="size-4" weight="bold" />
+          </button>
         </div>
-      </header>
+        <div className="flex-1 overflow-y-auto">
+          <TagTree mode="editor" />
+        </div>
+      </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Collapsible Filter Sidebar */}
-        <aside
-          className={cn(
-            'border-r bg-background flex-shrink-0 transition-all duration-200 overflow-hidden',
-            sidebarOpen ? 'w-64' : 'w-0',
-          )}
-        >
-          {/* Sidebar content */}
-          <div className="w-64 h-full overflow-y-auto">
-            <TagTree mode="editor" />
-          </div>
-        </aside>
+      {/* Backdrop when panel is open */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-        {/* Unified pill toggle - always visible, position depends on sidebar state */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={cn(
-            'absolute top-1/2 -translate-y-1/2 z-10 bg-muted/80 hover:bg-muted border rounded-full p-1.5 cursor-pointer transition-all shadow-sm',
-            sidebarOpen ? 'left-60' : 'left-0 rounded-l-none border-l-0',
-          )}
-          title={sidebarOpen ? 'Hide filters' : 'Show filters'}
-        >
-          <SidebarSimple className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
-
-        {/* Main content */}
+      {/* Main content (full screen with padding for HUD) */}
+      <div
+        className={cn(
+          'h-full flex flex-col pt-28 pb-16',
+          viewMode !== 'graph' && 'overflow-y-auto',
+        )}
+      >
         <div
           className={cn(
-            'flex-1 flex flex-col',
-            viewMode !== 'graph' && 'overflow-y-auto',
+            'container mx-auto px-4 py-6 flex-1',
+            viewMode === 'graph' && 'p-0 max-w-none h-full',
           )}
         >
-          {/* Filter bar */}
-          <TagFilterBar />
-          <div
-            className={cn(
-              'container mx-auto px-4 py-6 flex-1',
-              viewMode === 'graph' && 'p-0 max-w-none',
-            )}
-          >
-            {renderContent()}
-          </div>
+          {renderContent()}
         </div>
       </div>
     </div>
