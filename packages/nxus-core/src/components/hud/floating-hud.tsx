@@ -55,7 +55,12 @@ export function FloatingHud({
     <div className="pointer-events-auto h-[52px] min-w-[580px] bg-background/85 backdrop-blur-xl border border-foreground/10 rounded-[26px] flex items-center px-2 gap-1 shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
       {/* Logo */}
       <div className="w-9 h-9 rounded-full bg-foreground/10 flex items-center justify-center shrink-0">
-        <span className="text-primary font-mono font-bold text-sm">&gt;_</span>
+        <svg viewBox="0 0 64 64" className="w-6 h-6">
+          <g className="fill-primary">
+            <polygon points="16,20 30,32 16,44 16,39 23,32 16,25" />
+            <rect x="32" y="38" width="16" height="4" rx="1" />
+          </g>
+        </svg>
       </div>
 
       {/* Search */}

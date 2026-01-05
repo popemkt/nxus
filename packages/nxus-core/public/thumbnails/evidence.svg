@@ -1,24 +1,17 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="800" height="450" fill="url(#paint0_linear_1736_3)"/>
-<path d="M200 125 L400 225 L600 125 L400 25 Z" fill="url(#paint1_linear_1736_3)" stroke="#FFFFFF" stroke-width="8"/>
-<path d="M250 162.5 L400 250 L550 162.5" fill="none" stroke="url(#paint2_linear_1736_3)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="400" cy="225" r="40" fill="url(#paint3_radial_1736_3)"/>
-<defs>
-<linearGradient id="paint0_linear_1736_3" x1="0" y1="0" x2="800" y2="450">
-<stop stop-color="#1A237E"/>
-<stop offset="1" stop-color="#283593"/>
-</linearGradient>
-<linearGradient id="paint1_linear_1736_3" x1="400" y1="25" x2="400" y2="225">
-<stop stop-color="#3949AB"/>
-<stop offset="1" stop-color="#5C6BC0"/>
-</linearGradient>
-<linearGradient id="paint2_linear_1736_3" x1="400" y1="162.5" x2="400" y2="250">
-<stop stop-color="#9FA8DA"/>
-<stop offset="1" stop-color="#E8EAF6"/>
-</linearGradient>
-<radialGradient id="paint3_radial_1736_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(400 225) rotate(90) scale(40)">
-<stop stop-color="#C5CAE9"/>
-<stop offset="1" stop-color="#7986CB"/>
-</radialGradient>
-</defs>
+  <rect width="800" height="450" fill="#F0F4F8"/>
+  
+  <!-- House Icon -->
+  <path d="M400 150 L250 250 L300 250 L300 350 L500 350 L500 250 L550 250 L400 150Z" fill="#4A90E2"/>
+  
+  <!-- Document Icon -->
+  <rect x="350" y="200" width="100" height="120" fill="#50E3C2" rx="10"/>
+  <line x1="365" y1="220" x2="435" y2="220" stroke="#FFFFFF" stroke-width="8"/>
+  <line x1="365" y1="240" x2="435" y2="240" stroke="#FFFFFF" stroke-width="8"/>
+  <line x1="365" y1="260" x2="415" y2="260" stroke="#FFFFFF" stroke-width="8"/>
+  <line x1="365" y1="280" x2="405" y2="280" stroke="#FFFFFF" stroke-width="8"/>
+
+  <!-- Magnifying Glass Icon -->
+  <circle cx="470" cy="200" r="60" stroke="#F5A623" stroke-width="20"/>
+  <line x1="515" y1="245" x2="575" y2="305" stroke="#F5A623" stroke-width="20" stroke-linecap="round"/>
 </svg>
