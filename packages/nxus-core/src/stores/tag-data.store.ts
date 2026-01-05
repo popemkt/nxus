@@ -77,6 +77,9 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
           const now = Date.now()
           const cachedTags: CachedTag[] = result.data.map((tag) => ({
             ...tag,
+            // Convert null to undefined for optional fields
+            color: tag.color ?? undefined,
+            icon: tag.icon ?? undefined,
             createdAt: tag.createdAt?.toString() ?? new Date(now).toISOString(),
             updatedAt: tag.updatedAt?.toString() ?? new Date(now).toISOString(),
             _syncStatus: 'synced' as const,

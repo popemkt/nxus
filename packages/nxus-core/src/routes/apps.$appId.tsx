@@ -479,11 +479,10 @@ function OverviewContent({
 
             {/* Dependencies List */}
             <DependencyList
-              dependencies={
-                appRegistryService.getDependencies(app.id).success
-                  ? appRegistryService.getDependencies(app.id).data
-                  : []
-              }
+              dependencies={(() => {
+                const result = appRegistryService.getDependencies(app.id)
+                return result.success ? result.data : []
+              })()}
             />
           </div>
         </CardContent>

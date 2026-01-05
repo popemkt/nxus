@@ -53,7 +53,7 @@ export const parseScriptParamsServerFn = createServerFn({ method: 'GET' })
     console.log(
       '[parseScriptParamsServerFn] Success:',
       scriptPath,
-      result.params?.length,
+      result.success ? result.params?.length : 0,
     )
     return result
   })
