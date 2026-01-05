@@ -43,6 +43,7 @@ import { openPathServerFn } from '@/services/shell/open-path.server'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 import {
   useAppCheck,
+  appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
 import { itemStatusService } from '@/services/state/item-status-state'

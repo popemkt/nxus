@@ -44,17 +44,24 @@ export function getPlatformCommands(): PlatformCommands {
       openFolder: (path: string) => `start "" "${path}"`,
       whichCommand: 'where',
       folderPickerCommand: (startPath: string, title: string) => {
+        // Use base64-encoded script to avoid escaping issues with $ characters
+        // Also use a TopMost form as the owner so the dialog appears in front of other windows
         const psScript = `
-          Add-Type -AssemblyName System.Windows.Forms
-          $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-          $dialog.Description = '${title}'
-          $dialog.SelectedPath = '${startPath.replace(/\\/g, '\\\\')}'
-          $dialog.ShowNewFolderButton = $true
-          if ($dialog.ShowDialog() -eq 'OK') {
-            Write-Output $dialog.SelectedPath
-          }
-        `.replace(/\n/g, ' ')
-        return `powershell -Command "${psScript}"`
+Add-Type -AssemblyName System.Windows.Forms
+$topForm = New-Object System.Windows.Forms.Form
+$topForm.TopMost = $true
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = '${title.replace(/'/g, "''")}'
+$dialog.SelectedPath = '${startPath.replace(/'/g, "''")}'
+$dialog.ShowNewFolderButton = $true
+$result = $dialog.ShowDialog($topForm)
+$topForm.Dispose()
+if ($result -eq 'OK') {
+  Write-Output $dialog.SelectedPath
+}
+`
+        const encodedScript = Buffer.from(psScript, 'utf16le').toString('base64')
+        return `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedScript}`
       },
     },
 
