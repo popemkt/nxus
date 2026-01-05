@@ -244,7 +244,7 @@ function GenerateThumbnailButton({
   const health = useItemStatus('gemini-cli')
 
   const handleClick = async () => {
-    const thumbnailsDir = 'nxus-core/public/thumbnails'
+    const thumbnailsDir = 'public/thumbnails'
     const safeDescription = appDescription
       .replace(/[()]/g, '')
       .replace(/"/g, '')

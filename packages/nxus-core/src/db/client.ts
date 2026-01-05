@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const dataDir = resolve(__dirname, '../../data')
+const dataDir = resolve(__dirname, '../data')
 const dbPath = resolve(dataDir, 'nxus.db')
 
 // Ensure data directory exists
