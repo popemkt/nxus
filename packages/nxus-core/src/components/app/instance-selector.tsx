@@ -9,6 +9,7 @@ import {
   DownloadIcon,
   PencilSimpleIcon,
   CodeIcon,
+  FolderPlusIcon,
 } from '@phosphor-icons/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,8 @@ interface InstanceSelectorProps {
   appId: string
   canAddInstance: boolean
   onAddInstanceClick: () => void
+  /** Handler for choosing an existing folder as instance */
+  onChooseExistingClick?: () => void
   isAddingInstance?: boolean
   /** Called when an instance is selected */
   onInstanceSelect?: (instance: InstalledAppRecord | null) => void
@@ -69,6 +72,7 @@ export function InstanceSelector({
   appId,
   canAddInstance,
   onAddInstanceClick,
+  onChooseExistingClick,
   isAddingInstance,
   onInstanceSelect,
   selectedInstanceId: controlledSelectedId,
@@ -119,6 +123,7 @@ export function InstanceSelector({
         <EmptyView
           key="empty"
           onAdd={onAddInstanceClick}
+          onChooseExisting={onChooseExistingClick}
           disabled={isAddingInstance}
         />
       ) : !isExpanded ? (
@@ -137,6 +142,7 @@ export function InstanceSelector({
           onCollapse={() => setIsExpanded(false)}
           canAdd={canAddInstance}
           onAdd={onAddInstanceClick}
+          onChooseExisting={onChooseExistingClick}
           isAdding={isAddingInstance}
         />
       )}
@@ -148,9 +154,11 @@ export function InstanceSelector({
 
 function EmptyView({
   onAdd,
+  onChooseExisting,
   disabled,
 }: {
   onAdd: () => void
+  onChooseExisting?: () => void
   disabled?: boolean
 }) {
   return (
@@ -165,10 +173,22 @@ function EmptyView({
             <p className="text-sm text-muted-foreground mb-4">
               No instances yet
             </p>
-            <Button onClick={onAdd} disabled={disabled}>
-              <DownloadIcon data-icon="inline-start" />
-              Add First Instance
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button onClick={onAdd} disabled={disabled}>
+                <DownloadIcon data-icon="inline-start" />
+                Add First Instance
+              </Button>
+              {onChooseExisting && (
+                <Button
+                  variant="outline"
+                  onClick={onChooseExisting}
+                  disabled={disabled}
+                >
+                  <FolderPlusIcon data-icon="inline-start" />
+                  Choose Existing Folder
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -240,6 +260,7 @@ function ExpandedView({
   onCollapse,
   canAdd,
   onAdd,
+  onChooseExisting,
   isAdding,
 }: {
   instances: InstalledAppRecord[]
@@ -248,6 +269,7 @@ function ExpandedView({
   onCollapse: () => void
   canAdd: boolean
   onAdd: () => void
+  onChooseExisting?: () => void
   isAdding?: boolean
 }) {
   const devInfo = useDevInfo()
@@ -421,16 +443,28 @@ function ExpandedView({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, delay: instances.length * 0.05 }}
+              className="flex gap-2"
             >
               <Button
                 variant="outline"
-                className="w-full justify-start text-muted-foreground"
+                className="flex-1 justify-start text-muted-foreground"
                 onClick={onAdd}
                 disabled={isAdding}
               >
                 <PlusIcon data-icon="inline-start" />
-                Add Another Instance
+                Add Instance
               </Button>
+              {onChooseExisting && (
+                <Button
+                  variant="outline"
+                  className="flex-1 justify-start text-muted-foreground"
+                  onClick={onChooseExisting}
+                  disabled={isAdding}
+                >
+                  <FolderPlusIcon data-icon="inline-start" />
+                  Choose Existing
+                </Button>
+              )}
             </motion.div>
           )}
         </CardContent>

@@ -128,6 +128,32 @@ export const genericCommands: GenericCommand[] = [
     },
   },
   {
+    id: 'choose-existing-instance',
+    name: 'Choose Existing Instance',
+    icon: 'FolderPlus',
+    needsTarget: 'app',
+    targetFilter: (app) => app.type === 'remote-repo',
+    execute: async (appId) => {
+      if (!appId) return
+      const { openFolderPickerServerFn } = await import(
+        '@/services/shell/folder-picker.server'
+      )
+      const { appStateService } = await import('@/services/state/app-state')
+      const { appRegistryService } = await import(
+        '@/services/apps/registry.service'
+      )
+      const appResult = appRegistryService.getAppById(appId)
+      if (!appResult.success) return
+
+      const result = await openFolderPickerServerFn({
+        data: { title: `Choose existing ${appResult.data.name} installation` },
+      })
+      if (result.success && result.path) {
+        await appStateService.addInstallation(appId, result.path)
+      }
+    },
+  },
+  {
     id: 'open-folder',
     name: 'Open in File Explorer',
     icon: 'FolderOpen',

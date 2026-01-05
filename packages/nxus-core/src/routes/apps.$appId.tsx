@@ -40,6 +40,7 @@ import { InstallModal } from '@/components/app/install-modal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
+import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 import {
   useAppCheck,
   type InstalledAppRecord,
@@ -330,6 +331,16 @@ function OverviewContent({
   setGitStatusRefreshKey: (fn: (k: number) => number) => void
   onExecuteCommand: (command: string, args: string[]) => Promise<void>
 }) {
+  // Handler to choose existing folder
+  const handleChooseExisting = async () => {
+    const result = await openFolderPickerServerFn({
+      data: { title: `Choose existing ${app.name} installation` },
+    })
+    if (result.success && result.path) {
+      await appStateService.addInstallation(app.id, result.path)
+    }
+  }
+
   return (
     <>
       {/* Instance Selector */}
@@ -337,6 +348,9 @@ function OverviewContent({
         appId={appId}
         canAddInstance={app.type === 'remote-repo'}
         onAddInstanceClick={() => installModalService.open(app)}
+        onChooseExistingClick={
+          app.type === 'remote-repo' ? handleChooseExisting : undefined
+        }
         isAddingInstance={false}
         onInstanceSelect={setSelectedInstance}
       />
