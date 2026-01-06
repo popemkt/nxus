@@ -1,64 +1,44 @@
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#24292e"/>
-      <stop offset="100%" stop-color="#1b1f23"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#202020;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#101010;stop-opacity:1" />
     </linearGradient>
-    
-    <linearGradient id="face-top" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ff6b6b"/>
-      <stop offset="100%" stop-color="#ee5253"/>
-    </linearGradient>
-    
-    <linearGradient id="face-left" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#cb3837"/>
-      <stop offset="100%" stop-color="#a32020"/>
-    </linearGradient>
-    
-    <linearGradient id="face-right" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#e0403b"/>
-      <stop offset="100%" stop-color="#b52e2e"/>
-    </linearGradient>
-    
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#333" stroke-width="1"/>
+    </pattern>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="15" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
+  
+  <rect width="800" height="450" fill="url(#bg)" />
+  <rect width="800" height="450" fill="url(#grid)" />
+  
+  <!-- Centered Group -->
+  <g transform="translate(400, 225) scale(2.2)">
+    
+    <!-- Glow behind -->
+    <circle cx="0" cy="0" r="60" fill="#cb3837" opacity="0.15" filter="url(#glow)" />
 
-  <!-- Background -->
-  <rect width="800" height="450" fill="url(#bg-gradient)"/>
-
-  <!-- Centered Group for Isometric Box -->
-  <g transform="translate(400, 225)">
-    <!-- Shadow -->
-    <ellipse cx="0" cy="110" rx="100" ry="30" fill="#000" opacity="0.3" filter="url(#glow)"/>
-
-    <!-- Left Face -->
-    <path d="M0,0 L-87,50 L-87,150 L0,200 Z" fill="url(#face-left)"/>
+    <!-- Isometric Cube representing a package -->
+    <!-- Left Face (Darker Red) -->
+    <path d="M0 0 L-60 -34.64 L-60 34.64 L0 69.28 Z" fill="#8f2222" />
+    <!-- Right Face (Brand Red) -->
+    <path d="M0 0 L60 -34.64 L60 34.64 L0 69.28 Z" fill="#cb3837" />
+    <!-- Top Face (Lighter Red) -->
+    <path d="M0 0 L-60 -34.64 L0 -69.28 L60 -34.64 Z" fill="#eb5b5b" />
     
-    <!-- Right Face -->
-    <path d="M0,0 L87,50 L87,150 L0,200 Z" fill="url(#face-right)"/>
+    <!-- Subtle Inner Details to look more like a "module" -->
+    <!-- Top face inner outline -->
+    <path d="M0 -15 L-45 -41 L0 -67 L45 -41 Z" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2" />
     
-    <!-- Top Face -->
-    <path d="M0,0 L-87,50 L0,100 L87,50 Z" fill="url(#face-top)" transform="translate(0, -100)"/>
-    
-    <!-- Inner geometric details to suggest structure/modularity -->
-    <!-- Top Face Detail (lid or opening) -->
-    <path d="M0,10 L-70,50 L0,90 L70,50 Z" fill="#fff" fill-opacity="0.1" transform="translate(0, -100)"/>
-    
-    <!-- Accent line on left -->
-    <path d="M-87,50 L-87,150" stroke="#ff8f8f" stroke-width="2" opacity="0.3"/>
-    
-    <!-- Floating "Module" Cube above -->
-    <g transform="translate(0, -140)">
-       <!-- Small Cube Left -->
-       <path d="M0,25 L-22,37.5 L-22,62.5 L0,50 Z" fill="#ee5253"/> 
-       <!-- Small Cube Right -->
-       <path d="M0,25 L22,37.5 L22,62.5 L0,50 Z" fill="#b52e2e"/>
-       <!-- Small Cube Top -->
-       <path d="M0,25 L-22,37.5 L0,50 L22,37.5 Z" fill="#ff6b6b" transform="translate(0, -25)"/>
-    </g>
+    <!-- Vertical corner highlight -->
+    <line x1="0" y1="0" x2="0" y2="69.28" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
     
   </g>
 </svg>
