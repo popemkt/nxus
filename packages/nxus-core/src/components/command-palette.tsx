@@ -28,6 +28,7 @@ import { commandExecutor } from '@/services/command-palette/executor'
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { useAllItemStatus } from '@/services/state/item-status-state'
+import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 
 function DynamicIcon({
   name,
@@ -73,6 +74,16 @@ function getActionsForCommand(cmd: ActionPanelCommand) {
       name: cmd.mode === 'script' ? 'View Script' : 'Preview Command',
       icon: EyeIcon,
       shortcut: '⌘P',
+    })
+  }
+
+  // Open in Terminal (for executable commands that aren't already terminal mode)
+  if (['execute', 'script'].includes(cmd.mode)) {
+    actions.push({
+      id: 'open-terminal',
+      name: 'Open in Terminal',
+      icon: TerminalWindowIcon,
+      shortcut: '⌘T',
     })
   }
 
@@ -480,6 +491,14 @@ export function CommandPalette() {
         // In the future, this could open a preview modal
         close()
         alert(`Command: ${actionPanelCommand.command}`)
+        break
+      }
+      case 'open-terminal': {
+        // Open command in OS terminal
+        close()
+        await openTerminalWithCommandServerFn({
+          data: { command: actionPanelCommand.command },
+        })
         break
       }
       case 'copy': {

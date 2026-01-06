@@ -1,7 +1,13 @@
 import * as React from 'react'
 import { motion } from 'framer-motion'
 import * as PhosphorIcons from '@phosphor-icons/react'
-import { QuestionIcon, WarningIcon, CodeIcon } from '@phosphor-icons/react'
+import {
+  QuestionIcon,
+  WarningIcon,
+  CodeIcon,
+  DotsThree,
+  TerminalWindowIcon,
+} from '@phosphor-icons/react'
 import {
   Card,
   CardContent,
@@ -10,6 +16,12 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import { useItemStatus } from '@/services/state/item-status-state'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
@@ -17,6 +29,7 @@ import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
 import { ScriptParamsModal } from '@/components/app/script-params-modal'
 import { handleCommandMode, buildScriptCommand } from '@/lib/command-utils'
 import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.server'
+import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
 import type { App, ToolApp, AppCommand } from '@/types/app'
 
@@ -250,7 +263,9 @@ export function AppActionsPanel({
                       <Button
                         variant="outline"
                         className={`flex-1 justify-start ${
-                          isScriptMode || cmd.mode === 'execute'
+                          isScriptMode ||
+                          cmd.mode === 'execute' ||
+                          cmd.mode === 'terminal'
                             ? 'rounded-r-none border-r-0'
                             : ''
                         } ${
@@ -275,24 +290,57 @@ export function AppActionsPanel({
                           </span>
                         )}
                       </Button>
-                      {/* Show command preview button for script, execute, and terminal modes - always enabled as auxiliary action */}
+                      {/* Auxiliary actions dropdown for script, execute, and terminal modes */}
                       {(isScriptMode ||
                         cmd.mode === 'execute' ||
                         cmd.mode === 'terminal') && (
-                        <Button
-                          variant="outline"
-                          className="px-2 rounded-l-none"
-                          onClick={() => {
-                            setPreviewScriptPath(cmd.command)
-                            setPreviewIsInline(
-                              cmd.mode === 'execute' || cmd.mode === 'terminal',
-                            )
-                            setPreviewOpen(true)
-                          }}
-                          title={isScriptMode ? 'View script' : 'View command'}
-                        >
-                          <CodeIcon className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="px-2 rounded-l-none"
+                              title="More actions"
+                            >
+                              <DotsThree className="h-4 w-4" weight="bold" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="min-w-[180px]"
+                          >
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={() => {
+                                setPreviewScriptPath(cmd.command)
+                                setPreviewIsInline(
+                                  cmd.mode === 'execute' ||
+                                    cmd.mode === 'terminal',
+                                )
+                                setPreviewOpen(true)
+                              }}
+                            >
+                              <CodeIcon className="h-4 w-4" />
+                              <span>
+                                {isScriptMode ? 'View Script' : 'View Command'}
+                              </span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={async () => {
+                                // Build the full command if it's a script
+                                const fullCommand = isScriptMode
+                                  ? buildScriptCommand(app.id, cmd.command)
+                                  : cmd.command
+                                await openTerminalWithCommandServerFn({
+                                  data: { command: fullCommand },
+                                })
+                              }}
+                            >
+                              <TerminalWindowIcon className="h-4 w-4" />
+                              <span>Open in Terminal</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   </motion.div>
