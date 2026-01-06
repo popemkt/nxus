@@ -1,16 +1,42 @@
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="800" height="450" fill="#1E293B"/>
-    <path d="M100 225 H 700" stroke="#38BDF8" stroke-width="10" stroke-linecap="round"/>
-    <circle cx="150" cy="225" r="15" fill="#1E293B" stroke="#38BDF8" stroke-width="6"/>
-    <circle cx="300" cy="225" r="15" fill="#1E293B" stroke="#38BDF8" stroke-width="6"/>
-    <circle cx="500" cy="225" r="15" fill="#1E293B" stroke="#38BDF8" stroke-width="6"/>
-    <circle cx="650" cy="225" r="15" fill="#1E293B" stroke="#38BDF8" stroke-width="6"/>
-    <path d="M300 225 C 350 225, 350 125, 400 125 H 600" stroke="#A78BFA" stroke-width="10" stroke-linecap="round"/>
-    <circle cx="450" cy="125" r="15" fill="#1E293B" stroke="#A78BFA" stroke-width="6"/>
-    <circle cx="600" cy="125" r="15" fill="#1E293B" stroke="#A78BFA" stroke-width="6"/>
-    <path d="M600 125 C 650 125, 650 225, 650 225" stroke="#A78BFA" stroke-width="10" stroke-linecap="round"/>
-    <path d="M150 225 C 200 225, 200 325, 250 325 H 450" stroke="#F472B6" stroke-width="10" stroke-linecap="round"/>
-    <circle cx="350" cy="325" r="15" fill="#1E293B" stroke="#F472B6" stroke-width="6"/>
-    <circle cx="450" cy="325" r="15" fill="#1E293B" stroke="#F472B6" stroke-width="6"/>
-    <path d="M450 325 C 500 325, 500 225, 500 225" stroke="#F472B6" stroke-width="10" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a1a" />
+      <stop offset="100%" stop-color="#2d2d2d" />
+    </linearGradient>
+    <linearGradient id="gitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fc6d26" />
+      <stop offset="100%" stop-color="#e24329" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bgGradient)" />
+  
+  <!-- Git Icon -->
+  <g transform="translate(400, 225) scale(1.6)" filter="url(#shadow)">
+    <!-- Rotated Square Container -->
+    <g transform="rotate(45)">
+        <rect x="-70" y="-70" width="140" height="140" rx="15" fill="url(#gitGradient)" />
+        
+        <!-- Inner Graph (White) -->
+        <!-- Main vertical line -->
+        <line x1="0" y1="-45" x2="0" y2="45" stroke="white" stroke-width="12" stroke-linecap="round" />
+        
+        <!-- Branching line -->
+        <!-- Starts from middle, curves to right -->
+        <path d="M 0,20 C 0,20 35,20 35,-15" fill="none" stroke="white" stroke-width="12" stroke-linecap="round" />
+        
+        <!-- Nodes -->
+        <!-- Top Main -->
+        <circle cx="0" cy="-45" r="9" fill="white" />
+        <!-- Bottom Main -->
+        <circle cx="0" cy="45" r="9" fill="white" />
+        <!-- Branch Tip -->
+        <circle cx="35" cy="-15" r="9" fill="white" />
+    </g>
+  </g>
 </svg>
