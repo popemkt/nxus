@@ -27,8 +27,9 @@ import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
 import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
 import { ScriptParamsModal } from '@/components/app/script-params-modal'
-import { handleCommandMode, buildScriptCommand } from '@/lib/command-utils'
+import { handleCommandMode } from '@/lib/command-utils'
 import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.server'
+import { getScriptFullPathServerFn } from '@/services/shell/read-script.server'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
 import type { App, ToolApp, AppCommand } from '@/types/app'
@@ -127,7 +128,11 @@ export function AppActionsPanel({
     if (cmd.mode === 'script') {
       try {
         const result = await parseScriptParamsServerFn({
-          data: { appId: app.id, scriptPath: cmd.command },
+          data: {
+            appId: app.id,
+            scriptPath: cmd.command,
+            scriptSource: cmd.scriptSource,
+          },
         })
 
         if (result.success && result.params.length > 0) {
@@ -138,8 +143,15 @@ export function AppActionsPanel({
           return
         }
 
-        // No parameters - execute directly
-        const fullCommand = buildScriptCommand(app.id, cmd.command)
+        // No parameters - resolve path and execute directly
+        const resolved = await getScriptFullPathServerFn({
+          data: {
+            appId: app.id,
+            scriptPath: cmd.command,
+            scriptSource: cmd.scriptSource,
+          },
+        })
+        const fullCommand = `pwsh "${resolved.fullPath}"`
         onRunCommand?.(fullCommand)
         return
       } catch (err) {
@@ -166,7 +178,7 @@ export function AppActionsPanel({
   }
 
   // Handle script execution with parameters
-  const handleScriptRun = (
+  const handleScriptRun = async (
     values: Record<string, string | number | boolean>,
   ) => {
     if (!pendingScriptCommand) return
@@ -183,8 +195,16 @@ export function AppActionsPanel({
       .filter(Boolean)
       .join(' ')
 
-    const fullCommand =
-      buildScriptCommand(app.id, pendingScriptCommand.command) + ' ' + params
+    // Resolve script path using server-side resolver
+    const resolved = await getScriptFullPathServerFn({
+      data: {
+        appId: app.id,
+        scriptPath: pendingScriptCommand.command,
+        scriptSource: pendingScriptCommand.scriptSource,
+      },
+    })
+
+    const fullCommand = `pwsh "${resolved.fullPath}" ${params}`
     onRunCommand?.(fullCommand)
     setPendingScriptCommand(null)
   }
@@ -327,10 +347,20 @@ export function AppActionsPanel({
                             <DropdownMenuItem
                               className="gap-2"
                               onClick={async () => {
-                                // Build the full command if it's a script
-                                const fullCommand = isScriptMode
-                                  ? buildScriptCommand(app.id, cmd.command)
-                                  : cmd.command
+                                // Resolve script path for terminal
+                                let fullCommand: string
+                                if (isScriptMode) {
+                                  const resolved = await getScriptFullPathServerFn({
+                                    data: {
+                                      appId: app.id,
+                                      scriptPath: cmd.command,
+                                      scriptSource: cmd.scriptSource,
+                                    },
+                                  })
+                                  fullCommand = `pwsh "${resolved.fullPath}"`
+                                } else {
+                                  fullCommand = cmd.command
+                                }
                                 await openTerminalWithCommandServerFn({
                                   data: { command: fullCommand },
                                 })

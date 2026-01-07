@@ -94,6 +94,24 @@ export const CommandRequirementsSchema = z.object({
 export type CommandRequirements = z.infer<typeof CommandRequirementsSchema>
 
 /**
+ * Script source - where to resolve script paths for mode: 'script'
+ */
+export const ScriptSourceSchema = z.enum(['nxus-app', 'repo', 'shared'])
+export type ScriptSource = z.infer<typeof ScriptSourceSchema>
+
+/**
+ * Working directory specification for command execution
+ * - 'scriptLocation': Directory containing the script (script mode only)
+ * - 'instance': Selected instance path (script mode only)
+ * - string: Custom absolute path (all modes)
+ */
+export const CwdSchema = z.union([
+  z.enum(['scriptLocation', 'instance']),
+  z.string(),
+])
+export type Cwd = z.infer<typeof CwdSchema>
+
+/**
  * Config-driven command defined in app-registry.json
  * For shell/script commands with different parameters per app
  */
@@ -108,6 +126,10 @@ export const AppCommandSchema = z.object({
     'How to execute this command',
   ),
   command: z.string().describe('Shell command to execute or URL for docs mode'),
+  /** Where to resolve script paths (for mode: 'script'). Default: 'nxus-app' */
+  scriptSource: ScriptSourceSchema.optional(),
+  /** Working directory override. Default derived from scriptSource for scripts, process.cwd() for execute */
+  cwd: CwdSchema.optional(),
   override: z.string().optional().describe('ID of default command to override'),
   /** Platforms where this command is available */
   platforms: z.array(PlatformSchema).optional(),
