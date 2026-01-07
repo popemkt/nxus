@@ -3,6 +3,7 @@ import { z } from 'zod'
 import path from 'node:path'
 import { parsePowerShellParamsServerFn } from './script-param-adapters/powershell.server'
 import { resolveScriptServerFn } from './script-resolver.server'
+import type { ResolveScriptInput } from './script-resolver.server'
 import { ScriptSourceSchema } from '@/types/app'
 import type { ParseScriptParamsResult } from './script-param-adapters/types'
 
@@ -13,6 +14,31 @@ const ParseScriptParamsSchema = z.object({
   instancePath: z.string().optional(),
 })
 
+function buildResolverInput(
+  data: z.infer<typeof ParseScriptParamsSchema>,
+): ResolveScriptInput {
+  const { appId, scriptPath, scriptSource, instancePath } = data
+
+  if (scriptSource === 'repo') {
+    if (!instancePath) {
+      throw new Error('instancePath is required when scriptSource is "repo"')
+    }
+    return {
+      appId,
+      scriptPath,
+      scriptSource: 'repo',
+      instancePath,
+    }
+  }
+
+  return {
+    appId,
+    scriptPath,
+    scriptSource: scriptSource === 'shared' ? 'shared' : 'nxus-app',
+    instancePath,
+  }
+}
+
 /**
  * Parse script parameters - dispatches to appropriate adapter based on file extension
  * Now supports multiple script sources via scriptSource parameter
@@ -21,16 +47,11 @@ export const parseScriptParamsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(ParseScriptParamsSchema)
   .handler(async (ctx): Promise<ParseScriptParamsResult> => {
     console.log('[parseScriptParamsServerFn] Input:', ctx.data)
-    const { appId, scriptPath, scriptSource, instancePath } = ctx.data
+    const { scriptPath } = ctx.data
 
     // Use the resolver to get the full path
     const resolved = await resolveScriptServerFn({
-      data: {
-        appId,
-        scriptPath,
-        scriptSource: scriptSource ?? 'nxus-app',
-        instancePath,
-      },
+      data: buildResolverInput(ctx.data),
     })
 
     const fullPath = resolved.scriptFullPath

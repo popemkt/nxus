@@ -1,26 +1,33 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { ScriptSourceSchema, CwdSchema } from '@/types/app'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { CwdSchema } from '@/types/app'
 
 /**
  * Get the root path for app data
+ * Uses process.cwd() which is reliable in server context
  */
 function getAppDataRoot(): string {
-  return path.join(__dirname, '..', '..', 'data', 'apps')
+  return path.join(process.cwd(), 'packages', 'nxus-core', 'src', 'data', 'apps')
 }
 
-const ResolveScriptSchema = z.object({
+const CommonSchema = z.object({
   appId: z.string(),
   scriptPath: z.string(),
-  scriptSource: ScriptSourceSchema.default('nxus-app'),
-  instancePath: z.string().optional(),
   cwdOverride: CwdSchema.optional(),
 })
+
+const RepoSchema = CommonSchema.extend({
+  scriptSource: z.literal('repo'),
+  instancePath: z.string(),
+})
+
+const StandardSchema = CommonSchema.extend({
+  scriptSource: z.enum(['nxus-app', 'shared']).default('nxus-app'),
+  instancePath: z.string().optional(),
+})
+
+const ResolveScriptSchema = z.union([RepoSchema, StandardSchema])
 
 export type ResolveScriptInput = z.infer<typeof ResolveScriptSchema>
 
@@ -71,17 +78,9 @@ export const resolveScriptServerFn = createServerFn({ method: 'GET' })
         break
 
       case 'repo':
-        if (!instancePath) {
-          throw new Error(
-            'instancePath is required when scriptSource is "repo"',
-          )
-        }
         scriptFullPath = path.join(instancePath, scriptPath)
         defaultCwd = instancePath
         break
-
-      default:
-        throw new Error(`Unknown script source: ${scriptSource}`)
     }
 
     // Resolve cwd based on override or default
@@ -91,6 +90,10 @@ export const resolveScriptServerFn = createServerFn({ method: 'GET' })
     } else if (cwdOverride === 'scriptLocation') {
       cwd = path.dirname(scriptFullPath)
     } else if (cwdOverride === 'instance') {
+      // For standard schema, instancePath might be undefined
+      // But if cwdOverride is 'instance', we enforce logic check
+      // OR we can improve schema to require instancePath if cwdOverride is instance
+      // For now, runtime check is fine, or we can assume it's set if the user selected it
       if (!instancePath) {
         throw new Error('instancePath is required when cwd is "instance"')
       }

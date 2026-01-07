@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import fs from 'node:fs/promises'
 import { resolveScriptServerFn } from './script-resolver.server'
+import type { ResolveScriptInput } from './script-resolver.server'
 import { ScriptSourceSchema } from '@/types/app'
 
 const ReadScriptSchema = z.object({
@@ -11,6 +12,31 @@ const ReadScriptSchema = z.object({
   instancePath: z.string().optional(),
 })
 
+function buildResolverInput(data: z.infer<typeof ReadScriptSchema>): ResolveScriptInput {
+  const { appId, scriptPath, scriptSource, instancePath } = data
+
+  if (scriptSource === 'repo') {
+    if (!instancePath) {
+      throw new Error('instancePath is required when scriptSource is "repo"')
+    }
+    return {
+      appId,
+      scriptPath,
+      scriptSource: 'repo',
+      instancePath,
+    }
+  }
+
+  // Handle other cases (nxus-app, shared, or undefined->nxus-app)
+  // Ensure we don't pass 'repo' here accidentally (TS knows this via flow analysis)
+  return {
+    appId,
+    scriptPath,
+    scriptSource: scriptSource === 'shared' ? 'shared' : 'nxus-app',
+    instancePath,
+  }
+}
+
 /**
  * Read a script file content for preview
  * Now supports multiple script sources via scriptSource parameter
@@ -19,16 +45,10 @@ export const readScriptFileServerFn = createServerFn({ method: 'GET' })
   .inputValidator(ReadScriptSchema)
   .handler(async (ctx) => {
     console.log('[readScriptFileServerFn] Input:', ctx.data)
-    const { appId, scriptPath, scriptSource, instancePath } = ctx.data
 
     // Use the new resolver to get the full path
     const resolved = await resolveScriptServerFn({
-      data: {
-        appId,
-        scriptPath,
-        scriptSource: scriptSource ?? 'nxus-app',
-        instancePath,
-      },
+      data: buildResolverInput(ctx.data),
     })
 
     const fullPath = resolved.scriptFullPath
@@ -65,18 +85,13 @@ export const getScriptFullPathServerFn = createServerFn({ method: 'GET' })
   .inputValidator(GetScriptPathSchema)
   .handler(async (ctx) => {
     console.log('[getScriptFullPathServerFn] Input:', ctx.data)
-    const { appId, scriptPath, scriptSource, instancePath } = ctx.data
 
     // Use the new resolver
     const resolved = await resolveScriptServerFn({
-      data: {
-        appId,
-        scriptPath,
-        scriptSource: scriptSource ?? 'nxus-app',
-        instancePath,
-      },
+      data: buildResolverInput(ctx.data),
     })
 
     console.log('[getScriptFullPathServerFn] Result:', resolved.scriptFullPath)
     return { fullPath: resolved.scriptFullPath, cwd: resolved.cwd }
   })
+
