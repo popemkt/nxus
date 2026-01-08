@@ -332,18 +332,97 @@ function OverviewContent({
   setGitStatusRefreshKey: (fn: (k: number) => number) => void
   onExecuteCommand: (command: string, args: string[]) => Promise<void>
 }) {
+  // State for git validation error message
+  const [gitValidationError, setGitValidationError] = useState<string | null>(
+    null,
+  )
+
   // Handler to choose existing folder
   const handleChooseExisting = async () => {
+    setGitValidationError(null) // Clear previous error
     const result = await openFolderPickerServerFn({
       data: { title: `Choose existing ${app.name} installation` },
     })
+    console.log('[handleChooseExisting] Folder picker result:', result)
+
     if (result.success && result.path) {
+      // For remote-repo apps, validate that the folder is a git repo with the correct remote
+      if (app.type === 'remote-repo' && app.path) {
+        console.log(
+          '[handleChooseExisting] Checking git remote for:',
+          result.path,
+        )
+        const { getGitRemoteServerFn } = await import(
+          '@/services/apps/git-status.server'
+        )
+        const gitResult = await getGitRemoteServerFn({
+          data: { path: result.path },
+        })
+        console.log('[handleChooseExisting] Git result:', gitResult)
+
+        if (gitResult.error) {
+          console.error('[handleChooseExisting] Git error:', gitResult.error)
+          setGitValidationError(
+            `This folder is not a valid git repository: ${gitResult.error}`,
+          )
+          return
+        }
+
+        // Normalize URLs for comparison (remove .git suffix, trailing slashes)
+        const normalizeUrl = (url: string) =>
+          url
+            .replace(/\.git$/, '')
+            .replace(/\/$/, '')
+            .toLowerCase()
+
+        const expectedRemote = normalizeUrl(app.path)
+        const actualRemote = normalizeUrl(gitResult.remoteUrl || '')
+
+        console.log('[handleChooseExisting] Expected remote:', expectedRemote)
+        console.log('[handleChooseExisting] Actual remote:', actualRemote)
+
+        if (!actualRemote.includes(expectedRemote.split('/').pop() || '')) {
+          console.error('[handleChooseExisting] Remote mismatch!')
+          setGitValidationError(
+            `Remote mismatch! Expected: ${app.path}, Actual: ${gitResult.remoteUrl}`,
+          )
+          return
+        }
+      }
+
       await appStateService.addInstallation(app.id, result.path)
     }
   }
 
   return (
     <>
+      {/* Git Validation Error */}
+      {gitValidationError && (
+        <Card className="border-destructive bg-destructive/10">
+          <CardContent className="pt-4">
+            <div className="flex items-start gap-3">
+              <WarningIcon className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">
+                  Invalid Folder
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {gitValidationError}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-xs"
+                  onClick={() => setGitValidationError(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Instance Selector */}
       <InstanceSelector
         appId={appId}

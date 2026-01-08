@@ -153,3 +153,26 @@ export const checkGitStatusServerFn = createServerFn({ method: 'POST' })
       }
     }
   })
+
+/**
+ * Get the remote origin URL for a git repository
+ * @param path - Directory path to check
+ * @returns Object with remoteUrl and error if applicable
+ */
+export const getGitRemoteServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(GitStatusSchema)
+  .handler(async (ctx): Promise<{ remoteUrl?: string; error?: string }> => {
+    const { path } = ctx.data
+
+    try {
+      const { stdout } = await execAsync('git remote get-url origin', {
+        cwd: path,
+      })
+      return { remoteUrl: stdout.trim() }
+    } catch (error) {
+      return {
+        error:
+          error instanceof Error ? error.message : 'Failed to get remote URL',
+      }
+    }
+  })

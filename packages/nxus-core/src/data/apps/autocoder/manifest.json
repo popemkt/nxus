@@ -1,0 +1,68 @@
+{
+    "id": "autocoder",
+    "name": "AutoCoder",
+    "description": "AI-powered code generator using a two-agent pattern with Claude Code",
+    "type": "remote-repo",
+    "path": "https://github.com/leonvanzyl/autocoder.git",
+    "homepage": "https://github.com/leonvanzyl/autocoder",
+    "installConfig": {
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ],
+        "dependencies": [
+            "claude-code",
+            "python3"
+        ]
+    },
+    "dependencies": [
+        "claude-code",
+        "python3"
+    ],
+    "commands": [
+        {
+            "id": "run-ui",
+            "name": "Run Web UI",
+            "description": "Start the web-based interface",
+            "icon": "Browser",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./start_ui.sh"
+        },
+        {
+            "id": "run-cli",
+            "name": "Run CLI",
+            "description": "Start the CLI menu",
+            "icon": "Terminal",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./start.sh"
+        }
+    ],
+    "docs": [
+        {
+            "id": "guide",
+            "title": "User Guide",
+            "file": "guide.md",
+            "icon": "BookOpen"
+        }
+    ],
+    "metadata": {
+        "tags": [
+            "ai",
+            "coding",
+            "claude",
+            "automation",
+            "generator"
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-08T21:07:00.000Z",
+        "updatedAt": "2026-01-08T21:07:00.000Z",
+        "version": "1.0.0",
+        "author": "Leon van Zyl"
+    },
+    "status": "not-installed"
+}
