@@ -59,6 +59,12 @@
             "title": "Quick Start",
             "file": "quickstart.md",
             "icon": "Play"
+        },
+        {
+            "id": "integrations",
+            "title": "Other Integrations",
+            "file": "integrations.md",
+            "icon": "Plugs"
         }
     ],
     "metadata": {
