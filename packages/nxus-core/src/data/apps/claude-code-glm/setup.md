@@ -1,6 +1,6 @@
 # Setup Guide for Claude Code with GLM
 
-This guide will help you configure Claude Code to work with Z.AI's GLM model.
+This guide will help you configure Claude Code to work with Z.AI's GLM model using the automated helper.
 
 ## Prerequisites
 
@@ -8,52 +8,37 @@ Before you begin, ensure Claude Code is installed:
 
 {{command:claude-code:install-claude-code}}
 
-## Step 1: Get Your API Key
+## Step 1: Run the Z.AI Helper
 
-1. Visit the [Z.AI Open Platform](https://z.ai/model-api)
-2. Register or login to your account
-3. Navigate to [API Keys](https://z.ai/manage-apikey/apikey-list) management
-4. Create a new API key and copy it
+The easiest way to configure Claude Code for Z.AI is to run the automated coding tool helper:
 
-## Step 2: Configure Your Environment
+{{command:run-helper}}
 
-There are several ways to configure GLM:
+This tool will:
 
-### Option A: Use the Configuration Modal
+1. Verify Your Node.js environment.
+2. Guide you through obtaining and entering your Z.AI API key.
+3. Automatically configure your `~/.claude/settings.json`.
 
-The easiest way - set your API key through the UI:
+## Step 2: Verify Configuration
 
-{{command:configure}}
-
-### Option B: Add to Shell Profile
-
-For permanent configuration, add to your shell profile:
-
-**Bash users:**
-
-{{command:configure-glm-permanent-bash}}
-
-**Zsh users:**
-
-{{command:configure-glm-permanent-zsh}}
-
-### Option C: Session-Only Configuration
-
-Copy the environment variables for manual use:
-
-{{command:configure-glm-session}}
-
-## Step 3: Verify Configuration
-
-After configuration, run Claude Code in any project:
+After running the helper, you can start using Claude Code in any project:
 
 ```bash
 cd your-project
 claude
 ```
 
-## Need Help?
+## Troubleshooting
 
-Check the official Z.AI documentation:
+If you need to view or manually edit your configuration, you can open the settings directory:
+
+{{command:open-settings}}
+
+If you need to start fresh or re-authenticate, you can reset your configuration:
+
+{{command:reset-settings}}
+
+For more details, visit the official documentation:
 
 {{command:docs-glm}}

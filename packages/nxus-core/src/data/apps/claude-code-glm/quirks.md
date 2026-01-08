@@ -1,56 +1,39 @@
 # Quirks & Tips for GLM Configuration
 
-Personal notes and tips for working with Claude Code + GLM.
+Tips for working with Claude Code + GLM.
 
 ## Known Quirks
 
 ### API Timeout Issues
 
-The default API timeout may be too short for complex operations. The recommended timeout is `3000000ms` (50 minutes).
-
-If you experience timeouts, ensure your configuration includes:
-
-```bash
-export API_TIMEOUT_MS="3000000"
-```
+The default API timeout in the Z.AI helper is set to `3000000ms` (50 minutes), which is recommended for complex operations.
 
 ### Model Compatibility
 
 Not all Claude Code features work identically with GLM. Some differences:
 
-- **Vision capabilities**: May have different performance
-- **Tool use**: Generally works well
-- **Long context**: Supported up to GLM limits
+- **Vision capabilities**: Different performance characteristics.
+- **Tool use**: Generally robust.
+- **Long context**: Supported within GLM limits.
 
 ## Tips for Best Results
 
-1. **Use the configuration modal** for easy setup: {{command:configure}}
+1. **Use the coding helper** for most setup needs: {{command:run-helper}}
 
-2. **Keep your API key secure** - don't commit it to git!
+2. **Clean slate**: If things get messy, use {{command:reset-settings}} to clear your configuration and try again.
 
-3. **Monitor usage** through the Z.AI dashboard
-
-4. **Fall back to Anthropic** if GLM experiences issues:
-   - Simply unset the environment variables
-   - Or use a different terminal session
+3. **Check Documentation**: The official Z.AI docs are the best source for the latest updates: {{command:docs-glm}}
 
 ## Troubleshooting
 
 ### "Authentication failed" errors
 
-- Verify your API key is correct
-- Check if the key has the necessary permissions
-- Ensure the base URL is correct: `https://open.bigmodel.cn/api/paas/v4/`
+- Run the helper again to verify your API key.
+- Check the Z.AI dashboard for key status.
 
-### "Connection timeout" errors
+### "Command not found"
 
-- Check your network connectivity
-- Try increasing the API_TIMEOUT_MS value
-- The Z.AI service may be experiencing high load
-
-### Command not found
-
-Make sure Claude Code is installed globally:
+Ensure Claude Code is installed globally:
 
 ```bash
 npm install -g @anthropic-ai/claude-code

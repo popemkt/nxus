@@ -18,72 +18,52 @@
     "configSchema": {
         "fields": [
             {
-                "key": "ANTHROPIC_API_KEY",
-                "label": "Z.AI API Key",
+                "key": "ANTHROPIC_AUTH_TOKEN",
+                "label": "Z.AI Auth Token",
                 "type": "password",
                 "required": true,
-                "placeholder": "Enter your Z.AI API key"
+                "placeholder": "Enter your Z.AI API key/token"
             },
             {
                 "key": "ANTHROPIC_BASE_URL",
                 "label": "API Base URL",
                 "type": "url",
                 "required": false,
-                "defaultValue": "https://open.bigmodel.cn/api/paas/v4/",
+                "defaultValue": "https://api.z.ai/api/anthropic",
                 "placeholder": "API endpoint URL"
             }
         ]
     },
     "commands": [
         {
-            "id": "configure",
-            "name": "Configure API Keys",
-            "description": "Set up Z.AI API credentials",
-            "icon": "Gear",
-            "category": "Setup",
-            "target": "app",
-            "mode": "configure",
-            "command": ""
-        },
-        {
-            "id": "configure-glm-permanent-bash",
-            "name": "Apply to Bash Profile",
-            "description": "Add config to ~/.bashrc",
-            "icon": "Terminal",
+            "id": "run-helper",
+            "name": "Run Z.AI Helper",
+            "description": "Automatically configure Claude Code for Z.AI",
+            "icon": "MagicWand",
             "category": "Setup",
             "target": "app",
             "mode": "terminal",
-            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.bashrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.bashrc && source ~/.bashrc && echo 'GLM environment configured in ~/.bashrc'",
-            "requires": {
-                "tools": [
-                    "claude-code"
-                ]
-            }
+            "command": "npx @z_ai/coding-helper"
         },
         {
-            "id": "configure-glm-permanent-zsh",
-            "name": "Apply to Zsh Profile",
-            "description": "Add config to ~/.zshrc",
-            "icon": "Terminal",
+            "id": "open-settings",
+            "name": "Open Settings",
+            "description": "Open the Claude Code settings directory",
+            "icon": "FolderSimple",
             "category": "Setup",
             "target": "app",
-            "mode": "terminal",
-            "command": "echo 'export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"' >> ~/.zshrc && echo 'export ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\"' >> ~/.zshrc && source ~/.zshrc && echo 'GLM environment configured in ~/.zshrc'",
-            "requires": {
-                "tools": [
-                    "claude-code"
-                ]
-            }
+            "mode": "script",
+            "command": "open-settings.ps1"
         },
         {
-            "id": "configure-glm-session",
-            "name": "Copy Session Vars",
-            "description": "Copy env vars to clipboard",
-            "icon": "Copy",
+            "id": "reset-settings",
+            "name": "Reset Claude Config",
+            "description": "Clear all Claude Code settings and onboarding state",
+            "icon": "ArrowCounterClockwise",
             "category": "Setup",
             "target": "app",
-            "mode": "copy",
-            "command": "export ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"YOUR_Z_AI_KEY\""
+            "mode": "execute",
+            "command": "rm -f ~/.claude/settings.json ~/.claude.json"
         },
         {
             "id": "docs-glm",
@@ -93,7 +73,7 @@
             "category": "Help",
             "target": "app",
             "mode": "docs",
-            "command": "https://open.bigmodel.cn/dev/api"
+            "command": "https://docs.z.ai/devpack/tool/claude"
         }
     ],
     "docs": [
