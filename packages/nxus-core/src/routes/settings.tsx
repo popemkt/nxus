@@ -8,6 +8,7 @@ import {
   MagnifyingGlassIcon,
 } from '@phosphor-icons/react'
 import { Input } from '@/components/ui/input'
+import { ThemeChooser } from '@/components/theme-chooser'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -123,21 +124,10 @@ function GeneralSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Appearance</CardTitle>
-          <CardDescription>Customize how Nxus looks</CardDescription>
+          <CardDescription>Choose your preferred theme</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Field>
-            <FieldLabel>Theme</FieldLabel>
-            <select
-              value={theme}
-              onChange={(e) => setTheme(e.target.value as ThemeSetting)}
-              className="w-full h-10 px-3 rounded-md border bg-background"
-            >
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </Field>
+        <CardContent>
+          <ThemeChooser />
         </CardContent>
       </Card>
 

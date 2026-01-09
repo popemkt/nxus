@@ -1,0 +1,51 @@
+/* Retro Theme */
+/* Sharp corners, terminal/hacker aesthetic */
+
+.retro {
+  --background: oklch(0.1 0 0);
+  --foreground: oklch(0.7 0.2 140);
+
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.7 0.2 140);
+
+  --popover: oklch(0.11 0 0);
+  --popover-foreground: oklch(0.7 0.2 140);
+
+  --primary: oklch(0.65 0.22 140);
+  --primary-foreground: oklch(0.1 0 0);
+
+  --secondary: oklch(0.15 0 0);
+  --secondary-foreground: oklch(0.7 0.2 140);
+
+  --muted: oklch(0.15 0 0);
+  --muted-foreground: oklch(0.45 0.1 140);
+
+  --accent: oklch(0.6 0.18 180);
+  --accent-foreground: oklch(0.1 0 0);
+
+  --destructive: oklch(0.6 0.25 25);
+
+  --border: oklch(0.3 0.1 140);
+  --input: oklch(0.12 0 0);
+  --ring: oklch(0.65 0.22 140);
+
+  --chart-1: oklch(0.65 0.22 140);
+  --chart-2: oklch(0.6 0.18 180);
+  --chart-3: oklch(0.7 0.15 100);
+  --chart-4: oklch(0.6 0.25 25);
+  --chart-5: oklch(0.7 0.12 60);
+
+  --sidebar: oklch(0.08 0 0);
+  --sidebar-foreground: oklch(0.7 0.2 140);
+  --sidebar-primary: oklch(0.65 0.22 140);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent-foreground: oklch(0.7 0.2 140);
+  --sidebar-border: oklch(0.3 0.1 140);
+  --sidebar-ring: oklch(0.65 0.22 140);
+
+  /* Sharp corners - the key differentiator */
+  --radius-card: 2px;
+  --radius-panel: 4px;
+  --radius-button: 2px;
+}

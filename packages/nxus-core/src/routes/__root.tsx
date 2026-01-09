@@ -2,7 +2,10 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useSystemInfo } from '@/hooks/use-system-info'
+import { useThemeStore } from '@/stores/theme.store'
+import { themeOptions } from '@/config/theme-options'
 import { CommandPalette } from '@/components/command-palette'
 import { TerminalPanel } from '@/components/terminal-panel'
 import { ConfigureModal } from '@/components/configure-modal'
@@ -43,6 +46,36 @@ function SystemInfoLoader() {
   return null
 }
 
+/**
+ * Theme provider - applies theme class to html element
+ */
+function ThemeProvider() {
+  const theme = useThemeStore((s) => s.theme)
+
+  useEffect(() => {
+    const root = document.documentElement
+
+    // Remove all theme classes
+    themeOptions.forEach((t) => root.classList.remove(t.value))
+    root.classList.remove('dark')
+
+    // Get theme option to check if dark
+    const themeOption = themeOptions.find((t) => t.value === theme)
+
+    // Add dark class for dark themes
+    if (themeOption?.isDark) {
+      root.classList.add('dark')
+    }
+
+    // Add specific theme class (except for base 'dark' and 'light')
+    if (theme !== 'dark' && theme !== 'light') {
+      root.classList.add(theme)
+    }
+  }, [theme])
+
+  return null
+}
+
 import { queryClient } from '@/lib/query-client'
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -73,6 +106,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <QueryClientProvider client={queryClient}>
           <SystemInfoLoader />
+          <ThemeProvider />
           {children}
           <CommandPalette />
           <TerminalPanel />

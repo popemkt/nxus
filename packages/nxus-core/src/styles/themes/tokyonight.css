@@ -1,0 +1,46 @@
+/* Tokyo Night Theme */
+/* Based on the popular VS Code theme */
+
+.tokyonight {
+  --background: oklch(0.16 0.03 260);
+  --foreground: oklch(0.85 0.02 250);
+
+  --card: oklch(0.2 0.03 260);
+  --card-foreground: oklch(0.85 0.02 250);
+
+  --popover: oklch(0.18 0.03 260);
+  --popover-foreground: oklch(0.85 0.02 250);
+
+  --primary: oklch(0.7 0.18 280);
+  --primary-foreground: oklch(0.16 0.03 260);
+
+  --secondary: oklch(0.24 0.03 260);
+  --secondary-foreground: oklch(0.85 0.02 250);
+
+  --muted: oklch(0.24 0.03 260);
+  --muted-foreground: oklch(0.5 0.04 250);
+
+  --accent: oklch(0.28 0.04 260);
+  --accent-foreground: oklch(0.85 0.02 250);
+
+  --destructive: oklch(0.65 0.2 15);
+
+  --border: oklch(0.32 0.04 260);
+  --input: oklch(0.2 0.03 260);
+  --ring: oklch(0.7 0.18 280);
+
+  --chart-1: oklch(0.7 0.18 280);
+  --chart-2: oklch(0.75 0.18 200);
+  --chart-3: oklch(0.75 0.18 140);
+  --chart-4: oklch(0.7 0.2 320);
+  --chart-5: oklch(0.8 0.18 70);
+
+  --sidebar: oklch(0.14 0.03 260);
+  --sidebar-foreground: oklch(0.85 0.02 250);
+  --sidebar-primary: oklch(0.7 0.18 280);
+  --sidebar-primary-foreground: oklch(0.16 0.03 260);
+  --sidebar-accent: oklch(0.24 0.03 260);
+  --sidebar-accent-foreground: oklch(0.85 0.02 250);
+  --sidebar-border: oklch(0.32 0.04 260);
+  --sidebar-ring: oklch(0.7 0.18 280);
+}

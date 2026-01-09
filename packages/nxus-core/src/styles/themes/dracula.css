@@ -1,0 +1,46 @@
+/* Dracula Theme */
+/* Based on the popular dark theme */
+
+.dracula {
+  --background: oklch(0.19 0.02 260);
+  --foreground: oklch(0.95 0.01 250);
+
+  --card: oklch(0.23 0.02 265);
+  --card-foreground: oklch(0.95 0.01 250);
+
+  --popover: oklch(0.21 0.02 262);
+  --popover-foreground: oklch(0.95 0.01 250);
+
+  --primary: oklch(0.73 0.18 295);
+  --primary-foreground: oklch(0.19 0.02 260);
+
+  --secondary: oklch(0.28 0.02 265);
+  --secondary-foreground: oklch(0.95 0.01 250);
+
+  --muted: oklch(0.28 0.02 265);
+  --muted-foreground: oklch(0.6 0.02 250);
+
+  --accent: oklch(0.65 0.2 340);
+  --accent-foreground: oklch(0.19 0.02 260);
+
+  --destructive: oklch(0.65 0.22 15);
+
+  --border: oklch(0.35 0.03 265);
+  --input: oklch(0.23 0.02 265);
+  --ring: oklch(0.73 0.18 295);
+
+  --chart-1: oklch(0.73 0.18 295);
+  --chart-2: oklch(0.65 0.2 340);
+  --chart-3: oklch(0.7 0.2 140);
+  --chart-4: oklch(0.8 0.18 70);
+  --chart-5: oklch(0.7 0.2 200);
+
+  --sidebar: oklch(0.17 0.02 258);
+  --sidebar-foreground: oklch(0.95 0.01 250);
+  --sidebar-primary: oklch(0.73 0.18 295);
+  --sidebar-primary-foreground: oklch(0.19 0.02 260);
+  --sidebar-accent: oklch(0.28 0.02 265);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
+  --sidebar-border: oklch(0.35 0.03 265);
+  --sidebar-ring: oklch(0.73 0.18 295);
+}
