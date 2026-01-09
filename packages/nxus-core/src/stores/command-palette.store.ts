@@ -14,6 +14,8 @@ export interface ActionPanelCommand {
 
 interface CommandPaletteState {
   isOpen: boolean
+  /** Whether the palette was opened from gallery view (for morph animation) */
+  isFromGallery: boolean
   step: 'command' | 'target' | 'actions'
   query: string
   selectedGenericCommand: {
@@ -26,9 +28,9 @@ interface CommandPaletteState {
 }
 
 interface CommandPaletteActions {
-  open: () => void
+  open: (fromGallery?: boolean) => void
   close: () => void
-  toggle: () => void
+  toggle: (fromGallery?: boolean) => void
   setQuery: (query: string) => void
   selectGenericCommand: (
     cmd: CommandPaletteState['selectedGenericCommand'],
@@ -44,23 +46,26 @@ export const useCommandPaletteStore = create<
   CommandPaletteState & CommandPaletteActions
 >((set) => ({
   isOpen: false,
+  isFromGallery: false,
   step: 'command',
   query: '',
   selectedGenericCommand: null,
   actionPanelCommand: null,
 
-  open: () =>
+  open: (fromGallery = false) =>
     set({
       isOpen: true,
+      isFromGallery: fromGallery,
       step: 'command',
       query: '',
       selectedGenericCommand: null,
       actionPanelCommand: null,
     }),
   close: () => set({ isOpen: false }),
-  toggle: () =>
+  toggle: (fromGallery = false) =>
     set((state) => ({
       isOpen: !state.isOpen,
+      isFromGallery: !state.isOpen ? fromGallery : state.isFromGallery,
       step: 'command',
       query: '',
       selectedGenericCommand: null,
