@@ -8,7 +8,10 @@ import { useBatchItemStatus } from '@/hooks/use-item-status-check'
 import { TagTree } from '@/components/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
-import { useViewModeStore } from '@/stores/view-mode.store'
+import {
+  useViewModeStore,
+  useViewModeHasHydrated,
+} from '@/stores/view-mode.store'
 import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
@@ -72,6 +75,15 @@ function AppManager() {
     refetchInterval: 60000,
   })
   const inboxCount = inboxResult?.success ? inboxResult.data.length : 0
+
+  // Check if view mode has hydrated from localStorage
+  const hasHydrated = useViewModeHasHydrated()
+
+  // Prevent flash of default view before localStorage values load
+  // This MUST come after all hooks to avoid "Rendered more hooks" error
+  if (!hasHydrated) {
+    return null
+  }
 
   // Render content based on view mode
   const renderContent = () => {

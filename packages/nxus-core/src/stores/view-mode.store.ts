@@ -17,6 +17,10 @@ export interface GraphOptions {
 }
 
 interface ViewModeState {
+  // Hydration tracking (not persisted)
+  _hasHydrated: boolean
+  _setHasHydrated: (hasHydrated: boolean) => void
+
   // Current view mode
   viewMode: ViewMode
   setViewMode: (mode: ViewMode) => void
@@ -33,6 +37,10 @@ interface ViewModeState {
 export const useViewModeStore = create<ViewModeState>()(
   persist(
     (set) => ({
+      // Hydration tracking
+      _hasHydrated: false,
+      _setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),
+
       // View mode
       viewMode: 'gallery',
       setViewMode: (mode) => set({ viewMode: mode }),
@@ -57,6 +65,22 @@ export const useViewModeStore = create<ViewModeState>()(
     }),
     {
       name: 'nxus-view-mode',
+      partialize: (state) => ({
+        viewMode: state.viewMode,
+        galleryMode: state.galleryMode,
+        graphOptions: state.graphOptions,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?._setHasHydrated(true)
+      },
     },
   ),
 )
+
+/**
+ * Hook to check if the view mode store has hydrated from localStorage.
+ * Use this to prevent flash of default view before saved preference loads.
+ */
+export const useViewModeHasHydrated = () => {
+  return useViewModeStore((state) => state._hasHydrated)
+}
