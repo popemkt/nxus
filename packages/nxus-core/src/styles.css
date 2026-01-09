@@ -30,7 +30,7 @@
   --chart-4: oklch(0.56 0.15 49);
   --chart-5: oklch(0.47 0.12 46);
   --radius: 8px;
-  --radius-card: 24px;
+  --radius-card: 16px;
   --radius-panel: 26px;
   --radius-button: 9999px;
   --sidebar: oklch(0.985 0 0);
