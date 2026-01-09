@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-01-09T17:58:50.678Z",
-  "count": 11,
+  "exportedAt": "2026-01-09T18:27:27.943Z",
+  "count": 13,
   "tags": [
     {
       "id": "test",
@@ -11,7 +11,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T03:44:22.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "none-sense",
@@ -21,7 +21,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T04:24:02.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "other",
@@ -31,7 +31,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T04:45:18.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "next",
@@ -41,7 +41,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T04:45:22.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "more",
@@ -51,7 +51,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T04:58:29.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "anothera",
@@ -61,7 +61,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T04:58:35.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "aaa",
@@ -71,7 +71,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T05:07:41.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "what",
@@ -81,7 +81,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T05:32:32.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "extension",
@@ -91,7 +91,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T05:33:18.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "tool",
@@ -101,7 +101,7 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T06:07:44.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
     },
     {
       "id": "outstanding",
@@ -111,7 +111,27 @@
       "color": null,
       "icon": null,
       "createdAt": "2026-01-04T13:55:30.000Z",
-      "updatedAt": "2026-01-09T12:19:09.000Z"
+      "updatedAt": "2026-01-09T17:59:58.000Z"
+    },
+    {
+      "id": "ai",
+      "name": "ai",
+      "parentId": null,
+      "order": 4,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-09T18:18:37.000Z",
+      "updatedAt": "2026-01-09T18:18:37.000Z"
+    },
+    {
+      "id": "installed",
+      "name": "installed",
+      "parentId": null,
+      "order": 5,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-09T18:19:09.000Z",
+      "updatedAt": "2026-01-09T18:19:09.000Z"
     }
   ]
 }
