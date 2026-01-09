@@ -1,0 +1,117 @@
+{
+  "version": "1.0.0",
+  "exportedAt": "2026-01-09T12:44:35.670Z",
+  "count": 11,
+  "tags": [
+    {
+      "id": "test",
+      "name": "Test",
+      "parentId": "frontend",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T03:44:22.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "none-sense",
+      "name": "None-sense",
+      "parentId": null,
+      "order": 1,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T04:24:02.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "other",
+      "name": "other",
+      "parentId": null,
+      "order": 1,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T04:45:18.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "next",
+      "name": "NExt",
+      "parentId": "next",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T04:45:22.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "more",
+      "name": "More",
+      "parentId": "other",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T04:58:29.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "anothera",
+      "name": "anothera",
+      "parentId": "next",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T04:58:35.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "aaa",
+      "name": "aaa",
+      "parentId": "next",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T05:07:41.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "what",
+      "name": "What",
+      "parentId": "more",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T05:32:32.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "extension",
+      "name": "extension",
+      "parentId": null,
+      "order": 2,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T05:33:18.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "tool",
+      "name": "Tool",
+      "parentId": null,
+      "order": 3,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T06:07:44.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    },
+    {
+      "id": "outstanding",
+      "name": "Outstanding",
+      "parentId": "tool",
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-04T13:55:30.000Z",
+      "updatedAt": "2026-01-09T12:44:34.000Z"
+    }
+  ]
+}

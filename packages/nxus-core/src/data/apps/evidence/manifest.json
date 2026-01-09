@@ -8,14 +8,6 @@
     "dependencies": [
         "git"
     ],
-    "installConfig": {
-        "script": "echo 'Ready to use'",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
-    },
     "metadata": {
         "tags": [
             "mortgage",
@@ -28,6 +20,13 @@
         "version": "1.0.0",
         "author": "Topicus"
     },
-    "status": "not-installed",
-    "commands": []
+    "installConfig": {
+        "script": "echo 'Ready to use'",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ]
+    },
+    "status": "not-installed"
 }

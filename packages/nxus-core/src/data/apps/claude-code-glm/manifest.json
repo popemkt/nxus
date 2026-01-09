@@ -12,28 +12,6 @@
     ],
     "checkCommand": "claude --version",
     "installInstructions": "Set environment variables before running claude:\nexport ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"your_z_ai_key\"",
-    "dependencies": [
-        "claude-code"
-    ],
-    "configSchema": {
-        "fields": [
-            {
-                "key": "ANTHROPIC_AUTH_TOKEN",
-                "label": "Z.AI Auth Token",
-                "type": "password",
-                "required": true,
-                "placeholder": "Enter your Z.AI API key/token"
-            },
-            {
-                "key": "ANTHROPIC_BASE_URL",
-                "label": "API Base URL",
-                "type": "url",
-                "required": false,
-                "defaultValue": "https://api.z.ai/api/anthropic",
-                "placeholder": "API endpoint URL"
-            }
-        ]
-    },
     "commands": [
         {
             "id": "run-helper",
@@ -90,6 +68,9 @@
             "icon": "Lightbulb"
         }
     ],
+    "dependencies": [
+        "claude-code"
+    ],
     "metadata": {
         "tags": [
             "ai",
@@ -103,6 +84,25 @@
         "updatedAt": "2026-01-02T00:00:00.000Z",
         "version": "1.0.0",
         "author": "nxus"
+    },
+    "configSchema": {
+        "fields": [
+            {
+                "key": "ANTHROPIC_AUTH_TOKEN",
+                "label": "Z.AI Auth Token",
+                "type": "password",
+                "required": true,
+                "placeholder": "Enter your Z.AI API key/token"
+            },
+            {
+                "key": "ANTHROPIC_BASE_URL",
+                "label": "API Base URL",
+                "type": "url",
+                "required": false,
+                "defaultValue": "https://api.z.ai/api/anthropic",
+                "placeholder": "API endpoint URL"
+            }
+        ]
     },
     "status": "not-installed"
 }

@@ -5,21 +5,6 @@
     "type": "remote-repo",
     "path": "https://github.com/leonvanzyl/autocoder.git",
     "homepage": "https://github.com/leonvanzyl/autocoder",
-    "installConfig": {
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ],
-        "dependencies": [
-            "claude-code",
-            "python3"
-        ]
-    },
-    "dependencies": [
-        "claude-code",
-        "python3"
-    ],
     "commands": [
         {
             "id": "run-ui",
@@ -50,6 +35,10 @@
             "icon": "BookOpen"
         }
     ],
+    "dependencies": [
+        "claude-code",
+        "python3"
+    ],
     "metadata": {
         "tags": [
             "ai",
@@ -63,6 +52,17 @@
         "updatedAt": "2026-01-08T21:07:00.000Z",
         "version": "1.0.0",
         "author": "Leon van Zyl"
+    },
+    "installConfig": {
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ],
+        "dependencies": [
+            "claude-code",
+            "python3"
+        ]
     },
     "status": "not-installed"
 }

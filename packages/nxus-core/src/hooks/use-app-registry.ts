@@ -1,5 +1,6 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useCallback, useEffect, useState } from 'react'
 import { appRegistryService } from '../services/apps/registry.service'
+import { getAllAppsServerFn } from '../services/apps/apps.server'
 import type { App, AppStatus, AppType } from '../types/app'
 
 interface UseAppRegistryOptions {
@@ -22,71 +23,171 @@ interface UseAppRegistryReturn {
 
 /**
  * React hook for accessing and filtering the app registry
- * Uses lazy initialization - no useEffect needed for synchronous data
+ * Loads apps from SQLite via server function on first render
  */
 export function useAppRegistry(
   options: UseAppRegistryOptions = {},
 ): UseAppRegistryReturn {
-  // ✅ Lazy initialization - load data on first render
-  const [state, setState] = useState(() => {
-    const result = appRegistryService.getAllApps()
+  const [state, setState] = useState<{
+    apps: App[]
+    loading: boolean
+    error: Error | null
+    categories: string[]
+    tags: string[]
+  }>(() => {
+    // Check if apps are already loaded in the registry service
+    if (appRegistryService.isLoaded()) {
+      const result = appRegistryService.getAllApps()
+      const categoriesResult = appRegistryService.getCategories()
+      const tagsResult = appRegistryService.getTags()
 
-    if (!result.success) {
       return {
-        apps: [],
+        apps: result.success ? result.data : [],
         loading: false,
-        error: result.error,
-        categories: [],
-        tags: [],
+        error: result.success ? null : result.error,
+        categories: categoriesResult.success ? categoriesResult.data : [],
+        tags: tagsResult.success ? tagsResult.data : [],
       }
     }
 
-    const categoriesResult = appRegistryService.getCategories()
-    const tagsResult = appRegistryService.getTags()
-
+    // Start with loading state if not loaded
     return {
-      apps: result.data,
-      loading: false,
+      apps: [],
+      loading: true,
       error: null,
-      categories: categoriesResult.success ? categoriesResult.data : [],
-      tags: tagsResult.success ? tagsResult.data : [],
+      categories: [],
+      tags: [],
     }
   })
 
-  // Refetch function for manual refresh
-  const refetch = useCallback(() => {
-    const result = appRegistryService.getAllApps()
-
-    if (!result.success) {
-      setState({
-        apps: [],
-        loading: false,
-        error: result.error,
-        categories: [],
-        tags: [],
-      })
-      return
+  // Load apps from SQLite on mount
+  useEffect(() => {
+    if (appRegistryService.isLoaded()) {
+      return // Already loaded
     }
 
-    const categoriesResult = appRegistryService.getCategories()
-    const tagsResult = appRegistryService.getTags()
+    let cancelled = false
 
-    setState({
-      apps: result.data,
-      loading: false,
-      error: null,
-      categories: categoriesResult.success ? categoriesResult.data : [],
-      tags: tagsResult.success ? tagsResult.data : [],
-    })
+    async function loadApps() {
+      try {
+        const result = await getAllAppsServerFn()
+
+        if (cancelled) return
+
+        if (result.success) {
+          // Update the registry service with SQLite data
+          appRegistryService.setApps(result.apps)
+
+          const categoriesResult = appRegistryService.getCategories()
+          const tagsResult = appRegistryService.getTags()
+
+          setState({
+            apps: result.apps,
+            loading: false,
+            error: null,
+            categories: categoriesResult.success ? categoriesResult.data : [],
+            tags: tagsResult.success ? tagsResult.data : [],
+          })
+        } else {
+          // Fallback to manifest.json loading if SQLite fails
+          console.warn('SQLite load failed, falling back to manifests')
+          const fallbackResult = appRegistryService.loadRegistry()
+
+          if (fallbackResult.success) {
+            const categoriesResult = appRegistryService.getCategories()
+            const tagsResult = appRegistryService.getTags()
+
+            setState({
+              apps: fallbackResult.data.apps,
+              loading: false,
+              error: null,
+              categories: categoriesResult.success ? categoriesResult.data : [],
+              tags: tagsResult.success ? tagsResult.data : [],
+            })
+          }
+        }
+      } catch (error) {
+        if (cancelled) return
+
+        console.error('Failed to load apps from SQLite:', error)
+
+        // Fallback to manifest.json loading
+        const fallbackResult = appRegistryService.loadRegistry()
+
+        if (fallbackResult.success) {
+          const categoriesResult = appRegistryService.getCategories()
+          const tagsResult = appRegistryService.getTags()
+
+          setState({
+            apps: fallbackResult.data.apps,
+            loading: false,
+            error: null,
+            categories: categoriesResult.success ? categoriesResult.data : [],
+            tags: tagsResult.success ? tagsResult.data : [],
+          })
+        } else {
+          setState({
+            apps: [],
+            loading: false,
+            error: error as Error,
+            categories: [],
+            tags: [],
+          })
+        }
+      }
+    }
+
+    loadApps()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Refetch function for manual refresh
+  const refetch = useCallback(async () => {
+    setState((prev) => ({ ...prev, loading: true }))
+
+    try {
+      const result = await getAllAppsServerFn()
+
+      if (result.success) {
+        appRegistryService.setApps(result.apps)
+
+        const categoriesResult = appRegistryService.getCategories()
+        const tagsResult = appRegistryService.getTags()
+
+        setState({
+          apps: result.apps,
+          loading: false,
+          error: null,
+          categories: categoriesResult.success ? categoriesResult.data : [],
+          tags: tagsResult.success ? tagsResult.data : [],
+        })
+      }
+    } catch (error) {
+      console.error('Failed to refetch apps:', error)
+      setState((prev) => ({ ...prev, loading: false, error: error as Error }))
+    }
   }, [])
 
   const filteredApps = useMemo(() => {
     let filtered = state.apps
 
     if (options.searchQuery) {
-      const result = appRegistryService.searchApps(options.searchQuery)
-      if (result.success) {
-        filtered = result.data
+      const lowerQuery = options.searchQuery.toLowerCase().trim()
+      if (lowerQuery) {
+        filtered = filtered.filter((app) => {
+          const nameMatch = app.name.toLowerCase().includes(lowerQuery)
+          const descMatch = app.description.toLowerCase().includes(lowerQuery)
+          const tagMatch = app.metadata.tags.some((tag) =>
+            tag.toLowerCase().includes(lowerQuery),
+          )
+          const categoryMatch = app.metadata.category
+            .toLowerCase()
+            .includes(lowerQuery)
+          return nameMatch || descMatch || tagMatch || categoryMatch
+        })
       }
     }
 
@@ -133,27 +234,18 @@ export function useAppRegistry(
 
 /**
  * Hook to get a single app by ID
- * Uses lazy initialization - no useEffect needed for synchronous lookup
+ * Uses the registry service which is populated from SQLite
  */
 export function useApp(id: string) {
-  // ✅ Lazy initialization - lookup happens once on first render
-  const [state] = useState(() => {
-    const result = appRegistryService.getAppById(id)
+  const { apps, loading, error } = useAppRegistry({})
 
-    if (!result.success) {
-      return {
-        app: null,
-        loading: false,
-        error: result.error,
-      }
-    }
+  const app = useMemo(() => {
+    return apps.find((a) => a.id === id) ?? null
+  }, [apps, id])
 
-    return {
-      app: result.data,
-      loading: false,
-      error: null,
-    }
-  })
-
-  return state
+  return {
+    app,
+    loading,
+    error: app ? null : (error ?? new Error(`App ${id} not found`)),
+  }
 }

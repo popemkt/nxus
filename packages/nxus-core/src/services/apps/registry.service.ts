@@ -1,3 +1,11 @@
+/**
+ * registry.service.ts - App registry service using SQLite backend
+ *
+ * This is a hybrid approach:
+ * - Uses Vite glob import as fallback for development/build time
+ * - Can be progressively migrated to full SQLite once all apps are in DB
+ */
+
 import { parseApp } from '../../types/app'
 import type {
   App,
@@ -8,6 +16,7 @@ import type {
 } from '../../types/app'
 
 // Use Vite glob import to dynamically discover all app manifest files
+// This serves as a fallback during the transition period
 const appModules = import.meta.glob<App>('../../data/apps/*/manifest.json', {
   eager: true,
   import: 'default',
@@ -16,12 +25,17 @@ const appModules = import.meta.glob<App>('../../data/apps/*/manifest.json', {
 /**
  * Service for managing the app registry
  * Handles loading, filtering, and searching apps
+ *
+ * Note: This is the synchronous client-side version.
+ * For server-side SQLite access, use apps.server.ts functions.
  */
 export class AppRegistryService {
   private registry: AppRegistry | null = null
+  private apps: App[] = []
 
   /**
    * Load and parse all app data from individual files
+   * @deprecated Use server functions for SQLite access
    */
   loadRegistry(): Result<AppRegistry> {
     const apps: App[] = []
@@ -39,8 +53,27 @@ export class AppRegistryService {
       version: '1.0.0', // Standard version
       apps,
     }
+    this.apps = apps
 
     return { success: true, data: this.registry }
+  }
+
+  /**
+   * Set apps from SQLite (called after server function returns)
+   */
+  setApps(apps: App[]): void {
+    this.apps = apps
+    this.registry = {
+      version: '1.0.0',
+      apps,
+    }
+  }
+
+  /**
+   * Check if apps have been loaded
+   */
+  isLoaded(): boolean {
+    return this.apps.length > 0
   }
 
   /**

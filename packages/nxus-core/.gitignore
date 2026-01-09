@@ -11,3 +11,6 @@ count.txt
 .output
 .vinxi
 todos.json
+
+# Ephemeral database - local-only, machine-specific data
+ephemeral.db

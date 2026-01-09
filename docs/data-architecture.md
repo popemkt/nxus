@@ -1,100 +1,101 @@
 # Nxus Data Architecture
 
-> **Status**: Implemented (Phase 4 - SQLite Backend)  
-> **Last Updated**: 2026-01-04
+> **Status**: Implemented (Phase 5 - Dual SQLite with JSON Source)  
+> **Last Updated**: 2026-01-09
 
 ## Overview
 
-Nxus uses a **hybrid client-server architecture** with clear separation between persisted and ephemeral data.
+Nxus uses a **dual SQLite architecture** with JSON files as the git-committed source of truth:
+
+- **Master Data** (apps, commands, tags, inbox): Individual JSON files → SQLite at runtime
+- **Ephemeral Data** (installations, tool health): Separate SQLite (gitignored)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT                                      │
+│                        GIT-COMMITTED SOURCE OF TRUTH                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│   src/data/                                                              │
+│   ├── apps/                    Individual app folders                    │
+│   │   ├── claude-code/                                                   │
+│   │   │   ├── manifest.json   ← App manifest (commands, metadata)        │
+│   │   │   └── *.md            ← Documentation files                      │
+│   │   └── automaker/                                                     │
+│   │       └── manifest.json   ← App manifest                             │
+│   ├── tags.json               ← Tag tree                                 │
+│   └── inbox.json              ← Backlog items                            │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+           npm run db:seed    │    npm run db:export
+           (JSON → SQLite)    ▼    (SQLite → JSON)
+                              │
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           RUNTIME (SQLite)                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│   nxus.db (Master)                                                       │
+│   ├── apps          ← App manifests                                      │
+│   ├── commands      ← App commands (separate table for queries)          │
+│   ├── tags          ← Hierarchical tag tree                              │
+│   └── inbox_items   ← Backlog for add-item workflow                      │
 │                                                                          │
-│  ┌───────────────┐     reads/writes     ┌────────────────────────────┐  │
-│  │    React UI   │◄────────────────────►│   Zustand Stores           │  │
-│  └───────────────┘                      │   ├─ Data Stores           │  │
-│                                         │   │  (tags, cache, etc)    │  │
-│                                         │   └─ UI Stores             │  │
-│                                         │      (ephemeral state)     │  │
-│                                         └──────────────┬─────────────┘  │
-│                                                        │                 │
-│              ┌─────────────────────────────────────────┼─────────────┐  │
-│              │                                         │             │  │
-│              ▼                                         ▼             │  │
-│  ┌─────────────────────────────┐     ┌─────────────────────────────┐│  │
-│  │    localStorage             │     │     IndexedDB (Dexie)       ││  │
-│  │    • Theme                  │     │     "NxusDB" database       ││  │
-│  │    • Tool health (TTL)      │     │     • galleryItems          ││  │
-│  │    • Tool config            │     │     • commands              ││  │
-│  │    • App installations      │     │     • tags                  ││  │
-│  │    (via Zustand persist)    │     │     • installations         ││  │
-│  └─────────────────────────────┘     └──────────────┬──────────────┘│  │
-│                                                      │               │  │
-└──────────────────────────────────────────────────────┼───────────────┘  │
-                                                       │ Background Sync  │
-                                                       ▼                  │
-┌─────────────────────────────────────────────────────────────────────────┘
-│                              SERVER
-├──────────────────────────────────────────────────────────────────────────
-│  ┌─────────────────────────────────────────────────────────────────────┐
-│  │     SQLite (nxus.db)                                                 │
-│  │     via Drizzle ORM                                                  │
-│  │     ├─ inbox_items  (backlog for add-item workflow)                 │
-│  │     └─ tags         (hierarchical tag tree)                         │
-│  └─────────────────────────────────────────────────────────────────────┘
-│
-│  ┌─────────────────────────────────────────────────────────────────────┐
-│  │     Server Functions (TanStack Start)                                │
-│  │     ├─ Shell operations (command execution, PTY)                    │
-│  │     ├─ File system (folder picker, read scripts)                    │
-│  │     ├─ Dependency checks (which command)                            │
-│  │     └─ CRUD operations (inbox, tags → SQLite)                       │
-│  └─────────────────────────────────────────────────────────────────────┘
-└──────────────────────────────────────────────────────────────────────────
+│   ephemeral.db (Local-only, gitignored)                                  │
+│   ├── installations ← Machine-specific installs                          │
+│   └── tool_health   ← Cached health checks with TTL                      │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                             CLIENT                                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│   Server Functions (TanStack Start)                                      │
+│   ├── getAllAppsServerFn()  ← Query apps from SQLite                     │
+│   ├── Tag/Inbox CRUD        ← Server-side operations                     │
+│   └── Shell operations      ← PTY, command execution                     │
+│                                                                          │
+│   Zustand Stores (Client)                                                │
+│   ├── Tool health (localStorage with TTL)                                │
+│   ├── Tool config (localStorage, API keys)                               │
+│   └── UI state (ephemeral, not persisted)                                │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Data Categories
 
-| Category              | Client Storage | Server Storage | Pattern                             |
-| --------------------- | -------------- | -------------- | ----------------------------------- |
-| **Tags**              | Dexie          | SQLite         | Optimistic update → background sync |
-| **Gallery Items**     | Dexie          | —              | Client cache only (seeded from TS)  |
-| **Commands**          | Dexie          | —              | Client cache only (seeded from TS)  |
-| **Inbox Items**       | —              | SQLite         | Server-only                         |
-| **Tool Health**       | localStorage   | —              | Ephemeral with TTL                  |
-| **Tool Config**       | localStorage   | —              | Persisted, never cleared            |
-| **App Installations** | localStorage   | —              | Persisted, never cleared            |
-| **Theme**             | localStorage   | —              | Simple preference                   |
-| **UI State**          | Zustand only   | —              | Ephemeral, not persisted            |
+| Category          | Source (Git)                    | Runtime (SQLite)      | Notes                        |
+| ----------------- | ------------------------------- | --------------------- | ---------------------------- |
+| **Apps**          | `src/data/apps/*/manifest.json` | nxus.db `apps`        | Upsert by ID                 |
+| **Commands**      | Embedded in manifest.json       | nxus.db `commands`    | Separate table for queries   |
+| **Tags**          | `src/data/tags.json`            | nxus.db `tags`        | Tag tree                     |
+| **Inbox**         | `src/data/inbox.json`           | nxus.db `inbox_items` | Backlog                      |
+| **Installations** | —                               | ephemeral.db          | Machine-specific, gitignored |
+| **Tool Health**   | —                               | localStorage (TTL)    | Ephemeral cache              |
+| **Tool Config**   | —                               | localStorage          | API keys, never cleared      |
+| **UI State**      | —                               | Zustand (memory)      | Not persisted                |
 
 ## Key Files
 
-### Dexie (IndexedDB)
+### SQLite & Schemas
 
-| File                                       | Purpose                                  |
-| ------------------------------------------ | ---------------------------------------- |
-| `src/lib/db.ts`                            | Dexie schema, tables, version migrations |
-| `src/stores/cache.store.ts`                | Zustand store reading from Dexie         |
-| `src/services/cache/cache-sync.service.ts` | Initialize/seed Dexie on boot            |
-| `src/stores/tag-data.store.ts`             | Tag data with Dexie + SQLite sync        |
+| File                         | Purpose                                       |
+| ---------------------------- | --------------------------------------------- |
+| `src/db/schema.ts`           | Master schema (apps, commands, tags, inbox)   |
+| `src/db/ephemeral-schema.ts` | Ephemeral schema (installations, tool_health) |
+| `src/db/client.ts`           | Dual database initialization                  |
 
-### localStorage (Zustand persist)
+### Scripts
 
-| File                                      | Purpose            |
-| ----------------------------------------- | ------------------ |
-| `src/services/state/app-state.ts`         | App installations  |
-| `src/services/state/item-status-state.ts` | Tool health cache  |
-| `src/services/state/tool-config-state.ts` | Tool configuration |
+| Script                         | Purpose                              |
+| ------------------------------ | ------------------------------------ |
+| `scripts/db-seed.ts`           | JSON → SQLite (upsert by ID)         |
+| `scripts/db-export.ts`         | SQLite → JSON (individual manifests) |
+| `scripts/migrate-manifests.ts` | One-time initial migration           |
 
-### SQLite
+### Server Functions
 
-| File                                 | Purpose                                |
-| ------------------------------------ | -------------------------------------- |
-| `src/db/client.ts`                   | SQLite init, table creation, save/load |
-| `src/db/schema.ts`                   | Drizzle ORM schema definitions         |
-| `src/services/tag.server.ts`         | Tag CRUD server functions              |
-| `src/services/inbox/inbox.server.ts` | Inbox CRUD server functions            |
+| File                                 | Purpose                         |
+| ------------------------------------ | ------------------------------- |
+| `src/services/apps/apps.server.ts`   | App/command queries from SQLite |
+| `src/services/tag.server.ts`         | Tag CRUD operations             |
+| `src/services/inbox/inbox.server.ts` | Inbox CRUD operations           |
 
 ## Data Flow
 

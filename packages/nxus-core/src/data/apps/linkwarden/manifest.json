@@ -5,19 +5,123 @@
     "type": "remote-repo",
     "path": "https://github.com/linkwarden/linkwarden.git",
     "homepage": "https://github.com/linkwarden/linkwarden",
+    "commands": [
+        {
+            "id": "install-deps-yarn",
+            "name": "Install Dependencies",
+            "description": "yarn install",
+            "icon": "Package",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn install"
+        },
+        {
+            "id": "dev-web",
+            "name": "Dev: Web App",
+            "description": "Start web app in development mode",
+            "icon": "Play",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn web:dev"
+        },
+        {
+            "id": "dev-worker",
+            "name": "Dev: Worker",
+            "description": "Start worker in development mode",
+            "icon": "Gear",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn worker:dev"
+        },
+        {
+            "id": "dev-all",
+            "name": "Dev: Web + Worker",
+            "description": "Start both web and worker concurrently",
+            "icon": "Lightning",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn concurrently:dev"
+        },
+        {
+            "id": "build-web",
+            "name": "Build: Web App",
+            "description": "Build web app for production",
+            "icon": "Hammer",
+            "category": "Build",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn web:build"
+        },
+        {
+            "id": "start-production",
+            "name": "Start: Production",
+            "description": "Start web and worker in production mode",
+            "icon": "RocketLaunch",
+            "category": "Production",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn concurrently:start"
+        },
+        {
+            "id": "docker-up",
+            "name": "Start Docker Stack",
+            "description": "Start all containers via docker-compose",
+            "icon": "CubeTransparent",
+            "category": "Infrastructure",
+            "target": "instance",
+            "mode": "execute",
+            "command": "docker compose up -d"
+        },
+        {
+            "id": "docker-down",
+            "name": "Stop Docker Stack",
+            "description": "Stop all containers",
+            "icon": "Stop",
+            "category": "Infrastructure",
+            "target": "instance",
+            "mode": "execute",
+            "command": "docker compose down"
+        },
+        {
+            "id": "migrate-db",
+            "name": "Run Migrations",
+            "description": "Execute Prisma migrations",
+            "icon": "Database",
+            "category": "Database",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn prisma:dev"
+        },
+        {
+            "id": "prisma-studio",
+            "name": "Prisma Studio",
+            "description": "Open Prisma Studio to manage database",
+            "icon": "Table",
+            "category": "Database",
+            "target": "instance",
+            "mode": "execute",
+            "command": "yarn prisma:studio"
+        },
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "git pull"
+        }
+    ],
     "dependencies": [
         "yarn",
         "git",
         "docker"
     ],
-    "installConfig": {
-        "script": "yarn install",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
-    },
     "metadata": {
         "tags": [
             "bookmark-manager",
@@ -31,109 +135,13 @@
         "version": "1.0.0",
         "author": "linkwarden"
     },
-    "status": "not-installed",
-    "commands": [
-        {
-            "id": "install-deps-yarn",
-            "name": "Install Dependencies",
-            "description": "yarn install",
-            "icon": "Package",
-            "category": "Development",
-            "target": "instance",
-            "command": "yarn install",
-            "override": "install-deps"
-        },
-        {
-            "id": "dev-web",
-            "name": "Dev: Web App",
-            "description": "Start web app in development mode",
-            "icon": "Play",
-            "category": "Development",
-            "target": "instance",
-            "command": "yarn web:dev",
-            "override": "start"
-        },
-        {
-            "id": "dev-worker",
-            "name": "Dev: Worker",
-            "description": "Start worker in development mode",
-            "icon": "Gear",
-            "category": "Development",
-            "target": "instance",
-            "command": "yarn worker:dev"
-        },
-        {
-            "id": "dev-all",
-            "name": "Dev: Web + Worker",
-            "description": "Start both web and worker concurrently",
-            "icon": "Lightning",
-            "category": "Development",
-            "target": "instance",
-            "command": "yarn concurrently:dev"
-        },
-        {
-            "id": "build-web",
-            "name": "Build: Web App",
-            "description": "Build web app for production",
-            "icon": "Hammer",
-            "category": "Build",
-            "target": "instance",
-            "command": "yarn web:build",
-            "override": "build"
-        },
-        {
-            "id": "start-production",
-            "name": "Start: Production",
-            "description": "Start web and worker in production mode",
-            "icon": "RocketLaunch",
-            "category": "Production",
-            "target": "instance",
-            "command": "yarn concurrently:start"
-        },
-        {
-            "id": "docker-up",
-            "name": "Start Docker Stack",
-            "description": "Start all containers via docker-compose",
-            "icon": "CubeTransparent",
-            "category": "Infrastructure",
-            "target": "instance",
-            "command": "docker compose up -d"
-        },
-        {
-            "id": "docker-down",
-            "name": "Stop Docker Stack",
-            "description": "Stop all containers",
-            "icon": "Stop",
-            "category": "Infrastructure",
-            "target": "instance",
-            "command": "docker compose down"
-        },
-        {
-            "id": "migrate-db",
-            "name": "Run Migrations",
-            "description": "Execute Prisma migrations",
-            "icon": "Database",
-            "category": "Database",
-            "target": "instance",
-            "command": "yarn prisma:dev"
-        },
-        {
-            "id": "prisma-studio",
-            "name": "Prisma Studio",
-            "description": "Open Prisma Studio to manage database",
-            "icon": "Table",
-            "category": "Database",
-            "target": "instance",
-            "command": "yarn prisma:studio"
-        },
-        {
-            "id": "git-pull",
-            "name": "Update from Git",
-            "description": "Pull latest changes from repository",
-            "icon": "ArrowsClockwise",
-            "category": "Development",
-            "target": "instance",
-            "command": "git pull"
-        }
-    ]
+    "installConfig": {
+        "script": "yarn install",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ]
+    },
+    "status": "not-installed"
 }

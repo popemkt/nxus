@@ -5,18 +5,22 @@
     "type": "remote-repo",
     "path": "https://github.com/openrecall/openrecall.git",
     "homepage": "https://github.com/openrecall/openrecall",
+    "commands": [
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "git pull"
+        }
+    ],
     "dependencies": [
         "python3",
         "git"
     ],
-    "installConfig": {
-        "script": "python3 -m pip install --upgrade --no-cache-dir git+https://github.com/openrecall/openrecall.git",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
-    },
     "metadata": {
         "tags": [
             "privacy",
@@ -30,16 +34,13 @@
         "version": "1.0.0",
         "author": "openrecall"
     },
-    "status": "not-installed",
-    "commands": [
-        {
-            "id": "git-pull",
-            "name": "Update from Git",
-            "description": "Pull latest changes from repository",
-            "icon": "ArrowsClockwise",
-            "category": "Development",
-            "target": "instance",
-            "command": "git pull"
-        }
-    ]
+    "installConfig": {
+        "script": "python3 -m pip install --upgrade --no-cache-dir git+https://github.com/openrecall/openrecall.git",
+        "platform": [
+            "linux",
+            "macos",
+            "windows"
+        ]
+    },
+    "status": "not-installed"
 }

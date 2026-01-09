@@ -175,6 +175,66 @@ export const genericCommands: GenericCommand[] = [
       }
     },
   },
+  // Database sync commands
+  {
+    id: 'db-seed',
+    name: 'DB: Sync JSON → Database',
+    icon: 'ArrowDown',
+    needsTarget: false,
+    execute: async () => {
+      const { runDbCommandServerFn } = await import(
+        '@/services/db/db-actions.server'
+      )
+      const result = await runDbCommandServerFn({ data: { command: 'seed' } })
+      if (result.success) {
+        console.log('db:seed completed:', result.output)
+        alert('✅ Database seeded from JSON files')
+      } else {
+        console.error('db:seed failed:', result.error)
+        alert(`❌ Seed failed: ${result.error}`)
+      }
+    },
+  },
+  {
+    id: 'db-export',
+    name: 'DB: Sync Database → JSON',
+    icon: 'ArrowUp',
+    needsTarget: false,
+    execute: async () => {
+      const { runDbCommandServerFn } = await import(
+        '@/services/db/db-actions.server'
+      )
+      const result = await runDbCommandServerFn({ data: { command: 'export' } })
+      if (result.success) {
+        console.log('db:export completed:', result.output)
+        alert('✅ Database exported to JSON files')
+      } else {
+        console.error('db:export failed:', result.error)
+        alert(`❌ Export failed: ${result.error}`)
+      }
+    },
+  },
+  {
+    id: 'db-migrate',
+    name: 'DB: Migrate Manifests (One-time)',
+    icon: 'Database',
+    needsTarget: false,
+    execute: async () => {
+      const { runDbCommandServerFn } = await import(
+        '@/services/db/db-actions.server'
+      )
+      const result = await runDbCommandServerFn({
+        data: { command: 'migrate' },
+      })
+      if (result.success) {
+        console.log('db:migrate completed:', result.output)
+        alert('✅ Manifests migrated to database')
+      } else {
+        console.error('db:migrate failed:', result.error)
+        alert(`❌ Migration failed: ${result.error}`)
+      }
+    },
+  },
 ]
 
 class CommandRegistry {

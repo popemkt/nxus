@@ -11,10 +11,10 @@
         "windows"
     ],
     "checkCommand": "npm --version",
+    "installInstructions": "npm is included with Node.js installation",
     "dependencies": [
         "node"
     ],
-    "installInstructions": "npm is included with Node.js installation",
     "metadata": {
         "tags": [
             "package-manager",

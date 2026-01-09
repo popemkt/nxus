@@ -12,14 +12,6 @@
     ],
     "checkCommand": "gh --version",
     "installInstructions": "Visit https://cli.github.com/ for installation instructions for your platform",
-    "docs": [
-        {
-            "id": "gh-install-docs",
-            "title": "Installation",
-            "file": "install.md",
-            "icon": "Download"
-        }
-    ],
     "commands": [
         {
             "id": "install-gh-cli",
@@ -409,6 +401,14 @@
             "requires": {
                 "selfInstalled": true
             }
+        }
+    ],
+    "docs": [
+        {
+            "id": "gh-install-docs",
+            "title": "Installation",
+            "file": "install.md",
+            "icon": "Download"
         }
     ],
     "metadata": {
