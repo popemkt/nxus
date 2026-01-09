@@ -89,51 +89,26 @@ export function useAppRegistry(
             tags: tagsResult.success ? tagsResult.data : [],
           })
         } else {
-          // Fallback to manifest.json loading if SQLite fails
-          console.warn('SQLite load failed, falling back to manifests')
-          const fallbackResult = appRegistryService.loadRegistry()
-
-          if (fallbackResult.success) {
-            const categoriesResult = appRegistryService.getCategories()
-            const tagsResult = appRegistryService.getTags()
-
-            setState({
-              apps: fallbackResult.data.apps,
-              loading: false,
-              error: null,
-              categories: categoriesResult.success ? categoriesResult.data : [],
-              tags: tagsResult.success ? tagsResult.data : [],
-            })
-          }
+          console.error('Failed to load apps from SQLite')
+          setState({
+            apps: [],
+            loading: false,
+            error: new Error('Failed to load apps from database'),
+            categories: [],
+            tags: [],
+          })
         }
       } catch (error) {
         if (cancelled) return
 
         console.error('Failed to load apps from SQLite:', error)
-
-        // Fallback to manifest.json loading
-        const fallbackResult = appRegistryService.loadRegistry()
-
-        if (fallbackResult.success) {
-          const categoriesResult = appRegistryService.getCategories()
-          const tagsResult = appRegistryService.getTags()
-
-          setState({
-            apps: fallbackResult.data.apps,
-            loading: false,
-            error: null,
-            categories: categoriesResult.success ? categoriesResult.data : [],
-            tags: tagsResult.success ? tagsResult.data : [],
-          })
-        } else {
-          setState({
-            apps: [],
-            loading: false,
-            error: error as Error,
-            categories: [],
-            tags: [],
-          })
-        }
+        setState({
+          apps: [],
+          loading: false,
+          error: error as Error,
+          categories: [],
+          tags: [],
+        })
       }
     }
 

@@ -584,7 +584,7 @@ function AppDetailPage() {
   const isTool = app?.type === 'tool'
   const hasCheckCommand =
     isTool && app && 'checkCommand' in app && !!app.checkCommand
-  useItemStatusCheck(app!, hasCheckCommand)
+  useItemStatusCheck(app, hasCheckCommand)
   const healthCheck = useItemStatus(app?.id ?? '')
 
   const [selectedInstance, setSelectedInstance] =

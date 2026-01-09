@@ -54,17 +54,21 @@ export function useBatchItemStatus(items: App[], enabled = true) {
 
 /**
  * Hook to check an item's status using TanStack Query
+ * Handles undefined app gracefully for SSR
  */
-export function useItemStatusCheck(item: App, enabled = true) {
+export function useItemStatusCheck(
+  item: App | null | undefined,
+  enabled = true,
+) {
   // Use the Query-based hook
   const query = useItemStatusQuery(
-    item.id,
-    item.type === 'tool' ? item.checkCommand : undefined,
-    { enabled: enabled && item.type === 'tool' },
+    item?.id ?? '',
+    item?.type === 'tool' ? item.checkCommand : undefined,
+    { enabled: enabled && !!item && item.type === 'tool' },
   )
 
   // Also subscribe to Zustand for immediate access
-  const currentStatus = useItemStatus(item.id)
+  const currentStatus = useItemStatus(item?.id ?? '')
 
   return {
     ...currentStatus,

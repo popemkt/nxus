@@ -1,20 +1,62 @@
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5B21B6;" />
-      <stop offset="100%" style="stop-color:#D946EF;" />
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4338ca" /> <!-- Indigo 700 -->
+      <stop offset="100%" stop-color="#06b6d4" /> <!-- Cyan 500 -->
     </linearGradient>
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dx="0" dy="5" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge> 
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/> 
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="800" height="450" fill="url(#grad)" />
-  <path
-    d="M300 100 H500 V300 L400 400 L300 300 Z"
-    fill="white"
-  />
-  <path
-      d="M350 220 C350 185, 450 255, 450 220 C450 185, 350 255, 350 220 Z"
-      stroke="url(#grad)"
-      stroke-width="25"
-      stroke-linecap="round"
-      fill="none"
-  />
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg-gradient)" />
+
+  <!-- Iconic Design: Shield with Link -->
+  <g transform="translate(400, 225) scale(0.8)" filter="url(#dropShadow)">
+    
+    <!-- Shield Shape -->
+    <path d="M-90 -100 L90 -100 L90 20 C90 100 0 160 0 160 C0 160 -90 100 -90 20 Z" fill="#ffffff" opacity="0.2" />
+    <path d="M-80 -90 L80 -90 L80 20 C80 90 0 145 0 145 C0 145 -80 90 -80 20 Z" fill="#ffffff" />
+
+    <!-- Link Icon Cutout/Overlay -->
+    <g transform="translate(0, 10)" fill="url(#bg-gradient)">
+       <!-- Left Link -->
+       <path d="M-35 -15 
+                C-45 -15 -55 -5 -55 10 
+                C-55 25 -45 35 -30 35 
+                L-10 35 
+                L-10 25 
+                L-30 25 
+                C-38 25 -45 18 -45 10 
+                C-45 2 -38 -5 -30 -5 
+                L-10 -5 
+                L-10 -15 
+                Z" />
+       
+       <!-- Right Link -->
+       <path d="M35 35 
+                C45 35 55 25 55 10 
+                C55 -5 45 -15 30 -15 
+                L10 -15 
+                L10 -5 
+                L30 -5 
+                C38 -5 45 2 45 10 
+                C45 18 38 25 30 25 
+                L10 25 
+                L10 35 
+                Z" />
+       
+       <!-- Middle Connection -->
+       <rect x="-20" y="5" width="40" height="10" rx="5" />
+    </g>
+  </g>
 </svg>

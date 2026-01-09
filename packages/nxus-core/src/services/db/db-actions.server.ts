@@ -27,7 +27,7 @@ const commandDescriptions: Record<DbCommand, string> = {
  * Run a database command (seed, export, migrate)
  */
 export const runDbCommandServerFn = createServerFn({ method: 'POST' })
-  .validator((data: { command: DbCommand }) => data)
+  .inputValidator((data: { command: DbCommand }) => data)
   .handler(async (ctx) => {
     const { command } = ctx.data
 

@@ -1,12 +1,10 @@
 /**
  * registry.service.ts - App registry service using SQLite backend
  *
- * This is a hybrid approach:
- * - Uses Vite glob import as fallback for development/build time
- * - Can be progressively migrated to full SQLite once all apps are in DB
+ * Apps are loaded from SQLite via apps.server.ts and cached here.
+ * The Vite glob import has been removed - SQLite is the only source.
  */
 
-import { parseApp } from '../../types/app'
 import type {
   App,
   AppRegistry,
@@ -15,48 +13,16 @@ import type {
   Result,
 } from '../../types/app'
 
-// Use Vite glob import to dynamically discover all app manifest files
-// This serves as a fallback during the transition period
-const appModules = import.meta.glob<App>('../../data/apps/*/manifest.json', {
-  eager: true,
-  import: 'default',
-})
-
 /**
  * Service for managing the app registry
  * Handles loading, filtering, and searching apps
  *
- * Note: This is the synchronous client-side version.
- * For server-side SQLite access, use apps.server.ts functions.
+ * Note: Apps must be loaded via setApps() from apps.server.ts.
+ * This is a client-side cache/service layer.
  */
 export class AppRegistryService {
   private registry: AppRegistry | null = null
   private apps: App[] = []
-
-  /**
-   * Load and parse all app data from individual files
-   * @deprecated Use server functions for SQLite access
-   */
-  loadRegistry(): Result<AppRegistry> {
-    const apps: App[] = []
-
-    for (const [path, data] of Object.entries(appModules)) {
-      const result = parseApp(data)
-      if (result.success) {
-        apps.push(result.data)
-      } else {
-        console.error(`Failed to parse app at ${path}:`, result.error)
-      }
-    }
-
-    this.registry = {
-      version: '1.0.0', // Standard version
-      apps,
-    }
-    this.apps = apps
-
-    return { success: true, data: this.registry }
-  }
 
   /**
    * Set apps from SQLite (called after server function returns)
@@ -78,18 +44,12 @@ export class AppRegistryService {
 
   /**
    * Get all apps from the registry
+   * Note: Returns empty if apps haven't been loaded via setApps() yet
    */
   getAllApps(): Result<Array<App>> {
-    if (!this.registry) {
-      const loadResult = this.loadRegistry()
-      if (!loadResult.success) {
-        return loadResult
-      }
-    }
-
     return {
       success: true,
-      data: this.registry!.apps,
+      data: this.apps,
     }
   }
 

@@ -1,32 +1,58 @@
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="800" height="450" fill="#1A1A1A"/>
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#121212;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e1e1e;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <symbol id="cube">
+      <path d="M0 -15 L17.32 -25 L34.64 -15 L17.32 -5 Z" fill="#f9ad00" />
+      <path d="M0 -15 L17.32 -5 L17.32 15 L0 5 Z" fill="#d48c00" />
+      <path d="M17.32 -5 L34.64 -15 L34.64 5 L17.32 15 Z" fill="#a66d00" />
+    </symbol>
+  </defs>
 
-<!-- Central shared store representation -->
-<defs>
-  <g id="package-hexagon">
-    <path d="M30 0 L60 17.32 L60 51.96 L30 69.28 L0 51.96 L0 17.32 Z" fill="#F9AD00"/>
+  <rect width="800" height="450" fill="url(#bg)" />
+
+  <!-- Background glow -->
+  <circle cx="400" cy="225" r="200" fill="#f9ad00" opacity="0.08" filter="url(#glow)" />
+
+  <!-- Central "Store" structure representing pnpm's content-addressable storage -->
+  <g transform="translate(365, 185) scale(2.2)">
+    <!-- Base Layer -->
+    <use href="#cube" x="0" y="40" />
+    <use href="#cube" x="34.64" y="20" />
+    <use href="#cube" x="-34.64" y="20" />
+    
+    <!-- Top Layer -->
+    <use href="#cube" x="0" y="0" />
+    
+    <!-- Ghost cubes representing efficiency/potential -->
+    <use href="#cube" x="34.64" y="-20" opacity="0.1" />
+    <use href="#cube" x="-34.64" y="-20" opacity="0.1" />
+    <use href="#cube" x="69.28" y="0" opacity="0.1" />
   </g>
-</defs>
 
-<g transform="translate(340, 158)">
-  <use href="#package-hexagon" x="0" y="0" opacity="0.8"/>
-  <use href="#package-hexagon" x="70" y="0" opacity="0.8"/>
-  <use href="#package-hexagon" x="35" y="60" opacity="0.8"/>
-  <use href="#package-hexagon" x="105" y="60" opacity="0.8"/>
-</g>
+  <!-- Connection lines representing symlinks and hardlinks -->
+  <g stroke="#f9ad00" stroke-width="1.5" opacity="0.25">
+    <path d="M150 120 L350 180" stroke-dasharray="5 5" />
+    <path d="M650 120 L450 180" stroke-dasharray="5 5" />
+    <path d="M150 330 L350 270" stroke-dasharray="5 5" />
+    <path d="M650 330 L450 270" stroke-dasharray="5 5" />
+  </g>
+  
+  <!-- Floating individual packages being linked to the store -->
+  <g transform="translate(130, 110) scale(0.9)"> <use href="#cube" /> </g>
+  <g transform="translate(640, 105) scale(0.9)"> <use href="#cube" /> </g>
+  <g transform="translate(140, 320) scale(0.9)"> <use href="#cube" /> </g>
+  <g transform="translate(630, 315) scale(0.9)"> <use href="#cube" /> </g>
 
-<!-- Project representations -->
-<circle cx="150" cy="225" r="40" fill="#4A90E2"/>
-<rect x="620" y="100" width="80" height="80" rx="15" fill="#50E3C2"/>
-<path d="M660 325 L700 395 L620 395 Z" fill="#BD10E0"/>
-
-<!-- Connections -->
-<line x1="190" y1="225" x2="355" y2="248" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
-<line x1="190" y1="225" x2="380" y2="175" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
-
-<line x1="620" y1="140" x2="455" y2="180" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
-<line x1="620" y1="140" x2="420" y2="235" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
-
-<line x1="640" y1="350" x2="450" y2="240" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
-<line x1="640" y1="350" x2="480" y2="290" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.6"/>
+  <!-- Accent particles for a modern look -->
+  <circle cx="200" cy="80" r="3" fill="#f9ad00" opacity="0.4" />
+  <circle cx="600" cy="370" r="4" fill="#f9ad00" opacity="0.3" />
+  <circle cx="100" cy="225" r="2" fill="#f9ad00" opacity="0.5" />
+  <circle cx="700" cy="225" r="3" fill="#f9ad00" opacity="0.2" />
 </svg>

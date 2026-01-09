@@ -1,0 +1,52 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="grad-a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="grad-b" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg-grad)" />
+
+  <!-- Connecting Stream -->
+  <line x1="250" y1="225" x2="550" y2="225" stroke="#ffffff" stroke-width="4" stroke-opacity="0.1" />
+  <circle cx="400" cy="225" r="120" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.05" />
+
+  <!-- Agent A (Left Node) -->
+  <g filter="url(#glow)">
+    <circle cx="250" cy="225" r="80" fill="url(#grad-a)" />
+    <!-- Stylized visor/interface -->
+    <rect x="220" y="215" width="60" height="20" rx="10" fill="#ffffff" fill-opacity="0.4" />
+  </g>
+
+  <!-- Agent B (Right Node) -->
+  <g filter="url(#glow)">
+    <circle cx="550" cy="225" r="80" fill="url(#grad-b)" />
+    <!-- Stylized core/brain -->
+    <circle cx="550" cy="225" r="30" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.4" />
+    <path d="M 550 195 L 550 175 M 550 255 L 550 275 M 520 225 L 500 225 M 580 225 L 600 225" stroke="#ffffff" stroke-width="4" stroke-opacity="0.4" />
+  </g>
+
+  <!-- Central Code Symbol -->
+  <g transform="translate(400, 225)">
+     <path d="M -35 -25 L -60 0 L -35 25" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow)" />
+     <path d="M 35 -25 L 60 0 L 35 25" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow)" />
+     <line x1="-12" y1="35" x2="12" y2="-35" stroke="#ffffff" stroke-width="6" stroke-linecap="round" filter="url(#glow)" />
+  </g>
+</svg>
