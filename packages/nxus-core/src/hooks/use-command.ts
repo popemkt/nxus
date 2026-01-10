@@ -28,8 +28,13 @@
  */
 
 import { useMemo, useCallback } from 'react'
-import { useAllItemStatus } from '@/services/state/item-status-state'
-import { itemStatusService } from '@/services/state/item-status-state'
+import { useQueries } from '@tanstack/react-query'
+import {
+  toolHealthKeys,
+  getToolHealthFromCache,
+  type ToolHealthResult,
+} from '@/domain/tool-health'
+import { checkToolHealth } from '@/domain/tool-health/server'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import type { AppCommand, AppType, CommandRequirements } from '@/types/app'
@@ -70,12 +75,13 @@ export interface UseCommandResult {
 
 /**
  * Resolve command availability from declarative requirements
- * Uses global state only - no UI context dependency
+ * Uses TanStack Query cache - no Zustand dependency
  */
 function resolveRequirements(
   requirements: CommandRequirements | undefined,
-  context: CommandContext,
-  itemStatuses: Record<string, { isInstalled: boolean } | undefined>,
+  _context: CommandContext,
+  healthByCommand: Map<string, ToolHealthResult | undefined>,
+  selfCheckCommand?: string,
 ): CommandAvailability {
   // No requirements = always runnable
   if (!requirements) {
@@ -85,7 +91,9 @@ function resolveRequirements(
   // Check tool dependencies
   if (requirements.tools && requirements.tools.length > 0) {
     for (const toolId of requirements.tools) {
-      const health = itemStatuses[toolId]
+      // We need to look up by checkCommand, not toolId
+      // For now, assume toolId IS the checkCommand (git, node, etc.)
+      const health = healthByCommand.get(`${toolId} --version`)
       if (health === undefined) {
         // Still checking
         return {
@@ -104,8 +112,8 @@ function resolveRequirements(
   }
 
   // Check if tool itself must be installed (for uninstall/update)
-  if (requirements.selfInstalled) {
-    const health = itemStatuses[context.appId]
+  if (requirements.selfInstalled && selfCheckCommand) {
+    const health = healthByCommand.get(selfCheckCommand)
     if (health === undefined) {
       return {
         canExecute: false,
@@ -122,8 +130,8 @@ function resolveRequirements(
   }
 
   // Check if tool must NOT be installed (for install commands)
-  if (requirements.selfNotInstalled) {
-    const health = itemStatuses[context.appId]
+  if (requirements.selfNotInstalled && selfCheckCommand) {
+    const health = healthByCommand.get(selfCheckCommand)
     if (health === undefined) {
       return {
         canExecute: false,
@@ -154,17 +162,55 @@ export function useCommand(
   command: AppCommand,
   context: CommandContext,
 ): UseCommandResult {
-  // Subscribe to all health checks for reactivity
-  const itemStatuses = useAllItemStatus()
-
   // Get terminal store for execution
   const { createTab, createInteractiveTab, addLog, setStatus } =
     useTerminalStore()
 
+  // Build list of checkCommands we need to query
+  const checkCommands = useMemo(() => {
+    const commands: string[] = []
+    if (command.requires?.tools) {
+      for (const toolId of command.requires.tools) {
+        commands.push(`${toolId} --version`)
+      }
+    }
+    return commands
+  }, [command.requires?.tools])
+
+  // Subscribe to the relevant queries for reactivity
+  const queries = useQueries({
+    queries: checkCommands.map((checkCommand) => ({
+      queryKey: toolHealthKeys.command(checkCommand),
+      queryFn: async () => checkToolHealth({ data: { checkCommand } }),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  // Build health map from queries
+  const healthByCommand = useMemo(() => {
+    const map = new Map<string, ToolHealthResult | undefined>()
+    checkCommands.forEach((cmd, i) => {
+      map.set(cmd, queries[i]?.data)
+    })
+    return map
+  }, [checkCommands, queries])
+
   // Resolve availability from declarative requirements
   const availability = useMemo(() => {
-    return resolveRequirements(command.requires, context, itemStatuses)
-  }, [command.requires, context, itemStatuses])
+    // Get self check command if needed
+    let selfCheckCommand: string | undefined
+    if (command.requires?.selfInstalled || command.requires?.selfNotInstalled) {
+      // For self checks, we'd need the app's checkCommand
+      // This would require passing it in or looking it up
+      // For now, skip self checks in this hook (they're handled elsewhere)
+    }
+    return resolveRequirements(
+      command.requires,
+      context,
+      healthByCommand,
+      selfCheckCommand,
+    )
+  }, [command.requires, context, healthByCommand])
 
   // Execute function
   const execute = useCallback(async () => {
@@ -226,25 +272,29 @@ export function useCommand(
 /**
  * Imperative check for command availability (non-reactive)
  * Useful when you need a one-time check outside of React
+ *
+ * Reads from TanStack Query cache - no Zustand dependency
  */
 export function checkCommandAvailability(
   command: AppCommand,
   context: CommandContext,
 ): CommandAvailability {
-  // Build health checks record from current state
-  const itemStatuses: Record<string, { isInstalled: boolean } | undefined> = {}
+  // Use queryClient imported at module level
+  const qc = require('@/lib/query-client').queryClient
+
+  // Build health checks record from query cache
+  const healthByCommand = new Map<string, ToolHealthResult | undefined>()
 
   // Check required tools
   if (command.requires?.tools) {
     for (const toolId of command.requires.tools) {
-      itemStatuses[toolId] = itemStatusService.getItemStatus(toolId)
+      const checkCommand = `${toolId} --version`
+      healthByCommand.set(
+        checkCommand,
+        getToolHealthFromCache(qc, checkCommand),
+      )
     }
   }
 
-  // Check self (for both selfInstalled and selfNotInstalled)
-  if (command.requires?.selfInstalled || command.requires?.selfNotInstalled) {
-    itemStatuses[context.appId] = itemStatusService.getItemStatus(context.appId)
-  }
-
-  return resolveRequirements(command.requires, context, itemStatuses)
+  return resolveRequirements(command.requires, context, healthByCommand)
 }

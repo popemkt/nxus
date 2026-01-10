@@ -22,14 +22,11 @@
  */
 
 import { executeCommandServerFn } from '@/services/shell/command.server'
-import {
-  streamCommandServerFn,
-  type StreamChunk,
-} from '@/services/shell/command-stream.server'
+import { streamCommandServerFn } from '@/services/shell/command-stream.server'
 import { createPtySessionServerFn } from '@/services/shell/pty.server'
-import { itemStatusService } from '@/services/state/item-status-state'
 import { queryClient } from '@/lib/query-client'
-import { itemStatusKeys } from '@/hooks/use-item-status-query'
+import { toolHealthKeys } from '@/domain/tool-health'
+import { appRegistryService } from '@/services/apps/registry.service'
 import type { AppType } from '@/types/app'
 import type { LogEntry } from '@/services/shell/command.schema'
 
@@ -351,21 +348,17 @@ export const commandExecutor = {
     exitCode: number,
   ): Promise<void> {
     // Clear health check for tools so they get re-checked
-    // Use command-based clearing so all tools with same checkCommand update
     if (appType === 'tool') {
-      const checkCommand = itemStatusService.getCheckCommand(appId)
-      if (checkCommand) {
-        // 1. Clear Zustand (immediate UI update if subscribed)
-        itemStatusService.clearStatusesByCommand(checkCommand)
-        // 2. Invalidate Query Cache (triggers refetch)
-        await queryClient.invalidateQueries({
-          queryKey: itemStatusKeys.command(checkCommand),
-        })
-      } else {
-        // Fallback to single tool clear
-        itemStatusService.clearItemStatus(appId)
-        // Note: We can't easily invalidate Query here without the command,
-        // but getCheckCommand should usually return something if registered.
+      // Get the app's checkCommand to invalidate the right query
+      const appResult = appRegistryService.getAppById(appId)
+      if (appResult.success && appResult.data.type === 'tool') {
+        const checkCommand = (appResult.data as any).checkCommand
+        if (checkCommand) {
+          // Invalidate TanStack Query cache - triggers refetch in subscribed components
+          await queryClient.invalidateQueries({
+            queryKey: toolHealthKeys.command(checkCommand),
+          })
+        }
       }
     }
 

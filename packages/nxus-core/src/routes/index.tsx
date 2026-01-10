@@ -4,7 +4,7 @@ import { X } from '@phosphor-icons/react'
 import type { App } from '@/types/app'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { openApp } from '@/lib/app-actions'
-import { useBatchItemStatus } from '@/hooks/use-item-status-check'
+import { useBatchToolHealth } from '@/domain/tool-health'
 import { TagTree } from '@/components/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
@@ -62,8 +62,8 @@ function AppManager() {
     filterTags,
   })
 
-  // Trigger health checks for all tools
-  useBatchItemStatus(allApps)
+  // Trigger health checks for all tools - uses TanStack Query via domain hook
+  useBatchToolHealth(allApps)
 
   // Fetch inbox count for HUD
   const { data: inboxResult } = useQuery({

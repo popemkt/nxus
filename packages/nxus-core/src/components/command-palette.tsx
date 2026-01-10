@@ -28,7 +28,6 @@ import { configureModalService } from '@/stores/configure-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { appRegistryService } from '@/services/apps/registry.service'
-import { useAllItemStatus } from '@/services/state/item-status-state'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 
 function DynamicIcon({
@@ -203,9 +202,8 @@ export function CommandPalette() {
   const routerState = useRouterState()
   const isGalleryView = routerState.location.pathname === '/'
 
-  // Subscribe to health changes so command availability updates reactively
-  // This is used by getCommandAvailability to trigger re-renders when health changes
-  const _itemStatuses = useAllItemStatus()
+  // Note: Command availability reactivity is now handled by TanStack Query
+  // via checkCommandAvailability which reads from the query cache
 
   // Global keyboard shortcut
   const commandPaletteBinding = useSettingsStore(

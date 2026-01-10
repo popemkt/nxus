@@ -14,7 +14,8 @@
  * ```
  */
 
-import { itemStatusService } from '@/services/state/item-status-state'
+import { queryClient } from '@/lib/query-client'
+import { getToolHealthFromCache } from '@/domain/tool-health'
 import { appRegistryService } from '@/services/apps/registry.service'
 import type { AppType } from '@/types/app'
 import type { InstalledAppRecord } from '@/services/state/app-state'
@@ -49,11 +50,23 @@ export interface AvailabilityContext {
 
 /**
  * Check if a tool is installed and healthy
+ * Reads from TanStack Query cache
  */
 function checkToolHealth(appId: string): CommandAvailability {
-  const health = itemStatusService.getItemStatus(appId)
+  // Get the app to find its checkCommand
+  const appResult = appRegistryService.getAppById(appId)
+  if (!appResult.success || appResult.data.type !== 'tool') {
+    return { canExecute: true }
+  }
 
-  // Still checking
+  const checkCommand = (appResult.data as any).checkCommand
+  if (!checkCommand) {
+    return { canExecute: true }
+  }
+
+  const health = getToolHealthFromCache(queryClient, checkCommand)
+
+  // Not in cache yet = still checking
   if (health === undefined) {
     return {
       canExecute: false,
@@ -91,6 +104,7 @@ function checkInstanceAvailable(
 
 /**
  * Check if all dependencies for an app are met
+ * Reads from TanStack Query cache
  */
 function checkDependencies(appId: string): CommandAvailability {
   const depsResult = appRegistryService.getDependencies(appId)
@@ -104,7 +118,10 @@ function checkDependencies(appId: string): CommandAvailability {
   for (const dep of depsResult.data) {
     // Only check tool dependencies
     if (dep.type === 'tool') {
-      const health = itemStatusService.getItemStatus(dep.id)
+      const checkCommand = (dep as any).checkCommand
+      if (!checkCommand) continue
+
+      const health = getToolHealthFromCache(queryClient, checkCommand)
       if (health === undefined) {
         // Still checking
         return {
@@ -132,6 +149,7 @@ function checkDependencies(appId: string): CommandAvailability {
 
 /**
  * Check specific requirements for certain command types
+ * Reads from TanStack Query cache
  */
 function checkCommandSpecificRequirements(
   commandId: string,
@@ -139,7 +157,7 @@ function checkCommandSpecificRequirements(
 ): CommandAvailability {
   // Git commands require git to be installed
   if (commandId === 'git-pull' || commandId.startsWith('git-')) {
-    const gitHealth = itemStatusService.getItemStatus('git')
+    const gitHealth = getToolHealthFromCache(queryClient, 'git --version')
     if (gitHealth === undefined) {
       return {
         canExecute: false,
