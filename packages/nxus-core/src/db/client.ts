@@ -5,19 +5,26 @@ import * as ephemeralSchema from './ephemeral-schema'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { homedir } from 'os'
 
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const dataDir = resolve(__dirname, '../data')
 
+// User data directory for ephemeral/local data
+const userDataDir = resolve(homedir(), '.popemkt', '.nxus')
+
 // Database paths
 const masterDbPath = resolve(dataDir, 'nxus.db')
-const ephemeralDbPath = resolve(__dirname, '../../ephemeral.db') // In package root, gitignored
+const ephemeralDbPath = resolve(userDataDir, 'ephemeral.db')
 
-// Ensure data directory exists
+// Ensure directories exist
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true })
+}
+if (!existsSync(userDataDir)) {
+  mkdirSync(userDataDir, { recursive: true })
 }
 
 // ============================================================================
@@ -141,7 +148,7 @@ export function getDatabase(): SQLJsDatabase<typeof schema> {
 }
 
 // ============================================================================
-// Ephemeral Database (ephemeral.db) - Local-only, gitignored
+// Ephemeral Database (~/.popemkt/.nxus/ephemeral.db) - Local-only, gitignored
 // ============================================================================
 
 let ephemeralSqliteDb: SqlJsDatabase | null = null

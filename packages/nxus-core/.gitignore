@@ -12,5 +12,6 @@ count.txt
 .vinxi
 todos.json
 
-# Ephemeral database - local-only, machine-specific data
+# Ephemeral database - stored in ~/.popemkt/.nxus/ephemeral.db (machine-specific data)
+# Note: The file is in user home directory, this line kept for backwards compatibility
 ephemeral.db

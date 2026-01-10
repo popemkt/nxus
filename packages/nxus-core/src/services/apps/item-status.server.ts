@@ -1,9 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+import { toolHealthService } from '../tool-health/tool-health.service'
 
 /**
  * Input schema for checking item installation status
@@ -23,33 +20,16 @@ export interface ItemStatusResult {
 
 /**
  * Server function to check if an item is ready
- * Runs the checkCommand and parses the result
+ * Uses ToolHealthService for caching with 5-minute TTL
  */
 export const checkItemStatus = createServerFn({ method: 'GET' })
   .inputValidator(CheckItemStatusInputSchema)
   .handler(async ({ data }): Promise<ItemStatusResult> => {
-    console.log('[checkItemStatus] Input:', data)
     const { checkCommand } = data
 
-    try {
-      const { stdout, stderr } = await execAsync(checkCommand, {
-        timeout: 5000, // 5 second timeout
-      })
-
-      const output = stdout.trim() || stderr.trim()
-      console.log('[checkItemStatus] Success:', checkCommand, output)
-
-      return {
-        isInstalled: true,
-        version: output,
-      }
-    } catch (error: any) {
-      console.log('[checkItemStatus] Failed:', checkCommand, error.message)
-      return {
-        isInstalled: false,
-        error: error.message,
-      }
-    }
+    // Use checkCommand as toolId (unique identifier)
+    // This allows deduplication across tools with same check command
+    return await toolHealthService.checkToolStatus(checkCommand, checkCommand)
   })
 
 /**
@@ -75,6 +55,7 @@ export interface BatchItemStatusResult {
 
 /**
  * Server function to check multiple items at once
+ * Uses ToolHealthService for cached checks
  */
 export const batchCheckItemStatus = createServerFn({ method: 'POST' })
   .inputValidator(BatchCheckItemsInputSchema)
@@ -83,25 +64,13 @@ export const batchCheckItemStatus = createServerFn({ method: 'POST' })
     const { items } = data
     const results: Record<string, ItemStatusResult> = {}
 
-    // Check all items in parallel
+    // Check all items in parallel using the service
     await Promise.all(
       items.map(async (item) => {
-        try {
-          const { stdout, stderr } = await execAsync(item.checkCommand, {
-            timeout: 5000,
-          })
-
-          const output = stdout.trim() || stderr.trim()
-          results[item.id] = {
-            isInstalled: true,
-            version: output,
-          }
-        } catch (error: any) {
-          results[item.id] = {
-            isInstalled: false,
-            error: error.message,
-          }
-        }
+        results[item.id] = await toolHealthService.checkToolStatus(
+          item.id,
+          item.checkCommand,
+        )
       }),
     )
 

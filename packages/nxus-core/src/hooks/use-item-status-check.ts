@@ -1,42 +1,57 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { App } from '@/types/app'
 import {
   itemStatusService,
   useAllItemStatus,
   useItemStatus,
 } from '@/services/state/item-status-state'
-import { useItemStatusQuery } from './use-item-status-query'
+import { useItemStatusQuery, itemStatusKeys } from './use-item-status-query'
+import { checkItemStatus } from '@/services/apps/item-status.server'
 
 /**
  * Hook to check status of a batch of items
- * Uses TanStack Query for caching - triggers individual queries for each unique checkCommand
+ * Pre-fetches queries into TanStack Query cache for all unique check commands
  */
 export function useBatchItemStatus(items: App[], enabled = true) {
   const itemStatuses = useAllItemStatus()
+  const queryClient = useQueryClient()
 
-  // Group items by their unique checkCommand to avoid duplicates
-  const checkCommands = useMemo(() => {
-    const commandMap = new Map<string, App[]>()
+  useEffect(() => {
+    if (!enabled || items.length === 0) return
+
+    // Get unique check commands
+    const uniqueCommands = new Map<string, App[]>()
 
     items
       .filter((item) => item.type === 'tool' && (item as any).checkCommand)
       .forEach((item) => {
         const cmd = (item as any).checkCommand!
-        const existing = commandMap.get(cmd) || []
+        itemStatusService.registerItemCommand(item.id, cmd)
+
+        const existing = uniqueCommands.get(cmd) || []
         existing.push(item)
-        commandMap.set(cmd, existing)
+        uniqueCommands.set(cmd, existing)
       })
 
-    return commandMap
-  }, [items])
+    // Pre-fetch each unique check command into TanStack Query cache
+    // This is NOT a hook, so it's safe to call in a loop!
+    uniqueCommands.forEach(async (itemsWithSameCommand, checkCommand) => {
+      const firstItem = itemsWithSameCommand[0]
 
-  // Trigger a query for each unique checkCommand
-  // This leverages TanStack Query's caching - if data exists, it won't refetch
-  checkCommands.forEach((itemsWithSameCommand, checkCommand) => {
-    const firstItem = itemsWithSameCommand[0]
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useItemStatusQuery(firstItem.id, checkCommand, { enabled })
-  })
+      // Fetch and cache the result
+      const result = await queryClient.ensureQueryData({
+        queryKey: itemStatusKeys.command(checkCommand),
+        queryFn: async () => {
+          return await checkItemStatus({ data: { checkCommand } })
+        },
+        staleTime: 5 * 60 * 1000,
+      })
+
+      // Update Zustand store for all items with this command
+      itemStatusService.updateStatusesByCommand(checkCommand, result)
+    })
+  }, [items, enabled, queryClient])
 
   return itemStatuses
 }
