@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { App } from '@/types/app'
-import { batchCheckItemStatus } from '@/services/apps/item-status.server'
 import {
   itemStatusService,
   useAllItemStatus,
@@ -10,44 +9,34 @@ import { useItemStatusQuery } from './use-item-status-query'
 
 /**
  * Hook to check status of a batch of items
+ * Uses TanStack Query for caching - triggers individual queries for each unique checkCommand
  */
 export function useBatchItemStatus(items: App[], enabled = true) {
   const itemStatuses = useAllItemStatus()
 
-  useEffect(() => {
-    if (!enabled || items.length === 0) return
+  // Group items by their unique checkCommand to avoid duplicates
+  const checkCommands = useMemo(() => {
+    const commandMap = new Map<string, App[]>()
 
-    // Register all items for command deduplication
     items
       .filter((item) => item.type === 'tool' && (item as any).checkCommand)
       .forEach((item) => {
-        itemStatusService.registerItemCommand(
-          item.id,
-          (item as any).checkCommand!,
-        )
+        const cmd = (item as any).checkCommand!
+        const existing = commandMap.get(cmd) || []
+        existing.push(item)
+        commandMap.set(cmd, existing)
       })
 
-    const itemsToCheck = items
-      .filter((item) => item.type === 'tool' && item.checkCommand)
-      .map((item) => ({
-        id: item.id,
-        checkCommand: (item as any).checkCommand!, // Type narrowing with filter is tricky for TS
-      }))
+    return commandMap
+  }, [items])
 
-    if (itemsToCheck.length === 0) return
-
-    // Perform status check
-    batchCheckItemStatus({ data: { items: itemsToCheck } })
-      .then((result) => {
-        // Update store with results
-        Object.entries(result.results).forEach(([itemId, statusResult]) => {
-          itemStatusService.updateItemStatus(itemId, statusResult)
-        })
-      })
-      .catch((error) => {
-        console.error('Failed to check item status:', error)
-      })
-  }, [items, enabled])
+  // Trigger a query for each unique checkCommand
+  // This leverages TanStack Query's caching - if data exists, it won't refetch
+  checkCommands.forEach((itemsWithSameCommand, checkCommand) => {
+    const firstItem = itemsWithSameCommand[0]
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useItemStatusQuery(firstItem.id, checkCommand, { enabled })
+  })
 
   return itemStatuses
 }

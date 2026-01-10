@@ -46,10 +46,12 @@ export function useItemStatusQuery(
       }
       return checkItemStatus({ data: { checkCommand } })
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes
     enabled,
-    refetchOnWindowFocus: false,
+    refetchOnMount: false, // Don't refetch when component remounts (rely on staleTime)
+    refetchOnWindowFocus: false, // Don't refetch on window focus (like navigation)
+    refetchOnReconnect: false, // Don't refetch on network reconnect
   })
 
   // Sync query result to Zustand for all items with this command
