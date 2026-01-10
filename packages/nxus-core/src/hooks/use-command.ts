@@ -37,6 +37,7 @@ import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
+import { queryClient } from '@/lib/query-client'
 import type { AppCommand, AppType, CommandRequirements } from '@/types/app'
 
 /**
@@ -280,7 +281,7 @@ export function checkCommandAvailability(
   context: CommandContext,
 ): CommandAvailability {
   // Use queryClient imported at module level
-  const qc = require('@/lib/query-client').queryClient
+  const qc = queryClient
 
   // Build health checks record from query cache
   const healthByCommand = new Map<string, ToolHealthResult | undefined>()
