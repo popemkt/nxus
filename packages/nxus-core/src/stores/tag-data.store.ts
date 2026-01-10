@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { db, type CachedTag } from '@/lib/db'
 import type { Tag, CreateTagInput } from '@/types/tag'
 import { generateTagId } from '@/types/tag'
 import {
@@ -11,18 +10,18 @@ import {
 } from '@/services/tag.server'
 
 /**
- * Tag Data Store - Persistent data synced to Dexie
- * This store handles the actual tag data (CRUD operations)
+ * Tag Data Store - In-memory cache synced with SQLite
+ * No Dexie - loads from SQLite on init, writes directly to SQLite
  */
 interface TagDataState {
-  // === DATA (persisted to Dexie) ===
-  tags: Map<string, CachedTag>
+  // === DATA (in-memory cache, source is SQLite) ===
+  tags: Map<string, Tag>
   isInitialized: boolean
   isLoading: boolean
 
   // === ACTIONS ===
   initialize: () => Promise<void>
-  addTag: (input: CreateTagInput) => Promise<CachedTag>
+  addTag: (input: CreateTagInput) => Promise<Tag>
   updateTag: (id: string, updates: Partial<Tag>) => Promise<void>
   deleteTag: (id: string, cascade?: boolean) => Promise<void>
   moveTag: (
@@ -32,12 +31,12 @@ interface TagDataState {
   ) => Promise<void>
 
   // === SELECTORS ===
-  getTag: (id: string) => CachedTag | undefined
-  getChildren: (parentId: string | null) => CachedTag[]
-  getAncestors: (id: string) => CachedTag[]
-  getDescendants: (id: string) => CachedTag[]
-  getRootTags: () => CachedTag[]
-  getAllTags: () => CachedTag[]
+  getTag: (id: string) => Tag | undefined
+  getChildren: (parentId: string | null) => Tag[]
+  getAncestors: (id: string) => Tag[]
+  getDescendants: (id: string) => Tag[]
+  getRootTags: () => Tag[]
+  getAllTags: () => Tag[]
 }
 
 export const useTagDataStore = create<TagDataState>((set, get) => ({
@@ -46,68 +45,34 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   isInitialized: false,
   isLoading: false,
 
-  // Initialize from Dexie, seeding from SQLite if empty
+  // Initialize from SQLite
   initialize: async () => {
     if (get().isInitialized) return
 
     set({ isLoading: true })
 
     try {
-      // First try to load from Dexie (instant)
-      const localTags = await db.tags.toArray()
+      const result = await getTagsServerFn()
 
-      if (localTags.length > 0) {
-        // Have local data, use it
+      if (result.success && result.data.length > 0) {
+        const tagsMap = new Map(result.data.map((t) => [t.id, t]))
         set({
-          tags: new Map(localTags.map((t) => [t.id, t])),
+          tags: tagsMap,
           isInitialized: true,
           isLoading: false,
         })
         console.log(
           '[TagDataStore] Loaded',
-          localTags.length,
-          'tags from Dexie',
+          result.data.length,
+          'tags from SQLite',
         )
       } else {
-        // No local data - fetch from SQLite and seed Dexie
-        console.log('[TagDataStore] Dexie empty, fetching from SQLite...')
-        const result = await getTagsServerFn()
-
-        if (result.success && result.data.length > 0) {
-          const now = Date.now()
-          const cachedTags: CachedTag[] = result.data.map((tag) => ({
-            ...tag,
-            // Convert null to undefined for optional fields
-            color: tag.color ?? undefined,
-            icon: tag.icon ?? undefined,
-            createdAt: tag.createdAt?.toString() ?? new Date(now).toISOString(),
-            updatedAt: tag.updatedAt?.toString() ?? new Date(now).toISOString(),
-            _syncStatus: 'synced' as const,
-            _updatedAt: now,
-          }))
-
-          // Bulk insert to Dexie for future reads
-          await db.tags.bulkPut(cachedTags)
-
-          set({
-            tags: new Map(cachedTags.map((t) => [t.id, t])),
-            isInitialized: true,
-            isLoading: false,
-          })
-          console.log(
-            '[TagDataStore] Seeded',
-            cachedTags.length,
-            'tags from SQLite',
-          )
-        } else {
-          // No tags in SQLite either, just initialize empty
-          set({
-            tags: new Map(),
-            isInitialized: true,
-            isLoading: false,
-          })
-          console.log('[TagDataStore] No tags found, initialized empty')
-        }
+        set({
+          tags: new Map(),
+          isInitialized: true,
+          isLoading: false,
+        })
+        console.log('[TagDataStore] No tags found, initialized empty')
       }
     } catch (error) {
       console.error('[TagDataStore] Failed to initialize:', error)
@@ -116,8 +81,8 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   },
 
   // Add a new tag
-  addTag: async (input: CreateTagInput): Promise<CachedTag> => {
-    const now = Date.now()
+  addTag: async (input: CreateTagInput): Promise<Tag> => {
+    const now = new Date()
     const id = generateTagId(input.name)
 
     // Get siblings to calculate order
@@ -125,17 +90,15 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     const maxOrder =
       siblings.length > 0 ? Math.max(...siblings.map((s) => s.order)) : -1
 
-    const tag: CachedTag = {
+    const tag: Tag = {
       id,
       name: input.name,
       parentId: input.parentId,
       order: maxOrder + 1,
       color: input.color,
       icon: input.icon,
-      createdAt: new Date(now).toISOString(),
-      updatedAt: new Date(now).toISOString(),
-      _syncStatus: 'pending',
-      _updatedAt: now,
+      createdAt: now,
+      updatedAt: now,
     }
 
     // Optimistic update
@@ -143,29 +106,25 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     newTags.set(id, tag)
     set({ tags: newTags })
 
-    // Persist to Dexie
-    await db.tags.put(tag)
-
-    // Sync to SQLite (background)
-    createTagServerFn({
-      data: {
-        id,
-        name: input.name,
-        parentId: input.parentId,
-        order: maxOrder + 1,
-        color: input.color,
-        icon: input.icon,
-      },
-    })
-      .then(() => {
-        // Mark as synced
-        const updated = { ...tag, _syncStatus: 'synced' as const }
-        db.tags.put(updated)
-        const updatedTags = new Map(get().tags)
-        updatedTags.set(id, updated)
-        set({ tags: updatedTags })
+    // Sync to SQLite
+    try {
+      await createTagServerFn({
+        data: {
+          id,
+          name: input.name,
+          parentId: input.parentId,
+          order: maxOrder + 1,
+          color: input.color,
+          icon: input.icon,
+        },
       })
-      .catch((err) => console.error('[TagDataStore] SQLite sync failed:', err))
+    } catch (err) {
+      console.error('[TagDataStore] SQLite sync failed:', err)
+      // Rollback optimistic update
+      newTags.delete(id)
+      set({ tags: new Map(newTags) })
+      throw err
+    }
 
     return tag
   },
@@ -175,69 +134,59 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     const existing = get().tags.get(id)
     if (!existing) return
 
-    const now = Date.now()
-    const updated: CachedTag = {
+    const now = new Date()
+    const updated: Tag = {
       ...existing,
       ...updates,
       id, // Prevent id override
-      updatedAt: new Date(now).toISOString(),
-      _syncStatus: 'pending',
-      _updatedAt: now,
+      updatedAt: now,
     }
 
     const newTags = new Map(get().tags)
     newTags.set(id, updated)
     set({ tags: newTags })
 
-    await db.tags.put(updated)
-
     // Sync to SQLite
-    updateTagServerFn({ data: { id, ...updates } })
-      .then(() => {
-        const synced = { ...updated, _syncStatus: 'synced' as const }
-        db.tags.put(synced)
-      })
-      .catch((err) => console.error('[TagDataStore] SQLite sync failed:', err))
+    try {
+      await updateTagServerFn({ data: { id, ...updates } })
+    } catch (err) {
+      console.error('[TagDataStore] SQLite sync failed:', err)
+    }
   },
 
   // Delete a tag (optionally cascade to children)
   deleteTag: async (id: string, cascade = false) => {
     const newTags = new Map(get().tags)
+    const tag = get().tags.get(id)
 
     if (cascade) {
       // Delete all descendants
       const descendants = get().getDescendants(id)
       for (const desc of descendants) {
         newTags.delete(desc.id)
-        await db.tags.delete(desc.id)
       }
-    } else {
+    } else if (tag) {
       // Move children to parent's parent
-      const tag = get().tags.get(id)
-      if (tag) {
-        const children = get().getChildren(id)
-        for (const child of children) {
-          const updated: CachedTag = {
-            ...child,
-            parentId: tag.parentId,
-            _syncStatus: 'pending',
-            _updatedAt: Date.now(),
-          }
-          newTags.set(child.id, updated)
-          await db.tags.put(updated)
+      const children = get().getChildren(id)
+      for (const child of children) {
+        const updated: Tag = {
+          ...child,
+          parentId: tag.parentId,
+          updatedAt: new Date(),
         }
+        newTags.set(child.id, updated)
       }
     }
 
     newTags.delete(id)
     set({ tags: newTags })
 
-    await db.tags.delete(id)
-
     // Sync to SQLite
-    deleteTagServerFn({ data: { id, cascade } }).catch((err) =>
-      console.error('[TagDataStore] SQLite delete failed:', err),
-    )
+    try {
+      await deleteTagServerFn({ data: { id, cascade } })
+    } catch (err) {
+      console.error('[TagDataStore] SQLite delete failed:', err)
+    }
   },
 
   // Move tag to new parent and/or reorder
@@ -254,7 +203,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
       }
     }
 
-    const now = Date.now()
+    const now = new Date()
     const newTags = new Map(get().tags)
 
     // Get siblings (excluding the moved tag) and reorder them
@@ -268,35 +217,25 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     // Update all sibling orders
     for (let i = 0; i < siblings.length; i++) {
       const sibling = siblings[i]
-      const updated: CachedTag = {
+      const updated: Tag = {
         ...sibling,
         parentId: sibling.id === id ? newParentId : sibling.parentId,
         order: i,
-        updatedAt: new Date(now).toISOString(),
-        _syncStatus: 'pending',
-        _updatedAt: now,
+        updatedAt: now,
       }
       newTags.set(sibling.id, updated)
-      await db.tags.put(updated)
     }
 
     set({ tags: newTags })
 
-    // Sync to SQLite (only if we have valid params)
+    // Sync to SQLite
     const syncParams = { id, newParentId: newParentId ?? null, newOrder }
-    console.log('[TagDataStore] moveTag sync params:', syncParams)
-
     if (syncParams.id && typeof syncParams.newOrder === 'number') {
       try {
         await moveTagServerFn({ data: syncParams })
       } catch (err) {
         console.error('[TagDataStore] SQLite move failed:', err)
       }
-    } else {
-      console.warn(
-        '[TagDataStore] Skipping SQLite sync - invalid params:',
-        syncParams,
-      )
     }
   },
 
@@ -310,7 +249,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   },
 
   getAncestors: (id: string) => {
-    const ancestors: CachedTag[] = []
+    const ancestors: Tag[] = []
     let current = get().tags.get(id)
 
     while (current?.parentId) {
@@ -327,7 +266,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   },
 
   getDescendants: (id: string) => {
-    const descendants: CachedTag[] = []
+    const descendants: Tag[] = []
     const stack = [id]
 
     while (stack.length > 0) {
@@ -351,12 +290,12 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
  * Selector: Get tags as a tree structure (for rendering)
  */
 export interface TagTreeNode {
-  tag: CachedTag
+  tag: Tag
   children: TagTreeNode[]
 }
 
 export function buildTagTree(store: TagDataState): TagTreeNode[] {
-  const buildNode = (tag: CachedTag): TagTreeNode => ({
+  const buildNode = (tag: Tag): TagTreeNode => ({
     tag,
     children: store.getChildren(tag.id).map(buildNode),
   })
