@@ -22,7 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { useItemStatus } from '@/services/state/item-status-state'
+import { useToolHealth } from '@/domain/tool-health'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
 import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
@@ -88,9 +88,9 @@ export function AppActionsPanel({
   const [pendingScriptCommand, setPendingScriptCommand] =
     React.useState<AppCommand | null>(null)
 
-  // Get health check for this tool (liveness)
-  const healthCheck = useItemStatus(app.id)
-  const isInstalled = healthCheck?.isInstalled ?? false
+  // Get health check for this tool (liveness) - uses TanStack Query via domain hook
+  const healthCheck = useToolHealth(app)
+  const isInstalled = healthCheck.isInstalled
 
   // Get configuration status (readiness)
   const requiredFields = React.useMemo(() => {
@@ -350,13 +350,14 @@ export function AppActionsPanel({
                                 // Resolve script path for terminal
                                 let fullCommand: string
                                 if (isScriptMode) {
-                                  const resolved = await getScriptFullPathServerFn({
-                                    data: {
-                                      appId: app.id,
-                                      scriptPath: cmd.command,
-                                      scriptSource: cmd.scriptSource,
-                                    },
-                                  })
+                                  const resolved =
+                                    await getScriptFullPathServerFn({
+                                      data: {
+                                        appId: app.id,
+                                        scriptPath: cmd.command,
+                                        scriptSource: cmd.scriptSource,
+                                      },
+                                    })
                                   fullCommand = `pwsh "${resolved.fullPath}"`
                                 } else {
                                   fullCommand = cmd.command

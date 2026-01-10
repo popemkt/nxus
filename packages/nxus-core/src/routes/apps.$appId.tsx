@@ -20,8 +20,7 @@ import {
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { DependencyList } from '@/components/app/dependency-list'
-import { useItemStatus } from '@/services/state/item-status-state'
-import { useItemStatusCheck } from '@/hooks/use-item-status-check'
+import { useToolHealth, useToolHealthInvalidation } from '@/domain/tool-health'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,7 +45,6 @@ import {
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
-import { itemStatusService } from '@/services/state/item-status-state'
 import { installModalService } from '@/stores/install-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import {
@@ -240,8 +238,8 @@ function GenerateThumbnailButton({
   const geminiTool = appRegistryService.getAppById('gemini-cli')
   const tool = geminiTool.success ? geminiTool.data : null
 
-  useItemStatusCheck(tool!, !!tool)
-  const health = useItemStatus('gemini-cli')
+  // Health check for Gemini CLI - uses TanStack Query via domain hook
+  const health = useToolHealth(tool, !!tool)
 
   const handleClick = async () => {
     const thumbnailsDir = 'public/thumbnails'
@@ -322,6 +320,7 @@ function OverviewContent({
   handleOpen,
   setGitStatusRefreshKey,
   onExecuteCommand,
+  onRefreshHealth,
 }: {
   app: ReturnType<typeof useAppRegistry>['apps'][0]
   appId: string
@@ -331,6 +330,7 @@ function OverviewContent({
   handleOpen: () => void
   setGitStatusRefreshKey: (fn: (k: number) => number) => void
   onExecuteCommand: (command: string, args: string[]) => Promise<void>
+  onRefreshHealth: () => void
 }) {
   // State for git validation error message
   const [gitValidationError, setGitValidationError] = useState<string | null>(
@@ -455,7 +455,7 @@ function OverviewContent({
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => itemStatusService.clearItemStatus(app.id)}
+              onClick={onRefreshHealth}
             >
               <ArrowsClockwiseIcon data-icon="inline-start" />
               Refresh Status
@@ -580,12 +580,12 @@ function AppDetailPage() {
   const app = apps.find((a) => a.id === appId)
   const { isInstalled } = useAppCheck(appId)
 
-  // Health check for the tool itself
+  // Health check for the tool itself - uses TanStack Query via domain hook
   const isTool = app?.type === 'tool'
   const hasCheckCommand =
     isTool && app && 'checkCommand' in app && !!app.checkCommand
-  useItemStatusCheck(app, hasCheckCommand)
-  const healthCheck = useItemStatus(app?.id ?? '')
+  const healthCheck = useToolHealth(app, hasCheckCommand)
+  const { invalidate } = useToolHealthInvalidation()
 
   const [selectedInstance, setSelectedInstance] =
     useState<InstalledAppRecord | null>(null)
@@ -705,7 +705,7 @@ function AppDetailPage() {
           <Badge variant="secondary">{APP_TYPE_LABELS_LONG[app.type]}</Badge>
 
           {/* Health check status for tools in header */}
-          {hasCheckCommand && healthCheck?.isInstalled === undefined && (
+          {hasCheckCommand && healthCheck.isLoading && (
             <Badge
               variant="outline"
               className="flex items-center gap-1.5 animate-pulse"
@@ -715,7 +715,7 @@ function AppDetailPage() {
             </Badge>
           )}
 
-          {hasCheckCommand && healthCheck?.isInstalled !== undefined && (
+          {hasCheckCommand && !healthCheck.isLoading && (
             <Badge
               variant={healthCheck.isInstalled ? 'default' : 'destructive'}
               className="flex items-center gap-1 animate-fade-in status-transition"
@@ -735,7 +735,7 @@ function AppDetailPage() {
           )}
 
           {hasCheckCommand &&
-            healthCheck?.isInstalled &&
+            healthCheck.isInstalled &&
             healthCheck.version && (
               <Badge variant="outline" className="font-mono animate-fade-in">
                 {healthCheck.version}
@@ -777,6 +777,9 @@ function AppDetailPage() {
                   handleOpen={handleOpen}
                   setGitStatusRefreshKey={setGitStatusRefreshKey}
                   onExecuteCommand={executeInstanceCommand}
+                  onRefreshHealth={() =>
+                    hasCheckCommand && invalidate((app as any).checkCommand)
+                  }
                 />
               </TabsContent>
 
@@ -816,6 +819,9 @@ function AppDetailPage() {
                 handleOpen={handleOpen}
                 setGitStatusRefreshKey={setGitStatusRefreshKey}
                 onExecuteCommand={executeInstanceCommand}
+                onRefreshHealth={() =>
+                  hasCheckCommand && invalidate((app as any).checkCommand)
+                }
               />
             </div>
           )}

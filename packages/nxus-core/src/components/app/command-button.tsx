@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import { QuestionIcon, WarningIcon, CodeIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { useItemStatus } from '@/services/state/item-status-state'
+import { useToolHealth } from '@/domain/tool-health'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { configureModalService } from '@/stores/configure-modal.store'
@@ -59,9 +59,9 @@ export function CommandButton({
   const { executeCommand } = useCommandExecution({})
   const [previewOpen, setPreviewOpen] = React.useState(false)
 
-  // Get health check for tools
-  const healthCheck = useItemStatus(app.id)
-  const isInstalled = healthCheck?.isInstalled ?? true // Default true for non-tools
+  // Get health check for tools - uses TanStack Query via domain hook
+  const healthCheck = useToolHealth(app)
+  const isInstalled = healthCheck.isInstalled
 
   // Get configuration status
   const requiredFields = React.useMemo(() => {

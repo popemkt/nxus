@@ -2,8 +2,7 @@ import type { App } from '@/types/app'
 import { Link } from '@tanstack/react-router'
 import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
-import { useItemStatus } from '@/services/state/item-status-state'
-import { useItemStatusCheck } from '@/hooks/use-item-status-check'
+import { useToolHealth } from '@/domain/tool-health'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface DependencyListProps {
@@ -44,16 +43,12 @@ function DependencyItem({ dependency, onInstall }: DependencyItemProps) {
   const isTool = dependency.type === 'tool'
   const { isInstalled: isRepoInstalled } = useAppCheck(dependency.id)
 
-  // Health check for tools
-  useItemStatusCheck(dependency, isTool)
-  const healthCheck = useItemStatus(dependency.id)
+  // Health check for tools - uses TanStack Query via domain hook
+  const healthCheck = useToolHealth(dependency, isTool)
 
   // Determine loading state - for tools, we need to wait for health check
-  const isCheckingHealth =
-    isTool &&
-    !healthCheck?.isInstalled &&
-    healthCheck?.isInstalled === undefined
-  const isInstalled = isTool ? healthCheck?.isInstalled : isRepoInstalled
+  const isCheckingHealth = isTool && healthCheck.isLoading
+  const isInstalled = isTool ? healthCheck.isInstalled : isRepoInstalled
 
   // Render status icon with smooth transitions
   const renderStatusIcon = () => {

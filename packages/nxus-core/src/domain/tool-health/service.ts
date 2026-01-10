@@ -1,0 +1,199 @@
+/**
+ * Tool Health Service
+ *
+ * Server-side service for checking tool health with ephemeral DB caching.
+ * Used by server functions and can be used by future API routes.
+ */
+
+import {
+  getEphemeralDatabase,
+  saveEphemeralDatabase,
+  initEphemeralDatabase,
+} from '@/db/client'
+import { toolHealth } from '@/db/ephemeral-schema'
+import { eq } from 'drizzle-orm'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import type { ToolHealthResult } from './types'
+
+const execAsync = promisify(exec)
+
+export interface CheckOptions {
+  /** Skip ephemeral DB cache and run fresh check */
+  skipCache?: boolean
+}
+
+/**
+ * Service for managing tool health checks with ephemeral DB caching
+ */
+export class ToolHealthService {
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+  /**
+   * Check tool status with caching
+   *
+   * @param toolId - Unique identifier for the tool
+   * @param checkCommand - Shell command to check tool installation
+   * @param options - Check options (skipCache, etc.)
+   * @returns Tool health result
+   */
+  async checkToolStatus(
+    toolId: string,
+    checkCommand: string,
+    options?: CheckOptions,
+  ): Promise<ToolHealthResult> {
+    console.log('[ToolHealthService] Checking tool:', toolId)
+
+    // Ensure ephemeral database is initialized
+    await initEphemeralDatabase()
+
+    // Skip cache if requested (e.g., after install action)
+    if (!options?.skipCache) {
+      const cached = await this.getCachedHealth(toolId)
+      if (cached) {
+        console.log('[ToolHealthService] Using cached result for:', toolId)
+        return {
+          isInstalled: cached.status === 'healthy',
+          version: cached.version ?? undefined,
+          error: cached.error ?? undefined,
+        }
+      }
+    } else {
+      console.log('[ToolHealthService] Skipping cache for:', toolId)
+    }
+
+    // Run fresh check
+    console.log('[ToolHealthService] Running fresh check for:', toolId)
+    const result = await this.runCheckCommand(checkCommand)
+
+    // Cache the result
+    await this.cacheHealth(toolId, result)
+
+    return result
+  }
+
+  /**
+   * Get cached health status if not expired
+   */
+  private async getCachedHealth(toolId: string) {
+    try {
+      const db = getEphemeralDatabase()
+
+      const [cached] = await db
+        .select()
+        .from(toolHealth)
+        .where(eq(toolHealth.toolId, toolId))
+
+      if (!cached) {
+        return null
+      }
+
+      // Check if expired
+      const now = new Date()
+      if (now >= cached.expiresAt) {
+        console.log('[ToolHealthService] Cache expired for:', toolId)
+        return null
+      }
+
+      return cached
+    } catch (error) {
+      console.error('[ToolHealthService] Error reading cache:', error)
+      return null
+    }
+  }
+
+  /**
+   * Cache health status to ephemeral database
+   */
+  private async cacheHealth(toolId: string, result: ToolHealthResult) {
+    try {
+      const db = getEphemeralDatabase()
+
+      const now = new Date()
+      const expiresAt = new Date(now.getTime() + this.CACHE_TTL_MS)
+
+      await db
+        .insert(toolHealth)
+        .values({
+          toolId,
+          status: result.isInstalled ? 'healthy' : 'unhealthy',
+          version: result.version ?? null,
+          error: result.error ?? null,
+          checkedAt: now,
+          expiresAt,
+        })
+        .onConflictDoUpdate({
+          target: toolHealth.toolId,
+          set: {
+            status: result.isInstalled ? 'healthy' : 'unhealthy',
+            version: result.version ?? null,
+            error: result.error ?? null,
+            checkedAt: now,
+            expiresAt,
+          },
+        })
+
+      saveEphemeralDatabase()
+      console.log('[ToolHealthService] Cached result for:', toolId)
+    } catch (error) {
+      console.error('[ToolHealthService] Error caching health:', error)
+    }
+  }
+
+  /**
+   * Run the actual check command
+   */
+  private async runCheckCommand(
+    checkCommand: string,
+  ): Promise<ToolHealthResult> {
+    try {
+      const { stdout, stderr } = await execAsync(checkCommand, {
+        timeout: 5000,
+      })
+
+      const output = stdout.trim() || stderr.trim()
+      return {
+        isInstalled: true,
+        version: output,
+      }
+    } catch (error: any) {
+      return {
+        isInstalled: false,
+        error: error.message,
+      }
+    }
+  }
+
+  /**
+   * Clear cache for a specific tool
+   */
+  async clearCache(toolId: string): Promise<void> {
+    try {
+      const db = getEphemeralDatabase()
+      await db.delete(toolHealth).where(eq(toolHealth.toolId, toolId))
+      saveEphemeralDatabase()
+      console.log('[ToolHealthService] Cleared cache for:', toolId)
+    } catch (error) {
+      console.error('[ToolHealthService] Error clearing cache:', error)
+    }
+  }
+
+  /**
+   * Clear all cached health statuses
+   */
+  async clearAllCaches(): Promise<void> {
+    try {
+      const db = getEphemeralDatabase()
+      await db.delete(toolHealth)
+      saveEphemeralDatabase()
+      console.log('[ToolHealthService] Cleared all health caches')
+    } catch (error) {
+      console.error('[ToolHealthService] Error clearing all caches:', error)
+    }
+  }
+}
+
+/**
+ * Singleton service instance
+ */
+export const toolHealthService = new ToolHealthService()

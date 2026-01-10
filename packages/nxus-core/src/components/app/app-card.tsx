@@ -17,8 +17,7 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
-import { useItemStatus } from '@/services/state/item-status-state'
-import { useItemStatusCheck } from '@/hooks/use-item-status-check'
+import { useToolHealth } from '@/domain/tool-health'
 
 // Component that tries to load thumbnail from fallback paths
 function ThumbnailWithFallback({
@@ -86,15 +85,13 @@ interface AppCardProps {
 export function AppCard({ app }: AppCardProps) {
   const TypeIcon = APP_TYPE_ICONS[app.type]
 
-  // Health check for tools
+  // Health check for tools - uses TanStack Query via domain hook
   const isTool = app.type === 'tool'
   const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
-  useItemStatusCheck(app, hasCheckCommand)
-  const healthCheck = useItemStatus(app.id)
+  const healthCheck = useToolHealth(app, hasCheckCommand)
 
   // Determine if health check is still loading (only if tool has checkCommand)
-  const isCheckingHealth =
-    hasCheckCommand && healthCheck?.isInstalled === undefined
+  const isCheckingHealth = hasCheckCommand && healthCheck.isLoading
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:ring-2 hover:ring-primary/20">

@@ -1,17 +1,51 @@
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="url(#grad)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
   <defs>
-    <linearGradient id="grad" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2496ED"/>
-      <stop offset="1" stop-color="#1477B8"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="whaleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0db7ed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2496ed;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <path d="M140.5 234C110.5 264.5 117.667 341.167 160 369C202.333 396.833 302 409.5 404.5 388.5C507 367.5 631.5 325 680 271.5C728.5 218 710 175.5 649.5 184C589 192.5 529.5 222 451 234C372.5 246 170.5 203.5 140.5 234Z" fill="#08315A"/>
-  <g transform="translate(20, -10)">
-    <rect x="320" y="174" width="70" height="50" rx="5" fill="#F2994A"/>
-    <rect x="400" y="174" width="70" height="50" rx="5" fill="#6FCF97"/>
-    <rect x="480" y="174" width="70" height="50" rx="5" fill="#56CCF2"/>
-    <rect x="360" y="119" width="70" height="50" rx="5" fill="#BB6BD9"/>
-    <rect x="440" y="119" width="70" height="50" rx="5" fill="#EB5757"/>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg)"/>
+
+  <!-- Centered Content -->
+  <g transform="translate(400, 225)">
+    
+    <!-- Container Stack (Abstracted) -->
+    <g transform="translate(-80, -90)">
+        <!-- Top Container -->
+        <rect x="60" y="0" width="40" height="40" rx="4" fill="#38bdf8" opacity="0.9"/>
+        
+        <!-- Middle Row -->
+        <rect x="30" y="45" width="40" height="40" rx="4" fill="#0ea5e9" opacity="0.9"/>
+        <rect x="75" y="45" width="40" height="40" rx="4" fill="#0284c7" opacity="0.9"/>
+        
+        <!-- Bottom Row (on whale) -->
+        <rect x="0" y="90" width="40" height="40" rx="4" fill="#0369a1" opacity="0.9"/>
+        <rect x="45" y="90" width="40" height="40" rx="4" fill="#075985" opacity="0.9"/>
+        <rect x="90" y="90" width="40" height="40" rx="4" fill="#0c4a6e" opacity="0.9"/>
+    </g>
+
+    <!-- Whale Silhouette -->
+    <path d="M-100,50 
+             Q-100,90 -60,110
+             Q0,140 80,110
+             Q120,95 140,50
+             L140,50
+             L-100,50
+             Z" 
+          fill="url(#whaleGrad)" 
+          transform="translate(0, 10)"/>
+          
+    <!-- Tail -->
+    <path d="M130,60 Q160,40 160,10 L140,40 Z" fill="url(#whaleGrad)" transform="translate(0, 10)"/>
+
+    <!-- Eye -->
+    <circle cx="-70" cy="80" r="5" fill="#0f172a" opacity="0.6"/>
   </g>
 </svg>

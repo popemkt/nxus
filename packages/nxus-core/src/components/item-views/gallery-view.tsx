@@ -16,8 +16,7 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
-import { useItemStatus } from '@/services/state/item-status-state'
-import { useItemStatusCheck } from '@/hooks/use-item-status-check'
+import { useToolHealth } from '@/domain/tool-health'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { GalleryMode } from '@/stores/view-mode.store'
@@ -91,10 +90,9 @@ function ItemCard({ app, compact }: { app: App; compact: boolean }) {
   const isTool = app.type === 'tool'
   const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
 
-  useItemStatusCheck(app, hasCheckCommand)
-  const healthCheck = useItemStatus(app.id)
-  const isCheckingHealth =
-    hasCheckCommand && healthCheck?.isInstalled === undefined
+  // Health check for tools - uses TanStack Query via domain hook
+  const healthCheck = useToolHealth(app, hasCheckCommand)
+  const isCheckingHealth = hasCheckCommand && healthCheck.isLoading
 
   return (
     <Card

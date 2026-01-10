@@ -24,7 +24,7 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
-import { useItemStatus } from '@/services/state/item-status-state'
+import { useToolHealth } from '@/domain/tool-health'
 import { cn } from '@/lib/utils'
 
 interface TableViewProps {
@@ -33,15 +33,15 @@ interface TableViewProps {
 
 const columnHelper = createColumnHelper<App>()
 
-// Cell component for health status
+// Cell component for health status - uses TanStack Query via domain hook
 function HealthCell({ app }: { app: App }) {
   const isTool = app.type === 'tool'
   const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
-  const healthCheck = useItemStatus(app.id)
+  const healthCheck = useToolHealth(app, hasCheckCommand)
 
   if (!hasCheckCommand) return null
 
-  if (healthCheck?.isInstalled === undefined) {
+  if (healthCheck.isLoading) {
     return (
       <Badge variant="outline" className="animate-pulse">
         Checking...
