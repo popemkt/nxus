@@ -22,7 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { useToolHealth } from '@/domain/tool-health'
+import { useToolHealth } from '@/hooks/use-tool-health'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { ConfigModal } from '@/components/app/config-modal'
 import { ScriptPreviewModal } from '@/components/app/script-preview-modal'

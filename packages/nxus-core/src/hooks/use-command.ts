@@ -31,10 +31,10 @@ import { useMemo, useCallback } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import {
   toolHealthKeys,
-  getToolHealthFromCache,
   type ToolHealthResult,
-} from '@/domain/tool-health'
-import { checkToolHealth } from '@/domain/tool-health/server'
+} from '@/services/tool-health/types'
+import { getToolHealthFromCache } from '@/services/tool-health/utils'
+import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import type { AppCommand, AppType, CommandRequirements } from '@/types/app'

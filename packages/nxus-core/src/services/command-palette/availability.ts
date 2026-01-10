@@ -15,7 +15,7 @@
  */
 
 import { queryClient } from '@/lib/query-client'
-import { getToolHealthFromCache } from '@/domain/tool-health'
+import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { appRegistryService } from '@/services/apps/registry.service'
 import type { AppType } from '@/types/app'
 import type { InstalledAppRecord } from '@/services/state/app-state'

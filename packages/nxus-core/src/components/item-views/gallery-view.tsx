@@ -16,7 +16,7 @@ import {
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
-import { useToolHealth } from '@/domain/tool-health'
+import { useToolHealth } from '@/hooks/use-tool-health'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { GalleryMode } from '@/stores/view-mode.store'

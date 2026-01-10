@@ -20,7 +20,10 @@ import {
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { DependencyList } from '@/components/app/dependency-list'
-import { useToolHealth, useToolHealthInvalidation } from '@/domain/tool-health'
+import {
+  useToolHealth,
+  useToolHealthInvalidation,
+} from '@/hooks/use-tool-health'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
