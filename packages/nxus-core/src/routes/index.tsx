@@ -5,7 +5,7 @@ import type { App } from '@/types/app'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { openApp } from '@/lib/app-actions'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'
-import { TagTree } from '@/components/tag-tree'
+import { TagTree } from '@/components/features/gallery/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import {
@@ -15,13 +15,17 @@ import {
 import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
-import { GalleryView, TableView, GraphView } from '@/components/item-views'
+import {
+  GalleryView,
+  TableView,
+  GraphView,
+} from '@/components/features/gallery/item-views'
 import {
   FloatingHud,
   FloatingFilterRow,
   FloatingThemeToggle,
   SystemTray,
-} from '@/components/hud'
+} from '@/components/features/gallery/hud'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 

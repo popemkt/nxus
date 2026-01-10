@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { CommandLogViewer } from './command-log-viewer'
+import { CommandLogViewer } from '../commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 
 interface ActionWithLogsProps {

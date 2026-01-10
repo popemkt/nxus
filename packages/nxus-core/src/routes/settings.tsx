@@ -8,7 +8,7 @@ import {
   MagnifyingGlassIcon,
 } from '@phosphor-icons/react'
 import { Input } from '@/components/ui/input'
-import { ThemeChooser } from '@/components/theme-chooser'
+import { ThemeChooser } from '@/components/features/settings/theme-chooser'
 import { Button } from '@/components/ui/button'
 import {
   Card,

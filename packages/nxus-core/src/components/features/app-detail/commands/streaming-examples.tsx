@@ -16,7 +16,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { CommandLogViewer } from '@/components/app/command-log-viewer'
+import { CommandLogViewer } from '@/components/features/app-detail/commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { appStateService } from '@/services/state/app-state'
 import type { App } from '@/types/app'

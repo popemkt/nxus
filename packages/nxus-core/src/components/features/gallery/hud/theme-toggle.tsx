@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MoonIcon, SunIcon } from '@phosphor-icons/react'
-import { Button } from './ui/button'
+import { Button } from '../../../ui/button'
 
 // Apply theme immediately to prevent flash
 function getInitialTheme(): 'light' | 'dark' {

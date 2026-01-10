@@ -2,7 +2,7 @@ import * as React from 'react'
 import Markdown from 'react-markdown'
 import { getDocContentServerFn } from '@/services/apps/docs.server'
 import { appRegistryService } from '@/services/apps/registry.service'
-import { CommandButton } from '@/components/app/command-button'
+import { CommandButton } from '@/components/features/app-detail/commands/command-button'
 import type { App, AppCommand } from '@/types/app'
 
 interface DocViewerProps {

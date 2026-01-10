@@ -19,7 +19,7 @@ import {
 } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
-import { DependencyList } from '@/components/app/dependency-list'
+import { DependencyList } from '@/components/features/app-detail/dependency-list'
 import {
   useToolHealth,
   useToolHealthInvalidation,
@@ -34,11 +34,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { InstanceSelector } from '@/components/app/instance-selector'
-import { InstanceActionsPanel } from '@/components/app/instance-actions-panel'
-import { AppActionsPanel } from '@/components/app/app-actions-panel'
-import { DocViewer } from '@/components/app/doc-viewer'
-import { InstallModal } from '@/components/app/install-modal'
+import { InstanceSelector } from '@/components/features/app-detail/instance/instance-selector'
+import { InstanceActionsPanel } from '@/components/features/app-detail/actions/instance-actions-panel'
+import { AppActionsPanel } from '@/components/features/app-detail/actions/app-actions-panel'
+import { DocViewer } from '@/components/features/app-detail/doc-viewer'
+import { InstallModal } from '@/components/features/app-detail/modals/install-modal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'

@@ -6,7 +6,7 @@ import { useToolHealth } from '@/hooks/use-tool-health'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { configureModalService } from '@/stores/configure-modal.store'
-import { ScriptPreviewModal } from '@/components/app/script-preview-modal'
+import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
 import { handleCommandMode } from '@/lib/command-utils'
 import type { AppCommand, ToolApp, App } from '@/types/app'
 
