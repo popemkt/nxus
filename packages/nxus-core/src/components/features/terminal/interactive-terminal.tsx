@@ -47,7 +47,7 @@ export function InteractiveTerminal({
 
     try {
       await resizePtySessionServerFn({
-        data: { sessionId: ptySessionId, cols, rows },
+        data: { sessionId: ptySessionId, cols, rows, suppressOutput: true },
       })
     } catch (err) {
       console.error('[InteractiveTerminal] Resize failed:', err)
@@ -182,10 +182,11 @@ export function InteractiveTerminal({
           })
         })
 
-        // Send initial resize
+        // Send initial resize - don't suppress output for the first one
+        // so we don't drop the initial prompt
         const { cols, rows } = terminal
         await resizePtySessionServerFn({
-          data: { sessionId: ptySessionId, cols, rows },
+          data: { sessionId: ptySessionId, cols, rows, suppressOutput: false },
         })
 
         setIsLoading(false)

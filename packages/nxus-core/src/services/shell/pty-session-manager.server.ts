@@ -16,7 +16,10 @@ export interface PtySession {
   shell: string
   createdAt: Date
   outputBuffer: string[] // Buffer for reconnection
+  bufferOffset: number // Total characters shifted out of the buffer
   isAlive: boolean
+  resizeInProgress: boolean // Flag to suppress output during resize
+  resizeDebounceTimeout: NodeJS.Timeout | null // Resize settle timer
 }
 
 // Maximum buffer size per session (characters)
@@ -122,6 +125,7 @@ export function createPtySession(options?: {
     TERM: 'xterm-256color',
     COLORTERM: 'truecolor',
     LANG: process.env.LANG || 'en_US.UTF-8',
+    LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
   }
 
   console.log(`[PTY] Creating session ${id} with shell: ${shell} in ${cwd}`)
@@ -141,19 +145,30 @@ export function createPtySession(options?: {
     shell,
     createdAt: new Date(),
     outputBuffer: [],
+    bufferOffset: 0,
     isAlive: true,
+    resizeInProgress: false,
+    resizeDebounceTimeout: null,
   }
 
   sessions.set(id, session)
 
   // Buffer output for potential reconnection
   ptyProcess.onData((data) => {
+    // Skip output during resize to prevent redraw artifacts
+    if (session.resizeInProgress) {
+      return
+    }
+
     session.outputBuffer.push(data)
     // Trim buffer if too large
-    let totalSize = session.outputBuffer.join('').length
+    let totalSize = session.outputBuffer.reduce((acc, s) => acc + s.length, 0)
     while (totalSize > MAX_BUFFER_SIZE && session.outputBuffer.length > 1) {
-      session.outputBuffer.shift()
-      totalSize = session.outputBuffer.join('').length
+      const shifted = session.outputBuffer.shift()
+      if (shifted) {
+        session.bufferOffset += shifted.length
+      }
+      totalSize = session.outputBuffer.reduce((acc, s) => acc + s.length, 0)
     }
     resetSessionTimeout(id)
   })
@@ -228,16 +243,34 @@ export function resizePtySession(
   sessionId: string,
   cols: number,
   rows: number,
+  suppressOutput: boolean = true,
 ): boolean {
   const session = sessions.get(sessionId)
   if (!session || !session.isAlive) {
     return false
   }
   try {
+    // Suppress output during resize to avoid TUI redraw artifacts
+    if (suppressOutput) {
+      session.resizeInProgress = true
+      if (session.resizeDebounceTimeout) {
+        clearTimeout(session.resizeDebounceTimeout)
+      }
+    }
+
     session.pty.resize(cols, rows)
+
+    if (suppressOutput) {
+      session.resizeDebounceTimeout = setTimeout(() => {
+        session.resizeInProgress = false
+        session.resizeDebounceTimeout = null
+      }, 150)
+    }
+
     return true
   } catch (error) {
     console.error(`[PTY] Error resizing session ${sessionId}:`, error)
+    session.resizeInProgress = false
     return false
   }
 }
@@ -257,6 +290,11 @@ export function closePtySession(sessionId: string): boolean {
     }
   } catch {
     // Ignore errors during cleanup
+  }
+
+  if (session.resizeDebounceTimeout) {
+    clearTimeout(session.resizeDebounceTimeout)
+    session.resizeDebounceTimeout = null
   }
 
   sessions.delete(sessionId)
@@ -292,8 +330,13 @@ export function getAllPtySessions(): Array<{
 
 /**
  * Get buffered output for a session (for reconnection)
+ * Returns the full buffer and the current offset
  */
-export function getPtySessionBuffer(sessionId: string): string | null {
+export function getPtySessionBuffer(
+  sessionId: string,
+): { buffer: string; offset: number } | null {
   const session = sessions.get(sessionId)
-  return session ? session.outputBuffer.join('') : null
+  return session
+    ? { buffer: session.outputBuffer.join(''), offset: session.bufferOffset }
+    : null
 }

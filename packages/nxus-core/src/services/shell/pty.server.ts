@@ -119,12 +119,23 @@ export const pollPtyOutputServerFn = createServerFn({ method: 'POST' })
         }
       }
 
-      // Get all buffered output
-      const buffer = getPtySessionBuffer(sessionId) || ''
+      // Get all buffered output and its offset
+      const sessionBufferResult = getPtySessionBuffer(sessionId)
+      if (!sessionBufferResult) {
+        return {
+          chunks: [],
+          cursor: cursor,
+          isAlive: session.isAlive,
+        }
+      }
 
-      // Return only new data since cursor
-      const newData = buffer.slice(cursor)
-      const newCursor = buffer.length
+      const { buffer, offset } = sessionBufferResult
+
+      // Calculate relative cursor position
+      // If cursor is before offset, we lost some data, so start from 0 (the new offset)
+      const relativeCursor = Math.max(0, cursor - offset)
+      const newData = buffer.slice(relativeCursor)
+      const newCursor = offset + buffer.length
 
       const chunks: PtyOutputChunk[] = []
 
@@ -157,14 +168,15 @@ const ResizePtySessionInputSchema = z.object({
   sessionId: z.string(),
   cols: z.number(),
   rows: z.number(),
+  suppressOutput: z.boolean().optional(),
 })
 
 export const resizePtySessionServerFn = createServerFn({ method: 'POST' })
   .inputValidator(ResizePtySessionInputSchema)
   .handler(async (ctx) => {
     console.log('[resizePtySessionServerFn] Input:', ctx.data)
-    const { sessionId, cols, rows } = ctx.data
-    const success = resizePtySession(sessionId, cols, rows)
+    const { sessionId, cols, rows, suppressOutput = true } = ctx.data
+    const success = resizePtySession(sessionId, cols, rows, suppressOutput)
     return { success }
   })
 

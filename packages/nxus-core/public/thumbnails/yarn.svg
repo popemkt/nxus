@@ -1,21 +1,57 @@
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#f0f2f5"/>
-  <g transform="translate(400, 225)">
-    <!-- Main yarn ball / core dependency -->
-    <circle cx="0" cy="0" r="100" fill="#60b5ff" opacity="0.8"/>
-    <circle cx="0" cy="0" r="80" fill="#4fa5f5" opacity="0.9"/>
-    <circle cx="0" cy="0" r="60" fill="#3e95e5"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#202020;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#101010;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#333" stroke-width="1"/>
+    </pattern>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="yarnGrad" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+  
+  <rect width="800" height="450" fill="url(#bg)" />
+  <rect width="800" height="450" fill="url(#grid)" />
+  
+  <!-- Centered Yarn Ball -->
+  <g transform="translate(400, 225) scale(1.8)">
+    
+    <!-- Glow behind -->
+    <circle cx="0" cy="0" r="65" fill="#2188b6" opacity="0.2" filter="url(#glow)" />
 
-    <!-- Interconnected smaller dependencies -->
-    <circle cx="180" cy="-50" r="40" fill="#8aff8a" opacity="0.7"/>
-    <circle cx="-160" cy="70" r="50" fill="#ffb38a" opacity="0.7"/>
-    <circle cx="0" cy="-190" r="35" fill="#e066ff" opacity="0.7"/>
-    <circle cx="100" cy="170" r="45" fill="#ffe066" opacity="0.7"/>
+    <!-- Main Ball Body -->
+    <circle cx="0" cy="0" r="60" fill="#2188b6" />
+    <circle cx="0" cy="0" r="60" fill="url(#yarnGrad)" opacity="0.6"/>
 
-    <!-- Connecting lines -->
-    <line x1="0" y1="0" x2="180" y2="-50" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-    <line x1="0" y1="0" x2="-160" y2="70" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-    <line x1="0" y1="0" x2="0" y2="-190" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-    <line x1="0" y1="0" x2="100" y2="170" stroke="#cccccc" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+    <!-- Threads wrapping around -->
+    <g fill="none" stroke="#7ecbf5" stroke-width="5" stroke-linecap="round">
+        <!-- Horizontal wraps -->
+        <path d="M -50 -25 Q 0 -50 50 -25" />
+        <path d="M -58 0 Q 0 -25 58 0" />
+        <path d="M -50 25 Q 0 0 50 25" />
+
+        <!-- Vertical wraps -->
+        <path d="M -25 -50 Q -50 0 -25 50" />
+        <path d="M 0 -58 Q -25 0 0 58" />
+        <path d="M 25 -50 Q 0 0 25 50" />
+        
+        <!-- Diagonal details -->
+        <path d="M -35 -40 Q 0 -10 35 40" opacity="0.8" />
+        <path d="M 35 -40 Q 0 -10 -35 40" opacity="0.8" />
+    </g>
+    
+    <!-- Small "loose thread" tail -->
+    <path d="M 40 40 Q 60 60 80 50" fill="none" stroke="#7ecbf5" stroke-width="5" stroke-linecap="round" />
+
   </g>
 </svg>
