@@ -277,11 +277,15 @@ class CommandRegistry {
   }
 
   /**
-   * Search commands by query
+   * Search commands by query, with optional alias prioritization
    */
-  search(query: string): {
+  search(
+    query: string,
+    aliases?: Record<string, string>,
+  ): {
     appCommands: PaletteCommand[]
     genericCommands: GenericCommand[]
+    aliasMatch?: { commandId: string; exact: boolean }
   } {
     const lowerQuery = query.toLowerCase().trim()
 
@@ -292,18 +296,76 @@ class CommandRegistry {
       }
     }
 
-    const appCommands = this.getAllAppCommands().filter(
+    // Check for alias matches first
+    let aliasMatch: { commandId: string; exact: boolean } | undefined
+    const aliasMatchedIds = new Set<string>()
+
+    if (aliases) {
+      for (const [alias, commandId] of Object.entries(aliases)) {
+        const lowerAlias = alias.toLowerCase()
+        if (lowerAlias === lowerQuery) {
+          aliasMatch = { commandId, exact: true }
+          aliasMatchedIds.add(commandId)
+        } else if (lowerAlias.startsWith(lowerQuery)) {
+          if (!aliasMatch) {
+            aliasMatch = { commandId, exact: false }
+          }
+          aliasMatchedIds.add(commandId)
+        }
+      }
+    }
+
+    // Get all commands that match by text
+    const allAppCommands = this.getAllAppCommands()
+    const textMatchedAppCommands = allAppCommands.filter(
       (cmd) =>
         cmd.name.toLowerCase().includes(lowerQuery) ||
         cmd.appName.toLowerCase().includes(lowerQuery) ||
         cmd.description?.toLowerCase().includes(lowerQuery),
     )
 
-    const generic = this.getGenericCommands().filter((cmd) =>
+    const allGenericCommands = this.getGenericCommands()
+    const textMatchedGeneric = allGenericCommands.filter((cmd) =>
       cmd.name.toLowerCase().includes(lowerQuery),
     )
 
-    return { appCommands, genericCommands: generic }
+    // Sort: alias-matched commands first
+    const sortByAlias = <T extends { id?: string }>(commands: T[]): T[] => {
+      if (aliasMatchedIds.size === 0) return commands
+
+      return [...commands].sort((a, b) => {
+        const aId = 'id' in a ? a.id : undefined
+        const bId = 'id' in b ? b.id : undefined
+        const aIsAlias = aId && aliasMatchedIds.has(aId)
+        const bIsAlias = bId && aliasMatchedIds.has(bId)
+        if (aIsAlias && !bIsAlias) return -1
+        if (!aIsAlias && bIsAlias) return 1
+        return 0
+      })
+    }
+
+    // Include alias-matched commands even if they don't match text query
+    const aliasOnlyAppCommands = allAppCommands.filter(
+      (cmd) =>
+        aliasMatchedIds.has(cmd.id) &&
+        !textMatchedAppCommands.some((tc) => tc.id === cmd.id),
+    )
+    const aliasOnlyGenericCommands = allGenericCommands.filter(
+      (cmd) =>
+        aliasMatchedIds.has(cmd.id) &&
+        !textMatchedGeneric.some((tc) => tc.id === cmd.id),
+    )
+
+    const appCommands = sortByAlias([
+      ...aliasOnlyAppCommands,
+      ...textMatchedAppCommands,
+    ])
+    const generic = sortByAlias([
+      ...aliasOnlyGenericCommands,
+      ...textMatchedGeneric,
+    ])
+
+    return { appCommands, genericCommands: generic, aliasMatch }
   }
 
   /**

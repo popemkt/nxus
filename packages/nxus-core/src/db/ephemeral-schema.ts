@@ -46,3 +46,19 @@ export const toolHealth = sqliteTable('tool_health', {
 
 export type ToolHealth = typeof toolHealth.$inferSelect
 export type NewToolHealth = typeof toolHealth.$inferInsert
+
+/**
+ * Command aliases - user-configured shortcuts for commands
+ * Ephemeral because it's user preference, machine-specific
+ */
+export const commandAliases = sqliteTable('command_aliases', {
+  id: text('id').primaryKey(), // UUID
+  commandId: text('command_id').notNull(), // e.g. "go-to-app" or "myapp:run"
+  alias: text('alias').notNull().unique(), // e.g. "g", "ai"
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+})
+
+export type CommandAlias = typeof commandAliases.$inferSelect
+export type NewCommandAlias = typeof commandAliases.$inferInsert

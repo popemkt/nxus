@@ -29,6 +29,10 @@ import { commandExecutor } from '@/services/command-palette/executor'
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
+import {
+  getAliasesServerFn,
+  aliasUtils,
+} from '@/services/command-palette/alias.server'
 
 function DynamicIcon({
   name,
@@ -180,6 +184,7 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null)
   const selectedItemRef = useRef<HTMLButtonElement>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [aliases, setAliases] = useState<Record<string, string>>({})
 
   const {
     isOpen,
@@ -228,13 +233,24 @@ export function CommandPalette() {
     return () => window.removeEventListener('keydown', handler)
   }, [toggle, close, isOpen, step, reset, commandPaletteBinding, isGalleryView])
 
+  // Load aliases when palette opens (ensures fresh data from settings)
+  useEffect(() => {
+    if (isOpen) {
+      getAliasesServerFn().then(setAliases)
+    }
+  }, [isOpen])
+
   // Search results
   const results = useMemo(() => {
     if (step === 'target') {
       // Show apps or instances for target selection, filtered by command
-      const apps = commandRegistry.getAppsForTargetSelection(
-        selectedGenericCommand ?? undefined,
-      )
+      // Look up full command from registry (selectedGenericCommand only has partial data)
+      const fullCommand = selectedGenericCommand
+        ? commandRegistry
+            .getGenericCommands()
+            .find((c) => c.id === selectedGenericCommand.id)
+        : undefined
+      const apps = commandRegistry.getAppsForTargetSelection(fullCommand)
       const lowerQuery = query.toLowerCase()
       return apps.filter(
         (app) =>
@@ -243,8 +259,8 @@ export function CommandPalette() {
           app.id.toLowerCase().includes(lowerQuery),
       )
     }
-    return commandRegistry.search(query)
-  }, [query, step, selectedGenericCommand])
+    return commandRegistry.search(query, aliases)
+  }, [query, step, selectedGenericCommand, aliases])
 
   // Flatten results for keyboard navigation
   const items = useMemo(() => {
@@ -256,6 +272,15 @@ export function CommandPalette() {
     const searchResults = results as ReturnType<typeof commandRegistry.search>
     return [...searchResults.genericCommands, ...searchResults.appCommands]
   }, [results, step])
+
+  // Create command ID → alias lookup for badge display
+  const commandToAlias = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const [alias, commandId] of Object.entries(aliases)) {
+      map[commandId] = alias
+    }
+    return map
+  }, [aliases])
 
   // Helper function to find the next enabled item index
   const findNextEnabledIndex = (
@@ -325,6 +350,24 @@ export function CommandPalette() {
       e.stopPropagation()
       closeActions()
       return
+    }
+
+    // Handle space key for alias-to-target auto-advance
+    if (e.key === ' ' && step === 'command') {
+      const trimmedQuery = query.trim()
+      // Check if query matches an alias exactly
+      const matchedCommandId = aliasUtils.findExactMatch(trimmedQuery, aliases)
+      if (matchedCommandId) {
+        // Find the command in genericCommands (only generic commands have needsTarget)
+        const cmd = commandRegistry
+          .getGenericCommands()
+          .find((c) => c.id === matchedCommandId)
+        if (cmd?.needsTarget) {
+          e.preventDefault()
+          selectGenericCommand(cmd)
+          return
+        }
+      }
     }
 
     if (e.key === 'ArrowDown') {
@@ -612,6 +655,17 @@ export function CommandPalette() {
                             className={`h-4 w-4 ${selectedIndex === idx ? 'text-primary-foreground' : 'text-muted-foreground'}`}
                           />
                           <span>{cmd.name}</span>
+                          {commandToAlias[cmd.id] && (
+                            <code
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                                selectedIndex === idx
+                                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
+                            >
+                              {commandToAlias[cmd.id]}
+                            </code>
+                          )}
                           {cmd.needsTarget && (
                             <span
                               className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
@@ -684,6 +738,19 @@ export function CommandPalette() {
                             >
                               {cmd.name}
                             </span>
+                            {commandToAlias[cmd.id] && (
+                              <code
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                                  isDisabled
+                                    ? 'bg-muted/50 text-muted-foreground'
+                                    : isSelected
+                                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                                      : 'bg-muted text-muted-foreground'
+                                }`}
+                              >
+                                {commandToAlias[cmd.id]}
+                              </code>
+                            )}
                             {/* Show disabled reason OR description */}
                             {isDisabled ? (
                               <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">

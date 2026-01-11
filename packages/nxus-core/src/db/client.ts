@@ -197,6 +197,15 @@ export async function initEphemeralDatabase(): Promise<
     )
   `)
 
+  ephemeralSqliteDb.run(`
+    CREATE TABLE IF NOT EXISTS command_aliases (
+      id TEXT PRIMARY KEY,
+      command_id TEXT NOT NULL,
+      alias TEXT NOT NULL UNIQUE,
+      created_at INTEGER NOT NULL
+    )
+  `)
+
   // Save the database after creating tables
   saveEphemeralDatabase()
 

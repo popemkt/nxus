@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   GearIcon,
   KeyboardIcon,
   CubeIcon,
   ArrowLeftIcon,
   MagnifyingGlassIcon,
+  CommandIcon,
+  TrashIcon,
+  PlusIcon,
 } from '@phosphor-icons/react'
 import { Input } from '@/components/ui/input'
 import { ThemeChooser } from '@/components/features/settings/theme-chooser'
@@ -21,11 +24,17 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { useSettingsStore, type ThemeSetting } from '@/stores/settings.store'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { appRegistryService } from '@/services/apps/registry.service'
+import {
+  getAliasesServerFn,
+  setAliasServerFn,
+  removeAliasServerFn,
+} from '@/services/command-palette/alias.server'
+import { commandRegistry } from '@/services/command-palette/registry'
 import type { ToolApp } from '@/types/app'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
-type SettingsSection = 'general' | 'keyboard' | 'apps'
+type SettingsSection = 'general' | 'keyboard' | 'aliases' | 'apps'
 
 function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general')
@@ -38,6 +47,7 @@ function SettingsPage() {
       label: 'Keyboard Shortcuts',
       icon: KeyboardIcon,
     },
+    { id: 'aliases' as const, label: 'Command Aliases', icon: CommandIcon },
     { id: 'apps' as const, label: 'App Configurations', icon: CubeIcon },
   ]
 
@@ -94,6 +104,7 @@ function SettingsPage() {
           <div className="max-w-2xl">
             {activeSection === 'general' && <GeneralSettings />}
             {activeSection === 'keyboard' && <KeyboardSettings />}
+            {activeSection === 'aliases' && <AliasSettings />}
             {activeSection === 'apps' && (
               <AppConfigSettings searchQuery={searchQuery} />
             )}
@@ -213,6 +224,175 @@ function KeyboardSettings() {
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function AliasSettings() {
+  const [aliases, setAliases] = useState<Record<string, string>>({})
+  const [newAlias, setNewAlias] = useState('')
+  const [selectedCommand, setSelectedCommand] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Get all available commands for the dropdown
+  const allCommands = React.useMemo(() => {
+    const generic = commandRegistry.getGenericCommands()
+    const apps = commandRegistry.getAllAppCommands()
+    return [
+      ...generic.map((c) => ({ id: c.id, name: c.name, type: 'action' })),
+      ...apps.map((c) => ({
+        id: c.id,
+        name: `${c.appName}: ${c.name}`,
+        type: 'app',
+      })),
+    ]
+  }, [])
+
+  // Load aliases on mount
+  useEffect(() => {
+    getAliasesServerFn().then((data) => {
+      setAliases(data)
+      setIsLoading(false)
+    })
+  }, [])
+
+  const handleAddAlias = async () => {
+    if (!newAlias.trim() || !selectedCommand) return
+
+    await setAliasServerFn({
+      data: { commandId: selectedCommand, alias: newAlias.trim() },
+    })
+    const updated = await getAliasesServerFn()
+    setAliases(updated)
+    setNewAlias('')
+    setSelectedCommand('')
+  }
+
+  const handleRemoveAlias = async (commandId: string) => {
+    await removeAliasServerFn({ data: { commandId } })
+    const updated = await getAliasesServerFn()
+    setAliases(updated)
+  }
+
+  // Invert aliases map: alias → commandId becomes commandId → alias
+  const commandToAlias = React.useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const [alias, commandId] of Object.entries(aliases)) {
+      map[commandId] = alias
+    }
+    return map
+  }, [aliases])
+
+  const aliasedCommands = Object.entries(commandToAlias).map(
+    ([commandId, alias]) => {
+      const cmd = allCommands.find((c) => c.id === commandId)
+      return { commandId, alias, name: cmd?.name || commandId }
+    },
+  )
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Command Aliases</h2>
+        <p className="text-muted-foreground mb-6">
+          Create short aliases for commands. Type the alias in the command
+          palette to quickly find commands.
+        </p>
+      </div>
+
+      {/* Add new alias */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Add Alias</CardTitle>
+          <CardDescription>
+            Create a new alias for a command. After typing the alias, press
+            space to auto-advance to target selection.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            <Input
+              placeholder="Alias (e.g., g)"
+              value={newAlias}
+              onChange={(e) => setNewAlias(e.target.value)}
+              className="w-24"
+            />
+            <select
+              value={selectedCommand}
+              onChange={(e) => setSelectedCommand(e.target.value)}
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Select a command...</option>
+              <optgroup label="Actions">
+                {allCommands
+                  .filter((c) => c.type === 'action')
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="App Commands">
+                {allCommands
+                  .filter((c) => c.type === 'app')
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </optgroup>
+            </select>
+            <Button
+              onClick={handleAddAlias}
+              disabled={!newAlias.trim() || !selectedCommand}
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Existing aliases */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Configured Aliases</CardTitle>
+          <CardDescription>Your command aliases</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-muted-foreground text-sm">Loading...</p>
+          ) : aliasedCommands.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No aliases configured yet.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {aliasedCommands.map(({ commandId, alias, name }) => (
+                <div
+                  key={commandId}
+                  className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <code className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-sm">
+                      {alias}
+                    </code>
+                    <span className="text-sm">{name}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveAlias(commandId)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
