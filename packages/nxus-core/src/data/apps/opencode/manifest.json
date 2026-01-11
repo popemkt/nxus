@@ -179,15 +179,7 @@
         }
     ],
     "metadata": {
-        "tags": [
-            "ai",
-            "coding",
-            "tui",
-            "cli",
-            "anthropic",
-            "openai",
-            "gemini"
-        ],
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-11T00:00:00.000Z",
         "updatedAt": "2026-01-11T00:00:00.000Z",

@@ -123,12 +123,7 @@
         "docker"
     ],
     "metadata": {
-        "tags": [
-            "bookmark-manager",
-            "self-hosted",
-            "collaboration",
-            "typescript"
-        ],
+        "tags": [],
         "category": "productivity",
         "createdAt": "2025-12-29T02:25:00.000Z",
         "updatedAt": "2025-12-29T02:25:00.000Z",

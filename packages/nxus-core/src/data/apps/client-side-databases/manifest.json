@@ -93,13 +93,7 @@
         "git"
     ],
     "metadata": {
-        "tags": [
-            "database",
-            "comparison",
-            "firestore",
-            "rxdb",
-            "pouchdb"
-        ],
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2025-12-29T02:25:00.000Z",
         "updatedAt": "2025-12-29T02:25:00.000Z",
