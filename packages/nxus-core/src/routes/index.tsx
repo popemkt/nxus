@@ -48,21 +48,22 @@ function AppManager() {
   const filterTags = useMemo(() => {
     if (selectedTagIds.size === 0) return undefined
 
-    const tagSlugs: string[] = []
+    const tagObjects: Array<{ id: number; name: string }> = []
     for (const tagIdStr of selectedTagIds) {
       const tagId = parseInt(tagIdStr, 10)
       if (isNaN(tagId)) continue
 
       const tag = tags.get(tagId)
-      if (tag) tagSlugs.push(tag.slug) // Use slug for filtering against metadata.tags
+      if (tag) tagObjects.push({ id: tag.id, name: tag.name })
+
       if (includeSubTags.get(tagIdStr)) {
         const descendants = getDescendants(tagId)
         for (const desc of descendants) {
-          tagSlugs.push(desc.slug)
+          tagObjects.push({ id: desc.id, name: desc.name })
         }
       }
     }
-    return tagSlugs.length > 0 ? tagSlugs : undefined
+    return tagObjects.length > 0 ? tagObjects : undefined
   }, [selectedTagIds, includeSubTags, getDescendants, tags])
 
   const { apps, allApps, loading, error } = useAppRegistry({

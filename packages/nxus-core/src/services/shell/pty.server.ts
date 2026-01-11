@@ -34,6 +34,8 @@ const CreatePtySessionInputSchema = z.object({
   cwd: z.string().optional(),
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
+  /** Full command to execute in shell (shell handles parsing) */
+  shellCommand: z.string().optional(),
   cols: z.number().optional(),
   rows: z.number().optional(),
 })

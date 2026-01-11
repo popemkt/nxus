@@ -82,7 +82,6 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   // Add a new tag
   addTag: async (input: CreateTagInput): Promise<Tag> => {
     const now = new Date()
-    const slug = input.slug || generateSlug(input.name)
 
     // Get siblings to calculate order
     const siblings = get().getChildren(input.parentId ?? null)
@@ -93,7 +92,6 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     try {
       const result = await createTagServerFn({
         data: {
-          slug,
           name: input.name,
           parentId: input.parentId ?? null,
           order: maxOrder + 1,
@@ -108,7 +106,6 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
 
       const tag: Tag = {
         id: result.id,
-        slug,
         name: input.name,
         parentId: input.parentId ?? null,
         order: maxOrder + 1,

@@ -50,14 +50,14 @@ export function useGraphFilter({
           item.name.toLowerCase().includes(lowerQuery) ||
           item.description.toLowerCase().includes(lowerQuery) ||
           item.metadata.tags.some((tag) =>
-            tag.toLowerCase().includes(lowerQuery),
+            tag.name.toLowerCase().includes(lowerQuery),
           )
       }
 
       // Check tag filters (match slugs against metadata.tags)
       if (selectedTagSlugs.size > 0) {
         matchesTags = item.metadata.tags.some((tag) =>
-          selectedTagSlugs.has(tag),
+          selectedTagSlugs.has(tag.id.toString()),
         )
       }
 

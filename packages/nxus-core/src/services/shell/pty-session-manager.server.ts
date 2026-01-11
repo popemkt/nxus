@@ -105,6 +105,7 @@ export function createPtySession(options?: {
   cwd?: string
   command?: string
   args?: string[]
+  shellCommand?: string // Full command to execute in shell (shell handles parsing)
   cols?: number
   rows?: number
 }): PtySession {
@@ -165,6 +166,18 @@ export function createPtySession(options?: {
 
   // Set cleanup timer
   resetSessionTimeout(id)
+
+  // If shellCommand is provided, write it to the PTY
+  // This lets the shell handle all parsing (quotes, escapes, etc.)
+  if (options?.shellCommand) {
+    // Small delay to ensure shell is ready
+    setTimeout(() => {
+      if (session.isAlive) {
+        ptyProcess.write(`${options.shellCommand}\r`)
+        console.log(`[PTY] Wrote shellCommand to session ${id}`)
+      }
+    }, 100)
+  }
 
   console.log(`[PTY] Session ${id} created successfully`)
   return session

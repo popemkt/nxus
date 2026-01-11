@@ -91,7 +91,7 @@ export class AppRegistryService {
       const nameMatch = app.name.toLowerCase().includes(lowerQuery)
       const descMatch = app.description.toLowerCase().includes(lowerQuery)
       const tagMatch = app.metadata.tags.some((tag) =>
-        tag.toLowerCase().includes(lowerQuery),
+        tag.name.toLowerCase().includes(lowerQuery),
       )
       const categoryMatch = app.metadata.category
         .toLowerCase()

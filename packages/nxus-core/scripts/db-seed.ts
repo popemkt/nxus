@@ -173,7 +173,6 @@ async function seed() {
       const tagId = tag.id as number
       const tagRecord = {
         id: tagId,
-        slug: tag.slug as string,
         name: tag.name as string,
         parentId: (tag.parentId as number | null) ?? null,
         order: (tag.order as number) ?? 0,

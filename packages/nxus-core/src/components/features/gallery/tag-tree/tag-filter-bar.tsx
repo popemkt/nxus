@@ -35,7 +35,6 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
     id: number
     idStr: string
     name: string
-    slug: string
   }>
 
   return (
@@ -115,20 +114,20 @@ export function useTagFilter<T extends { tags?: string[] }>(items: T[]): T[] {
     return items
   }
 
-  // Build the set of tag slugs to match
-  const matchTagSlugs = new Set<string>()
+  // Build the set of tag names to match
+  const matchTagNames = new Set<string>()
   for (const tagIdStr of selectedTagIds) {
     const tagId = parseInt(tagIdStr, 10)
     if (isNaN(tagId)) continue
 
     const tag = tags.get(tagId)
-    if (tag) matchTagSlugs.add(tag.slug)
+    if (tag) matchTagNames.add(tag.name)
 
     if (includeSubTags.get(tagIdStr)) {
       // Add all descendants
       const descendants = getDescendants(tagId)
       for (const desc of descendants) {
-        matchTagSlugs.add(desc.slug)
+        matchTagNames.add(desc.name)
       }
     }
   }
@@ -136,6 +135,6 @@ export function useTagFilter<T extends { tags?: string[] }>(items: T[]): T[] {
   // Filter items: item must have at least one tag from the filter set
   return items.filter((item) => {
     if (!item.tags || item.tags.length === 0) return false
-    return item.tags.some((t) => matchTagSlugs.has(t))
+    return item.tags.some((t) => matchTagNames.has(t))
   })
 }

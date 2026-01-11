@@ -22,6 +22,71 @@
  */
 
 import { executeCommandServerFn } from '@/services/shell/command.server'
+
+/**
+ * Parse a command string into command and args, respecting quotes
+ * Handles single quotes, double quotes, and escape characters
+ *
+ * @example
+ * parseCommand('claude "hello world"') // => ['claude', 'hello world']
+ * parseCommand('npm install --save')   // => ['npm', 'install', '--save']
+ * parseCommand("echo 'it\\'s great'")  // => ['echo', "it's great"]
+ */
+function parseCommand(command: string): [string, string[]] {
+  const args: string[] = []
+  let currentArg = ''
+  let inSingleQuote = false
+  let inDoubleQuote = false
+  let escapeNext = false
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i]
+    const nextChar = command[i + 1]
+
+    if (escapeNext) {
+      currentArg += char
+      escapeNext = false
+      continue
+    }
+
+    if (char === '\\' && nextChar) {
+      escapeNext = true
+      continue
+    }
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote
+      continue
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote
+      continue
+    }
+
+    if (char === ' ' && !inSingleQuote && !inDoubleQuote) {
+      if (currentArg.length > 0) {
+        args.push(currentArg)
+        currentArg = ''
+      }
+      continue
+    }
+
+    currentArg += char
+  }
+
+  // Push the last arg
+  if (currentArg.length > 0) {
+    args.push(currentArg)
+  }
+
+  if (args.length === 0) {
+    return ['', []]
+  }
+
+  const [cmd, ...rest] = args
+  return [cmd, rest]
+}
 import { streamCommandServerFn } from '@/services/shell/command-stream.server'
 import { createPtySessionServerFn } from '@/services/shell/pty.server'
 import { queryClient } from '@/lib/query-client'
@@ -105,10 +170,8 @@ export const commandExecutor = {
   ): Promise<CommandExecutionResult> {
     const { command, cwd, appId, appType, tabName, terminalStore } = options
 
-    // Parse command into parts
-    const parts = command.split(' ')
-    const cmd = parts[0]
-    const args = parts.slice(1)
+    // Parse command into parts (respects quotes)
+    const [cmd, args] = parseCommand(command)
 
     // Create terminal tab if store provided
     let tabId: string | undefined
@@ -219,10 +282,8 @@ export const commandExecutor = {
   ): Promise<CommandExecutionResult> {
     const { command, cwd, appId, appType, tabName, terminalStore } = options
 
-    // Parse command into parts
-    const parts = command.split(' ')
-    const cmd = parts[0]
-    const args = parts.slice(1)
+    // Parse command into parts (respects quotes)
+    const [cmd, args] = parseCommand(command)
 
     // Create terminal tab if store provided
     let tabId: string | undefined
@@ -409,18 +470,12 @@ export const commandExecutor = {
       }
     }
 
-    // Parse command - for interactive, we may run a specific command or just open a shell
-    const parts = command ? command.split(' ') : []
-    const cmd = parts[0] || undefined
-    const args = parts.slice(1)
-
     try {
-      // Create PTY session
+      // Create PTY session with shellCommand - lets the shell handle all parsing
       const result = await createPtySessionServerFn({
         data: {
           cwd,
-          command: cmd,
-          args: args.length > 0 ? args : undefined,
+          shellCommand: command, // Pass full command to shell for proper parsing
         },
       })
 

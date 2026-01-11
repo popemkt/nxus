@@ -9,7 +9,7 @@ interface UseAppRegistryOptions {
   filterType?: AppType
   filterStatus?: AppStatus
   filterCategory?: string
-  filterTags?: Array<string>
+  filterTags?: Array<{ id: number; name: string }>
 }
 
 interface UseAppRegistryReturn {
@@ -95,7 +95,7 @@ export function useAppRegistry(
           const nameMatch = app.name.toLowerCase().includes(lowerQuery)
           const descMatch = app.description.toLowerCase().includes(lowerQuery)
           const tagMatch = app.metadata.tags.some((tag) =>
-            tag.toLowerCase().includes(lowerQuery),
+            tag.name.toLowerCase().includes(lowerQuery),
           )
           const categoryMatch = app.metadata.category
             .toLowerCase()
@@ -120,8 +120,9 @@ export function useAppRegistry(
     }
 
     if (options.filterTags && options.filterTags.length > 0) {
+      const filterTagIds = new Set(options.filterTags.map((t) => t.id))
       filtered = filtered.filter((app) =>
-        options.filterTags!.some((tag) => app.metadata.tags.includes(tag)),
+        app.metadata.tags.some((tag) => filterTagIds.has(tag.id)),
       )
     }
 

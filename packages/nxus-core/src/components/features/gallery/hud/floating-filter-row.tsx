@@ -34,14 +34,12 @@ export function FloatingFilterRow({
       if (!tag) return null
       return {
         id: idStr, // Keep string ID for UI state operations
-        slug: tag.slug,
         name: tag.name,
         includeChildren: includeSubTags.get(idStr) ?? true,
       }
     })
     .filter(Boolean) as Array<{
     id: string
-    slug: string
     name: string
     includeChildren: boolean
   }>

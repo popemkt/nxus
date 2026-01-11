@@ -122,8 +122,9 @@ function ItemCard({ app, compact }: { app: App; compact: boolean }) {
 
         <Card
           className={cn(
-            'flex flex-col overflow-hidden transition-all hover:ring-2 hover:ring-primary/20',
+            'flex flex-col h-full overflow-hidden transition-all hover:ring-2 hover:ring-primary/20',
             compact && 'text-sm',
+            'pt-0',
           )}
         >
           {app.thumbnail ? (

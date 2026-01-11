@@ -48,8 +48,8 @@ interface TagTreeItemProps {
   mode: 'editor' | 'filter'
   onSelect?: (tagId: number) => void
   searchQuery?: string
-  /** Map of tag slug to integer configurable tag ID */
-  configurableTagIds?: Map<string, number>
+  /** Set of configurable tag IDs */
+  configurableTagIds?: Set<number>
   onViewSchema?: (tagId: number, tagName: string) => void
 }
 
@@ -64,8 +64,7 @@ function TagTreeItem({
 }: TagTreeItemProps) {
   const { tag, children } = node
   const hasChildren = children.length > 0
-  const configurableId = configurableTagIds?.get(tag.slug)
-  const isConfigurable = configurableId !== undefined
+  const isConfigurable = configurableTagIds?.has(tag.id) ?? false
 
   const expandedIds = useTagUIStore((s) => s.expandedIds)
   const toggleExpanded = useTagUIStore((s) => s.toggleExpanded)
@@ -157,12 +156,12 @@ function TagTreeItem({
         <span className="text-sm truncate flex-1">{tag.name}</span>
 
         {/* Configurable indicator */}
-        {isConfigurable && configurableId && (
+        {isConfigurable && (
           <button
             className="p-0.5 rounded opacity-60 hover:opacity-100 hover:bg-accent transition-opacity"
             onClick={(e) => {
               e.stopPropagation()
-              onViewSchema?.(configurableId, tag.name)
+              onViewSchema?.(tag.id, tag.name)
             }}
             title="View schema"
           >
@@ -235,24 +234,16 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
     queryFn: () => getAllConfigurableTagsServerFn(),
   })
 
-  // Build a map from tag slug to configurable tag integer ID
-  // We need to join with tags store to get the slug for each configurable tag
+  // Build a set of configurable tag IDs for O(1) lookup
   const configurableTagIds = React.useMemo(() => {
     const result = configurableTagsResult as
       | { success: boolean; data?: Array<{ tagId: number }> }
       | undefined
-    if (!result?.success || !result.data) return new Map<string, number>()
+    if (!result?.success || !result.data) return new Set<number>()
 
-    // For each configurable tagId, find the tag's slug
-    const map = new Map<string, number>()
-    for (const { tagId } of result.data) {
-      const tag = tags.get(tagId)
-      if (tag) {
-        map.set(tag.slug, tagId)
-      }
-    }
-    return map
-  }, [configurableTagsResult, tags])
+    // Create a set of configurable tag IDs
+    return new Set(result.data.map(({ tagId }) => tagId))
+  }, [configurableTagsResult])
 
   useEffect(() => {
     initialize()
