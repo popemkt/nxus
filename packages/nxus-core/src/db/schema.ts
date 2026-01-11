@@ -137,3 +137,46 @@ export const commands = sqliteTable('commands', {
 
 export type Command = typeof commands.$inferSelect
 export type NewCommand = typeof commands.$inferInsert
+
+// ============================================================================
+// Tag Configurations - Schema definitions for configurable tags
+// ============================================================================
+
+/**
+ * Tag configs - schema definitions for tags that require configuration
+ * When an app has a "configurable" tag (e.g., ai-provider), it needs to
+ * provide values matching this schema.
+ */
+export const tagConfigs = sqliteTable('tag_configs', {
+  tagId: text('tag_id').primaryKey(), // e.g., "ai-provider"
+  schema: text('schema').notNull(), // JSON: { fields: [...] }
+  description: text('description'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+})
+
+export type TagConfig = typeof tagConfigs.$inferSelect
+export type NewTagConfig = typeof tagConfigs.$inferInsert
+
+/**
+ * App tag values - per-app configuration values for configurable tags
+ * Stores the actual values an app provides for a configurable tag.
+ */
+export const appTagValues = sqliteTable('app_tag_values', {
+  appId: text('app_id').notNull(),
+  tagId: text('tag_id').notNull(),
+  values: text('values').notNull(), // JSON values matching the tag's schema
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+})
+
+export type AppTagValue = typeof appTagValues.$inferSelect
+export type NewAppTagValue = typeof appTagValues.$inferInsert

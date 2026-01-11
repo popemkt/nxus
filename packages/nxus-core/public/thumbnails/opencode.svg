@@ -1,0 +1,80 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/> <!-- Cyan -->
+      <stop offset="50%" stop-color="#8b5cf6"/> <!-- Violet -->
+      <stop offset="100%" stop-color="#ec4899"/> <!-- Pink -->
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bgGradient)"/>
+  
+  <!-- Subtle Grid -->
+  <path d="M0 0 L800 0 M0 45 L800 45 M0 90 L800 90 M0 135 L800 135 M0 180 L800 180 M0 225 L800 225 M0 270 L800 270 M0 315 L800 315 M0 360 L800 360 M0 405 L800 405 M0 450 L800 450" stroke="#334155" stroke-width="1" opacity="0.1"/>
+  <path d="M0 0 L0 450 M80 0 L80 450 M160 0 L160 450 M240 0 L240 450 M320 0 L320 450 M400 0 L400 450 M480 0 L480 450 M560 0 L560 450 M640 0 L640 450 M720 0 L720 450 M800 0 L800 450" stroke="#334155" stroke-width="1" opacity="0.1"/>
+
+  <!-- Terminal Window Group -->
+  <g transform="translate(150, 75)">
+    <!-- Shadow -->
+    <rect x="10" y="10" width="500" height="300" rx="16" fill="#000000" opacity="0.3"/>
+    
+    <!-- Window Body -->
+    <rect x="0" y="0" width="500" height="300" rx="16" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    
+    <!-- Title Bar -->
+    <rect x="0" y="0" width="500" height="48" rx="16" fill="#0f172a" clip-path="url(#topClip)"/>
+    <path d="M0 16 A16 16 0 0 1 16 0 L484 0 A16 16 0 0 1 500 16 L500 48 L0 48 Z" fill="#0f172a"/>
+    <line x1="0" y1="48" x2="500" y2="48" stroke="#334155" stroke-width="2"/>
+
+    <!-- Window Controls -->
+    <circle cx="30" cy="24" r="6" fill="#ef4444"/>
+    <circle cx="54" cy="24" r="6" fill="#f59e0b"/>
+    <circle cx="78" cy="24" r="6" fill="#10b981"/>
+
+    <!-- TUI Content Area -->
+    <g transform="translate(40, 80)">
+      <!-- Line 1: Prompt + Command -->
+      <path d="M0 5 L10 15 L0 25" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="25" y="8" width="120" height="14" rx="4" fill="#22d3ee" opacity="0.8"/>
+      
+      <!-- Line 2: Output / AI Processing -->
+      <g transform="translate(0, 50)">
+         <!-- Abstract "Code" Blocks -->
+         <rect x="0" y="0" width="300" height="10" rx="5" fill="#475569"/>
+         <rect x="0" y="20" width="220" height="10" rx="5" fill="#475569"/>
+         <rect x="0" y="40" width="260" height="10" rx="5" fill="#475569"/>
+         
+         <!-- Highlighted "AI" Block -->
+         <rect x="0" y="70" width="180" height="10" rx="5" fill="url(#aiGradient)" filter="url(#glow)"/>
+         
+         <!-- Cursor -->
+         <rect x="190" y="68" width="12" height="14" fill="#ec4899">
+           <animate attributeName="opacity" values="1;0;1" dur="0.8s" repeatCount="indefinite"/>
+         </rect>
+      </g>
+      
+      <!-- Floating Abstract Shape (Right side) representing AI Brain/Core -->
+      <g transform="translate(350, 80)">
+         <path d="M30 0 L56 15 L56 45 L30 60 L4 45 L4 15 Z" fill="none" stroke="url(#aiGradient)" stroke-width="3" opacity="0.8">
+            <animateTransform attributeName="transform" type="rotate" from="0 30 30" to="360 30 30" dur="20s" repeatCount="indefinite"/>
+         </path>
+         <circle cx="30" cy="30" r="10" fill="#22d3ee" filter="url(#glow)"/>
+         <!-- Connecting lines to code -->
+         <path d="M-50 0 L10 20" stroke="url(#aiGradient)" stroke-width="1" opacity="0.5" stroke-dasharray="4 4"/>
+         <path d="M-60 40 L10 35" stroke="url(#aiGradient)" stroke-width="1" opacity="0.5" stroke-dasharray="4 4"/>
+      </g>
+    </g>
+  </g>
+</svg>

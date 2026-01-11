@@ -7,6 +7,8 @@ import {
   CheckIcon,
   TrashIcon,
   ArrowLeftIcon,
+  PencilSimple,
+  Robot,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +20,8 @@ import {
   type InboxItem,
 } from '@/services/inbox/inbox.server'
 import { useInboxModalStore } from '@/stores/inbox-modal.store'
+import { InboxEditModal } from '@/components/features/inbox/inbox-edit-modal'
+import { ProcessInboxModal } from '@/components/features/inbox/process-inbox-modal'
 
 export const Route = createFileRoute('/inbox')({
   component: InboxPage,
@@ -31,6 +35,18 @@ function InboxPage() {
   const items = Route.useLoaderData()
   const [localItems, setLocalItems] = useState<InboxItem[]>(items)
   const { isOpen } = useInboxModalStore()
+
+  // Modal state
+  const [editingItem, setEditingItem] = useState<InboxItem | null>(null)
+  const [processingItem, setProcessingItem] = useState<InboxItem | null>(null)
+
+  // Refresh items helper
+  const refreshItems = async () => {
+    const result = await getInboxItemsServerFn()
+    if (result.success) {
+      setLocalItems(result.data)
+    }
+  }
 
   // Refresh items when modal closes (in case new item was added)
   useEffect(() => {
@@ -48,18 +64,8 @@ function InboxPage() {
   const doneItems = localItems.filter((i) => i.status === 'done')
 
   const handleCopyAndProcess = async (item: InboxItem) => {
-    const text = `Add this item to Nxus registry:\n\nTitle: ${item.title}\n${item.notes ? `Notes: ${item.notes}` : ''}`
-    await navigator.clipboard.writeText(text)
-
-    const result = await updateInboxItemServerFn({
-      data: { id: item.id, status: 'processing' },
-    })
-
-    if (result.success && result.data) {
-      setLocalItems(
-        localItems.map((i) => (i.id === item.id ? result.data! : i)),
-      )
-    }
+    // Open the process modal instead of clipboard
+    setProcessingItem(item)
   }
 
   const handleMarkDone = async (item: InboxItem) => {
@@ -128,6 +134,7 @@ function InboxPage() {
                 key={item.id}
                 item={item}
                 onCopyAndProcess={() => handleCopyAndProcess(item)}
+                onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item.id)}
               />
             ))}
@@ -148,6 +155,7 @@ function InboxPage() {
                 key={item.id}
                 item={item}
                 onMarkDone={() => handleMarkDone(item)}
+                onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item.id)}
               />
             ))}
@@ -167,11 +175,39 @@ function InboxPage() {
               <InboxItemCard
                 key={item.id}
                 item={item}
+                onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item.id)}
               />
             ))}
           </div>
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <InboxEditModal
+          item={editingItem}
+          open={!!editingItem}
+          onOpenChange={(open) => !open && setEditingItem(null)}
+          onSave={(updated) => {
+            setLocalItems(
+              localItems.map((i) => (i.id === updated.id ? updated : i)),
+            )
+          }}
+          onDelete={() => {
+            setLocalItems(localItems.filter((i) => i.id !== editingItem.id))
+          }}
+        />
+      )}
+
+      {/* Process Modal */}
+      {processingItem && (
+        <ProcessInboxModal
+          item={processingItem}
+          open={!!processingItem}
+          onOpenChange={(open) => !open && setProcessingItem(null)}
+          onStart={() => refreshItems()}
+        />
       )}
     </div>
   )
@@ -181,11 +217,13 @@ function InboxItemCard({
   item,
   onCopyAndProcess,
   onMarkDone,
+  onEdit,
   onDelete,
 }: {
   item: InboxItem
   onCopyAndProcess?: () => void
   onMarkDone?: () => void
+  onEdit?: () => void
   onDelete: () => void
 }) {
   const statusVariants = {
@@ -220,9 +258,9 @@ function InboxItemCard({
                 variant="outline"
                 size="sm"
                 onClick={onCopyAndProcess}
-                title="Copy to clipboard & mark as processing"
+                title="Process with AI"
               >
-                <ClipboardIcon className="h-4 w-4 mr-1" />
+                <Robot className="h-4 w-4 mr-1" />
                 Process
               </Button>
             )}
@@ -235,6 +273,16 @@ function InboxItemCard({
               >
                 <CheckIcon className="h-4 w-4 mr-1" />
                 Done
+              </Button>
+            )}
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onEdit}
+                title="Edit item"
+              >
+                <PencilSimple className="h-4 w-4" />
               </Button>
             )}
             <Button

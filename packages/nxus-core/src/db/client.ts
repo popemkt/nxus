@@ -120,6 +120,70 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
+  // Tag configuration tables
+  masterSqliteDb.run(`
+    CREATE TABLE IF NOT EXISTS tag_configs (
+      tag_id TEXT PRIMARY KEY,
+      schema TEXT NOT NULL,
+      description TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `)
+
+  masterSqliteDb.run(`
+    CREATE TABLE IF NOT EXISTS app_tag_values (
+      app_id TEXT NOT NULL,
+      tag_id TEXT NOT NULL,
+      values TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      PRIMARY KEY (app_id, tag_id)
+    )
+  `)
+
+  // Seed ai-provider tag config if it doesn't exist
+  const aiProviderExists = masterSqliteDb.exec(
+    `SELECT 1 FROM tag_configs WHERE tag_id = 'ai-provider' LIMIT 1`,
+  )
+  if (aiProviderExists.length === 0) {
+    const now = Date.now()
+    const schema = JSON.stringify({
+      fields: [
+        {
+          key: 'cliCommand',
+          label: 'CLI Command',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., claude, gemini, opencode',
+        },
+        {
+          key: 'promptFormat',
+          label: 'Prompt Format',
+          type: 'select',
+          options: ['direct', 'file', 'stdin'],
+          default: 'direct',
+        },
+        {
+          key: 'supportsInteractive',
+          label: 'Supports Interactive Mode',
+          type: 'boolean',
+          default: true,
+        },
+      ],
+    })
+    masterSqliteDb.run(
+      `INSERT INTO tag_configs (tag_id, schema, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+      [
+        'ai-provider',
+        schema,
+        'AI coding assistants that can process inbox items',
+        now,
+        now,
+      ],
+    )
+  }
+
   // Save the database after creating tables
   saveMasterDatabase()
 
