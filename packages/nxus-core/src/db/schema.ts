@@ -169,7 +169,7 @@ export type NewTagConfig = typeof tagConfigs.$inferInsert
 export const appTagValues = sqliteTable('app_tag_values', {
   appId: text('app_id').notNull(),
   tagId: text('tag_id').notNull(),
-  values: text('values').notNull(), // JSON values matching the tag's schema
+  configValues: text('config_values').notNull(), // JSON values matching the tag's schema
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
     .notNull(),

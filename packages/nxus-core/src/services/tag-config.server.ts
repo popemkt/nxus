@@ -196,7 +196,7 @@ export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
       data: {
         appId: values.appId,
         tagId: values.tagId,
-        values: JSON.parse(values.values) as Record<string, unknown>,
+        values: JSON.parse(values.configValues) as Record<string, unknown>,
       },
     }
   })
@@ -219,7 +219,7 @@ export const getAllAppTagValuesServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: allValues.map((v) => ({
         tagId: v.tagId,
-        values: JSON.parse(v.values) as Record<string, unknown>,
+        values: JSON.parse(v.configValues) as Record<string, unknown>,
       })),
     }
   })
@@ -233,7 +233,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     z.object({
       appId: z.string(),
       tagId: z.string(),
-      values: z.record(z.unknown()),
+      configValues: z.record(z.unknown()),
     }),
   )
   .handler(async (ctx) => {
@@ -353,7 +353,7 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: results.map((r) => ({
         appId: r.appId,
-        values: JSON.parse(r.values) as Record<string, unknown>,
+        values: JSON.parse(r.configValues) as Record<string, unknown>,
       })),
     }
   })

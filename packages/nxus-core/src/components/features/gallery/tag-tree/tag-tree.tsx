@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { useEffect, useState } from 'react'
 import {
   CaretRight,
@@ -7,6 +8,7 @@ import {
   X,
   MagnifyingGlass,
   TreeStructure,
+  Gear,
 } from '@phosphor-icons/react'
 import {
   useTagDataStore,
@@ -20,6 +22,9 @@ import {
   SortableTagItem,
   useTagDndDropIndicator,
 } from './use-tag-dnd'
+import { useQuery } from '@tanstack/react-query'
+import { getAllConfigurableTagsServerFn } from '@/services/tag-config.server'
+import { TagSchemaModal } from '@/components/shared/tag-schema-modal'
 
 // Wrapper that connects SortableTagItem to the drop indicator context
 function SortableTagItemWithIndicator({
@@ -43,6 +48,8 @@ interface TagTreeItemProps {
   mode: 'editor' | 'filter'
   onSelect?: (tagId: string) => void
   searchQuery?: string
+  configurableTags?: Set<string>
+  onViewSchema?: (tagId: string) => void
 }
 
 function TagTreeItem({
@@ -51,9 +58,12 @@ function TagTreeItem({
   mode,
   onSelect,
   searchQuery,
+  configurableTags,
+  onViewSchema,
 }: TagTreeItemProps) {
   const { tag, children } = node
   const hasChildren = children.length > 0
+  const isConfigurable = configurableTags?.has(tag.name) ?? false
 
   const expandedIds = useTagUIStore((s) => s.expandedIds)
   const toggleExpanded = useTagUIStore((s) => s.toggleExpanded)
@@ -141,7 +151,21 @@ function TagTreeItem({
         )}
 
         {/* Tag name */}
-        <span className="text-sm truncate">{tag.name}</span>
+        <span className="text-sm truncate flex-1">{tag.name}</span>
+
+        {/* Configurable indicator */}
+        {isConfigurable && (
+          <button
+            className="p-0.5 rounded opacity-60 hover:opacity-100 hover:bg-accent transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation()
+              onViewSchema?.(tag.name)
+            }}
+            title="View schema"
+          >
+            <Gear size={12} />
+          </button>
+        )}
       </div>
 
       {/* Children - with connector line */}
@@ -155,6 +179,8 @@ function TagTreeItem({
               mode={mode}
               onSelect={onSelect}
               searchQuery={searchQuery}
+              configurableTags={configurableTags}
+              onViewSchema={onViewSchema}
             />
           ))}
         </div>
@@ -195,6 +221,21 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
   const [showAddInput, setShowAddInput] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [schemaModalTag, setSchemaModalTag] = useState<string | null>(null)
+
+  // Fetch configurable tags
+  const { data: configurableTagsResult } = useQuery({
+    queryKey: ['configurable-tags'],
+    queryFn: () => getAllConfigurableTagsServerFn(),
+  })
+
+  const configurableTags = React.useMemo(() => {
+    const result = configurableTagsResult as
+      | { success: boolean; data?: Array<{ tagId: string }> }
+      | undefined
+    if (!result?.success || !result.data) return new Set<string>()
+    return new Set(result.data.map((t) => t.tagId))
+  }, [configurableTagsResult])
 
   useEffect(() => {
     initialize()
@@ -267,6 +308,8 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
             mode={mode}
             onSelect={onSelect}
             searchQuery={searchQuery}
+            configurableTags={configurableTags}
+            onViewSchema={setSchemaModalTag}
           />
         ))
       )}
@@ -372,6 +415,15 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
             )}
           </div>
         </>
+      )}
+
+      {/* Schema Modal */}
+      {schemaModalTag && (
+        <TagSchemaModal
+          tagId={schemaModalTag}
+          open={!!schemaModalTag}
+          onOpenChange={(open) => !open && setSchemaModalTag(null)}
+        />
       )}
     </div>
   )

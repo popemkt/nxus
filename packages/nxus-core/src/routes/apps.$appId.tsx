@@ -39,6 +39,7 @@ import { InstanceActionsPanel } from '@/components/features/app-detail/actions/i
 import { AppActionsPanel } from '@/components/features/app-detail/actions/app-actions-panel'
 import { DocViewer } from '@/components/features/app-detail/doc-viewer'
 import { InstallModal } from '@/components/features/app-detail/modals/install-modal'
+import { AppDetailTags } from '@/components/features/app-detail/app-detail-tags'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
@@ -745,11 +746,11 @@ function AppDetailPage() {
               </Badge>
             )}
 
-          {app.metadata.tags.map((tag) => (
-            <Badge key={tag} variant="outline">
-              {tag}
-            </Badge>
-          ))}
+          <AppDetailTags
+            appId={appId}
+            appName={app.name}
+            tags={app.metadata.tags}
+          />
         </div>
       </div>
 

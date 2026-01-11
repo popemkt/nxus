@@ -131,11 +131,12 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
+  console.log('Creating app_tag_values table')
   masterSqliteDb.run(`
     CREATE TABLE IF NOT EXISTS app_tag_values (
       app_id TEXT NOT NULL,
       tag_id TEXT NOT NULL,
-      values TEXT NOT NULL,
+      config_values TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       PRIMARY KEY (app_id, tag_id)
