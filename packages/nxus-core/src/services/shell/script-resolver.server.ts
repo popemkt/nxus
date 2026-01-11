@@ -2,14 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import path from 'node:path'
 import { CwdSchema } from '@/types/app'
-
-/**
- * Get the root path for app data
- * Uses process.cwd() which is reliable in server context
- */
-function getAppDataRoot(): string {
-  return path.join(process.cwd(), 'packages', 'nxus-core', 'src', 'data', 'apps')
-}
+import { PATHS } from '@/paths'
 
 const CommonSchema = z.object({
   appId: z.string(),
@@ -60,7 +53,6 @@ export const resolveScriptServerFn = createServerFn({ method: 'GET' })
   .handler(async (ctx): Promise<ResolveScriptResult> => {
     const { appId, scriptPath, scriptSource, instancePath, cwdOverride } =
       ctx.data
-    const dataRoot = getAppDataRoot()
 
     // Resolve script path based on source
     let scriptFullPath: string
@@ -68,12 +60,12 @@ export const resolveScriptServerFn = createServerFn({ method: 'GET' })
 
     switch (scriptSource) {
       case 'nxus-app':
-        scriptFullPath = path.join(dataRoot, appId, scriptPath)
+        scriptFullPath = PATHS.app(appId, scriptPath)
         defaultCwd = path.dirname(scriptFullPath)
         break
 
       case 'shared':
-        scriptFullPath = path.join(dataRoot, '_scripts', scriptPath)
+        scriptFullPath = PATHS.sharedScripts(scriptPath)
         defaultCwd = path.dirname(scriptFullPath)
         break
 

@@ -29,6 +29,7 @@ import { useTerminalStore } from '@/stores/terminal.store'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
+import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import type { App } from '@/types/app'
 
 export interface ProcessInboxModalProps {
@@ -82,34 +83,54 @@ export function ProcessInboxModal({
         appsResult.apps.map((app) => [app.id, app]),
       )
 
-      const providers: AIProvider[] = tagValues.data
-        .map((tv: { appId: string; values: Record<string, unknown> }) => {
-          const app = appsMap.get(tv.appId)
-          if (!app) return null
+      // Check health for each provider in parallel
+      const providerChecks = await Promise.all(
+        tagValues.data.map(
+          async (tv: { appId: string; values: Record<string, unknown> }) => {
+            const app = appsMap.get(tv.appId)
+            if (!app) return null
 
-          const values = tv.values as { cliCommand?: string }
-          if (!values.cliCommand) return null
+            const values = tv.values as { cliCommand?: string }
+            if (!values.cliCommand) return null
 
-          // Check if tool has a checkCommand and determine installation dynamically
-          const checkCommand =
-            app.type === 'tool' && 'checkCommand' in app
-              ? (app as any).checkCommand
-              : undefined
+            // Get checkCommand if tool has one
+            const checkCommand =
+              app.type === 'tool' && 'checkCommand' in app
+                ? (app as any).checkCommand
+                : undefined
 
-          // Use the cliCommand as a proxy for installation check if no checkCommand
-          // Tools with cliCommand configured are likely installed
-          const isInstalled = app.status === 'installed' || !!checkCommand
+            // Dynamically check installation status using tool health
+            let isInstalled = false
+            if (checkCommand) {
+              try {
+                const healthResult = await checkToolHealth({
+                  data: { checkCommand },
+                })
+                isInstalled = healthResult.isInstalled
+              } catch (error) {
+                console.warn(`Health check failed for ${app.name}:`, error)
+                // Fall back to app.status if health check fails
+                isInstalled = app.status === 'installed'
+              }
+            } else {
+              // No health check available, use static status
+              isInstalled = app.status === 'installed'
+            }
 
-          return {
-            appId: app.id,
-            appName: app.name,
-            cliCommand: values.cliCommand,
-            isInstalled,
-            checkCommand, // Store for dynamic health check
-          }
-        })
-        .filter((p): p is AIProvider => p !== null)
+            return {
+              appId: app.id,
+              appName: app.name,
+              cliCommand: values.cliCommand,
+              isInstalled,
+              checkCommand,
+            }
+          },
+        ),
+      )
 
+      const providers = providerChecks.filter(
+        (p): p is AIProvider => p !== null,
+      )
       return { providers }
     },
     enabled: open,
