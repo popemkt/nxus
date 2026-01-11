@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import type { Tag, CreateTagInput } from '@/types/tag'
-import { generateSlug } from '@/types/tag'
 import {
   createTagServerFn,
   updateTagServerFn,
@@ -11,7 +10,7 @@ import {
 
 /**
  * Tag Data Store - In-memory cache synced with SQLite
- * Uses integer IDs for tags with slug for AI-friendly references
+ * Uses integer IDs for tags
  */
 interface TagDataState {
   // === DATA (in-memory cache, source is SQLite) ===
@@ -32,7 +31,6 @@ interface TagDataState {
 
   // === SELECTORS ===
   getTag: (id: number) => Tag | undefined
-  getTagBySlug: (slug: string) => Tag | undefined
   getChildren: (parentId: number | null) => Tag[]
   getAncestors: (id: number) => Tag[]
   getDescendants: (id: number) => Tag[]
@@ -241,10 +239,6 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
 
   // === SELECTORS ===
   getTag: (id: number) => get().tags.get(id),
-
-  getTagBySlug: (slug: string) => {
-    return Array.from(get().tags.values()).find((t) => t.slug === slug)
-  },
 
   getChildren: (parentId: number | null) => {
     return Array.from(get().tags.values())

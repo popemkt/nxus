@@ -1,7 +1,11 @@
-import { initDatabase, getDatabase } from '../src/db/client'
+import { initDatabase, getDatabase, saveDatabase } from '../src/db/client'
 import { apps, tags, appTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
 
+/**
+ * Sync app_tags junction table from app metadata
+ * This script handles the new format where metadata.tags is {id, name}[]
+ */
 async function sync() {
   console.log('Starting tag sync...')
   await initDatabase()
@@ -9,19 +13,21 @@ async function sync() {
 
   // 1. Get all current tags
   const currentTags = await db.select().from(tags).all()
-  const slugToId = new Map(currentTags.map((t) => [t.slug, t.id]))
+  const nameToId = new Map(currentTags.map((t) => [t.name.toLowerCase(), t.id]))
   console.log(`Found ${currentTags.length} tags in database`)
 
   // 2. Restore hierarchy (AI Provider child of AI)
-  const aiTag = currentTags.find((t) => t.slug === 'ai')
-  const aiProviderTag = currentTags.find((t) => t.slug === 'ai-provider')
+  const aiTag = currentTags.find((t) => t.name.toLowerCase() === 'ai')
+  const aiProviderTag = currentTags.find((t) =>
+    t.name.toLowerCase().includes('ai provider'),
+  )
   if (aiTag && aiProviderTag) {
     await db
       .update(tags)
       .set({ parentId: aiTag.id })
       .where(eq(tags.id, aiProviderTag.id))
     console.log(
-      `Restored hierarchy: ai-provider (id: ${aiProviderTag.id}) -> ai (id: ${aiTag.id})`,
+      `Restored hierarchy: AI Provider (id: ${aiProviderTag.id}) -> AI (id: ${aiTag.id})`,
     )
   }
 
@@ -35,36 +41,47 @@ async function sync() {
   for (const app of allApps) {
     if (!app.metadata) continue
     const metadata = JSON.parse(app.metadata)
-    const appTagSlugs = metadata.tags || []
+    const appTagRefs = metadata.tags || []
 
-    for (const slug of appTagSlugs) {
-      if (!slug) continue
+    // Handle both old format (string[]) and new format ({id, name}[])
+    for (const tagRef of appTagRefs) {
+      let tagId: number | undefined
+      let tagName: string
 
-      let tagId = slugToId.get(slug)
+      if (typeof tagRef === 'string') {
+        // Old format: slug string
+        tagName = tagRef
+          .split('-')
+          .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(' ')
+        tagId =
+          nameToId.get(tagRef.toLowerCase()) ||
+          nameToId.get(tagName.toLowerCase())
+      } else if (tagRef && typeof tagRef === 'object') {
+        // New format: {id, name}
+        tagId = tagRef.id
+        tagName = tagRef.name
+      } else {
+        continue
+      }
 
       if (!tagId) {
         // Create missing tag
-        const name = slug
-          .split('-')
-          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-          .join(' ')
-
         try {
           const res = await db
             .insert(tags)
             .values({
-              slug,
-              name,
+              name: tagName,
               order: 0,
             })
             .returning({ id: tags.id })
 
           tagId = res[0].id
-          slugToId.set(slug, tagId)
+          nameToId.set(tagName.toLowerCase(), tagId)
           createdCount++
-          console.log(`Created missing tag: ${slug} (id: ${tagId})`)
+          console.log(`Created missing tag: ${tagName} (id: ${tagId})`)
         } catch (err) {
-          console.error(`Failed to create tag ${slug}:`, err)
+          console.error(`Failed to create tag ${tagName}:`, err)
           continue
         }
       }

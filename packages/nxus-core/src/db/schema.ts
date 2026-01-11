@@ -23,11 +23,10 @@ export type NewInboxItem = typeof inboxItems.$inferInsert
 
 /**
  * Tags - hierarchical tag tree for organizing items
- * Uses integer ID for efficient indexing, slug for AI-friendly references
+ * Uses integer ID for efficient indexing
  */
 export const tags = sqliteTable('tags', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   parentId: integer('parent_id'),
   order: integer('order').notNull().default(0),

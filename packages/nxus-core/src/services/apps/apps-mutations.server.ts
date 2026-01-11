@@ -8,19 +8,25 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, getDatabase, saveDatabase } from '@/db/client'
-import { apps, appTags, tags } from '@/db/schema'
-import { eq, and, inArray } from 'drizzle-orm'
-import type { AppMetadata } from '@/types/app'
+import { apps, appTags } from '@/db/schema'
+import { eq } from 'drizzle-orm'
+import type { AppMetadata, TagRef } from '@/types/app'
 
 /**
  * Update an app's tags
  * Updates BOTH the metadata.tags array in the apps table AND the app_tags junction table
+ * Now accepts tag objects with id and name instead of slug strings
  */
 export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       appId: z.string(),
-      tags: z.array(z.string()),
+      tags: z.array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+        }),
+      ),
     }),
   )
   .handler(async (ctx) => {
@@ -45,18 +51,9 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
       return { success: false as const, error: 'App not found' }
     }
 
-    // 2. Resolve tag slugs to IDs
-    const tagSlugs = ctx.data.tags
-    let tagIds: number[] = []
-
-    if (tagSlugs.length > 0) {
-      const resolvedTags = await db
-        .select({ id: tags.id })
-        .from(tags)
-        .where(inArray(tags.slug, tagSlugs))
-        .all()
-      tagIds = resolvedTags.map((t) => t.id)
-    }
+    // 2. Get tag IDs directly from input
+    const tagRefs = ctx.data.tags
+    const tagIds = tagRefs.map((t) => t.id)
 
     // 3. Update junction table
     // Delete existing links
@@ -75,14 +72,14 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
       }
     }
 
-    // 4. Update JSON metadata in apps table (for backward compatibility)
+    // 4. Update JSON metadata in apps table
     const currentMetadata: AppMetadata = appRecord.metadata
       ? JSON.parse(appRecord.metadata)
       : { tags: [], category: 'uncategorized', createdAt: '', updatedAt: '' }
 
     const updatedMetadata: AppMetadata = {
       ...currentMetadata,
-      tags: tagSlugs,
+      tags: tagRefs, // Store as {id, name}[] objects
       updatedAt: new Date().toISOString(),
     }
 
@@ -97,7 +94,7 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
     saveDatabase()
     console.log('[updateAppTagsServerFn] Success:', ctx.data.appId)
 
-    return { success: true as const, data: { tags: tagSlugs } }
+    return { success: true as const, data: { tags: tagRefs } }
   })
 
 /**

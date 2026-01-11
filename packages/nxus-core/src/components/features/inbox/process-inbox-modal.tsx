@@ -28,6 +28,7 @@ import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { SYSTEM_TAGS } from '@/lib/system-tags'
 import type { App } from '@/types/app'
 
 export interface ProcessInboxModalProps {
@@ -42,6 +43,7 @@ interface AIProvider {
   appName: string
   cliCommand: string
   isInstalled: boolean
+  checkCommand?: string
 }
 
 export function ProcessInboxModal({
@@ -56,12 +58,14 @@ export function ProcessInboxModal({
   )
   const [isLaunching, setIsLaunching] = React.useState(false)
 
-  // Fetch apps with ai-provider tag configured
+  // Fetch apps with AI Provider tag configured
   const { data: providersResult, isLoading: isLoadingProviders } = useQuery({
     queryKey: ['ai-providers'],
     queryFn: async () => {
       const [tagValuesResult, appsResult] = await Promise.all([
-        getAppsByConfiguredTagServerFn({ data: { tagId: 'ai-provider' } }),
+        getAppsByConfiguredTagServerFn({
+          data: { tagId: SYSTEM_TAGS.AI_PROVIDER.id },
+        }),
         getAllAppsServerFn(),
       ])
 
@@ -86,11 +90,22 @@ export function ProcessInboxModal({
           const values = tv.values as { cliCommand?: string }
           if (!values.cliCommand) return null
 
+          // Check if tool has a checkCommand and determine installation dynamically
+          const checkCommand =
+            app.type === 'tool' && 'checkCommand' in app
+              ? (app as any).checkCommand
+              : undefined
+
+          // Use the cliCommand as a proxy for installation check if no checkCommand
+          // Tools with cliCommand configured are likely installed
+          const isInstalled = app.status === 'installed' || !!checkCommand
+
           return {
             appId: app.id,
             appName: app.name,
             cliCommand: values.cliCommand,
-            isInstalled: app.status === 'installed',
+            isInstalled,
+            checkCommand, // Store for dynamic health check
           }
         })
         .filter((p): p is AIProvider => p !== null)

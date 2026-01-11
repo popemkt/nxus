@@ -3,11 +3,9 @@ import { z } from 'zod'
 import { initDatabase, saveDatabase } from '@/db/client'
 import { tags } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { generateSlug } from '@/types/tag'
 
-// Input schemas - now using integer IDs
+// Input schemas - now using integer IDs (slug removed)
 const CreateTagInputSchema = z.object({
-  slug: z.string().optional(), // Auto-generated from name if not provided
   name: z.string().min(1),
   parentId: z.number().nullable().default(null),
   order: z.number().default(0),
@@ -17,7 +15,6 @@ const CreateTagInputSchema = z.object({
 
 const UpdateTagInputSchema = z.object({
   id: z.number(),
-  slug: z.string().optional(),
   name: z.string().min(1).optional(),
   parentId: z.number().nullable().optional(),
   order: z.number().optional(),
@@ -46,13 +43,9 @@ export const createTagServerFn = createServerFn({ method: 'POST' })
     const db = await initDatabase()
     const now = new Date()
 
-    // Generate slug from name if not provided
-    const slug = ctx.data.slug || generateSlug(ctx.data.name)
-
     const result = await db
       .insert(tags)
       .values({
-        slug,
         name: ctx.data.name,
         parentId: ctx.data.parentId,
         order: ctx.data.order,
@@ -67,7 +60,7 @@ export const createTagServerFn = createServerFn({ method: 'POST' })
     const newId = result[0]?.id
     console.log('[createTagServerFn] Success, new ID:', newId)
 
-    return { success: true, id: newId, slug }
+    return { success: true, id: newId }
   })
 
 /**
@@ -154,16 +147,16 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
 )
 
 /**
- * Get a tag by slug
+ * Get a tag by ID
  */
-export const getTagBySlugServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ slug: z.string() }))
+export const getTagByIdServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
     const db = await initDatabase()
     const tag = await db
       .select()
       .from(tags)
-      .where(eq(tags.slug, ctx.data.slug))
+      .where(eq(tags.id, ctx.data.id))
       .get()
 
     if (!tag) {

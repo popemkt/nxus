@@ -13,25 +13,20 @@ import {
   getAllAppTagValuesServerFn,
 } from '@/services/tag-config.server'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTagDataStore } from '@/stores/tag-data.store'
+import type { TagRef } from '@/types/app'
 
 interface AppDetailTagsProps {
   appId: string
   appName: string
-  tags: string[]
+  tags: TagRef[] // Now receives {id, name}[] directly
 }
 
-export function AppDetailTags({
-  appId,
-  appName,
-  tags: tagSlugs,
-}: AppDetailTagsProps) {
+export function AppDetailTags({ appId, appName, tags }: AppDetailTagsProps) {
   const queryClient = useQueryClient()
   const [configModalTag, setConfigModalTag] = React.useState<{
     id: number
     name: string
   } | null>(null)
-  const getTagBySlug = useTagDataStore((s) => s.getTagBySlug)
 
   // Fetch all configurable tags
   const { data: configurableTagsResult } = useQuery({
@@ -62,16 +57,11 @@ export function AppDetailTags({
     return new Set(result.data.map((v) => v.tagId))
   }, [appTagValuesResult])
 
-  if (tagSlugs.length === 0) return null
-
-  // Resolve slugs to Tag objects
-  const resolvedTags = tagSlugs
-    .map((slug) => getTagBySlug(slug))
-    .filter(Boolean) as Array<{ id: number; name: string; slug: string }>
+  if (!tags || tags.length === 0) return null
 
   return (
     <>
-      {resolvedTags.map((tag) => (
+      {tags.map((tag) => (
         <ConfigurableTag
           key={tag.id}
           tagId={tag.name} // Display the name

@@ -39,10 +39,19 @@ export const InstallConfigSchema = z.object({
 export type InstallConfig = z.infer<typeof InstallConfigSchema>
 
 /**
+ * Tag reference in app metadata
+ */
+export const TagRefSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+})
+export type TagRef = z.infer<typeof TagRefSchema>
+
+/**
  * App metadata for categorization and search
  */
 export const AppMetadataSchema = z.object({
-  tags: z.array(z.string()).default([]),
+  tags: z.array(TagRefSchema).default([]),
   category: z.string().default('uncategorized'),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

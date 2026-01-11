@@ -31,7 +31,7 @@ import {
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
-import type { App } from '@/types/app'
+import type { App, TagRef } from '@/types/app'
 
 export interface TagEditorModalProps {
   app: App
@@ -49,8 +49,8 @@ export function TagEditorModal({
   const queryClient = useQueryClient()
   const { getAllTags } = useTagDataStore()
 
-  // Local state
-  const [tagSlugs, setTagSlugs] = React.useState<string[]>([])
+  // Local state - now using TagRef[] instead of string[] slugs
+  const [selectedTags, setSelectedTags] = React.useState<TagRef[]>([])
   const [inputValue, setInputValue] = React.useState('')
   const [showSuggestions, setShowSuggestions] = React.useState(false)
   const [selectedIndex, setSelectedIndex] = React.useState(0)
@@ -75,9 +75,9 @@ export function TagEditorModal({
     enabled: open,
   })
 
-  // Save mutation
+  // Save mutation - now sends TagRef[]
   const saveMutation = useMutation({
-    mutationFn: (newTags: string[]) =>
+    mutationFn: (newTags: TagRef[]) =>
       updateAppTagsServerFn({ data: { appId: app.id, tags: newTags } }),
     onSuccess: (result) => {
       if (result.success) {
@@ -91,7 +91,7 @@ export function TagEditorModal({
   // Initialize tags from app
   React.useEffect(() => {
     if (open) {
-      setTagSlugs(app.metadata.tags ?? [])
+      setSelectedTags(app.metadata.tags ?? [])
       setInputValue('')
       setShowSuggestions(false)
     }
@@ -120,15 +120,10 @@ export function TagEditorModal({
     return new Set(result.data.map((v) => v.tagId))
   }, [appTagValuesResult])
 
-  // Get current tags as objects
-  const getTagBySlug = useTagDataStore((s) => s.getTagBySlug)
-  const currentTags = React.useMemo(() => {
-    return tagSlugs.map((slug) => getTagBySlug(slug)).filter(Boolean) as Array<{
-      id: number
-      name: string
-      slug: string
-    }>
-  }, [tagSlugs, getTagBySlug])
+  // Get IDs of currently selected tags for filtering
+  const selectedTagIds = React.useMemo(() => {
+    return new Set(selectedTags.map((t) => t.id))
+  }, [selectedTags])
 
   // Filter suggestions based on input
   const suggestions = React.useMemo(() => {
@@ -138,43 +133,41 @@ export function TagEditorModal({
     const matches = allExistingTags
       .filter(
         (tag) =>
-          (tag.name.toLowerCase().includes(query) ||
-            tag.slug.toLowerCase().includes(query)) &&
-          !tagSlugs.includes(tag.slug),
+          tag.name.toLowerCase().includes(query) && !selectedTagIds.has(tag.id),
       )
       .slice(0, 8)
+      .map((tag) => ({ id: tag.id, name: tag.name }))
 
-    // Add "create new" option if input doesn't match any existing tag name or slug
+    // Add "create new" option if input doesn't match any existing tag name
     const exactMatch = allExistingTags.some(
-      (t) => t.name.toLowerCase() === query || t.slug.toLowerCase() === query,
+      (t) => t.name.toLowerCase() === query,
     )
     if (
       !exactMatch &&
       inputValue.trim() &&
-      !tagSlugs.includes(inputValue.trim().toLowerCase())
+      !selectedTags.some((t) => t.name.toLowerCase() === query)
     ) {
       matches.push({
-        id: -1,
-        slug: `__create__:${inputValue.trim()}`,
+        id: -1, // Marker for "create new"
         name: inputValue.trim(),
-      } as any)
+      })
     }
 
     return matches
-  }, [inputValue, allExistingTags, tagSlugs])
+  }, [inputValue, allExistingTags, selectedTagIds, selectedTags])
 
-  const handleAddTag = (suggestion: any) => {
-    // Determine if it's an existing tag object or a "create" object
-    const isCreate = suggestion.slug?.startsWith('__create__:')
-    const slug = isCreate
-      ? suggestion.slug
-          .replace('__create__:', '')
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-      : suggestion.slug
-
-    if (slug && !tagSlugs.includes(slug)) {
-      setTagSlugs([...tagSlugs, slug])
+  const handleAddTag = (suggestion: TagRef) => {
+    if (suggestion.id === -1) {
+      // Creating a new tag - for now just add with temp ID
+      // The server will create the tag if it doesn't exist
+      // TODO: Consider creating tag on server first
+      const newTag = { id: Date.now(), name: suggestion.name }
+      setSelectedTags([...selectedTags, newTag])
+    } else {
+      // Existing tag
+      if (!selectedTagIds.has(suggestion.id)) {
+        setSelectedTags([...selectedTags, suggestion])
+      }
     }
     setInputValue('')
     setShowSuggestions(false)
@@ -182,8 +175,8 @@ export function TagEditorModal({
     inputRef.current?.focus()
   }
 
-  const handleRemoveTag = (slug: string) => {
-    setTagSlugs(tagSlugs.filter((s) => s !== slug))
+  const handleRemoveTag = (tagId: number) => {
+    setSelectedTags(selectedTags.filter((t) => t.id !== tagId))
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -198,19 +191,23 @@ export function TagEditorModal({
       if (suggestions.length > 0) {
         handleAddTag(suggestions[selectedIndex])
       } else if (inputValue.trim()) {
-        const slug = inputValue.trim().toLowerCase().replace(/\s+/g, '-')
-        handleAddTag({ slug, name: inputValue.trim() })
+        // Create new tag on Enter
+        handleAddTag({ id: -1, name: inputValue.trim() })
       }
-    } else if (e.key === 'Backspace' && !inputValue && tagSlugs.length > 0) {
-      // Remove last tag on backspace when input is empty
-      handleRemoveTag(tagSlugs[tagSlugs.length - 1])
+    } else if (
+      e.key === 'Backspace' &&
+      !inputValue &&
+      selectedTags.length > 0
+    ) {
+      // Remove last tag on backspace
+      handleRemoveTag(selectedTags[selectedTags.length - 1].id)
     } else if (e.key === 'Escape') {
       setShowSuggestions(false)
     }
   }
 
   const handleSave = () => {
-    saveMutation.mutate(tagSlugs)
+    saveMutation.mutate(selectedTags)
   }
 
   return (
@@ -230,7 +227,7 @@ export function TagEditorModal({
           <div className="py-4">
             {/* Tags container */}
             <div className="flex flex-wrap gap-2 p-3 min-h-[60px] bg-muted/50 rounded-md border">
-              {currentTags.map((tag) => (
+              {selectedTags.map((tag) => (
                 <ConfigurableTag
                   key={tag.id}
                   tagId={tag.name}
@@ -240,7 +237,7 @@ export function TagEditorModal({
                   onConfigure={() =>
                     setConfigModalTag({ id: tag.id, name: tag.name })
                   }
-                  onRemove={() => handleRemoveTag(tag.slug)}
+                  onRemove={() => handleRemoveTag(tag.id)}
                   showConfigButton={configurableTagIds.has(tag.id)}
                 />
               ))}
@@ -268,16 +265,12 @@ export function TagEditorModal({
                 {/* Suggestions dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {suggestions.map((suggestion: any, index) => {
-                      const isCreate =
-                        suggestion.slug?.startsWith('__create__:')
-                      const displayText = isCreate
-                        ? suggestion.name
-                        : suggestion.name
+                    {suggestions.map((suggestion, index) => {
+                      const isCreate = suggestion.id === -1
 
                       return (
                         <button
-                          key={suggestion.slug}
+                          key={suggestion.id}
                           type="button"
                           className={cn(
                             'w-full px-3 py-2 text-left text-sm flex items-center justify-between',
@@ -290,12 +283,12 @@ export function TagEditorModal({
                             {isCreate ? (
                               <>
                                 <Plus className="h-3 w-3" />
-                                Create "{displayText}"
+                                Create "{suggestion.name}"
                               </>
                             ) : (
                               <>
                                 <MagnifyingGlass className="h-3 w-3 text-muted-foreground" />
-                                {displayText}
+                                {suggestion.name}
                               </>
                             )}
                           </span>
