@@ -5,7 +5,7 @@
  * with the new streaming log viewer.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -20,6 +20,7 @@ import { CommandLogViewer } from '@/components/features/app-detail/commands/comm
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { appStateService } from '@/services/state/app-state'
 import type { App } from '@/types/app'
+import { usePath } from '@/hooks/use-paths'
 
 interface StreamingInstallationProps {
   app: App
@@ -30,8 +31,16 @@ export function StreamingInstallation({
   app,
   onComplete,
 }: StreamingInstallationProps) {
-  const [installPath, setInstallPath] = useState('/home/popemkt/nxus-apps')
+  const defaultAppInstallRoot = usePath('defaultAppInstallRoot')
+  const [installPath, setInstallPath] = useState('')
   const [showLogs, setShowLogs] = useState(false)
+
+  // Set install path once the path is loaded from server
+  useEffect(() => {
+    if (defaultAppInstallRoot && !installPath) {
+      setInstallPath(defaultAppInstallRoot)
+    }
+  }, [defaultAppInstallRoot, installPath])
 
   const { logs, isRunning, executeCommand, clearLogs } = useCommandExecution({
     onComplete: async () => {

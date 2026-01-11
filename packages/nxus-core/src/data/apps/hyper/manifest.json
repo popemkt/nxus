@@ -1,0 +1,103 @@
+{
+    "id": "hyper",
+    "name": "Hyper",
+    "description": "A beautiful and extensible terminal emulator built on web technologies (HTML, CSS, JavaScript)",
+    "type": "tool",
+    "path": "https://hyper.is/",
+    "homepage": "https://hyper.is/",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "hyper --version",
+    "installInstructions": "Download from https://hyper.is/ or install via package manager",
+    "commands": [
+        {
+            "id": "hyper-open",
+            "name": "Launch Hyper",
+            "description": "Open Hyper terminal",
+            "icon": "Terminal",
+            "category": "General",
+            "target": "app",
+            "mode": "execute",
+            "command": "hyper",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "hyper-install-plugin",
+            "name": "Install Plugin",
+            "description": "Install a Hyper plugin (e.g., hyper-snazzy)",
+            "icon": "Plus",
+            "category": "Plugins",
+            "target": "app",
+            "mode": "terminal",
+            "command": "hyper install",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "hyper-list-plugins",
+            "name": "List Plugins",
+            "description": "List installed Hyper plugins",
+            "icon": "List",
+            "category": "Plugins",
+            "target": "app",
+            "mode": "execute",
+            "command": "hyper list",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "hyper-uninstall-plugin",
+            "name": "Uninstall Plugin",
+            "description": "Uninstall a Hyper plugin",
+            "icon": "Trash",
+            "category": "Plugins",
+            "target": "app",
+            "mode": "terminal",
+            "command": "hyper uninstall",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "hyper-docs",
+            "name": "Open Documentation",
+            "description": "Open Hyper documentation in browser",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "app",
+            "mode": "docs",
+            "command": "https://hyper.is/"
+        },
+        {
+            "id": "hyper-plugins-docs",
+            "name": "Browse Plugins",
+            "description": "Browse available Hyper plugins and themes",
+            "icon": "Sparkle",
+            "category": "Help",
+            "target": "app",
+            "mode": "docs",
+            "command": "https://hyper.is/plugins"
+        }
+    ],
+    "metadata": {
+        "tags": [
+            "terminal",
+            "electron",
+            "web-based",
+            "extensible"
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-11T21:55:46Z",
+        "updatedAt": "2026-01-11T21:55:46Z",
+        "version": "1.0.0",
+        "author": "Vercel"
+    },
+    "status": "not-installed"
+}

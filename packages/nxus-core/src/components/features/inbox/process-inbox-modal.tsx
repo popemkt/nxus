@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import type { App } from '@/types/app'
+import { usePath } from '@/hooks/use-paths'
 
 export interface ProcessInboxModalProps {
   item: InboxItem
@@ -58,6 +59,9 @@ export function ProcessInboxModal({
     null,
   )
   const [isLaunching, setIsLaunching] = React.useState(false)
+
+  // Get the nxus core root path from server
+  const nxusCoreRoot = usePath('nxusCoreRoot')
 
   // Fetch apps with AI Provider tag configured
   const { data: providersResult, isLoading: isLoadingProviders } = useQuery({
@@ -155,7 +159,7 @@ export function ProcessInboxModal({
   }, [open])
 
   const handleStart = async () => {
-    if (!selectedProvider) return
+    if (!selectedProvider || !nxusCoreRoot) return
 
     const provider = providers.find((p) => p.appId === selectedProvider)
     if (!provider) return
@@ -176,7 +180,7 @@ Follow the workflow: /update-add-item`
       // Launch interactive terminal with AI CLI
       await commandExecutor.executeInteractive({
         command: `${provider.cliCommand} "${prompt.replace(/"/g, '\\"')}"`,
-        cwd: '/stuff/WorkSpace/Nxus/nxus',
+        cwd: nxusCoreRoot,
         tabName: `Add: ${item.title}`,
         terminalStore,
       })

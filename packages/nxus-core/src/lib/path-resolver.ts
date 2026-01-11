@@ -24,5 +24,6 @@ export function getOsDefaultWorkspacePath(osInfo: OsInfo | null): string {
   }
 
   // Linux/MacOS
+  // TODO: Refactor to use path from user in ephemeral db
   return '/stuff/WorkSpace/_playground'
 }

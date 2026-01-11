@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   PlayIcon,
   StopIcon,
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { CommandLogViewer } from '../commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
+import { usePath } from '@/hooks/use-paths'
 
 interface ActionWithLogsProps {
   title: string
@@ -112,8 +113,16 @@ export function InstallActionWithLogs({
   onComplete,
   onError,
 }: InstallActionWithLogsProps) {
-  const [installPath, setInstallPath] = useState('/home/popemkt/nxus-apps')
+  const defaultAppInstallRoot = usePath('defaultAppInstallRoot')
+  const [installPath, setInstallPath] = useState('')
   const [showLogs, setShowLogs] = useState(false)
+
+  // Set install path once the path is loaded from server
+  useEffect(() => {
+    if (defaultAppInstallRoot && !installPath) {
+      setInstallPath(defaultAppInstallRoot)
+    }
+  }, [defaultAppInstallRoot, installPath])
   const { logs, isRunning, executeCommand, clearLogs } = useCommandExecution({
     onComplete: () => {
       onComplete?.(installPath)

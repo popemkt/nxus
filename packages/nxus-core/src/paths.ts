@@ -19,8 +19,15 @@ const __dirname = path.dirname(__filename)
  * Environment Variable Overrides:
  * - APP_DATA_ROOT: Override the apps data directory path
  * - APP_REPO_ROOT: Override the repository instances directory path
+ * - APP_DEFAULT_INSTALL_ROOT: Override the default app installation directory path
  */
 export const PATHS = {
+  /**
+   * Root directory of the nxus-core package
+   * Computed from the current file location
+   */
+  nxusCoreRoot: path.resolve(__dirname, '..', '..'),
+
   /**
    * Root directory for app data (manifests, scripts, docs)
    * Default: packages/nxus-core/src/data/apps
@@ -32,6 +39,14 @@ export const PATHS = {
    * Default: ~/.nxus/repos
    */
   reposRoot: process.env.APP_REPO_ROOT || path.resolve(os.homedir(), '.nxus', 'repos'),
+
+  /**
+   * Default root directory for user-installed apps
+   * Default: ~/.nxus/apps
+   */
+  defaultAppInstallRoot:
+    process.env.APP_DEFAULT_INSTALL_ROOT ||
+    path.resolve(os.homedir(), '.nxus', 'apps'),
 
   /**
    * Get the path to a specific app's directory
