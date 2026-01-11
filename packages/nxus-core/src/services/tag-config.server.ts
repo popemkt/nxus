@@ -4,6 +4,8 @@
  * Provides CRUD operations for configurable tags and their per-app values.
  * Tags like "ai-provider" can have schema definitions that require
  * apps to provide configuration values.
+ *
+ * Uses integer tag IDs for proper foreign key relationships.
  */
 
 import { createServerFn } from '@tanstack/react-start'
@@ -69,10 +71,10 @@ const TagConfigSchemaValidator = z.object({
 // ============================================================================
 
 /**
- * Get schema for a configurable tag
+ * Get schema for a configurable tag by integer ID
  */
 export const getTagConfigServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ tagId: z.string() }))
+  .inputValidator(z.object({ tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[getTagConfigServerFn] Fetching:', ctx.data.tagId)
     const db = await initDatabase()
@@ -124,7 +126,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
 export const setTagConfigServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
-      tagId: z.string().min(1),
+      tagId: z.number(),
       schema: TagConfigSchemaValidator,
       description: z.string().optional(),
     }),
@@ -171,7 +173,7 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
  * Get an app's configuration values for a specific tag
  */
 export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ appId: z.string(), tagId: z.string() }))
+  .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[getAppTagValuesServerFn] Fetching:', ctx.data)
     const db = await initDatabase()
@@ -195,8 +197,7 @@ export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: {
         appId: values.appId,
-        tagId: values.tagId,
-        values: JSON.parse(values.configValues) as Record<string, unknown>,
+        values: JSON.parse(values.configValues) as Record<string, any>,
       },
     }
   })
@@ -219,7 +220,7 @@ export const getAllAppTagValuesServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: allValues.map((v) => ({
         tagId: v.tagId,
-        values: JSON.parse(v.configValues) as Record<string, unknown>,
+        values: JSON.parse(v.configValues) as Record<string, any>,
       })),
     }
   })
@@ -232,12 +233,21 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       appId: z.string(),
-      tagId: z.string(),
-      configValues: z.record(z.unknown()),
+      tagId: z.number(),
+      configValues: z.any(), // Use z.any() instead of z.record() to avoid validation issues
     }),
   )
   .handler(async (ctx) => {
     console.log('[setAppTagValuesServerFn] Setting:', ctx.data)
+
+    // Manual validation that configValues is an object
+    if (!ctx.data.configValues || typeof ctx.data.configValues !== 'object') {
+      return {
+        success: false as const,
+        error: 'configValues must be an object',
+      }
+    }
+
     const db = await initDatabase()
 
     // 1. Get tag schema for validation
@@ -250,14 +260,14 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     if (!tagConfig) {
       return {
         success: false as const,
-        error: `Tag "${ctx.data.tagId}" has no configuration schema`,
+        error: `Tag ID ${ctx.data.tagId} has no configuration schema`,
       }
     }
 
     // 2. Build dynamic Zod validator from schema
     const schema = JSON.parse(tagConfig.schema) as TagConfigSchema
     const validationResult = validateValuesAgainstSchema(
-      ctx.data.values,
+      ctx.data.configValues,
       schema,
     )
 
@@ -286,7 +296,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       await db
         .update(appTagValues)
         .set({
-          values: JSON.stringify(validationResult.data),
+          configValues: JSON.stringify(validationResult.data),
           updatedAt: now,
         })
         .where(
@@ -300,7 +310,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       await db.insert(appTagValues).values({
         appId: ctx.data.appId,
         tagId: ctx.data.tagId,
-        values: JSON.stringify(validationResult.data),
+        configValues: JSON.stringify(validationResult.data),
         createdAt: now,
         updatedAt: now,
       })
@@ -315,7 +325,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
  * Delete an app's configuration values for a tag
  */
 export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ appId: z.string(), tagId: z.string() }))
+  .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[deleteAppTagValuesServerFn] Deleting:', ctx.data)
     const db = await initDatabase()
@@ -339,7 +349,7 @@ export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
  * Useful for finding all AI providers, for example
  */
 export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ tagId: z.string() }))
+  .inputValidator(z.object({ tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[getAppsByConfiguredTagServerFn] Fetching:', ctx.data.tagId)
     const db = await initDatabase()
@@ -353,7 +363,7 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: results.map((r) => ({
         appId: r.appId,
-        values: JSON.parse(r.configValues) as Record<string, unknown>,
+        values: JSON.parse(r.configValues) as Record<string, any>,
       })),
     }
   })
@@ -366,11 +376,11 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
  * Validate values against a tag config schema
  */
 function validateValuesAgainstSchema(
-  values: Record<string, unknown>,
+  values: Record<string, any>,
   schema: TagConfigSchema,
-): { valid: boolean; errors?: string[]; data?: Record<string, unknown> } {
+): { valid: boolean; errors?: string[]; data?: Record<string, any> } {
   const errors: string[] = []
-  const validatedData: Record<string, unknown> = {}
+  const validatedData: Record<string, any> = {}
 
   for (const field of schema.fields) {
     const value = values[field.key]

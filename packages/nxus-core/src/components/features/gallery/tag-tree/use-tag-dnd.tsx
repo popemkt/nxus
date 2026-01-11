@@ -131,8 +131,13 @@ export function useTagDnd(options?: UseTagDndOptions) {
 
     if (!over || active.id === over.id || currentIndicator.type === null) return
 
-    const activeTagId = active.id as string
-    const overTagId = over.id as string
+    const activeTagIdStr = active.id as string
+    const overTagIdStr = over.id as string
+
+    const activeTagId = parseInt(activeTagIdStr, 10)
+    const overTagId = parseInt(overTagIdStr, 10)
+
+    if (isNaN(activeTagId) || isNaN(overTagId)) return
 
     const overTag = tags.get(overTagId)
     const activeTag = tags.get(activeTagId)
@@ -143,8 +148,8 @@ export function useTagDnd(options?: UseTagDndOptions) {
       // Nest: make active tag a child of over tag
       const targetChildren = getChildren(overTagId)
       await moveTag(activeTagId, overTagId, targetChildren.length)
-      options?.onMoveTag?.(activeTagId, overTagId, targetChildren.length)
-      options?.onExpandParent?.(overTagId)
+      options?.onMoveTag?.(activeTagIdStr, overTagIdStr, targetChildren.length)
+      options?.onExpandParent?.(overTagIdStr)
     } else if (
       currentIndicator.type === 'before' ||
       currentIndicator.type === 'after'
@@ -158,7 +163,8 @@ export function useTagDnd(options?: UseTagDndOptions) {
         const newIndex =
           currentIndicator.type === 'after' ? overIndex + 1 : overIndex
         await moveTag(activeTagId, parentId, newIndex)
-        options?.onMoveTag?.(activeTagId, parentId, newIndex)
+        const parentIdStr = parentId === null ? null : String(parentId)
+        options?.onMoveTag?.(activeTagIdStr, parentIdStr as string, newIndex)
       }
     }
   }

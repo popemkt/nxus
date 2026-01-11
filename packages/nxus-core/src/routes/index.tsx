@@ -44,21 +44,25 @@ function AppManager() {
   const tags = useTagDataStore((s) => s.tags)
 
   // Build tag filter list including descendants if needed
+  // selectedTagIds are stringified integer IDs, tags Map uses number keys
   const filterTags = useMemo(() => {
     if (selectedTagIds.size === 0) return undefined
 
-    const tagNames: string[] = []
-    for (const tagId of selectedTagIds) {
+    const tagSlugs: string[] = []
+    for (const tagIdStr of selectedTagIds) {
+      const tagId = parseInt(tagIdStr, 10)
+      if (isNaN(tagId)) continue
+
       const tag = tags.get(tagId)
-      if (tag) tagNames.push(tag.name)
-      if (includeSubTags.get(tagId)) {
+      if (tag) tagSlugs.push(tag.slug) // Use slug for filtering against metadata.tags
+      if (includeSubTags.get(tagIdStr)) {
         const descendants = getDescendants(tagId)
         for (const desc of descendants) {
-          tagNames.push(desc.name)
+          tagSlugs.push(desc.slug)
         }
       }
     }
-    return tagNames.length > 0 ? tagNames : undefined
+    return tagSlugs.length > 0 ? tagSlugs : undefined
   }, [selectedTagIds, includeSubTags, getDescendants, tags])
 
   const { apps, allApps, loading, error } = useAppRegistry({

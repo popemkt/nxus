@@ -3,6 +3,8 @@
  *
  * Read-only modal to view a tag's configuration schema.
  * Shows field definitions, types, and defaults.
+ *
+ * Now uses integer tag IDs with optional slug display.
  */
 
 import { Gear, Info, Asterisk } from '@phosphor-icons/react'
@@ -20,7 +22,10 @@ import { getTagConfigServerFn } from '@/services/tag-config.server'
 import { useQuery } from '@tanstack/react-query'
 
 export interface TagSchemaModalProps {
-  tagId: string
+  /** Integer tag ID */
+  tagId: number
+  /** Display name/slug for the modal title */
+  tagName?: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -37,6 +42,7 @@ interface SchemaField {
 
 export function TagSchemaModal({
   tagId,
+  tagName,
   open,
   onOpenChange,
 }: TagSchemaModalProps) {
@@ -44,7 +50,7 @@ export function TagSchemaModal({
   const { data: configResult, isLoading } = useQuery({
     queryKey: ['tag-config', tagId],
     queryFn: () => getTagConfigServerFn({ data: { tagId } }),
-    enabled: open,
+    enabled: open && tagId > 0,
   })
 
   const config = configResult as
@@ -57,6 +63,8 @@ export function TagSchemaModal({
   const schema = config?.success && config.data?.schema
   const description = config?.data?.description
 
+  const displayName = tagName || `Tag #${tagId}`
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="sm:max-w-md">
@@ -64,7 +72,7 @@ export function TagSchemaModal({
           <div className="flex items-center gap-2">
             <Gear className="h-5 w-5 text-primary" />
             <AlertDialogTitle>
-              Tag Schema: <code className="text-primary">{tagId}</code>
+              Tag Schema: <code className="text-primary">{displayName}</code>
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription>

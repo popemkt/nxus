@@ -24,8 +24,19 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
   }
 
   const selectedTags = Array.from(selectedTagIds)
-    .map((id) => tags.get(id))
-    .filter(Boolean)
+    .map((idStr) => {
+      const id = parseInt(idStr, 10)
+      if (isNaN(id)) return null
+      const tag = tags.get(id)
+      if (!tag) return null
+      return { ...tag, idStr } // Add string ID for UI operations
+    })
+    .filter(Boolean) as Array<{
+    id: number
+    idStr: string
+    name: string
+    slug: string
+  }>
 
   return (
     <div
@@ -39,7 +50,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
       <div className="flex flex-wrap gap-1.5 flex-1">
         {selectedTags.map((tag) => {
           if (!tag) return null
-          const includesSubTags = includeSubTags.get(tag.id) ?? false
+          const includesSubTags = includeSubTags.get(tag.idStr) ?? false
 
           return (
             <div
@@ -53,7 +64,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
 
               {/* Include sub-tags dropdown */}
               <button
-                onClick={() => setIncludeSubTags(tag.id, !includesSubTags)}
+                onClick={() => setIncludeSubTags(tag.idStr, !includesSubTags)}
                 className={cn(
                   'flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-primary/20 transition-colors',
                   includesSubTags && 'bg-primary/20',
@@ -68,7 +79,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
 
               {/* Remove button */}
               <button
-                onClick={() => toggleSelected(tag.id)}
+                onClick={() => toggleSelected(tag.idStr)}
                 className="p-0.5 rounded-full hover:bg-primary/20 transition-colors"
                 title="Remove filter"
               >
@@ -97,32 +108,34 @@ export function useTagFilter<T extends { tags?: string[] }>(items: T[]): T[] {
   const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
   const includeSubTags = useTagUIStore((s) => s.includeSubTags)
   const getDescendants = useTagDataStore((s) => s.getDescendants)
+  const tags = useTagDataStore((s) => s.tags)
 
   // No filters = return all
   if (selectedTagIds.size === 0) {
     return items
   }
 
-  // Build the set of tag IDs to match
-  const matchTagIds = new Set<string>()
-  for (const tagId of selectedTagIds) {
-    matchTagIds.add(tagId)
-    if (includeSubTags.get(tagId)) {
+  // Build the set of tag slugs to match
+  const matchTagSlugs = new Set<string>()
+  for (const tagIdStr of selectedTagIds) {
+    const tagId = parseInt(tagIdStr, 10)
+    if (isNaN(tagId)) continue
+
+    const tag = tags.get(tagId)
+    if (tag) matchTagSlugs.add(tag.slug)
+
+    if (includeSubTags.get(tagIdStr)) {
       // Add all descendants
       const descendants = getDescendants(tagId)
       for (const desc of descendants) {
-        matchTagIds.add(desc.id)
+        matchTagSlugs.add(desc.slug)
       }
     }
   }
 
-  // Filter items: item must have ALL selected tag groups
-  // For "include sub-tags", any of the parent+descendants counts as a match for that group
+  // Filter items: item must have at least one tag from the filter set
   return items.filter((item) => {
     if (!item.tags || item.tags.length === 0) return false
-
-    // For now, AND logic: must have at least one tag from the filter set
-    // This can be enhanced to true AND (must have tags from each selected group)
-    return item.tags.some((t) => matchTagIds.has(t))
+    return item.tags.some((t) => matchTagSlugs.has(t))
   })
 }

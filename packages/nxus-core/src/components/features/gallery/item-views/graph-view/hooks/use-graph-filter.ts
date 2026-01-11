@@ -10,14 +10,15 @@ interface UseGraphFilterProps {
   items: App[]
   searchQuery: string
   selectedTagIds: Set<string>
-  tagNames: Map<string, string> // tagId -> tagName
+  /** Map of string tagId to tag slug for matching against metadata.tags */
+  tagSlugs: Map<string, string>
 }
 
 export function useGraphFilter({
   items,
   searchQuery,
   selectedTagIds,
-  tagNames,
+  tagSlugs,
 }: UseGraphFilterProps): GraphFilterResult {
   return useMemo(() => {
     const hasActiveFilter = searchQuery.trim() !== '' || selectedTagIds.size > 0
@@ -30,9 +31,10 @@ export function useGraphFilter({
     }
 
     const lowerQuery = searchQuery.toLowerCase().trim()
-    const selectedTagNames = new Set(
+    // Get slugs for selected tags to match against app's metadata.tags
+    const selectedTagSlugs = new Set(
       Array.from(selectedTagIds)
-        .map((id) => tagNames.get(id) || '')
+        .map((id) => tagSlugs.get(id) || '')
         .filter(Boolean),
     )
 
@@ -52,10 +54,10 @@ export function useGraphFilter({
           )
       }
 
-      // Check tag filters
-      if (selectedTagNames.size > 0) {
+      // Check tag filters (match slugs against metadata.tags)
+      if (selectedTagSlugs.size > 0) {
         matchesTags = item.metadata.tags.some((tag) =>
-          selectedTagNames.has(tag),
+          selectedTagSlugs.has(tag),
         )
       }
 
@@ -65,5 +67,5 @@ export function useGraphFilter({
     })
 
     return { matchedIds, hasActiveFilter }
-  }, [items, searchQuery, selectedTagIds, tagNames])
+  }, [items, searchQuery, selectedTagIds, tagSlugs])
 }

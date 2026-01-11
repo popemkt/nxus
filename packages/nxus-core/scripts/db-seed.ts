@@ -170,27 +170,28 @@ async function seed() {
 
   if (tagsData?.tags) {
     for (const tag of tagsData.tags) {
+      const tagId = tag.id as number
       const tagRecord = {
-        ...tag,
-        createdAt: parseTimestamp(tag.createdAt),
-        updatedAt: parseTimestamp(tag.updatedAt),
+        id: tagId,
+        slug: tag.slug as string,
+        name: tag.name as string,
+        parentId: (tag.parentId as number | null) ?? null,
+        order: (tag.order as number) ?? 0,
+        color: (tag.color as string | null) ?? null,
+        icon: (tag.icon as string | null) ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
 
-      const existing = db
-        .select()
-        .from(tags)
-        .where(eq(tags.id, tag.id as string))
-        .get()
+      const existing = db.select().from(tags).where(eq(tags.id, tagId)).get()
 
       if (existing) {
         db.update(tags)
           .set({ ...tagRecord, updatedAt: new Date() })
-          .where(eq(tags.id, tag.id as string))
+          .where(eq(tags.id, tagId))
           .run()
       } else {
-        db.insert(tags)
-          .values(tagRecord as typeof tags.$inferInsert)
-          .run()
+        db.insert(tags).values(tagRecord).run()
       }
       tagsCount++
     }

@@ -27,16 +27,21 @@ export function FloatingFilterRow({
   }
 
   const selectedTags = Array.from(selectedTagIds)
-    .map((id) => {
+    .map((idStr) => {
+      const id = parseInt(idStr, 10)
+      if (isNaN(id)) return null
       const tag = tags.get(id)
       if (!tag) return null
       return {
-        ...tag,
-        includeChildren: includeSubTags.get(id) ?? true,
+        id: idStr, // Keep string ID for UI state operations
+        slug: tag.slug,
+        name: tag.name,
+        includeChildren: includeSubTags.get(idStr) ?? true,
       }
     })
     .filter(Boolean) as Array<{
     id: string
+    slug: string
     name: string
     includeChildren: boolean
   }>

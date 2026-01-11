@@ -72,11 +72,12 @@
             "coding",
             "anthropic",
             "cli",
+            "AI provider",
             "ai-provider"
         ],
         "category": "development-tools",
         "createdAt": "2026-01-01T15:32:00.000Z",
-        "updatedAt": "2026-01-11T07:45:18.620Z",
+        "updatedAt": "2026-01-11T10:33:24.400Z",
         "version": "1.0.0",
         "author": "nxus"
     },

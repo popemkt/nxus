@@ -41,7 +41,9 @@ interface TagConfigSchema {
 
 export interface TagConfigModalProps {
   /** Tag ID to configure */
-  tagId: string
+  tagId: number
+  /** Tag name for display */
+  tagName?: string
   /** App ID to configure values for */
   appId: string
   /** App name for display */
@@ -56,6 +58,7 @@ export interface TagConfigModalProps {
 
 export function TagConfigModal({
   tagId,
+  tagName,
   appId,
   appName,
   open,
@@ -84,19 +87,24 @@ export function TagConfigModal({
 
   // Save mutation
   const saveMutation = useMutation({
-    mutationFn: (values: Record<string, unknown>) =>
-      setAppTagValuesServerFn({ data: { appId, tagId, values } }),
-    onSuccess: (result: { success: boolean; error?: string }) => {
-      if (result.success) {
+    mutationFn: async (values: Record<string, any>) => {
+      const result = await setAppTagValuesServerFn({
+        data: { appId, tagId, configValues: values },
+      })
+      return result
+    },
+    onSuccess: (result) => {
+      if (result?.success) {
         queryClient.invalidateQueries({ queryKey: ['app-tag-values', appId] })
         onOpenChange(false)
         onSave?.()
       } else {
-        setError(result.error ?? 'Failed to save')
+        setError(result?.error ?? 'Failed to save')
       }
     },
-    onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Failed to save')
+    onError: (err: any) => {
+      console.error('[TagConfigModal] Save error:', err)
+      setError(err?.message ?? 'Failed to save configuration')
     },
   })
 
@@ -145,12 +153,12 @@ export function TagConfigModal({
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
             <Gear className="h-5 w-5 text-primary" />
-            <AlertDialogTitle>Configure: {tagId}</AlertDialogTitle>
+            <AlertDialogTitle>Configure: {tagName || tagId}</AlertDialogTitle>
           </div>
           <AlertDialogDescription>
             {appName
-              ? `Configure ${tagId} settings for ${appName}`
-              : `Configure ${tagId} settings for this app`}
+              ? `Configure ${tagName || tagId} settings for ${appName}`
+              : `Configure ${tagName || tagId} settings for this app`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
 /**
  * Inbox items - backlog of tools/apps to add later via add-item workflow
@@ -23,11 +23,13 @@ export type NewInboxItem = typeof inboxItems.$inferInsert
 
 /**
  * Tags - hierarchical tag tree for organizing items
+ * Uses integer ID for efficient indexing, slug for AI-friendly references
  */
 export const tags = sqliteTable('tags', {
-  id: text('id').primaryKey(),
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
-  parentId: text('parent_id'),
+  parentId: integer('parent_id'),
   order: integer('order').notNull().default(0),
   color: text('color'),
   icon: text('icon'),
@@ -41,6 +43,22 @@ export const tags = sqliteTable('tags', {
 
 export type Tag = typeof tags.$inferSelect
 export type NewTag = typeof tags.$inferInsert
+
+/**
+ * App Tags - junction table linking apps to tags
+ * Proper relational design with foreign keys for referential integrity
+ */
+export const appTags = sqliteTable(
+  'app_tags',
+  {
+    appId: text('app_id').notNull(),
+    tagId: integer('tag_id').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.appId, table.tagId] })],
+)
+
+export type AppTag = typeof appTags.$inferSelect
+export type NewAppTag = typeof appTags.$inferInsert
 
 // ============================================================================
 // Apps - Master data for all registered apps/tools
@@ -148,7 +166,7 @@ export type NewCommand = typeof commands.$inferInsert
  * provide values matching this schema.
  */
 export const tagConfigs = sqliteTable('tag_configs', {
-  tagId: text('tag_id').primaryKey(), // e.g., "ai-provider"
+  tagId: integer('tag_id').primaryKey(), // References tags.id
   schema: text('schema').notNull(), // JSON: { fields: [...] }
   description: text('description'),
   createdAt: integer('created_at', { mode: 'timestamp' })
@@ -168,7 +186,7 @@ export type NewTagConfig = typeof tagConfigs.$inferInsert
  */
 export const appTagValues = sqliteTable('app_tag_values', {
   appId: text('app_id').notNull(),
-  tagId: text('tag_id').notNull(),
+  tagId: integer('tag_id').notNull(), // References tags.id
   configValues: text('config_values').notNull(), // JSON values matching the tag's schema
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())

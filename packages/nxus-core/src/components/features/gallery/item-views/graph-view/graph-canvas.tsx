@@ -275,10 +275,13 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
       return new Set(items.map((i) => i.id))
     }
 
-    const tagNamesSet = new Set<string>()
-    selectedTagIds.forEach((id) => {
-      const tag = tags.get(id)
-      if (tag) tagNamesSet.add(tag.name)
+    // Convert string tag IDs to slugs for matching
+    const tagSlugsSet = new Set<string>()
+    selectedTagIds.forEach((idStr) => {
+      const tagId = parseInt(idStr, 10)
+      if (isNaN(tagId)) return
+      const tag = tags.get(tagId)
+      if (tag) tagSlugsSet.add(tag.slug)
     })
 
     const matched = new Set<string>()
@@ -290,8 +293,8 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
         item.metadata.tags.some((t) => t.toLowerCase().includes(lowerQuery))
 
       const matchesTags =
-        tagNamesSet.size === 0 ||
-        item.metadata.tags.some((t) => tagNamesSet.has(t))
+        tagSlugsSet.size === 0 ||
+        item.metadata.tags.some((t) => tagSlugsSet.has(t))
 
       if (matchesSearch && matchesTags) {
         matched.add(item.id)

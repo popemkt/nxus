@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-01-11T08:45:21.431Z",
-  "count": 33,
+  "exportedAt": "2026-01-11T11:31:19.108Z",
+  "count": 34,
   "items": [
     {
       "id": 1,
@@ -266,6 +266,14 @@
       "status": "pending",
       "createdAt": "2026-01-11T07:46:02.000Z",
       "updatedAt": "2026-01-11T07:46:02.000Z"
+    },
+    {
+      "id": 34,
+      "title": "Card ui refine",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-11T08:59:12.000Z",
+      "updatedAt": "2026-01-11T08:59:12.000Z"
     }
   ]
 }
