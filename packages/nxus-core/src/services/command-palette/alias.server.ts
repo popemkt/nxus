@@ -12,7 +12,7 @@ import { commandAliases } from '@/db/ephemeral-schema'
  */
 export const getAliasesServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    await initEphemeralDatabase()
+    initEphemeralDatabase()
     const db = getEphemeralDatabase()
     const rows = await db.select().from(commandAliases)
 
@@ -30,7 +30,7 @@ export const getAliasesServerFn = createServerFn({ method: 'GET' }).handler(
 export const setAliasServerFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { commandId: string; alias: string }) => data)
   .handler(async ({ data: { commandId, alias } }) => {
-    await initEphemeralDatabase()
+    initEphemeralDatabase()
     const db = getEphemeralDatabase()
 
     // Check if this command already has an alias
@@ -65,7 +65,7 @@ export const setAliasServerFn = createServerFn({ method: 'POST' })
 export const removeAliasServerFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { commandId: string }) => data)
   .handler(async ({ data: { commandId } }) => {
-    await initEphemeralDatabase()
+    initEphemeralDatabase()
     const db = getEphemeralDatabase()
     await db
       .delete(commandAliases)

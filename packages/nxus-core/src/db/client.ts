@@ -1,10 +1,10 @@
-import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js'
-import { drizzle, type SQLJsDatabase } from 'drizzle-orm/sql-js'
+import Database from 'better-sqlite3'
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from './schema'
 import * as ephemeralSchema from './ephemeral-schema'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
 import { homedir } from 'os'
 
 // Get the data directory path relative to this file
@@ -31,29 +31,25 @@ if (!existsSync(userDataDir)) {
 // Master Database (nxus.db) - Committed via JSON export
 // ============================================================================
 
-let masterSqliteDb: SqlJsDatabase | null = null
-let masterDrizzleDb: SQLJsDatabase<typeof schema> | null = null
+let masterDb: Database.Database | null = null
+let masterDrizzleDb: BetterSQLite3Database<typeof schema> | null = null
 
 /**
  * Initialize the master database connection
  */
-export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
+export function initDatabase(): BetterSQLite3Database<typeof schema> {
   if (masterDrizzleDb) return masterDrizzleDb
 
-  const SQL = await initSqlJs()
+  // better-sqlite3 opens the file directly and persists changes automatically
+  masterDb = new Database(masterDbPath)
 
-  // Load existing database or create new one
-  if (existsSync(masterDbPath)) {
-    const fileBuffer = readFileSync(masterDbPath)
-    masterSqliteDb = new SQL.Database(fileBuffer)
-  } else {
-    masterSqliteDb = new SQL.Database()
-  }
+  // Enable WAL mode for better concurrency
+  masterDb.pragma('journal_mode = WAL')
 
-  masterDrizzleDb = drizzle(masterSqliteDb, { schema })
+  masterDrizzleDb = drizzle(masterDb, { schema })
 
   // Create tables if they don't exist
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS inbox_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -64,7 +60,7 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS tags (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       slug TEXT NOT NULL UNIQUE,
@@ -78,7 +74,7 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS app_tags (
       app_id TEXT NOT NULL,
       tag_id INTEGER NOT NULL,
@@ -86,7 +82,7 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS apps (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -108,7 +104,7 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS commands (
       id TEXT PRIMARY KEY,
       app_id TEXT NOT NULL,
@@ -130,7 +126,7 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
   `)
 
   // Tag configuration tables
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS tag_configs (
       tag_id INTEGER PRIMARY KEY,
       schema TEXT NOT NULL,
@@ -140,7 +136,7 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
-  masterSqliteDb.run(`
+  masterDb.exec(`
     CREATE TABLE IF NOT EXISTS app_tag_values (
       app_id TEXT NOT NULL,
       tag_id INTEGER NOT NULL,
@@ -151,27 +147,25 @@ export async function initDatabase(): Promise<SQLJsDatabase<typeof schema>> {
     )
   `)
 
-  // Save the database after creating tables
-  saveMasterDatabase()
+  // No need to manually save - better-sqlite3 persists automatically
 
   return masterDrizzleDb
 }
 
 /**
  * Save the master database to disk
+ * Note: better-sqlite3 persists automatically, so this is now a no-op
+ * Kept for backwards compatibility
  */
 export function saveMasterDatabase() {
-  if (!masterSqliteDb) return
-
-  const data = masterSqliteDb.export()
-  const buffer = Buffer.from(data)
-  writeFileSync(masterDbPath, buffer)
+  // better-sqlite3 writes changes immediately to disk
+  // This function is kept for backwards compatibility only
 }
 
 /**
  * Get the master database instance (must call initDatabase first)
  */
-export function getDatabase(): SQLJsDatabase<typeof schema> {
+export function getDatabase(): BetterSQLite3Database<typeof schema> {
   if (!masterDrizzleDb) {
     throw new Error('Database not initialized. Call initDatabase() first.')
   }
@@ -182,31 +176,24 @@ export function getDatabase(): SQLJsDatabase<typeof schema> {
 // Ephemeral Database (~/.popemkt/.nxus/ephemeral.db) - Local-only, gitignored
 // ============================================================================
 
-let ephemeralSqliteDb: SqlJsDatabase | null = null
-let ephemeralDrizzleDb: SQLJsDatabase<typeof ephemeralSchema> | null = null
+let ephemeralDb: Database.Database | null = null
+let ephemeralDrizzleDb: BetterSQLite3Database<typeof ephemeralSchema> | null = null
 
 /**
  * Initialize the ephemeral database connection
  */
-export async function initEphemeralDatabase(): Promise<
-  SQLJsDatabase<typeof ephemeralSchema>
-> {
+export function initEphemeralDatabase(): BetterSQLite3Database<typeof ephemeralSchema> {
   if (ephemeralDrizzleDb) return ephemeralDrizzleDb
 
-  const SQL = await initSqlJs()
+  ephemeralDb = new Database(ephemeralDbPath)
 
-  // Load existing database or create new one
-  if (existsSync(ephemeralDbPath)) {
-    const fileBuffer = readFileSync(ephemeralDbPath)
-    ephemeralSqliteDb = new SQL.Database(fileBuffer)
-  } else {
-    ephemeralSqliteDb = new SQL.Database()
-  }
+  // Enable WAL mode for better concurrency
+  ephemeralDb.pragma('journal_mode = WAL')
 
-  ephemeralDrizzleDb = drizzle(ephemeralSqliteDb, { schema: ephemeralSchema })
+  ephemeralDrizzleDb = drizzle(ephemeralDb, { schema: ephemeralSchema })
 
   // Create tables if they don't exist
-  ephemeralSqliteDb.run(`
+  ephemeralDb.exec(`
     CREATE TABLE IF NOT EXISTS installations (
       id TEXT PRIMARY KEY,
       app_id TEXT NOT NULL,
@@ -217,7 +204,7 @@ export async function initEphemeralDatabase(): Promise<
     )
   `)
 
-  ephemeralSqliteDb.run(`
+  ephemeralDb.exec(`
     CREATE TABLE IF NOT EXISTS tool_health (
       tool_id TEXT PRIMARY KEY,
       status TEXT NOT NULL,
@@ -228,7 +215,7 @@ export async function initEphemeralDatabase(): Promise<
     )
   `)
 
-  ephemeralSqliteDb.run(`
+  ephemeralDb.exec(`
     CREATE TABLE IF NOT EXISTS command_aliases (
       id TEXT PRIMARY KEY,
       command_id TEXT NOT NULL,
@@ -237,27 +224,25 @@ export async function initEphemeralDatabase(): Promise<
     )
   `)
 
-  // Save the database after creating tables
-  saveEphemeralDatabase()
+  // No need to manually save - better-sqlite3 persists automatically
 
   return ephemeralDrizzleDb
 }
 
 /**
  * Save the ephemeral database to disk
+ * Note: better-sqlite3 persists automatically, so this is now a no-op
+ * Kept for backwards compatibility
  */
 export function saveEphemeralDatabase() {
-  if (!ephemeralSqliteDb) return
-
-  const data = ephemeralSqliteDb.export()
-  const buffer = Buffer.from(data)
-  writeFileSync(ephemeralDbPath, buffer)
+  // better-sqlite3 writes changes immediately to disk
+  // This function is kept for backwards compatibility only
 }
 
 /**
  * Get the ephemeral database instance (must call initEphemeralDatabase first)
  */
-export function getEphemeralDatabase(): SQLJsDatabase<typeof ephemeralSchema> {
+export function getEphemeralDatabase(): BetterSQLite3Database<typeof ephemeralSchema> {
   if (!ephemeralDrizzleDb) {
     throw new Error(
       'Ephemeral database not initialized. Call initEphemeralDatabase() first.',
@@ -273,9 +258,9 @@ export function getEphemeralDatabase(): SQLJsDatabase<typeof ephemeralSchema> {
 /**
  * Initialize both master and ephemeral databases
  */
-export async function initAllDatabases() {
-  await initDatabase()
-  await initEphemeralDatabase()
+export function initAllDatabases() {
+  initDatabase()
+  initEphemeralDatabase()
 }
 
 // Export paths for reference

@@ -34,7 +34,7 @@ function parseJsonField<T>(value: string | null): T | undefined {
 
 async function exportData() {
   console.log('Initializing database...')
-  await initDatabase()
+  initDatabase()
   const db = getDatabase()
 
   // Export apps to individual manifest.json files

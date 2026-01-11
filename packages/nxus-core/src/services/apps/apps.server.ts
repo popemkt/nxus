@@ -71,7 +71,7 @@ function parseCommandRecord(record: typeof commands.$inferSelect): AppCommand {
  */
 export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    await initDatabase()
+    initDatabase()
     const db = getDatabase()
 
     // Get all apps
@@ -110,7 +110,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
   .handler(async (ctx) => {
     const { id } = ctx.data
 
-    await initDatabase()
+    initDatabase()
     const db = getDatabase()
 
     // Get app
@@ -138,7 +138,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
  */
 export const getCategoriesServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    await initDatabase()
+    initDatabase()
     const db = getDatabase()
 
     const appRecords = db.select().from(apps).all()
@@ -160,7 +160,7 @@ export const getCategoriesServerFn = createServerFn({ method: 'GET' }).handler(
  */
 export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    await initDatabase()
+    initDatabase()
     const db = getDatabase()
 
     const appRecords = db.select().from(apps).all()

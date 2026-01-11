@@ -635,25 +635,42 @@ function AppDetailPage() {
     })
   }
 
-  // Use delayed loading to prevent flash
-  const showLoading = useDelayedLoading(loading, 150)
+  // Use delayed loading to prevent flash for cached data
+  const showLoading = useDelayedLoading(loading, 2000)
 
-  if (loading && showLoading) {
-    return <AppDetailSkeleton />
-  }
-
+  // Handle app not found or still loading
   if (!app) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg font-medium text-destructive">App not found</p>
-          <Link to="/">
-            <Button variant="outline" className="mt-4">
-              <ArrowLeftIcon data-icon="inline-start" />
-              Back to Gallery
-            </Button>
-          </Link>
+    // Loading is complete but app still not found
+    if (!loading) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium text-destructive">
+              App not found
+            </p>
+            <Link to="/">
+              <Button variant="outline" className="mt-4">
+                <ArrowLeftIcon data-icon="inline-start" />
+                Back to Gallery
+              </Button>
+            </Link>
+          </div>
         </div>
+      )
+    }
+    // Still loading - only show skeleton after delay to avoid flash
+    if (showLoading) {
+      return <AppDetailSkeleton />
+    }
+    // During delay period, render minimal placeholder to prevent layout shift
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <Link to="/">
+          <Button variant="ghost" className="mb-4 -ml-2 opacity-50">
+            <ArrowLeftIcon data-icon="inline-start" />
+            Back to Gallery
+          </Button>
+        </Link>
       </div>
     )
   }

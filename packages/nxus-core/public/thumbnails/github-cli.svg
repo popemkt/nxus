@@ -1,35 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0d1117" />
-      <stop offset="100%" stop-color="#161b22" />
-    </linearGradient>
-    <linearGradient id="cliGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#58a6ff" />
-      <stop offset="100%" stop-color="#bc8cff" />
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#8a63d2"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="rgba(0,0,0,0.5)"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
+      <feOffset dx="5" dy="5" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
   
   <!-- Background -->
-  <rect width="100%" height="100%" fill="url(#bgGradient)" />
+  <rect width="800" height="450" fill="url(#bg)" />
   
-  <!-- Decorative Background Glow -->
-  <circle cx="400" cy="225" r="200" fill="url(#cliGradient)" opacity="0.1" filter="url(#shadow)" />
-
-  <!-- Main Composition -->
+  <!-- Content Container -->
   <g transform="translate(400, 225)" filter="url(#shadow)">
-    <!-- Terminal Symbol -->
-    <path d="M -160 -60 L -120 -20 L -160 20" fill="none" stroke="url(#cliGradient)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" />
-    <rect x="-100" y="10" width="80" height="20" rx="5" fill="url(#cliGradient)">
-      <animate attributeName="opacity" values="1;0.2;1" dur="1s" repeatCount="indefinite" />
-    </rect>
+    
+    <!-- Terminal Window Shape Hint (Optional, kept subtle) -->
+    <!-- <rect x="-150" y="-120" width="300" height="240" rx="15" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="2"/> -->
 
-    <!-- GitHub Mark Representation (Simplified) -->
-    <g transform="translate(100, 0) scale(0.8)">
-      <path d="M 0 -100 C -55.23 -100 -100 -55.23 -100 0 C -100 44.18 -71.35 81.67 -31.64 94.88 C -26.64 95.8 -24.82 92.71 -24.82 90.06 C -24.82 87.69 -24.91 81.41 -24.96 73.06 C -52.76 79.1 -58.64 59.7 -58.64 59.7 C -63.19 48.15 -69.75 45.08 -69.75 45.08 C -78.81 38.89 -69.06 39.02 -69.06 39.02 C -59.04 39.72 -53.78 49.31 -53.78 49.31 C -44.88 64.57 -30.43 60.17 -24.73 57.61 C -23.82 51.16 -21.24 46.77 -18.39 44.27 C -40.58 41.75 -63.92 33.16 -63.92 -5.02 C -63.92 -15.9 -60.03 -24.8 -53.64 -31.76 C -54.67 -34.28 -58.09 -44.5 -52.66 -58.37 C -52.66 -58.37 -44.29 -61.05 -25.21 -48.13 C -17.26 -50.34 -8.73 -51.44 0 -51.49 C 8.73 -51.44 17.26 -50.34 25.21 -48.13 C 44.29 -61.05 52.66 -58.37 52.66 -58.37 C 58.09 -44.5 54.67 -34.28 53.64 -31.76 C 60.03 -24.8 63.92 -15.9 63.92 -5.02 C 63.92 33.16 40.58 41.75 18.39 44.27 C 21.24 46.77 23.82 51.16 23.82 57.61 C 23.82 66.88 23.74 74.37 23.74 76.62 C 23.74 79.29 25.54 82.42 30.63 81.44 C 70.3 68.18 98.92 30.73 98.92 -13.43 C 98.92 -68.66 54.14 -113.43 -1.08 -113.43 Z" fill="white" />
+    <!-- Git Branch Icon -->
+    <g stroke="#ffffff" stroke-width="18" stroke-linecap="round" fill="none">
+      <!-- Main Line -->
+      <path d="M-30,80 L-30,-80" />
+      <!-- Branch Line -->
+      <path d="M-30,20 C-30,-40 50,-40 50,-80" />
     </g>
+
+    <!-- Nodes -->
+    <g fill="#ffffff" stroke="none">
+      <circle cx="-30" cy="80" r="14" />
+      <circle cx="-30" cy="-80" r="14" />
+      <circle cx="50" cy="-80" r="14" />
+    </g>
+    
+    <!-- CLI Prompt Element -->
+    <g transform="translate(-130, 60)">
+        <path d="M0,0 L20,20 L0,40" stroke="#3fb950" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <rect x="30" y="30" width="25" height="10" fill="#3fb950" />
+    </g>
+
   </g>
 </svg>

@@ -53,7 +53,7 @@ function loadJsonFile<T>(filepath: string): T | null {
 
 async function seed() {
   console.log('Initializing database...')
-  await initDatabase()
+  initDatabase()
   const db = getDatabase()
 
   let appsCount = 0

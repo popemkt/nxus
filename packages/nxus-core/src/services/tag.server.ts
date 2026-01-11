@@ -40,7 +40,7 @@ export const createTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(CreateTagInputSchema)
   .handler(async (ctx) => {
     console.log('[createTagServerFn] Input:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
     const now = new Date()
 
     const result = await db
@@ -70,7 +70,7 @@ export const updateTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(UpdateTagInputSchema)
   .handler(async (ctx) => {
     console.log('[updateTagServerFn] Input:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
     const { id, ...updates } = ctx.data
 
     await db
@@ -94,7 +94,7 @@ export const deleteTagServerFn = createServerFn({ method: 'POST' })
   .inputValidator(DeleteTagInputSchema)
   .handler(async (ctx) => {
     console.log('[deleteTagServerFn] Input:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
 
     // TODO: Handle cascade deletion of children
 
@@ -114,7 +114,7 @@ export const moveTagServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[moveTagServerFn] Received:', ctx.data)
 
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const result = await db
       .update(tags)
@@ -139,7 +139,7 @@ export const moveTagServerFn = createServerFn({ method: 'POST' })
 export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     console.log('[getTagsServerFn] Fetching all tags')
-    const db = await initDatabase()
+    const db = initDatabase()
     const allTags = await db.select().from(tags)
     console.log('[getTagsServerFn] Found:', allTags.length)
     return { success: true, data: allTags }
@@ -152,7 +152,7 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
 export const getTagByIdServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
-    const db = await initDatabase()
+    const db = initDatabase()
     const tag = await db
       .select()
       .from(tags)

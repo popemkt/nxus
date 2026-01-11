@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm'
  */
 async function sync() {
   console.log('Starting tag sync...')
-  await initDatabase()
+  initDatabase()
   const db = getDatabase()
 
   // 1. Get all current tags

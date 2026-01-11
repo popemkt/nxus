@@ -36,7 +36,7 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
       ctx.data.tags,
     )
 
-    await initDatabase()
+    initDatabase()
     const db = getDatabase()
 
     // 1. Get current app
@@ -110,7 +110,7 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[updateAppCategoryServerFn] Updating:', ctx.data.appId)
 
-    await initDatabase()
+    initDatabase()
     const db = getDatabase()
 
     const appRecord = db

@@ -30,7 +30,7 @@ function stringifyIfNeeded(value: unknown): string | null {
 
 async function migrate() {
   console.log('Initializing database...')
-  await initDatabase()
+  initDatabase()
   const db = getDatabase()
 
   // Get all app directories

@@ -77,7 +77,7 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[getTagConfigServerFn] Fetching:', ctx.data.tagId)
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const config = await db
       .select()
@@ -106,7 +106,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   console.log('[getAllConfigurableTagsServerFn] Fetching all')
-  const db = await initDatabase()
+  const db = initDatabase()
 
   const configs = await db.select().from(tagConfigs)
 
@@ -133,7 +133,7 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
   )
   .handler(async (ctx) => {
     console.log('[setTagConfigServerFn] Setting:', ctx.data.tagId)
-    const db = await initDatabase()
+    const db = initDatabase()
     const now = new Date()
 
     // Check if exists
@@ -176,7 +176,7 @@ export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[getAppTagValuesServerFn] Fetching:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const values = await db
       .select()
@@ -209,7 +209,7 @@ export const getAllAppTagValuesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ appId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getAllAppTagValuesServerFn] Fetching:', ctx.data.appId)
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const allValues = await db
       .select()
@@ -248,7 +248,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       }
     }
 
-    const db = await initDatabase()
+    const db = initDatabase()
 
     // 1. Get tag schema for validation
     const tagConfig = await db
@@ -328,7 +328,7 @@ export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[deleteAppTagValuesServerFn] Deleting:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
 
     await db
       .delete(appTagValues)
@@ -352,7 +352,7 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ tagId: z.number() }))
   .handler(async (ctx) => {
     console.log('[getAppsByConfiguredTagServerFn] Fetching:', ctx.data.tagId)
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const results = await db
       .select()

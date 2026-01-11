@@ -36,7 +36,7 @@ export class ToolHealthService {
     console.log('[ToolHealthService] Checking tool:', toolId, checkCommand)
 
     // Ensure ephemeral database is initialized
-    await initEphemeralDatabase()
+    initEphemeralDatabase()
 
     // 1. Try to get cached result
     const cached = await this.getCachedHealth(toolId)

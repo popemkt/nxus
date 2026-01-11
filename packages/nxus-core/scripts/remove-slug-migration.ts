@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 async function dropSlugColumn() {
   console.log('Starting slug column removal migration...')
 
-  await initDatabase()
+  initDatabase()
   const db = getDatabase()
 
   try {

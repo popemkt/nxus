@@ -10,7 +10,7 @@ import { eq, desc } from 'drizzle-orm'
 export const getInboxItemsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     console.log('[getInboxItemsServerFn] Fetching all items')
-    const db = await initDatabase()
+    const db = initDatabase()
     const items = await db
       .select()
       .from(inboxItems)
@@ -50,7 +50,7 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[addInboxItemServerFn] Input:', ctx.data)
     const { title, notes } = ctx.data
-    const db = await initDatabase()
+    const db = initDatabase()
     const now = new Date()
 
     const result = await db
@@ -84,7 +84,7 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[updateInboxItemServerFn] Input:', ctx.data)
     const { id, ...updates } = ctx.data
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const result = await db
       .update(inboxItems)
@@ -113,7 +113,7 @@ export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[deleteInboxItemServerFn] Input:', ctx.data)
     const { id } = ctx.data
-    const db = await initDatabase()
+    const db = initDatabase()
 
     const result = await db
       .delete(inboxItems)
@@ -137,7 +137,7 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
     console.log('[markAsProcessingServerFn] Input:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
     const result = await db
       .update(inboxItems)
       .set({ status: 'processing', updatedAt: new Date() })
@@ -156,7 +156,7 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number() }))
   .handler(async (ctx) => {
     console.log('[markAsDoneServerFn] Input:', ctx.data)
-    const db = await initDatabase()
+    const db = initDatabase()
     const result = await db
       .update(inboxItems)
       .set({ status: 'done', updatedAt: new Date() })

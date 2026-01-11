@@ -3,5 +3,11 @@ packages:
 
 autoInstallPeers: true
 
-ignoredBuiltDependencies:
+onlyBuiltDependencies:
+  - '@swc/core'
+  - better-sqlite3
+  - esbuild
+  - msw
   - node-pty
+  - nx
+  - unrs-resolver
