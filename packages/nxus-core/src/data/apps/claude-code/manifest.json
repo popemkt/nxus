@@ -69,14 +69,14 @@
     ],
     "metadata": {
         "tags": [
-            "ai",
             "coding",
             "anthropic",
-            "cli"
+            "cli",
+            "ai-provider"
         ],
         "category": "development-tools",
         "createdAt": "2026-01-01T15:32:00.000Z",
-        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "updatedAt": "2026-01-11T07:45:18.620Z",
         "version": "1.0.0",
         "author": "nxus"
     },

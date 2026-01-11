@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-01-11T04:07:20.901Z",
-  "count": 31,
+  "exportedAt": "2026-01-11T08:45:21.431Z",
+  "count": 33,
   "items": [
     {
       "id": 1,
@@ -9,7 +9,7 @@
       "notes": "Context management",
       "status": "pending",
       "createdAt": "2026-01-02T17:57:31.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 2,
@@ -17,7 +17,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-03T10:31:57.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 3,
@@ -25,7 +25,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-03T11:45:22.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 4,
@@ -33,7 +33,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-03T12:32:15.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 5,
@@ -41,7 +41,7 @@
       "notes": "The workflow command type will be combination of multiple commands/actions.\n\nI can click on the axilliary button to view the graph\n\nWhen executed the graph will run as I see it.\n\nThis means actions need to have input outputs now",
       "status": "pending",
       "createdAt": "2026-01-03T14:50:20.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 6,
@@ -49,7 +49,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-03T15:14:32.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 7,
@@ -57,7 +57,7 @@
       "notes": "Using command palletes in the context of terminal will just paste in the command",
       "status": "pending",
       "createdAt": "2026-01-03T15:28:14.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 8,
@@ -65,7 +65,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-03T17:05:25.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 9,
@@ -73,7 +73,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-03T17:06:16.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 10,
@@ -81,7 +81,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T05:45:55.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 11,
@@ -89,7 +89,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T08:39:54.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 12,
@@ -97,7 +97,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T12:57:09.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 13,
@@ -105,7 +105,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T13:55:22.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 14,
@@ -113,7 +113,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T14:25:03.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 15,
@@ -121,7 +121,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T15:01:37.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 16,
@@ -129,7 +129,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T15:13:26.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 17,
@@ -137,7 +137,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-04T15:28:15.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 18,
@@ -145,7 +145,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-05T02:50:54.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 19,
@@ -153,7 +153,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-05T16:48:22.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 20,
@@ -161,7 +161,7 @@
       "notes": "Markdown documentation of commands, execution graphs\n\nCollections for viewing related tools",
       "status": "pending",
       "createdAt": "2026-01-06T16:21:30.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 21,
@@ -169,7 +169,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-06T16:21:39.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 22,
@@ -177,7 +177,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-06T16:22:01.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 23,
@@ -185,7 +185,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-06T16:22:25.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 24,
@@ -193,7 +193,7 @@
       "notes": "Having os lists, adapters\nConfiguration of Terminal to use (auto detect terminals)",
       "status": "pending",
       "createdAt": "2026-01-06T16:25:45.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 25,
@@ -201,7 +201,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-06T16:31:10.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 26,
@@ -209,7 +209,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-06T16:33:04.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 27,
@@ -217,7 +217,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-07T02:32:01.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 28,
@@ -225,7 +225,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-07T02:32:35.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 29,
@@ -233,7 +233,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-08T17:04:30.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 30,
@@ -241,7 +241,7 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-09T12:51:11.000Z",
-      "updatedAt": "2026-01-09T17:59:58.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
     },
     {
       "id": 31,
@@ -249,7 +249,23 @@
       "notes": null,
       "status": "pending",
       "createdAt": "2026-01-09T18:22:01.000Z",
-      "updatedAt": "2026-01-09T18:22:01.000Z"
+      "updatedAt": "2026-01-11T04:09:12.000Z"
+    },
+    {
+      "id": 32,
+      "title": "adding to db doesn't refresh UI, even in incognito",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-11T04:21:58.000Z",
+      "updatedAt": "2026-01-11T04:21:58.000Z"
+    },
+    {
+      "id": 33,
+      "title": "refactor tags to use slug + display names",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-11T07:46:02.000Z",
+      "updatedAt": "2026-01-11T07:46:02.000Z"
     }
   ]
 }
