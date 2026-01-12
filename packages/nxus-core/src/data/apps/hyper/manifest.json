@@ -87,12 +87,7 @@
         }
     ],
     "metadata": {
-        "tags": [
-            "terminal",
-            "electron",
-            "web-based",
-            "extensible"
-        ],
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-11T21:55:46Z",
         "updatedAt": "2026-01-11T21:55:46Z",

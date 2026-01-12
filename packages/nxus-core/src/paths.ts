@@ -24,9 +24,9 @@ const __dirname = path.dirname(__filename)
 export const PATHS = {
   /**
    * Root directory of the nxus-core package
-   * Computed from the current file location
+   * Computed from the current file location (src/paths.ts -> go up 1 level)
    */
-  nxusCoreRoot: path.resolve(__dirname, '..', '..'),
+  nxusCoreRoot: path.resolve(__dirname, '..'),
 
   /**
    * Root directory for app data (manifests, scripts, docs)
@@ -38,7 +38,8 @@ export const PATHS = {
    * Root directory for cloned repository instances
    * Default: ~/.nxus/repos
    */
-  reposRoot: process.env.APP_REPO_ROOT || path.resolve(os.homedir(), '.nxus', 'repos'),
+  reposRoot:
+    process.env.APP_REPO_ROOT || path.resolve(os.homedir(), '.nxus', 'repos'),
 
   /**
    * Default root directory for user-installed apps

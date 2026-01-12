@@ -24,6 +24,16 @@ const commandDescriptions: Record<DbCommand, string> = {
 }
 
 /**
+ * Get the nxus-core package root path
+ */
+export const getPackageRootServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { PATHS } = await import('@/paths')
+    return { path: PATHS.nxusCoreRoot }
+  },
+)
+
+/**
  * Run a database command (seed, export, migrate)
  */
 export const runDbCommandServerFn = createServerFn({ method: 'POST' })

@@ -52,7 +52,11 @@ function loadJsonFile<T>(filepath: string): T | null {
 }
 
 async function seed() {
-  console.log('Initializing database...')
+  console.log('\n' + '='.repeat(50))
+  console.log('  DB Seed: JSON → Database')
+  console.log('='.repeat(50) + '\n')
+
+  console.log('[1/4] Initializing database...')
   initDatabase()
   const db = getDatabase()
 
@@ -60,7 +64,7 @@ async function seed() {
   let commandsCount = 0
 
   // Seed apps from individual manifest.json files
-  console.log('Seeding apps from manifests...')
+  console.log('[2/4] Seeding apps from manifests...')
 
   // Get all app directories
   const appDirs = readdirSync(appsDir).filter((name) => {
@@ -162,7 +166,7 @@ async function seed() {
   console.log(`  Upserted ${appsCount} apps, ${commandsCount} commands`)
 
   // Seed tags
-  console.log('Seeding tags...')
+  console.log('[3/4] Seeding tags...')
   const tagsData = loadJsonFile<{ tags: Record<string, unknown>[] }>(
     resolve(dataDir, 'tags.json'),
   )
@@ -200,7 +204,7 @@ async function seed() {
   }
 
   // Seed inbox
-  console.log('Seeding inbox items...')
+  console.log('[4/4] Seeding inbox items...')
   const inboxData = loadJsonFile<{ items: Record<string, unknown>[] }>(
     resolve(dataDir, 'inbox.json'),
   )
@@ -242,9 +246,11 @@ async function seed() {
   // Save the database
   saveMasterDatabase()
 
-  console.log('\n✅ Seed complete!')
+  console.log('\n' + '='.repeat(50))
+  console.log('✅ Seed complete!')
   console.log(`   Apps: ${appsCount}, Commands: ${commandsCount}`)
   console.log(`   Tags: ${tagsCount}, Inbox: ${inboxCount}`)
+  console.log('='.repeat(50) + '\n')
 }
 
 seed().catch(console.error)

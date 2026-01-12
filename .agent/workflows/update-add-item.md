@@ -50,6 +50,30 @@ The manifest lives at `packages/nxus-core/src/data/apps/<id>/manifest.json`.
   - `fields`: Array of `{ key, label, type, required }`.
   - _Usage_: Stored locally in browser `localStorage` (via `toolConfigService`).
 
+### Metadata & Tags
+
+- **`metadata.category`**: Broad classification slug (e.g., `development-tools`, `ai-tools`, `utilities`).
+- **`metadata.tags`**: Array of `TagRef` objects for search/filtering.
+  - **Format**: `[{ "id": 1, "name": "terminal" }, { "id": 2, "name": "git" }]`
+  - **Important**: Tags must reference _existing_ tags from the database (created via app UI).
+  - _Quirk_: If you add a tag that doesn't exist yet, run migration again after creating it in the UI.
+- **`metadata.version`**: Semantic version (e.g., `1.0.0`).
+- **`metadata.author`**: Tool author/maintainer name.
+
+### Platforms
+
+- **Top-level `platform`**: Array of supported operating systems: `["linux", "macos", "windows"]`.
+  - Defines where the tool can be installed/used.
+- **Per-command `platforms`**: Override for specific commands.
+  - Example: An uninstall command that only works on Linux:
+    ```json
+    {
+      "id": "uninstall",
+      "platforms": ["linux"],
+      "command": "sudo dnf remove -y my-tool"
+    }
+    ```
+
 ## 4. Define Commands
 
 Commands are the primary way users interact with items.
@@ -77,6 +101,28 @@ For complex cross-platform logic, don't put giant commands in JSON.
     - Use `param([switch]$Private)` -> Checkbox
     - Use `param([ValidateSet("public","private")][string]$Visibility)` -> Dropdown
 
+### Command Requirements
+
+Use the `requires` field to declare what a command needs to run:
+
+- **`selfInstalled`**: `true` if the tool itself must be installed (e.g., uninstall/update commands).
+- **`selfNotInstalled`**: `true` if the tool must NOT be installed (e.g., install commands).
+- **`tools`**: Array of tool IDs that must be present (e.g., `["git", "node"]`).
+
+Example:
+
+```json
+{
+  "id": "install",
+  "mode": "script",
+  "command": "install.ps1",
+  "requires": {
+    "selfNotInstalled": true,
+    "tools": ["powershell"]
+  }
+}
+```
+
 ## 5. Add Documentation (Optional)
 
 1.  Create `guide.md` in the app folder.
@@ -90,11 +136,19 @@ For complex cross-platform logic, don't put giant commands in JSON.
 
 ## 6. Verification Checklist
 
-- [ ] **Manifest Valid**: JSON is valid and matches schema.
-- [ ] **Health Check**:
+- [ ] **Manifest Valid**: JSON is valid and matches `AppSchema`.
+  - Run `pnpm db:migrate` in terminal - should complete without errors.
+- [ ] **Tags**:
+  - [ ] `metadata.tags` uses `TagRef` format: `[{ "id": 1, "name": "..." }]`.
+  - [ ] Tags reference existing IDs from the database.
+  - [ ] Item appears when filtering by tag in sidebar.
+- [ ] **Health Check** (if applicable):
   - [ ] `checkCommand` works (returns 0 if installed).
   - [ ] Status badge shows "Installed" or "Not Found".
-  - [ ] "Checking..." badge does not hang (ensure `checkCommand` is present if badge is desired).
+  - [ ] "Checking..." badge does not hang.
+- [ ] **Platforms**:
+  - [ ] Top-level `platform` array is set if tool is OS-specific.
+  - [ ] Per-command `platforms` work for OS-specific commands.
 - [ ] **Scripts**:
   - [ ] Parameters modal appears for `script` mode.
   - [ ] Folder picker works for path parameters.

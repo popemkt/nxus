@@ -33,12 +33,16 @@ function parseJsonField<T>(value: string | null): T | undefined {
 }
 
 async function exportData() {
-  console.log('Initializing database...')
+  console.log('\n' + '='.repeat(50))
+  console.log('  DB Export: Database → JSON')
+  console.log('='.repeat(50) + '\n')
+
+  console.log('[1/3] Initializing database...')
   initDatabase()
   const db = getDatabase()
 
   // Export apps to individual manifest.json files
-  console.log('Exporting apps to individual manifests...')
+  console.log('[2/3] Exporting apps to individual manifests...')
   const allApps = db.select().from(apps).all()
   const allCommands = db.select().from(commands).all()
 
@@ -131,7 +135,7 @@ async function exportData() {
   console.log(`  Exported ${appsExported} app manifests`)
 
   // Export tags
-  console.log('Exporting tags...')
+  console.log('[3/3] Exporting tags and inbox...')
   const allTags = db.select().from(tags).all()
 
   writeFileSync(
@@ -147,10 +151,8 @@ async function exportData() {
       2,
     ),
   )
-  console.log(`  Exported ${allTags.length} tags`)
+  console.log(`  → Exported ${allTags.length} tags`)
 
-  // Export inbox items
-  console.log('Exporting inbox items...')
   const allInbox = db.select().from(inboxItems).all()
 
   writeFileSync(
@@ -166,11 +168,13 @@ async function exportData() {
       2,
     ),
   )
-  console.log(`  Exported ${allInbox.length} inbox items`)
+  console.log(`  → Exported ${allInbox.length} inbox items`)
 
-  console.log('\n✅ Export complete!')
+  console.log('\n' + '='.repeat(50))
+  console.log('✅ Export complete!')
   console.log('   App manifests: src/data/apps/{appId}/manifest.json')
   console.log('   Tags/Inbox: src/data/')
+  console.log('='.repeat(50) + '\n')
 }
 
 exportData().catch(console.error)

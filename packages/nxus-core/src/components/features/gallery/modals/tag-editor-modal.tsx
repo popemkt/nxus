@@ -47,7 +47,6 @@ export function TagEditorModal({
   onSave,
 }: TagEditorModalProps) {
   const queryClient = useQueryClient()
-  const { getAllTags } = useTagDataStore()
 
   // Local state - now using TagRef[] instead of string[] slugs
   const [selectedTags, setSelectedTags] = React.useState<TagRef[]>([])

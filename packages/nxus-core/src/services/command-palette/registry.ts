@@ -175,24 +175,28 @@ export const genericCommands: GenericCommand[] = [
       }
     },
   },
-  // Database sync commands
+  // Database sync commands - run in terminal for visibility
   {
     id: 'db-seed',
     name: 'DB: Sync JSON → Database',
     icon: 'ArrowDown',
     needsTarget: false,
     execute: async () => {
-      const { runDbCommandServerFn } = await import(
+      const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
-      const result = await runDbCommandServerFn({ data: { command: 'seed' } })
-      if (result.success) {
-        console.log('db:seed completed:', result.output)
-        alert('✅ Database seeded from JSON files')
-      } else {
-        console.error('db:seed failed:', result.error)
-        alert(`❌ Seed failed: ${result.error}`)
-      }
+      const { commandExecutor } = await import(
+        '@/services/command-palette/executor'
+      )
+      const { useTerminalStore } = await import('@/stores/terminal.store')
+      const { path: cwd } = await getPackageRootServerFn()
+      const terminalStore = useTerminalStore.getState()
+      await commandExecutor.executeInteractive({
+        command: 'pnpm db:seed',
+        cwd,
+        tabName: 'DB: JSON → Database',
+        terminalStore,
+      })
     },
   },
   {
@@ -201,17 +205,21 @@ export const genericCommands: GenericCommand[] = [
     icon: 'ArrowUp',
     needsTarget: false,
     execute: async () => {
-      const { runDbCommandServerFn } = await import(
+      const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
-      const result = await runDbCommandServerFn({ data: { command: 'export' } })
-      if (result.success) {
-        console.log('db:export completed:', result.output)
-        alert('✅ Database exported to JSON files')
-      } else {
-        console.error('db:export failed:', result.error)
-        alert(`❌ Export failed: ${result.error}`)
-      }
+      const { commandExecutor } = await import(
+        '@/services/command-palette/executor'
+      )
+      const { useTerminalStore } = await import('@/stores/terminal.store')
+      const { path: cwd } = await getPackageRootServerFn()
+      const terminalStore = useTerminalStore.getState()
+      await commandExecutor.executeInteractive({
+        command: 'pnpm db:export',
+        cwd,
+        tabName: 'DB: Database → JSON',
+        terminalStore,
+      })
     },
   },
   {
@@ -220,19 +228,21 @@ export const genericCommands: GenericCommand[] = [
     icon: 'Database',
     needsTarget: false,
     execute: async () => {
-      const { runDbCommandServerFn } = await import(
+      const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
-      const result = await runDbCommandServerFn({
-        data: { command: 'migrate' },
+      const { commandExecutor } = await import(
+        '@/services/command-palette/executor'
+      )
+      const { useTerminalStore } = await import('@/stores/terminal.store')
+      const { path: cwd } = await getPackageRootServerFn()
+      const terminalStore = useTerminalStore.getState()
+      await commandExecutor.executeInteractive({
+        command: 'pnpm db:migrate',
+        cwd,
+        tabName: 'DB: Migrate Manifests',
+        terminalStore,
       })
-      if (result.success) {
-        console.log('db:migrate completed:', result.output)
-        alert('✅ Manifests migrated to database')
-      } else {
-        console.error('db:migrate failed:', result.error)
-        alert(`❌ Migration failed: ${result.error}`)
-      }
     },
   },
 ]

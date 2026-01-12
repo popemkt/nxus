@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
 import { apps, commands } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
+import { AppMetadataSchema } from '../src/types/app'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -29,7 +30,11 @@ function stringifyIfNeeded(value: unknown): string | null {
 }
 
 async function migrate() {
-  console.log('Initializing database...')
+  console.log('\n' + '='.repeat(50))
+  console.log('  DB Migrate: Manifests → Database')
+  console.log('='.repeat(50) + '\n')
+
+  console.log('[1/2] Initializing database...')
   initDatabase()
   const db = getDatabase()
 
@@ -43,10 +48,11 @@ async function migrate() {
     )
   })
 
-  console.log(`Found ${appDirs.length} app manifests to migrate\n`)
+  console.log(`[2/2] Processing ${appDirs.length} app manifests...\n`)
 
   let appsCount = 0
   let commandsCount = 0
+  const validationErrors: { app: string; errors: string[] }[] = []
 
   for (const appDir of appDirs) {
     const manifestPath = join(appsDir, appDir, 'manifest.json')
@@ -54,6 +60,19 @@ async function migrate() {
 
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+
+      // Validate metadata schema
+      if (manifest.metadata) {
+        const metadataResult = AppMetadataSchema.safeParse(manifest.metadata)
+        if (!metadataResult.success) {
+          const errors = metadataResult.error.issues.map(
+            (issue) => `  - ${issue.path.join('.')}: ${issue.message}`,
+          )
+          validationErrors.push({ app: appDir, errors })
+          console.log(`  ⚠ Validation warnings (will still migrate):`)
+          errors.forEach((e) => console.log(e))
+        }
+      }
 
       // Extract commands from manifest
       const appCommands = manifest.commands || []
@@ -155,6 +174,20 @@ async function migrate() {
   console.log(`✅ Migration complete!`)
   console.log(`   Apps migrated: ${appsCount}`)
   console.log(`   Commands migrated: ${commandsCount}`)
+
+  // Report validation errors summary
+  if (validationErrors.length > 0) {
+    console.log('\n' + '='.repeat(50))
+    console.log(
+      `⚠️  ${validationErrors.length} app(s) had validation warnings:`,
+    )
+    for (const { app, errors } of validationErrors) {
+      console.log(`\n   ${app}:`)
+      errors.forEach((e) => console.log(`   ${e}`))
+    }
+    console.log('\n   Fix these manifests to match the schema.')
+  }
+
   console.log('\nNext steps:')
   console.log('  1. Run: npm run db:export')
   console.log('  2. Commit the generated JSON files')
