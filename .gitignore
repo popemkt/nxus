@@ -42,6 +42,6 @@ Thumbs.db
 .nx/workspace-data
 packages/repos
 
-# Database temp files (WAL and SHM)
-*wal
-*shm
+# SQLite runtime files
+*.db-shm
+*.db-wal

@@ -13,7 +13,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase } from '../src/db/client'
 import { apps, commands, tags, inboxItems } from '../src/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, isNull } from 'drizzle-orm'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -44,7 +44,12 @@ async function exportData() {
   // Export apps to individual manifest.json files
   console.log('[2/3] Exporting apps to individual manifests...')
   const allApps = db.select().from(apps).all()
-  const allCommands = db.select().from(commands).all()
+  // Only export active commands (not soft-deleted)
+  const allCommands = db
+    .select()
+    .from(commands)
+    .where(isNull(commands.deletedAt))
+    .all()
 
   // Group commands by app
   const commandsByApp = new Map<string, (typeof allCommands)[0][]>()

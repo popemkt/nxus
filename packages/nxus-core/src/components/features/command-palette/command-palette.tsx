@@ -442,6 +442,12 @@ export function CommandPalette() {
       (c) => c.id === cmd.commandId,
     )
 
+    // Get the app's checkCommand for self-installation checks
+    const selfCheckCommand =
+      appResult.data.type === 'tool'
+        ? (appResult.data as any).checkCommand
+        : undefined
+
     return checkCommandAvailability(
       {
         ...cmd,
@@ -453,6 +459,7 @@ export function CommandPalette() {
         appId: cmd.appId,
         appType: appResult.data.type,
       },
+      selfCheckCommand,
     )
   }
 

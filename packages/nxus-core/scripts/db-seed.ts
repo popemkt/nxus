@@ -123,9 +123,13 @@ async function seed() {
     }
     appsCount++
 
-    // Upsert commands
+    // Upsert commands - track which command IDs are in the manifest
+    const manifestCommandIds = new Set<string>()
+
     for (const cmd of appCommands) {
       const commandId = `${manifest.id}:${cmd.id}`
+      manifestCommandIds.add(commandId)
+
       const commandRecord = {
         id: commandId,
         appId: manifest.id as string,
@@ -152,14 +156,32 @@ async function seed() {
         .get()
 
       if (existingCmd) {
+        // Restore if soft-deleted, and update
         db.update(commands)
-          .set({ ...commandRecord, updatedAt: new Date() })
+          .set({ ...commandRecord, deletedAt: null, updatedAt: new Date() })
           .where(eq(commands.id, commandId))
           .run()
       } else {
         db.insert(commands).values(commandRecord).run()
       }
       commandsCount++
+    }
+
+    // Soft delete commands that exist in DB but not in manifest
+    const dbCommands = db
+      .select()
+      .from(commands)
+      .where(eq(commands.appId, manifest.id as string))
+      .all()
+
+    for (const dbCmd of dbCommands) {
+      if (!manifestCommandIds.has(dbCmd.id) && !dbCmd.deletedAt) {
+        db.update(commands)
+          .set({ deletedAt: new Date(), updatedAt: new Date() })
+          .where(eq(commands.id, dbCmd.id))
+          .run()
+        console.log(`    Soft-deleted orphaned command: ${dbCmd.id}`)
+      }
     }
   }
 

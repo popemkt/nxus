@@ -144,6 +144,9 @@ export const commands = sqliteTable('commands', {
   platforms: text('platforms'), // JSON array: ["linux", "macos", "windows"]
   requires: text('requires'), // JSON object: CommandRequirements
 
+  // Soft delete
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
     .notNull(),

@@ -78,7 +78,7 @@ export function useAppRegistry(
     const tagSet = new Set<string>()
     for (const app of apps) {
       for (const tag of app.metadata.tags) {
-        tagSet.add(tag)
+        tagSet.add(tag.name)
       }
     }
     return Array.from(tagSet).sort()

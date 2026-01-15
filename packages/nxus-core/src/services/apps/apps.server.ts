@@ -9,7 +9,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, getDatabase } from '../../db/client'
 import { apps, commands } from '../../db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, isNull, and } from 'drizzle-orm'
 import type { App, AppCommand, AppMetadata, DocEntry } from '../../types/app'
 
 /**
@@ -77,8 +77,12 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
     // Get all apps
     const appRecords = db.select().from(apps).all()
 
-    // Get all commands grouped by app
-    const commandRecords = db.select().from(commands).all()
+    // Get all active commands (not soft-deleted) grouped by app
+    const commandRecords = db
+      .select()
+      .from(commands)
+      .where(isNull(commands.deletedAt))
+      .all()
     const commandsByApp = new Map<string, AppCommand[]>()
 
     for (const cmd of commandRecords) {
@@ -120,11 +124,11 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
       return { success: false as const, error: `App ${id} not found` }
     }
 
-    // Get commands for this app
+    // Get active commands for this app (not soft-deleted)
     const commandRecords = db
       .select()
       .from(commands)
-      .where(eq(commands.appId, id))
+      .where(and(eq(commands.appId, id), isNull(commands.deletedAt)))
       .all()
 
     const app = parseAppRecord(appRecord)

@@ -5,6 +5,7 @@
     "type": "tool",
     "path": "https://hyper.is/",
     "homepage": "https://hyper.is/",
+    "thumbnail": "/thumbnails/hyper.svg",
     "platform": [
         "linux",
         "macos",

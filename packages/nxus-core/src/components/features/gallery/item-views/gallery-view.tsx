@@ -230,8 +230,8 @@ function ItemCard({ app, compact }: { app: App; compact: boolean }) {
               {!isTool && !compact && (
                 <>
                   {app.metadata.tags.slice(0, 2).map((tag) => (
-                    <Badge key={tag} variant="outline">
-                      {tag}
+                    <Badge key={tag.id} variant="outline">
+                      {tag.name}
                     </Badge>
                   ))}
                   {app.metadata.tags.length > 2 && (

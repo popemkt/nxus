@@ -279,6 +279,7 @@ export function useCommand(
 export function checkCommandAvailability(
   command: AppCommand,
   context: CommandContext,
+  selfCheckCommand?: string,
 ): CommandAvailability {
   // Use queryClient imported at module level
   const qc = queryClient
@@ -297,5 +298,21 @@ export function checkCommandAvailability(
     }
   }
 
-  return resolveRequirements(command.requires, context, healthByCommand)
+  // Check self health if needed
+  if (
+    selfCheckCommand &&
+    (command.requires?.selfInstalled || command.requires?.selfNotInstalled)
+  ) {
+    healthByCommand.set(
+      selfCheckCommand,
+      getToolHealthFromCache(qc, selfCheckCommand),
+    )
+  }
+
+  return resolveRequirements(
+    command.requires,
+    context,
+    healthByCommand,
+    selfCheckCommand,
+  )
 }

@@ -118,8 +118,8 @@ export function TableView({ items }: TableViewProps) {
           return (
             <div className="flex flex-wrap gap-1">
               {tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
+                <Badge key={tag.id} variant="outline" className="text-xs">
+                  {tag.name}
                 </Badge>
               ))}
               {tags.length > 3 && (
