@@ -4,7 +4,9 @@ Factory Droid is an AI agentic coding assistant for agent-native software develo
 
 ## Installation
 
-**Linux/macOS:**
+{{command:install-factory-droid}}
+
+**Manual Installation (Linux/macOS):**
 
 ```bash
 curl -fsSL https://app.factory.ai/cli | sh
@@ -20,9 +22,14 @@ irm https://app.factory.ai/cli/windows | iex
 
 1. Navigate to your project directory
 2. Start an interactive session:
-   ```bash
-   droid
-   ```
+
+{{command:start-droid}}
+
+Or manually:
+
+```bash
+droid
+```
 
 ## Example Prompts
 

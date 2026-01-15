@@ -132,7 +132,12 @@ Example:
       { "id": "guide", "title": "User Guide", "file": "guide.md", "icon": "BookOpen" }
     ]
     ```
-3.  **Quirk**: You can embed runnable commands in markdown! Users can click to run.
+3.  **Embed Runnable Commands**: You can add interactive buttons to your markdown!
+    - **Syntax**: `{{command:command-id}}`
+    - **Cross-Item Referencing**: You can also reference commands from _other_ items using `{{command:item-id:command-id}}`.
+      - _Example_: `{{command:claude-code:install-claude-code}}`
+    - **Usage**: Use this to make it easy for users to install, update, or run your tool directly from the guide.
+    - **Note**: Ensure the `command-id` exists in the target item's manifest.
 
 ## 6. Verification Checklist
 

@@ -4,11 +4,9 @@ This guide covers how to install the GitHub CLI (`gh`) on your system.
 
 ## Smart Installation
 
-We provided a smart PowerShell script that automatically detects your OS and installs the CLI using the appropriate package manager.
+We provide a smart PowerShell script that automatically detects your OS and installs the CLI using the appropriate package manager.
 
-**[View Install Script](command:gh-view-install-script)**
-
-To run it, simply use the **Install** command in the app.
+{{command:install-gh-cli}}
 
 ## Manual Installation
 

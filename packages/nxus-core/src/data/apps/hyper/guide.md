@@ -15,7 +15,7 @@ You can install Hyper using your favorite package manager:
 
 ### Launch Hyper
 
-**[Launch Hyper](command:hyper-open)**
+{{command:hyper-open}}
 
 ### Configuration
 
@@ -32,11 +32,12 @@ Hyper is highly extensible. You can find plugins and themes at [hyper.is/plugins
 ### Install a Plugin
 
 To install a plugin, use the `hyper i` command followed by the plugin name.
-**[Install Plugin](command:hyper-install-plugin)**
+
+{{command:hyper-install-plugin}}
 
 ### List Installed Plugins
 
-**[List Plugins](command:hyper-list-plugins)**
+{{command:hyper-list-plugins}}
 
 ### Advanced Customization
 
