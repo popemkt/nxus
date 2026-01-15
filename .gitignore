@@ -43,5 +43,5 @@ Thumbs.db
 packages/repos
 
 # Database temp files (WAL and SHM)
-*.wal
-*.shm
+*wal
+*shm
