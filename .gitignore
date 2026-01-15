@@ -41,3 +41,7 @@ Thumbs.db
 .nx/cache
 .nx/workspace-data
 packages/repos
+
+# Database temp files (WAL and SHM)
+*.wal
+*.shm
