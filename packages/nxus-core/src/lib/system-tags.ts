@@ -22,7 +22,7 @@ export interface SystemTag {
 export const SYSTEM_TAGS = {
   AI_PROVIDER: {
     id: 14,
-    name: 'AI Provider',
+    name: 'AI CLI Provider',
     description: 'AI tools that can be configured to provide AI capabilities',
     configurable: true,
   },

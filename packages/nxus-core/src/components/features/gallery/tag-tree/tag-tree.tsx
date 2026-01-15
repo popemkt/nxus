@@ -70,14 +70,58 @@ function TagTreeItem({
   const toggleExpanded = useTagUIStore((s) => s.toggleExpanded)
   const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
   const toggleSelected = useTagUIStore((s) => s.toggleSelected)
+  const updateTag = useTagDataStore((s) => s.updateTag)
 
   const tagIdStr = String(tag.id)
   const isExpanded = expandedIds.has(tagIdStr)
   const isSelected = selectedTagIds.has(tagIdStr)
 
+  // In-place edit state
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(tag.name)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
   // Filter: show if matches search or has matching children
   const matchesSearch =
     !searchQuery || tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+
+  const startEditing = () => {
+    if (mode === 'editor') {
+      setEditValue(tag.name)
+      setIsEditing(true)
+    }
+  }
+
+  const cancelEditing = () => {
+    setIsEditing(false)
+    setEditValue(tag.name)
+  }
+
+  const saveEdit = async () => {
+    const trimmed = editValue.trim()
+    if (trimmed && trimmed !== tag.name) {
+      await updateTag(tag.id, { name: trimmed })
+    }
+    setIsEditing(false)
+  }
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveEdit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelEditing()
+    }
+  }
 
   const handleClick = () => {
     // Always toggle selection (for filter bar)
@@ -85,6 +129,18 @@ function TagTreeItem({
     // In editor mode, also call the onSelect callback
     if (mode === 'editor') {
       onSelect?.(tag.id)
+    }
+  }
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    startEditing()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'F2' && mode === 'editor' && !isEditing) {
+      e.preventDefault()
+      startEditing()
     }
   }
 
@@ -98,7 +154,7 @@ function TagTreeItem({
   }
 
   const content = (
-    <div className="select-none">
+    <div className="select-none" onKeyDown={handleKeyDown} tabIndex={0}>
       <div
         className={cn(
           'flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-colors group',
@@ -107,6 +163,7 @@ function TagTreeItem({
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
       >
         {/* Icon with optional expand overlay */}
         <div className="relative flex items-center justify-center w-5 h-5">
@@ -152,8 +209,21 @@ function TagTreeItem({
           />
         )}
 
-        {/* Tag name */}
-        <span className="text-sm truncate flex-1">{tag.name}</span>
+        {/* Tag name - editable in editor mode */}
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleEditKeyDown}
+            onBlur={saveEdit}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 text-sm px-1 py-0 bg-transparent outline outline-1 outline-primary/50 rounded focus:outline-primary min-w-0"
+          />
+        ) : (
+          <span className="text-sm truncate flex-1">{tag.name}</span>
+        )}
 
         {/* Configurable indicator */}
         {isConfigurable && (
