@@ -297,7 +297,7 @@ export function CommandPalette() {
     while (iterations < maxIterations) {
       const item = items[currentIndex]
       // Check if it's an app command and if it's disabled
-      if ('appId' in item) {
+      if ('app' in item) {
         const availability = getCommandAvailability(item as PaletteCommand)
         if (availability.canExecute) return currentIndex
       } else {
@@ -394,11 +394,11 @@ export function CommandPalette() {
         const cmd = selectedItem as PaletteCommand
         openActions({
           id: cmd.id,
-          name: cmd.name,
-          appId: cmd.appId,
-          appName: cmd.appName,
-          mode: cmd.mode || 'execute',
-          command: cmd.command || '',
+          name: cmd.command.name,
+          appId: cmd.app.id,
+          appName: cmd.app.name,
+          mode: cmd.command.mode || 'execute',
+          command: cmd.command.command || '',
         })
       }
     } else if (e.key === 'Enter') {
@@ -432,33 +432,22 @@ export function CommandPalette() {
 
   // Check command availability using declarative requirements
   const getCommandAvailability = (cmd: PaletteCommand) => {
-    const appResult = appRegistryService.getAppById(cmd.appId)
-    if (!appResult.success) {
-      return { canExecute: false, reason: 'App not found' }
-    }
-
     // Use the command's declared requirements (not app dependencies)
     // This is the key change - commands only check their own requirements
-    const appCommand = appResult.data.commands?.find(
-      (c) => c.id === cmd.commandId,
-    )
 
     // Get the app's checkCommand for self-installation checks
     const selfCheckCommand =
-      appResult.data.type === 'tool'
-        ? (appResult.data as any).checkCommand
-        : undefined
+      cmd.app.type === 'tool' ? (cmd.app as any).checkCommand : undefined
 
     return checkCommandAvailability(
       {
-        ...cmd,
-        mode: cmd.mode ?? 'execute',
+        ...cmd.command,
+        mode: cmd.command.mode ?? 'execute',
         category: '',
-        requires: appCommand?.requires,
       },
       {
-        appId: cmd.appId,
-        appType: appResult.data.type,
+        appId: cmd.app.id,
+        appType: cmd.app.type,
       },
       selfCheckCommand,
     )
@@ -491,16 +480,13 @@ export function CommandPalette() {
         break
       case 'script': {
         // Use centralized script executor which handles interactive option
-        const appResult = appRegistryService.getAppById(cmd.appId)
-        const appType = appResult.success ? appResult.data.type : undefined
-
         const result = await commandExecutor.executeScript({
           appId: action.appId,
-          appType,
+          appType: cmd.app.type,
           scriptPath: action.scriptPath,
           scriptSource: action.scriptSource,
           interactive: action.interactive,
-          tabName: `${cmd.appName}: ${cmd.name}`,
+          tabName: `${cmd.app.name}: ${cmd.command.name}`,
           terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
         })
 
@@ -514,16 +500,12 @@ export function CommandPalette() {
         break
       }
       case 'execute': {
-        // Get app info for post-execution effects
-        const appResult = appRegistryService.getAppById(cmd.appId)
-        const appType = appResult.success ? appResult.data.type : undefined
-
         // Use centralized executor
         await commandExecutor.executeStreaming({
           command: action.command,
-          appId: cmd.appId,
-          appType,
-          tabName: `${cmd.appName}: ${cmd.name}`,
+          appId: cmd.app.id,
+          appType: cmd.app.type,
+          tabName: `${cmd.app.name}: ${cmd.command.name}`,
           terminalStore: { createTab, addLog, setStatus },
         })
         break
@@ -745,7 +727,7 @@ export function CommandPalette() {
                             title={isDisabled ? availability.reason : undefined}
                           >
                             <DynamicIcon
-                              name={cmd.icon}
+                              name={cmd.command.icon}
                               className={`h-4 w-4 ${
                                 isDisabled
                                   ? 'text-muted-foreground'
@@ -761,14 +743,14 @@ export function CommandPalette() {
                                   : 'text-muted-foreground'
                               }
                             >
-                              {cmd.appName}:
+                              {cmd.app.name}:
                             </span>
                             <span
                               className={
                                 isDisabled ? 'text-muted-foreground' : ''
                               }
                             >
-                              {cmd.name}
+                              {cmd.command.name}
                             </span>
                             {commandToAlias[cmd.id] && (
                               <code
@@ -793,9 +775,9 @@ export function CommandPalette() {
                               <span
                                 className={`ml-auto flex items-center gap-2 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
                               >
-                                {cmd.description && (
+                                {cmd.command.description && (
                                   <span className="text-xs truncate max-w-[120px]">
-                                    {cmd.description}
+                                    {cmd.command.description}
                                   </span>
                                 )}
                                 {/* Tab indicator for actions */}

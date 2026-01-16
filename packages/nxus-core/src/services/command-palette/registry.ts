@@ -1,26 +1,19 @@
 import { appRegistryService } from '@/services/apps/registry.service'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
-import type { App, CommandMode } from '@/types/app'
+import type { App, AppCommand, CommandMode } from '@/types/app'
 
 /**
  * Command extended with app context for palette display
+ * Uses composition pattern: embeds full App and AppCommand instead of flattening
  */
 export interface PaletteCommand {
+  /** Composite ID for keying: `${app.id}:${command.id}` */
   id: string
-  commandId: string
-  appId: string
-  appName: string
-  name: string
-  description?: string
-  icon: string
-  mode: CommandMode
-  command: string
-  target: 'app' | 'instance'
-  /** For script mode: where to resolve script path */
-  scriptSource?: string
-  /** For script mode: mode-specific options like interactive */
-  options?: Record<string, unknown>
+  /** Full app entity this command belongs to */
+  app: App
+  /** Full command definition */
+  command: AppCommand
 }
 
 /**
@@ -267,17 +260,8 @@ class CommandRegistry {
       for (const cmd of app.commands) {
         commands.push({
           id: `${app.id}:${cmd.id}`,
-          commandId: cmd.id,
-          appId: app.id,
-          appName: app.name,
-          name: cmd.name,
-          description: cmd.description,
-          icon: cmd.icon,
-          mode: cmd.mode ?? 'execute',
-          command: cmd.command,
-          target: cmd.target,
-          scriptSource: cmd.scriptSource,
-          options: cmd.options,
+          app,
+          command: cmd,
         })
       }
     }
@@ -401,9 +385,7 @@ class CommandRegistry {
   /**
    * Determine execution action based on mode
    */
-  getExecutionAction(
-    cmd: PaletteCommand,
-  ):
+  getExecutionAction(cmd: PaletteCommand):
     | { type: 'navigate'; url: string }
     | { type: 'execute'; command: string }
     | { type: 'copy'; text: string }
@@ -416,34 +398,36 @@ class CommandRegistry {
         scriptSource?: string
         interactive: boolean
       } {
-    switch (cmd.mode) {
+    const mode = cmd.command.mode ?? 'execute'
+    switch (mode) {
       case 'configure':
         return {
           type: 'configure',
-          appId: cmd.appId,
-          commandId: cmd.commandId,
+          appId: cmd.app.id,
+          commandId: cmd.command.id,
         }
       case 'docs':
-        return { type: 'docs', url: cmd.command }
+        return { type: 'docs', url: cmd.command.command }
       case 'copy':
-        return { type: 'copy', text: cmd.command }
+        return { type: 'copy', text: cmd.command.command }
       case 'terminal':
         return {
           type: 'navigate',
-          url: `/apps/${cmd.appId}?action=${cmd.commandId}`,
+          url: `/apps/${cmd.app.id}?action=${cmd.command.id}`,
         }
       case 'script':
         return {
           type: 'script',
-          appId: cmd.appId,
-          scriptPath: cmd.command,
-          scriptSource: cmd.scriptSource,
+          appId: cmd.app.id,
+          scriptPath: cmd.command.command,
+          scriptSource: cmd.command.scriptSource,
           interactive:
-            (cmd.options as { interactive?: boolean })?.interactive ?? false,
+            (cmd.command.options as { interactive?: boolean })?.interactive ??
+            false,
         }
       case 'execute':
       default:
-        return { type: 'execute', command: cmd.command }
+        return { type: 'execute', command: cmd.command.command }
     }
   }
 }
