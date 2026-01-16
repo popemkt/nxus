@@ -10,6 +10,7 @@ import { CommandPalette } from '@/components/features/command-palette/command-pa
 import { TerminalPanel } from '@/components/features/terminal/terminal-panel'
 import { ConfigureModal } from '@/components/features/app-detail/modals/configure-modal'
 import { InboxModal } from '@/components/features/inbox/inbox-modal'
+import { GlobalCommandParamsModal } from '@/components/features/command-params/global-command-params-modal'
 
 import appCss from '../styles.css?url'
 
@@ -145,6 +146,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <TerminalPanel />
           <ConfigureModal />
           <InboxModal />
+          <GlobalCommandParamsModal />
         </QueryClientProvider>
         <TanStackDevtools
           config={{

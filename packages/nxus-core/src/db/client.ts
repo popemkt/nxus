@@ -120,6 +120,8 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
       platforms TEXT,
       requires TEXT,
       options TEXT,
+      requirements TEXT,
+      params TEXT,
       deleted_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL

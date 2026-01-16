@@ -151,6 +151,10 @@ export const commands = sqliteTable('commands', {
   platforms: json<string[]>()('platforms'),
   requires: json<Record<string, unknown>>()('requires'),
   options: json<Record<string, unknown>>()('options'),
+  /** Tagged item selectors (e.g., pick an AI provider) */
+  requirements: json<Record<string, unknown>[]>()('requirements'),
+  /** User input parameters to collect before execution */
+  params: json<Record<string, unknown>[]>()('params'),
 
   // Soft delete
   deletedAt: integer('deleted_at', { mode: 'timestamp' }),

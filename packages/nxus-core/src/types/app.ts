@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CommandRequirementSchema, CommandParamSchema } from './command-params'
 
 /**
  * Supported platforms for app installation
@@ -155,6 +156,10 @@ export const AppCommandSchema = z.object({
   requires: CommandRequirementsSchema.optional(),
   /** Mode-specific options (stored as JSON in DB, parsed based on mode type) */
   options: z.record(z.string(), z.any()).optional(),
+  /** Tagged item selectors (e.g., pick an AI provider) */
+  requirements: z.array(CommandRequirementSchema).optional(),
+  /** User input parameters to collect before execution */
+  params: z.array(CommandParamSchema).optional(),
 })
 export type AppCommand = z.infer<typeof AppCommandSchema>
 

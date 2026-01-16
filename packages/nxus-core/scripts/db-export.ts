@@ -106,6 +106,11 @@ async function exportData() {
         ...(cmd.cwd && { cwd: cmd.cwd }),
         ...(cmd.platforms && { platforms: parseJsonField(cmd.platforms) }),
         ...(cmd.requires && { requires: parseJsonField(cmd.requires) }),
+        ...(cmd.options && { options: parseJsonField(cmd.options) }),
+        ...(cmd.requirements && {
+          requirements: parseJsonField(cmd.requirements),
+        }),
+        ...(cmd.params && { params: parseJsonField(cmd.params) }),
       }))
     }
 

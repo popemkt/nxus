@@ -1,7 +1,9 @@
 import { appRegistryService } from '@/services/apps/registry.service'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
-import type { App, AppCommand, CommandMode } from '@/types/app'
+import { SYSTEM_TAGS } from '@/lib/system-tags'
+import type { App, AppCommand } from '@/types/app'
+import type { CommandRequirement, CommandParam } from '@/types/command-params'
 
 /**
  * Command extended with app context for palette display
@@ -26,7 +28,21 @@ export interface GenericCommand {
   needsTarget?: 'app' | 'instance' | false
   /** Optional filter for target selection (e.g., only show remote-repo apps) */
   targetFilter?: (app: App) => boolean
-  execute: (targetId?: string, targetPath?: string) => void | Promise<void>
+  /** Tagged item selectors (e.g., pick an AI provider) */
+  requirements?: CommandRequirement[]
+  /** User input parameters to collect before execution */
+  params?: CommandParam[]
+  execute: (
+    targetId?: string,
+    targetPath?: string,
+    context?: {
+      requirements?: Record<
+        string,
+        { appId: string; value: Record<string, unknown> }
+      >
+      params?: Record<string, string | number | boolean>
+    },
+  ) => void | Promise<void>
 }
 
 /**
@@ -75,8 +91,82 @@ export const genericCommands: GenericCommand[] = [
     name: 'Generate Thumbnail',
     icon: 'Image',
     needsTarget: 'app',
-    execute: (appId) => {
-      window.location.href = `/apps/${appId}?action=generate-thumbnail`
+    requirements: [
+      {
+        name: 'provider',
+        tagId: SYSTEM_TAGS.AI_PROVIDER.id,
+        label: 'AI Provider',
+        description: 'Select which AI CLI to use for generation',
+      },
+    ],
+    params: [
+      {
+        name: 'additionalPrompt',
+        dataType: 'string',
+        uiType: 'textarea',
+        label: 'Additional Instructions',
+        description: 'Extra prompt to append to default thumbnail prompt',
+      },
+    ],
+    execute: async (appId, _targetPath, context) => {
+      if (!appId) return
+
+      const provider = context?.requirements?.provider
+      const additionalPrompt = context?.params?.additionalPrompt as
+        | string
+        | undefined
+
+      if (!provider) {
+        console.error('No AI provider selected')
+        return
+      }
+
+      const cliCommand = (provider.value as { cliCommand?: string })?.cliCommand
+      if (!cliCommand) {
+        console.error('AI provider has no cliCommand configured')
+        return
+      }
+
+      // Get app details for the prompt
+      const { appRegistryService } = await import(
+        '@/services/apps/registry.service'
+      )
+      const appResult = appRegistryService.getAppById(appId)
+      if (!appResult.success) return
+
+      const app = appResult.data
+
+      // Build the prompt
+      const basePrompt = `Generate SVG image for app ${app.name}. ${app.description}. Style: Modern vibrant colors, simple iconic design, 800x450 aspect ratio, no text labels.`
+      const fullPrompt = additionalPrompt
+        ? `${basePrompt} Additional: ${additionalPrompt}`
+        : basePrompt
+
+      // Get paths
+      const { getPackageRootServerFn } = await import(
+        '@/services/db/db-actions.server'
+      )
+      const { path: nxusRoot } = await getPackageRootServerFn()
+
+      const thumbnailFilename = `${app.id}.svg`
+      const thumbnailsDir = `${nxusRoot}/public/thumbnails`
+
+      // Build command
+      const command = `${cliCommand} -y "${fullPrompt.replace(/"/g, '\\"')} Save it as SVG file named ${thumbnailFilename} in directory ${thumbnailsDir}."`
+
+      // Execute in terminal
+      const { commandExecutor } = await import(
+        '@/services/command-palette/executor'
+      )
+      const { useTerminalStore } = await import('@/stores/terminal.store')
+      const terminalStore = useTerminalStore.getState()
+
+      await commandExecutor.executeInteractive({
+        command,
+        cwd: nxusRoot,
+        tabName: `Generate Thumbnail: ${app.name}`,
+        terminalStore,
+      })
     },
   },
   {
@@ -319,9 +409,9 @@ class CommandRegistry {
     const allAppCommands = this.getAllAppCommands()
     const textMatchedAppCommands = allAppCommands.filter(
       (cmd) =>
-        cmd.name.toLowerCase().includes(lowerQuery) ||
-        cmd.appName.toLowerCase().includes(lowerQuery) ||
-        cmd.description?.toLowerCase().includes(lowerQuery),
+        cmd.command.name.toLowerCase().includes(lowerQuery) ||
+        cmd.app.name.toLowerCase().includes(lowerQuery) ||
+        cmd.command.description?.toLowerCase().includes(lowerQuery),
     )
 
     const allGenericCommands = this.getGenericCommands()

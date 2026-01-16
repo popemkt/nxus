@@ -523,7 +523,40 @@ export function CommandPalette() {
       .getGenericCommands()
       .find((c) => c.id === selectedGenericCommand.id)
 
-    if (fullCommand) {
+    if (!fullCommand) return
+
+    // Check if command has requirements or params - show modal
+    const hasRequirements =
+      fullCommand.requirements && fullCommand.requirements.length > 0
+    const hasParams = fullCommand.params && fullCommand.params.length > 0
+
+    if (hasRequirements || hasParams) {
+      // Dynamic import to avoid circular deps
+      const { commandParamsModalService } = await import(
+        '@/stores/command-params-modal.store'
+      )
+
+      commandParamsModalService.open({
+        title: fullCommand.name,
+        description: `Configure ${fullCommand.name}`,
+        requirements: fullCommand.requirements,
+        params: fullCommand.params,
+        onComplete: (result) => {
+          // Convert RequirementOption to expected format
+          const reqContext: Record<
+            string,
+            { appId: string; value: Record<string, unknown> }
+          > = {}
+          for (const [name, opt] of Object.entries(result.requirements)) {
+            reqContext[name] = { appId: opt.appId, value: opt.value }
+          }
+          fullCommand.execute(appId, undefined, {
+            requirements: reqContext,
+            params: result.params,
+          })
+        },
+      })
+    } else {
       fullCommand.execute(appId)
     }
   }

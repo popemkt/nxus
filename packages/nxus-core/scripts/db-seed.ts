@@ -165,6 +165,8 @@ async function seed() {
         platforms: cmd.platforms ?? null,
         requires: cmd.requires ?? null,
         options: cmd.options ?? null,
+        requirements: cmd.requirements ?? null,
+        params: cmd.params ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }

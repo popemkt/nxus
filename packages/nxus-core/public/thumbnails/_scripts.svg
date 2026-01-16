@@ -1,42 +1,59 @@
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#0F172A"/>
-  
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="grad_main" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#38BDF8"/>
-      <stop offset="1" stop-color="#818CF8"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
-    <linearGradient id="grad_accent" x1="300" y1="125" x2="500" y2="325" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F472B6"/>
-      <stop offset="1" stop-color="#FB7185"/>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
     </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <!-- Background Decorative Shapes -->
-  <path d="M0 0L300 0L0 300Z" fill="url(#grad_main)" fill-opacity="0.05"/>
-  <path d="M800 450L500 450L800 150Z" fill="url(#grad_accent)" fill-opacity="0.05"/>
-  
-  <circle cx="400" cy="225" r="180" stroke="url(#grad_main)" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="10 20"/>
-  <circle cx="400" cy="225" r="220" stroke="url(#grad_accent)" stroke-width="1" stroke-opacity="0.1" stroke-dasharray="5 15"/>
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg)"/>
 
-  <!-- Main Iconic Design -->
-  <g transform="translate(400, 225)">
-    <!-- Outer Ring -->
-    <circle r="120" fill="#1E293B" fill-opacity="0.5" stroke="white" stroke-opacity="0.1" stroke-width="2"/>
+  <!-- Decorative Background Elements -->
+  <circle cx="100" cy="100" r="150" fill="#3b82f6" opacity="0.05"/>
+  <circle cx="700" cy="350" r="200" fill="#34d399" opacity="0.05"/>
+
+  <!-- Main Terminal Window Icon -->
+  <g transform="translate(200, 75)">
+    <!-- Window Shadow -->
+    <rect x="0" y="10" width="400" height="300" rx="16" fill="#000000" opacity="0.3"/>
     
-    <!-- Code Brackets -->
-    <path d="M-60 -40 L-85 -40 C-100 -40 -100 -25 -100 0 C-100 25 -100 40 -85 40 L-60 40" stroke="#38BDF8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M60 -40 L85 -40 C100 -40 100 -25 100 0 C100 25 100 40 85 40 L60 40" stroke="#38BDF8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Window Frame -->
+    <rect x="0" y="0" width="400" height="300" rx="16" fill="#1e293b" stroke="url(#accent)" stroke-width="2"/>
     
-    <!-- Automation Gear (Stylized) -->
-    <circle r="40" stroke="url(#grad_accent)" stroke-width="8" stroke-dasharray="20 11.4"/>
-    <circle r="15" fill="url(#grad_accent)"/>
-    
-    <!-- Connecting lines/Nodes -->
-    <line x1="-40" y1="-70" x2="-20" y2="-50" stroke="white" stroke-opacity="0.3" stroke-width="2"/>
-    <circle cx="-45" cy="-75" r="4" fill="#38BDF8"/>
-    
-    <line x1="40" y1="70" x2="20" y2="50" stroke="white" stroke-opacity="0.3" stroke-width="2"/>
-    <circle cx="45" cy="75" r="4" fill="#FB7185"/>
+    <!-- Title Bar Controls -->
+    <g transform="translate(24, 24)">
+      <circle cx="0" cy="0" r="8" fill="#ef4444"/>
+      <circle cx="24" cy="0" r="8" fill="#f59e0b"/>
+      <circle cx="48" cy="0" r="8" fill="#22c55e"/>
+    </g>
+
+    <!-- Content Area -->
+    <g transform="translate(40, 80)">
+      <!-- Prompt Chevron -->
+      <path d="M0 0 L20 15 L0 30" fill="none" stroke="url(#accent)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+      
+      <!-- Cursor / Command -->
+      <rect x="35" y="20" width="30" height="6" rx="2" fill="#34d399" opacity="0.8">
+        <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite"/>
+      </rect>
+      
+      <!-- Script Lines -->
+      <rect x="0" y="60" width="200" height="8" rx="4" fill="#64748b"/>
+      <rect x="0" y="85" width="280" height="8" rx="4" fill="#475569"/>
+      <rect x="0" y="110" width="150" height="8" rx="4" fill="#475569"/>
+      <rect x="0" y="135" width="220" height="8" rx="4" fill="#475569"/>
+    </g>
   </g>
 </svg>
