@@ -223,75 +223,17 @@ function DetailThumbnail({
 }
 
 /**
- * Generate Thumbnail button with dependency checking
- * Disabled with warning if Gemini CLI is not installed
+ * Generate Thumbnail button - opens modal for AI provider selection
+ *
+ * Uses centralized executeGenericCommandById to ensure command definition
+ * (requirements, params, execute logic) is defined in ONE place (registry.ts)
  */
-function GenerateThumbnailButton({
-  appId,
-  appName,
-  appDescription,
-  isGenerating,
-  onGenerate,
-}: {
-  appId: string
-  appName: string
-  appDescription: string
-  isGenerating: boolean
-  onGenerate: (command: string, args: string[]) => Promise<void>
-}) {
-  const geminiTool = appRegistryService.getAppById('gemini-cli')
-  const tool = geminiTool.success ? geminiTool.data : null
-
-  // Health check for Gemini CLI - uses TanStack Query via domain hook
-  const health = useToolHealth(tool, !!tool)
-
+function GenerateThumbnailButton({ appId }: { appId: string }) {
   const handleClick = async () => {
-    const thumbnailsDir = 'public/thumbnails'
-    const safeDescription = appDescription
-      .replace(/[()]/g, '')
-      .replace(/"/g, '')
-      .replace(/'/g, '')
-    const prompt = `"Generate an SVG image for this application thumbnail. App: ${appName}. Description: ${safeDescription}. Style: Modern, vibrant colors, simple iconic design representing the app concept. Make it 800x450 aspect ratio. No text or labels. Save it as an SVG file named ${appId}.svg in the directory ${thumbnailsDir}."`
-
-    await onGenerate('gemini', ['-y', prompt])
-  }
-
-  const isLoading = !health
-  const allMet = health?.isInstalled
-  const isDisabled = isLoading || !allMet || isGenerating
-
-  if (!isLoading && !allMet && tool) {
-    return (
-      <div className="space-y-2">
-        <Button
-          variant="outline"
-          className="w-full justify-start opacity-50"
-          disabled
-        >
-          <ImageIcon data-icon="inline-start" />
-          Generate Thumbnail
-        </Button>
-        <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-md p-3">
-          <WarningIcon className="h-4 w-4 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium">Missing: {tool.name}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {tool.type === 'tool' && tool.installInstructions}
-            </p>
-            {tool.homepage && (
-              <a
-                href={tool.homepage}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline mt-2 inline-block"
-              >
-                View installation guide →
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
+    const { executeGenericCommandById } = await import(
+      '@/lib/command-execution'
     )
+    await executeGenericCommandById('generate-thumbnail', appId)
   }
 
   return (
@@ -299,14 +241,9 @@ function GenerateThumbnailButton({
       variant="outline"
       className="w-full justify-start"
       onClick={handleClick}
-      disabled={isDisabled}
     >
       <ImageIcon data-icon="inline-start" />
-      {isLoading
-        ? 'Checking...'
-        : isGenerating
-          ? 'Generating...'
-          : 'Generate Thumbnail'}
+      Generate Thumbnail
     </Button>
   )
 }
@@ -479,13 +416,7 @@ function OverviewContent({
           )}
 
           {/* Generate Thumbnail for all app types */}
-          <GenerateThumbnailButton
-            appId={appId}
-            appName={app.name}
-            appDescription={app.description}
-            isGenerating={false}
-            onGenerate={onExecuteCommand}
-          />
+          <GenerateThumbnailButton appId={appId} />
 
           {/* Secondary Actions - compact row */}
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">

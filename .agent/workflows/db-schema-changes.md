@@ -8,7 +8,7 @@ When adding or modifying columns in the Nxus database, follow these steps to ens
 
 ## Steps
 
-### 1. Update the Drizzle Schema
+### 1. Update the Drizzle Schema (Source of Truth)
 
 Edit `packages/nxus-core/src/db/schema.ts` to add or modify columns:
 
@@ -65,7 +65,18 @@ const commandRecord = {
 };
 ```
 
-### 5. Update Types (if applicable)
+### 5. Update the Export Script
+
+Edit `packages/nxus-core/scripts/db-export.ts` to include the new column in command mapping:
+
+```typescript
+manifest.commands = appCommands.map((cmd) => ({
+  // ... existing fields ...
+  ...(cmd.myNewColumn && { myNewColumn: parseJsonField(cmd.myNewColumn) }),
+}));
+```
+
+### 6. Update Types (if applicable)
 
 If the column is for AppCommand, update `packages/nxus-core/src/types/app.ts`:
 
@@ -82,6 +93,7 @@ export const AppCommandSchema = z.object({
 - [ ] `db/client.ts` - CREATE TABLE statement updated
 - [ ] Run ALTER TABLE on existing database
 - [ ] `scripts/db-seed.ts` - Seed script updated
+- [ ] `scripts/db-export.ts` - Export script updated
 - [ ] `types/app.ts` - Types updated (if needed)
 - [ ] Restart dev server to pick up changes
 
@@ -94,3 +106,50 @@ This means the column exists in `schema.ts` but not in the actual database. Run 
 ### Column not persisting
 
 Ensure the seed script includes the field in the record object being inserted/updated.
+
+---
+
+## Future Improvement: Single Source of Truth
+
+Currently, there's duplication across files. Here are ideas to centralize:
+
+### Option A: Generate CREATE TABLE from Drizzle Schema
+
+Create a script that reads `schema.ts` and generates the SQL:
+
+```typescript
+// scripts/generate-create-tables.ts
+import { commands } from '../src/db/schema';
+// Generate SQL from Drizzle schema definition
+```
+
+### Option B: Use Drizzle Migrations
+
+Switch from manual CREATE TABLE to Drizzle Kit migrations:
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
+
+This auto-detects schema changes and generates migration SQL.
+
+### Option C: Shared Field Mapper
+
+Create a central mapping util used by both seed and export:
+
+```typescript
+// lib/command-fields.ts
+export const COMMAND_JSON_FIELDS = [
+  'platforms',
+  'requires',
+  'options',
+  'requirements',
+  'params',
+] as const;
+
+// Used in db-seed.ts and db-export.ts
+```
+
+> [!TIP]
+> Option B (Drizzle Migrations) is the most robust long-term solution.

@@ -151,8 +151,9 @@ export const genericCommands: GenericCommand[] = [
       const thumbnailFilename = `${app.id}.svg`
       const thumbnailsDir = `${nxusRoot}/public/thumbnails`
 
-      // Build command
-      const command = `${cliCommand} -y "${fullPrompt.replace(/"/g, '\\"')} Save it as SVG file named ${thumbnailFilename} in directory ${thumbnailsDir}."`
+      // Build command - cliCommand should include any provider-specific flags
+      // e.g., gemini -y, claude --allow-dangerously-skip-permissions, etc.
+      const command = `${cliCommand} "${fullPrompt.replace(/"/g, '\\"')} Save it as SVG file named ${thumbnailFilename} in directory ${thumbnailsDir}."`
 
       // Execute in terminal
       const { commandExecutor } = await import(
