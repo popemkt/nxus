@@ -15,8 +15,23 @@ import type { App, AppCommand, AppMetadata, DocEntry } from '../../types/app'
 /**
  * Map database record to App type
  * JSON fields are now auto-parsed by the schema's json() column type
+ *
+ * IMPORTANT: This is the data boundary - we ensure metadata shape here
+ * so downstream code never needs defensive checks
  */
 function parseAppRecord(record: typeof apps.$inferSelect): App {
+  // Ensure metadata has proper defaults - this is the type-safe boundary
+  const rawMetadata = record.metadata as Partial<AppMetadata> | undefined
+  const metadata: AppMetadata = {
+    tags: Array.isArray(rawMetadata?.tags) ? rawMetadata.tags : [],
+    category: rawMetadata?.category ?? 'uncategorized',
+    createdAt: rawMetadata?.createdAt ?? '',
+    updatedAt: rawMetadata?.updatedAt ?? '',
+    version: rawMetadata?.version,
+    author: rawMetadata?.author,
+    license: rawMetadata?.license,
+  }
+
   return {
     id: record.id,
     name: record.name,
@@ -28,7 +43,7 @@ function parseAppRecord(record: typeof apps.$inferSelect): App {
     platform: record.platform ?? undefined,
     docs: record.docs ?? undefined,
     dependencies: record.dependencies ?? undefined,
-    metadata: record.metadata,
+    metadata, // Now guaranteed to have proper shape
     installConfig: record.installConfig ?? undefined,
     checkCommand: record.checkCommand ?? undefined,
     installInstructions: record.installInstructions ?? undefined,

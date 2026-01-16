@@ -73,9 +73,14 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
     }
 
     // 4. Update JSON metadata in apps table
-    const currentMetadata: AppMetadata = appRecord.metadata
-      ? JSON.parse(appRecord.metadata)
-      : { tags: [], category: 'uncategorized', createdAt: '', updatedAt: '' }
+    // Note: Drizzle json() column already returns parsed object, no need to JSON.parse
+    const currentMetadata: AppMetadata =
+      (appRecord.metadata as AppMetadata) || {
+        tags: [],
+        category: 'uncategorized',
+        createdAt: '',
+        updatedAt: '',
+      }
 
     const updatedMetadata: AppMetadata = {
       ...currentMetadata,
@@ -123,9 +128,14 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
       return { success: false as const, error: 'App not found' }
     }
 
-    const currentMetadata: AppMetadata = appRecord.metadata
-      ? JSON.parse(appRecord.metadata)
-      : { tags: [], category: 'uncategorized', createdAt: '', updatedAt: '' }
+    // Note: Drizzle json() column already returns parsed object, no need to JSON.parse
+    const currentMetadata: AppMetadata =
+      (appRecord.metadata as AppMetadata) || {
+        tags: [],
+        category: 'uncategorized',
+        createdAt: '',
+        updatedAt: '',
+      }
 
     const updatedMetadata: AppMetadata = {
       ...currentMetadata,

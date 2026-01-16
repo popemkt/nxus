@@ -87,6 +87,29 @@ export const AppCommandSchema = z.object({
 });
 ```
 
+### 7. Ensure Type Safety at Parse Layer
+
+> [!IMPORTANT]
+> If the column can be null/undefined, ensure the parse function defaults it properly.
+> This prevents defensive checks from spreading throughout the codebase.
+
+Update the relevant parse function in `apps.server.ts`:
+
+```typescript
+// In parseAppRecord or parseCommandRecord
+function parseAppRecord(record) {
+  // ✅ GOOD: Ensure defaults at parse time
+  const metadata: AppMetadata = {
+    tags: Array.isArray(record.metadata?.tags) ? record.metadata.tags : [],
+    category: record.metadata?.category ?? 'uncategorized',
+    myNewColumn: record.metadata?.myNewColumn ?? defaultValue,
+  };
+  return { ...record, metadata };
+}
+```
+
+See [Data Architecture - Type Safety at Data Boundary](file:///stuff/WorkSpace/Nxus/nxus/docs/data-architecture.md) for details.
+
 ## Checklist
 
 - [ ] `db/schema.ts` - Drizzle schema updated
@@ -95,6 +118,7 @@ export const AppCommandSchema = z.object({
 - [ ] `scripts/db-seed.ts` - Seed script updated
 - [ ] `scripts/db-export.ts` - Export script updated
 - [ ] `types/app.ts` - Types updated (if needed)
+- [ ] **`apps.server.ts` - Parse layer ensures defaults**
 - [ ] Restart dev server to pick up changes
 
 ## Common Issues

@@ -97,6 +97,54 @@ Nxus uses a **dual SQLite architecture** with JSON files as the git-committed so
 | `src/services/tag.server.ts`         | Tag CRUD operations             |
 | `src/services/inbox/inbox.server.ts` | Inbox CRUD operations           |
 
+## Type Safety at Data Boundary
+
+> [!IMPORTANT]
+> All data entering the application from SQLite MUST be validated and defaulted at the **parse layer**.
+> This ensures downstream code never needs defensive null checks.
+
+### The Problem
+
+SQLite stores JSON as TEXT. Drizzle's `json()` column parses it, but:
+
+- Returns `undefined` for null columns
+- Returns raw parsed JSON without shape validation
+- TypeScript trusts the type annotation, but runtime data may differ
+
+```typescript
+// ❌ BAD: Trusting database data without validation
+const metadata: AppMetadata = record.metadata; // Could be null, {}, or malformed!
+```
+
+### The Solution
+
+Validate and default at the **parse layer** (functions like `parseAppRecord`):
+
+```typescript
+// ✅ GOOD: Ensure shape at parse time
+function parseAppRecord(record) {
+  const rawMetadata = record.metadata as Partial<AppMetadata> | undefined;
+  const metadata: AppMetadata = {
+    tags: Array.isArray(rawMetadata?.tags) ? rawMetadata.tags : [],
+    category: rawMetadata?.category ?? 'uncategorized',
+    // ... other fields with defaults
+  };
+  return { ...app, metadata }; // Guaranteed shape
+}
+```
+
+### Key Files for Data Boundary
+
+| File             | Parse Function       | Ensures                                       |
+| ---------------- | -------------------- | --------------------------------------------- |
+| `apps.server.ts` | `parseAppRecord`     | `metadata.tags` is `[]`, `category` is string |
+| `apps.server.ts` | `parseCommandRecord` | Command fields have proper defaults           |
+
+### Rule
+
+**Never add defensive checks downstream.** If you find yourself writing `app.metadata?.tags ?? []`,
+the fix belongs in the parse layer, not in every consumer.
+
 ## Data Flow
 
 ### Read Path
