@@ -504,4 +504,134 @@ export const commandExecutor = {
       }
     }
   },
+
+  /**
+   * Execute a script command (mode: 'script')
+   *
+   * This is the centralized handler for all script mode commands.
+   * It handles:
+   * 1. Resolving the script path via scriptSource
+   * 2. Checking for parameters (returns early if params need UI)
+   * 3. Respecting the `interactive` option
+   *
+   * @param options.appId - The app ID containing the script
+   * @param options.scriptPath - Relative path to script (e.g., "my-script.ps1")
+   * @param options.scriptSource - Where to resolve the script ('nxus-app' | 'repo' | 'shared')
+   * @param options.interactive - If true, run in PTY terminal; else run in background
+   * @param options.params - Optional pre-filled parameters (if already collected from UI)
+   * @param options.terminalStore - Terminal store for PTY execution
+   * @param options.onNeedsParams - Callback when script has parameters that need UI input
+   */
+  async executeScript(options: {
+    appId: string
+    appType?: AppType
+    scriptPath: string
+    scriptSource?: string
+    interactive?: boolean
+    params?: Record<string, string | number | boolean>
+    terminalStore?: TerminalStore
+    tabName?: string
+    cwd?: string
+    onNeedsParams?: (params: unknown[]) => void
+  }): Promise<CommandExecutionResult & { needsParams?: boolean }> {
+    const {
+      appId,
+      appType,
+      scriptPath,
+      scriptSource,
+      interactive = false,
+      params,
+      terminalStore,
+      tabName,
+      cwd,
+      onNeedsParams,
+    } = options
+
+    // Import server functions dynamically to avoid circular deps
+    const { getScriptFullPathServerFn } = await import(
+      '@/services/shell/read-script.server'
+    )
+    const { parseScriptParamsServerFn } = await import(
+      '@/services/shell/parse-script-params.server'
+    )
+
+    try {
+      // Check if script has parameters (only if params not already provided)
+      if (!params) {
+        const paramResult = await parseScriptParamsServerFn({
+          data: {
+            appId,
+            scriptPath,
+            scriptSource,
+          },
+        })
+
+        if (paramResult.success && paramResult.params.length > 0) {
+          // Script has parameters - needs UI input
+          if (onNeedsParams) {
+            onNeedsParams(paramResult.params)
+          }
+          return {
+            success: true,
+            needsParams: true,
+          }
+        }
+      }
+
+      // Resolve script path
+      const resolved = await getScriptFullPathServerFn({
+        data: {
+          appId,
+          scriptPath,
+          scriptSource,
+        },
+      })
+
+      // Build command with parameters
+      let fullCommand = `pwsh "${resolved.fullPath}"`
+      if (params) {
+        const paramString = Object.entries(params)
+          .filter(([, v]) => v !== '' && v !== undefined)
+          .map(([key, value]) => {
+            if (typeof value === 'boolean') {
+              return value ? `-${key}` : ''
+            }
+            return `-${key} "${value}"`
+          })
+          .filter(Boolean)
+          .join(' ')
+        if (paramString) {
+          fullCommand += ` ${paramString}`
+        }
+      }
+
+      // Execute based on interactive flag
+      if (interactive) {
+        // Interactive: run in PTY terminal
+        return this.executeInteractive({
+          command: fullCommand,
+          cwd: cwd ?? resolved.scriptDir,
+          appId,
+          appType,
+          tabName: tabName ?? scriptPath,
+          terminalStore,
+        })
+      } else {
+        // Non-interactive: run in background with streaming output
+        return this.executeStreaming({
+          command: fullCommand,
+          cwd: cwd ?? resolved.scriptDir,
+          appId,
+          appType,
+          tabName: tabName ?? scriptPath,
+          terminalStore,
+        })
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  },
 }

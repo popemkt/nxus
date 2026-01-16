@@ -47,16 +47,5 @@
         "version": "1.0.0",
         "author": "Leon van Zyl"
     },
-    "installConfig": {
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ],
-        "dependencies": [
-            "claude-code",
-            "python3"
-        ]
-    },
     "status": "not-installed"
 }

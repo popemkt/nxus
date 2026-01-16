@@ -127,6 +127,10 @@ export function AppActionsPanel({
     // For script mode, check if script has parameters
     if (cmd.mode === 'script') {
       try {
+        // Check if this is an interactive script
+        const isInteractive =
+          (cmd.options as { interactive?: boolean })?.interactive ?? false
+
         const result = await parseScriptParamsServerFn({
           data: {
             appId: app.id,
@@ -143,7 +147,7 @@ export function AppActionsPanel({
           return
         }
 
-        // No parameters - resolve path and execute directly
+        // No parameters - resolve path and execute
         const resolved = await getScriptFullPathServerFn({
           data: {
             appId: app.id,
@@ -152,7 +156,13 @@ export function AppActionsPanel({
           },
         })
         const fullCommand = `pwsh "${resolved.fullPath}"`
-        onRunCommand?.(fullCommand)
+
+        // Interactive scripts run in in-app PTY terminal (xterm.js), non-interactive run in background
+        if (isInteractive) {
+          onTerminal?.(fullCommand)
+        } else {
+          onRunCommand?.(fullCommand)
+        }
         return
       } catch (err) {
         setError(`Failed to parse script parameters: ${(err as Error).message}`)
@@ -183,6 +193,11 @@ export function AppActionsPanel({
   ) => {
     if (!pendingScriptCommand) return
 
+    // Check if this is an interactive script
+    const isInteractive =
+      (pendingScriptCommand.options as { interactive?: boolean })
+        ?.interactive ?? false
+
     // Build command with parameters
     const params = Object.entries(values)
       .filter(([, v]) => v !== '' && v !== undefined)
@@ -205,7 +220,13 @@ export function AppActionsPanel({
     })
 
     const fullCommand = `pwsh "${resolved.fullPath}" ${params}`
-    onRunCommand?.(fullCommand)
+
+    // Interactive scripts run in PTY terminal, non-interactive run in background
+    if (isInteractive) {
+      onTerminal?.(fullCommand)
+    } else {
+      onRunCommand?.(fullCommand)
+    }
     setPendingScriptCommand(null)
   }
 

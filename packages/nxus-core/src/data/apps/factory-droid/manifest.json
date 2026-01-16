@@ -67,6 +67,19 @@
             "requires": {
                 "selfInstalled": true
             }
+        },
+        {
+            "id": "droid-demo-key",
+            "name": "Set Demo Key",
+            "description": "Set API key to 'fk-demo' for demo purposes (persists to ~/.bashrc)",
+            "icon": "Key",
+            "category": "Setup",
+            "target": "app",
+            "mode": "execute",
+            "command": "echo 'export FACTORY_API_KEY=fk-demo' >> ~/.bashrc && export FACTORY_API_KEY=fk-demo",
+            "requires": {
+                "selfInstalled": true
+            }
         }
     ],
     "docs": [

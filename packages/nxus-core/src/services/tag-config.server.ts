@@ -93,7 +93,7 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: {
         tagId: config.tagId,
-        schema: JSON.parse(config.schema) as TagConfigSchema,
+        schema: config.schema as TagConfigSchema,
         description: config.description,
       },
     }
@@ -114,7 +114,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
     success: true as const,
     data: configs.map((c) => ({
       tagId: c.tagId,
-      schema: JSON.parse(c.schema) as TagConfigSchema,
+      schema: c.schema as TagConfigSchema,
       description: c.description,
     })),
   }
@@ -148,7 +148,7 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
       await db
         .update(tagConfigs)
         .set({
-          schema: JSON.stringify(ctx.data.schema),
+          schema: ctx.data.schema,
           description: ctx.data.description ?? null,
           updatedAt: now,
         })
@@ -157,7 +157,7 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
       // Insert
       await db.insert(tagConfigs).values({
         tagId: ctx.data.tagId,
-        schema: JSON.stringify(ctx.data.schema),
+        schema: ctx.data.schema,
         description: ctx.data.description ?? null,
         createdAt: now,
         updatedAt: now,
@@ -197,7 +197,7 @@ export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: {
         appId: values.appId,
-        values: JSON.parse(values.configValues) as Record<string, any>,
+        values: values.configValues as Record<string, any>,
       },
     }
   })
@@ -220,7 +220,7 @@ export const getAllAppTagValuesServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: allValues.map((v) => ({
         tagId: v.tagId,
-        values: JSON.parse(v.configValues) as Record<string, any>,
+        values: v.configValues as Record<string, any>,
       })),
     }
   })
@@ -265,7 +265,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     }
 
     // 2. Build dynamic Zod validator from schema
-    const schema = JSON.parse(tagConfig.schema) as TagConfigSchema
+    const schema = tagConfig.schema as TagConfigSchema
     const validationResult = validateValuesAgainstSchema(
       ctx.data.configValues,
       schema,
@@ -296,7 +296,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       await db
         .update(appTagValues)
         .set({
-          configValues: JSON.stringify(validationResult.data),
+          configValues: validationResult.data,
           updatedAt: now,
         })
         .where(
@@ -310,7 +310,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       await db.insert(appTagValues).values({
         appId: ctx.data.appId,
         tagId: ctx.data.tagId,
-        configValues: JSON.stringify(validationResult.data),
+        configValues: validationResult.data,
         createdAt: now,
         updatedAt: now,
       })
@@ -363,7 +363,7 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: results.map((r) => ({
         appId: r.appId,
-        values: JSON.parse(r.configValues) as Record<string, any>,
+        values: r.configValues as Record<string, any>,
       })),
     }
   })

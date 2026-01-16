@@ -201,7 +201,8 @@ export function CommandPalette() {
     closeActions,
     reset,
   } = useCommandPaletteStore()
-  const { createTab, addLog, setStatus } = useTerminalStore()
+  const { createTab, createInteractiveTab, addLog, setStatus } =
+    useTerminalStore()
 
   // Detect if we're on the gallery (home) route
   const routerState = useRouterState()
@@ -488,6 +489,30 @@ export function CommandPalette() {
       case 'configure':
         configureModalService.open(action.appId, action.commandId)
         break
+      case 'script': {
+        // Use centralized script executor which handles interactive option
+        const appResult = appRegistryService.getAppById(cmd.appId)
+        const appType = appResult.success ? appResult.data.type : undefined
+
+        const result = await commandExecutor.executeScript({
+          appId: action.appId,
+          appType,
+          scriptPath: action.scriptPath,
+          scriptSource: action.scriptSource,
+          interactive: action.interactive,
+          tabName: `${cmd.appName}: ${cmd.name}`,
+          terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+        })
+
+        // Script has parameters that need UI - for now, alert user
+        // In the future, could open a modal here
+        if (result.needsParams) {
+          alert(
+            'This script has parameters. Please run it from the app detail page.',
+          )
+        }
+        break
+      }
       case 'execute': {
         // Get app info for post-execution effects
         const appResult = appRegistryService.getAppById(cmd.appId)

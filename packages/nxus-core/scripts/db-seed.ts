@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
 import { apps, commands, tags, inboxItems } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
+import { AppSchema } from '../src/types/app'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -71,7 +72,6 @@ async function seed() {
     const fullPath = join(appsDir, name)
     return (
       statSync(fullPath).isDirectory() &&
-      !name.startsWith('_') &&
       existsSync(join(fullPath, 'manifest.json'))
     )
   })
@@ -82,26 +82,44 @@ async function seed() {
 
     if (!manifest) continue
 
+    // Validate manifest against schema
+    const validationResult = AppSchema.safeParse(manifest)
+    if (!validationResult.success) {
+      console.error(`\n❌ Validation failed for ${appDir}:`)
+      console.error(validationResult.error.format())
+      console.error(`Skipping ${appDir}...\n`)
+      continue
+    }
+
+    const validatedManifest = validationResult.data
+
     // Extract commands from manifest
-    const appCommands = (manifest.commands as Record<string, unknown>[]) || []
+    const appCommands = validatedManifest.commands || []
 
     // Prepare app record
+    // Note: JSON fields (platform, docs, etc.) auto-stringify via schema's json() column
     const appRecord = {
-      id: manifest.id as string,
-      name: manifest.name as string,
-      description: (manifest.description as string) || '',
-      type: manifest.type as string,
-      path: manifest.path as string,
-      homepage: (manifest.homepage as string) || null,
-      thumbnail: (manifest.thumbnail as string) || null,
-      platform: stringifyIfNeeded(manifest.platform),
-      docs: stringifyIfNeeded(manifest.docs),
-      dependencies: stringifyIfNeeded(manifest.dependencies),
-      metadata: stringifyIfNeeded(manifest.metadata),
-      installConfig: stringifyIfNeeded(manifest.installConfig),
-      checkCommand: (manifest.checkCommand as string) || null,
-      installInstructions: (manifest.installInstructions as string) || null,
-      configSchema: stringifyIfNeeded(manifest.configSchema),
+      id: validatedManifest.id,
+      name: validatedManifest.name,
+      description: validatedManifest.description || '',
+      type: validatedManifest.type,
+      path: validatedManifest.path,
+      homepage: validatedManifest.homepage || null,
+      thumbnail: validatedManifest.thumbnail || null,
+      platform: validatedManifest.platform ?? null,
+      docs: validatedManifest.docs ?? null,
+      dependencies: validatedManifest.dependencies ?? null,
+      metadata: {
+        tags: [],
+        category: 'uncategorized',
+        createdAt: '',
+        updatedAt: '',
+        ...validatedManifest.metadata,
+      },
+      installConfig: validatedManifest.installConfig ?? null,
+      checkCommand: validatedManifest.checkCommand || null,
+      installInstructions: validatedManifest.installInstructions || null,
+      configSchema: validatedManifest.configSchema ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -127,12 +145,13 @@ async function seed() {
     const manifestCommandIds = new Set<string>()
 
     for (const cmd of appCommands) {
-      const commandId = `${manifest.id}:${cmd.id}`
+      const commandId = `${validatedManifest.id}:${cmd.id}`
       manifestCommandIds.add(commandId)
 
+      // Note: JSON fields (platforms, requires, options) auto-stringify via schema's json() column
       const commandRecord = {
         id: commandId,
-        appId: manifest.id as string,
+        appId: validatedManifest.id,
         commandId: cmd.id as string,
         name: cmd.name as string,
         description: (cmd.description as string) || null,
@@ -143,8 +162,9 @@ async function seed() {
         command: cmd.command as string,
         scriptSource: (cmd.scriptSource as string) || null,
         cwd: (cmd.cwd as string) || null,
-        platforms: stringifyIfNeeded(cmd.platforms),
-        requires: stringifyIfNeeded(cmd.requires),
+        platforms: cmd.platforms ?? null,
+        requires: cmd.requires ?? null,
+        options: cmd.options ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -171,7 +191,7 @@ async function seed() {
     const dbCommands = db
       .select()
       .from(commands)
-      .where(eq(commands.appId, manifest.id as string))
+      .where(eq(commands.appId, validatedManifest.id))
       .all()
 
     for (const dbCmd of dbCommands) {

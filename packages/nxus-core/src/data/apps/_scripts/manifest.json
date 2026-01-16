@@ -9,11 +9,6 @@
         "macos",
         "windows"
     ],
-    "dependencies": [
-        "github-cli",
-        "git",
-        "powershell"
-    ],
     "commands": [
         {
             "id": "create-github-repo",
@@ -31,20 +26,38 @@
                     "powershell"
                 ]
             }
+        },
+        {
+            "id": "bash-config",
+            "name": "Bash Config Manager",
+            "description": "Edit .bashrc or start interactive bash session with vi",
+            "icon": "Terminal",
+            "category": "Configuration",
+            "target": "app",
+            "mode": "script",
+            "command": "bash-config.ps1",
+            "options": {
+                "interactive": true
+            },
+            "requires": {
+                "tools": [
+                    "powershell"
+                ]
+            }
         }
     ],
+    "dependencies": [
+        "github-cli",
+        "git",
+        "powershell"
+    ],
     "metadata": {
-        "tags": [
-            "scripts",
-            "automation",
-            "git",
-            "github"
-        ],
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-03T07:59:33Z",
         "updatedAt": "2026-01-03T09:40:00Z",
         "version": "1.0.0",
         "author": "popemkt"
     },
-    "status": "available"
+    "status": "not-installed"
 }

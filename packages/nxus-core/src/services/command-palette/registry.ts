@@ -17,6 +17,10 @@ export interface PaletteCommand {
   mode: CommandMode
   command: string
   target: 'app' | 'instance'
+  /** For script mode: where to resolve script path */
+  scriptSource?: string
+  /** For script mode: mode-specific options like interactive */
+  options?: Record<string, unknown>
 }
 
 /**
@@ -272,6 +276,8 @@ class CommandRegistry {
           mode: cmd.mode ?? 'execute',
           command: cmd.command,
           target: cmd.target,
+          scriptSource: cmd.scriptSource,
+          options: cmd.options,
         })
       }
     }
@@ -402,7 +408,14 @@ class CommandRegistry {
     | { type: 'execute'; command: string }
     | { type: 'copy'; text: string }
     | { type: 'docs'; url: string }
-    | { type: 'configure'; appId: string; commandId: string } {
+    | { type: 'configure'; appId: string; commandId: string }
+    | {
+        type: 'script'
+        appId: string
+        scriptPath: string
+        scriptSource?: string
+        interactive: boolean
+      } {
     switch (cmd.mode) {
       case 'configure':
         return {
@@ -418,6 +431,15 @@ class CommandRegistry {
         return {
           type: 'navigate',
           url: `/apps/${cmd.appId}?action=${cmd.commandId}`,
+        }
+      case 'script':
+        return {
+          type: 'script',
+          appId: cmd.appId,
+          scriptPath: cmd.command,
+          scriptSource: cmd.scriptSource,
+          interactive:
+            (cmd.options as { interactive?: boolean })?.interactive ?? false,
         }
       case 'execute':
       default:

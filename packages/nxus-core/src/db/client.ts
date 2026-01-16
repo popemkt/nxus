@@ -63,7 +63,6 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   masterDb.exec(`
     CREATE TABLE IF NOT EXISTS tags (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      slug TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       parent_id INTEGER,
       "order" INTEGER NOT NULL DEFAULT 0,
@@ -120,6 +119,8 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
       cwd TEXT,
       platforms TEXT,
       requires TEXT,
+      options TEXT,
+      deleted_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
@@ -177,12 +178,15 @@ export function getDatabase(): BetterSQLite3Database<typeof schema> {
 // ============================================================================
 
 let ephemeralDb: Database.Database | null = null
-let ephemeralDrizzleDb: BetterSQLite3Database<typeof ephemeralSchema> | null = null
+let ephemeralDrizzleDb: BetterSQLite3Database<typeof ephemeralSchema> | null =
+  null
 
 /**
  * Initialize the ephemeral database connection
  */
-export function initEphemeralDatabase(): BetterSQLite3Database<typeof ephemeralSchema> {
+export function initEphemeralDatabase(): BetterSQLite3Database<
+  typeof ephemeralSchema
+> {
   if (ephemeralDrizzleDb) return ephemeralDrizzleDb
 
   ephemeralDb = new Database(ephemeralDbPath)
@@ -242,7 +246,9 @@ export function saveEphemeralDatabase() {
 /**
  * Get the ephemeral database instance (must call initEphemeralDatabase first)
  */
-export function getEphemeralDatabase(): BetterSQLite3Database<typeof ephemeralSchema> {
+export function getEphemeralDatabase(): BetterSQLite3Database<
+  typeof ephemeralSchema
+> {
   if (!ephemeralDrizzleDb) {
     throw new Error(
       'Ephemeral database not initialized. Call initEphemeralDatabase() first.',

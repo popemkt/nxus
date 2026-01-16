@@ -1,49 +1,42 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Gradient -->
-  <rect width="800" height="450" fill="url(#bg_gradient)"/>
+  <rect width="800" height="450" fill="#0F172A"/>
   
-  <!-- Subtle Decorative Circles -->
-  <circle cx="700" cy="100" r="150" fill="white" fill-opacity="0.05"/>
-  <circle cx="100" cy="350" r="100" fill="white" fill-opacity="0.05"/>
-  
-  <!-- Main "Terminal/Script" Card -->
-  <g filter="url(#dropShadow)">
-    <rect x="225" y="100" width="350" height="250" rx="24" fill="white" fill-opacity="0.1" style="backdrop-filter:blur(10px)"/>
-    <rect x="225.5" y="100.5" width="349" height="249" rx="23.5" stroke="white" stroke-opacity="0.3"/>
-    
-    <!-- Header Bar -->
-    <rect x="225" y="100" width="350" height="40" rx="24" fill="white" fill-opacity="0.1"/>
-    <circle cx="255" cy="120" r="6" fill="#FF5F56"/>
-    <circle cx="275" cy="120" r="6" fill="#FFBD2E"/>
-    <circle cx="295" cy="120" r="6" fill="#27C93F"/>
-    
-    <!-- Code Lines -->
-    <rect x="260" y="165" width="200" height="10" rx="5" fill="white" fill-opacity="0.6"/>
-    <rect x="260" y="195" width="280" height="10" rx="5" fill="white" fill-opacity="0.3"/>
-    <rect x="260" y="225" width="240" height="10" rx="5" fill="white" fill-opacity="0.3"/>
-    <rect x="260" y="255" width="180" height="10" rx="5" fill="white" fill-opacity="0.3"/>
-    
-    <!-- Cursor/Prompt -->
-    <path d="M260 300L275 315L260 330" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="285" y="325" width="25" height="5" rx="2.5" fill="white">
-      <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite" />
-    </rect>
-  </g>
-
   <defs>
-    <linearGradient id="bg_gradient" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4F46E5"/>
-      <stop offset="1" stop-color="#9333EA"/>
+    <linearGradient id="grad_main" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#818CF8"/>
     </linearGradient>
-    <filter id="dropShadow" x="185" y="70" width="430" height="330" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-      <feOffset dy="10"/>
-      <feGaussianBlur stdDeviation="20"/>
-      <feComposite in2="hardAlpha" operator="out"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
-      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
-      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
-    </filter>
+    <linearGradient id="grad_accent" x1="300" y1="125" x2="500" y2="325" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F472B6"/>
+      <stop offset="1" stop-color="#FB7185"/>
+    </linearGradient>
   </defs>
+
+  <!-- Background Decorative Shapes -->
+  <path d="M0 0L300 0L0 300Z" fill="url(#grad_main)" fill-opacity="0.05"/>
+  <path d="M800 450L500 450L800 150Z" fill="url(#grad_accent)" fill-opacity="0.05"/>
+  
+  <circle cx="400" cy="225" r="180" stroke="url(#grad_main)" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="10 20"/>
+  <circle cx="400" cy="225" r="220" stroke="url(#grad_accent)" stroke-width="1" stroke-opacity="0.1" stroke-dasharray="5 15"/>
+
+  <!-- Main Iconic Design -->
+  <g transform="translate(400, 225)">
+    <!-- Outer Ring -->
+    <circle r="120" fill="#1E293B" fill-opacity="0.5" stroke="white" stroke-opacity="0.1" stroke-width="2"/>
+    
+    <!-- Code Brackets -->
+    <path d="M-60 -40 L-85 -40 C-100 -40 -100 -25 -100 0 C-100 25 -100 40 -85 40 L-60 40" stroke="#38BDF8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M60 -40 L85 -40 C100 -40 100 -25 100 0 C100 25 100 40 85 40 L60 40" stroke="#38BDF8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Automation Gear (Stylized) -->
+    <circle r="40" stroke="url(#grad_accent)" stroke-width="8" stroke-dasharray="20 11.4"/>
+    <circle r="15" fill="url(#grad_accent)"/>
+    
+    <!-- Connecting lines/Nodes -->
+    <line x1="-40" y1="-70" x2="-20" y2="-50" stroke="white" stroke-opacity="0.3" stroke-width="2"/>
+    <circle cx="-45" cy="-75" r="4" fill="#38BDF8"/>
+    
+    <line x1="40" y1="70" x2="20" y2="50" stroke="white" stroke-opacity="0.3" stroke-width="2"/>
+    <circle cx="45" cy="75" r="4" fill="#FB7185"/>
+  </g>
 </svg>

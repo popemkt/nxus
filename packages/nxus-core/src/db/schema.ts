@@ -1,4 +1,11 @@
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { json } from './columns'
+import type {
+  DocEntry,
+  AppMetadata,
+  InstallConfig,
+  ConfigSchema,
+} from '../types/app'
 
 /**
  * Inbox items - backlog of tools/apps to add later via add-item workflow
@@ -81,17 +88,17 @@ export const apps = sqliteTable('apps', {
   homepage: text('homepage'),
   thumbnail: text('thumbnail'),
 
-  // JSON-stringified complex fields
-  platform: text('platform'), // JSON array: ["linux", "macos", "windows"]
-  docs: text('docs'), // JSON array of DocEntry
-  dependencies: text('dependencies'), // JSON array of string IDs
-  metadata: text('metadata'), // JSON object: AppMetadata
-  installConfig: text('install_config'), // JSON object: InstallConfig
+  // JSON fields with auto-parsing
+  platform: json<string[]>()('platform'),
+  docs: json<DocEntry[]>()('docs'),
+  dependencies: json<string[]>()('dependencies'),
+  metadata: json<AppMetadata>()('metadata'),
+  installConfig: json<InstallConfig>()('install_config'),
 
   // Tool-specific fields
   checkCommand: text('check_command'),
   installInstructions: text('install_instructions'),
-  configSchema: text('config_schema'), // JSON object: ConfigSchema
+  configSchema: json<ConfigSchema>()('config_schema'),
 
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
@@ -141,8 +148,9 @@ export const commands = sqliteTable('commands', {
   command: text('command').notNull(),
   scriptSource: text('script_source'), // 'nxus-app' | 'repo' | 'shared'
   cwd: text('cwd'),
-  platforms: text('platforms'), // JSON array: ["linux", "macos", "windows"]
-  requires: text('requires'), // JSON object: CommandRequirements
+  platforms: json<string[]>()('platforms'),
+  requires: json<Record<string, unknown>>()('requires'),
+  options: json<Record<string, unknown>>()('options'),
 
   // Soft delete
   deletedAt: integer('deleted_at', { mode: 'timestamp' }),
@@ -169,7 +177,7 @@ export type NewCommand = typeof commands.$inferInsert
  */
 export const tagConfigs = sqliteTable('tag_configs', {
   tagId: integer('tag_id').primaryKey(), // References tags.id
-  schema: text('schema').notNull(), // JSON: { fields: [...] }
+  schema: json<Record<string, unknown>>()('schema').notNull(),
   description: text('description'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
@@ -189,7 +197,7 @@ export type NewTagConfig = typeof tagConfigs.$inferInsert
 export const appTagValues = sqliteTable('app_tag_values', {
   appId: text('app_id').notNull(),
   tagId: integer('tag_id').notNull(), // References tags.id
-  configValues: text('config_values').notNull(), // JSON values matching the tag's schema
+  configValues: json<Record<string, unknown>>()('config_values').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
     .notNull(),

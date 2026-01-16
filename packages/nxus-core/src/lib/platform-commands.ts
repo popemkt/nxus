@@ -96,7 +96,7 @@ if ($result -eq 'OK') {
         `which xdg-terminal > /dev/null 2>&1 && xdg-terminal --cwd="${path}" || gnome-terminal --working-directory="${path}"`,
       openTerminalWithCommand: (command: string, cwd?: string) => {
         // Try gnome-terminal first, fall back to xterm
-        const escapedCmd = command.replace(/"/g, '\\"')
+        const escapedCmd = command.replace(/"/g, '\\\\"')
         const cwdPart = cwd ? `--working-directory="${cwd}"` : ''
         // Echo the command first, then execute it, then keep bash open
         return `gnome-terminal ${cwdPart} -- bash -c "echo 'Executing command:' && echo '${escapedCmd}' && ${escapedCmd}; exec bash" 2>/dev/null || xterm -e bash -c "echo 'Executing command:' && echo '${escapedCmd}' && ${escapedCmd}; exec bash"`

@@ -121,6 +121,15 @@ export const CwdSchema = z.union([
 export type Cwd = z.infer<typeof CwdSchema>
 
 /**
+ * Script mode options - for mode: 'script'
+ */
+export const ScriptModeOptionsSchema = z.object({
+  /** Run script in interactive terminal mode (default: false = background execution) */
+  interactive: z.boolean().optional().default(false),
+})
+export type ScriptModeOptions = z.infer<typeof ScriptModeOptionsSchema>
+
+/**
  * Config-driven command defined in app-registry.json
  * For shell/script commands with different parameters per app
  */
@@ -144,6 +153,8 @@ export const AppCommandSchema = z.object({
   platforms: z.array(PlatformSchema).optional(),
   /** Declarative requirements - what this command needs to run */
   requires: CommandRequirementsSchema.optional(),
+  /** Mode-specific options (stored as JSON in DB, parsed based on mode type) */
+  options: z.record(z.string(), z.any()).optional(),
 })
 export type AppCommand = z.infer<typeof AppCommandSchema>
 

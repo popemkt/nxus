@@ -13,7 +13,8 @@ import { eq, isNull, and } from 'drizzle-orm'
 import type { App, AppCommand, AppMetadata, DocEntry } from '../../types/app'
 
 /**
- * Parse JSON fields from database record to typed objects
+ * Map database record to App type
+ * JSON fields are now auto-parsed by the schema's json() column type
  */
 function parseAppRecord(record: typeof apps.$inferSelect): App {
   return {
@@ -24,29 +25,22 @@ function parseAppRecord(record: typeof apps.$inferSelect): App {
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
-    platform: record.platform ? JSON.parse(record.platform) : undefined,
-    docs: record.docs ? (JSON.parse(record.docs) as DocEntry[]) : undefined,
-    dependencies: record.dependencies
-      ? JSON.parse(record.dependencies)
-      : undefined,
-    metadata: record.metadata
-      ? (JSON.parse(record.metadata) as AppMetadata)
-      : { tags: [], category: 'uncategorized', createdAt: '', updatedAt: '' },
-    installConfig: record.installConfig
-      ? JSON.parse(record.installConfig)
-      : undefined,
+    platform: record.platform ?? undefined,
+    docs: record.docs ?? undefined,
+    dependencies: record.dependencies ?? undefined,
+    metadata: record.metadata,
+    installConfig: record.installConfig ?? undefined,
     checkCommand: record.checkCommand ?? undefined,
     installInstructions: record.installInstructions ?? undefined,
-    configSchema: record.configSchema
-      ? JSON.parse(record.configSchema)
-      : undefined,
+    configSchema: record.configSchema ?? undefined,
     status: 'not-installed', // Runtime status, not stored
     commands: [], // Will be populated separately
   } as App
 }
 
 /**
- * Parse command record to typed object
+ * Map command record to AppCommand type
+ * JSON fields are now auto-parsed by the schema's json() column type
  */
 function parseCommandRecord(record: typeof commands.$inferSelect): AppCommand {
   return {
@@ -61,8 +55,9 @@ function parseCommandRecord(record: typeof commands.$inferSelect): AppCommand {
     scriptSource:
       (record.scriptSource as AppCommand['scriptSource']) ?? undefined,
     cwd: record.cwd ?? undefined,
-    platforms: record.platforms ? JSON.parse(record.platforms) : undefined,
-    requires: record.requires ? JSON.parse(record.requires) : undefined,
+    platforms: record.platforms ?? undefined,
+    requires: record.requires ?? undefined,
+    options: record.options ?? undefined,
   }
 }
 
@@ -150,8 +145,7 @@ export const getCategoriesServerFn = createServerFn({ method: 'GET' }).handler(
     const categories = new Set<string>()
     for (const record of appRecords) {
       if (record.metadata) {
-        const metadata = JSON.parse(record.metadata) as AppMetadata
-        categories.add(metadata.category)
+        categories.add(record.metadata.category)
       }
     }
 
@@ -172,8 +166,7 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
     const tags = new Set<string>()
     for (const record of appRecords) {
       if (record.metadata) {
-        const metadata = JSON.parse(record.metadata) as AppMetadata
-        for (const tag of metadata.tags) {
+        for (const tag of record.metadata.tags) {
           tags.add(tag)
         }
       }

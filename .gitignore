@@ -45,3 +45,7 @@ packages/repos
 # SQLite runtime files
 *.db-shm
 *.db-wal
+
+# Prevent database from being created in wrong location
+# Correct location: packages/nxus-core/src/data/nxus.db
+packages/nxus-core/src/db/nxus.db

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
 import { apps, commands } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
-import { AppMetadataSchema } from '../src/types/app'
+import { AppMetadataSchema, AppSchema } from '../src/types/app'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -43,7 +43,6 @@ async function migrate() {
     const fullPath = join(appsDir, name)
     return (
       statSync(fullPath).isDirectory() &&
-      !name.startsWith('_') &&
       existsSync(join(fullPath, 'manifest.json'))
     )
   })
@@ -61,41 +60,41 @@ async function migrate() {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
 
-      // Validate metadata schema
-      if (manifest.metadata) {
-        const metadataResult = AppMetadataSchema.safeParse(manifest.metadata)
-        if (!metadataResult.success) {
-          const errors = metadataResult.error.issues.map(
-            (issue) => `  - ${issue.path.join('.')}: ${issue.message}`,
-          )
-          validationErrors.push({ app: appDir, errors })
-          console.log(`  ⚠ Validation warnings (will still migrate):`)
-          errors.forEach((e) => console.log(e))
-        }
+      // Validate full manifest against schema
+      const validationResult = AppSchema.safeParse(manifest)
+      if (!validationResult.success) {
+        const errors = validationResult.error.issues.map(
+          (issue) => `  - ${issue.path.join('.')}: ${issue.message}`,
+        )
+        validationErrors.push({ app: appDir, errors })
+        console.log(`  ⚠ Validation errors:`)
+        errors.forEach((e) => console.log(e))
+        console.log(`  Skipping ${appDir}...`)
+        continue
       }
 
+      const validatedManifest = validationResult.data
+
       // Extract commands from manifest
-      const appCommands = manifest.commands || []
-      delete manifest.commands // Remove from app record
-      delete manifest.status // Runtime status, not stored
+      const appCommands = validatedManifest.commands || []
 
       // Prepare app record
       const appRecord = {
-        id: manifest.id,
-        name: manifest.name,
-        description: manifest.description || '',
-        type: manifest.type,
-        path: manifest.path,
-        homepage: manifest.homepage || null,
-        thumbnail: manifest.thumbnail || null,
-        platform: stringifyIfNeeded(manifest.platform),
-        docs: stringifyIfNeeded(manifest.docs),
-        dependencies: stringifyIfNeeded(manifest.dependencies),
-        metadata: stringifyIfNeeded(manifest.metadata),
-        installConfig: stringifyIfNeeded(manifest.installConfig),
-        checkCommand: manifest.checkCommand || null,
-        installInstructions: manifest.installInstructions || null,
-        configSchema: stringifyIfNeeded(manifest.configSchema),
+        id: validatedManifest.id,
+        name: validatedManifest.name,
+        description: validatedManifest.description || '',
+        type: validatedManifest.type,
+        path: validatedManifest.path,
+        homepage: validatedManifest.homepage || null,
+        thumbnail: validatedManifest.thumbnail || null,
+        platform: stringifyIfNeeded(validatedManifest.platform),
+        docs: stringifyIfNeeded(validatedManifest.docs),
+        dependencies: stringifyIfNeeded(validatedManifest.dependencies),
+        metadata: stringifyIfNeeded(validatedManifest.metadata),
+        installConfig: stringifyIfNeeded(validatedManifest.installConfig),
+        checkCommand: validatedManifest.checkCommand || null,
+        installInstructions: validatedManifest.installInstructions || null,
+        configSchema: stringifyIfNeeded(validatedManifest.configSchema),
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -121,10 +120,10 @@ async function migrate() {
 
       // Insert commands
       for (const cmd of appCommands) {
-        const commandId = `${manifest.id}:${cmd.id}`
+        const commandId = `${validatedManifest.id}:${cmd.id}`
         const commandRecord = {
           id: commandId,
-          appId: manifest.id,
+          appId: validatedManifest.id,
           commandId: cmd.id,
           name: cmd.name,
           description: cmd.description || null,
