@@ -24,7 +24,9 @@
             "command": "install.ps1",
             "requires": {
                 "selfNotInstalled": true,
-                "tools": ["powershell"]
+                "tools": [
+                    "powershell"
+                ]
             }
         },
         {

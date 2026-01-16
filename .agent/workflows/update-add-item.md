@@ -141,8 +141,10 @@ Example:
 
 ## 6. Verification Checklist
 
-- [ ] **Manifest Valid**: JSON is valid and matches `AppSchema`.
-  - Run `pnpm db:migrate` in terminal - should complete without errors.
+- [ ] **Database & Files Synchronization**:
+  - Run `pnpm db:migrate` in `packages/nxus-core` to sync manifest changes to the local database.
+  - Run `pnpm db:export` in `packages/nxus-core` to export the updated state back to regional JSON files.
+  - Verify that `packages/nxus-core/src/data/apps/<id>/manifest.json` reflects the final state.
 - [ ] **Tags**:
   - [ ] `metadata.tags` uses `TagRef` format: `[{ "id": 1, "name": "..." }]`.
   - [ ] Tags reference existing IDs from the database.
