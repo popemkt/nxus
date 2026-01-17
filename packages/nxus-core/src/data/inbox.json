@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-01-17T02:16:26.532Z",
-  "count": 47,
+  "exportedAt": "2026-01-17T04:31:23.966Z",
+  "count": 52,
   "items": [
     {
       "id": 1,
@@ -378,6 +378,46 @@
       "status": "pending",
       "createdAt": "2026-01-17T02:11:05.000Z",
       "updatedAt": "2026-01-17T02:11:05.000Z"
+    },
+    {
+      "id": 48,
+      "title": "think about auditing system?",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-17T02:16:29.000Z",
+      "updatedAt": "2026-01-17T02:16:29.000Z"
+    },
+    {
+      "id": 49,
+      "title": "Maybe use more google stuff?",
+      "notes": "https://www.youtube.com/watch?v=TcUwnJ5zqdM",
+      "status": "pending",
+      "createdAt": "2026-01-17T02:42:28.000Z",
+      "updatedAt": "2026-01-17T02:42:28.000Z"
+    },
+    {
+      "id": 50,
+      "title": "Raycast extension, for evidence commands for example",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-17T02:58:05.000Z",
+      "updatedAt": "2026-01-17T02:58:25.000Z"
+    },
+    {
+      "id": 51,
+      "title": "neo4j as a relation layer",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-17T03:26:12.000Z",
+      "updatedAt": "2026-01-17T03:26:12.000Z"
+    },
+    {
+      "id": 52,
+      "title": "We have item command and commands, how should these be unified",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-17T03:42:04.000Z",
+      "updatedAt": "2026-01-17T03:42:04.000Z"
     }
   ]
 }

@@ -95,11 +95,9 @@ export function AppActionsPanel({
   // Get configuration status (readiness)
   const requiredFields = React.useMemo(() => {
     if (app.type !== 'tool') return []
-    return (
-      (app as ToolItem).configSchema?.fields
-        .filter((f) => f.required)
-        .map((f) => f.key) ?? []
-    )
+    const fields = (app as ToolItem).configSchema?.fields
+    if (!Array.isArray(fields)) return []
+    return fields.filter((f) => f.required).map((f) => f.key)
   }, [app])
   const isConfigured = useToolConfigured(app.id, requiredFields)
 

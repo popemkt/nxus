@@ -48,7 +48,7 @@ function parseAppRecord(
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
     platform: record.platform ?? undefined,
-    docs: record.docs ?? undefined,
+    docs: Array.isArray(record.docs) ? record.docs : undefined,
     dependencies: record.dependencies ?? undefined,
     metadata, // Now guaranteed to have proper shape
     installConfig: record.installConfig ?? undefined,

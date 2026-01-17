@@ -93,12 +93,12 @@
         "git"
     ],
     "metadata": {
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2025-12-25T13:43:00.000Z",
         "updatedAt": "2025-12-25T13:43:00.000Z",
         "version": "1.0.0",
-        "author": "AutoMaker-Org",
-        "tags": []
+        "author": "AutoMaker-Org"
     },
     "installConfig": {
         "script": "npm install",

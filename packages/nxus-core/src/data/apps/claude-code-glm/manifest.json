@@ -1,7 +1,7 @@
 {
     "id": "claude-code-glm",
-    "name": "Claude Code (GLM)",
-    "description": "Claude Code configured to use Z.AI's GLM model",
+    "name": "Z AI",
+    "description": "Z.AI integrations hub - Claude Code, Goose Desktop, and more",
     "type": "tool",
     "path": "https://z.ai",
     "homepage": "https://z.ai",
@@ -52,6 +52,16 @@
             "target": "app",
             "mode": "docs",
             "command": "https://docs.z.ai/devpack/tool/claude"
+        },
+        {
+            "id": "goose-desktop-docs",
+            "name": "Goose Desktop Docs",
+            "description": "Open Goose Desktop integration documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "app",
+            "mode": "docs",
+            "command": "https://docs.z.ai/devpack/tool/goose#step-2:-creating-a-new-provider"
         }
     ],
     "docs": [
@@ -72,12 +82,12 @@
         "claude-code"
     ],
     "metadata": {
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-01T15:32:00.000Z",
-        "updatedAt": "2026-01-02T00:00:00.000Z",
+        "updatedAt": "2026-01-17T04:30:00.000Z",
         "version": "1.0.0",
-        "author": "nxus",
-        "tags": []
+        "author": "nxus"
     },
     "configSchema": {
         "fields": [
