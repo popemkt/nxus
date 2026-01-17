@@ -38,7 +38,27 @@ import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { queryClient } from '@/lib/query-client'
+import { appRegistryService } from '@/services/apps/registry.service'
 import type { ItemCommand, ItemType, CommandRequirements } from '@/types/item'
+
+/**
+ * Get the actual checkCommand for a tool ID by looking it up in the registry.
+ * Falls back to `${toolId} --version` for unknown tools or non-tool types.
+ */
+function getCheckCommandForTool(toolId: string): string {
+  const appResult = appRegistryService.getAppById(toolId)
+  if (appResult.success && appResult.data.type === 'tool') {
+    return appResult.data.checkCommand
+  }
+  // Tool not found in registry or not a tool type - this is a data integrity issue
+  throw new Error(
+    `Cannot resolve checkCommand for tool "${toolId}": ${
+      appResult.success
+        ? 'item is not a tool type'
+        : 'item not found in registry'
+    }`,
+  )
+}
 
 /**
  * Result of availability check
@@ -92,9 +112,9 @@ function resolveRequirements(
   // Check tool dependencies
   if (requirements.tools && requirements.tools.length > 0) {
     for (const toolId of requirements.tools) {
-      // We need to look up by checkCommand, not toolId
-      // For now, assume toolId IS the checkCommand (git, node, etc.)
-      const health = healthByCommand.get(`${toolId} --version`)
+      // Look up actual checkCommand from registry (e.g., warp -> warp-terminal --dump-debug-info)
+      const checkCommand = getCheckCommandForTool(toolId)
+      const health = healthByCommand.get(checkCommand)
       if (health === undefined) {
         // Still checking
         return {
@@ -172,7 +192,8 @@ export function useCommand(
     const commands: string[] = []
     if (command.requires?.tools) {
       for (const toolId of command.requires.tools) {
-        commands.push(`${toolId} --version`)
+        // Look up actual checkCommand from registry
+        commands.push(getCheckCommandForTool(toolId))
       }
     }
     return commands
@@ -290,7 +311,8 @@ export function checkCommandAvailability(
   // Check required tools
   if (command.requires?.tools) {
     for (const toolId of command.requires.tools) {
-      const checkCommand = `${toolId} --version`
+      // Look up actual checkCommand from registry
+      const checkCommand = getCheckCommandForTool(toolId)
       healthByCommand.set(
         checkCommand,
         getToolHealthFromCache(qc, checkCommand),

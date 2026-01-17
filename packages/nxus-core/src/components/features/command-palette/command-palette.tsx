@@ -33,6 +33,9 @@ import {
   getAliasesServerFn,
   aliasUtils,
 } from '@/services/command-palette/alias.server'
+import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
+import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
+import type { ItemCommand, ItemType } from '@/types/item'
 
 function DynamicIcon({
   name,
@@ -185,6 +188,19 @@ export function CommandPalette() {
   const selectedItemRef = useRef<HTMLButtonElement>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [aliases, setAliases] = useState<Record<string, string>>({})
+
+  // Script params modal state
+  const [scriptParamsModalOpen, setScriptParamsModalOpen] = useState(false)
+  const [scriptParams, setScriptParams] = useState<ScriptParam[]>([])
+  const [pendingScriptExecution, setPendingScriptExecution] = useState<{
+    appId: string
+    appType: ItemType
+    appName: string
+    commandName: string
+    scriptPath: string
+    scriptSource?: string
+    interactive?: boolean
+  } | null>(null)
 
   const {
     isOpen,
@@ -488,14 +504,26 @@ export function CommandPalette() {
           interactive: action.interactive,
           tabName: `${cmd.app.name}: ${cmd.command.name}`,
           terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+          onNeedsParams: (params) => {
+            // Script has parameters - open modal to collect them
+            setScriptParams(params as ScriptParam[])
+            setPendingScriptExecution({
+              appId: action.appId,
+              appType: cmd.app.type,
+              appName: cmd.app.name,
+              commandName: cmd.command.name,
+              scriptPath: action.scriptPath,
+              scriptSource: action.scriptSource,
+              interactive: action.interactive,
+            })
+            setScriptParamsModalOpen(true)
+          },
         })
 
-        // Script has parameters that need UI - for now, alert user
-        // In the future, could open a modal here
-        if (result.needsParams) {
-          alert(
-            'This script has parameters. Please run it from the app detail page.',
-          )
+        // If needs params, modal will handle execution - don't close palette yet
+        // (modal is already open from onNeedsParams callback)
+        if (!result.needsParams) {
+          // Script executed without params
         }
         break
       }
@@ -567,284 +595,340 @@ export function CommandPalette() {
     }
   }
 
-  if (!isOpen) return null
+  // Handle script params modal submit
+  const handleScriptParamsSubmit = async (
+    values: Record<string, string | number | boolean>,
+  ) => {
+    if (!pendingScriptExecution) return
+
+    const {
+      appId,
+      appType,
+      appName,
+      commandName,
+      scriptPath,
+      scriptSource,
+      interactive,
+    } = pendingScriptExecution
+
+    // Execute with collected params
+    await commandExecutor.executeScript({
+      appId,
+      appType,
+      scriptPath,
+      scriptSource,
+      interactive,
+      params: values,
+      tabName: `${appName}: ${commandName}`,
+      terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+    })
+
+    // Clean up
+    setPendingScriptExecution(null)
+    setScriptParams([])
+    close()
+  }
+
+  if (!isOpen && !scriptParamsModalOpen) return null
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={close}
-          />
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={close}
+            />
 
-          {/* Palette - HUD bar styling */}
-          <motion.div
-            layoutId={isFromGallery && isGalleryView ? 'hud-bar' : undefined}
-            initial={
-              isFromGallery && isGalleryView
-                ? undefined
-                : { opacity: 0, scale: 0.95, y: -10 }
-            }
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={
-              isFromGallery && isGalleryView
-                ? undefined
-                : { opacity: 0, scale: 0.95, y: -10 }
-            }
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="relative w-full max-w-xl bg-background/85 backdrop-blur-xl border border-foreground/10 rounded-[26px] shadow-[0_20px_40px_rgba(0,0,0,0.25)] overflow-hidden"
-          >
-            {/* Header - HUD bar pill style */}
-            <div className="flex items-center gap-2 h-[52px] px-4">
-              {step === 'target' && (
-                <button
-                  onClick={reset}
-                  className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-foreground/10 transition-colors"
-                >
-                  <ArrowLeftIcon className="h-4 w-4" />
-                </button>
-              )}
-              <MagnifyingGlassIcon className="h-4 w-4 text-foreground/40 shrink-0" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  step === 'target'
-                    ? `Select target for "${selectedGenericCommand?.name}"...`
-                    : 'Search commands...'
-                }
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-foreground/40"
-              />
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 text-[10px] text-foreground/50 bg-foreground/8 rounded-md">
-                <CommandIcon className="h-3 w-3" />
-                <span>K</span>
-              </kbd>
-            </div>
+            {/* Palette - HUD bar styling */}
+            <motion.div
+              layoutId={isFromGallery && isGalleryView ? 'hud-bar' : undefined}
+              initial={
+                isFromGallery && isGalleryView
+                  ? undefined
+                  : { opacity: 0, scale: 0.95, y: -10 }
+              }
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={
+                isFromGallery && isGalleryView
+                  ? undefined
+                  : { opacity: 0, scale: 0.95, y: -10 }
+              }
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="relative w-full max-w-xl bg-background/85 backdrop-blur-xl border border-foreground/10 rounded-[26px] shadow-[0_20px_40px_rgba(0,0,0,0.25)] overflow-hidden"
+            >
+              {/* Header - HUD bar pill style */}
+              <div className="flex items-center gap-2 h-[52px] px-4">
+                {step === 'target' && (
+                  <button
+                    onClick={reset}
+                    className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-foreground/10 transition-colors"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                  </button>
+                )}
+                <MagnifyingGlassIcon className="h-4 w-4 text-foreground/40 shrink-0" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    step === 'target'
+                      ? `Select target for "${selectedGenericCommand?.name}"...`
+                      : 'Search commands...'
+                  }
+                  className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-foreground/40"
+                />
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 text-[10px] text-foreground/50 bg-foreground/8 rounded-md">
+                  <CommandIcon className="h-3 w-3" />
+                  <span>K</span>
+                </kbd>
+              </div>
 
-            {/* Results */}
-            <div className="max-h-80 overflow-y-auto">
-              {step === 'command' ? (
-                <>
-                  {/* Generic commands */}
-                  {(results as ReturnType<typeof commandRegistry.search>)
-                    .genericCommands.length > 0 && (
-                    <div className="p-2">
-                      <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
-                        Actions
-                      </p>
-                      {(
-                        results as ReturnType<typeof commandRegistry.search>
-                      ).genericCommands.map((cmd, idx) => (
-                        <button
-                          key={cmd.id}
-                          ref={selectedIndex === idx ? selectedItemRef : null}
-                          onClick={() => {
-                            if (cmd.needsTarget) {
-                              selectGenericCommand(cmd)
-                            } else {
-                              close()
-                              cmd.execute()
-                            }
-                          }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
-                            selectedIndex === idx
-                              ? 'bg-primary text-primary-foreground'
-                              : 'hover:bg-muted'
-                          }`}
-                        >
-                          <DynamicIcon
-                            name={cmd.icon}
-                            className={`h-4 w-4 ${selectedIndex === idx ? 'text-primary-foreground' : 'text-muted-foreground'}`}
-                          />
-                          <span>{cmd.name}</span>
-                          {commandToAlias[cmd.id] && (
-                            <code
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                                selectedIndex === idx
-                                  ? 'bg-primary-foreground/20 text-primary-foreground'
-                                  : 'bg-muted text-muted-foreground'
-                              }`}
-                            >
-                              {commandToAlias[cmd.id]}
-                            </code>
-                          )}
-                          {cmd.needsTarget && (
-                            <span
-                              className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
-                            >
-                              → select {cmd.needsTarget}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* App commands */}
-                  {(results as ReturnType<typeof commandRegistry.search>)
-                    .appCommands.length > 0 && (
-                    <div className="p-2 border-t border-border">
-                      <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
-                        App Commands
-                      </p>
-                      {(
-                        results as ReturnType<typeof commandRegistry.search>
-                      ).appCommands.map((cmd, idx) => {
-                        const globalIdx =
-                          (results as ReturnType<typeof commandRegistry.search>)
-                            .genericCommands.length + idx
-                        const availability = getCommandAvailability(cmd)
-                        const isDisabled = !availability.canExecute
-                        const isSelected = selectedIndex === globalIdx
-
-                        return (
+              {/* Results */}
+              <div className="max-h-80 overflow-y-auto">
+                {step === 'command' ? (
+                  <>
+                    {/* Generic commands */}
+                    {(results as ReturnType<typeof commandRegistry.search>)
+                      .genericCommands.length > 0 && (
+                      <div className="p-2">
+                        <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
+                          Actions
+                        </p>
+                        {(
+                          results as ReturnType<typeof commandRegistry.search>
+                        ).genericCommands.map((cmd, idx) => (
                           <button
                             key={cmd.id}
-                            ref={isSelected ? selectedItemRef : null}
-                            onClick={() =>
-                              !isDisabled && executeAppCommand(cmd)
-                            }
-                            disabled={isDisabled}
+                            ref={selectedIndex === idx ? selectedItemRef : null}
+                            onClick={() => {
+                              if (cmd.needsTarget) {
+                                selectGenericCommand(cmd)
+                              } else {
+                                close()
+                                cmd.execute()
+                              }
+                            }}
                             className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
-                              isDisabled
-                                ? 'opacity-50 cursor-not-allowed'
-                                : isSelected
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'hover:bg-muted'
+                              selectedIndex === idx
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted'
                             }`}
-                            title={isDisabled ? availability.reason : undefined}
                           >
                             <DynamicIcon
-                              name={cmd.command.icon}
-                              className={`h-4 w-4 ${
-                                isDisabled
-                                  ? 'text-muted-foreground'
-                                  : isSelected
-                                    ? 'text-primary-foreground'
-                                    : 'text-muted-foreground'
-                              }`}
+                              name={cmd.icon}
+                              className={`h-4 w-4 ${selectedIndex === idx ? 'text-primary-foreground' : 'text-muted-foreground'}`}
                             />
-                            <span
-                              className={
-                                isSelected && !isDisabled
-                                  ? ''
-                                  : 'text-muted-foreground'
-                              }
-                            >
-                              {cmd.app.name}:
-                            </span>
-                            <span
-                              className={
-                                isDisabled ? 'text-muted-foreground' : ''
-                              }
-                            >
-                              {cmd.command.name}
-                            </span>
+                            <span>{cmd.name}</span>
                             {commandToAlias[cmd.id] && (
                               <code
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                                  isDisabled
-                                    ? 'bg-muted/50 text-muted-foreground'
-                                    : isSelected
-                                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                                      : 'bg-muted text-muted-foreground'
+                                  selectedIndex === idx
+                                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground'
                                 }`}
                               >
                                 {commandToAlias[cmd.id]}
                               </code>
                             )}
-                            {/* Show disabled reason OR description */}
-                            {isDisabled ? (
-                              <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
-                                <WarningCircleIcon className="h-3 w-3" />
-                                {availability.reason}
-                              </span>
-                            ) : (
+                            {cmd.needsTarget && (
                               <span
-                                className={`ml-auto flex items-center gap-2 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                                className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
                               >
-                                {cmd.command.description && (
-                                  <span className="text-xs truncate max-w-[120px]">
-                                    {cmd.command.description}
-                                  </span>
-                                )}
-                                {/* Tab indicator for actions */}
-                                {isSelected && (
-                                  <span className="flex items-center gap-1 text-xs opacity-70">
-                                    <CaretRightIcon className="h-3 w-3" />
-                                    <span className="hidden sm:inline">
-                                      Tab
-                                    </span>
-                                  </span>
-                                )}
+                                → select {cmd.needsTarget}
                               </span>
                             )}
                           </button>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {(results as ReturnType<typeof commandRegistry.search>)
-                    .appCommands.length === 0 &&
-                    (results as ReturnType<typeof commandRegistry.search>)
-                      .genericCommands.length === 0 && (
-                      <div className="p-8 text-center text-muted-foreground">
-                        No commands found
+                        ))}
                       </div>
                     )}
-                </>
-              ) : step === 'actions' && actionPanelCommand ? (
-                // Action panel for selected command
-                <ActionPanel
-                  command={actionPanelCommand}
-                  onAction={handleActionPanelAction}
-                  onBack={closeActions}
-                />
-              ) : (
-                // Target selection step
-                <div className="p-2">
-                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
-                    Select {selectedGenericCommand?.needsTarget}
-                  </p>
-                  {(
-                    results as ReturnType<
-                      typeof commandRegistry.getAppsForTargetSelection
-                    >
-                  ).map((app, idx) => (
-                    <button
-                      key={app.id}
-                      ref={selectedIndex === idx ? selectedItemRef : null}
-                      onClick={() => executeGenericCommand(app.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
-                        selectedIndex === idx
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-muted'
-                      }`}
-                    >
-                      <span>{app.name}</span>
-                      <span
-                        className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+
+                    {/* App commands */}
+                    {(results as ReturnType<typeof commandRegistry.search>)
+                      .appCommands.length > 0 && (
+                      <div className="p-2 border-t border-border">
+                        <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
+                          App Commands
+                        </p>
+                        {(
+                          results as ReturnType<typeof commandRegistry.search>
+                        ).appCommands.map((cmd, idx) => {
+                          const globalIdx =
+                            (
+                              results as ReturnType<
+                                typeof commandRegistry.search
+                              >
+                            ).genericCommands.length + idx
+                          const availability = getCommandAvailability(cmd)
+                          const isDisabled = !availability.canExecute
+                          const isSelected = selectedIndex === globalIdx
+
+                          return (
+                            <button
+                              key={cmd.id}
+                              ref={isSelected ? selectedItemRef : null}
+                              onClick={() =>
+                                !isDisabled && executeAppCommand(cmd)
+                              }
+                              disabled={isDisabled}
+                              className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
+                                isDisabled
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : isSelected
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'hover:bg-muted'
+                              }`}
+                              title={
+                                isDisabled ? availability.reason : undefined
+                              }
+                            >
+                              <DynamicIcon
+                                name={cmd.command.icon}
+                                className={`h-4 w-4 ${
+                                  isDisabled
+                                    ? 'text-muted-foreground'
+                                    : isSelected
+                                      ? 'text-primary-foreground'
+                                      : 'text-muted-foreground'
+                                }`}
+                              />
+                              <span
+                                className={
+                                  isSelected && !isDisabled
+                                    ? ''
+                                    : 'text-muted-foreground'
+                                }
+                              >
+                                {cmd.app.name}:
+                              </span>
+                              <span
+                                className={
+                                  isDisabled ? 'text-muted-foreground' : ''
+                                }
+                              >
+                                {cmd.command.name}
+                              </span>
+                              {commandToAlias[cmd.id] && (
+                                <code
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                                    isDisabled
+                                      ? 'bg-muted/50 text-muted-foreground'
+                                      : isSelected
+                                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                                        : 'bg-muted text-muted-foreground'
+                                  }`}
+                                >
+                                  {commandToAlias[cmd.id]}
+                                </code>
+                              )}
+                              {/* Show disabled reason OR description */}
+                              {isDisabled ? (
+                                <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                                  <WarningCircleIcon className="h-3 w-3" />
+                                  {availability.reason}
+                                </span>
+                              ) : (
+                                <span
+                                  className={`ml-auto flex items-center gap-2 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                                >
+                                  {cmd.command.description && (
+                                    <span className="text-xs truncate max-w-[120px]">
+                                      {cmd.command.description}
+                                    </span>
+                                  )}
+                                  {/* Tab indicator for actions */}
+                                  {isSelected && (
+                                    <span className="flex items-center gap-1 text-xs opacity-70">
+                                      <CaretRightIcon className="h-3 w-3" />
+                                      <span className="hidden sm:inline">
+                                        Tab
+                                      </span>
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {(results as ReturnType<typeof commandRegistry.search>)
+                      .appCommands.length === 0 &&
+                      (results as ReturnType<typeof commandRegistry.search>)
+                        .genericCommands.length === 0 && (
+                        <div className="p-8 text-center text-muted-foreground">
+                          No commands found
+                        </div>
+                      )}
+                  </>
+                ) : step === 'actions' && actionPanelCommand ? (
+                  // Action panel for selected command
+                  <ActionPanel
+                    command={actionPanelCommand}
+                    onAction={handleActionPanelAction}
+                    onBack={closeActions}
+                  />
+                ) : (
+                  // Target selection step
+                  <div className="p-2">
+                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
+                      Select {selectedGenericCommand?.needsTarget}
+                    </p>
+                    {(
+                      results as ReturnType<
+                        typeof commandRegistry.getAppsForTargetSelection
                       >
-                        {app.type}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+                    ).map((app, idx) => (
+                      <button
+                        key={app.id}
+                        ref={selectedIndex === idx ? selectedItemRef : null}
+                        onClick={() => executeGenericCommand(app.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
+                          selectedIndex === idx
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-muted'
+                        }`}
+                      >
+                        <span>{app.name}</span>
+                        <span
+                          className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                        >
+                          {app.type}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Script Parameters Modal */}
+      <ScriptParamsModal
+        scriptName={pendingScriptExecution?.scriptPath ?? ''}
+        params={scriptParams}
+        open={scriptParamsModalOpen}
+        onOpenChange={(open) => {
+          setScriptParamsModalOpen(open)
+          if (!open) {
+            setPendingScriptExecution(null)
+            setScriptParams([])
+          }
+        }}
+        onRun={handleScriptParamsSubmit}
+      />
+    </>
   )
 }

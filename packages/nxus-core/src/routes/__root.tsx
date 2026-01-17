@@ -48,31 +48,29 @@ function SystemInfoLoader() {
 }
 
 /**
- * Theme provider - applies theme class to html element
+ * Theme provider - applies theme palette and color mode classes to html element
  */
 function ThemeProvider() {
-  const theme = useThemeStore((s) => s.theme)
+  const palette = useThemeStore((s) => s.palette)
+  const colorMode = useThemeStore((s) => s.colorMode)
 
   useEffect(() => {
     const root = document.documentElement
 
-    // Remove all theme classes
+    // Remove all palette classes
     themeOptions.forEach((t) => root.classList.remove(t.value))
     root.classList.remove('dark')
 
-    // Get theme option to check if dark
-    const themeOption = themeOptions.find((t) => t.value === theme)
-
-    // Add dark class for dark themes
-    if (themeOption?.isDark) {
+    // Apply color mode
+    if (colorMode === 'dark') {
       root.classList.add('dark')
     }
 
-    // Add specific theme class (except for base 'dark' and 'light')
-    if (theme !== 'dark' && theme !== 'light') {
-      root.classList.add(theme)
+    // Apply palette class (except for 'default' which uses base styles)
+    if (palette !== 'default') {
+      root.classList.add(palette)
     }
-  }, [theme])
+  }, [palette, colorMode])
 
   return null
 }
@@ -123,12 +121,20 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             __html: `
               (function() {
                 try {
-                  var storedTheme = localStorage.getItem('theme');
-                  var theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                  if (theme === 'dark') {
+                  var stored = localStorage.getItem('nxus-theme');
+                  if (stored) {
+                    var state = JSON.parse(stored).state;
+                    var colorMode = state.colorMode || 'dark';
+                    var palette = state.palette || 'default';
+                    
+                    if (colorMode === 'dark') {
+                      document.documentElement.classList.add('dark');
+                    }
+                    if (palette !== 'default') {
+                      document.documentElement.classList.add(palette);
+                    }
+                  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
                   }
                 } catch (e) {}
               })();

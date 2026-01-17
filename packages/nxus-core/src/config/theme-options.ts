@@ -1,99 +1,107 @@
 import {
-  Moon,
-  Sun,
   Sparkle,
   Ghost,
   Snowflake,
   Terminal,
   Cat,
   GithubLogo,
+  CircleDashed,
+  Lightning,
+  Fire,
+  Flower,
+  Tree,
+  Waves,
+  Sun,
 } from '@phosphor-icons/react'
 import type { ComponentType } from 'react'
-
-// Theme value type - all available themes
-export type Theme =
-  // Dark themes
-  | 'dark'
-  | 'tokyonight'
-  | 'dracula'
-  | 'nord'
-  | 'catppuccin'
-  | 'retro'
-  // Light themes
-  | 'light'
-  | 'github'
+import type { ThemePalette } from '@/stores/theme.store'
 
 export interface ThemeOption {
-  value: Theme
+  value: ThemePalette
   label: string
   Icon: ComponentType<{ className?: string; weight?: string }>
-  isDark: boolean
   color: string // Primary color for preview
 }
 
 export const themeOptions: ThemeOption[] = [
-  // Dark themes
+  // Core themes
   {
-    value: 'dark',
-    label: 'Dark',
-    Icon: Moon,
-    isDark: true,
+    value: 'default',
+    label: 'Default',
+    Icon: CircleDashed,
     color: '#3b82f6',
   },
   {
     value: 'tokyonight',
     label: 'Tokyo Night',
     Icon: Sparkle,
-    isDark: true,
     color: '#bb9af7',
   },
   {
     value: 'dracula',
     label: 'Dracula',
     Icon: Ghost,
-    isDark: true,
     color: '#bd93f9',
   },
   {
     value: 'nord',
     label: 'Nord',
     Icon: Snowflake,
-    isDark: true,
     color: '#88c0d0',
   },
   {
     value: 'catppuccin',
     label: 'Catppuccin',
     Icon: Cat,
-    isDark: true,
     color: '#cba6f7',
   },
   {
     value: 'retro',
     label: 'Retro',
     Icon: Terminal,
-    isDark: true,
     color: '#22c55e',
-  },
-  // Light themes
-  {
-    value: 'light',
-    label: 'Light',
-    Icon: Sun,
-    isDark: false,
-    color: '#3b82f6',
   },
   {
     value: 'github',
     label: 'GitHub',
     Icon: GithubLogo,
-    isDark: false,
     color: '#0969da',
   },
+  // Wild themes
+  {
+    value: 'synthwave',
+    label: 'Synthwave',
+    Icon: Lightning,
+    color: '#ff7edb',
+  },
+  {
+    value: 'gruvbox',
+    label: 'Gruvbox',
+    Icon: Fire,
+    color: '#d79921',
+  },
+  {
+    value: 'rosepine',
+    label: 'Rosé Pine',
+    Icon: Flower,
+    color: '#ebbcba',
+  },
+  {
+    value: 'everforest',
+    label: 'Everforest',
+    Icon: Tree,
+    color: '#a7c080',
+  },
+  {
+    value: 'kanagawa',
+    label: 'Kanagawa',
+    Icon: Waves,
+    color: '#7e9cd8',
+  },
+  {
+    value: 'solarized',
+    label: 'Solarized',
+    Icon: Sun,
+    color: '#268bd2',
+  },
 ]
-
-// Helper: Get only dark themes
-export const darkThemes = themeOptions.filter((t) => t.isDark)
-
-// Helper: Get only light themes
-export const lightThemes = themeOptions.filter((t) => !t.isDark)

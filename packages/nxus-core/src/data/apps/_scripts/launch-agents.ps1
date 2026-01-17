@@ -1,9 +1,9 @@
 param (
-    [string]$cwd = "."
+    [string]$cwdPath = "."
 )
 
 # 1. Resolve absolute path for CWD
-$absoluteCwd = Resolve-Path $cwd
+$absoluteCwd = Resolve-Path $cwdPath
 $configName = "agents"
 
 # 2. Detect OS and set Warp configuration path

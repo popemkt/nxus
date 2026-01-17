@@ -7,3 +7,10 @@
 @import './themes/catppuccin.css';
 @import './themes/retro.css';
 @import './themes/github.css';
+/* Wild themes */
+@import './themes/synthwave.css';
+@import './themes/gruvbox.css';
+@import './themes/rosepine.css';
+@import './themes/everforest.css';
+@import './themes/kanagawa.css';
+@import './themes/solarized.css';

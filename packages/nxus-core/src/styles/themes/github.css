@@ -1,6 +1,8 @@
-/* GitHub Light Theme */
+/* GitHub Theme */
 /* Clean and minimal like GitHub's interface */
+/* Light variant is GitHub Light, Dark variant is GitHub Dark */
 
+/* GitHub - Light Variant */
 .github {
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.25 0.01 250);
@@ -43,4 +45,49 @@
   --sidebar-accent-foreground: oklch(0.25 0.01 250);
   --sidebar-border: oklch(0.88 0.005 250);
   --sidebar-ring: oklch(0.5 0.18 230);
+}
+
+/* GitHub - Dark Variant */
+.dark.github {
+  --background: oklch(0.15 0.01 250);
+  --foreground: oklch(0.9 0.005 250);
+
+  --card: oklch(0.2 0.01 250);
+  --card-foreground: oklch(0.9 0.005 250);
+
+  --popover: oklch(0.18 0.01 250);
+  --popover-foreground: oklch(0.9 0.005 250);
+
+  --primary: oklch(0.6 0.15 230);
+  --primary-foreground: oklch(0.15 0.01 250);
+
+  --secondary: oklch(0.25 0.01 250);
+  --secondary-foreground: oklch(0.9 0.005 250);
+
+  --muted: oklch(0.25 0.01 250);
+  --muted-foreground: oklch(0.55 0.01 250);
+
+  --accent: oklch(0.28 0.015 250);
+  --accent-foreground: oklch(0.9 0.005 250);
+
+  --destructive: oklch(0.65 0.2 15);
+
+  --border: oklch(0.32 0.01 250);
+  --input: oklch(0.2 0.01 250);
+  --ring: oklch(0.6 0.15 230);
+
+  --chart-1: oklch(0.6 0.15 230);
+  --chart-2: oklch(0.65 0.15 160);
+  --chart-3: oklch(0.7 0.18 300);
+  --chart-4: oklch(0.75 0.2 30);
+  --chart-5: oklch(0.6 0.12 280);
+
+  --sidebar: oklch(0.13 0.01 250);
+  --sidebar-foreground: oklch(0.9 0.005 250);
+  --sidebar-primary: oklch(0.6 0.15 230);
+  --sidebar-primary-foreground: oklch(0.15 0.01 250);
+  --sidebar-accent: oklch(0.25 0.01 250);
+  --sidebar-accent-foreground: oklch(0.9 0.005 250);
+  --sidebar-border: oklch(0.32 0.01 250);
+  --sidebar-ring: oklch(0.6 0.15 230);
 }

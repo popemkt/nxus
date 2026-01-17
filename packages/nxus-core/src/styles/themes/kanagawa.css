@@ -1,0 +1,93 @@
+/* Kanagawa Theme */
+/* Inspired by the famous wave painting by Hokusai */
+/* Deep blues and soft golds with Japanese aesthetic */
+
+/* Kanagawa - Light Variant (Lotus) */
+.kanagawa {
+  --background: oklch(0.96 0.01 230);
+  --foreground: oklch(0.25 0.03 230);
+
+  --card: oklch(0.98 0.008 230);
+  --card-foreground: oklch(0.25 0.03 230);
+
+  --popover: oklch(0.97 0.01 230);
+  --popover-foreground: oklch(0.25 0.03 230);
+
+  --primary: oklch(0.55 0.14 230);
+  --primary-foreground: oklch(0.97 0.005 230);
+
+  --secondary: oklch(0.9 0.015 230);
+  --secondary-foreground: oklch(0.3 0.03 230);
+
+  --muted: oklch(0.9 0.015 230);
+  --muted-foreground: oklch(0.5 0.02 230);
+
+  --accent: oklch(0.7 0.12 80);
+  --accent-foreground: oklch(0.25 0.03 230);
+
+  --destructive: oklch(0.55 0.18 15);
+
+  --border: oklch(0.83 0.025 230);
+  --input: oklch(0.9 0.015 230);
+  --ring: oklch(0.55 0.14 230);
+
+  --chart-1: oklch(0.55 0.14 230);
+  --chart-2: oklch(0.7 0.12 80);
+  --chart-3: oklch(0.6 0.15 350);
+  --chart-4: oklch(0.6 0.12 160);
+  --chart-5: oklch(0.55 0.16 300);
+
+  --sidebar: oklch(0.94 0.01 230);
+  --sidebar-foreground: oklch(0.25 0.03 230);
+  --sidebar-primary: oklch(0.55 0.14 230);
+  --sidebar-primary-foreground: oklch(0.97 0.005 230);
+  --sidebar-accent: oklch(0.86 0.03 230);
+  --sidebar-accent-foreground: oklch(0.25 0.03 230);
+  --sidebar-border: oklch(0.83 0.025 230);
+  --sidebar-ring: oklch(0.55 0.14 230);
+}
+
+/* Kanagawa - Dark Variant (Wave) */
+.dark.kanagawa {
+  --background: oklch(0.12 0.03 230);
+  --foreground: oklch(0.88 0.02 80);
+
+  --card: oklch(0.16 0.035 230);
+  --card-foreground: oklch(0.88 0.02 80);
+
+  --popover: oklch(0.14 0.032 230);
+  --popover-foreground: oklch(0.88 0.02 80);
+
+  --primary: oklch(0.7 0.14 230);
+  --primary-foreground: oklch(0.12 0.03 230);
+
+  --secondary: oklch(0.22 0.04 230);
+  --secondary-foreground: oklch(0.88 0.02 80);
+
+  --muted: oklch(0.22 0.04 230);
+  --muted-foreground: oklch(0.6 0.03 80);
+
+  --accent: oklch(0.75 0.12 80);
+  --accent-foreground: oklch(0.12 0.03 230);
+
+  --destructive: oklch(0.65 0.18 15);
+
+  --border: oklch(0.3 0.05 230);
+  --input: oklch(0.16 0.035 230);
+  --ring: oklch(0.7 0.14 230);
+
+  --chart-1: oklch(0.7 0.14 230);
+  --chart-2: oklch(0.75 0.12 80);
+  --chart-3: oklch(0.72 0.15 350);
+  --chart-4: oklch(0.7 0.12 160);
+  --chart-5: oklch(0.68 0.16 300);
+
+  --sidebar: oklch(0.1 0.025 230);
+  --sidebar-foreground: oklch(0.88 0.02 80);
+  --sidebar-primary: oklch(0.7 0.14 230);
+  --sidebar-primary-foreground: oklch(0.12 0.03 230);
+  --sidebar-accent: oklch(0.22 0.04 230);
+  --sidebar-accent-foreground: oklch(0.88 0.02 80);
+  --sidebar-border: oklch(0.3 0.05 230);
+  --sidebar-ring: oklch(0.7 0.14 230);
+}

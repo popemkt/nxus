@@ -271,7 +271,6 @@ export const ToolItemSchema = BaseItemSchema.extend({
     .describe('How to install this tool'),
   checkCommand: z
     .string()
-    .optional()
     .describe('Command to check if installed (e.g., "node --version")'),
   platform: z.array(PlatformSchema).describe('Supported platforms'),
   configSchema: ConfigSchemaSchema.optional().describe(
