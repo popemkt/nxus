@@ -225,7 +225,7 @@ export function TagEditorModal({
 
           <div className="py-4">
             {/* Tags container */}
-            <div className="flex flex-wrap gap-2 p-3 min-h-[60px] bg-muted/50 rounded-md border">
+            <div className="flex flex-wrap items-center gap-2 p-3 min-h-[60px] bg-muted/50 rounded-md border">
               {selectedTags.map((tag) => (
                 <ConfigurableTag
                   key={tag.id}
@@ -258,7 +258,7 @@ export function TagEditorModal({
                   }}
                   onKeyDown={handleKeyDown}
                   placeholder="Add tag..."
-                  className="border-0 bg-transparent focus-visible:ring-0 px-0 h-8"
+                  className="border-0 bg-transparent focus-visible:ring-0 px-0 h-7 text-sm"
                 />
 
                 {/* Suggestions dropdown */}

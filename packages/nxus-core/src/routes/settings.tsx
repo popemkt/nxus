@@ -322,7 +322,7 @@ function AliasSettings() {
             <select
               value={selectedCommand}
               onChange={(e) => setSelectedCommand(e.target.value)}
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="flex-1 rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select a command...</option>
               <optgroup label="Actions">

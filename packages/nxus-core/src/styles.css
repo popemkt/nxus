@@ -132,6 +132,12 @@
   html {
     @apply font-sans;
   }
+  /* Native select elements */
+  select,
+  option,
+  optgroup {
+    @apply bg-background text-foreground;
+  }
 
   /* Custom Scrollbar - Auto-hiding */
   * {
