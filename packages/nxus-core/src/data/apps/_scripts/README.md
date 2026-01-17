@@ -61,7 +61,7 @@ To add a new script to this collection:
      "description": "What this script does",
      "icon": "IconName",
      "category": "Category",
-     "target": "app",
+     "target": "item",
      "mode": "terminal",
      "command": "bash /stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/_scripts/my-new-script.sh",
      "requires": {

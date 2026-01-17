@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { UnifiedCommand } from '@/types/command'
 
 /**
  * Represents a command in the action panel context
@@ -18,11 +19,8 @@ interface CommandPaletteState {
   isFromGallery: boolean
   step: 'command' | 'target' | 'actions'
   query: string
-  selectedGenericCommand: {
-    id: string
-    name: string
-    needsTarget?: 'app' | 'instance' | false
-  } | null
+  /** Selected command that needs target selection */
+  selectedCommand: UnifiedCommand | null
   /** Command currently showing in action panel */
   actionPanelCommand: ActionPanelCommand | null
 }
@@ -32,9 +30,8 @@ interface CommandPaletteActions {
   close: () => void
   toggle: (fromGallery?: boolean) => void
   setQuery: (query: string) => void
-  selectGenericCommand: (
-    cmd: CommandPaletteState['selectedGenericCommand'],
-  ) => void
+  /** Select a command (triggers target selection if needed) */
+  selectCommand: (cmd: UnifiedCommand | null) => void
   /** Open action panel for a command */
   openActions: (cmd: ActionPanelCommand) => void
   /** Close action panel and return to command list */
@@ -49,7 +46,7 @@ export const useCommandPaletteStore = create<
   isFromGallery: false,
   step: 'command',
   query: '',
-  selectedGenericCommand: null,
+  selectedCommand: null,
   actionPanelCommand: null,
 
   open: (fromGallery = false) =>
@@ -58,7 +55,7 @@ export const useCommandPaletteStore = create<
       isFromGallery: fromGallery,
       step: 'command',
       query: '',
-      selectedGenericCommand: null,
+      selectedCommand: null,
       actionPanelCommand: null,
     }),
   close: () => set({ isOpen: false }),
@@ -68,19 +65,19 @@ export const useCommandPaletteStore = create<
       isFromGallery: !state.isOpen ? fromGallery : state.isFromGallery,
       step: 'command',
       query: '',
-      selectedGenericCommand: null,
+      selectedCommand: null,
       actionPanelCommand: null,
     })),
   setQuery: (query) => set({ query }),
-  selectGenericCommand: (cmd) =>
-    set({ selectedGenericCommand: cmd, step: 'target', query: '' }),
+  selectCommand: (cmd) =>
+    set({ selectedCommand: cmd, step: 'target', query: '' }),
   openActions: (cmd) => set({ actionPanelCommand: cmd, step: 'actions' }),
   closeActions: () => set({ actionPanelCommand: null, step: 'command' }),
   reset: () =>
     set({
       step: 'command',
       query: '',
-      selectedGenericCommand: null,
+      selectedCommand: null,
       actionPanelCommand: null,
     }),
 }))

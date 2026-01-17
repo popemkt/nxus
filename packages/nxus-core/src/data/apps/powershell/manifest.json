@@ -19,7 +19,7 @@
             "description": "Install PowerShell on Linux",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "sudo dnf install powershell",
             "platforms": [
@@ -35,7 +35,7 @@
             "description": "Install PowerShell on macOS",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "brew install --cask powershell",
             "platforms": [
@@ -51,7 +51,7 @@
             "description": "Install PowerShell on Windows",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "winget install --id Microsoft.Powershell --source winget",
             "platforms": [

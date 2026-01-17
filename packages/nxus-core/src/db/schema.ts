@@ -118,7 +118,7 @@ export type NewItem = typeof items.$inferInsert
 /**
  * Command target - what scope the command operates on
  */
-export type CommandTarget = 'app' | 'instance'
+export type CommandTarget = 'item' | 'instance'
 
 /**
  * Command mode - how the command should be executed

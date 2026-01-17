@@ -19,7 +19,7 @@
             "description": "Install Node.js via dnf",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "sudo dnf install nodejs"
         },
@@ -29,7 +29,7 @@
             "description": "Install Node.js via winget",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "copy",
             "command": "winget install OpenJS.NodeJS"
         },
@@ -39,7 +39,7 @@
             "description": "Open Node.js documentation",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://nodejs.org/docs"
         }

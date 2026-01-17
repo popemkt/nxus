@@ -19,7 +19,7 @@
             "description": "Install Yarn globally",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm install -g yarn",
             "requires": {
@@ -35,7 +35,7 @@
             "description": "Update to latest version",
             "icon": "ArrowsClockwise",
             "category": "Maintenance",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm update -g yarn",
             "requires": {
@@ -51,7 +51,7 @@
             "description": "Remove Yarn",
             "icon": "Trash",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm uninstall -g yarn",
             "requires": {

@@ -19,7 +19,7 @@
             "description": "Install pnpm globally",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm install -g pnpm",
             "requires": {
@@ -35,7 +35,7 @@
             "description": "Update to latest version",
             "icon": "ArrowsClockwise",
             "category": "Maintenance",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm update -g pnpm",
             "requires": {
@@ -51,7 +51,7 @@
             "description": "Remove pnpm",
             "icon": "Trash",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm uninstall -g pnpm",
             "requires": {

@@ -16,7 +16,7 @@
             "description": "Create a new GitHub repository and initialize local git folder",
             "icon": "GitBranch",
             "category": "Git",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "create-repo.ps1",
             "requires": {
@@ -33,7 +33,7 @@
             "description": "Edit .bashrc or start interactive bash session with vi",
             "icon": "Terminal",
             "category": "Configuration",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "bash-config.ps1",
             "requires": {
@@ -51,7 +51,7 @@
             "description": "Open a multi-agent workspace in Warp terminal (Claude, OpenCode, Droid, Goose)",
             "icon": "ProjectorScreen",
             "category": "Automation",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "launch-agents.ps1",
             "requires": {

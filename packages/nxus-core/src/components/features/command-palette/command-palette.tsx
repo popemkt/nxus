@@ -24,6 +24,8 @@ import {
   commandRegistry,
   type PaletteCommand,
 } from '@/services/command-palette/registry'
+import type { GenericCommand, UnifiedCommand } from '@/types/command'
+import { getUnifiedCommandTarget } from '@/types/command'
 import { configureModalService } from '@/stores/configure-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { checkCommandAvailability } from '@/hooks/use-command'
@@ -207,12 +209,12 @@ export function CommandPalette() {
     isFromGallery,
     step,
     query,
-    selectedGenericCommand,
+    selectedCommand,
     actionPanelCommand,
     close,
     toggle,
     setQuery,
-    selectGenericCommand,
+    selectCommand,
     openActions,
     closeActions,
     reset,
@@ -261,12 +263,13 @@ export function CommandPalette() {
   const results = useMemo(() => {
     if (step === 'target') {
       // Show apps or instances for target selection, filtered by command
-      // Look up full command from registry (selectedGenericCommand only has partial data)
-      const fullCommand = selectedGenericCommand
-        ? commandRegistry
-            .getGenericCommands()
-            .find((c) => c.id === selectedGenericCommand.id)
-        : undefined
+      // Look up full command from registry
+      const fullCommand =
+        selectedCommand?.source === 'generic'
+          ? commandRegistry
+              .getGenericCommands()
+              .find((c) => c.id === selectedCommand.command.id)
+          : undefined
       const apps = commandRegistry.getAppsForTargetSelection(fullCommand)
       const lowerQuery = query.toLowerCase()
       return apps.filter(
@@ -277,7 +280,7 @@ export function CommandPalette() {
       )
     }
     return commandRegistry.search(query, aliases)
-  }, [query, step, selectedGenericCommand, aliases])
+  }, [query, step, selectedCommand, aliases])
 
   // Flatten results for keyboard navigation
   const items = useMemo(() => {
@@ -375,13 +378,13 @@ export function CommandPalette() {
       // Check if query matches an alias exactly
       const matchedCommandId = aliasUtils.findExactMatch(trimmedQuery, aliases)
       if (matchedCommandId) {
-        // Find the command in genericCommands (only generic commands have needsTarget)
+        // Find the command in genericCommands
         const cmd = commandRegistry
           .getGenericCommands()
           .find((c) => c.id === matchedCommandId)
-        if (cmd?.needsTarget) {
+        if (cmd?.target && cmd.target !== 'none') {
           e.preventDefault()
-          selectGenericCommand(cmd)
+          selectCommand({ source: 'generic', id: cmd.id, command: cmd })
           return
         }
       }
@@ -406,7 +409,7 @@ export function CommandPalette() {
 
       const selectedItem = items[selectedIndex]
       // Only app commands have auxiliary actions, not generic commands
-      if (!('needsTarget' in selectedItem) && 'command' in selectedItem) {
+      if (!('target' in selectedItem) && 'command' in selectedItem) {
         const cmd = selectedItem as PaletteCommand
         openActions({
           id: cmd.id,
@@ -429,11 +432,12 @@ export function CommandPalette() {
         return
       } else {
         // Check if it's a generic command or app command
-        if ('needsTarget' in selectedItem) {
+        if ('target' in selectedItem && 'execute' in selectedItem) {
           // Generic command
-          const cmd = selectedItem as any
-          if (cmd.needsTarget) {
-            selectGenericCommand(cmd)
+          const cmd = selectedItem as GenericCommand
+          const cmdTarget = cmd.target ?? 'none'
+          if (cmdTarget !== 'none') {
+            selectCommand({ source: 'generic', id: cmd.id, command: cmd })
           } else {
             close()
             cmd.execute()
@@ -543,14 +547,14 @@ export function CommandPalette() {
 
   // Execute generic command - uses centralized utility for single source of truth
   const executeGenericCommand = async (appId: string) => {
-    if (!selectedGenericCommand) return
+    if (!selectedCommand || selectedCommand.source !== 'generic') return
     close()
 
     // Use centralized utility to ensure command definition is in ONE place
     const { executeGenericCommandById } = await import(
       '@/lib/command-execution'
     )
-    await executeGenericCommandById(selectedGenericCommand.id, appId)
+    await executeGenericCommandById(selectedCommand.command.id, appId)
   }
 
   // Handle action panel action execution
@@ -681,8 +685,8 @@ export function CommandPalette() {
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={
-                    step === 'target'
-                      ? `Select target for "${selectedGenericCommand?.name}"...`
+                    step === 'target' && selectedCommand?.source === 'generic'
+                      ? `Select target for "${selectedCommand.command.name}"...`
                       : 'Search commands...'
                   }
                   className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-foreground/40"
@@ -711,8 +715,13 @@ export function CommandPalette() {
                             key={cmd.id}
                             ref={selectedIndex === idx ? selectedItemRef : null}
                             onClick={() => {
-                              if (cmd.needsTarget) {
-                                selectGenericCommand(cmd)
+                              const cmdTarget = cmd.target ?? 'none'
+                              if (cmdTarget !== 'none') {
+                                selectCommand({
+                                  source: 'generic',
+                                  id: cmd.id,
+                                  command: cmd,
+                                })
                               } else {
                                 close()
                                 cmd.execute()
@@ -740,11 +749,11 @@ export function CommandPalette() {
                                 {commandToAlias[cmd.id]}
                               </code>
                             )}
-                            {cmd.needsTarget && (
+                            {cmd.target && cmd.target !== 'none' && (
                               <span
                                 className={`ml-auto text-xs ${selectedIndex === idx ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
                               >
-                                → select {cmd.needsTarget}
+                                → select {cmd.target}
                               </span>
                             )}
                           </button>
@@ -882,7 +891,10 @@ export function CommandPalette() {
                   // Target selection step
                   <div className="p-2">
                     <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
-                      Select {selectedGenericCommand?.needsTarget}
+                      Select{' '}
+                      {selectedCommand?.source === 'generic'
+                        ? selectedCommand.command.target
+                        : 'target'}
                     </p>
                     {(
                       results as ReturnType<

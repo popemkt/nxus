@@ -20,7 +20,7 @@
             "description": "Open Hyper terminal",
             "icon": "Terminal",
             "category": "General",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "hyper",
             "requires": {
@@ -33,7 +33,7 @@
             "description": "Install a Hyper plugin (e.g., hyper-snazzy)",
             "icon": "Plus",
             "category": "Plugins",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "hyper install",
             "requires": {
@@ -46,7 +46,7 @@
             "description": "List installed Hyper plugins",
             "icon": "List",
             "category": "Plugins",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "hyper list",
             "requires": {
@@ -59,7 +59,7 @@
             "description": "Uninstall a Hyper plugin",
             "icon": "Trash",
             "category": "Plugins",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "hyper uninstall",
             "requires": {
@@ -72,7 +72,7 @@
             "description": "Open Hyper documentation in browser",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://hyper.is/"
         },
@@ -82,7 +82,7 @@
             "description": "Browse available Hyper plugins and themes",
             "icon": "Sparkle",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://hyper.is/plugins"
         }

@@ -19,7 +19,7 @@
             "description": "Install Python 3 via dnf",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "sudo dnf install python3"
         },
@@ -29,7 +29,7 @@
             "description": "Install Python 3 via winget",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "copy",
             "command": "winget install Python.Python.3"
         },
@@ -39,7 +39,7 @@
             "description": "Open Python documentation",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://docs.python.org/3/"
         }

@@ -19,7 +19,7 @@
             "description": "Install Docker via dnf",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
         },
@@ -29,7 +29,7 @@
             "description": "Download Docker Desktop for Windows",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://docs.docker.com/desktop/install/windows-install/"
         },
@@ -39,7 +39,7 @@
             "description": "Open Docker documentation",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://docs.docker.com/"
         }

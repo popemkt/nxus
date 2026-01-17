@@ -70,7 +70,7 @@ export type ItemMetadata = z.infer<typeof ItemMetadataSchema>
 /**
  * Command target - what scope the command operates on
  */
-export const CommandTargetSchema = z.enum(['app', 'instance'])
+export const CommandTargetSchema = z.enum(['item', 'instance'])
 export type CommandTarget = z.infer<typeof CommandTargetSchema>
 
 /**

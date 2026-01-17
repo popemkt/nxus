@@ -19,7 +19,7 @@
             "description": "Smart install (auto-detect OS)",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "install.ps1",
             "requires": {
@@ -35,7 +35,7 @@
             "description": "Launch OpenCode Terminal UI",
             "icon": "Terminal",
             "category": "Core",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "opencode",
             "requires": {
@@ -48,7 +48,7 @@
             "description": "Run a single AI prompt (non-interactive)",
             "icon": "Play",
             "category": "Core",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "opencode run",
             "requires": {
@@ -61,7 +61,7 @@
             "description": "Continue the last session",
             "icon": "ArrowsClockwise",
             "category": "Core",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "opencode tui --continue",
             "requires": {
@@ -74,7 +74,7 @@
             "description": "Login to AI provider account",
             "icon": "Key",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "opencode auth login",
             "requires": {
@@ -87,7 +87,7 @@
             "description": "List configured authentication",
             "icon": "List",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "opencode auth list",
             "requires": {
@@ -100,7 +100,7 @@
             "description": "List available AI models",
             "icon": "Stack",
             "category": "Info",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "opencode models",
             "requires": {
@@ -113,7 +113,7 @@
             "description": "List all sessions",
             "icon": "ListBullets",
             "category": "Session",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "opencode session list",
             "requires": {
@@ -126,7 +126,7 @@
             "description": "View usage statistics",
             "icon": "ChartBar",
             "category": "Info",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "opencode stats --days 30",
             "requires": {
@@ -139,7 +139,7 @@
             "description": "Create a custom agent",
             "icon": "Robot",
             "category": "Configuration",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "opencode agent create",
             "requires": {
@@ -152,7 +152,7 @@
             "description": "Open OpenCode documentation",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://opencode.ai/docs/"
         },
@@ -162,7 +162,7 @@
             "description": "Open OpenCode config file",
             "icon": "Gear",
             "category": "Configuration",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "open-config.ps1",
             "requires": {

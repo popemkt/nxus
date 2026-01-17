@@ -19,7 +19,7 @@
             "description": "Install Gemini CLI globally",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm install -g @google/gemini-cli",
             "requires": {
@@ -32,7 +32,7 @@
             "description": "Update to latest version",
             "icon": "ArrowsClockwise",
             "category": "Maintenance",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm update -g @google/gemini-cli",
             "requires": {
@@ -45,7 +45,7 @@
             "description": "Remove Gemini CLI",
             "icon": "Trash",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "npm uninstall -g @google/gemini-cli",
             "requires": {

@@ -19,7 +19,7 @@
             "description": "Install Factory Droid CLI (auto-detects OS)",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "install.ps1",
             "requires": {
@@ -35,7 +35,7 @@
             "description": "Update to latest version",
             "icon": "ArrowsClockwise",
             "category": "Maintenance",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "droid update",
             "requires": {
@@ -48,7 +48,7 @@
             "description": "Start an interactive coding session",
             "icon": "Play",
             "category": "Usage",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "droid",
             "requires": {
@@ -61,7 +61,7 @@
             "description": "Login to Factory account",
             "icon": "Key",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "droid auth login",
             "requires": {
@@ -74,7 +74,7 @@
             "description": "Set API key to 'fk-demo' for demo purposes (persists to ~/.bashrc)",
             "icon": "Key",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "echo 'export FACTORY_API_KEY=fk-demo' >> ~/.bashrc && export FACTORY_API_KEY=fk-demo",
             "requires": {

@@ -12,7 +12,7 @@
             "description": "Clone the Goose repository",
             "icon": "DownloadSimple",
             "category": "Source",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "git clone https://github.com/block/goose.git"
         },
@@ -22,7 +22,7 @@
             "description": "Pull latest changes from the repository",
             "icon": "ArrowDown",
             "category": "Source",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "git pull"
         }

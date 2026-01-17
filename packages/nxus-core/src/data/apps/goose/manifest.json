@@ -18,7 +18,7 @@
             "description": "Install the Goose CLI tool",
             "icon": "DownloadSimple",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "install.sh",
             "platforms": [
@@ -35,7 +35,7 @@
             "description": "Install the Goose CLI tool on Windows",
             "icon": "DownloadSimple",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "install.ps1",
             "platforms": [
@@ -51,7 +51,7 @@
             "description": "Start an interactive AI developer session",
             "icon": "ChatTeardropText",
             "category": "Usage",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "goose session",
             "requires": {
@@ -64,7 +64,7 @@
             "description": "Launch the Goose web-based chat interface",
             "icon": "Browser",
             "category": "Usage",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "goose web --open",
             "requires": {
@@ -77,7 +77,7 @@
             "description": "Interactive setup for LLM providers and extensions",
             "icon": "Gear",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "goose configure",
             "requires": {
@@ -90,7 +90,7 @@
             "description": "Update Goose to the latest version",
             "icon": "ArrowClockwise",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "goose update",
             "requires": {

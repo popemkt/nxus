@@ -20,7 +20,7 @@
             "description": "Install Git via dnf",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "sudo dnf install git"
         },
@@ -30,7 +30,7 @@
             "description": "Install Git via winget",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "copy",
             "command": "winget install Git.Git"
         },
@@ -40,7 +40,7 @@
             "description": "Open Git documentation",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://git-scm.com/doc"
         }

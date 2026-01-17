@@ -103,7 +103,7 @@ export function AppActionsPanel({
 
   // Get app-level commands
   const appCommands = React.useMemo(
-    () => app.commands?.filter((cmd) => cmd.target === 'app') ?? [],
+    () => app.commands?.filter((cmd) => cmd.target === 'item') ?? [],
     [app.commands],
   )
 

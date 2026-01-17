@@ -19,7 +19,7 @@
             "description": "Smart install (auto-detect OS)",
             "icon": "Download",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "install.ps1",
             "requires": {
@@ -35,7 +35,7 @@
             "description": "Remove GitHub CLI from system",
             "icon": "Trash",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "sudo dnf remove -y gh",
             "platforms": [
@@ -51,7 +51,7 @@
             "description": "Login to GitHub account",
             "icon": "Key",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh auth login",
             "requires": {
@@ -64,7 +64,7 @@
             "description": "Check GitHub authentication status",
             "icon": "CheckCircle",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh auth status",
             "requires": {
@@ -77,7 +77,7 @@
             "description": "Create a new GitHub repository",
             "icon": "Plus",
             "category": "Repository",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh repo create",
             "requires": {
@@ -90,7 +90,7 @@
             "description": "Clone a repository locally",
             "icon": "GitBranch",
             "category": "Repository",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh repo clone",
             "requires": {
@@ -103,7 +103,7 @@
             "description": "View repository details",
             "icon": "Eye",
             "category": "Repository",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh repo view",
             "requires": {
@@ -116,7 +116,7 @@
             "description": "List your repositories",
             "icon": "List",
             "category": "Repository",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh repo list",
             "requires": {
@@ -129,7 +129,7 @@
             "description": "Create a new pull request",
             "icon": "GitPullRequest",
             "category": "Pull Request",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh pr create",
             "requires": {
@@ -145,7 +145,7 @@
             "description": "List pull requests",
             "icon": "ListBullets",
             "category": "Pull Request",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh pr list",
             "requires": {
@@ -158,7 +158,7 @@
             "description": "Checkout a pull request locally",
             "icon": "ArrowsClockwise",
             "category": "Pull Request",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh pr checkout",
             "requires": {
@@ -174,7 +174,7 @@
             "description": "View details of a pull request",
             "icon": "Eye",
             "category": "Pull Request",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh pr view",
             "requires": {
@@ -187,7 +187,7 @@
             "description": "Merge a pull request",
             "icon": "GitMerge",
             "category": "Pull Request",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh pr merge",
             "requires": {
@@ -200,7 +200,7 @@
             "description": "Create a new issue",
             "icon": "Plus",
             "category": "Issues",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh issue create",
             "requires": {
@@ -213,7 +213,7 @@
             "description": "List issues in a repository",
             "icon": "ListBullets",
             "category": "Issues",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh issue list",
             "requires": {
@@ -226,7 +226,7 @@
             "description": "View details of an issue",
             "icon": "Eye",
             "category": "Issues",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh issue view",
             "requires": {
@@ -239,7 +239,7 @@
             "description": "Close an issue",
             "icon": "XCircle",
             "category": "Issues",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh issue close",
             "requires": {
@@ -252,7 +252,7 @@
             "description": "Create a new release",
             "icon": "Tag",
             "category": "Release",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh release create",
             "requires": {
@@ -265,7 +265,7 @@
             "description": "List releases",
             "icon": "ListBullets",
             "category": "Release",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh release list",
             "requires": {
@@ -278,7 +278,7 @@
             "description": "View details of a release",
             "icon": "Eye",
             "category": "Release",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh release view",
             "requires": {
@@ -291,7 +291,7 @@
             "description": "List GitHub Actions workflows",
             "icon": "Gear",
             "category": "Workflows",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh workflow list",
             "requires": {
@@ -304,7 +304,7 @@
             "description": "Run a workflow",
             "icon": "Play",
             "category": "Workflows",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh workflow run",
             "requires": {
@@ -317,7 +317,7 @@
             "description": "List recent workflow runs",
             "icon": "ListBullets",
             "category": "Workflows",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh run list",
             "requires": {
@@ -330,7 +330,7 @@
             "description": "View details of a workflow run",
             "icon": "Eye",
             "category": "Workflows",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh run view",
             "requires": {
@@ -343,7 +343,7 @@
             "description": "Create a new gist",
             "icon": "FileCode",
             "category": "Gist",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "gh gist create",
             "requires": {
@@ -356,7 +356,7 @@
             "description": "List your gists",
             "icon": "ListBullets",
             "category": "Gist",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh gist list",
             "requires": {
@@ -369,7 +369,7 @@
             "description": "Open repository in browser",
             "icon": "Globe",
             "category": "Repository",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh browse",
             "requires": {
@@ -382,7 +382,7 @@
             "description": "View GitHub CLI configuration",
             "icon": "Gear",
             "category": "Configuration",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh config list",
             "requires": {
@@ -395,7 +395,7 @@
             "description": "View GitHub status across repos",
             "icon": "Info",
             "category": "Info",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "gh status",
             "requires": {

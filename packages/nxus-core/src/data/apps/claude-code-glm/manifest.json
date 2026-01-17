@@ -19,7 +19,7 @@
             "description": "Automatically configure Claude Code for Z.AI",
             "icon": "MagicWand",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "terminal",
             "command": "npx @z_ai/coding-helper"
         },
@@ -29,7 +29,7 @@
             "description": "Open the Claude Code settings directory",
             "icon": "FolderSimple",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "script",
             "command": "open-settings.ps1"
         },
@@ -39,7 +39,7 @@
             "description": "Clear all Claude Code settings and onboarding state",
             "icon": "ArrowCounterClockwise",
             "category": "Setup",
-            "target": "app",
+            "target": "item",
             "mode": "execute",
             "command": "rm -f ~/.claude/settings.json ~/.claude.json",
             "requires": {
@@ -54,7 +54,7 @@
             "description": "Open Z.AI GLM docs",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://docs.z.ai/devpack/tool/claude"
         },
@@ -64,7 +64,7 @@
             "description": "Open Goose Desktop integration documentation",
             "icon": "BookOpen",
             "category": "Help",
-            "target": "app",
+            "target": "item",
             "mode": "docs",
             "command": "https://docs.z.ai/devpack/tool/goose#step-2:-creating-a-new-provider"
         }

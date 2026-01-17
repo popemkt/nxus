@@ -3,7 +3,12 @@ import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import type { Item, ItemCommand } from '@/types/item'
-import type { CommandRequirement, CommandParam } from '@/types/command-params'
+import type {
+  GenericCommand,
+  UnifiedCommand,
+  ItemBoundCommand,
+  GenericBoundCommand,
+} from '@/types/command'
 
 /**
  * Command extended with app context for palette display
@@ -18,32 +23,8 @@ export interface PaletteCommand {
   command: ItemCommand
 }
 
-/**
- * Generic command that may need target selection
- */
-export interface GenericCommand {
-  id: string
-  name: string
-  icon: string
-  needsTarget?: 'app' | 'instance' | false
-  /** Optional filter for target selection (e.g., only show remote-repo apps) */
-  targetFilter?: (app: Item) => boolean
-  /** Tagged item selectors (e.g., pick an AI provider) */
-  requirements?: CommandRequirement[]
-  /** User input parameters to collect before execution */
-  params?: CommandParam[]
-  execute: (
-    targetId?: string,
-    targetPath?: string,
-    context?: {
-      requirements?: Record<
-        string,
-        { appId: string; value: Record<string, unknown> }
-      >
-      params?: Record<string, string | number | boolean>
-    },
-  ) => void | Promise<void>
-}
+// Re-export GenericCommand for consumers that import from registry
+export type { GenericCommand } from '@/types/command'
 
 /**
  * Generic commands available globally
@@ -53,7 +34,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'go-to-settings',
     name: 'Settings',
     icon: 'Gear',
-    needsTarget: false,
+    target: 'none',
     execute: () => {
       window.location.href = '/settings'
     },
@@ -62,7 +43,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'go-to-inbox',
     name: 'Go to Inbox',
     icon: 'Tray',
-    needsTarget: false,
+    target: 'none',
     execute: () => {
       window.location.href = '/inbox'
     },
@@ -71,7 +52,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'add-to-inbox',
     name: 'Add to Inbox',
     icon: 'Plus',
-    needsTarget: false,
+    target: 'none',
     execute: async () => {
       const { inboxModalService } = await import('@/stores/inbox-modal.store')
       inboxModalService.open()
@@ -81,7 +62,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'go-to-app',
     name: 'Go to App',
     icon: 'ArrowSquareOut',
-    needsTarget: 'app',
+    target: 'item',
     execute: (appId) => {
       window.location.href = `/apps/${appId}`
     },
@@ -90,7 +71,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'generate-thumbnail',
     name: 'Generate Thumbnail',
     icon: 'Image',
-    needsTarget: 'app',
+    target: 'item',
     requirements: [
       {
         name: 'provider',
@@ -174,7 +155,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'edit-manifest',
     name: 'Edit Manifest',
     icon: 'PencilSimple',
-    needsTarget: 'app',
+    target: 'item',
     execute: async (appId) => {
       if (!appId) return
       const paths = await getAppManifestPathServerFn({ data: { appId } })
@@ -185,7 +166,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'edit-docs',
     name: 'Edit Docs',
     icon: 'BookOpen',
-    needsTarget: 'app',
+    target: 'item',
     execute: async (appId) => {
       if (!appId) return
       const paths = await getAppManifestPathServerFn({ data: { appId } })
@@ -198,7 +179,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'add-instance',
     name: 'Add Instance',
     icon: 'Plus',
-    needsTarget: 'app',
+    target: 'item',
     targetFilter: (app) => app.type === 'remote-repo',
     execute: async (appId) => {
       if (!appId) return
@@ -219,7 +200,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'choose-existing-instance',
     name: 'Choose Existing Instance',
     icon: 'FolderPlus',
-    needsTarget: 'app',
+    target: 'item',
     targetFilter: (app) => app.type === 'remote-repo',
     execute: async (appId) => {
       if (!appId) return
@@ -245,7 +226,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'open-folder',
     name: 'Open in File Explorer',
     icon: 'FolderOpen',
-    needsTarget: 'instance',
+    target: 'instance',
     execute: (_appId, instancePath) => {
       if (instancePath) {
         // Will be handled by the palette executor
@@ -256,7 +237,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'open-terminal',
     name: 'Open Terminal Here',
     icon: 'Terminal',
-    needsTarget: 'instance',
+    target: 'instance',
     execute: (_appId, instancePath) => {
       if (instancePath) {
         // Will be handled by the palette executor
@@ -268,7 +249,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'db-seed',
     name: 'DB: Sync JSON → Database',
     icon: 'ArrowDown',
-    needsTarget: false,
+    target: 'none',
     execute: async () => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
@@ -291,7 +272,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'db-export',
     name: 'DB: Sync Database → JSON',
     icon: 'ArrowUp',
-    needsTarget: false,
+    target: 'none',
     execute: async () => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
@@ -314,7 +295,7 @@ export const genericCommands: GenericCommand[] = [
     id: 'db-migrate',
     name: 'DB: Migrate Manifests (One-time)',
     icon: 'Database',
-    needsTarget: false,
+    target: 'none',
     execute: async () => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
@@ -365,6 +346,28 @@ class CommandRegistry {
    */
   getGenericCommands(): GenericCommand[] {
     return genericCommands
+  }
+
+  /**
+   * Get all commands as unified type
+   */
+  getAllUnified(): UnifiedCommand[] {
+    const itemCommands: ItemBoundCommand[] = this.getAllAppCommands().map(
+      (pc) => ({
+        source: 'item' as const,
+        id: pc.id,
+        app: pc.app,
+        command: pc.command,
+      }),
+    )
+
+    const genericCmds: GenericBoundCommand[] = genericCommands.map((gc) => ({
+      source: 'generic' as const,
+      id: gc.id,
+      command: gc,
+    }))
+
+    return [...itemCommands, ...genericCmds]
   }
 
   /**
