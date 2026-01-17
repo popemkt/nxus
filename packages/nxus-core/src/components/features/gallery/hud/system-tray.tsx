@@ -39,12 +39,12 @@ export function SystemTray({ className }: SystemTrayProps) {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 flex items-center gap-3 px-3.5 py-2 bg-background/80 backdrop-blur-xl border border-foreground/10 rounded-full z-40 text-[11px] text-foreground/50 transition-all hover:bg-background hover:border-foreground/15">
+    <div className="fixed bottom-5 right-5 flex items-center gap-3 px-3.5 py-2 bg-background/80 backdrop-blur-xl border border-foreground/10 radius-button z-40 text-[11px] text-foreground/50 transition-all hover:bg-background hover:border-foreground/15">
       {/* Dev Mode indicator */}
       {devInfo?.isDevMode && (
         <>
-          <div className="flex items-center gap-1.5 text-red-500">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <div className="flex items-center gap-1.5 text-primary font-bold">
+            <div className="w-1.5 h-1.5 radius-button bg-primary" />
             <span>Dev</span>
           </div>
           <div className="w-px h-3 bg-foreground/10" />
@@ -53,7 +53,7 @@ export function SystemTray({ className }: SystemTrayProps) {
 
       {/* OS indicator */}
       <div className="flex items-center gap-1.5">
-        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+        <div className="w-1.5 h-1.5 radius-button bg-chart-5" />
         {getOsIcon()}
         <span>{getOsLabel()}</span>
       </div>

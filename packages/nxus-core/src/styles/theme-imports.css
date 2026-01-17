@@ -1,12 +1,14 @@
 /* Theme imports */
 /* Import all theme CSS files */
 
+/* Core themes */
 @import './themes/tokyonight.css';
 @import './themes/dracula.css';
 @import './themes/nord.css';
 @import './themes/catppuccin.css';
 @import './themes/retro.css';
 @import './themes/github.css';
+
 /* Wild themes */
 @import './themes/synthwave.css';
 @import './themes/gruvbox.css';
@@ -14,3 +16,11 @@
 @import './themes/everforest.css';
 @import './themes/kanagawa.css';
 @import './themes/solarized.css';
+
+/* Expressive themes */
+@import './themes/anime.css';
+@import './themes/sketch.css';
+@import './themes/celshaded.css';
+@import './themes/vaporwave.css';
+@import './themes/neon.css';
+@import './themes/brutalism.css';

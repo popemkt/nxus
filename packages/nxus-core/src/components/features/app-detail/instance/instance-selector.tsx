@@ -215,30 +215,28 @@ function CompactView({
       <button
         type="button"
         onClick={onExpand}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ring-1 hover:bg-muted/50 transition-all text-left group ${
+        className={`w-full flex items-center gap-2 px-3 py-2 radius-button ring-1 hover:bg-muted/50 transition-all text-left group ${
           isDevReference
-            ? 'bg-amber-50/30 dark:bg-amber-950/20 ring-amber-500/50 hover:ring-amber-500'
+            ? 'bg-primary/10 ring-primary/50 hover:ring-primary'
             : 'bg-muted/30 ring-border hover:ring-primary/50'
         }`}
       >
         {isDevReference ? (
-          <CodeIcon className="h-4 w-4 text-amber-500 shrink-0" />
+          <CodeIcon className="h-4 w-4 text-primary shrink-0" />
         ) : (
           <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <p
             className={`text-xs font-mono truncate group-hover:text-foreground transition-colors ${
-              isDevReference
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-muted-foreground'
+              isDevReference ? 'text-primary' : 'text-muted-foreground'
             }`}
           >
             {selectedInstance?.name || selectedInstance?.installPath}
           </p>
         </div>
         {isDevReference && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 shrink-0">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 radius-button bg-primary/20 text-primary shrink-0 font-bold border border-primary/20">
             DEV
           </span>
         )}
@@ -338,14 +336,14 @@ function ExpandedView({
 
             // Build class name based on selection and dev reference status
             let itemClass =
-              'w-full relative group rounded-lg ring-1 transition-all text-left '
+              'w-full relative group radius-button ring-1 transition-all text-left '
             if (isSelected && isDevRef) {
-              itemClass += 'bg-amber-50/50 dark:bg-amber-950/30 ring-amber-500'
+              itemClass += 'bg-primary/20 ring-primary shadow-sm'
             } else if (isSelected) {
               itemClass += 'bg-primary/10 ring-primary'
             } else if (isDevRef) {
               itemClass +=
-                'bg-amber-50/30 dark:bg-amber-950/20 ring-amber-300/50 hover:ring-amber-500/50 hover:bg-amber-50/50 dark:hover:bg-amber-950/30'
+                'bg-foreground/5 ring-primary/30 hover:ring-primary/50 hover:bg-foreground/10'
             } else {
               itemClass +=
                 'bg-muted/50 ring-border hover:ring-primary/50 hover:bg-muted'
@@ -393,11 +391,11 @@ function ExpandedView({
                   >
                     {isSelected ? (
                       <CheckIcon
-                        className={`h-5 w-5 shrink-0 ${isDevRef ? 'text-amber-500' : 'text-primary'}`}
+                        className={`h-5 w-5 shrink-0 ${isDevRef ? 'text-primary' : 'text-primary'}`}
                         weight="bold"
                       />
                     ) : isDevRef ? (
-                      <CodeIcon className="h-5 w-5 text-amber-500 shrink-0" />
+                      <CodeIcon className="h-5 w-5 text-primary shrink-0" />
                     ) : (
                       <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
                     )}
@@ -409,7 +407,7 @@ function ExpandedView({
                           {instance.name || 'Unnamed Instance'}
                         </span>
                         {isDevRef && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 radius-button bg-primary/20 text-primary border border-primary/20 font-bold">
                             DEV
                           </span>
                         )}

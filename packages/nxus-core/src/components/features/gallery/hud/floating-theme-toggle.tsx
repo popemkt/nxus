@@ -12,7 +12,7 @@ export function FloatingThemeToggle() {
 
   return (
     <button
-      className="fixed top-8 right-6 w-11 h-11 rounded-full border border-foreground/10 bg-background/85 backdrop-blur-xl shadow-lg text-foreground/70 cursor-pointer flex items-center justify-center z-50 transition-all hover:bg-background hover:text-foreground hover:scale-105"
+      className="fixed top-8 right-6 w-11 h-11 radius-button border border-foreground/10 bg-background/85 backdrop-blur-xl shadow-lg text-foreground/70 cursor-pointer flex items-center justify-center z-50 transition-all hover:bg-background hover:text-foreground hover:scale-105"
       onClick={toggleColorMode}
       title={
         colorMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
@@ -37,7 +37,7 @@ export function FloatingThemeToggle() {
             exit={{ scale: 0, rotate: 90, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           >
-            <Sun className="size-4 text-yellow-400" weight="fill" />
+            <Sun className="size-4 text-foreground/80" weight="fill" />
           </motion.div>
         )}
       </AnimatePresence>

@@ -73,7 +73,7 @@ export function ConfigurableTag({
         sizeClasses[size],
         isConfigurable &&
           !isConfigured &&
-          'bg-amber-500/20 text-amber-400 border-amber-500/30',
+          'bg-warning/20 text-warning border-warning/30',
         isConfigurable &&
           isConfigured &&
           'bg-primary/20 text-primary border-primary/30',

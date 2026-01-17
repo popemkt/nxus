@@ -10,7 +10,7 @@ export function DevModeBadge() {
   return (
     <Badge
       variant="outline"
-      className="flex items-center gap-1.5 px-3 py-1 bg-amber-50/50 dark:bg-amber-950/30 backdrop-blur-sm border-amber-500/50 text-amber-700 dark:text-amber-300"
+      className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 backdrop-blur-sm border-primary/30 text-primary radius-button font-bold"
       title={devInfo.devReposPath || 'Dev mode active'}
     >
       <CodeIcon className="size-3.5" weight="fill" />

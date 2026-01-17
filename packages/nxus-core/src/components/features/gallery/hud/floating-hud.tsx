@@ -46,9 +46,9 @@ export function FloatingHud({
 
   const GalleryIcon = galleryMode === 'compact' ? GridFour : SquaresFour
 
-  // Common button styles
+  // Common button styles - using radius-button for theme-reactive corners
   const btnBase =
-    'w-9 h-9 rounded-full border-none cursor-pointer flex items-center justify-center transition-all'
+    'w-9 h-9 radius-button border-none cursor-pointer flex items-center justify-center transition-all'
   const btnInactive =
     'bg-transparent text-foreground/50 hover:bg-foreground/10 hover:text-foreground/90'
   const btnActive = 'bg-foreground text-background'
@@ -57,11 +57,11 @@ export function FloatingHud({
     <LayoutGroup>
       <motion.div
         layoutId="hud-bar"
-        className="pointer-events-auto h-[52px] min-w-[580px] bg-background/85 backdrop-blur-xl border border-foreground/10 rounded-[26px] flex items-center px-2 gap-1 shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
+        className="pointer-events-auto h-[52px] min-w-[580px] bg-background/85 backdrop-blur-xl border border-foreground/10 radius-panel flex items-center px-2 gap-1 shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
         style={{ opacity: isCommandPaletteOpen ? 0 : 1 }}
       >
         {/* Logo */}
-        <div className="w-9 h-9 rounded-full bg-foreground/10 flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 radius-button bg-foreground/10 flex items-center justify-center shrink-0">
           <svg viewBox="0 0 64 64" className="w-6 h-6">
             <g className="fill-primary">
               <polygon points="16,20 30,32 16,44 16,39 23,32 16,25" />
@@ -78,7 +78,7 @@ export function FloatingHud({
           />
           <input
             type="text"
-            className="w-full h-full bg-foreground/5 border-none rounded-[18px] pl-8 pr-20 text-foreground text-[13px] outline-none transition-colors focus:bg-foreground/10 placeholder:text-foreground/40"
+            className="w-full h-full bg-foreground/5 border-none radius-card pl-8 pr-20 text-foreground text-[13px] outline-none transition-colors focus:bg-foreground/10 placeholder:text-foreground/40"
             placeholder="Search apps..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}

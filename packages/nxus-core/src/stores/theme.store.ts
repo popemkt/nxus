@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware'
 // Theme palette (color scheme)
 export type ThemePalette =
   | 'default'
+  // Core themes
   | 'tokyonight'
   | 'dracula'
   | 'nord'
@@ -17,6 +18,13 @@ export type ThemePalette =
   | 'everforest'
   | 'kanagawa'
   | 'solarized'
+  // Expressive themes
+  | 'anime'
+  | 'sketch'
+  | 'celshaded'
+  | 'vaporwave'
+  | 'neon'
+  | 'brutalism'
 
 // Color mode (light/dark)
 export type ColorMode = 'light' | 'dark'

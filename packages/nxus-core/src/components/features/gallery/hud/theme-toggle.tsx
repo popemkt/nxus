@@ -16,7 +16,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleColorMode}
       aria-label="Toggle theme"
-      className="rounded-full overflow-hidden relative cursor-pointer"
+      className="radius-button overflow-hidden relative cursor-pointer"
       asChild
     >
       <motion.button whileTap={{ scale: 0.9 }}>
@@ -39,7 +39,7 @@ export function ThemeToggle() {
               exit={{ scale: 0, rotate: 90, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 200, damping: 20 }}
             >
-              <SunIcon className="h-6 w-6 text-yellow-400" weight="fill" />
+              <SunIcon className="h-6 w-6 text-foreground/80" weight="fill" />
             </motion.div>
           )}
         </AnimatePresence>

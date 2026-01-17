@@ -21,6 +21,16 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxGroup,
+  ComboboxLabel,
+  ComboboxEmpty,
+} from '@/components/ui/combobox'
 import { useSettingsStore, type ThemeSetting } from '@/stores/settings.store'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { appRegistryService } from '@/services/apps/registry.service'
@@ -30,6 +40,7 @@ import {
   removeAliasServerFn,
 } from '@/services/command-palette/alias.server'
 import { commandRegistry } from '@/services/command-palette/registry'
+import { useAppRegistry } from '@/hooks/use-app-registry'
 import type { ToolItem } from '@/types/item'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
@@ -236,6 +247,9 @@ function AliasSettings() {
   const [selectedCommand, setSelectedCommand] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
+  // Ensure apps are loaded - this hook triggers app loading and syncs with appRegistryService
+  const { allApps } = useAppRegistry({})
+
   // Get all available commands for the dropdown
   const allCommands = React.useMemo(() => {
     const generic = commandRegistry.getGenericCommands()
@@ -244,11 +258,11 @@ function AliasSettings() {
       ...generic.map((c) => ({ id: c.id, name: c.name, type: 'action' })),
       ...apps.map((c) => ({
         id: c.id,
-        name: `${c.appName}: ${c.name}`,
+        name: `${c.app.name}: ${c.command.name}`,
         type: 'app',
       })),
     ]
-  }, [])
+  }, [allApps]) // Re-compute when apps are loaded
 
   // Load aliases on mount
   useEffect(() => {
@@ -312,41 +326,49 @@ function AliasSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             <Input
               placeholder="Alias (e.g., g)"
               value={newAlias}
               onChange={(e) => setNewAlias(e.target.value)}
-              className="w-24"
+              className="w-24 h-9"
             />
-            <select
+            <Combobox
               value={selectedCommand}
-              onChange={(e) => setSelectedCommand(e.target.value)}
-              className="flex-1 rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              onValueChange={(val) => setSelectedCommand(val as string)}
+              className="flex-1"
             >
-              <option value="">Select a command...</option>
-              <optgroup label="Actions">
-                {allCommands
-                  .filter((c) => c.type === 'action')
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-              </optgroup>
-              <optgroup label="App Commands">
-                {allCommands
-                  .filter((c) => c.type === 'app')
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-              </optgroup>
-            </select>
+              <ComboboxInput placeholder="Search commands..." className="h-9" />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxEmpty>No commands found</ComboboxEmpty>
+                  <ComboboxGroup>
+                    <ComboboxLabel>Actions</ComboboxLabel>
+                    {allCommands
+                      .filter((c) => c.type === 'action')
+                      .map((c) => (
+                        <ComboboxItem key={c.id} value={c.id}>
+                          {c.name}
+                        </ComboboxItem>
+                      ))}
+                  </ComboboxGroup>
+                  <ComboboxGroup>
+                    <ComboboxLabel>App Commands</ComboboxLabel>
+                    {allCommands
+                      .filter((c) => c.type === 'app')
+                      .map((c) => (
+                        <ComboboxItem key={c.id} value={c.id}>
+                          {c.name}
+                        </ComboboxItem>
+                      ))}
+                  </ComboboxGroup>
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
             <Button
               onClick={handleAddAlias}
               disabled={!newAlias.trim() || !selectedCommand}
+              className="h-9"
             >
               <PlusIcon className="h-4 w-4 mr-1" />
               Add

@@ -1,0 +1,99 @@
+/* Anime Theme */
+/* Bright, saturated colors inspired by anime aesthetics */
+/* Bold accents, high contrast, energetic vibes */
+
+/* Anime - Light Variant */
+.anime {
+  --background: oklch(0.98 0.01 340);
+  --foreground: oklch(0.2 0.05 280);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.05 280);
+
+  --popover: oklch(0.99 0.005 340);
+  --popover-foreground: oklch(0.2 0.05 280);
+
+  --primary: oklch(0.6 0.28 340);
+  --primary-foreground: oklch(0.99 0.01 340);
+
+  --secondary: oklch(0.92 0.04 340);
+  --secondary-foreground: oklch(0.25 0.05 280);
+
+  --muted: oklch(0.92 0.04 340);
+  --muted-foreground: oklch(0.45 0.04 280);
+
+  --accent: oklch(0.7 0.22 200);
+  --accent-foreground: oklch(0.99 0.01 200);
+
+  --destructive: oklch(0.55 0.25 25);
+
+  --border: oklch(0.8 0.08 340);
+  --input: oklch(0.92 0.04 340);
+  --ring: oklch(0.6 0.28 340);
+
+  /* Bold borders for anime feel */
+  --border-width: 2px;
+
+  --chart-1: oklch(0.6 0.28 340);
+  --chart-2: oklch(0.7 0.22 200);
+  --chart-3: oklch(0.75 0.2 60);
+  --chart-4: oklch(0.6 0.25 280);
+  --chart-5: oklch(0.65 0.22 140);
+
+  --sidebar: oklch(0.96 0.01 340);
+  --sidebar-foreground: oklch(0.2 0.05 280);
+  --sidebar-primary: oklch(0.6 0.28 340);
+  --sidebar-primary-foreground: oklch(0.99 0.01 340);
+  --sidebar-accent: oklch(0.88 0.06 340);
+  --sidebar-accent-foreground: oklch(0.2 0.05 280);
+  --sidebar-border: oklch(0.8 0.08 340);
+  --sidebar-ring: oklch(0.6 0.28 340);
+}
+
+/* Anime - Dark Variant */
+.dark.anime {
+  --background: oklch(0.12 0.04 280);
+  --foreground: oklch(0.95 0.02 340);
+
+  --card: oklch(0.16 0.05 280);
+  --card-foreground: oklch(0.95 0.02 340);
+
+  --popover: oklch(0.14 0.045 280);
+  --popover-foreground: oklch(0.95 0.02 340);
+
+  --primary: oklch(0.7 0.3 340);
+  --primary-foreground: oklch(0.12 0.04 280);
+
+  --secondary: oklch(0.22 0.06 280);
+  --secondary-foreground: oklch(0.95 0.02 340);
+
+  --muted: oklch(0.22 0.06 280);
+  --muted-foreground: oklch(0.65 0.06 340);
+
+  --accent: oklch(0.75 0.25 200);
+  --accent-foreground: oklch(0.12 0.04 280);
+
+  --destructive: oklch(0.65 0.28 25);
+
+  --border: oklch(0.4 0.12 300);
+  --input: oklch(0.18 0.05 280);
+  --ring: oklch(0.7 0.3 340);
+
+  /* Bold borders for anime feel */
+  --border-width: 2px;
+
+  --chart-1: oklch(0.7 0.3 340);
+  --chart-2: oklch(0.75 0.25 200);
+  --chart-3: oklch(0.8 0.22 60);
+  --chart-4: oklch(0.7 0.28 280);
+  --chart-5: oklch(0.72 0.24 140);
+
+  --sidebar: oklch(0.1 0.035 280);
+  --sidebar-foreground: oklch(0.95 0.02 340);
+  --sidebar-primary: oklch(0.7 0.3 340);
+  --sidebar-primary-foreground: oklch(0.12 0.04 280);
+  --sidebar-accent: oklch(0.22 0.06 280);
+  --sidebar-accent-foreground: oklch(0.95 0.02 340);
+  --sidebar-border: oklch(0.4 0.12 300);
+  --sidebar-ring: oklch(0.7 0.3 340);
+}

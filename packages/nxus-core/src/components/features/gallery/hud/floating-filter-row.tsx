@@ -54,7 +54,7 @@ export function FloatingFilterRow({
       {selectedTags.map((tag) => (
         <div
           key={tag.id}
-          className="flex items-center gap-1.5 h-7 px-3 bg-primary/15 backdrop-blur-xl border border-primary/30 rounded-full text-[11px] text-primary shadow-md"
+          className="flex items-center gap-1.5 h-7 px-3 bg-primary/15 backdrop-blur-xl border border-primary/30 radius-button text-[11px] text-primary shadow-md"
         >
           <span>{tag.name}</span>
 
@@ -90,7 +90,7 @@ export function FloatingFilterRow({
 
       {/* Result count pill */}
       {resultCount !== undefined && (
-        <div className="flex items-center h-7 px-3 bg-background/80 backdrop-blur-xl border border-foreground/10 rounded-full text-[11px] text-foreground/40 shadow-md">
+        <div className="flex items-center h-7 px-3 bg-background/80 backdrop-blur-xl border border-foreground/10 radius-button text-[11px] text-foreground/40 shadow-md">
           <span>
             {resultCount} {resultCount === 1 ? 'result' : 'results'}
           </span>
@@ -100,7 +100,7 @@ export function FloatingFilterRow({
       {/* Clear all button */}
       {selectedTags.length > 1 && (
         <button
-          className="h-7 px-3 bg-transparent border border-dashed border-foreground/20 rounded-full text-[11px] text-foreground/40 cursor-pointer transition-all hover:border-foreground/40 hover:text-foreground/70"
+          className="h-7 px-3 bg-transparent border border-dashed border-foreground/20 radius-button text-[11px] text-foreground/40 cursor-pointer transition-all hover:border-foreground/40 hover:text-foreground/70"
           onClick={clearSelection}
         >
           Clear all

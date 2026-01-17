@@ -12,6 +12,12 @@ import {
   Tree,
   Waves,
   Sun,
+  Palette,
+  PencilLine,
+  GameController,
+  Disc,
+  Radioactive,
+  Cube,
 } from '@phosphor-icons/react'
 import type { ComponentType } from 'react'
 import type { ThemePalette } from '@/stores/theme.store'
@@ -103,5 +109,42 @@ export const themeOptions: ThemeOption[] = [
     label: 'Solarized',
     Icon: Sun,
     color: '#268bd2',
+  },
+  // Expressive themes
+  {
+    value: 'anime',
+    label: 'Anime',
+    Icon: Palette,
+    color: '#ff1493',
+  },
+  {
+    value: 'sketch',
+    label: 'Sketch',
+    Icon: PencilLine,
+    color: '#4a4a4a',
+  },
+  {
+    value: 'celshaded',
+    label: 'Cel-Shaded',
+    Icon: GameController,
+    color: '#4ade80',
+  },
+  {
+    value: 'vaporwave',
+    label: 'Vaporwave',
+    Icon: Disc,
+    color: '#e879f9',
+  },
+  {
+    value: 'neon',
+    label: 'Neon',
+    Icon: Radioactive,
+    color: '#00ff88',
+  },
+  {
+    value: 'brutalism',
+    label: 'Brutalism',
+    Icon: Cube,
+    color: '#1a1a1a',
   },
 ]

@@ -661,7 +661,7 @@ export function CommandPalette() {
                   : { opacity: 0, scale: 0.95, y: -10 }
               }
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-              className="relative w-full max-w-xl bg-background/85 backdrop-blur-xl border border-foreground/10 rounded-[26px] shadow-[0_20px_40px_rgba(0,0,0,0.25)] overflow-hidden"
+              className="relative w-full max-w-xl bg-background/85 backdrop-blur-xl border border-foreground/10 radius-panel shadow-[0_20px_40px_rgba(0,0,0,0.25)] overflow-hidden"
             >
               {/* Header - HUD bar pill style */}
               <div className="flex items-center gap-2 h-[52px] px-4">
@@ -832,7 +832,7 @@ export function CommandPalette() {
                               )}
                               {/* Show disabled reason OR description */}
                               {isDisabled ? (
-                                <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                                <span className="ml-auto flex items-center gap-1 text-xs text-warning">
                                   <WarningCircleIcon className="h-3 w-3" />
                                   {availability.reason}
                                 </span>

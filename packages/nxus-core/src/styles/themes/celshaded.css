@@ -1,0 +1,107 @@
+/* Cel-Shaded Theme */
+/* Video game inspired flat colors with bold outlines */
+/* Borderlands/Wind Waker aesthetic */
+
+/* Cel-Shaded - Light Variant */
+.celshaded {
+  --background: oklch(0.96 0.02 95);
+  --foreground: oklch(0.15 0.02 60);
+
+  --card: oklch(0.98 0.015 95);
+  --card-foreground: oklch(0.15 0.02 60);
+
+  --popover: oklch(0.97 0.018 95);
+  --popover-foreground: oklch(0.15 0.02 60);
+
+  --primary: oklch(0.6 0.22 140);
+  --primary-foreground: oklch(0.98 0.01 95);
+
+  --secondary: oklch(0.88 0.04 95);
+  --secondary-foreground: oklch(0.2 0.02 60);
+
+  --muted: oklch(0.88 0.04 95);
+  --muted-foreground: oklch(0.4 0.02 60);
+
+  --accent: oklch(0.7 0.2 60);
+  --accent-foreground: oklch(0.15 0.02 60);
+
+  --destructive: oklch(0.55 0.22 25);
+
+  --border: oklch(0.15 0.02 60);
+  --input: oklch(0.92 0.03 95);
+  --ring: oklch(0.6 0.22 140);
+
+  /* Bold black outlines for cel-shaded look */
+  --border-width: 3px;
+  --radius: 0px;
+  --radius-card: 0px;
+  --radius-panel: 0px;
+  --radius-button: 0px;
+
+  --chart-1: oklch(0.6 0.22 140);
+  --chart-2: oklch(0.7 0.2 60);
+  --chart-3: oklch(0.55 0.22 200);
+  --chart-4: oklch(0.6 0.25 340);
+  --chart-5: oklch(0.65 0.2 280);
+
+  --sidebar: oklch(0.94 0.02 95);
+  --sidebar-foreground: oklch(0.15 0.02 60);
+  --sidebar-primary: oklch(0.6 0.22 140);
+  --sidebar-primary-foreground: oklch(0.98 0.01 95);
+  --sidebar-accent: oklch(0.85 0.06 95);
+  --sidebar-accent-foreground: oklch(0.15 0.02 60);
+  --sidebar-border: oklch(0.15 0.02 60);
+  --sidebar-ring: oklch(0.6 0.22 140);
+}
+
+/* Cel-Shaded - Dark Variant */
+.dark.celshaded {
+  --background: oklch(0.18 0.03 240);
+  --foreground: oklch(0.95 0.01 95);
+
+  --card: oklch(0.22 0.035 240);
+  --card-foreground: oklch(0.95 0.01 95);
+
+  --popover: oklch(0.2 0.032 240);
+  --popover-foreground: oklch(0.95 0.01 95);
+
+  --primary: oklch(0.72 0.22 140);
+  --primary-foreground: oklch(0.18 0.03 240);
+
+  --secondary: oklch(0.28 0.04 240);
+  --secondary-foreground: oklch(0.92 0.01 95);
+
+  --muted: oklch(0.28 0.04 240);
+  --muted-foreground: oklch(0.65 0.02 95);
+
+  --accent: oklch(0.75 0.22 60);
+  --accent-foreground: oklch(0.18 0.03 240);
+
+  --destructive: oklch(0.65 0.24 25);
+
+  --border: oklch(0.85 0.01 95);
+  --input: oklch(0.24 0.035 240);
+  --ring: oklch(0.72 0.22 140);
+
+  /* Bold outlines for cel-shaded look */
+  --border-width: 3px;
+  --radius: 0px;
+  --radius-card: 0px;
+  --radius-panel: 0px;
+  --radius-button: 0px;
+
+  --chart-1: oklch(0.72 0.22 140);
+  --chart-2: oklch(0.75 0.22 60);
+  --chart-3: oklch(0.65 0.22 200);
+  --chart-4: oklch(0.7 0.28 340);
+  --chart-5: oklch(0.7 0.22 280);
+
+  --sidebar: oklch(0.16 0.025 240);
+  --sidebar-foreground: oklch(0.95 0.01 95);
+  --sidebar-primary: oklch(0.72 0.22 140);
+  --sidebar-primary-foreground: oklch(0.18 0.03 240);
+  --sidebar-accent: oklch(0.28 0.04 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 95);
+  --sidebar-border: oklch(0.85 0.01 95);
+  --sidebar-ring: oklch(0.72 0.22 140);
+}
