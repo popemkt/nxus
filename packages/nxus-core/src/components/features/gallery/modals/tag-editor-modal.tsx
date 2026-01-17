@@ -31,10 +31,10 @@ import {
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
-import type { App, TagRef } from '@/types/app'
+import type { Item, TagRef } from '@/types/item'
 
 export interface TagEditorModalProps {
-  app: App
+  app: Item
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave?: () => void

@@ -1,10 +1,10 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { cn } from '@/lib/utils'
 
 // Type-based colors - solid, not transparent
-const TYPE_COLORS: Record<App['type'], { bg: string; solid: string }> = {
+const TYPE_COLORS: Record<Item['type'], { bg: string; solid: string }> = {
   html: { bg: 'bg-orange-500', solid: '#f97316' },
   typescript: { bg: 'bg-blue-500', solid: '#3b82f6' },
   'remote-repo': { bg: 'bg-purple-500', solid: '#a855f7' },
@@ -12,15 +12,15 @@ const TYPE_COLORS: Record<App['type'], { bg: string; solid: string }> = {
 }
 
 // Status-based opacity/ring
-const STATUS_STYLES: Record<App['status'], string> = {
+const STATUS_STYLES: Record<Item['status'], string> = {
   installed: 'ring-2 ring-primary/50',
   'not-installed': 'opacity-70',
   available: '',
 }
 
 interface SimpleNodeData {
-  type: App['type']
-  status: App['status']
+  type: Item['type']
+  status: Item['status']
   label: string
   isDimmed: boolean
   isHighlighted?: boolean // True when matched with active filter

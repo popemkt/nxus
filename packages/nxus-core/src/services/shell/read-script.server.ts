@@ -3,7 +3,7 @@ import { z } from 'zod'
 import fs from 'node:fs/promises'
 import { resolveScriptServerFn } from './script-resolver.server'
 import type { ResolveScriptInput } from './script-resolver.server'
-import { ScriptSourceSchema } from '@/types/app'
+import { ScriptSourceSchema } from '@/types/item'
 
 const ReadScriptSchema = z.object({
   appId: z.string(),
@@ -12,7 +12,9 @@ const ReadScriptSchema = z.object({
   instancePath: z.string().optional(),
 })
 
-function buildResolverInput(data: z.infer<typeof ReadScriptSchema>): ResolveScriptInput {
+function buildResolverInput(
+  data: z.infer<typeof ReadScriptSchema>,
+): ResolveScriptInput {
   const { appId, scriptPath, scriptSource, instancePath } = data
 
   if (scriptSource === 'repo') {
@@ -94,4 +96,3 @@ export const getScriptFullPathServerFn = createServerFn({ method: 'GET' })
     console.log('[getScriptFullPathServerFn] Result:', resolved.scriptFullPath)
     return { fullPath: resolved.scriptFullPath, cwd: resolved.cwd }
   })
-

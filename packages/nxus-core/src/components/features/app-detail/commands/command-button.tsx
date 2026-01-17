@@ -8,7 +8,7 @@ import { useCommandExecution } from '@/hooks/use-command-execution'
 import { configureModalService } from '@/stores/configure-modal.store'
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
 import { handleCommandMode } from '@/lib/command-utils'
-import type { AppCommand, ToolApp, App } from '@/types/app'
+import type { ItemCommand, ToolItem, Item } from '@/types/item'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -36,8 +36,8 @@ function CommandIcon({
 }
 
 interface CommandButtonProps {
-  command: AppCommand
-  app: App
+  command: ItemCommand
+  app: Item
   /** Compact mode for inline rendering in docs */
   compact?: boolean
   /** Custom click handler - if not provided, uses default behavior */
@@ -67,7 +67,7 @@ export function CommandButton({
   const requiredFields = React.useMemo(() => {
     if (app.type !== 'tool') return []
     return (
-      (app as ToolApp).configSchema?.fields
+      (app as ToolItem).configSchema?.fields
         .filter((f) => f.required)
         .map((f) => f.key) ?? []
     )

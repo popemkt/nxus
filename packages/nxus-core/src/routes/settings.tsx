@@ -30,7 +30,7 @@ import {
   removeAliasServerFn,
 } from '@/services/command-palette/alias.server'
 import { commandRegistry } from '@/services/command-palette/registry'
-import type { ToolApp } from '@/types/app'
+import type { ToolItem } from '@/types/item'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
@@ -405,8 +405,8 @@ function AppConfigSettings({ searchQuery }: { searchQuery: string }) {
     const appsResult = appRegistryService.getAllApps()
     const apps = appsResult.success ? appsResult.data : []
     return apps.filter(
-      (app): app is ToolApp =>
-        app.type === 'tool' && !!(app as ToolApp).configSchema,
+      (app): app is ToolItem =>
+        app.type === 'tool' && !!(app as ToolItem).configSchema,
     )
   }, [])
 
@@ -442,7 +442,7 @@ function AppConfigSettings({ searchQuery }: { searchQuery: string }) {
 // Stable empty object to prevent infinite re-renders
 const EMPTY_CONFIG = {}
 
-function AppConfigCard({ app }: { app: ToolApp }) {
+function AppConfigCard({ app }: { app: ToolItem }) {
   const config = useToolConfigStore((s) => s.configs[app.id]) || EMPTY_CONFIG
 
   const handleChange = (key: string, value: string) => {

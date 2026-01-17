@@ -2,19 +2,19 @@ import { useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAllAppsServerFn } from '../services/apps/apps.server'
 import { appRegistryService } from '../services/apps/registry.service'
-import type { App, AppStatus, AppType } from '../types/app'
+import type { Item, ItemStatus, ItemType } from '../types/item'
 
 interface UseAppRegistryOptions {
   searchQuery?: string
-  filterType?: AppType
-  filterStatus?: AppStatus
+  filterType?: ItemType
+  filterStatus?: ItemStatus
   filterCategory?: string
   filterTags?: Array<{ id: number; name: string }>
 }
 
 interface UseAppRegistryReturn {
-  apps: Array<App> // Filtered apps based on options
-  allApps: Array<App> // All apps (unfiltered) - useful for graph highlight mode
+  apps: Array<Item> // Filtered apps based on options
+  allApps: Array<Item> // All apps (unfiltered) - useful for graph highlight mode
   loading: boolean
   error: Error | null
   categories: Array<string>

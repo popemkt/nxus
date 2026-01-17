@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ import type { GalleryMode } from '@/stores/view-mode.store'
 import { TagEditorModal } from '../modals/tag-editor-modal'
 
 interface GalleryViewProps {
-  items: App[]
+  items: Item[]
   mode: GalleryMode
   groupByType?: boolean
 }
@@ -91,7 +91,7 @@ function ThumbnailWithFallback({
 }
 
 // Individual card component
-function ItemCard({ app, compact }: { app: App; compact: boolean }) {
+function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false)
   const TypeIcon = APP_TYPE_ICONS[app.type]
   const isTool = app.type === 'tool'

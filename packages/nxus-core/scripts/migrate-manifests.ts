@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
 import { items, itemCommands } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
-import { AppMetadataSchema, AppSchema } from '../src/types/app'
+import { ItemMetadataSchema, ItemSchema } from '../src/types/item'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -61,7 +61,7 @@ async function migrate() {
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
 
       // Validate full manifest against schema
-      const validationResult = AppSchema.safeParse(manifest)
+      const validationResult = ItemSchema.safeParse(manifest)
       if (!validationResult.success) {
         const errors = validationResult.error.issues.map(
           (issue) => `  - ${issue.path.join('.')}: ${issue.message}`,

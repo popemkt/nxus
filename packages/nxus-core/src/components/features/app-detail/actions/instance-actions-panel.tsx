@@ -45,7 +45,7 @@ import {
   checkGitStatusServerFn,
   type GitStatus,
 } from '@/services/apps/git-status.server'
-import type { App, AppType } from '@/types/app'
+import type { Item, ItemType } from '@/types/item'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -81,7 +81,7 @@ interface InstanceAction {
 
 interface InstanceActionsPanelProps {
   instance: InstalledAppRecord | null
-  app: App
+  app: Item
   onRunCommand?: (command: string, cwd: string) => void
   /** Increment this to trigger git status refresh (e.g., after git pull) */
   gitStatusRefreshKey?: number
@@ -521,7 +521,7 @@ export function InstanceActionsPanel({
 /**
  * Get type-specific actions
  */
-function getActionsForType(appType: AppType): {
+function getActionsForType(appType: ItemType): {
   primary: InstanceAction[]
   secondary: InstanceAction[]
 } {

@@ -92,7 +92,7 @@ import { createPtySessionServerFn } from '@/services/shell/pty.server'
 import { queryClient } from '@/lib/query-client'
 import { toolHealthKeys } from '@/services/tool-health/types'
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { AppType } from '@/types/app'
+import type { ItemType } from '@/types/item'
 import type { LogEntry } from '@/services/shell/command.schema'
 
 // Terminal store interface matching the actual store
@@ -117,7 +117,7 @@ export interface CommandExecutionOptions {
   /** App ID for post-execution effects */
   appId?: string
   /** App type for post-execution effects */
-  appType?: AppType
+  appType?: ItemType
   /** Name for the terminal tab */
   tabName?: string
   /** Terminal store instance (passed in to avoid hook context issues) */
@@ -143,7 +143,7 @@ export interface CommandExecutionResult {
  */
 export type PostExecutionCallback = (
   appId: string,
-  appType: AppType,
+  appType: ItemType,
   exitCode: number,
 ) => void | Promise<void>
 
@@ -405,7 +405,7 @@ export const commandExecutor = {
    */
   async handlePostExecution(
     appId: string,
-    appType: AppType,
+    appType: ItemType,
     exitCode: number,
   ): Promise<void> {
     // Clear health check for tools so they get re-checked
@@ -524,7 +524,7 @@ export const commandExecutor = {
    */
   async executeScript(options: {
     appId: string
-    appType?: AppType
+    appType?: ItemType
     scriptPath: string
     scriptSource?: string
     interactive?: boolean

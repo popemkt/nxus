@@ -4,7 +4,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import {
   toolHealthKeys,
   type ToolHealthResult,
@@ -16,7 +16,7 @@ import { checkToolHealth } from '@/services/tool-health/tool-health.server'
  * Check a tool's health/installation status
  */
 export function useToolHealth(
-  app: App | null | undefined,
+  app: Item | null | undefined,
   enabled = true,
 ): ToolHealthData {
   const checkCommand =
@@ -76,7 +76,7 @@ export function useToolHealthInvalidation() {
 /**
  * Pre-fetch health status for multiple tools
  */
-export function useBatchToolHealth(apps: App[], enabled = true) {
+export function useBatchToolHealth(apps: Item[], enabled = true) {
   const queryClient = useQueryClient()
 
   useEffect(() => {

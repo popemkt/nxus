@@ -1,51 +1,91 @@
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgParams" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="docGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="glassGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.3" />
-      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.1" />
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="5" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
+    <style>
+      .float { animation: float 4s ease-in-out infinite; }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+      }
+      .pulse { animation: pulse 2s infinite; }
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.8; }
+      }
+      .bg-anim { animation: bg-shift 10s linear infinite; }
+      @keyframes bg-shift {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-40px); }
+      }
+      .sheen { animation: sheen 4s ease-in-out infinite; }
+      @keyframes sheen {
+        0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+        50% { transform: translate(5px, 5px) scale(1.2); opacity: 1; }
+      }
+    </style>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#252540" stroke-width="1"/>
+    </pattern>
   </defs>
 
   <!-- Background -->
-  <rect width="800" height="450" fill="url(#bgParams)" />
+  <rect width="800" height="450" fill="#1a1a2e" />
+  <rect width="840" height="450" fill="url(#grid)" class="bg-anim" />
 
-  <!-- Central Composition Group -->
-  <g transform="translate(400, 225) scale(1.2)">
+  <!-- Background Accents (Anime Speed Lines vibe) -->
+  <path d="M0 450 L300 0 L350 0 L50 450 Z" fill="#16213e" opacity="0.5"/>
+  <path d="M600 0 L800 300 L800 450 L500 0 Z" fill="#16213e" opacity="0.5"/>
+
+  <!-- Main Composition Group -->
+  <g transform="translate(410, 235)">
+    <!-- Shadow for depth (Static on ground) -->
+    <ellipse cx="0" cy="110" rx="100" ry="15" fill="#000000" opacity="0.3" />
     
-    <!-- Abstract Document/Folder Shape -->
-    <path d="M-60,-80 L20,-80 L60,-40 L60,80 L-60,80 Z" 
-          fill="url(#docGradient)" 
-          stroke="none" 
-          filter="url(#glow)" />
-    <!-- Folded Corner -->
-    <path d="M20,-80 L20,-40 L60,-40" fill="#1e293b" opacity="0.3" />
+    <g class="float">
 
-    <!-- House Icon (embedded in doc) -->
-    <path d="M-30,10 L0,-20 L30,10 L30,50 L-30,50 Z" 
-          fill="#f8fafc" 
-          opacity="0.9" />
-    <!-- House Door -->
-    <path d="M-10,50 L-10,30 L10,30 L10,50" fill="#3b82f6" />
+    <!-- Folder/Document Back -->
+    <rect x="-90" y="-80" width="160" height="140" rx="10" fill="#ff2a6d" stroke="#ffffff" stroke-width="4" />
+    
+    <!-- Paper Sheet -->
+    <rect x="-80" y="-95" width="140" height="120" rx="5" fill="#f7f7f7" stroke="#1a1a2e" stroke-width="2" />
+    <!-- Text Lines -->
+    <rect x="-60" y="-75" width="60" height="6" rx="3" fill="#1a1a2e" opacity="0.2" />
+    <rect x="-60" y="-60" width="100" height="6" rx="3" fill="#1a1a2e" opacity="0.2" />
+    <rect x="-60" y="-45" width="100" height="6" rx="3" fill="#1a1a2e" opacity="0.2" />
+    <rect x="-60" y="-30" width="80" height="6" rx="3" fill="#1a1a2e" opacity="0.2" />
 
-    <!-- Magnifying Glass / Search Element -->
-    <g transform="translate(30, 30)">
-      <circle cx="0" cy="0" r="35" stroke="#f59e0b" stroke-width="6" fill="url(#glassGradient)" />
-      <line x1="25" y1="25" x2="50" y2="50" stroke="#f59e0b" stroke-width="8" stroke-linecap="round" />
-      <!-- Reflection on glass -->
-      <path d="M-20,-10 Q-10,-25 10,-20" stroke="white" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round" />
+    <!-- Folder Front Flap -->
+    <path d="M-90 60 L70 60 L70 -10 L-90 -10 Z" fill="#ff578f" stroke="#ffffff" stroke-width="4" />
+
+    <!-- Magnifying Glass -->
+    <g transform="translate(30, 10) rotate(-15)">
+      <!-- Handle -->
+      <rect x="-10" y="50" width="20" height="70" rx="10" fill="#1a1a2e" stroke="#05d9e8" stroke-width="3" />
+      
+      <!-- Lens Rim -->
+      <circle cx="0" cy="0" r="55" fill="none" stroke="#05d9e8" stroke-width="8" />
+      
+      <!-- Lens Glass -->
+      <circle cx="0" cy="0" r="48" fill="#05d9e8" opacity="0.3" />
+      
+      <!-- Reflection/Glint -->
+      <path d="M-35 -20 Q-25 -35 -10 -40" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.9" stroke-linecap="round" class="sheen" />
+      <circle cx="25" cy="25" r="4" fill="#ffffff" opacity="0.6" class="sheen" style="animation-delay: 0.2s" />
     </g>
 
+    <!-- Checkmark Pop-up (Finding Evidence) -->
+    <g transform="translate(80, -70)">
+        <circle cx="0" cy="0" r="25" fill="#00ff9d" stroke="#ffffff" stroke-width="3" class="pulse" />
+        <path d="M-10 0 L-2 8 L 12 -6" fill="none" stroke="#1a1a2e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
   </g>
+</g>
+
+  <!-- Decorative Sparkles -->
+  <g fill="#ffff00">
+    <path d="M150 100 L155 110 L165 115 L155 120 L150 130 L145 120 L135 115 L145 110 Z" class="pulse" style="animation-delay: 0.5s"/>
+    <circle cx="650" cy="350" r="4" class="pulse" style="animation-delay: 1.2s"/>
+    <circle cx="700" cy="100" r="6" class="pulse" style="animation-delay: 0.2s"/>
+  </g>
+
 </svg>

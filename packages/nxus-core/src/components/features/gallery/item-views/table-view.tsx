@@ -9,7 +9,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,13 +28,13 @@ import { useToolHealth } from '@/hooks/use-tool-health'
 import { cn } from '@/lib/utils'
 
 interface TableViewProps {
-  items: App[]
+  items: Item[]
 }
 
-const columnHelper = createColumnHelper<App>()
+const columnHelper = createColumnHelper<Item>()
 
 // Cell component for health status - uses TanStack Query via domain hook
-function HealthCell({ app }: { app: App }) {
+function HealthCell({ app }: { app: Item }) {
   const isTool = app.type === 'tool'
   const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
   const healthCheck = useToolHealth(app, hasCheckCommand)

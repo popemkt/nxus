@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, devtools } from 'zustand/middleware'
-import type { Platform } from '../../types/app'
+import type { Platform } from '../../types/item'
 
 // --- Internal Store (Implementation Detail) ---
 

@@ -1,14 +1,14 @@
 import { create } from 'zustand'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 
 interface InstallModalState {
   isOpen: boolean
-  app: App | null
+  app: Item | null
   defaultPath: string
 }
 
 interface InstallModalActions {
-  open: (app: App, defaultPath?: string) => void
+  open: (app: Item, defaultPath?: string) => void
   close: () => void
 }
 
@@ -38,7 +38,7 @@ export const useInstallModalStore = create<
  * Service for imperative access
  */
 export const installModalService = {
-  open: (app: App, defaultPath?: string) =>
+  open: (app: Item, defaultPath?: string) =>
     useInstallModalStore.getState().open(app, defaultPath),
   close: () => useInstallModalStore.getState().close(),
 }

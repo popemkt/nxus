@@ -1,4 +1,4 @@
-import type { Platform } from '@/types/app'
+import type { Platform } from '@/types/item'
 
 export interface OsInfo {
   platform: Platform

@@ -1,4 +1,4 @@
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { Link } from '@tanstack/react-router'
 import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
@@ -6,8 +6,8 @@ import { useToolHealth } from '@/hooks/use-tool-health'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface DependencyListProps {
-  dependencies: App[]
-  onInstall?: (app: App) => void
+  dependencies: Item[]
+  onInstall?: (app: Item) => void
 }
 
 export function DependencyList({
@@ -35,8 +35,8 @@ export function DependencyList({
 }
 
 interface DependencyItemProps {
-  dependency: App
-  onInstall?: (app: App) => void
+  dependency: Item
+  onInstall?: (app: Item) => void
 }
 
 function DependencyItem({ dependency, onInstall }: DependencyItemProps) {

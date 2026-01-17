@@ -6,12 +6,12 @@
  */
 
 import type {
-  App,
-  AppRegistry,
-  AppStatus,
-  AppType,
+  Item,
+  ItemRegistry,
+  ItemStatus,
+  ItemType,
   Result,
-} from '../../types/app'
+} from '../../types/item'
 
 /**
  * Service for managing the app registry
@@ -21,17 +21,17 @@ import type {
  * This is a client-side cache/service layer.
  */
 export class AppRegistryService {
-  private registry: AppRegistry | null = null
-  private apps: App[] = []
+  private registry: ItemRegistry | null = null
+  private apps: Item[] = []
 
   /**
    * Set apps from SQLite (called after server function returns)
    */
-  setApps(apps: App[]): void {
+  setApps(apps: Item[]): void {
     this.apps = apps
     this.registry = {
       version: '1.0.0',
-      apps,
+      items: apps,
     }
   }
 
@@ -46,7 +46,7 @@ export class AppRegistryService {
    * Get all apps from the registry
    * Note: Returns empty if apps haven't been loaded via setApps() yet
    */
-  getAllApps(): Result<Array<App>> {
+  getAllApps(): Result<Array<Item>> {
     return {
       success: true,
       data: this.apps,
@@ -56,7 +56,7 @@ export class AppRegistryService {
   /**
    * Get app by ID
    */
-  getAppById(id: string): Result<App> {
+  getAppById(id: string): Result<Item> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -76,7 +76,7 @@ export class AppRegistryService {
   /**
    * Search apps by name, description, or tags
    */
-  searchApps(query: string): Result<Array<App>> {
+  searchApps(query: string): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -106,7 +106,7 @@ export class AppRegistryService {
   /**
    * Filter apps by type
    */
-  filterByType(type: AppType): Result<Array<App>> {
+  filterByType(type: ItemType): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -119,7 +119,7 @@ export class AppRegistryService {
   /**
    * Filter apps by status
    */
-  filterByStatus(status: AppStatus): Result<Array<App>> {
+  filterByStatus(status: ItemStatus): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -132,7 +132,7 @@ export class AppRegistryService {
   /**
    * Filter apps by category
    */
-  filterByCategory(category: string): Result<Array<App>> {
+  filterByCategory(category: string): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -147,7 +147,7 @@ export class AppRegistryService {
   /**
    * Filter apps by tags
    */
-  filterByTags(tags: Array<string>): Result<Array<App>> {
+  filterByTags(tags: Array<string>): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -190,7 +190,7 @@ export class AppRegistryService {
   /**
    * Get all tool-type items
    */
-  getTools(): Result<Array<App>> {
+  getTools(): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -203,7 +203,7 @@ export class AppRegistryService {
   /**
    * Get all non-tool items (repos/apps)
    */
-  getRepos(): Result<Array<App>> {
+  getRepos(): Result<Array<Item>> {
     const appsResult = this.getAllApps()
     if (!appsResult.success) {
       return appsResult
@@ -216,7 +216,7 @@ export class AppRegistryService {
   /**
    * Get dependencies for an item
    */
-  getDependencies(itemId: string): Result<Array<App>> {
+  getDependencies(itemId: string): Result<Array<Item>> {
     const itemResult = this.getAppById(itemId)
     if (!itemResult.success) {
       return itemResult
@@ -227,7 +227,7 @@ export class AppRegistryService {
       return { success: true, data: [] }
     }
 
-    const deps: App[] = []
+    const deps: Item[] = []
     for (const depId of item.dependencies) {
       const depResult = this.getAppById(depId)
       if (depResult.success) {
@@ -246,7 +246,7 @@ export class AppRegistryService {
   getDependencyTree(
     itemId: string,
     visited = new Set<string>(),
-  ): Result<Array<App>> {
+  ): Result<Array<Item>> {
     if (visited.has(itemId)) {
       return { success: true, data: [] } // Circular dependency protection
     }
@@ -258,7 +258,7 @@ export class AppRegistryService {
       return depsResult
     }
 
-    const allDeps: App[] = [...depsResult.data]
+    const allDeps: Item[] = [...depsResult.data]
 
     for (const dep of depsResult.data) {
       const nestedResult = this.getDependencyTree(dep.id, visited)

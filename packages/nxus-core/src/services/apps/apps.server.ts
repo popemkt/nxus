@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { initDatabase, getDatabase } from '../../db/client'
 import { items, itemCommands, itemTags, tags } from '../../db/schema'
 import { eq, isNull, and } from 'drizzle-orm'
-import type { App, AppCommand, AppMetadata, TagRef } from '../../types/app'
+import type { Item, ItemCommand, ItemMetadata, TagRef } from '../../types/item'
 
 /**
  * Map database record to App type
@@ -25,11 +25,11 @@ import type { App, AppCommand, AppMetadata, TagRef } from '../../types/app'
 function parseAppRecord(
   record: typeof items.$inferSelect,
   tagsFromJunction: TagRef[] = [],
-): App {
+): Item {
   // Ensure metadata has proper defaults - this is the type-safe boundary
   // Tags now come from junction table, not from stored JSON
-  const rawMetadata = record.metadata as Partial<AppMetadata> | undefined
-  const metadata: AppMetadata = {
+  const rawMetadata = record.metadata as Partial<ItemMetadata> | undefined
+  const metadata: ItemMetadata = {
     tags: tagsFromJunction, // From junction table, NOT from metadata JSON
     category: rawMetadata?.category ?? 'uncategorized',
     createdAt: rawMetadata?.createdAt ?? '',
@@ -43,7 +43,7 @@ function parseAppRecord(
     id: record.id,
     name: record.name,
     description: record.description,
-    type: record.type as App['type'],
+    type: record.type as Item['type'],
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
@@ -57,7 +57,7 @@ function parseAppRecord(
     configSchema: record.configSchema ?? undefined,
     status: 'not-installed', // Runtime status, not stored
     commands: [], // Will be populated separately
-  } as App
+  } as Item
 }
 
 /**
@@ -66,18 +66,18 @@ function parseAppRecord(
  */
 function parseCommandRecord(
   record: typeof itemCommands.$inferSelect,
-): AppCommand {
+): ItemCommand {
   return {
     id: record.commandId, // Use local command ID, not global
     name: record.name,
     description: record.description ?? undefined,
     icon: record.icon,
     category: record.category,
-    target: record.target as AppCommand['target'],
-    mode: record.mode as AppCommand['mode'],
+    target: record.target as ItemCommand['target'],
+    mode: record.mode as ItemCommand['mode'],
     command: record.command,
     scriptSource:
-      (record.scriptSource as AppCommand['scriptSource']) ?? undefined,
+      (record.scriptSource as ItemCommand['scriptSource']) ?? undefined,
     cwd: record.cwd ?? undefined,
     platforms: record.platforms ?? undefined,
     requires: record.requires ?? undefined,
@@ -103,7 +103,7 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
       .from(itemCommands)
       .where(isNull(itemCommands.deletedAt))
       .all()
-    const commandsByApp = new Map<string, AppCommand[]>()
+    const commandsByApp = new Map<string, ItemCommand[]>()
 
     for (const cmd of commandRecords) {
       const appCommands = commandsByApp.get(cmd.appId) ?? []

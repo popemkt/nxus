@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
 import { X } from '@phosphor-icons/react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { openApp } from '@/lib/app-actions'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'

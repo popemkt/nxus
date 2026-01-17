@@ -38,7 +38,7 @@ import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { queryClient } from '@/lib/query-client'
-import type { AppCommand, AppType, CommandRequirements } from '@/types/app'
+import type { ItemCommand, ItemType, CommandRequirements } from '@/types/item'
 
 /**
  * Result of availability check
@@ -59,7 +59,7 @@ export interface CommandContext {
   /** App ID the command belongs to */
   appId: string
   /** App type for post-execution effects */
-  appType: AppType
+  appType: ItemType
   /** Working directory (for instance-targeted commands) */
   cwd?: string
 }
@@ -160,7 +160,7 @@ function resolveRequirements(
  * - Instance actions panel
  */
 export function useCommand(
-  command: AppCommand,
+  command: ItemCommand,
   context: CommandContext,
 ): UseCommandResult {
   // Get terminal store for execution
@@ -277,7 +277,7 @@ export function useCommand(
  * Reads from TanStack Query cache - no Zustand dependency
  */
 export function checkCommandAvailability(
-  command: AppCommand,
+  command: ItemCommand,
   context: CommandContext,
   selfCheckCommand?: string,
 ): CommandAvailability {

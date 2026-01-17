@@ -7,7 +7,7 @@ import {
   GithubLogoIcon,
   XCircleIcon,
 } from '@phosphor-icons/react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,9 +27,9 @@ import { useAppCheck, appStateService } from '@/services/state/app-state'
 import { useInstallPath } from '@/hooks/use-install-path'
 
 interface AppActionsDialogProps {
-  app: App
+  app: Item
   trigger: React.ReactNode
-  onOpen?: (app: App) => void
+  onOpen?: (app: Item) => void
 }
 
 type DialogStep = 'actions' | 'configure-install' | 'installing' | 'result'

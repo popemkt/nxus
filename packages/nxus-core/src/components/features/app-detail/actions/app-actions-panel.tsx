@@ -32,7 +32,7 @@ import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.
 import { getScriptFullPathServerFn } from '@/services/shell/read-script.server'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import type { App, ToolApp, AppCommand } from '@/types/app'
+import type { Item, ToolItem, ItemCommand } from '@/types/item'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -55,7 +55,7 @@ function CommandIcon({ iconName }: { iconName: string }) {
 }
 
 interface AppActionsPanelProps {
-  app: App
+  app: Item
   onRunCommand?: (command: string) => void
   onTerminal?: (command: string) => void
 }
@@ -86,7 +86,7 @@ export function AppActionsPanel({
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
   const [scriptParams, setScriptParams] = React.useState<ScriptParam[]>([])
   const [pendingScriptCommand, setPendingScriptCommand] =
-    React.useState<AppCommand | null>(null)
+    React.useState<ItemCommand | null>(null)
 
   // Get health check for this tool (liveness) - uses TanStack Query via domain hook
   const healthCheck = useToolHealth(app)
@@ -96,7 +96,7 @@ export function AppActionsPanel({
   const requiredFields = React.useMemo(() => {
     if (app.type !== 'tool') return []
     return (
-      (app as ToolApp).configSchema?.fields
+      (app as ToolItem).configSchema?.fields
         .filter((f) => f.required)
         .map((f) => f.key) ?? []
     )
@@ -121,7 +121,7 @@ export function AppActionsPanel({
     return groups
   }, [appCommands])
 
-  const handleCommandClick = async (cmd: AppCommand) => {
+  const handleCommandClick = async (cmd: ItemCommand) => {
     setError(null)
 
     // For script mode, check if script has parameters
@@ -404,9 +404,9 @@ export function AppActionsPanel({
       </Card>
 
       {/* Config Modal */}
-      {app.type === 'tool' && (app as ToolApp).configSchema && (
+      {app.type === 'tool' && (app as ToolItem).configSchema && (
         <ConfigModal
-          app={app as ToolApp}
+          app={app as ToolItem}
           open={configModalOpen}
           onOpenChange={setConfigModalOpen}
         />

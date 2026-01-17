@@ -13,10 +13,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { toolConfigService } from '@/services/state/tool-config-state'
-import type { ConfigField, ToolApp } from '@/types/app'
+import type { ConfigField, ToolItem } from '@/types/item'
 
 interface ConfigModalProps {
-  app: ToolApp
+  app: ToolItem
   open: boolean
   onOpenChange: (open: boolean) => void
 }

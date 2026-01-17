@@ -34,7 +34,7 @@ import {
   getParamLabel,
   getParamDefaultValue,
 } from '@/types/command-params'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 
 interface RequirementOption {
   appId: string
@@ -102,7 +102,7 @@ export function CommandParamsModal({
           continue
         }
 
-        const appsMap = new Map<string, App>(
+        const appsMap = new Map<string, Item>(
           appsResult.apps.map((app) => [app.id, app]),
         )
 

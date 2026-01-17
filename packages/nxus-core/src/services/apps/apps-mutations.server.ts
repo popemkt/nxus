@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { initDatabase, getDatabase, saveDatabase } from '@/db/client'
 import { items, itemTags } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import type { AppMetadata, TagRef } from '@/types/app'
+import type { ItemMetadata, TagRef } from '@/types/item'
 
 /**
  * Update an app's tags
@@ -113,15 +113,15 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
     }
 
     // Note: Drizzle json() column already returns parsed object, no need to JSON.parse
-    const currentMetadata: AppMetadata =
-      (appRecord.metadata as AppMetadata) || {
+    const currentMetadata: ItemMetadata =
+      (appRecord.metadata as ItemMetadata) || {
         tags: [],
         category: 'uncategorized',
         createdAt: '',
         updatedAt: '',
       }
 
-    const updatedMetadata: AppMetadata = {
+    const updatedMetadata: ItemMetadata = {
       ...currentMetadata,
       category: ctx.data.category,
       updatedAt: new Date().toISOString(),

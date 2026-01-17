@@ -3,12 +3,12 @@ import Markdown from 'react-markdown'
 import { getDocContentServerFn } from '@/services/apps/docs.server'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { CommandButton } from '@/components/features/app-detail/commands/command-button'
-import type { App, AppCommand } from '@/types/app'
+import type { Item, ItemCommand } from '@/types/item'
 
 interface DocViewerProps {
   appId: string
   fileName: string
-  app: App
+  app: Item
   onExecuteCommand?: (command: string) => void
 }
 
@@ -65,7 +65,7 @@ export function DocViewer({
 
   // Build a map of commands by ID for quick lookup
   const commandsById = React.useMemo(() => {
-    const map = new Map<string, AppCommand>()
+    const map = new Map<string, ItemCommand>()
     app.commands?.forEach((cmd) => map.set(cmd.id, cmd))
     return map
   }, [app.commands])
@@ -91,7 +91,7 @@ export function DocViewer({
         if (targetAppResult.success) {
           const targetApp = targetAppResult.data
           const command = targetApp.commands?.find(
-            (c: AppCommand) => c.id === commandId,
+            (c: ItemCommand) => c.id === commandId,
           )
           if (command) {
             return (

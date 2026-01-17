@@ -2,10 +2,10 @@ import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import { json } from './columns'
 import type {
   DocEntry,
-  AppMetadata,
+  ItemMetadata,
   InstallConfig,
   ConfigSchema,
-} from '../types/app'
+} from '../types/item'
 
 /**
  * Inbox items - backlog of tools/apps to add later via add-item workflow
@@ -92,7 +92,7 @@ export const items = sqliteTable('items', {
   platform: json<string[]>()('platform'),
   docs: json<DocEntry[]>()('docs'),
   dependencies: json<string[]>()('dependencies'),
-  metadata: json<AppMetadata>()('metadata'),
+  metadata: json<ItemMetadata>()('metadata'),
   installConfig: json<InstallConfig>()('install_config'),
 
   // Tool-specific fields

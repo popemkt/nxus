@@ -4,7 +4,7 @@ import {
   FolderOpenIcon,
   WrenchIcon,
 } from '@phosphor-icons/react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 
 /**
  * Icon mapping for each app type.
@@ -47,7 +47,7 @@ export const STATUS_VARIANTS = {
   installed: 'default',
   'not-installed': 'secondary',
   available: 'outline',
-} as const satisfies Record<App['status'], 'default' | 'secondary' | 'outline'>
+} as const satisfies Record<Item['status'], 'default' | 'secondary' | 'outline'>
 
 // Type exports for consumers
 export type AppType = keyof typeof APP_TYPE_ICONS

@@ -1,4 +1,4 @@
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 
 /**
  * Opens an app based on its type.
@@ -10,7 +10,7 @@ import type { App } from '@/types/app'
  * - HTML apps: Opens in a new browser tab/window
  * - Other types: No action (for future extension)
  */
-export function openApp(app: App): void {
+export function openApp(app: Item): void {
   if (app.type === 'html') {
     window.open(app.path, '_blank')
   }

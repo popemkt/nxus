@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
 import { items, itemCommands, tags, inbox, itemTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
-import { AppSchema, type TagRef } from '../src/types/app'
+import { ItemSchema, type TagRef } from '../src/types/item'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -83,7 +83,7 @@ async function seed() {
     if (!manifest) continue
 
     // Validate manifest against schema
-    const validationResult = AppSchema.safeParse(manifest)
+    const validationResult = ItemSchema.safeParse(manifest)
     if (!validationResult.success) {
       console.error(`\n❌ Validation failed for ${appDir}:`)
       console.error(validationResult.error.format())

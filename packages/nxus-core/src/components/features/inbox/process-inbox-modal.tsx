@@ -30,7 +30,7 @@ import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { usePath } from '@/hooks/use-paths'
 
 export interface ProcessInboxModalProps {
@@ -83,7 +83,7 @@ export function ProcessInboxModal({
         return { providers: [] as AIProvider[] }
       }
 
-      const appsMap = new Map<string, App>(
+      const appsMap = new Map<string, Item>(
         appsResult.apps.map((app) => [app.id, app]),
       )
 

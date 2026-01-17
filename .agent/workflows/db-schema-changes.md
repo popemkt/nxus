@@ -133,6 +133,58 @@ Ensure the seed script includes the field in the record object being inserted/up
 
 ---
 
+## Renaming Tables
+
+When renaming entire tables (not just columns), follow this process:
+
+### 1. Rename in SQLite (existing data)
+
+```bash
+// turbo
+sqlite3 packages/nxus-core/src/data/nxus.db "ALTER TABLE old_name RENAME TO new_name;"
+```
+
+### 2. Update Drizzle Schema
+
+Edit `packages/nxus-core/src/db/schema.ts`:
+
+- Change the export name: `export const newName = sqliteTable(...)`
+- Change the SQL string: `sqliteTable('new_name', { ... })`
+- Update type exports: `export type NewType = typeof newName.$inferSelect`
+
+### 3. Update CREATE TABLE Statement
+
+Edit `packages/nxus-core/src/db/client.ts` to use new table name in `CREATE TABLE IF NOT EXISTS`.
+
+### 4. Update All Imports/Usages
+
+Use VSCode's "Rename Symbol" (F2) on the schema export to update all imports automatically.
+
+Files that typically need updates:
+
+- `services/apps/*.server.ts`
+- `scripts/db-seed.ts`
+- `scripts/db-export.ts`
+
+### 5. Handle Ephemeral Database
+
+For ephemeral DB tables, just delete it - it recreates with new schema:
+
+```bash
+// turbo
+rm ~/.popemkt/.nxus/ephemeral.db
+```
+
+### Renaming Checklist
+
+- [ ] Run `ALTER TABLE RENAME` on master DB
+- [ ] Update `db/schema.ts` (export name + SQL string + types)
+- [ ] Update `db/client.ts` CREATE TABLE statements
+- [ ] Update all service imports/usages
+- [ ] Update seed and export scripts
+- [ ] Delete ephemeral DB (if applicable)
+- [ ] Restart dev server
+
 ## Future Improvement: Single Source of Truth
 
 Currently, there's duplication across files. Here are ideas to centralize:

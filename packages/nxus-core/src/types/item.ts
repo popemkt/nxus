@@ -10,23 +10,23 @@ export type Platform = z.infer<typeof PlatformSchema>
 /**
  * App types that Nxus can manage
  */
-export const AppTypeSchema = z.enum([
+export const ItemTypeSchema = z.enum([
   'html',
   'typescript',
   'remote-repo',
   'tool',
 ])
-export type AppType = z.infer<typeof AppTypeSchema>
+export type ItemType = z.infer<typeof ItemTypeSchema>
 
 /**
  * App installation status
  */
-export const AppStatusSchema = z.enum([
+export const ItemStatusSchema = z.enum([
   'installed',
   'not-installed',
   'available',
 ])
-export type AppStatus = z.infer<typeof AppStatusSchema>
+export type ItemStatus = z.infer<typeof ItemStatusSchema>
 
 /**
  * Installation configuration for apps that require setup
@@ -51,7 +51,7 @@ export type TagRef = z.infer<typeof TagRefSchema>
 /**
  * App metadata for categorization and search
  */
-export const AppMetadataSchema = z.object({
+export const ItemMetadataSchema = z.object({
   /**
    * Tags for this app.
    * NOTE: In SQLite, this is stored in the `app_tags` transition table.
@@ -65,7 +65,7 @@ export const AppMetadataSchema = z.object({
   author: z.string().optional(),
   license: z.string().optional(),
 })
-export type AppMetadata = z.infer<typeof AppMetadataSchema>
+export type ItemMetadata = z.infer<typeof ItemMetadataSchema>
 
 /**
  * Command target - what scope the command operates on
@@ -139,7 +139,7 @@ export type ScriptModeOptions = z.infer<typeof ScriptModeOptionsSchema>
  * Config-driven command defined in app-registry.json
  * For shell/script commands with different parameters per app
  */
-export const AppCommandSchema = z.object({
+export const ItemCommandSchema = z.object({
   id: z.string().describe('Unique command identifier'),
   name: z.string().describe('Display name'),
   description: z.string().optional(),
@@ -166,7 +166,7 @@ export const AppCommandSchema = z.object({
   /** User input parameters to collect before execution */
   params: z.array(CommandParamSchema).optional(),
 })
-export type AppCommand = z.infer<typeof AppCommandSchema>
+export type ItemCommand = z.infer<typeof ItemCommandSchema>
 
 /**
  * Documentation entry for an app
@@ -182,23 +182,23 @@ export type DocEntry = z.infer<typeof DocEntrySchema>
 /**
  * Base app configuration schema
  */
-const BaseAppSchema = z.object({
+const BaseItemSchema = z.object({
   id: z.string().describe('Unique identifier'),
   name: z.string().min(1).describe('Display name'),
   description: z.string().describe('App description'),
-  type: AppTypeSchema,
+  type: ItemTypeSchema,
   path: z.string().describe('Local path or remote URL'),
   homepage: z.string().url().optional().describe('URL to homepage/preview'),
   thumbnail: z.string().optional().describe('Path or URL to thumbnail image'),
   installConfig: InstallConfigSchema.optional(),
-  metadata: AppMetadataSchema,
-  status: AppStatusSchema.default('not-installed'),
+  metadata: ItemMetadataSchema,
+  status: ItemStatusSchema.default('not-installed'),
   dependencies: z
     .array(z.string())
     .optional()
     .describe('Item IDs this item depends on'),
   commands: z
-    .array(AppCommandSchema)
+    .array(ItemCommandSchema)
     .optional()
     .describe('Config-driven commands'),
   docs: z
@@ -210,33 +210,33 @@ const BaseAppSchema = z.object({
 /**
  * HTML app - single HTML file that can be opened in browser
  */
-export const HtmlAppSchema = BaseAppSchema.extend({
+export const HtmlItemSchema = BaseItemSchema.extend({
   type: z.literal('html'),
   path: z.string().describe('Path to HTML file'),
 })
-export type HtmlApp = z.infer<typeof HtmlAppSchema>
+export type HtmlItem = z.infer<typeof HtmlItemSchema>
 
 /**
  * TypeScript app - full TypeScript application
  */
-export const TypeScriptAppSchema = BaseAppSchema.extend({
+export const TypeScriptItemSchema = BaseItemSchema.extend({
   type: z.literal('typescript'),
   path: z.string().describe('Path to TypeScript project root'),
   startCommand: z.string().optional().describe('Command to start the app'),
   buildCommand: z.string().optional().describe('Command to build the app'),
 })
-export type TypeScriptApp = z.infer<typeof TypeScriptAppSchema>
+export type TypeScriptItem = z.infer<typeof TypeScriptItemSchema>
 
 /**
  * Remote repository - GitHub/GitLab repo to clone
  */
-export const RemoteRepoAppSchema = BaseAppSchema.extend({
+export const RemoteRepoItemSchema = BaseItemSchema.extend({
   type: z.literal('remote-repo'),
   path: z.string().url().describe('Git repository URL'),
   clonePath: z.string().optional().describe('Local path to clone to'),
   branch: z.string().optional().describe('Branch to checkout'),
 })
-export type RemoteRepoApp = z.infer<typeof RemoteRepoAppSchema>
+export type RemoteRepoItem = z.infer<typeof RemoteRepoItemSchema>
 
 /**
  * Configuration field schema for tools that need configuration
@@ -262,7 +262,7 @@ export type ConfigSchema = z.infer<typeof ConfigSchemaSchema>
 /**
  * Tool app - installable tools/dependencies like node, npm, git
  */
-export const ToolAppSchema = BaseAppSchema.extend({
+export const ToolItemSchema = BaseItemSchema.extend({
   type: z.literal('tool'),
   path: z.string().describe('Installation source or package name'),
   installInstructions: z
@@ -278,27 +278,27 @@ export const ToolAppSchema = BaseAppSchema.extend({
     'Configuration fields for this tool (e.g., API keys)',
   ),
 })
-export type ToolApp = z.infer<typeof ToolAppSchema>
+export type ToolItem = z.infer<typeof ToolItemSchema>
 
 /**
  * Discriminated union of all app types
  */
-export const AppSchema = z.discriminatedUnion('type', [
-  HtmlAppSchema,
-  TypeScriptAppSchema,
-  RemoteRepoAppSchema,
-  ToolAppSchema,
+export const ItemSchema = z.discriminatedUnion('type', [
+  HtmlItemSchema,
+  TypeScriptItemSchema,
+  RemoteRepoItemSchema,
+  ToolItemSchema,
 ])
-export type App = z.infer<typeof AppSchema>
+export type Item = z.infer<typeof ItemSchema>
 
 /**
  * App registry containing all apps
  */
-export const AppRegistrySchema = z.object({
+export const ItemRegistrySchema = z.object({
   version: z.string().default('1.0.0'),
-  apps: z.array(AppSchema),
+  items: z.array(ItemSchema),
 })
-export type AppRegistry = z.infer<typeof AppRegistrySchema>
+export type ItemRegistry = z.infer<typeof ItemRegistrySchema>
 
 /**
  * Result type for operations that can fail
@@ -310,9 +310,9 @@ export type Result<T, E = Error> =
 /**
  * Parse app data with validation
  */
-export function parseApp(data: unknown): Result<App> {
+export function parseItem(data: unknown): Result<Item> {
   try {
-    const app = AppSchema.parse(data)
+    const app = ItemSchema.parse(data)
     return { success: true, data: app }
   } catch (error) {
     return { success: false, error: error as Error }
@@ -322,9 +322,9 @@ export function parseApp(data: unknown): Result<App> {
 /**
  * Parse app registry with validation
  */
-export function parseAppRegistry(data: unknown): Result<AppRegistry> {
+export function parseItemRegistry(data: unknown): Result<ItemRegistry> {
   try {
-    const registry = AppRegistrySchema.parse(data)
+    const registry = ItemRegistrySchema.parse(data)
     return { success: true, data: registry }
   } catch (error) {
     return { success: false, error: error as Error }

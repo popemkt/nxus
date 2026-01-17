@@ -13,7 +13,7 @@ import {
   getAllAppTagValuesServerFn,
 } from '@/services/tag-config.server'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { TagRef } from '@/types/app'
+import type { TagRef } from '@/types/item'
 
 interface AppDetailTagsProps {
   appId: string

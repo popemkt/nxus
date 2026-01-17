@@ -1,8 +1,8 @@
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { GraphCanvas } from './graph-view/graph-canvas'
 
 interface GraphViewProps {
-  items: App[]
+  items: Item[]
   searchQuery: string
 }
 

@@ -17,7 +17,7 @@
 import { queryClient } from '@/lib/query-client'
 import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { AppType } from '@/types/app'
+import type { ItemType } from '@/types/item'
 import type { InstalledAppRecord } from '@/services/state/app-state'
 
 /**
@@ -41,7 +41,7 @@ export interface AvailabilityContext {
   /** App ID the command belongs to */
   appId: string
   /** App type */
-  appType: AppType
+  appType: ItemType
   /** Selected instance (for instance-targeted commands) */
   instance?: InstalledAppRecord | null
   /** Whether the command targets an instance */

@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import {
   ItemNode,
   CommandNode,
@@ -69,7 +69,7 @@ const NODE_HEIGHT = 100
 const SIMPLE_NODE_SIZE = 24
 
 interface GraphCanvasProps {
-  items: App[]
+  items: Item[]
   searchQuery: string
   className?: string
 }
@@ -87,7 +87,7 @@ interface ForceNode extends SimulationNodeDatum {
  * Create nodes from items. Node data includes isForceLayout flag.
  */
 function createNodes(
-  items: App[],
+  items: Item[],
   matchedIds: Set<string>,
   hasActiveFilter: boolean,
   options: {
@@ -169,7 +169,7 @@ function createNodes(
  * Create edges from item dependencies.
  */
 function createEdges(
-  items: App[],
+  items: Item[],
   visibleIds: Set<string>,
   matchedIds: Set<string>,
   edgeType: 'dependency' | 'forceArrow',
@@ -290,7 +290,9 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
         !lowerQuery ||
         item.name.toLowerCase().includes(lowerQuery) ||
         item.description.toLowerCase().includes(lowerQuery) ||
-        item.metadata.tags.some((t) => t.name.toLowerCase().includes(lowerQuery))
+        item.metadata.tags.some((t) =>
+          t.name.toLowerCase().includes(lowerQuery),
+        )
 
       const matchesTags =
         tagNamesSet.size === 0 ||
@@ -674,7 +676,7 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
 
   const minimapNodeColor = useCallback((node: Node) => {
     if (node.type === 'simple') {
-      const data = node.data as { type: App['type']; isDimmed: boolean }
+      const data = node.data as { type: Item['type']; isDimmed: boolean }
       if (data?.isDimmed) return 'var(--muted)'
       switch (data?.type) {
         case 'tool':

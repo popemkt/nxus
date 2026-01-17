@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 
 export interface GraphFilterResult {
   matchedIds: Set<string>
@@ -7,7 +7,7 @@ export interface GraphFilterResult {
 }
 
 interface UseGraphFilterProps {
-  items: App[]
+  items: Item[]
   searchQuery: string
   selectedTagIds: Set<string>
   /** Map of string tagId to tag slug for matching against metadata.tags */

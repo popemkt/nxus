@@ -2,7 +2,7 @@ import { appRegistryService } from '@/services/apps/registry.service'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
-import type { App, AppCommand } from '@/types/app'
+import type { Item, ItemCommand } from '@/types/item'
 import type { CommandRequirement, CommandParam } from '@/types/command-params'
 
 /**
@@ -13,9 +13,9 @@ export interface PaletteCommand {
   /** Composite ID for keying: `${app.id}:${command.id}` */
   id: string
   /** Full app entity this command belongs to */
-  app: App
+  app: Item
   /** Full command definition */
-  command: AppCommand
+  command: ItemCommand
 }
 
 /**
@@ -27,7 +27,7 @@ export interface GenericCommand {
   icon: string
   needsTarget?: 'app' | 'instance' | false
   /** Optional filter for target selection (e.g., only show remote-repo apps) */
-  targetFilter?: (app: App) => boolean
+  targetFilter?: (app: Item) => boolean
   /** Tagged item selectors (e.g., pick an AI provider) */
   requirements?: CommandRequirement[]
   /** User input parameters to collect before execution */
@@ -462,7 +462,7 @@ class CommandRegistry {
   /**
    * Get apps for target selection, optionally filtered by command
    */
-  getAppsForTargetSelection(command?: GenericCommand): App[] {
+  getAppsForTargetSelection(command?: GenericCommand): Item[] {
     const result = appRegistryService.getAllApps()
     if (!result.success) return []
 

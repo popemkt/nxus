@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/react'
-import type { App } from '@/types/app'
+import type { Item } from '@/types/item'
 import { APP_TYPE_ICONS } from '@/lib/app-constants'
 import type { GraphFilterResult } from './use-graph-filter'
 import type { GraphOptions } from '@/stores/view-mode.store'
@@ -7,12 +7,12 @@ import type { GraphOptions } from '@/stores/view-mode.store'
 export interface ItemNodeData extends Record<string, unknown> {
   label: string
   description: string
-  type: App['type']
-  status: App['status']
+  type: Item['type']
+  status: Item['status']
   isMatched: boolean
   isDimmed: boolean
   isHighlighted?: boolean // True when matched with active filter
-  app: App
+  app: Item
   TypeIcon: React.ComponentType<{ className?: string }>
 }
 
@@ -27,7 +27,7 @@ export type CommandNode = Node<CommandNodeData, 'command'>
 export type DependencyEdge = Edge<{ isMatched: boolean }>
 
 interface UseGraphNodesProps {
-  items: App[]
+  items: Item[]
   filterResult: GraphFilterResult
   graphOptions: GraphOptions
 }
