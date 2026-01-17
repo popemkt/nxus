@@ -40,12 +40,12 @@
         "python3"
     ],
     "metadata": {
-        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-08T21:07:00.000Z",
         "updatedAt": "2026-01-08T21:07:00.000Z",
         "version": "1.0.0",
-        "author": "Leon van Zyl"
+        "author": "Leon van Zyl",
+        "tags": []
     },
     "status": "not-installed"
 }

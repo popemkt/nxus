@@ -12,7 +12,7 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase } from '../src/db/client'
-import { apps, commands, tags, inboxItems } from '../src/db/schema'
+import { apps, commands, tags, inboxItems, appTags } from '../src/db/schema'
 import { eq, isNull } from 'drizzle-orm'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -22,14 +22,28 @@ const appsDir = resolve(dataDir, 'apps')
 
 /**
  * Parse JSON fields from database records
+ * Handles both:
+ * - Raw strings (legacy/manual queries)
+ * - Already-parsed objects (from Drizzle json() column)
  */
-function parseJsonField<T>(value: string | null): T | undefined {
-  if (!value) return undefined
-  try {
-    return JSON.parse(value) as T
-  } catch {
-    return undefined
+function parseJsonField<T>(value: unknown): T | undefined {
+  if (value === null || value === undefined) return undefined
+
+  // If it's already an object/array, return it directly
+  if (typeof value === 'object') {
+    return value as T
   }
+
+  // If it's a string, try to parse it
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T
+    } catch {
+      return undefined
+    }
+  }
+
+  return undefined
 }
 
 async function exportData() {
@@ -57,6 +71,26 @@ async function exportData() {
     const appCommands = commandsByApp.get(cmd.appId) ?? []
     appCommands.push(cmd)
     commandsByApp.set(cmd.appId, appCommands)
+  }
+
+  // Query tags for all apps from junction table
+  console.log('  Querying tags from junction table...')
+  const appTagRecords = db
+    .select({
+      appId: appTags.appId,
+      tagId: tags.id,
+      tagName: tags.name,
+    })
+    .from(appTags)
+    .innerJoin(tags, eq(appTags.tagId, tags.id))
+    .all()
+
+  // Group tags by appId
+  const tagsByApp = new Map<string, Array<{ id: number; name: string }>>()
+  for (const r of appTagRecords) {
+    const arr = tagsByApp.get(r.appId) ?? []
+    arr.push({ id: r.tagId, name: r.tagName })
+    tagsByApp.set(r.appId, arr)
   }
 
   let appsExported = 0
@@ -123,8 +157,12 @@ async function exportData() {
     if (dependencies) manifest.dependencies = dependencies
 
     // Add metadata
-    const metadata = parseJsonField(app.metadata)
-    if (metadata) manifest.metadata = metadata
+    const metadata = (parseJsonField(app.metadata) as any) || {}
+    // Inject tags from junction table into metadata for export
+    manifest.metadata = {
+      ...metadata,
+      tags: tagsByApp.get(app.id) ?? [],
+    }
 
     // Add install config
     const installConfig = parseJsonField(app.installConfig)

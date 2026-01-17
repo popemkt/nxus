@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-01-16T12:43:29.876Z",
-  "count": 38,
+  "exportedAt": "2026-01-17T02:16:26.532Z",
+  "count": 47,
   "items": [
     {
       "id": 1,
@@ -306,6 +306,78 @@
       "status": "pending",
       "createdAt": "2026-01-16T12:38:33.000Z",
       "updatedAt": "2026-01-16T12:38:33.000Z"
+    },
+    {
+      "id": 39,
+      "title": "Create ai ideas page",
+      "notes": "Planning to start project\nLet GLM work its way through\nWorldModel\nOpenCode as better harness\nDroid at even better.\nBase projects with nxus for reference.\nMore?\nMake it a lifeCycle, flow chart decision tree",
+      "status": "pending",
+      "createdAt": "2026-01-16T15:44:30.000Z",
+      "updatedAt": "2026-01-16T15:45:18.000Z"
+    },
+    {
+      "id": 40,
+      "title": "Fix all typescript errors",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T15:51:49.000Z",
+      "updatedAt": "2026-01-16T15:51:49.000Z"
+    },
+    {
+      "id": 41,
+      "title": "Generate thumbnail refactor",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T15:52:00.000Z",
+      "updatedAt": "2026-01-16T15:52:00.000Z"
+    },
+    {
+      "id": 42,
+      "title": "Converter of ai tools arfifacts (skills etc)",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T15:58:41.000Z",
+      "updatedAt": "2026-01-16T15:58:41.000Z"
+    },
+    {
+      "id": 43,
+      "title": "https://liveblocks.io/blog/which-rich-text-editor-framework-should-you-choose-in-2025?exampleId=Lx8zxk6ww2JpKtp",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T16:06:29.000Z",
+      "updatedAt": "2026-01-16T16:06:29.000Z"
+    },
+    {
+      "id": 44,
+      "title": "plugins and skills videos",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T16:21:29.000Z",
+      "updatedAt": "2026-01-16T16:21:29.000Z"
+    },
+    {
+      "id": 45,
+      "title": "sync accounts for tag configs",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T17:44:49.000Z",
+      "updatedAt": "2026-01-16T17:44:49.000Z"
+    },
+    {
+      "id": 46,
+      "title": "Properly add skills antigravity",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-16T17:53:07.000Z",
+      "updatedAt": "2026-01-16T17:53:07.000Z"
+    },
+    {
+      "id": 47,
+      "title": "hostname for app",
+      "notes": null,
+      "status": "pending",
+      "createdAt": "2026-01-17T02:11:05.000Z",
+      "updatedAt": "2026-01-17T02:11:05.000Z"
     }
   ]
 }

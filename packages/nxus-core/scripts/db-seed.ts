@@ -12,9 +12,9 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
 import { resolve, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
-import { apps, commands, tags, inboxItems } from '../src/db/schema'
+import { apps, commands, tags, inboxItems, appTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
-import { AppSchema } from '../src/types/app'
+import { AppSchema, type TagRef } from '../src/types/app'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -97,7 +97,11 @@ async function seed() {
     const appCommands = validatedManifest.commands || []
 
     // Prepare app record
+    // Extract tags from manifest metadata for junction table
+    const manifestTags: TagRef[] = validatedManifest.metadata?.tags ?? []
+
     // Note: JSON fields (platform, docs, etc.) auto-stringify via schema's json() column
+    // Tags are now stored in junction table, NOT in metadata JSON
     const appRecord = {
       id: validatedManifest.id,
       name: validatedManifest.name,
@@ -110,11 +114,13 @@ async function seed() {
       docs: validatedManifest.docs ?? null,
       dependencies: validatedManifest.dependencies ?? null,
       metadata: {
-        tags: [],
-        category: 'uncategorized',
-        createdAt: '',
-        updatedAt: '',
-        ...validatedManifest.metadata,
+        // Exclude tags - they go in junction table
+        category: validatedManifest.metadata?.category ?? 'uncategorized',
+        createdAt: validatedManifest.metadata?.createdAt ?? '',
+        updatedAt: validatedManifest.metadata?.updatedAt ?? '',
+        version: validatedManifest.metadata?.version,
+        author: validatedManifest.metadata?.author,
+        license: validatedManifest.metadata?.license,
       },
       installConfig: validatedManifest.installConfig ?? null,
       checkCommand: validatedManifest.checkCommand || null,
@@ -140,6 +146,13 @@ async function seed() {
       db.insert(apps).values(appRecord).run()
     }
     appsCount++
+
+    // Upsert app_tags junction table - delete existing and insert new
+    // This ensures tags from manifest.metadata.tags are synced to junction table
+    db.delete(appTags).where(eq(appTags.appId, appRecord.id)).run()
+    for (const tag of manifestTags) {
+      db.insert(appTags).values({ appId: appRecord.id, tagId: tag.id }).run()
+    }
 
     // Upsert commands - track which command IDs are in the manifest
     const manifestCommandIds = new Set<string>()
@@ -226,17 +239,16 @@ async function seed() {
         order: (tag.order as number) ?? 0,
         color: (tag.color as string | null) ?? null,
         icon: (tag.icon as string | null) ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: parseTimestamp(tag.createdAt) ?? new Date(),
+        updatedAt: parseTimestamp(tag.updatedAt) ?? new Date(),
       }
 
       const existing = db.select().from(tags).where(eq(tags.id, tagId)).get()
 
       if (existing) {
-        db.update(tags)
-          .set({ ...tagRecord, updatedAt: new Date() })
-          .where(eq(tags.id, tagId))
-          .run()
+        // Preserve timestamps from JSON - don't overwrite with current time
+        // updatedAt should only change via UI edits, not sync
+        db.update(tags).set(tagRecord).where(eq(tags.id, tagId)).run()
       } else {
         db.insert(tags).values(tagRecord).run()
       }
@@ -270,8 +282,10 @@ async function seed() {
           .get()
 
         if (existing) {
+          // Preserve timestamps from JSON - don't overwrite with current time
+          // updatedAt should only change via UI edits, not sync
           db.update(inboxItems)
-            .set({ ...itemRecord, updatedAt: new Date() })
+            .set(itemRecord)
             .where(eq(inboxItems.id, item.id as number))
             .run()
         } else {

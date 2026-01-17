@@ -76,6 +76,11 @@
         "node"
     ],
     "metadata": {
+        "category": "productivity",
+        "createdAt": "2026-01-15T20:50:00.000Z",
+        "updatedAt": "2026-01-15T21:15:00.000Z",
+        "version": "1.0.0",
+        "author": "reorproject",
         "tags": [
             {
                 "id": 12,
@@ -89,12 +94,7 @@
                 "id": 10,
                 "name": "Tool"
             }
-        ],
-        "category": "productivity",
-        "createdAt": "2026-01-15T20:50:00.000Z",
-        "updatedAt": "2026-01-15T21:15:00.000Z",
-        "version": "1.0.0",
-        "author": "reorproject"
+        ]
     },
     "status": "not-installed"
 }

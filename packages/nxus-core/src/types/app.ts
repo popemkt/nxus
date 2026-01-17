@@ -52,6 +52,11 @@ export type TagRef = z.infer<typeof TagRefSchema>
  * App metadata for categorization and search
  */
 export const AppMetadataSchema = z.object({
+  /**
+   * Tags for this app.
+   * NOTE: In SQLite, this is stored in the `app_tags` transition table.
+   * It is populated here at runtime by the server function via a JOIN.
+   */
   tags: z.array(TagRefSchema).default([]),
   category: z.string().default('uncategorized'),
   createdAt: z.string().datetime(),

@@ -23,10 +23,10 @@
             "mode": "execute",
             "command": "npm install -g yarn",
             "requires": {
-                "selfNotInstalled": true,
                 "tools": [
                     "npm"
-                ]
+                ],
+                "selfNotInstalled": true
             }
         },
         {
@@ -39,10 +39,10 @@
             "mode": "execute",
             "command": "npm update -g yarn",
             "requires": {
-                "selfInstalled": true,
                 "tools": [
                     "npm"
-                ]
+                ],
+                "selfInstalled": true
             }
         },
         {
@@ -55,10 +55,10 @@
             "mode": "execute",
             "command": "npm uninstall -g yarn",
             "requires": {
-                "selfInstalled": true,
                 "tools": [
                     "npm"
-                ]
+                ],
+                "selfInstalled": true
             }
         }
     ],
@@ -66,12 +66,12 @@
         "node"
     ],
     "metadata": {
-        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-01T01:09:00.000Z",
         "updatedAt": "2026-01-01T22:37:00.000Z",
         "version": "1.0.0",
-        "author": "nxus"
+        "author": "nxus",
+        "tags": []
     },
     "status": "not-installed"
 }

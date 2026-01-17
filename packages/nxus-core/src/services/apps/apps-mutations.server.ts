@@ -55,7 +55,7 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
     const tagRefs = ctx.data.tags
     const tagIds = tagRefs.map((t) => t.id)
 
-    // 3. Update junction table
+    // 3. Update junction table (this is now the ONLY source of truth for tags)
     // Delete existing links
     await db.delete(appTags).where(eq(appTags.appId, ctx.data.appId)).run()
 
@@ -72,25 +72,9 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
       }
     }
 
-    // 4. Update JSON metadata in apps table
-    // Note: Drizzle json() column already returns parsed object, no need to JSON.parse
-    const currentMetadata: AppMetadata =
-      (appRecord.metadata as AppMetadata) || {
-        tags: [],
-        category: 'uncategorized',
-        createdAt: '',
-        updatedAt: '',
-      }
-
-    const updatedMetadata: AppMetadata = {
-      ...currentMetadata,
-      tags: tagRefs, // Store as {id, name}[] objects
-      updatedAt: new Date().toISOString(),
-    }
-
+    // 4. Update updatedAt in apps table (but NOT metadata.tags - that's deprecated)
     db.update(apps)
       .set({
-        metadata: JSON.stringify(updatedMetadata),
         updatedAt: new Date(),
       })
       .where(eq(apps.id, ctx.data.appId))

@@ -23,10 +23,10 @@
             "mode": "script",
             "command": "install.ps1",
             "requires": {
-                "selfNotInstalled": true,
                 "tools": [
                     "powershell"
-                ]
+                ],
+                "selfNotInstalled": true
             }
         },
         {
@@ -133,10 +133,10 @@
             "mode": "terminal",
             "command": "gh pr create",
             "requires": {
-                "selfInstalled": true,
                 "tools": [
                     "git"
-                ]
+                ],
+                "selfInstalled": true
             }
         },
         {
@@ -162,10 +162,10 @@
             "mode": "terminal",
             "command": "gh pr checkout",
             "requires": {
-                "selfInstalled": true,
                 "tools": [
                     "git"
-                ]
+                ],
+                "selfInstalled": true
             }
         },
         {
@@ -412,12 +412,12 @@
         }
     ],
     "metadata": {
-        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-03T07:59:33Z",
         "updatedAt": "2026-01-03T07:59:33Z",
         "version": "1.0.0",
-        "author": "GitHub"
+        "author": "GitHub",
+        "tags": []
     },
     "status": "not-installed"
 }

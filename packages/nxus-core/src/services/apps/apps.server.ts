@@ -8,9 +8,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, getDatabase } from '../../db/client'
-import { apps, commands } from '../../db/schema'
+import { apps, commands, appTags, tags } from '../../db/schema'
 import { eq, isNull, and } from 'drizzle-orm'
-import type { App, AppCommand, AppMetadata, DocEntry } from '../../types/app'
+import type { App, AppCommand, AppMetadata, TagRef } from '../../types/app'
 
 /**
  * Map database record to App type
@@ -18,12 +18,19 @@ import type { App, AppCommand, AppMetadata, DocEntry } from '../../types/app'
  *
  * IMPORTANT: This is the data boundary - we ensure metadata shape here
  * so downstream code never needs defensive checks
+ *
+ * @param record - Database record from apps table
+ * @param tagsFromJunction - Tags queried from app_tags junction table (single source of truth)
  */
-function parseAppRecord(record: typeof apps.$inferSelect): App {
+function parseAppRecord(
+  record: typeof apps.$inferSelect,
+  tagsFromJunction: TagRef[] = [],
+): App {
   // Ensure metadata has proper defaults - this is the type-safe boundary
+  // Tags now come from junction table, not from stored JSON
   const rawMetadata = record.metadata as Partial<AppMetadata> | undefined
   const metadata: AppMetadata = {
-    tags: Array.isArray(rawMetadata?.tags) ? rawMetadata.tags : [],
+    tags: tagsFromJunction, // From junction table, NOT from metadata JSON
     category: rawMetadata?.category ?? 'uncategorized',
     createdAt: rawMetadata?.createdAt ?? '',
     updatedAt: rawMetadata?.updatedAt ?? '',
@@ -78,6 +85,7 @@ function parseCommandRecord(record: typeof commands.$inferSelect): AppCommand {
 
 /**
  * Get all apps from SQLite database
+ * Tags are now queried from app_tags junction table (single source of truth)
  */
 export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -101,9 +109,28 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
       commandsByApp.set(cmd.appId, appCommands)
     }
 
-    // Parse and assemble apps with their commands
+    // Query tags from junction table - this is now the single source of truth
+    const appTagRecords = db
+      .select({
+        appId: appTags.appId,
+        tagId: tags.id,
+        tagName: tags.name,
+      })
+      .from(appTags)
+      .innerJoin(tags, eq(appTags.tagId, tags.id))
+      .all()
+
+    // Group tags by appId
+    const tagsByApp = new Map<string, Array<{ id: number; name: string }>>()
+    for (const r of appTagRecords) {
+      const arr = tagsByApp.get(r.appId) ?? []
+      arr.push({ id: r.tagId, name: r.tagName })
+      tagsByApp.set(r.appId, arr)
+    }
+
+    // Parse and assemble apps with their commands and tags
     const parsedApps = appRecords.map((record) => {
-      const app = parseAppRecord(record)
+      const app = parseAppRecord(record, tagsByApp.get(record.id) ?? [])
       app.commands = commandsByApp.get(record.id) ?? []
       return app
     })
@@ -118,6 +145,7 @@ const GetAppByIdSchema = z.object({
 
 /**
  * Get a single app by ID from SQLite
+ * Tags are queried from junction table
  */
 export const getAppByIdServerFn = createServerFn({ method: 'GET' })
   .inputValidator(GetAppByIdSchema)
@@ -141,7 +169,17 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
       .where(and(eq(commands.appId, id), isNull(commands.deletedAt)))
       .all()
 
-    const app = parseAppRecord(appRecord)
+    // Query tags from junction table
+    const appTagRecords = db
+      .select({ tagId: tags.id, tagName: tags.name })
+      .from(appTags)
+      .innerJoin(tags, eq(appTags.tagId, tags.id))
+      .where(eq(appTags.appId, id))
+      .all()
+
+    const tagRefs = appTagRecords.map((r) => ({ id: r.tagId, name: r.tagName }))
+
+    const app = parseAppRecord(appRecord, tagRefs)
     app.commands = commandRecords.map(parseCommandRecord)
 
     return { success: true as const, app }
