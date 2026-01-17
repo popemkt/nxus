@@ -12,7 +12,7 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase } from '../src/db/client'
-import { apps, commands, tags, inboxItems, appTags } from '../src/db/schema'
+import { items, itemCommands, tags, inbox, itemTags } from '../src/db/schema'
 import { eq, isNull } from 'drizzle-orm'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -57,12 +57,12 @@ async function exportData() {
 
   // Export apps to individual manifest.json files
   console.log('[2/3] Exporting apps to individual manifests...')
-  const allApps = db.select().from(apps).all()
+  const allApps = db.select().from(items).all()
   // Only export active commands (not soft-deleted)
   const allCommands = db
     .select()
-    .from(commands)
-    .where(isNull(commands.deletedAt))
+    .from(itemCommands)
+    .where(isNull(itemCommands.deletedAt))
     .all()
 
   // Group commands by app
@@ -77,12 +77,12 @@ async function exportData() {
   console.log('  Querying tags from junction table...')
   const appTagRecords = db
     .select({
-      appId: appTags.appId,
+      appId: itemTags.appId,
       tagId: tags.id,
       tagName: tags.name,
     })
-    .from(appTags)
-    .innerJoin(tags, eq(appTags.tagId, tags.id))
+    .from(itemTags)
+    .innerJoin(tags, eq(itemTags.tagId, tags.id))
     .all()
 
   // Group tags by appId
@@ -201,7 +201,7 @@ async function exportData() {
   )
   console.log(`  → Exported ${allTags.length} tags`)
 
-  const allInbox = db.select().from(inboxItems).all()
+  const allInbox = db.select().from(inbox).all()
 
   writeFileSync(
     resolve(dataDir, 'inbox.json'),

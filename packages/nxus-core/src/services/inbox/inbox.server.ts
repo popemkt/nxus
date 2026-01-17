@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, saveDatabase } from '@/db/client'
-import { inboxItems, type InboxItem } from '@/db/schema'
+import { inbox, type InboxEntry } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 
 /**
@@ -11,10 +11,7 @@ export const getInboxItemsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     console.log('[getInboxItemsServerFn] Fetching all items')
     const db = initDatabase()
-    const items = await db
-      .select()
-      .from(inboxItems)
-      .orderBy(desc(inboxItems.createdAt))
+    const items = await db.select().from(inbox).orderBy(desc(inbox.createdAt))
     console.log('[getInboxItemsServerFn] Found:', items.length)
     return { success: true, data: items }
   },
@@ -30,9 +27,9 @@ export const getPendingInboxItemsServerFn = createServerFn({
   const db = await initDatabase()
   const items = await db
     .select()
-    .from(inboxItems)
-    .where(eq(inboxItems.status, 'pending'))
-    .orderBy(desc(inboxItems.createdAt))
+    .from(inbox)
+    .where(eq(inbox.status, 'pending'))
+    .orderBy(desc(inbox.createdAt))
   console.log('[getPendingInboxItemsServerFn] Found:', items.length)
   return { success: true, data: items }
 })
@@ -54,7 +51,7 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
     const now = new Date()
 
     const result = await db
-      .insert(inboxItems)
+      .insert(inbox)
       .values({
         title,
         notes: notes ?? null,
@@ -87,12 +84,12 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
     const db = initDatabase()
 
     const result = await db
-      .update(inboxItems)
+      .update(inbox)
       .set({
         ...updates,
         updatedAt: new Date(),
       })
-      .where(eq(inboxItems.id, id))
+      .where(eq(inbox.id, id))
       .returning()
 
     if (result.length === 0) {
@@ -115,10 +112,7 @@ export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
     const { id } = ctx.data
     const db = initDatabase()
 
-    const result = await db
-      .delete(inboxItems)
-      .where(eq(inboxItems.id, id))
-      .returning()
+    const result = await db.delete(inbox).where(eq(inbox.id, id)).returning()
 
     if (result.length === 0) {
       console.log('[deleteInboxItemServerFn] Not found:', id)
@@ -139,9 +133,9 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
     console.log('[markAsProcessingServerFn] Input:', ctx.data)
     const db = initDatabase()
     const result = await db
-      .update(inboxItems)
+      .update(inbox)
       .set({ status: 'processing', updatedAt: new Date() })
-      .where(eq(inboxItems.id, ctx.data.id))
+      .where(eq(inbox.id, ctx.data.id))
       .returning()
 
     saveDatabase()
@@ -158,9 +152,9 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
     console.log('[markAsDoneServerFn] Input:', ctx.data)
     const db = initDatabase()
     const result = await db
-      .update(inboxItems)
+      .update(inbox)
       .set({ status: 'done', updatedAt: new Date() })
-      .where(eq(inboxItems.id, ctx.data.id))
+      .where(eq(inbox.id, ctx.data.id))
       .returning()
 
     saveDatabase()
@@ -168,4 +162,4 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
     return { success: true, data: result[0] }
   })
 
-export type { InboxItem }
+export type { InboxEntry }

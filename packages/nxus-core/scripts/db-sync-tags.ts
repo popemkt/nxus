@@ -1,5 +1,5 @@
 import { initDatabase, getDatabase, saveDatabase } from '../src/db/client'
-import { apps, tags, appTags } from '../src/db/schema'
+import { items, tags, itemTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
 
 /**
@@ -32,7 +32,7 @@ async function sync() {
   }
 
   // 3. Get all apps
-  const allApps = await db.select().from(apps).all()
+  const allApps = await db.select().from(items).all()
   console.log(`Found ${allApps.length} apps in database`)
 
   let junctionCount = 0
@@ -88,7 +88,7 @@ async function sync() {
 
       // Link in junction table
       try {
-        await db.insert(appTags).values({
+        await db.insert(itemTags).values({
           appId: app.id,
           tagId: tagId,
         })

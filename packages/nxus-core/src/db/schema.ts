@@ -10,7 +10,7 @@ import type {
 /**
  * Inbox items - backlog of tools/apps to add later via add-item workflow
  */
-export const inboxItems = sqliteTable('inbox_items', {
+export const inbox = sqliteTable('inbox', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   notes: text('notes'),
@@ -25,8 +25,8 @@ export const inboxItems = sqliteTable('inbox_items', {
     .notNull(),
 })
 
-export type InboxItem = typeof inboxItems.$inferSelect
-export type NewInboxItem = typeof inboxItems.$inferInsert
+export type InboxEntry = typeof inbox.$inferSelect
+export type NewInboxEntry = typeof inbox.$inferInsert
 
 /**
  * Tags - hierarchical tag tree for organizing items
@@ -54,8 +54,8 @@ export type NewTag = typeof tags.$inferInsert
  * App Tags - junction table linking apps to tags
  * Proper relational design with foreign keys for referential integrity
  */
-export const appTags = sqliteTable(
-  'app_tags',
+export const itemTags = sqliteTable(
+  'item_tags',
   {
     appId: text('app_id').notNull(),
     tagId: integer('tag_id').notNull(),
@@ -63,8 +63,8 @@ export const appTags = sqliteTable(
   (table) => [primaryKey({ columns: [table.appId, table.tagId] })],
 )
 
-export type AppTag = typeof appTags.$inferSelect
-export type NewAppTag = typeof appTags.$inferInsert
+export type ItemTag = typeof itemTags.$inferSelect
+export type NewItemTag = typeof itemTags.$inferInsert
 
 // ============================================================================
 // Apps - Master data for all registered apps/tools
@@ -79,7 +79,7 @@ export type AppType = 'html' | 'typescript' | 'remote-repo' | 'tool'
  * Apps - master registry of all apps and tools
  * Complex nested fields (commands, docs, metadata) stored as JSON text
  */
-export const apps = sqliteTable('apps', {
+export const items = sqliteTable('items', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description').notNull(),
@@ -108,8 +108,8 @@ export const apps = sqliteTable('apps', {
     .notNull(),
 })
 
-export type App = typeof apps.$inferSelect
-export type NewApp = typeof apps.$inferInsert
+export type Item = typeof items.$inferSelect
+export type NewItem = typeof items.$inferInsert
 
 // ============================================================================
 // Commands - Extracted from apps for better querying
@@ -135,7 +135,7 @@ export type CommandMode =
 /**
  * Commands - individual commands extracted from apps for querying
  */
-export const commands = sqliteTable('commands', {
+export const itemCommands = sqliteTable('item_commands', {
   id: text('id').primaryKey(), // Format: "{appId}:{commandId}"
   appId: text('app_id').notNull(),
   commandId: text('command_id').notNull(), // Local ID within app
@@ -167,8 +167,8 @@ export const commands = sqliteTable('commands', {
     .notNull(),
 })
 
-export type Command = typeof commands.$inferSelect
-export type NewCommand = typeof commands.$inferInsert
+export type ItemCommand = typeof itemCommands.$inferSelect
+export type NewItemCommand = typeof itemCommands.$inferInsert
 
 // ============================================================================
 // Tag Configurations - Schema definitions for configurable tags
@@ -179,7 +179,7 @@ export type NewCommand = typeof commands.$inferInsert
  * When an app has a "configurable" tag (e.g., ai-provider), it needs to
  * provide values matching this schema.
  */
-export const tagConfigs = sqliteTable('tag_configs', {
+export const tagSchemas = sqliteTable('tag_schemas', {
   tagId: integer('tag_id').primaryKey(), // References tags.id
   schema: json<Record<string, unknown>>()('schema').notNull(),
   description: text('description'),
@@ -191,14 +191,14 @@ export const tagConfigs = sqliteTable('tag_configs', {
     .notNull(),
 })
 
-export type TagConfig = typeof tagConfigs.$inferSelect
-export type NewTagConfig = typeof tagConfigs.$inferInsert
+export type TagSchema = typeof tagSchemas.$inferSelect
+export type NewTagSchema = typeof tagSchemas.$inferInsert
 
 /**
  * App tag values - per-app configuration values for configurable tags
  * Stores the actual values an app provides for a configurable tag.
  */
-export const appTagValues = sqliteTable('app_tag_values', {
+export const itemTagConfigs = sqliteTable('item_tag_configs', {
   appId: text('app_id').notNull(),
   tagId: integer('tag_id').notNull(), // References tags.id
   configValues: json<Record<string, unknown>>()('config_values').notNull(),
@@ -210,5 +210,5 @@ export const appTagValues = sqliteTable('app_tag_values', {
     .notNull(),
 })
 
-export type AppTagValue = typeof appTagValues.$inferSelect
-export type NewAppTagValue = typeof appTagValues.$inferInsert
+export type ItemTagConfig = typeof itemTagConfigs.$inferSelect
+export type NewItemTagConfig = typeof itemTagConfigs.$inferInsert

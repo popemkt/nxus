@@ -8,7 +8,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, getDatabase, saveDatabase } from '@/db/client'
-import { apps, appTags } from '@/db/schema'
+import { items, itemTags } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import type { AppMetadata, TagRef } from '@/types/app'
 
@@ -42,8 +42,8 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
     // 1. Get current app
     const appRecord = db
       .select()
-      .from(apps)
-      .where(eq(apps.id, ctx.data.appId))
+      .from(items)
+      .where(eq(items.id, ctx.data.appId))
       .get()
 
     if (!appRecord) {
@@ -57,13 +57,13 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
 
     // 3. Update junction table (this is now the ONLY source of truth for tags)
     // Delete existing links
-    await db.delete(appTags).where(eq(appTags.appId, ctx.data.appId)).run()
+    await db.delete(itemTags).where(eq(itemTags.appId, ctx.data.appId)).run()
 
     // Insert new links
     if (tagIds.length > 0) {
       for (const tagId of tagIds) {
         await db
-          .insert(appTags)
+          .insert(itemTags)
           .values({
             appId: ctx.data.appId,
             tagId: tagId,
@@ -73,11 +73,11 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
     }
 
     // 4. Update updatedAt in apps table (but NOT metadata.tags - that's deprecated)
-    db.update(apps)
+    db.update(items)
       .set({
         updatedAt: new Date(),
       })
-      .where(eq(apps.id, ctx.data.appId))
+      .where(eq(items.id, ctx.data.appId))
       .run()
 
     saveDatabase()
@@ -104,8 +104,8 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
 
     const appRecord = db
       .select()
-      .from(apps)
-      .where(eq(apps.id, ctx.data.appId))
+      .from(items)
+      .where(eq(items.id, ctx.data.appId))
       .get()
 
     if (!appRecord) {
@@ -127,12 +127,12 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
       updatedAt: new Date().toISOString(),
     }
 
-    db.update(apps)
+    db.update(items)
       .set({
         metadata: JSON.stringify(updatedMetadata),
         updatedAt: new Date(),
       })
-      .where(eq(apps.id, ctx.data.appId))
+      .where(eq(items.id, ctx.data.appId))
       .run()
 
     saveDatabase()

@@ -8,7 +8,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, getDatabase } from '../../db/client'
-import { apps, commands, appTags, tags } from '../../db/schema'
+import { items, itemCommands, itemTags, tags } from '../../db/schema'
 import { eq, isNull, and } from 'drizzle-orm'
 import type { App, AppCommand, AppMetadata, TagRef } from '../../types/app'
 
@@ -23,7 +23,7 @@ import type { App, AppCommand, AppMetadata, TagRef } from '../../types/app'
  * @param tagsFromJunction - Tags queried from app_tags junction table (single source of truth)
  */
 function parseAppRecord(
-  record: typeof apps.$inferSelect,
+  record: typeof items.$inferSelect,
   tagsFromJunction: TagRef[] = [],
 ): App {
   // Ensure metadata has proper defaults - this is the type-safe boundary
@@ -64,7 +64,9 @@ function parseAppRecord(
  * Map command record to AppCommand type
  * JSON fields are now auto-parsed by the schema's json() column type
  */
-function parseCommandRecord(record: typeof commands.$inferSelect): AppCommand {
+function parseCommandRecord(
+  record: typeof itemCommands.$inferSelect,
+): AppCommand {
   return {
     id: record.commandId, // Use local command ID, not global
     name: record.name,
@@ -93,13 +95,13 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
     const db = getDatabase()
 
     // Get all apps
-    const appRecords = db.select().from(apps).all()
+    const appRecords = db.select().from(items).all()
 
     // Get all active commands (not soft-deleted) grouped by app
     const commandRecords = db
       .select()
-      .from(commands)
-      .where(isNull(commands.deletedAt))
+      .from(itemCommands)
+      .where(isNull(itemCommands.deletedAt))
       .all()
     const commandsByApp = new Map<string, AppCommand[]>()
 
@@ -112,12 +114,12 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
     // Query tags from junction table - this is now the single source of truth
     const appTagRecords = db
       .select({
-        appId: appTags.appId,
+        appId: itemTags.appId,
         tagId: tags.id,
         tagName: tags.name,
       })
-      .from(appTags)
-      .innerJoin(tags, eq(appTags.tagId, tags.id))
+      .from(itemTags)
+      .innerJoin(tags, eq(itemTags.tagId, tags.id))
       .all()
 
     // Group tags by appId
@@ -156,7 +158,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
     const db = getDatabase()
 
     // Get app
-    const appRecord = db.select().from(apps).where(eq(apps.id, id)).get()
+    const appRecord = db.select().from(items).where(eq(items.id, id)).get()
 
     if (!appRecord) {
       return { success: false as const, error: `App ${id} not found` }
@@ -165,16 +167,16 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
     // Get active commands for this app (not soft-deleted)
     const commandRecords = db
       .select()
-      .from(commands)
-      .where(and(eq(commands.appId, id), isNull(commands.deletedAt)))
+      .from(itemCommands)
+      .where(and(eq(itemCommands.appId, id), isNull(itemCommands.deletedAt)))
       .all()
 
     // Query tags from junction table
     const appTagRecords = db
       .select({ tagId: tags.id, tagName: tags.name })
-      .from(appTags)
-      .innerJoin(tags, eq(appTags.tagId, tags.id))
-      .where(eq(appTags.appId, id))
+      .from(itemTags)
+      .innerJoin(tags, eq(itemTags.tagId, tags.id))
+      .where(eq(itemTags.appId, id))
       .all()
 
     const tagRefs = appTagRecords.map((r) => ({ id: r.tagId, name: r.tagName }))
@@ -193,7 +195,7 @@ export const getCategoriesServerFn = createServerFn({ method: 'GET' }).handler(
     initDatabase()
     const db = getDatabase()
 
-    const appRecords = db.select().from(apps).all()
+    const appRecords = db.select().from(items).all()
 
     const categories = new Set<string>()
     for (const record of appRecords) {
@@ -214,7 +216,7 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
     initDatabase()
     const db = getDatabase()
 
-    const appRecords = db.select().from(apps).all()
+    const appRecords = db.select().from(items).all()
 
     const tags = new Set<string>()
     for (const record of appRecords) {

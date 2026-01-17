@@ -12,7 +12,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
 import { resolve, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
-import { apps, commands, tags, inboxItems, appTags } from '../src/db/schema'
+import { items, itemCommands, tags, inbox, itemTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
 import { AppSchema, type TagRef } from '../src/types/app'
 
@@ -133,25 +133,25 @@ async function seed() {
     // Upsert app
     const existingApp = db
       .select()
-      .from(apps)
-      .where(eq(apps.id, appRecord.id))
+      .from(items)
+      .where(eq(items.id, appRecord.id))
       .get()
 
     if (existingApp) {
-      db.update(apps)
+      db.update(items)
         .set({ ...appRecord, updatedAt: new Date() })
-        .where(eq(apps.id, appRecord.id))
+        .where(eq(items.id, appRecord.id))
         .run()
     } else {
-      db.insert(apps).values(appRecord).run()
+      db.insert(items).values(appRecord).run()
     }
     appsCount++
 
     // Upsert app_tags junction table - delete existing and insert new
     // This ensures tags from manifest.metadata.tags are synced to junction table
-    db.delete(appTags).where(eq(appTags.appId, appRecord.id)).run()
+    db.delete(itemTags).where(eq(itemTags.appId, appRecord.id)).run()
     for (const tag of manifestTags) {
-      db.insert(appTags).values({ appId: appRecord.id, tagId: tag.id }).run()
+      db.insert(itemTags).values({ appId: appRecord.id, tagId: tag.id }).run()
     }
 
     // Upsert commands - track which command IDs are in the manifest
@@ -186,18 +186,18 @@ async function seed() {
 
       const existingCmd = db
         .select()
-        .from(commands)
-        .where(eq(commands.id, commandId))
+        .from(itemCommands)
+        .where(eq(itemCommands.id, commandId))
         .get()
 
       if (existingCmd) {
         // Restore if soft-deleted, and update
-        db.update(commands)
+        db.update(itemCommands)
           .set({ ...commandRecord, deletedAt: null, updatedAt: new Date() })
-          .where(eq(commands.id, commandId))
+          .where(eq(itemCommands.id, commandId))
           .run()
       } else {
-        db.insert(commands).values(commandRecord).run()
+        db.insert(itemCommands).values(commandRecord).run()
       }
       commandsCount++
     }
@@ -205,15 +205,15 @@ async function seed() {
     // Soft delete commands that exist in DB but not in manifest
     const dbCommands = db
       .select()
-      .from(commands)
-      .where(eq(commands.appId, validatedManifest.id))
+      .from(itemCommands)
+      .where(eq(itemCommands.appId, validatedManifest.id))
       .all()
 
     for (const dbCmd of dbCommands) {
       if (!manifestCommandIds.has(dbCmd.id) && !dbCmd.deletedAt) {
-        db.update(commands)
+        db.update(itemCommands)
           .set({ deletedAt: new Date(), updatedAt: new Date() })
-          .where(eq(commands.id, dbCmd.id))
+          .where(eq(itemCommands.id, dbCmd.id))
           .run()
         console.log(`    Soft-deleted orphaned command: ${dbCmd.id}`)
       }
@@ -277,20 +277,20 @@ async function seed() {
       if (item.id) {
         const existing = db
           .select()
-          .from(inboxItems)
-          .where(eq(inboxItems.id, item.id as number))
+          .from(inbox)
+          .where(eq(inbox.id, item.id as number))
           .get()
 
         if (existing) {
           // Preserve timestamps from JSON - don't overwrite with current time
           // updatedAt should only change via UI edits, not sync
-          db.update(inboxItems)
+          db.update(inbox)
             .set(itemRecord)
-            .where(eq(inboxItems.id, item.id as number))
+            .where(eq(inbox.id, item.id as number))
             .run()
         } else {
-          db.insert(inboxItems)
-            .values(itemRecord as typeof inboxItems.$inferInsert)
+          db.insert(inbox)
+            .values(itemRecord as typeof inbox.$inferInsert)
             .run()
         }
         inboxCount++

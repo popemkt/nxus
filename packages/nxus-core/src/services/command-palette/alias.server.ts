@@ -5,7 +5,7 @@ import {
   initEphemeralDatabase,
   saveEphemeralDatabase,
 } from '@/db/client'
-import { commandAliases } from '@/db/ephemeral-schema'
+import { aliases } from '@/db/ephemeral-schema'
 
 /**
  * Get all aliases as a map of alias → commandId
@@ -14,7 +14,7 @@ export const getAliasesServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     initEphemeralDatabase()
     const db = getEphemeralDatabase()
-    const rows = await db.select().from(commandAliases)
+    const rows = await db.select().from(aliases)
 
     const aliasMap: Record<string, string> = {}
     for (const row of rows) {
@@ -36,18 +36,18 @@ export const setAliasServerFn = createServerFn({ method: 'POST' })
     // Check if this command already has an alias
     const existing = await db
       .select()
-      .from(commandAliases)
-      .where(eq(commandAliases.commandId, commandId))
+      .from(aliases)
+      .where(eq(aliases.commandId, commandId))
 
     if (existing.length > 0) {
       // Update existing
       await db
-        .update(commandAliases)
+        .update(aliases)
         .set({ alias, createdAt: new Date() })
-        .where(eq(commandAliases.commandId, commandId))
+        .where(eq(aliases.commandId, commandId))
     } else {
       // Insert new
-      await db.insert(commandAliases).values({
+      await db.insert(aliases).values({
         id: crypto.randomUUID(),
         commandId,
         alias,
@@ -67,9 +67,7 @@ export const removeAliasServerFn = createServerFn({ method: 'POST' })
   .handler(async ({ data: { commandId } }) => {
     initEphemeralDatabase()
     const db = getEphemeralDatabase()
-    await db
-      .delete(commandAliases)
-      .where(eq(commandAliases.commandId, commandId))
+    await db.delete(aliases).where(eq(aliases.commandId, commandId))
     saveEphemeralDatabase()
     return { success: true }
   })

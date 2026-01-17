@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" version="29.3.2">
+  <diagram name="Page-1" id="_9WuSA7sj9l9ROBAU9qe">
+    <mxGraphModel dx="1080" dy="1034" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-2" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="CLI agents" vertex="1">
+          <mxGeometry height="200" width="380" x="500" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-3" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="OpenCode" vertex="1">
+          <mxGeometry height="60" width="100" x="5" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-6" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="Droid" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-7" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="Goose" vertex="1">
+          <mxGeometry height="60" width="100" x="250" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-8" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="Crush" vertex="1">
+          <mxGeometry height="60" width="100" x="5" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-9" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="Claude code" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-5" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fillColor=#fff2cc;strokeColor=#d6b656;" value="This could be dynamically visualized by graphs and tags using nxus" vertex="1">
+          <mxGeometry height="100" width="220" x="390" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-11" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Concepts" vertex="1">
+          <mxGeometry height="200" width="380" x="50" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-12" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Plugins" vertex="1">
+          <mxGeometry height="60" width="100" x="5" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-13" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Skills" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-14" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Specs" vertex="1">
+          <mxGeometry height="60" width="100" x="250" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-15" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Crush" vertex="1">
+          <mxGeometry height="60" width="100" x="5" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-17" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Plugins" vertex="1">
+          <mxGeometry height="180" width="230" x="50" y="600" as="geometry">
+            <mxRectangle height="30" width="80" x="50" y="600" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-24" parent="sqoQ5OMcbHbjpH_v5Ne7-17" style="swimlane;whiteSpace=wrap;html=1;" value="Functional" vertex="1">
+          <mxGeometry height="100" width="200" x="5" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-18" parent="sqoQ5OMcbHbjpH_v5Ne7-24" style="rounded=0;whiteSpace=wrap;html=1;" value="Ralph loop" vertex="1">
+          <mxGeometry height="60" width="100" x="10" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-25" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Skills" vertex="1">
+          <mxGeometry height="180" width="230" x="320" y="600" as="geometry">
+            <mxRectangle height="30" width="80" x="50" y="600" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-26" parent="sqoQ5OMcbHbjpH_v5Ne7-25" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" value="Meta" vertex="1">
+          <mxGeometry height="100" width="200" x="5" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-27" parent="sqoQ5OMcbHbjpH_v5Ne7-26" style="rounded=0;whiteSpace=wrap;html=1;" value="Auto learning" vertex="1">
+          <mxGeometry height="60" width="100" x="10" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-28" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Spec tools" vertex="1">
+          <mxGeometry height="180" width="360" x="610" y="600" as="geometry">
+            <mxRectangle height="30" width="80" x="50" y="600" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-31" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="BMAD" vertex="1">
+          <mxGeometry height="60" width="100" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-32" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="SpecKit" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-33" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="OpenSpec" vertex="1">
+          <mxGeometry height="60" width="100" x="240" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-34" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="PRDgen ???" vertex="1">
+          <mxGeometry height="60" width="100" x="20" y="110" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

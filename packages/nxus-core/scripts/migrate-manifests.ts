@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'fs'
 import { resolve, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
-import { apps, commands } from '../src/db/schema'
+import { items, itemCommands } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
 import { AppMetadataSchema, AppSchema } from '../src/types/app'
 
@@ -102,18 +102,18 @@ async function migrate() {
       // Upsert app
       const existingApp = db
         .select()
-        .from(apps)
-        .where(eq(apps.id, appRecord.id))
+        .from(items)
+        .where(eq(items.id, appRecord.id))
         .get()
 
       if (existingApp) {
-        db.update(apps)
+        db.update(items)
           .set({ ...appRecord, updatedAt: new Date() })
-          .where(eq(apps.id, appRecord.id))
+          .where(eq(items.id, appRecord.id))
           .run()
         console.log(`  ↻ Updated app: ${appRecord.id}`)
       } else {
-        db.insert(apps).values(appRecord).run()
+        db.insert(items).values(appRecord).run()
         console.log(`  + Inserted app: ${appRecord.id}`)
       }
       appsCount++
@@ -143,17 +143,17 @@ async function migrate() {
         // Upsert command
         const existingCmd = db
           .select()
-          .from(commands)
-          .where(eq(commands.id, commandId))
+          .from(itemCommands)
+          .where(eq(itemCommands.id, commandId))
           .get()
 
         if (existingCmd) {
-          db.update(commands)
+          db.update(itemCommands)
             .set({ ...commandRecord, updatedAt: new Date() })
-            .where(eq(commands.id, commandId))
+            .where(eq(itemCommands.id, commandId))
             .run()
         } else {
-          db.insert(commands).values(commandRecord).run()
+          db.insert(itemCommands).values(commandRecord).run()
         }
         commandsCount++
       }

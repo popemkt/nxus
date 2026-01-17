@@ -1,132 +1,98 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice">
   <defs>
-    <!-- Background Gradient -->
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="50%" stop-color="#1e1b4b"/>
-      <stop offset="100%" stop-color="#312e81"/>
-    </linearGradient>
-
-    <!-- Glow Filters -->
-    <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
-      <feColorMatrix in="blur" type="matrix" values="
-        1 0 0 0 0
-        0 1 0 0 0
-        0 0 1 0 0
-        0 0 0 18 -7" result="goo" />
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    
-    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
-        <feMerge>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-    </filter>
-
-    <!-- Gradient for animated lines -->
-    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#22d3ee" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
-    </linearGradient>
+    <!-- Clip paths for speed lines -->
+    <clipPath id="center-burst">
+      <circle cx="400" cy="225" r="300" />
+    </clipPath>
   </defs>
 
-  <!-- Background -->
-  <rect width="100%" height="100%" fill="url(#bgGradient)"/>
+  <!-- 1. Background: Deep Solid Purple -->
+  <rect width="800" height="450" fill="#1e1b4b" />
 
-  <!-- Ambient Floating Particles -->
-  <g opacity="0.3">
-    <circle cx="100" cy="100" r="2" fill="#fff">
-        <animate attributeName="cy" values="100;80;100" dur="4s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="4s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="700" cy="350" r="3" fill="#6366f1">
-        <animate attributeName="cy" values="350;370;350" dur="6s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.2;0.6;0.2" dur="6s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="50" cy="400" r="1.5" fill="#22d3ee">
-        <animate attributeName="cx" values="50;70;50" dur="8s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0;1;0" dur="8s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="750" cy="50" r="2" fill="#d946ef">
-        <animate attributeName="cy" values="50;70;50" dur="5s" repeatCount="indefinite"/>
-    </circle>
+  <!-- 2. Action/Speed Lines (Manga style background) -->
+  <!-- Radiating from center, solid colors for cel-shaded look -->
+  <g transform="translate(400, 225)">
+    <!-- Darker blue rays -->
+    <path d="M0 0 L-400 -250 L-300 -250 Z" fill="#312e81" opacity="0.5" />
+    <path d="M0 0 L400 -250 L300 -250 Z" fill="#312e81" opacity="0.5" />
+    <path d="M0 0 L-400 250 L-300 250 Z" fill="#312e81" opacity="0.5" />
+    <path d="M0 0 L400 250 L300 250 Z" fill="#312e81" opacity="0.5" />
+    
+    <!-- Lighter energetic rays (Cyan/Pink) -->
+    <path d="M0 0 L-100 -225 L-50 -225 Z" fill="#06b6d4" opacity="0.2">
+      <animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="0.2s" repeatCount="indefinite" />
+    </path>
+    <path d="M0 0 L100 225 L150 225 Z" fill="#ec4899" opacity="0.2">
+      <animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="0.3s" repeatCount="indefinite" />
+    </path>
+    
+    <!-- Rotating subtle background burst -->
+    <g opacity="0.1">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite" />
+      <circle r="200" stroke="#fff" stroke-width="2" stroke-dasharray="10 20" fill="none" />
+      <rect x="-150" y="-150" width="300" height="300" stroke="#fff" stroke-width="2" fill="none" transform="rotate(45)" />
+    </g>
   </g>
 
-  <!-- Background Grid Lines (Perspective) -->
-  <g stroke="#6366f1" stroke-width="1" opacity="0.1">
-      <path d="M0 450 L400 225 M800 450 L400 225 M0 0 L400 225 M800 0 L400 225" />
-      <circle cx="400" cy="225" r="150" fill="none" opacity="0.5"/>
-      <circle cx="400" cy="225" r="300" fill="none" opacity="0.3"/>
-  </g>
-
-  <!-- Main Composition Center -->
+  <!-- 3. Central "Action" Elements -->
   <g transform="translate(400, 225)">
     
-    <!-- Rotating Outer Ring -->
-    <g filter="url(#bloom)">
-        <circle r="110" fill="none" stroke="#4f46e5" stroke-width="2" stroke-dasharray="20 40" opacity="0.6">
-            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite" />
-        </circle>
+    <!-- "Impact" Circle (Behind) -->
+    <circle r="130" fill="#4338ca" /> <!-- Indigo circle -->
+    <circle r="120" fill="#1e1b4b" /> <!-- Inner dark circle to create ring -->
+    
+    <!-- Spinning Tech Ring (Cel-shaded style: solid blocks) -->
+    <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="8s" repeatCount="indefinite" />
+        <path d="M-130 0 A 130 130 0 0 1 -91 -91" fill="none" stroke="#22d3ee" stroke-width="8" stroke-linecap="square" />
+        <path d="M130 0 A 130 130 0 0 1 91 91" fill="none" stroke="#f472b6" stroke-width="8" stroke-linecap="square" />
     </g>
 
-    <!-- Counter-Rotating Tech Ring -->
-    <g filter="url(#bloom)">
-        <path d="M-90 0 A 90 90 0 0 1 90 0" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round">
-            <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="12s" repeatCount="indefinite" />
-            <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
-        </path>
-        <path d="M-90 0 A 90 90 0 0 0 90 0" fill="none" stroke="#818cf8" stroke-width="3" stroke-linecap="round" stroke-dasharray="10 20">
-             <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="12s" repeatCount="indefinite" />
-        </path>
-    </g>
+    <!-- Inner Static Hexagon (Tech base) -->
+    <path d="M-70 -40 L0 -80 L70 -40 L70 40 L0 80 L-70 40 Z" fill="#312e81" stroke="#818cf8" stroke-width="4" />
 
-    <!-- Central Hexagon Container -->
-    <g filter="url(#neonGlow)">
-        <path d="M-50 -29 L0 -58 L50 -29 L50 29 L0 58 L-50 29 Z" fill="rgba(15, 23, 42, 0.8)" stroke="#d946ef" stroke-width="4">
-            <animate attributeName="stroke" values="#d946ef;#6366f1;#d946ef" dur="8s" repeatCount="indefinite"/>
-            <animate attributeName="stroke-width" values="4;6;4" dur="2s" repeatCount="indefinite"/>
-        </path>
+    <!-- 4. The ICON: Stylized Prompt ">_" -->
+    <!-- Shadow / Glitch offset (Pink) -->
+    <g transform="translate(5, 5)">
+        <path d="M-40 -30 L20 0 L-40 30" fill="none" stroke="#ec4899" stroke-width="12" stroke-linejoin="round" opacity="0.5" />
+        <rect x="30" y="15" width="25" height="12" fill="#ec4899" opacity="0.5" />
     </g>
+    
+    <!-- Main Icon (Cyan / White) -->
+    <path d="M-40 -30 L20 0 L-40 30" fill="none" stroke="#22d3ee" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
+         <!-- "Power up" animation on stroke width or color -->
+         <animate attributeName="stroke" values="#22d3ee;#ffffff;#22d3ee" dur="2s" repeatCount="indefinite" />
+    </path>
+    
+    <!-- The Cursor (Blinking Block) -->
+    <rect x="30" y="15" width="25" height="12" fill="#fff">
+        <animate attributeName="opacity" values="1;0;1" dur="0.8s" repeatCount="indefinite" calcMode="discrete" />
+    </rect>
 
-    <!-- Iconic Script Symbol -->
-    <g filter="url(#neonGlow)">
-        <!-- Greater Than Symbol -->
-        <path d="M-20 -15 L10 0 L-20 15" fill="none" stroke="#e879f9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-            <animate attributeName="stroke" values="#e879f9;#22d3ee;#e879f9" dur="5s" repeatCount="indefinite"/>
+    <!-- 5. "Pop" Particles / Debris -->
+    <!-- Triangle shards flying out -->
+    <g>
+        <path d="M80 -60 L90 -80 L100 -60 Z" fill="#facc15">
+             <animateTransform attributeName="transform" type="translate" values="0,0; 20,-20; 0,0" dur="2s" repeatCount="indefinite" />
         </path>
-        <!-- Cursor Block -->
-        <rect x="20" y="10" width="15" height="6" fill="#22d3ee" rx="1">
-            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.4;0.6;1" dur="1s" repeatCount="indefinite"/>
+        <rect x="-100" y="50" width="10" height="10" fill="#ec4899" transform="rotate(15)">
+             <animateTransform attributeName="transform" type="translate" values="0,0; -20,20; 0,0" dur="1.5s" repeatCount="indefinite" />
         </rect>
+        <circle cx="60" cy="80" r="5" fill="#22d3ee">
+             <animate attributeName="opacity" values="1;0.2;1" dur="1s" repeatCount="indefinite" />
+        </circle>
+        
+        <!-- Speed lines overlay on top of icon for "Fast" feel -->
+        <path d="M-150 -10 L-60 -2" stroke="#fff" stroke-width="2" opacity="0.6">
+            <animate attributeName="d" values="M-150 -10 L-60 -2; M-60 -2 L0 0" dur="0.4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;1;0" dur="0.4s" repeatCount="indefinite" />
+        </path>
     </g>
 
-    <!-- Energy Pulse Rings -->
-    <circle r="60" fill="none" stroke="#22d3ee" stroke-width="2" opacity="0">
-        <animate attributeName="r" values="50;100" dur="2s" repeatCount="indefinite" begin="0s"/>
-        <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" begin="0s"/>
-        <animate attributeName="stroke-width" values="2;0" dur="2s" repeatCount="indefinite" begin="0s"/>
-    </circle>
   </g>
-
-  <!-- Horizontal Data Stream Lines -->
-  <g>
-    <rect x="-100" y="100" width="200" height="2" fill="url(#lineGradient)" opacity="0.6">
-        <animate attributeName="x" from="-200" to="900" dur="3s" repeatCount="indefinite" />
-    </rect>
-    <rect x="-100" y="300" width="150" height="1" fill="url(#lineGradient)" opacity="0.4">
-        <animate attributeName="x" from="-150" to="900" dur="4.5s" repeatCount="indefinite" begin="1s"/>
-    </rect>
-     <rect x="-100" y="225" width="100" height="1" fill="url(#lineGradient)" opacity="0.3">
-        <animate attributeName="x" from="-100" to="900" dur="2s" repeatCount="indefinite" begin="0.5s"/>
-    </rect>
-  </g>
+  
+  <!-- Vignette / Border (Solid dark corners for drama) -->
+  <path d="M0 0 L200 0 L0 200 Z" fill="#0f172a" opacity="0.4" />
+  <path d="M800 450 L600 450 L800 250 Z" fill="#0f172a" opacity="0.4" />
 
 </svg>

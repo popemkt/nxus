@@ -8,7 +8,7 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
  * Installations - machine-specific app installation records
  * Reset on fresh Nxus install, tracks where apps are installed locally
  */
-export const installations = sqliteTable('installations', {
+export const localInstallations = sqliteTable('local_installations', {
   id: text('id').primaryKey(), // UUID
   appId: text('app_id').notNull(), // References apps.id (cross-db)
   installPath: text('install_path').notNull(),
@@ -21,8 +21,8 @@ export const installations = sqliteTable('installations', {
     .notNull(),
 })
 
-export type Installation = typeof installations.$inferSelect
-export type NewInstallation = typeof installations.$inferInsert
+export type LocalInstallation = typeof localInstallations.$inferSelect
+export type NewLocalInstallation = typeof localInstallations.$inferInsert
 
 /**
  * Tool health status
@@ -33,7 +33,7 @@ export type ToolHealthStatus = 'healthy' | 'unhealthy' | 'unknown'
  * Tool health - cached health check results with TTL
  * Ephemeral because it's machine-specific and can be regenerated
  */
-export const toolHealth = sqliteTable('tool_health', {
+export const healthCache = sqliteTable('health_cache', {
   toolId: text('tool_id').primaryKey(),
   status: text('status').$type<ToolHealthStatus>().notNull(),
   version: text('version'),
@@ -44,14 +44,14 @@ export const toolHealth = sqliteTable('tool_health', {
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(), // TTL
 })
 
-export type ToolHealth = typeof toolHealth.$inferSelect
-export type NewToolHealth = typeof toolHealth.$inferInsert
+export type HealthCacheEntry = typeof healthCache.$inferSelect
+export type NewHealthCacheEntry = typeof healthCache.$inferInsert
 
 /**
  * Command aliases - user-configured shortcuts for commands
  * Ephemeral because it's user preference, machine-specific
  */
-export const commandAliases = sqliteTable('command_aliases', {
+export const aliases = sqliteTable('aliases', {
   id: text('id').primaryKey(), // UUID
   commandId: text('command_id').notNull(), // e.g. "go-to-app" or "myapp:run"
   alias: text('alias').notNull().unique(), // e.g. "g", "ai"
@@ -60,5 +60,5 @@ export const commandAliases = sqliteTable('command_aliases', {
     .notNull(),
 })
 
-export type CommandAlias = typeof commandAliases.$inferSelect
-export type NewCommandAlias = typeof commandAliases.$inferInsert
+export type Alias = typeof aliases.$inferSelect
+export type NewAlias = typeof aliases.$inferInsert

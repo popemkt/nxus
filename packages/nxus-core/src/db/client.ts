@@ -50,7 +50,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   // Create tables if they don't exist
   masterDb.exec(`
-    CREATE TABLE IF NOT EXISTS inbox_items (
+    CREATE TABLE IF NOT EXISTS inbox (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       notes TEXT,
@@ -74,7 +74,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   `)
 
   masterDb.exec(`
-    CREATE TABLE IF NOT EXISTS app_tags (
+    CREATE TABLE IF NOT EXISTS item_tags (
       app_id TEXT NOT NULL,
       tag_id INTEGER NOT NULL,
       PRIMARY KEY (app_id, tag_id)
@@ -82,7 +82,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   `)
 
   masterDb.exec(`
-    CREATE TABLE IF NOT EXISTS apps (
+    CREATE TABLE IF NOT EXISTS items (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT NOT NULL,
@@ -104,7 +104,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   `)
 
   masterDb.exec(`
-    CREATE TABLE IF NOT EXISTS commands (
+    CREATE TABLE IF NOT EXISTS item_commands (
       id TEXT PRIMARY KEY,
       app_id TEXT NOT NULL,
       command_id TEXT NOT NULL,
@@ -130,7 +130,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   // Tag configuration tables
   masterDb.exec(`
-    CREATE TABLE IF NOT EXISTS tag_configs (
+    CREATE TABLE IF NOT EXISTS tag_schemas (
       tag_id INTEGER PRIMARY KEY,
       schema TEXT NOT NULL,
       description TEXT,
@@ -140,7 +140,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   `)
 
   masterDb.exec(`
-    CREATE TABLE IF NOT EXISTS app_tag_values (
+    CREATE TABLE IF NOT EXISTS item_tag_configs (
       app_id TEXT NOT NULL,
       tag_id INTEGER NOT NULL,
       config_values TEXT NOT NULL,
@@ -200,7 +200,7 @@ export function initEphemeralDatabase(): BetterSQLite3Database<
 
   // Create tables if they don't exist
   ephemeralDb.exec(`
-    CREATE TABLE IF NOT EXISTS installations (
+    CREATE TABLE IF NOT EXISTS local_installations (
       id TEXT PRIMARY KEY,
       app_id TEXT NOT NULL,
       install_path TEXT NOT NULL,
@@ -211,7 +211,7 @@ export function initEphemeralDatabase(): BetterSQLite3Database<
   `)
 
   ephemeralDb.exec(`
-    CREATE TABLE IF NOT EXISTS tool_health (
+    CREATE TABLE IF NOT EXISTS health_cache (
       tool_id TEXT PRIMARY KEY,
       status TEXT NOT NULL,
       version TEXT,
@@ -222,7 +222,7 @@ export function initEphemeralDatabase(): BetterSQLite3Database<
   `)
 
   ephemeralDb.exec(`
-    CREATE TABLE IF NOT EXISTS command_aliases (
+    CREATE TABLE IF NOT EXISTS aliases (
       id TEXT PRIMARY KEY,
       command_id TEXT NOT NULL,
       alias TEXT NOT NULL UNIQUE,

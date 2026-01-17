@@ -11,7 +11,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { initDatabase, saveDatabase } from '@/db/client'
-import { tagConfigs, appTagValues } from '@/db/schema'
+import { tagSchemas, itemTagConfigs } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 
 // ============================================================================
@@ -81,8 +81,8 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
 
     const config = await db
       .select()
-      .from(tagConfigs)
-      .where(eq(tagConfigs.tagId, ctx.data.tagId))
+      .from(tagSchemas)
+      .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
 
     if (!config) {
@@ -108,7 +108,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
   console.log('[getAllConfigurableTagsServerFn] Fetching all')
   const db = initDatabase()
 
-  const configs = await db.select().from(tagConfigs)
+  const configs = await db.select().from(tagSchemas)
 
   return {
     success: true as const,
@@ -139,23 +139,23 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
     // Check if exists
     const existing = await db
       .select()
-      .from(tagConfigs)
-      .where(eq(tagConfigs.tagId, ctx.data.tagId))
+      .from(tagSchemas)
+      .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
 
     if (existing) {
       // Update
       await db
-        .update(tagConfigs)
+        .update(tagSchemas)
         .set({
           schema: ctx.data.schema,
           description: ctx.data.description ?? null,
           updatedAt: now,
         })
-        .where(eq(tagConfigs.tagId, ctx.data.tagId))
+        .where(eq(tagSchemas.tagId, ctx.data.tagId))
     } else {
       // Insert
-      await db.insert(tagConfigs).values({
+      await db.insert(tagSchemas).values({
         tagId: ctx.data.tagId,
         schema: ctx.data.schema,
         description: ctx.data.description ?? null,
@@ -180,11 +180,11 @@ export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
 
     const values = await db
       .select()
-      .from(appTagValues)
+      .from(itemTagConfigs)
       .where(
         and(
-          eq(appTagValues.appId, ctx.data.appId),
-          eq(appTagValues.tagId, ctx.data.tagId),
+          eq(itemTagConfigs.appId, ctx.data.appId),
+          eq(itemTagConfigs.tagId, ctx.data.tagId),
         ),
       )
       .get()
@@ -213,8 +213,8 @@ export const getAllAppTagValuesServerFn = createServerFn({ method: 'GET' })
 
     const allValues = await db
       .select()
-      .from(appTagValues)
-      .where(eq(appTagValues.appId, ctx.data.appId))
+      .from(itemTagConfigs)
+      .where(eq(itemTagConfigs.appId, ctx.data.appId))
 
     return {
       success: true as const,
@@ -253,8 +253,8 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     // 1. Get tag schema for validation
     const tagConfig = await db
       .select()
-      .from(tagConfigs)
-      .where(eq(tagConfigs.tagId, ctx.data.tagId))
+      .from(tagSchemas)
+      .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
 
     if (!tagConfig) {
@@ -282,11 +282,11 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     const now = new Date()
     const existing = await db
       .select()
-      .from(appTagValues)
+      .from(itemTagConfigs)
       .where(
         and(
-          eq(appTagValues.appId, ctx.data.appId),
-          eq(appTagValues.tagId, ctx.data.tagId),
+          eq(itemTagConfigs.appId, ctx.data.appId),
+          eq(itemTagConfigs.tagId, ctx.data.tagId),
         ),
       )
       .get()
@@ -294,20 +294,20 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     if (existing) {
       // Update
       await db
-        .update(appTagValues)
+        .update(itemTagConfigs)
         .set({
           configValues: validationResult.data,
           updatedAt: now,
         })
         .where(
           and(
-            eq(appTagValues.appId, ctx.data.appId),
-            eq(appTagValues.tagId, ctx.data.tagId),
+            eq(itemTagConfigs.appId, ctx.data.appId),
+            eq(itemTagConfigs.tagId, ctx.data.tagId),
           ),
         )
     } else {
       // Insert
-      await db.insert(appTagValues).values({
+      await db.insert(itemTagConfigs).values({
         appId: ctx.data.appId,
         tagId: ctx.data.tagId,
         configValues: validationResult.data,
@@ -331,11 +331,11 @@ export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
     const db = initDatabase()
 
     await db
-      .delete(appTagValues)
+      .delete(itemTagConfigs)
       .where(
         and(
-          eq(appTagValues.appId, ctx.data.appId),
-          eq(appTagValues.tagId, ctx.data.tagId),
+          eq(itemTagConfigs.appId, ctx.data.appId),
+          eq(itemTagConfigs.tagId, ctx.data.tagId),
         ),
       )
 
@@ -356,8 +356,8 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
 
     const results = await db
       .select()
-      .from(appTagValues)
-      .where(eq(appTagValues.tagId, ctx.data.tagId))
+      .from(itemTagConfigs)
+      .where(eq(itemTagConfigs.tagId, ctx.data.tagId))
 
     return {
       success: true as const,

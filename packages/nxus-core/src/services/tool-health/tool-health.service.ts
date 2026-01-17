@@ -3,7 +3,7 @@ import {
   saveEphemeralDatabase,
   initEphemeralDatabase,
 } from '@/db/client'
-import { toolHealth } from '@/db/ephemeral-schema'
+import { healthCache } from '@/db/ephemeral-schema'
 import { eq } from 'drizzle-orm'
 import { exec } from 'child_process'
 import { promisify } from 'util'
@@ -68,8 +68,8 @@ export class ToolHealthService {
 
       const [cached] = await db
         .select()
-        .from(toolHealth)
-        .where(eq(toolHealth.toolId, toolId))
+        .from(healthCache)
+        .where(eq(healthCache.toolId, toolId))
 
       if (!cached) {
         return null
@@ -100,7 +100,7 @@ export class ToolHealthService {
       const expiresAt = new Date(now.getTime() + this.CACHE_TTL_MS)
 
       await db
-        .insert(toolHealth)
+        .insert(healthCache)
         .values({
           toolId,
           status: result.isInstalled ? 'healthy' : 'unhealthy',
@@ -110,7 +110,7 @@ export class ToolHealthService {
           expiresAt,
         })
         .onConflictDoUpdate({
-          target: toolHealth.toolId,
+          target: healthCache.toolId,
           set: {
             status: result.isInstalled ? 'healthy' : 'unhealthy',
             version: result.version ?? null,
@@ -158,7 +158,7 @@ export class ToolHealthService {
   async clearCache(toolId: string): Promise<void> {
     try {
       const db = getEphemeralDatabase()
-      await db.delete(toolHealth).where(eq(toolHealth.toolId, toolId))
+      await db.delete(healthCache).where(eq(healthCache.toolId, toolId))
       saveEphemeralDatabase()
       console.log('[ToolHealthService] Cleared cache for:', toolId)
     } catch (error) {
@@ -172,7 +172,7 @@ export class ToolHealthService {
   async clearAllCaches(): Promise<void> {
     try {
       const db = getEphemeralDatabase()
-      await db.delete(toolHealth)
+      await db.delete(healthCache)
       saveEphemeralDatabase()
       console.log('[ToolHealthService] Cleared all health caches')
     } catch (error) {
