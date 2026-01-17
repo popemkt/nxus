@@ -41,7 +41,12 @@
             "category": "Setup",
             "target": "app",
             "mode": "execute",
-            "command": "rm -f ~/.claude/settings.json ~/.claude.json"
+            "command": "rm -f ~/.claude/settings.json ~/.claude.json",
+            "requires": {
+                "tools": [
+                    "claude-code"
+                ]
+            }
         },
         {
             "id": "docs-glm",

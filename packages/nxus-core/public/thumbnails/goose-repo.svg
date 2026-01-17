@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+      <feOffset dx="2" dy="4" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bgGrad)" />
+  
+  <!-- Anime Speed Lines / Background Elements -->
+  <path d="M -50 400 L 400 225 L -50 50 Z" fill="#ffffff" opacity="0.05" />
+  <path d="M 850 400 L 400 225 L 850 50 Z" fill="#ffffff" opacity="0.05" />
+  <circle cx="400" cy="225" r="180" fill="#ffffff" opacity="0.1" />
+
+  <!-- Goose Character -->
+  <g transform="translate(400, 240) scale(1.4)">
+    <!-- Neck and Head -->
+    <path d="M -40,100 C -40,100 -50,0 -20,-50 C -10,-70 20,-80 50,-70 C 80,-60 90,-30 80,0 C 70,40 60,100 60,100 L -40,100 Z" fill="#f8fafc" filter="url(#shadow)"/>
+    
+    <!-- Cell Shading Shadow -->
+    <path d="M -40,100 C -45,50 -25,-40 -20,-50 L 0,-50 C -5,0 -20,60 -20,100 Z" fill="#cbd5e1" opacity="0.6" />
+
+    <!-- Beak -->
+    <path d="M 80,-30 Q 120,-25 130,-10 L 90,5 Z" fill="#f97316" />
+    <path d="M 90,5 L 130,-10 L 120,10 Z" fill="#c2410c" />
+
+    <!-- Eye (Anime Style) -->
+    <g transform="translate(40, -40)">
+        <ellipse cx="0" cy="0" rx="12" ry="14" fill="#1e293b" />
+        <circle cx="4" cy="-4" r="5" fill="white" />
+        <circle cx="-3" cy="5" r="2" fill="white" opacity="0.5" />
+    </g>
+    <!-- Eyebrow -->
+    <path d="M 25,-60 L 60,-55" stroke="#1e293b" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Cheek Blush -->
+    <ellipse cx="40" cy="-15" rx="8" ry="4" fill="#f43f5e" opacity="0.4" />
+
+    <!-- Tech/Repo Element: Headset -->
+    <rect x="-25" y="-65" width="15" height="40" rx="4" fill="#475569" transform="rotate(-10)" />
+    <circle cx="-25" cy="-35" r="18" fill="#334155" />
+    <circle cx="-25" cy="-35" r="10" fill="#06b6d4" />
+    <path d="M -25,-35 L -15,-80" stroke="#475569" stroke-width="4" fill="none" />
+  </g>
+  
+  <!-- "Repository" Icon element floating -->
+  <rect x="580" y="120" width="60" height="70" rx="5" fill="#ffffff" opacity="0.2" transform="rotate(15)" />
+  <rect x="600" y="140" width="40" height="5" rx="2" fill="#ffffff" opacity="0.4" transform="rotate(15)" />
+  <rect x="595" y="155" width="40" height="5" rx="2" fill="#ffffff" opacity="0.4" transform="rotate(15)" />
+
+</svg>

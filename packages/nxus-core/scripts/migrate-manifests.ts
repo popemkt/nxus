@@ -21,12 +21,10 @@ const __dirname = dirname(__filename)
 const appsDir = resolve(__dirname, '../src/data/apps')
 
 /**
- * Stringify JSON fields for database storage
+ * Pass raw objects to Drizzle; the custom json() type handles stringification.
  */
-function stringifyIfNeeded(value: unknown): string | null {
-  if (value === null || value === undefined) return null
-  if (typeof value === 'string') return value
-  return JSON.stringify(value)
+function toRawOrNull(value: unknown): any {
+  return value ?? null
 }
 
 async function migrate() {
@@ -87,14 +85,14 @@ async function migrate() {
         path: validatedManifest.path,
         homepage: validatedManifest.homepage || null,
         thumbnail: validatedManifest.thumbnail || null,
-        platform: stringifyIfNeeded(validatedManifest.platform),
-        docs: stringifyIfNeeded(validatedManifest.docs),
-        dependencies: stringifyIfNeeded(validatedManifest.dependencies),
-        metadata: stringifyIfNeeded(validatedManifest.metadata),
-        installConfig: stringifyIfNeeded(validatedManifest.installConfig),
+        platform: toRawOrNull(validatedManifest.platform),
+        docs: toRawOrNull(validatedManifest.docs),
+        dependencies: toRawOrNull(validatedManifest.dependencies),
+        metadata: toRawOrNull(validatedManifest.metadata),
+        installConfig: toRawOrNull(validatedManifest.installConfig),
         checkCommand: validatedManifest.checkCommand || null,
         installInstructions: validatedManifest.installInstructions || null,
-        configSchema: stringifyIfNeeded(validatedManifest.configSchema),
+        configSchema: toRawOrNull(validatedManifest.configSchema),
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -134,8 +132,8 @@ async function migrate() {
           command: cmd.command,
           scriptSource: cmd.scriptSource || null,
           cwd: cmd.cwd || null,
-          platforms: stringifyIfNeeded(cmd.platforms),
-          requires: stringifyIfNeeded(cmd.requires),
+          platforms: toRawOrNull(cmd.platforms),
+          requires: toRawOrNull(cmd.requires),
           createdAt: new Date(),
           updatedAt: new Date(),
         }

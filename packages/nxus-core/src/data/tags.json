@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-01-17T04:31:23.965Z",
-  "count": 17,
+  "exportedAt": "2026-01-17T06:11:35.625Z",
+  "count": 18,
   "tags": [
     {
       "id": 1,
@@ -115,13 +115,13 @@
     },
     {
       "id": 12,
-      "name": "ai",
+      "name": "AI",
       "parentId": null,
       "order": 4,
       "color": null,
       "icon": null,
       "createdAt": "2026-01-16T12:43:10.000Z",
-      "updatedAt": "2026-01-16T12:43:10.000Z"
+      "updatedAt": "2026-01-17T04:50:28.000Z"
     },
     {
       "id": 13,
@@ -172,6 +172,16 @@
       "icon": null,
       "createdAt": "2026-01-16T12:43:10.000Z",
       "updatedAt": "2026-01-16T12:43:10.000Z"
+    },
+    {
+      "id": 18,
+      "name": "High Autonomy Builder",
+      "parentId": 12,
+      "order": 0,
+      "color": null,
+      "icon": null,
+      "createdAt": "2026-01-17T04:51:01.000Z",
+      "updatedAt": "2026-01-17T05:48:33.000Z"
     }
   ]
 }

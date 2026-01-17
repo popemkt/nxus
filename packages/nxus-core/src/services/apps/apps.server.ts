@@ -39,6 +39,10 @@ function parseAppRecord(
     license: rawMetadata?.license,
   }
 
+  // Robust helper to ensure we always have an array for array-typed fields
+  const ensureArray = <T>(val: any): T[] | undefined =>
+    Array.isArray(val) ? (val as T[]) : undefined
+
   return {
     id: record.id,
     name: record.name,
@@ -47,9 +51,9 @@ function parseAppRecord(
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
-    platform: record.platform ?? undefined,
-    docs: Array.isArray(record.docs) ? record.docs : undefined,
-    dependencies: record.dependencies ?? undefined,
+    platform: ensureArray<string>(record.platform),
+    docs: ensureArray<DocEntry>(record.docs),
+    dependencies: ensureArray<string>(record.dependencies),
     metadata, // Now guaranteed to have proper shape
     installConfig: record.installConfig ?? undefined,
     checkCommand: record.checkCommand ?? undefined,

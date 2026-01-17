@@ -1,0 +1,23 @@
+---
+name: agents
+windows:
+  - tabs:
+      - title: Workspace
+        layout:
+          panes:
+            - cwd: '{{CWD}}'
+      - title: Agents
+        layout:
+          grid:
+            - - cwd: '{{CWD}}'
+                commands:
+                  - claude
+              - cwd: '{{CWD}}'
+                commands:
+                  - opencode
+            - - cwd: '{{CWD}}'
+                commands:
+                  - droid
+              - cwd: '{{CWD}}'
+                commands:
+                  - goose session

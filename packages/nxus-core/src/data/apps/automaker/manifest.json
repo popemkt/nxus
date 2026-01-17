@@ -93,7 +93,12 @@
         "git"
     ],
     "metadata": {
-        "tags": [],
+        "tags": [
+            {
+                "id": 18,
+                "name": "High Autonomy Builder"
+            }
+        ],
         "category": "development-tools",
         "createdAt": "2025-12-25T13:43:00.000Z",
         "updatedAt": "2025-12-25T13:43:00.000Z",

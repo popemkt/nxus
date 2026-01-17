@@ -1,0 +1,36 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#121417"/>
+      <stop offset="100%" stop-color="#1B1E23"/>
+    </linearGradient>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00C1DE" />
+      <stop offset="50%" stop-color="#7B61FF" />
+      <stop offset="100%" stop-color="#FF5C00" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect width="800" height="450" fill="url(#bg)"/>
+  
+  <g transform="translate(150, 0)">
+      <!-- Echo 1 -->
+      <path d="M150 112.5 L262.5 225 L150 337.5" fill="none" stroke="#00C1DE" stroke-width="20" opacity="0.15" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Echo 2 -->
+      <path d="M220 112.5 L332.5 225 L220 337.5" fill="none" stroke="url(#grad1)" stroke-width="20" opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Main Chevron -->
+      <path d="M290 112.5 L402.5 225 L290 337.5" fill="none" stroke="url(#grad1)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+      
+      <!-- Terminal Cursor Block (blinking suggestion) -->
+      <rect x="440" y="210" width="20" height="30" fill="#FF5C00" opacity="0.8">
+         <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1s" repeatCount="indefinite" />
+      </rect>
+  </g>
+</svg>
