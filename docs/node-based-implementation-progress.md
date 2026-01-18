@@ -91,6 +91,23 @@ Goal: Add node-based mutations alongside legacy.
 
 **Toggle applies to writes too**.
 
+Phase 5.5 is about UI Migration - leveraging the node architecture in the frontend. Here's what it could include:
+
+Phase 5.5 Options
+Feature Description Complexity
+Backlinks Panel Show "referenced by" for any node (items referencing tags, commands referencing items) Medium
+Graph View Upgrade Use node_relations for edges instead of hardcoded dependencies Low
+Supertag Browser Browse nodes by supertag (#Tool, #Tag, #Command) with inheritance Medium
+Universal Search Search across all nodes by content, not just items Low
+Node Inspector UI Visual version of
+inspect-node.ts
+for debugging Low
+Recommendations
+Quick wins:
+
+Add backlinks to item detail page - "Items with this tag" or "Commands for this item"
+Bigger changes: 3. Graph view from node relations - True relationship visualization 4. Supertag filtering - Filter items by #Tool vs #Repo dynamically
+
 ### Phase 6: Remove Legacy Dependency
 
 Goal: Stop seeding legacy tables, node-only operation.
