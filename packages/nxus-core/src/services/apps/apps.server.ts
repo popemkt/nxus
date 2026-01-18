@@ -2,12 +2,13 @@
  * apps.server.ts - Server functions for loading apps from SQLite
  *
  * Provides server-side access to the apps and commands tables.
- * Replaces the old filesystem-based manifest.json loading.
+ * Supports gradual migration to node-based architecture via feature toggle.
  */
 
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
+import { NODE_BASED_ARCHITECTURE_ENABLED } from '../../config/feature-flags'
 import { getDatabase, initDatabase } from '../../db/client'
 import { itemCommands, items, itemTags, tags } from '../../db/schema'
 import type {
@@ -17,6 +18,7 @@ import type {
   ItemMetadata,
   TagRef,
 } from '../../types/item'
+import { getAllItemsFromNodesServerFn } from '../nodes/nodes.server'
 
 /**
  * Map database record to App type
@@ -97,10 +99,21 @@ function parseCommandRecord(
 
 /**
  * Get all apps from SQLite database
- * Tags are now queried from app_tags junction table (single source of truth)
+ * Uses node-based queries when NODE_BASED_ARCHITECTURE_ENABLED is true
  */
 export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
+    // Feature toggle: use node-based architecture
+    if (NODE_BASED_ARCHITECTURE_ENABLED) {
+      console.log('[getAllAppsServerFn] Using node-based architecture')
+      const result = await getAllItemsFromNodesServerFn()
+      if (result.success) {
+        return { success: true as const, apps: result.items }
+      }
+      return { success: false as const, error: 'Node query failed' }
+    }
+
+    // Legacy: query from items table
     initDatabase()
     const db = getDatabase()
 

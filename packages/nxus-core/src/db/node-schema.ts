@@ -104,6 +104,12 @@ export const SYSTEM_FIELDS = {
   PATH: 'field:path',
   HOMEPAGE: 'field:homepage',
   DESCRIPTION: 'field:description',
+  COLOR: 'field:color',
+  ICON: 'field:icon',
+  LEGACY_ID: 'field:legacy_id', // For migration: stores old ID
+  CATEGORY: 'field:category',
+  PLATFORM: 'field:platform', // platforms array
+  DOCS: 'field:docs', // docs JSON array
 
   // Relation fields
   DEPENDENCIES: 'field:dependencies',
@@ -114,6 +120,19 @@ export const SYSTEM_FIELDS = {
   // Tool-specific
   CHECK_COMMAND: 'field:check_command',
   INSTALL_INSTRUCTIONS: 'field:install_instructions',
+
+  // Command-specific
+  COMMAND: 'field:command',
+  COMMAND_ID: 'field:command_id',
+  MODE: 'field:mode',
+  TARGET: 'field:target',
+  SCRIPT_SOURCE: 'field:script_source',
+  CWD: 'field:cwd',
+  PLATFORMS: 'field:platforms', // command platforms
+  REQUIRES: 'field:requires',
+  OPTIONS: 'field:options',
+  PARAMS: 'field:params',
+  REQUIREMENTS: 'field:requirements',
 } as const
 
 /**

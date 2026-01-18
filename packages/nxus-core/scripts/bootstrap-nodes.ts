@@ -246,6 +246,13 @@ async function bootstrap() {
       content: 'description',
       fieldType: 'text',
     },
+    { systemId: SYSTEM_FIELDS.COLOR, content: 'color', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.ICON, content: 'icon', fieldType: 'text' },
+    {
+      systemId: SYSTEM_FIELDS.LEGACY_ID,
+      content: 'legacyId',
+      fieldType: 'text',
+    },
     {
       systemId: SYSTEM_FIELDS.DEPENDENCIES,
       content: 'dependencies',
@@ -267,6 +274,49 @@ async function bootstrap() {
       systemId: SYSTEM_FIELDS.INSTALL_INSTRUCTIONS,
       content: 'installInstructions',
       fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.CATEGORY,
+      content: 'category',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.PLATFORM,
+      content: 'platform',
+      fieldType: 'json',
+    },
+    { systemId: SYSTEM_FIELDS.DOCS, content: 'docs', fieldType: 'json' },
+    // Command-specific
+    { systemId: SYSTEM_FIELDS.COMMAND, content: 'command', fieldType: 'text' },
+    {
+      systemId: SYSTEM_FIELDS.COMMAND_ID,
+      content: 'commandId',
+      fieldType: 'text',
+    },
+    { systemId: SYSTEM_FIELDS.MODE, content: 'mode', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.TARGET, content: 'target', fieldType: 'select' },
+    {
+      systemId: SYSTEM_FIELDS.SCRIPT_SOURCE,
+      content: 'scriptSource',
+      fieldType: 'text',
+    },
+    { systemId: SYSTEM_FIELDS.CWD, content: 'cwd', fieldType: 'text' },
+    {
+      systemId: SYSTEM_FIELDS.PLATFORMS,
+      content: 'platforms',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.REQUIRES,
+      content: 'requires',
+      fieldType: 'json',
+    },
+    { systemId: SYSTEM_FIELDS.OPTIONS, content: 'options', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.PARAMS, content: 'params', fieldType: 'json' },
+    {
+      systemId: SYSTEM_FIELDS.REQUIREMENTS,
+      content: 'requirements',
+      fieldType: 'json',
     },
   ]
 
