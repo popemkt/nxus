@@ -10,9 +10,9 @@
  *
  * Set via env: NODE_BASED_ARCHITECTURE_ENABLED=true
  */
-export const NODE_BASED_ARCHITECTURE_ENABLED =
-  process.env.NODE_BASED_ARCHITECTURE_ENABLED === 'true' ||
-  process.env.NODE_BASED_ARCHITECTURE_ENABLED === '1'
+export const NODE_BASED_ARCHITECTURE_ENABLED = true
+// process.env.NODE_BASED_ARCHITECTURE_ENABLED === 'true' ||
+// process.env.NODE_BASED_ARCHITECTURE_ENABLED === '1'
 
 /**
  * Log when feature toggle is used (for debugging)
