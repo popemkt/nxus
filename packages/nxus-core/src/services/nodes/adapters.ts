@@ -28,6 +28,7 @@ export function nodeToItem(
   options?: {
     resolveTagRefs?: (tagNodeIds: string[]) => TagRef[]
     resolveCommands?: (itemNodeId: string) => ItemCommand[]
+    resolveDependencies?: (depNodeIds: string[]) => string[]
   },
 ): Item {
   // Determine item type from supertag
@@ -44,6 +45,10 @@ export function nodeToItem(
 
   // Get commands via resolver or empty
   const commands = options?.resolveCommands?.(node.id) ?? []
+
+  // Get dependencies via resolver or return empty (UUIDs are not useful to legacy code)
+  const depNodeIds = getPropertyValues<string>(node, 'dependencies')
+  const dependencies = options?.resolveDependencies?.(depNodeIds) ?? []
 
   const metadata: ItemMetadata = {
     tags: tagRefs,
@@ -65,7 +70,7 @@ export function nodeToItem(
     thumbnail: undefined,
     platform: getProperty<string[]>(node, 'platform'),
     docs: getProperty<DocEntry[]>(node, 'docs'),
-    dependencies: getPropertyValues<string>(node, 'dependencies'),
+    dependencies,
     metadata,
     installConfig: undefined,
     checkCommand: getProperty<string>(node, 'checkCommand'),
@@ -130,7 +135,10 @@ export function nodeToCommand(node: AssembledNode): ItemCommand {
       'scriptSource',
     ) as ItemCommand['scriptSource'],
     cwd: getProperty<string>(node, 'cwd'),
-    platforms: getProperty<string[]>(node, 'platforms'),
+    platforms: getProperty<Array<'linux' | 'macos' | 'windows'>>(
+      node,
+      'platforms',
+    ),
     requires: getProperty<Record<string, unknown>>(node, 'requires'),
     options: getProperty<Record<string, unknown>>(node, 'options'),
   }

@@ -1,17 +1,16 @@
 /**
  * node.service.ts - Core node operations
  *
- * Provides CRUD and assembly functions for the node-based architecture.
+ * Provides CRUD and query functions for the node-based architecture.
+ *
+ * For NEW mini-apps: Use the Write API directly (createNode, setProperty, etc.)
+ * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { eq, or } from 'drizzle-orm'
+import { randomUUID } from 'crypto'
+import { eq } from 'drizzle-orm'
 import { getDatabase } from '../../db/client'
-import {
-  nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  SYSTEM_SUPERTAGS,
-} from '../../db/node-schema'
+import { nodeProperties, nodes, SYSTEM_FIELDS } from '../../db/node-schema'
 
 // ============================================================================
 // Types
@@ -38,8 +37,15 @@ export interface PropertyValue {
   order: number
 }
 
+export interface CreateNodeOptions {
+  content: string
+  systemId?: string
+  ownerId?: string
+  supertagSystemId?: string // e.g., 'supertag:note', 'supertag:task'
+}
+
 // ============================================================================
-// System Node Cache
+// System Node Cache (runtime cache for field/supertag lookups)
 // ============================================================================
 
 const systemNodeCache = new Map<string, { id: string; content: string }>()
@@ -54,7 +60,6 @@ export function getSystemNode(
   if (systemNodeCache.has(systemId)) {
     return systemNodeCache.get(systemId)!
   }
-
   const node = db.select().from(nodes).where(eq(nodes.systemId, systemId)).get()
   if (node) {
     const entry = { id: node.id, content: node.content || '' }
@@ -72,8 +77,50 @@ export function clearSystemNodeCache(): void {
 }
 
 // ============================================================================
-// Core Functions
+// Read API - Query nodes
 // ============================================================================
+
+/**
+ * Find node by UUID
+ */
+export function findNodeById(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): AssembledNode | null {
+  const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+  if (!node) return null
+  return assembleNode(db, node.id)
+}
+
+/**
+ * Find node by systemId (uses cache)
+ */
+export function findNodeBySystemId(
+  db: ReturnType<typeof getDatabase>,
+  systemId: string,
+): AssembledNode | null {
+  const cached = getSystemNode(db, systemId)
+  if (cached) {
+    return assembleNode(db, cached.id)
+  }
+  const node = db.select().from(nodes).where(eq(nodes.systemId, systemId)).get()
+  if (!node) return null
+  return assembleNode(db, node.id)
+}
+
+/**
+ * @deprecated Use findNodeById or findNodeBySystemId instead
+ */
+export function findNode(
+  db: ReturnType<typeof getDatabase>,
+  identifier: string,
+): AssembledNode | null {
+  // Try systemId first (more common for lookups)
+  let result = findNodeBySystemId(db, identifier)
+  if (result) return result
+  // Fall back to UUID
+  return findNodeById(db, identifier)
+}
 
 /**
  * Assemble a node with all its properties and resolved field names
@@ -124,7 +171,6 @@ export function assembleNode(
     supertags: [],
   }
 
-  // Get supertag field ID
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   const supertagFieldId = supertagField?.id
 
@@ -176,51 +222,212 @@ export function assembleNode(
   return assembled
 }
 
-/**
- * Find node by systemId or UUID
- */
-export function findNode(
-  db: ReturnType<typeof getDatabase>,
-  identifier: string,
-): AssembledNode | null {
-  const node = db
-    .select()
-    .from(nodes)
-    .where(or(eq(nodes.systemId, identifier), eq(nodes.id, identifier)))
-    .get()
+// ============================================================================
+// Write API - Create/Update/Delete nodes (for new mini-apps)
+// ============================================================================
 
-  if (!node) return null
-  return assembleNode(db, node.id)
+/**
+ * Create a new node with optional supertag
+ */
+export function createNode(
+  db: ReturnType<typeof getDatabase>,
+  options: CreateNodeOptions,
+): string {
+  const nodeId = randomUUID()
+  const now = new Date()
+
+  db.insert(nodes)
+    .values({
+      id: nodeId,
+      content: options.content,
+      contentPlain: options.content.toLowerCase(),
+      systemId: options.systemId,
+      ownerId: options.ownerId,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run()
+
+  // Assign supertag if provided
+  if (options.supertagSystemId) {
+    const supertag = getSystemNode(db, options.supertagSystemId)
+    const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+    if (supertag && supertagField) {
+      setProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertag.id)
+    }
+  }
+
+  return nodeId
 }
 
 /**
+ * Update node content
+ */
+export function updateNodeContent(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  content: string,
+): void {
+  db.update(nodes)
+    .set({
+      content,
+      contentPlain: content.toLowerCase(),
+      updatedAt: new Date(),
+    })
+    .where(eq(nodes.id, nodeId))
+    .run()
+}
+
+/**
+ * Soft delete a node
+ */
+export function deleteNode(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): void {
+  db.update(nodes)
+    .set({ deletedAt: new Date() })
+    .where(eq(nodes.id, nodeId))
+    .run()
+}
+
+/**
+ * Set a property value (creates or updates)
+ */
+export function setProperty(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  fieldSystemId: string,
+  value: unknown,
+  order: number = 0,
+): void {
+  const field = getSystemNode(db, fieldSystemId)
+  if (!field) throw new Error(`Field not found: ${fieldSystemId}`)
+
+  const jsonValue = JSON.stringify(value)
+  const now = new Date()
+
+  // Check if property exists
+  const existing = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.nodeId, nodeId))
+    .all()
+    .find((p) => p.fieldNodeId === field.id && p.order === order)
+
+  if (existing) {
+    db.update(nodeProperties)
+      .set({ value: jsonValue, updatedAt: now })
+      .where(eq(nodeProperties.id, existing.id))
+      .run()
+  } else {
+    db.insert(nodeProperties)
+      .values({
+        nodeId,
+        fieldNodeId: field.id,
+        value: jsonValue,
+        order,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run()
+  }
+}
+
+/**
+ * Add a value to a multi-value property (like tags, dependencies)
+ */
+export function addPropertyValue(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  fieldSystemId: string,
+  value: unknown,
+): void {
+  const field = getSystemNode(db, fieldSystemId)
+  if (!field) throw new Error(`Field not found: ${fieldSystemId}`)
+
+  // Get current max order
+  const existing = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.nodeId, nodeId))
+    .all()
+    .filter((p) => p.fieldNodeId === field.id)
+
+  const maxOrder = existing.reduce((max, p) => Math.max(max, p.order || 0), -1)
+
+  db.insert(nodeProperties)
+    .values({
+      nodeId,
+      fieldNodeId: field.id,
+      value: JSON.stringify(value),
+      order: maxOrder + 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .run()
+}
+
+/**
+ * Remove all property values for a field
+ */
+export function clearProperty(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  fieldSystemId: string,
+): void {
+  const field = getSystemNode(db, fieldSystemId)
+  if (!field) return
+
+  const props = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.nodeId, nodeId))
+    .all()
+    .filter((p) => p.fieldNodeId === field.id)
+
+  for (const prop of props) {
+    db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
+  }
+}
+
+/**
+ * Link two nodes via a field (e.g., set parent, add dependency)
+ */
+export function linkNodes(
+  db: ReturnType<typeof getDatabase>,
+  fromNodeId: string,
+  fieldSystemId: string,
+  toNodeId: string,
+  append: boolean = false,
+): void {
+  if (append) {
+    addPropertyValue(db, fromNodeId, fieldSystemId, toNodeId)
+  } else {
+    setProperty(db, fromNodeId, fieldSystemId, toNodeId)
+  }
+}
+
+// ============================================================================
+// Query API - Find nodes by criteria
+// ============================================================================
+
+/**
  * Get all node IDs that have a specific supertag (with inheritance)
- *
- * If querying for #Item, also returns nodes with #Tool, #Repo, etc.
  */
 export function getNodeIdsBySupertagWithInheritance(
   db: ReturnType<typeof getDatabase>,
   supertagSystemId: string,
 ): string[] {
-  // Get the supertag node
   const targetSupertag = getSystemNode(db, supertagSystemId)
   if (!targetSupertag) return []
 
-  // Get all supertags that extend this one (recursive)
   const extendsField = getSystemNode(db, SYSTEM_FIELDS.EXTENDS)
   if (!extendsField) return []
 
   const allSupertagIds = new Set<string>([targetSupertag.id])
 
-  // Find all supertags that extend our target
-  const allSupertags = db
-    .select()
-    .from(nodes)
-    .where(eq(nodes.systemId, SYSTEM_SUPERTAGS.SUPERTAG))
-    .all()
-
-  // This is a simplified approach - in production you'd want recursive CTE
-  // For now, do a single level of inheritance lookup
+  // Find child supertags (single level for now)
   const childSupertags = db
     .select()
     .from(nodeProperties)
@@ -238,11 +445,9 @@ export function getNodeIdsBySupertagWithInheritance(
     allSupertagIds.add(child.nodeId)
   }
 
-  // Get supertag field
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   if (!supertagField) return []
 
-  // Find all nodes with these supertags
   const nodeIds: string[] = []
   for (const stId of allSupertagIds) {
     const withSupertag = db
@@ -259,9 +464,7 @@ export function getNodeIdsBySupertagWithInheritance(
       })
 
     for (const p of withSupertag) {
-      if (!nodeIds.includes(p.nodeId)) {
-        nodeIds.push(p.nodeId)
-      }
+      if (!nodeIds.includes(p.nodeId)) nodeIds.push(p.nodeId)
     }
   }
 
@@ -281,8 +484,12 @@ export function getNodesBySupertagWithInheritance(
     .filter((n): n is AssembledNode => n !== null)
 }
 
+// ============================================================================
+// Property Helpers (for reading assembled nodes)
+// ============================================================================
+
 /**
- * Get property value from assembled node
+ * Get single property value from assembled node
  */
 export function getProperty<T = unknown>(
   node: AssembledNode,

@@ -35,9 +35,10 @@ import {
 export const getNodeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ identifier: z.string() }))
   .handler(async (ctx) => {
+    const { identifier } = ctx.data
     initDatabase()
     const db = getDatabase()
-    const node = findNode(db, ctx.data.identifier)
+    const node = findNode(db, identifier)
 
     if (!node) {
       return { success: false as const, error: 'Node not found' }
@@ -51,12 +52,10 @@ export const getNodeServerFn = createServerFn({ method: 'GET' })
 export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ supertagSystemId: z.string() }))
   .handler(async (ctx) => {
+    const { supertagSystemId } = ctx.data
     initDatabase()
     const db = getDatabase()
-    const nodesList = getNodesBySupertagWithInheritance(
-      db,
-      ctx.data.supertagSystemId,
-    )
+    const nodesList = getNodesBySupertagWithInheritance(db, supertagSystemId)
     return { success: true as const, nodes: nodesList }
   })
 
@@ -126,11 +125,12 @@ export const getAllItemsFromNodesServerFn = createServerFn({
 export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async (ctx) => {
+    const { id } = ctx.data
     initDatabase()
     const db = getDatabase()
 
     // Try to find by systemId first (item:xxx)
-    let node = findNode(db, `item:${ctx.data.id}`)
+    let node = findNode(db, `item:${id}`)
 
     // If not found, search by legacyId property
     if (!node) {
@@ -148,7 +148,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
           .all()
           .find((p) => {
             try {
-              return JSON.parse(p.value || '') === ctx.data.id
+              return JSON.parse(p.value || '') === id
             } catch {
               return false
             }
@@ -161,7 +161,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
     }
 
     if (!node) {
-      return { success: false as const, error: `Item ${ctx.data.id} not found` }
+      return { success: false as const, error: `Item ${id} not found` }
     }
 
     // Get tags for this item
