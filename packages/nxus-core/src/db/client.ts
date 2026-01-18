@@ -1,11 +1,11 @@
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import * as schema from './schema'
-import * as ephemeralSchema from './ephemeral-schema'
-import { resolve, dirname } from 'path'
-import { fileURLToPath } from 'url'
 import { existsSync, mkdirSync } from 'fs'
 import { homedir } from 'os'
+import { dirname, resolve } from 'path'
+import { fileURLToPath } from 'url'
+import * as ephemeralSchema from './ephemeral-schema'
+import * as schema from './schema'
 
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)
@@ -148,6 +148,60 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
       updated_at INTEGER NOT NULL,
       PRIMARY KEY (app_id, tag_id)
     )
+  `)
+
+  // ============================================================================
+  // Node-Based Architecture Tables (Simplified: 2 tables only)
+  // Everything is encoded through field values, including supertags!
+  // ============================================================================
+
+  masterDb.exec(`
+    CREATE TABLE IF NOT EXISTS nodes (
+      id TEXT PRIMARY KEY,
+      content TEXT,
+      content_plain TEXT,
+      system_id TEXT UNIQUE,
+      owner_id TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted_at INTEGER
+    )
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_nodes_system_id ON nodes(system_id)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_nodes_owner_id ON nodes(owner_id)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_nodes_content_plain ON nodes(content_plain)
+  `)
+
+  masterDb.exec(`
+    CREATE TABLE IF NOT EXISTS node_properties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      node_id TEXT NOT NULL,
+      field_node_id TEXT NOT NULL,
+      value TEXT,
+      "order" INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_node_properties_node ON node_properties(node_id)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_node_properties_field ON node_properties(field_node_id)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_node_properties_value ON node_properties(value)
   `)
 
   // No need to manually save - better-sqlite3 persists automatically
