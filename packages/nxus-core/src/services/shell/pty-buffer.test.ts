@@ -1,18 +1,14 @@
-import {
-  createPtySession,
-  getPtySessionBuffer,
-  closePtySession,
-} from './pty-session-manager.server'
+import { closePtySession, createPtySession } from './pty-session-manager.server'
 
-async function testBufferRollover() {
+async function _testBufferRollover() {
   console.log('Testing PTY buffer rollover...')
 
   const session = createPtySession({ command: 'echo', args: ['hello'] })
   const sessionId = session.id
 
   // Mock data arrival
-  const pty = session.pty as any
-  const onData = (session as any).onData // We need to access the handler
+  const _pty = session.pty as any
+  const _onData = (session as any).onData // We need to access the handler
 
   // Since we can't easily trigger the internal handler from outside without modifying pty-session-manager,
   // we'll rely on manual verification or unit tests if we had a proper test runner for server fns.

@@ -1,8 +1,8 @@
-import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
 import { initDatabase, saveDatabase } from '@/db/client'
 import { inbox, type InboxEntry } from '@/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { createServerFn } from '@tanstack/react-start'
+import { desc, eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 /**
  * Get all inbox items
@@ -162,4 +162,5 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
     return { success: true, data: result[0] }
   })
 
+export type InboxItem = InboxEntry
 export type { InboxEntry }

@@ -195,7 +195,7 @@ interface DraggableTagItemProps {
  * Draggable wrapper using raw @dnd-kit/core (no automatic transforms on siblings)
  */
 export function DraggableTagItem({ id, children }: DraggableTagItemProps) {
-  const { dropIndicator, activeId } = useTagDndDropIndicator()
+  const { dropIndicator, activeId: _activeId } = useTagDndDropIndicator()
 
   const {
     attributes,
@@ -205,7 +205,7 @@ export function DraggableTagItem({ id, children }: DraggableTagItemProps) {
     isDragging,
   } = useDraggable({ id })
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id })
+  const { setNodeRef: setDropRef, isOver: _isOver } = useDroppable({ id })
 
   // Combine refs
   const setNodeRef = useCallback(
@@ -270,7 +270,7 @@ interface TagDndContextProps {
  */
 export function TagDndContext({
   children,
-  items,
+  items: _items,
   onMoveTag,
   onExpandParent,
 }: TagDndContextProps) {
@@ -304,7 +304,7 @@ export function TagDndContext({
 export function SortableTagItem({
   id,
   children,
-  dropIndicator,
+  dropIndicator: _dropIndicator,
 }: {
   id: string
   children: React.ReactNode

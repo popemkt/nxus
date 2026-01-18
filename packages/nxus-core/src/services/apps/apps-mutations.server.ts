@@ -5,12 +5,12 @@
  * Separated from apps.server.ts which handles read operations.
  */
 
-import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
-import { initDatabase, getDatabase, saveDatabase } from '@/db/client'
+import { getDatabase, initDatabase, saveDatabase } from '@/db/client'
 import { items, itemTags } from '@/db/schema'
+import type { ItemMetadata } from '@/types/item'
+import { createServerFn } from '@tanstack/react-start'
 import { eq } from 'drizzle-orm'
-import type { ItemMetadata, TagRef } from '@/types/item'
+import { z } from 'zod'
 
 /**
  * Update an app's tags
@@ -129,7 +129,7 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
 
     db.update(items)
       .set({
-        metadata: JSON.stringify(updatedMetadata),
+        metadata: updatedMetadata,
         updatedAt: new Date(),
       })
       .where(eq(items.id, ctx.data.appId))

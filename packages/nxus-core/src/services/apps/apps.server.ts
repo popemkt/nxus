@@ -6,11 +6,17 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
+import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
-import { initDatabase, getDatabase } from '../../db/client'
-import { items, itemCommands, itemTags, tags } from '../../db/schema'
-import { eq, isNull, and } from 'drizzle-orm'
-import type { Item, ItemCommand, ItemMetadata, TagRef } from '../../types/item'
+import { getDatabase, initDatabase } from '../../db/client'
+import { itemCommands, items, itemTags, tags } from '../../db/schema'
+import type {
+  DocEntry,
+  Item,
+  ItemCommand,
+  ItemMetadata,
+  TagRef,
+} from '../../types/item'
 
 /**
  * Map database record to App type
@@ -51,11 +57,11 @@ function parseAppRecord(
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
-    platform: ensureArray<string>(record.platform),
-    docs: ensureArray<DocEntry>(record.docs),
-    dependencies: ensureArray<string>(record.dependencies),
+    platform: ensureArray<string>(record.platform) as any,
+    docs: ensureArray<DocEntry>(record.docs) as any,
+    dependencies: ensureArray<string>(record.dependencies) as any,
     metadata, // Now guaranteed to have proper shape
-    installConfig: record.installConfig ?? undefined,
+    installConfig: record.installConfig as Item['installConfig'],
     checkCommand: record.checkCommand ?? undefined,
     installInstructions: record.installInstructions ?? undefined,
     configSchema: record.configSchema ?? undefined,
@@ -203,8 +209,9 @@ export const getCategoriesServerFn = createServerFn({ method: 'GET' }).handler(
 
     const categories = new Set<string>()
     for (const record of appRecords) {
-      if (record.metadata) {
-        categories.add(record.metadata.category)
+      const metadata = record.metadata as ItemMetadata | undefined
+      if (metadata?.category) {
+        categories.add(metadata.category)
       }
     }
 
@@ -222,15 +229,16 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
 
     const appRecords = db.select().from(items).all()
 
-    const tags = new Set<string>()
+    const allTags = new Set<string>()
     for (const record of appRecords) {
-      if (record.metadata) {
-        for (const tag of record.metadata.tags) {
-          tags.add(tag)
+      const metadata = record.metadata as ItemMetadata | undefined
+      if (metadata?.tags) {
+        for (const tag of metadata.tags) {
+          allTags.add(tag.name)
         }
       }
     }
 
-    return { success: true as const, tags: Array.from(tags).sort() }
+    return { success: true as const, tags: Array.from(allTags).sort() }
   },
 )

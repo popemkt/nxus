@@ -13,7 +13,6 @@ import {
   writePtySessionServerFn,
   resizePtySessionServerFn,
   closePtySessionServerFn,
-  type PtyOutputChunk,
 } from '@/services/shell/pty.server'
 
 // Polling interval in milliseconds

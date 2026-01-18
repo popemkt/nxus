@@ -154,7 +154,7 @@ export class AppRegistryService {
     }
 
     const filtered = appsResult.data.filter((app) =>
-      tags.some((tag) => app.metadata.tags.includes(tag)),
+      tags.some((tag) => app.metadata.tags.some((t) => t.name === tag)),
     )
     return { success: true, data: filtered }
   }
@@ -183,7 +183,9 @@ export class AppRegistryService {
       return appsResult
     }
 
-    const tags = new Set(appsResult.data.flatMap((app) => app.metadata.tags))
+    const tags = new Set(
+      appsResult.data.flatMap((app) => app.metadata.tags.map((t) => t.name)),
+    )
     return { success: true, data: Array.from(tags).sort() }
   }
 

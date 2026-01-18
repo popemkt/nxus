@@ -28,7 +28,6 @@ import {
 import { type ItemNodeData } from './hooks'
 import {
   useViewModeStore,
-  type GraphOptions,
   type GraphLayout,
   type GraphNodeStyle,
 } from '@/stores/view-mode.store'

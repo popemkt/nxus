@@ -1,43 +1,42 @@
-import { useEffect, useRef, useMemo, useState } from 'react'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { motion, AnimatePresence } from 'framer-motion'
-import * as PhosphorIcons from '@phosphor-icons/react'
-import {
-  MagnifyingGlassIcon,
-  ArrowLeftIcon,
-  CommandIcon,
-  QuestionIcon,
-  WarningCircleIcon,
-  PlayIcon,
-  EyeIcon,
-  CopyIcon,
-  TerminalWindowIcon,
-  CaretRightIcon,
-} from '@phosphor-icons/react'
-import {
-  useCommandPaletteStore,
-  type ActionPanelCommand,
-} from '@/stores/command-palette.store'
-import { useTerminalStore } from '@/stores/terminal.store'
-import { useSettingsStore, matchesKeybinding } from '@/stores/settings.store'
+import { checkCommandAvailability } from '@/hooks/use-command'
+import { commandExecutor } from '@/services/command-palette/executor'
 import {
   commandRegistry,
   type PaletteCommand,
 } from '@/services/command-palette/registry'
-import type { GenericCommand, UnifiedCommand } from '@/types/command'
-import { getUnifiedCommandTarget } from '@/types/command'
-import { configureModalService } from '@/stores/configure-modal.store'
-import { commandExecutor } from '@/services/command-palette/executor'
-import { checkCommandAvailability } from '@/hooks/use-command'
-import { appRegistryService } from '@/services/apps/registry.service'
-import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import {
-  getAliasesServerFn,
-  aliasUtils,
-} from '@/services/command-palette/alias.server'
+  useCommandPaletteStore,
+  type ActionPanelCommand,
+} from '@/stores/command-palette.store'
+import { configureModalService } from '@/stores/configure-modal.store'
+import { matchesKeybinding, useSettingsStore } from '@/stores/settings.store'
+import { useTerminalStore } from '@/stores/terminal.store'
+import type { GenericCommand } from '@/types/command'
+import * as PhosphorIcons from '@phosphor-icons/react'
+import {
+  ArrowLeftIcon,
+  CaretRightIcon,
+  CommandIcon,
+  CopyIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
+  PlayIcon,
+  QuestionIcon,
+  TerminalWindowIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
+import {
+  aliasUtils,
+  getAliasesServerFn,
+} from '@/services/command-palette/alias.server'
+import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import type { ItemCommand, ItemType } from '@/types/item'
+import type { ItemType } from '@/types/item'
 
 function DynamicIcon({
   name,
@@ -538,7 +537,7 @@ export function CommandPalette() {
           appId: cmd.app.id,
           appType: cmd.app.type,
           tabName: `${cmd.app.name}: ${cmd.command.name}`,
-          terminalStore: { createTab, addLog, setStatus },
+          terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
         })
         break
       }

@@ -1,9 +1,9 @@
 import { useOsInfo, useDevInfo } from '@/services/state/app-state'
 import {
-  WindowsLogo,
-  AppleLogo,
-  LinuxLogo,
-  Desktop,
+  WindowsLogoIcon,
+  AppleLogoIcon,
+  LinuxLogoIcon,
+  DesktopIcon,
 } from '@phosphor-icons/react'
 
 interface SystemTrayProps {
@@ -13,21 +13,21 @@ interface SystemTrayProps {
 /**
  * System tray component displayed in the bottom-right corner.
  */
-export function SystemTray({ className }: SystemTrayProps) {
+export function SystemTray({ className: _className }: SystemTrayProps) {
   const osInfo = useOsInfo()
   const devInfo = useDevInfo()
 
   const getOsIcon = () => {
-    if (!osInfo) return <Desktop className="size-3" weight="fill" />
+    if (!osInfo) return <DesktopIcon className="size-3" weight="fill" />
     switch (osInfo.platform) {
       case 'windows':
-        return <WindowsLogo className="size-3" weight="fill" />
+        return <WindowsLogoIcon className="size-3" weight="fill" />
       case 'macos':
-        return <AppleLogo className="size-3" weight="fill" />
+        return <AppleLogoIcon className="size-3" weight="fill" />
       case 'linux':
-        return <LinuxLogo className="size-3" weight="fill" />
+        return <LinuxLogoIcon className="size-3" weight="fill" />
       default:
-        return <Desktop className="size-3" weight="fill" />
+        return <DesktopIcon className="size-3" weight="fill" />
     }
   }
 

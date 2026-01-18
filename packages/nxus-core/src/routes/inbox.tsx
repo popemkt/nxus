@@ -3,12 +3,11 @@ import { useState, useEffect } from 'react'
 import {
   TrayIcon,
   PlusIcon,
-  ClipboardIcon,
   CheckIcon,
   TrashIcon,
   ArrowLeftIcon,
-  PencilSimple,
-  Robot,
+  PencilSimpleIcon,
+  RobotIcon,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -260,7 +259,7 @@ function InboxItemCard({
                 onClick={onCopyAndProcess}
                 title="Process with AI"
               >
-                <Robot className="h-4 w-4 mr-1" />
+                <RobotIcon className="h-4 w-4 mr-1" />
                 Process
               </Button>
             )}
@@ -282,7 +281,7 @@ function InboxItemCard({
                 onClick={onEdit}
                 title="Edit item"
               >
-                <PencilSimple className="h-4 w-4" />
+                <PencilSimpleIcon className="h-4 w-4" />
               </Button>
             )}
             <Button

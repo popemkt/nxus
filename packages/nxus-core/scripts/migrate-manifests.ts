@@ -8,13 +8,13 @@
  * from existing manifests.
  */
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'fs'
-import { resolve, dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
-import { items, itemCommands } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
-import { ItemMetadataSchema, ItemSchema } from '../src/types/item'
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { dirname, join, resolve } from 'path'
+import { fileURLToPath } from 'url'
+import { getDatabase, initDatabase, saveMasterDatabase } from '../src/db/client'
+import { itemCommands, items } from '../src/db/schema'
+import { ItemSchema } from '../src/types/item'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -85,17 +85,18 @@ async function migrate() {
         path: validatedManifest.path,
         homepage: validatedManifest.homepage || null,
         thumbnail: validatedManifest.thumbnail || null,
-        platform: toRawOrNull(validatedManifest.platform),
+        platform: toRawOrNull((validatedManifest as any).platform),
         docs: toRawOrNull(validatedManifest.docs),
         dependencies: toRawOrNull(validatedManifest.dependencies),
         metadata: toRawOrNull(validatedManifest.metadata),
         installConfig: toRawOrNull(validatedManifest.installConfig),
-        checkCommand: validatedManifest.checkCommand || null,
-        installInstructions: validatedManifest.installInstructions || null,
-        configSchema: toRawOrNull(validatedManifest.configSchema),
+        checkCommand: (validatedManifest as any).checkCommand || null,
+        installInstructions:
+          (validatedManifest as any).installInstructions || null,
+        configSchema: toRawOrNull((validatedManifest as any).configSchema),
         createdAt: new Date(),
         updatedAt: new Date(),
-      }
+      } as any
 
       // Upsert app
       const existingApp = db

@@ -1,16 +1,3 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import React, { useState, useEffect } from 'react'
-import {
-  GearIcon,
-  KeyboardIcon,
-  CubeIcon,
-  ArrowLeftIcon,
-  MagnifyingGlassIcon,
-  CommandIcon,
-  TrashIcon,
-  PlusIcon,
-} from '@phosphor-icons/react'
-import { Input } from '@/components/ui/input'
 import { ThemeChooser } from '@/components/features/settings/theme-chooser'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,28 +7,41 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldLabel } from '@/components/ui/field'
 import {
   Combobox,
-  ComboboxInput,
   ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  ComboboxGroup,
-  ComboboxLabel,
   ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxLabel,
+  ComboboxList,
 } from '@/components/ui/combobox'
-import { useSettingsStore, type ThemeSetting } from '@/stores/settings.store'
-import { useToolConfigStore } from '@/services/state/tool-config-state'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import {
   getAliasesServerFn,
-  setAliasServerFn,
   removeAliasServerFn,
+  setAliasServerFn,
 } from '@/services/command-palette/alias.server'
 import { commandRegistry } from '@/services/command-palette/registry'
-import { useAppRegistry } from '@/hooks/use-app-registry'
+import { useToolConfigStore } from '@/services/state/tool-config-state'
+import { useSettingsStore } from '@/stores/settings.store'
 import type { ToolItem } from '@/types/item'
+import {
+  ArrowLeftIcon,
+  CommandIcon,
+  CubeIcon,
+  GearIcon,
+  KeyboardIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@phosphor-icons/react'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import React, { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
@@ -127,11 +127,9 @@ function SettingsPage() {
 }
 
 function GeneralSettings() {
-  const theme = useSettingsStore((s) => s.general.theme)
   const defaultInstallPath = useSettingsStore(
     (s) => s.general.defaultInstallPath,
   )
-  const setTheme = useSettingsStore((s) => s.setTheme)
   const setDefaultInstallPath = useSettingsStore((s) => s.setDefaultInstallPath)
 
   return (
@@ -333,38 +331,42 @@ function AliasSettings() {
               onChange={(e) => setNewAlias(e.target.value)}
               className="w-24 h-9"
             />
-            <Combobox
-              value={selectedCommand}
-              onValueChange={(val) => setSelectedCommand(val as string)}
-              className="flex-1"
-            >
-              <ComboboxInput placeholder="Search commands..." className="h-9" />
-              <ComboboxContent>
-                <ComboboxList>
-                  <ComboboxEmpty>No commands found</ComboboxEmpty>
-                  <ComboboxGroup>
-                    <ComboboxLabel>Actions</ComboboxLabel>
-                    {allCommands
-                      .filter((c) => c.type === 'action')
-                      .map((c) => (
-                        <ComboboxItem key={c.id} value={c.id}>
-                          {c.name}
-                        </ComboboxItem>
-                      ))}
-                  </ComboboxGroup>
-                  <ComboboxGroup>
-                    <ComboboxLabel>App Commands</ComboboxLabel>
-                    {allCommands
-                      .filter((c) => c.type === 'app')
-                      .map((c) => (
-                        <ComboboxItem key={c.id} value={c.id}>
-                          {c.name}
-                        </ComboboxItem>
-                      ))}
-                  </ComboboxGroup>
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
+            <div className="flex-1">
+              <Combobox
+                value={selectedCommand}
+                onValueChange={(val) => setSelectedCommand(val as string)}
+              >
+                <ComboboxInput
+                  placeholder="Search commands..."
+                  className="h-9"
+                />
+                <ComboboxContent>
+                  <ComboboxList>
+                    <ComboboxEmpty>No commands found</ComboboxEmpty>
+                    <ComboboxGroup>
+                      <ComboboxLabel>Actions</ComboboxLabel>
+                      {allCommands
+                        .filter((c) => c.type === 'action')
+                        .map((c) => (
+                          <ComboboxItem key={c.id} value={c.id}>
+                            {c.name}
+                          </ComboboxItem>
+                        ))}
+                    </ComboboxGroup>
+                    <ComboboxGroup>
+                      <ComboboxLabel>App Commands</ComboboxLabel>
+                      {allCommands
+                        .filter((c) => c.type === 'app')
+                        .map((c) => (
+                          <ComboboxItem key={c.id} value={c.id}>
+                            {c.name}
+                          </ComboboxItem>
+                        ))}
+                    </ComboboxGroup>
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
             <Button
               onClick={handleAddAlias}
               disabled={!newAlias.trim() || !selectedCommand}
@@ -490,7 +492,7 @@ function AppConfigCard({ app }: { app: ToolItem }) {
             </FieldLabel>
             <Input
               type={field.type === 'password' ? 'password' : 'text'}
-              value={config[field.key] ?? field.defaultValue ?? ''}
+              value={(config as any)[field.key] ?? field.defaultValue ?? ''}
               onChange={(e) => handleChange(field.key, e.target.value)}
               placeholder={field.placeholder}
             />

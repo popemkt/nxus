@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react'
-import {
-  PlayIcon,
-  StopIcon,
-  TrashIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react'
+import { PlayIcon, TerminalWindowIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import {
   Card,

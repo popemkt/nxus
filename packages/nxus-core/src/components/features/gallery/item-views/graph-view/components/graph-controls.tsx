@@ -1,20 +1,18 @@
 import { Panel } from '@xyflow/react'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
 import {
-  Lock,
-  LockOpen,
-  TreeStructure,
-  Graph,
-  ArrowsOutCardinal,
-  CirclesFour,
-  Cards,
-  Funnel,
-  FunnelSimple,
-  Command,
-  GearSix,
-  Tag,
+  LockIcon,
+  LockOpenIcon,
+  TreeStructureIcon,
+  GraphIcon,
+  ArrowsOutCardinalIcon,
+  CirclesFourIcon,
+  CardsIcon,
+  FunnelIcon,
+  FunnelSimpleIcon,
+  CommandIcon,
+  GearSixIcon,
+  TagIcon,
 } from '@phosphor-icons/react'
 import type { GraphOptions, GraphNodeStyle } from '@/stores/view-mode.store'
 import { cn } from '@/lib/utils'
@@ -66,9 +64,9 @@ export function GraphControls({
         }
       >
         {nodesLocked ? (
-          <Lock className="h-4 w-4" />
+          <LockIcon className="h-4 w-4" />
         ) : (
-          <LockOpen className="h-4 w-4" />
+          <LockOpenIcon className="h-4 w-4" />
         )}
       </Button>
 
@@ -84,7 +82,7 @@ export function GraphControls({
         }
         title="Detailed nodes"
       >
-        <Cards className="h-4 w-4" />
+        <CardsIcon className="h-4 w-4" />
       </Button>
 
       <Button
@@ -94,7 +92,7 @@ export function GraphControls({
         onClick={() => onOptionsChange({ nodeStyle: 'simple' })}
         title="Simple dots (colored by type, sized by dependencies)"
       >
-        <CirclesFour className="h-4 w-4" />
+        <CirclesFourIcon className="h-4 w-4" />
       </Button>
 
       <div className="w-px bg-border" />
@@ -112,7 +110,7 @@ export function GraphControls({
             }}
             title="Hierarchical layout (left to right)"
           >
-            <TreeStructure className="h-4 w-4" />
+            <TreeStructureIcon className="h-4 w-4" />
           </Button>
 
           <Button
@@ -125,7 +123,7 @@ export function GraphControls({
             }}
             title="Force-directed layout (interactive, springy)"
           >
-            <Graph className="h-4 w-4" />
+            <GraphIcon className="h-4 w-4" />
           </Button>
 
           <div className="w-px bg-border" />
@@ -140,7 +138,7 @@ export function GraphControls({
         onClick={onFitView}
         title="Fit view"
       >
-        <ArrowsOutCardinal className="h-4 w-4" />
+        <ArrowsOutCardinalIcon className="h-4 w-4" />
       </Button>
 
       <div className="w-px bg-border" />
@@ -151,7 +149,7 @@ export function GraphControls({
           className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
           title="Graph options"
         >
-          <GearSix className="h-4 w-4" />
+          <GearSixIcon className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
           {/* Filter mode */}
@@ -162,14 +160,14 @@ export function GraphControls({
             checked={filterMode === 'highlight'}
             onCheckedChange={() => onOptionsChange({ filterMode: 'highlight' })}
           >
-            <FunnelSimple className="h-4 w-4 mr-2" />
+            <FunnelSimpleIcon className="h-4 w-4 mr-2" />
             Highlight matches
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filterMode === 'show-only'}
             onCheckedChange={() => onOptionsChange({ filterMode: 'show-only' })}
           >
-            <Funnel className="h-4 w-4 mr-2" />
+            <FunnelIcon className="h-4 w-4 mr-2" />
             Show only matches
           </DropdownMenuCheckboxItem>
 
@@ -182,7 +180,7 @@ export function GraphControls({
               onOptionsChange({ showLabels: !!checked })
             }
           >
-            <Tag className="h-4 w-4 mr-2" />
+            <TagIcon className="h-4 w-4 mr-2" />
             Show labels
           </DropdownMenuCheckboxItem>
 
@@ -194,7 +192,7 @@ export function GraphControls({
                 onOptionsChange({ showCommands: !!checked })
               }
             >
-              <Command className="h-4 w-4 mr-2" />
+              <CommandIcon className="h-4 w-4 mr-2" />
               Show commands
             </DropdownMenuCheckboxItem>
           )}

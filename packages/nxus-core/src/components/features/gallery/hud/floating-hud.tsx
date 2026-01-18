@@ -1,16 +1,16 @@
 import { Link } from '@tanstack/react-router'
 import { motion, LayoutGroup } from 'framer-motion'
 import {
-  MagnifyingGlass,
-  SquaresFour,
-  Table,
-  Graph,
-  Tag,
-  Gear,
-  TrayArrowDown,
-  Command,
-  GridFour,
-  CaretDown,
+  MagnifyingGlassIcon,
+  SquaresFourIcon,
+  TableIcon,
+  GraphIcon,
+  TagIcon,
+  GearIcon,
+  TrayArrowDownIcon,
+  CommandIcon,
+  GridFourIcon,
+  CaretDownIcon,
 } from '@phosphor-icons/react'
 import { useViewModeStore } from '@/stores/view-mode.store'
 import { useCommandPaletteStore } from '@/stores/command-palette.store'
@@ -44,7 +44,7 @@ export function FloatingHud({
   const openPalette = useCommandPaletteStore((s) => s.open)
   const isCommandPaletteOpen = useCommandPaletteStore((s) => s.isOpen)
 
-  const GalleryIcon = galleryMode === 'compact' ? GridFour : SquaresFour
+  const GalleryIcon = galleryMode === 'compact' ? GridFourIcon : SquaresFourIcon
 
   // Common button styles - using radius-button for theme-reactive corners
   const btnBase =
@@ -72,7 +72,7 @@ export function FloatingHud({
 
         {/* Search */}
         <div className="flex-1 relative flex items-center h-9 min-w-[200px]">
-          <MagnifyingGlass
+          <MagnifyingGlassIcon
             className="absolute left-3 w-3.5 h-3.5 text-foreground/40 pointer-events-none"
             weight="bold"
           />
@@ -88,7 +88,7 @@ export function FloatingHud({
             onClick={() => openPalette(true)}
             title="Open command palette"
           >
-            <Command className="size-3" weight="bold" />
+            <CommandIcon className="size-3" weight="bold" />
             <span>K</span>
           </button>
         </div>
@@ -101,14 +101,17 @@ export function FloatingHud({
           onClick={onSidebarToggle}
           title={sidebarOpen ? 'Hide tags' : 'Show tags'}
         >
-          <Tag className="size-4" weight={sidebarOpen ? 'fill' : 'regular'} />
+          <TagIcon
+            className="size-4"
+            weight={sidebarOpen ? 'fill' : 'regular'}
+          />
         </button>
 
         <div className="w-px h-5 bg-foreground/10 mx-1" />
 
         {/* Gallery View Mode with Dropdown - full chevron overlay like tag tree */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <button
               className={cn(
                 btnBase,
@@ -136,7 +139,7 @@ export function FloatingHud({
                 {/* Chevron overlay - appears on hover, same size as icon container */}
                 {viewMode === 'gallery' && (
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CaretDown className="size-4" weight="bold" />
+                    <CaretDownIcon className="size-4" weight="bold" />
                   </div>
                 )}
               </div>
@@ -147,14 +150,14 @@ export function FloatingHud({
               checked={galleryMode === 'default'}
               onCheckedChange={() => setGalleryMode('default')}
             >
-              <SquaresFour className="size-4 mr-2" />
+              <SquaresFourIcon className="size-4 mr-2" />
               Default
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={galleryMode === 'compact'}
               onCheckedChange={() => setGalleryMode('compact')}
             >
-              <GridFour className="size-4 mr-2" />
+              <GridFourIcon className="size-4 mr-2" />
               Compact
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
@@ -168,7 +171,7 @@ export function FloatingHud({
           onClick={() => setViewMode('table')}
           title="Table view"
         >
-          <Table
+          <TableIcon
             className="size-4"
             weight={viewMode === 'table' ? 'fill' : 'regular'}
           />
@@ -182,7 +185,7 @@ export function FloatingHud({
           onClick={() => setViewMode('graph')}
           title="Graph view"
         >
-          <Graph
+          <GraphIcon
             className="size-4"
             weight={viewMode === 'graph' ? 'fill' : 'regular'}
           />
@@ -196,7 +199,7 @@ export function FloatingHud({
           className={cn(btnBase, btnInactive, 'relative')}
           title="Inbox"
         >
-          <TrayArrowDown className="size-4" />
+          <TrayArrowDownIcon className="size-4" />
           {inboxCount > 0 && (
             <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-1 bg-primary rounded-full text-[9px] font-semibold text-primary-foreground flex items-center justify-center">
               {inboxCount > 9 ? '9+' : inboxCount}
@@ -210,7 +213,7 @@ export function FloatingHud({
           className={cn(btnBase, btnInactive)}
           title="Settings"
         >
-          <Gear className="size-4" />
+          <GearIcon className="size-4" />
         </Link>
       </motion.div>
     </LayoutGroup>

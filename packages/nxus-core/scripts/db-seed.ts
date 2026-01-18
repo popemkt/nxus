@@ -8,27 +8,18 @@
  * Uses upsert strategy: insert if new, update if existing, never delete.
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
-import { resolve, dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-import { initDatabase, getDatabase, saveMasterDatabase } from '../src/db/client'
-import { items, itemCommands, tags, inbox, itemTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
+import { dirname, join, resolve } from 'path'
+import { fileURLToPath } from 'url'
+import { getDatabase, initDatabase, saveMasterDatabase } from '../src/db/client'
+import { inbox, itemCommands, items, itemTags, tags } from '../src/db/schema'
 import { ItemSchema, type TagRef } from '../src/types/item'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const dataDir = resolve(__dirname, '../src/data')
 const appsDir = resolve(dataDir, 'apps')
-
-/**
- * Stringify value to JSON if not already a string
- */
-function stringifyIfNeeded(value: unknown): string | null {
-  if (value === null || value === undefined) return null
-  if (typeof value === 'string') return value
-  return JSON.stringify(value)
-}
 
 /**
  * Convert timestamp to Date object
@@ -110,25 +101,25 @@ async function seed() {
       path: validatedManifest.path,
       homepage: validatedManifest.homepage || null,
       thumbnail: validatedManifest.thumbnail || null,
-      platform: validatedManifest.platform ?? null,
+      platform: (validatedManifest as any).platform ?? null,
       docs: validatedManifest.docs ?? null,
       dependencies: validatedManifest.dependencies ?? null,
       metadata: {
-        // Exclude tags - they go in junction table
         category: validatedManifest.metadata?.category ?? 'uncategorized',
         createdAt: validatedManifest.metadata?.createdAt ?? '',
         updatedAt: validatedManifest.metadata?.updatedAt ?? '',
         version: validatedManifest.metadata?.version,
         author: validatedManifest.metadata?.author,
         license: validatedManifest.metadata?.license,
-      },
+      } as ItemMetadata,
       installConfig: validatedManifest.installConfig ?? null,
-      checkCommand: validatedManifest.checkCommand || null,
-      installInstructions: validatedManifest.installInstructions || null,
-      configSchema: validatedManifest.configSchema ?? null,
+      checkCommand: (validatedManifest as any).checkCommand || null,
+      installInstructions:
+        (validatedManifest as any).installInstructions || null,
+      configSchema: (validatedManifest as any).configSchema ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    }
+    } as any // Cast to any for easier insert into Drizzle items table which expect raw values or SQL
 
     // Upsert app
     const existingApp = db

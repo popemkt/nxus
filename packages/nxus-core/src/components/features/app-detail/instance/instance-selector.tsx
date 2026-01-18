@@ -1,26 +1,26 @@
-import * as React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
-  FolderIcon,
+  appStateService,
+  isDevReferencePath,
+  useAppInstallations,
+  useDevInfo,
+  type InstalledAppRecord,
+} from '@/services/state/app-state'
+import {
   CaretDownIcon,
   CaretUpIcon,
   CheckIcon,
-  PlusIcon,
-  DownloadIcon,
-  PencilSimpleIcon,
   CodeIcon,
+  DownloadIcon,
+  FolderIcon,
   FolderPlusIcon,
+  PencilSimpleIcon,
+  PlusIcon,
 } from '@phosphor-icons/react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  useAppInstallations,
-  useDevInfo,
-  isDevReferencePath,
-  appStateService,
-  type InstalledAppRecord,
-} from '@/services/state/app-state'
+import { AnimatePresence, motion } from 'framer-motion'
+import * as React from 'react'
 
 interface InstanceSelectorProps {
   appId: string
@@ -54,13 +54,13 @@ const variants = {
     initial: { opacity: 0, y: -10 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -10 },
-    transition: { duration: 0.2, ease: 'easeOut' },
+    transition: { duration: 0.2, ease: 'easeOut' as const },
   },
   expanded: {
     initial: { opacity: 0, height: 0 },
     animate: { opacity: 1, height: 'auto' },
     exit: { opacity: 0, height: 0 },
-    transition: { duration: 0.3, ease: 'easeInOut' },
+    transition: { duration: 0.3, ease: 'easeInOut' as const },
   },
   item: {
     initial: { opacity: 0, x: -20 },
@@ -469,13 +469,4 @@ function ExpandedView({
       </Card>
     </motion.div>
   )
-}
-
-function formatDate(timestamp: number | undefined): string {
-  if (!timestamp) return ''
-  return new Date(timestamp).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
 }

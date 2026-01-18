@@ -1,9 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
-import { X } from '@phosphor-icons/react'
-import type { Item } from '@/types/item'
+import { XIcon } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
-import { openApp } from '@/lib/app-actions'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'
 import { TagTree } from '@/components/features/gallery/tag-tree'
 import { useTagUIStore } from '@/stores/tag-ui.store'
@@ -177,7 +175,7 @@ function AppManager() {
             onClick={() => setSidebarOpen(false)}
             title="Close"
           >
-            <X className="size-4" weight="bold" />
+            <XIcon className="size-4" weight="bold" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">

@@ -1,23 +1,23 @@
-import * as React from 'react'
-import { FolderIcon, CodeIcon, DownloadIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { useInstallPath } from '@/hooks/use-install-path'
+import { commandExecutor } from '@/services/command-palette/executor'
+import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
+import { appStateService, useDevInfo } from '@/services/state/app-state'
 import { useInstallModalStore } from '@/stores/install-modal.store'
 import { useTerminalStore } from '@/stores/terminal.store'
-import { useInstallPath } from '@/hooks/use-install-path'
-import { useDevInfo, appStateService } from '@/services/state/app-state'
-import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
-import { commandExecutor } from '@/services/command-palette/executor'
+import { CodeIcon, DownloadIcon, FolderIcon } from '@phosphor-icons/react'
+import * as React from 'react'
 
 /**
  * Install Modal for cloning remote repositories
@@ -25,7 +25,8 @@ import { commandExecutor } from '@/services/command-palette/executor'
  */
 export function InstallModal() {
   const { isOpen, app, close } = useInstallModalStore()
-  const { createTab, addLog, setStatus } = useTerminalStore()
+  const { createTab, createInteractiveTab, addLog, setStatus } =
+    useTerminalStore()
   const devInfo = useDevInfo()
 
   // Get persisted install path for this app
@@ -54,7 +55,7 @@ export function InstallModal() {
       appId: app.id,
       appType: app.type,
       tabName: `Installing ${app.name}`,
-      terminalStore: { createTab, addLog, setStatus },
+      terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
     })
 
     if (result.success) {

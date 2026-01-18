@@ -6,7 +6,7 @@
  */
 
 import * as React from 'react'
-import { Gear } from '@phosphor-icons/react'
+import { GearIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -152,7 +152,7 @@ export function TagConfigModal({
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
-            <Gear className="h-5 w-5 text-primary" />
+            <GearIcon className="h-5 w-5 text-primary" />
             <AlertDialogTitle>Configure: {tagName || tagId}</AlertDialogTitle>
           </div>
           <AlertDialogDescription>
