@@ -11,18 +11,18 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDatabase, initDatabase } from '../../db/client'
 import {
-  nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  SYSTEM_SUPERTAGS,
+    nodeProperties,
+    nodes,
+    SYSTEM_FIELDS,
+    SYSTEM_SUPERTAGS,
 } from '../../db/node-schema'
 import type { Item, ItemCommand, TagRef } from '../../types/item'
 import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
 import {
-  assembleNode,
-  findNode,
-  getNodesBySupertagWithInheritance,
-  getProperty,
+    assembleNode,
+    findNode,
+    getNodesBySupertagWithInheritance,
+    getProperty,
 } from './node.service'
 
 // ============================================================================
@@ -57,6 +57,28 @@ export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
     const db = getDatabase()
     const nodesList = getNodesBySupertagWithInheritance(db, supertagSystemId)
     return { success: true as const, nodes: nodesList }
+  })
+
+/**
+ * Update a node's content (for inline editing)
+ */
+export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ nodeId: z.string(), content: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeId, content } = ctx.data
+    initDatabase()
+    const db = getDatabase()
+
+    // Import the function dynamically to avoid circular deps
+    const { updateNodeContent: updateFn } = await import('./node.service')
+    updateFn(db, nodeId, content)
+
+    // Return the updated node
+    const updatedNode = assembleNode(db, nodeId)
+    if (!updatedNode) {
+      return { success: false as const, error: 'Node not found after update' }
+    }
+    return { success: true as const, node: updatedNode }
   })
 
 // ============================================================================

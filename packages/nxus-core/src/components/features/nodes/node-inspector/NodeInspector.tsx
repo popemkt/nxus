@@ -8,10 +8,12 @@
  * - Incoming backlinks
  * - Navigation breadcrumbs
  * - Clickable links to navigate between nodes
+ * - Inline content editing (double-click header)
  */
 
 import { cn } from '@/lib/utils'
 import type { AssembledNode } from '@/services/nodes/node.service'
+import { updateNodeContentServerFn } from '@/services/nodes/nodes.server'
 import { getBacklinksServerFn } from '@/services/nodes/search-nodes.server'
 import {
     ArrowBendUpLeft,
@@ -24,19 +26,73 @@ import {
     Fingerprint,
     Hash,
     LinkSimple,
+    PencilSimple,
 } from '@phosphor-icons/react'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
 
 export interface NodeInspectorProps {
   node: AssembledNode
   onNavigate: (nodeId: string) => void
+  onNodeUpdated?: (node: AssembledNode) => void
 }
 
-export function NodeInspector({ node, onNavigate }: NodeInspectorProps) {
+export function NodeInspector({
+  node,
+  onNavigate,
+  onNodeUpdated,
+}: NodeInspectorProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['properties', 'supertags']),
   )
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(node.content || '')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const queryClient = useQueryClient()
+
+  // Update edit content when node changes
+  useEffect(() => {
+    setEditContent(node.content || '')
+  }, [node.content])
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  // Mutation for updating node content
+  const updateMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return updateNodeContentServerFn({
+        data: { nodeId: node.id, content },
+      })
+    },
+    onSuccess: (result) => {
+      if (result.success && result.node) {
+        queryClient.invalidateQueries({ queryKey: ['nodes'] })
+        onNodeUpdated?.(result.node)
+      }
+    },
+  })
+
+  const handleSave = () => {
+    if (editContent !== node.content) {
+      updateMutation.mutate(editContent)
+    }
+    setIsEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave()
+    } else if (e.key === 'Escape') {
+      setEditContent(node.content || '')
+      setIsEditing(false)
+    }
+  }
 
   // Fetch backlinks for this node
   const { data: backlinksResult } = useQuery({
@@ -105,11 +161,38 @@ export function NodeInspector({ node, onNavigate }: NodeInspectorProps) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-border bg-card/50">
-        <h2 className="text-lg font-semibold truncate">
-          {node.content || (
-            <span className="text-muted-foreground italic">(no content)</span>
-          )}
-        </h2>
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className="w-full text-lg font-semibold bg-muted/50 border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        ) : (
+          <h2
+            className="text-lg font-semibold truncate flex items-center gap-2 group cursor-pointer"
+            onDoubleClick={() => !node.systemId && setIsEditing(true)}
+          >
+            {node.content || (
+              <span className="text-muted-foreground italic">(no content)</span>
+            )}
+            {!node.systemId && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
+                title="Edit content"
+              >
+                <PencilSimple className="size-4" />
+              </button>
+            )}
+            {updateMutation.isPending && (
+              <span className="text-xs text-muted-foreground">Saving...</span>
+            )}
+          </h2>
+        )}
         {node.systemId && (
           <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-mono">
             <Fingerprint className="size-3" />

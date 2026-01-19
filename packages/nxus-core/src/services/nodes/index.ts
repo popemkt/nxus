@@ -9,30 +9,33 @@
 // Read API - Query and Assemble
 // ============================================================================
 export {
-  assembleNode,
-  clearSystemNodeCache,
-  findNode,
-  findNodeById,
-  findNodeBySystemId,
-  getNodeIdsBySupertagWithInheritance,
-  getNodesBySupertagWithInheritance,
-  getSystemNode,
-  type AssembledNode,
-  type CreateNodeOptions,
-  type PropertyValue,
+    assembleNode,
+    assembleNodeWithInheritance,
+    clearSystemNodeCache,
+    findNode,
+    findNodeById,
+    findNodeBySystemId,
+    getAncestorSupertags,
+    getNodeIdsBySupertagWithInheritance,
+    getNodesBySupertagWithInheritance,
+    getSupertagFieldDefinitions,
+    getSystemNode,
+    type AssembledNode,
+    type CreateNodeOptions,
+    type PropertyValue
 } from './node.service'
 
 // ============================================================================
 // Write API - Create/Update/Delete (for new mini-apps)
 // ============================================================================
 export {
-  addPropertyValue,
-  clearProperty,
-  createNode,
-  deleteNode,
-  linkNodes,
-  setProperty,
-  updateNodeContent,
+    addPropertyValue,
+    clearProperty,
+    createNode,
+    deleteNode,
+    linkNodes,
+    setProperty,
+    updateNodeContent
 } from './node.service'
 
 // ============================================================================
@@ -49,9 +52,10 @@ export { nodeToCommand, nodeToItem, nodeToTag, nodesToItems } from './adapters'
 // Server Functions
 // ============================================================================
 export {
-  getAllItemsFromNodesServerFn,
-  getAllTagsFromNodesServerFn,
-  getItemByIdFromNodesServerFn,
-  getNodeServerFn,
-  getNodesBySupertagServerFn,
+    getAllItemsFromNodesServerFn,
+    getAllTagsFromNodesServerFn,
+    getItemByIdFromNodesServerFn,
+    getNodeServerFn,
+    getNodesBySupertagServerFn
 } from './nodes.server'
+

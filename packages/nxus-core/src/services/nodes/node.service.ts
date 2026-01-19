@@ -76,6 +76,111 @@ export function clearSystemNodeCache(): void {
   systemNodeCache.clear()
 }
 
+/**
+ * Get all ancestor supertags by walking the field:extends chain
+ * Returns IDs in order from immediate parent to root ancestor
+ */
+export function getAncestorSupertags(
+  db: ReturnType<typeof getDatabase>,
+  supertagId: string,
+  maxDepth: number = 10,
+): string[] {
+  const extendsField = getSystemNode(db, SYSTEM_FIELDS.EXTENDS)
+  if (!extendsField) return []
+
+  const ancestors: string[] = []
+  const visited = new Set<string>()
+  let currentId = supertagId
+
+  for (let depth = 0; depth < maxDepth; depth++) {
+    if (visited.has(currentId)) break // Prevent cycles
+    visited.add(currentId)
+
+    // Find the extends property of the current supertag
+    const extendsProp = db
+      .select()
+      .from(nodeProperties)
+      .where(eq(nodeProperties.nodeId, currentId))
+      .all()
+      .find((p) => p.fieldNodeId === extendsField.id)
+
+    if (!extendsProp) break
+
+    try {
+      const parentId = JSON.parse(extendsProp.value || '')
+      if (typeof parentId === 'string' && parentId) {
+        ancestors.push(parentId)
+        currentId = parentId
+      } else {
+        break
+      }
+    } catch {
+      break
+    }
+  }
+
+  return ancestors
+}
+
+/**
+ * Get field definitions from a supertag (fields that the supertag defines for its instances)
+ * Returns map of fieldSystemId -> default value (or undefined if no default)
+ */
+export function getSupertagFieldDefinitions(
+  db: ReturnType<typeof getDatabase>,
+  supertagId: string,
+): Map<string, { fieldNodeId: string; fieldName: string; defaultValue?: unknown }> {
+  const fieldDefs = new Map<string, { fieldNodeId: string; fieldName: string; defaultValue?: unknown }>()
+
+  // Get all properties of the supertag node itself
+  // Properties on a supertag define the schema for its instances
+  const props = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.nodeId, supertagId))
+    .all()
+
+  // Filter to only include properties that are "field definitions"
+  // Skip system fields like supertag, extends that are about the supertag itself
+  const systemFieldIds = new Set<string>()
+  const systemFields = [
+    SYSTEM_FIELDS.SUPERTAG,
+    SYSTEM_FIELDS.EXTENDS,
+    SYSTEM_FIELDS.FIELD_TYPE,
+  ]
+  for (const sf of systemFields) {
+    const node = getSystemNode(db, sf)
+    if (node) systemFieldIds.add(node.id)
+  }
+
+  for (const prop of props) {
+    if (systemFieldIds.has(prop.fieldNodeId)) continue
+
+    const fieldNode = db
+      .select()
+      .from(nodes)
+      .where(eq(nodes.id, prop.fieldNodeId))
+      .get()
+
+    if (fieldNode && fieldNode.systemId) {
+      let defaultValue: unknown
+      try {
+        defaultValue = JSON.parse(prop.value || 'null')
+      } catch {
+        defaultValue = prop.value
+      }
+
+      fieldDefs.set(fieldNode.systemId, {
+        fieldNodeId: prop.fieldNodeId,
+        fieldName: fieldNode.content || fieldNode.systemId,
+        defaultValue,
+      })
+    }
+  }
+
+  return fieldDefs
+}
+
 // ============================================================================
 // Read API - Query nodes
 // ============================================================================
@@ -220,6 +325,71 @@ export function assembleNode(
   }
 
   return assembled
+}
+
+/**
+ * Assemble a node with inherited properties from supertag chain
+ *
+ * This walks the supertag inheritance chain (field:extends) and merges
+ * field definitions from ancestor supertags into the node's properties.
+ *
+ * Inheritance order: Node's own properties > Immediate supertag > Parent supertags
+ */
+export function assembleNodeWithInheritance(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): AssembledNode | null {
+  // Start with base assembled node
+  const node = assembleNode(db, nodeId)
+  if (!node) return null
+
+  // Track which fields we already have (don't override)
+  const existingFieldSystemIds = new Set<string>()
+  for (const values of Object.values(node.properties)) {
+    for (const pv of values) {
+      if (pv.fieldSystemId) {
+        existingFieldSystemIds.add(pv.fieldSystemId)
+      }
+    }
+  }
+
+  // For each supertag, collect inherited fields
+  for (const supertag of node.supertags) {
+    // Get all ancestors (immediate supertag + its parents)
+    const supertagChain = [supertag.id, ...getAncestorSupertags(db, supertag.id)]
+
+    // Process from root to leaf (so child supertag values override parent values)
+    const reversedChain = [...supertagChain].reverse()
+
+    for (const stId of reversedChain) {
+      const fieldDefs = getSupertagFieldDefinitions(db, stId)
+
+      for (const [fieldSystemId, def] of fieldDefs) {
+        // Skip if node already has this field
+        if (existingFieldSystemIds.has(fieldSystemId)) continue
+
+        // Add inherited field with default value
+        if (def.defaultValue !== undefined && def.defaultValue !== null) {
+          const inheritedPv: PropertyValue = {
+            value: def.defaultValue,
+            rawValue: JSON.stringify(def.defaultValue),
+            fieldNodeId: def.fieldNodeId,
+            fieldName: def.fieldName,
+            fieldSystemId: fieldSystemId,
+            order: 0,
+          }
+
+          if (!node.properties[def.fieldName]) {
+            node.properties[def.fieldName] = []
+          }
+          node.properties[def.fieldName].push(inheritedPv)
+          existingFieldSystemIds.add(fieldSystemId)
+        }
+      }
+    }
+  }
+
+  return node
 }
 
 // ============================================================================
