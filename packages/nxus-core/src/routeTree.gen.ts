@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as DebugRouteImport } from './routes/debug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppsAppIdRouteImport } from './routes/apps.$appId'
 
@@ -22,6 +23,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugRoute = DebugRouteImport.update({
+  id: '/debug',
+  path: '/debug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,12 +43,14 @@ const AppsAppIdRoute = AppsAppIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/debug': typeof DebugRoute
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/debug': typeof DebugRoute
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/debug': typeof DebugRoute
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inbox' | '/settings' | '/apps/$appId'
+  fullPaths: '/' | '/debug' | '/inbox' | '/settings' | '/apps/$appId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inbox' | '/settings' | '/apps/$appId'
-  id: '__root__' | '/' | '/inbox' | '/settings' | '/apps/$appId'
+  to: '/' | '/debug' | '/inbox' | '/settings' | '/apps/$appId'
+  id: '__root__' | '/' | '/debug' | '/inbox' | '/settings' | '/apps/$appId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DebugRoute: typeof DebugRoute
   InboxRoute: typeof InboxRoute
   SettingsRoute: typeof SettingsRoute
   AppsAppIdRoute: typeof AppsAppIdRoute
@@ -85,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/debug': {
+      id: '/debug'
+      path: '/debug'
+      fullPath: '/debug'
+      preLoaderRoute: typeof DebugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DebugRoute: DebugRoute,
   InboxRoute: InboxRoute,
   SettingsRoute: SettingsRoute,
   AppsAppIdRoute: AppsAppIdRoute,
