@@ -1,14 +1,14 @@
 import { cn } from '@/lib/utils'
 import type { AssembledNode } from '@/services/nodes/node.service'
 import {
-    CaretDown,
-    CaretRight,
-    Cube,
-    Database,
-    Hash,
-    MagnifyingGlass,
+  CaretDown,
+  CaretRight,
+  Cube,
+  Database,
+  Hash,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NodeBadge } from '../shared'
 
 export interface NodeBrowserProps {
@@ -91,9 +91,7 @@ export function NodeBrowser({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
-          setFocusedIndex((prev) =>
-            Math.min(prev + 1, flatNodeList.length - 1),
-          )
+          setFocusedIndex((prev) => Math.min(prev + 1, flatNodeList.length - 1))
           break
         case 'ArrowUp':
           e.preventDefault()
@@ -112,15 +110,19 @@ export function NodeBrowser({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [flatNodeList, focusedIndex, onSelectNode])
 
-  // Auto-expand first group on load
+  // Track if we've done the initial auto-expand
+  const hasAutoExpanded = useRef(false)
+
+  // Auto-expand first group only on initial load
   useEffect(() => {
-    if (groupedNodes.size > 0 && expandedGroups.size === 0) {
+    if (!hasAutoExpanded.current && groupedNodes.size > 0) {
       const firstGroup = groupedNodes.keys().next().value
       if (firstGroup) {
         setExpandedGroups(new Set([firstGroup]))
+        hasAutoExpanded.current = true
       }
     }
-  }, [groupedNodes, expandedGroups.size])
+  }, [groupedNodes])
 
   return (
     <div className="flex-1 flex flex-col min-w-0">

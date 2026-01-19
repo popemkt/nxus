@@ -9,7 +9,11 @@ import { and, eq, isNull, like } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDatabase, initDatabase } from '../../db/client'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../../db/node-schema'
-import { assembleNode, type AssembledNode } from './node.service'
+import {
+  assembleNode,
+  getNodesBySupertagWithInheritance,
+  type AssembledNode,
+} from './node.service'
 
 /**
  * Search nodes by content (case-insensitive via content_plain)
@@ -130,18 +134,33 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
     }),
   )
   .handler(async (ctx) => {
-    const { limit = 200, includeSystemNodes = true } = ctx.data
+    const {
+      supertagSystemId,
+      limit = 200,
+      includeSystemNodes = true,
+    } = ctx.data
     initDatabase()
     const db = getDatabase()
 
-    // Get all non-deleted nodes
-    let query = db
+    // If supertag filter is provided, use inheritance-aware query
+    if (supertagSystemId) {
+      const filteredNodes = getNodesBySupertagWithInheritance(
+        db,
+        supertagSystemId,
+      )
+      return {
+        success: true as const,
+        nodes: filteredNodes.slice(0, limit),
+      }
+    }
+
+    // Otherwise get all non-deleted nodes
+    const allNodes = db
       .select()
       .from(nodes)
       .where(isNull(nodes.deletedAt))
       .limit(limit)
-
-    const allNodes = query.all()
+      .all()
 
     // Assemble each node
     const assembledNodes: AssembledNode[] = []
