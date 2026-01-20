@@ -11,7 +11,6 @@
  * - Inline content editing (double-click header)
  */
 
-import { SYSTEM_SUPERTAGS } from '@/db/node-schema'
 import { cn } from '@/lib/utils'
 import type { AssembledNode } from '@/services/nodes/node.service'
 import {
@@ -37,7 +36,6 @@ import {
   LinkSimple,
   List,
   PencilSimple,
-  Terminal,
   ToggleRight,
 } from '@phosphor-icons/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -131,18 +129,18 @@ export function NodeInspector({
     systemId: string | null
   }> = ownerChainResult?.success ? ownerChainResult.chain : []
 
-  // Fetch child command nodes (for item nodes)
-  const { data: childCommandsResult } = useQuery({
-    queryKey: ['childCommands', node.id],
+  // Fetch child nodes (nodes where ownerId === this node)
+  const { data: childNodesResult } = useQuery({
+    queryKey: ['childNodes', node.id],
     queryFn: () =>
       getChildNodesServerFn({
-        data: { parentId: node.id, supertagSystemId: SYSTEM_SUPERTAGS.COMMAND },
+        data: { parentId: node.id },
       }),
     staleTime: 30000,
   })
 
-  const childCommands: AssembledNode[] = childCommandsResult?.success
-    ? childCommandsResult.children
+  const childNodes: AssembledNode[] = childNodesResult?.success
+    ? childNodesResult.children
     : []
 
   const toggleSection = (section: string) => {
@@ -347,31 +345,41 @@ export function NodeInspector({
           )}
         </Section>
 
-        {/* Commands Section (for nodes with child commands) */}
-        {childCommands.length > 0 && (
-          <Section
-            title="Commands"
-            icon={<Terminal className="size-3.5" />}
-            count={childCommands.length}
-            expanded={expandedSections.has('commands')}
-            onToggle={() => toggleSection('commands')}
-          >
+        {/* Children Section (nodes owned by this node) */}
+        <Section
+          title="Children"
+          icon={<Cube className="size-3.5" />}
+          count={childNodes.length}
+          expanded={expandedSections.has('children')}
+          onToggle={() => toggleSection('children')}
+        >
+          {childNodes.length === 0 ? (
+            <div className="text-xs text-muted-foreground italic">
+              No children
+            </div>
+          ) : (
             <div className="space-y-1">
-              {childCommands.map((cmd) => (
+              {childNodes.map((child) => (
                 <button
-                  key={cmd.id}
-                  onClick={() => onNavigate(cmd.id)}
+                  key={child.id}
+                  onClick={() => onNavigate(child.id)}
                   className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-muted transition-colors text-left group"
                 >
-                  <Terminal className="size-3 text-primary" />
-                  <span className="truncate group-hover:underline font-medium">
-                    {cmd.content || cmd.systemId || cmd.id.slice(0, 8)}
+                  <Cube className="size-3 text-muted-foreground" />
+                  <span className="truncate group-hover:underline">
+                    {child.content || child.systemId || child.id.slice(0, 8)}
                   </span>
+                  {child.supertags.length > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-primary/70 ml-auto shrink-0">
+                      <Hash className="size-2.5" />
+                      {child.supertags[0].content}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
-          </Section>
-        )}
+          )}
+        </Section>
 
         {/* Backlinks Section */}
         <Section
