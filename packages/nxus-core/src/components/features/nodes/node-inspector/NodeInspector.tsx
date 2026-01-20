@@ -13,7 +13,10 @@
 
 import { cn } from '@/lib/utils'
 import type { AssembledNode } from '@/services/nodes/node.service'
-import { updateNodeContentServerFn } from '@/services/nodes/nodes.server'
+import {
+  getNodeServerFn,
+  updateNodeContentServerFn,
+} from '@/services/nodes/nodes.server'
 import {
   getBacklinksServerFn,
   getOwnerChainServerFn,
@@ -470,6 +473,41 @@ function PropertyRow({
   )
 }
 
+// Node link component - renders node reference as "Name #Supertag" like Tana
+function NodeLink({
+  nodeId,
+  onNavigate,
+}: {
+  nodeId: string
+  onNavigate: (nodeId: string) => void
+}) {
+  const { data: nodeResult } = useQuery({
+    queryKey: ['node', nodeId],
+    queryFn: () => getNodeServerFn({ data: { identifier: nodeId } }),
+    staleTime: 60000,
+  })
+
+  const linkedNode = nodeResult?.success ? nodeResult.node : null
+  const displayName =
+    linkedNode?.content || linkedNode?.systemId || nodeId.slice(0, 8)
+  const supertag = linkedNode?.supertags?.[0]
+
+  return (
+    <button
+      onClick={() => onNavigate(nodeId)}
+      className="text-primary hover:underline flex items-center gap-1.5 group"
+    >
+      <LinkSimple className="size-3 opacity-60 group-hover:opacity-100" />
+      <span className="truncate max-w-[180px]">{displayName}</span>
+      {supertag && (
+        <span className="text-muted-foreground text-[10px] shrink-0">
+          #{supertag.content}
+        </span>
+      )}
+    </button>
+  )
+}
+
 // Smart property value renderer
 function PropertyValue({
   value,
@@ -488,15 +526,7 @@ function PropertyValue({
       value,
     )
   ) {
-    return (
-      <button
-        onClick={() => onNavigate(value)}
-        className="text-primary hover:underline font-mono flex items-center gap-1"
-      >
-        <LinkSimple className="size-3" />
-        {value.slice(0, 8)}...
-      </button>
-    )
+    return <NodeLink nodeId={value} onNavigate={onNavigate} />
   }
 
   // Array of values

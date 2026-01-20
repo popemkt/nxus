@@ -271,13 +271,14 @@ async function seedNodes() {
           id: cmdNodeId,
           content: cmd.name,
           contentPlain: cmd.name.toLowerCase(),
+          ownerId: nodeId, // Item owns its commands
           createdAt: new Date(),
           updatedAt: new Date(),
         })
         .run()
 
       addProperty(db, cmdNodeId, F.supertag, JSON.stringify(ST.command))
-      addProperty(db, cmdNodeId, F.parent, JSON.stringify(nodeId))
+      // Note: parent relationship is established via ownerId on the node itself
       addProperty(db, cmdNodeId, F.commandId, JSON.stringify(cmd.id))
       addProperty(db, cmdNodeId, F.command, JSON.stringify(cmd.command))
       addProperty(db, cmdNodeId, F.mode, JSON.stringify(cmd.mode))

@@ -19,10 +19,11 @@ import { NodeBrowser } from '@/components/features/nodes/node-browser'
 import { NodeInspector } from '@/components/features/nodes/node-inspector'
 import { SupertagSidebar } from '@/components/features/nodes/supertag-sidebar'
 import type { AssembledNode } from '@/services/nodes/node.service'
+import { getNodeServerFn } from '@/services/nodes/nodes.server'
 import {
-    getAllNodesServerFn,
-    getSupertagsServerFn,
-    searchNodesServerFn,
+  getAllNodesServerFn,
+  getSupertagsServerFn,
+  searchNodesServerFn,
 } from '@/services/nodes/search-nodes.server'
 
 export const Route = createFileRoute('/nodes')({ component: NodeWorkbench })
@@ -58,12 +59,24 @@ function NodeWorkbench() {
     staleTime: 10000,
   })
 
+  // Fetch the selected node separately (for navigation to nodes outside current list)
+  const { data: selectedNodeResult } = useQuery({
+    queryKey: ['node', selectedNodeId],
+    queryFn: () => getNodeServerFn({ data: { identifier: selectedNodeId! } }),
+    enabled: !!selectedNodeId,
+    staleTime: 30000,
+  })
+
   const nodes: AssembledNode[] = nodesResult?.success ? nodesResult.nodes : []
   const supertags: AssembledNode[] = supertagsResult?.success
     ? supertagsResult.supertags
     : []
 
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId)
+  // Prefer the separately fetched node (works even if not in filtered list)
+  // Fall back to finding in the list for instant UI
+  const selectedNode = selectedNodeResult?.success
+    ? selectedNodeResult.node
+    : nodes.find((n) => n.id === selectedNodeId)
 
   return (
     <div className="h-screen bg-background flex">
