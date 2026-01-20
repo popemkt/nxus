@@ -7,11 +7,11 @@
  * bypassing the legacy items/commands tables.
  */
 
-import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
+import { uuidv7 } from 'uuidv7'
 import { getDatabase, initDatabase } from '../src/db/client'
 import {
   nodeProperties,
@@ -93,7 +93,7 @@ function getOrCreateTagNode(
   }
 
   // Create new tag node
-  const nodeId = randomUUID()
+  const nodeId = uuidv7()
   db.insert(nodes)
     .values({
       id: nodeId,
@@ -197,7 +197,7 @@ async function seedNodes() {
       // Delete existing properties to re-seed
       db.delete(nodeProperties).where(eq(nodeProperties.nodeId, nodeId)).run()
     } else {
-      nodeId = randomUUID()
+      nodeId = uuidv7()
       db.insert(nodes)
         .values({
           id: nodeId,
@@ -265,7 +265,7 @@ async function seedNodes() {
 
     // Commands
     for (const cmd of item.commands || []) {
-      const cmdNodeId = randomUUID()
+      const cmdNodeId = uuidv7()
       db.insert(nodes)
         .values({
           id: cmdNodeId,

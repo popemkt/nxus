@@ -14,19 +14,22 @@
 import { cn } from '@/lib/utils'
 import type { AssembledNode } from '@/services/nodes/node.service'
 import { updateNodeContentServerFn } from '@/services/nodes/nodes.server'
-import { getBacklinksServerFn } from '@/services/nodes/search-nodes.server'
 import {
-    ArrowBendUpLeft,
-    ArrowsLeftRight,
-    ArrowSquareOut,
-    CaretDown,
-    CaretRight,
-    Clock,
-    Code,
-    Fingerprint,
-    Hash,
-    LinkSimple,
-    PencilSimple,
+  getBacklinksServerFn,
+  getOwnerChainServerFn,
+} from '@/services/nodes/search-nodes.server'
+import {
+  ArrowBendUpLeft,
+  ArrowsLeftRight,
+  ArrowSquareOut,
+  CaretDown,
+  CaretRight,
+  Clock,
+  Code,
+  Fingerprint,
+  Hash,
+  LinkSimple,
+  PencilSimple,
 } from '@phosphor-icons/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
@@ -101,8 +104,23 @@ export function NodeInspector({
     staleTime: 30000,
   })
 
-  const backlinks: AssembledNode[] =
-    backlinksResult?.success ? backlinksResult.backlinks : []
+  const backlinks: AssembledNode[] = backlinksResult?.success
+    ? backlinksResult.backlinks
+    : []
+
+  // Fetch owner chain for breadcrumbs
+  const { data: ownerChainResult } = useQuery({
+    queryKey: ['ownerChain', node.id],
+    queryFn: () => getOwnerChainServerFn({ data: { nodeId: node.id } }),
+    staleTime: 30000,
+    enabled: !!node.ownerId, // Only fetch if node has an owner
+  })
+
+  const ownerChain: Array<{
+    id: string
+    content: string | null
+    systemId: string | null
+  }> = ownerChainResult?.success ? ownerChainResult.chain : []
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -161,6 +179,25 @@ export function NodeInspector({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-border bg-card/50">
+        {/* Breadcrumbs */}
+        {ownerChain.length > 1 && (
+          <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground overflow-x-auto">
+            {ownerChain.slice(0, -1).map((item, idx) => (
+              <span key={item.id} className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => onNavigate(item.id)}
+                  className="hover:text-primary hover:underline truncate max-w-[120px]"
+                  title={item.content || item.systemId || item.id}
+                >
+                  {item.content || item.systemId || item.id.slice(0, 8)}
+                </button>
+                {idx < ownerChain.length - 2 && (
+                  <CaretRight className="size-3 shrink-0" />
+                )}
+              </span>
+            ))}
+          </div>
+        )}
         {isEditing ? (
           <input
             ref={inputRef}

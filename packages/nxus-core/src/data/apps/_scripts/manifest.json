@@ -9,6 +9,7 @@
         "macos",
         "windows"
     ],
+    "checkCommand": "echo true",
     "commands": [
         {
             "id": "create-github-repo",

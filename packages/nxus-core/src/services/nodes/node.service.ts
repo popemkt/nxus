@@ -7,8 +7,8 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
+import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../../db/client'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../../db/node-schema'
 
@@ -129,8 +129,14 @@ export function getAncestorSupertags(
 export function getSupertagFieldDefinitions(
   db: ReturnType<typeof getDatabase>,
   supertagId: string,
-): Map<string, { fieldNodeId: string; fieldName: string; defaultValue?: unknown }> {
-  const fieldDefs = new Map<string, { fieldNodeId: string; fieldName: string; defaultValue?: unknown }>()
+): Map<
+  string,
+  { fieldNodeId: string; fieldName: string; defaultValue?: unknown }
+> {
+  const fieldDefs = new Map<
+    string,
+    { fieldNodeId: string; fieldName: string; defaultValue?: unknown }
+  >()
 
   // Get all properties of the supertag node itself
   // Properties on a supertag define the schema for its instances
@@ -356,7 +362,10 @@ export function assembleNodeWithInheritance(
   // For each supertag, collect inherited fields
   for (const supertag of node.supertags) {
     // Get all ancestors (immediate supertag + its parents)
-    const supertagChain = [supertag.id, ...getAncestorSupertags(db, supertag.id)]
+    const supertagChain = [
+      supertag.id,
+      ...getAncestorSupertags(db, supertag.id),
+    ]
 
     // Process from root to leaf (so child supertag values override parent values)
     const reversedChain = [...supertagChain].reverse()
@@ -403,7 +412,7 @@ export function createNode(
   db: ReturnType<typeof getDatabase>,
   options: CreateNodeOptions,
 ): string {
-  const nodeId = randomUUID()
+  const nodeId = uuidv7()
   const now = new Date()
 
   db.insert(nodes)

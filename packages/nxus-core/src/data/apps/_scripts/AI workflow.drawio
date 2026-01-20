@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" version="29.3.2">
   <diagram name="Page-1" id="_9WuSA7sj9l9ROBAU9qe">
-    <mxGraphModel dx="1074" dy="1021" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1922" dy="1018" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -184,6 +184,30 @@
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="450" y="1160" as="sourcePoint" />
             <mxPoint x="480" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="OVr6cGYYiI68A-jpwxc5-1" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=17;" value="Good for prototyping and AI interfacing with the db directly" vertex="1">
+          <mxGeometry height="60" width="110" x="-110" y="1280" as="geometry" />
+        </mxCell>
+        <mxCell id="OVr6cGYYiI68A-jpwxc5-2" edge="1" parent="1" source="OVr6cGYYiI68A-jpwxc5-1" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" target="HHSoT7AJqHFKdJInWXzz-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="40" y="1320" as="sourcePoint" />
+            <mxPoint x="90" y="1270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="OVr6cGYYiI68A-jpwxc5-4" parent="1" style="swimlane;startSize=0;" value="Techniques" vertex="1">
+          <mxGeometry height="200" width="320" x="350" y="1340" as="geometry" />
+        </mxCell>
+        <mxCell id="OVr6cGYYiI68A-jpwxc5-3" parent="OVr6cGYYiI68A-jpwxc5-4" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=17;" value="Json data for AI readings making up data" vertex="1">
+          <mxGeometry height="60" width="110" x="10" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="OVr6cGYYiI68A-jpwxc5-5" parent="OVr6cGYYiI68A-jpwxc5-4" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=17;" value="Scripts are really effective to interface with the database" vertex="1">
+          <mxGeometry height="60" width="110" x="130" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="OVr6cGYYiI68A-jpwxc5-6" edge="1" parent="1" source="OVr6cGYYiI68A-jpwxc5-4" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" target="_Oi1Si3Fho545Zoji3qj-1" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="420" y="1290" as="sourcePoint" />
+            <mxPoint x="482" y="1220" as="targetPoint" />
           </mxGeometry>
         </mxCell>
       </root>

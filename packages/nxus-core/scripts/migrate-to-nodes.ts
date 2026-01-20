@@ -6,10 +6,10 @@
  * Migrates items, tags, and commands from old tables to the node architecture.
  */
 
-import { randomUUID } from 'crypto'
 import { eq, isNull } from 'drizzle-orm'
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { uuidv7 } from 'uuidv7'
 import { getDatabase, initDatabase } from '../src/db/client'
 import {
   nodeProperties,
@@ -168,7 +168,7 @@ async function migrate() {
   let tagCount = 0
 
   for (const tag of allTags) {
-    const nodeId = randomUUID()
+    const nodeId = uuidv7()
     tagIdMap.set(tag.id, nodeId)
 
     db.insert(nodes)
@@ -212,7 +212,7 @@ async function migrate() {
   let itemCount = 0
 
   for (const item of allItems) {
-    const nodeId = randomUUID()
+    const nodeId = uuidv7()
     itemIdMap.set(item.id, nodeId)
 
     db.insert(nodes)
@@ -273,7 +273,7 @@ async function migrate() {
   let commandCount = 0
 
   for (const cmd of allCommands) {
-    const nodeId = randomUUID()
+    const nodeId = uuidv7()
     commandIdMap.set(cmd.id, nodeId)
 
     db.insert(nodes)

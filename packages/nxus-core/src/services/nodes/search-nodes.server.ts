@@ -229,3 +229,43 @@ export const getBacklinksServerFn = createServerFn({ method: 'GET' })
 
     return { success: true as const, backlinks }
   })
+
+/**
+ * Get the owner chain (breadcrumbs) for a node
+ * Traverses up the ownerId chain until reaching the root
+ */
+export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ nodeId: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeId } = ctx.data
+    initDatabase()
+    const db = getDatabase()
+
+    const chain: Array<{
+      id: string
+      content: string | null
+      systemId: string | null
+    }> = []
+    const visited = new Set<string>()
+    let currentId: string | null = nodeId
+
+    // Walk up the owner chain (max 20 levels to prevent infinite loops)
+    while (currentId && chain.length < 20) {
+      if (visited.has(currentId)) break
+      visited.add(currentId)
+
+      const node = db.select().from(nodes).where(eq(nodes.id, currentId)).get()
+
+      if (!node) break
+
+      chain.unshift({
+        id: node.id,
+        content: node.content,
+        systemId: node.systemId,
+      })
+
+      currentId = node.ownerId
+    }
+
+    return { success: true as const, chain }
+  })

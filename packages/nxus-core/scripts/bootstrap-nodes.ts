@@ -8,10 +8,10 @@
  * Supertags are assigned via field:supertag property values.
  */
 
-import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { uuidv7 } from 'uuidv7'
 import { getDatabase, initDatabase } from '../src/db/client'
 import {
   nodeProperties,
@@ -31,7 +31,7 @@ const systemNodeIds = new Map<string, string>()
  */
 function getSystemNodeId(systemId: string): string {
   if (!systemNodeIds.has(systemId)) {
-    systemNodeIds.set(systemId, randomUUID())
+    systemNodeIds.set(systemId, uuidv7())
   }
   return systemNodeIds.get(systemId)!
 }

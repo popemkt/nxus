@@ -13,11 +13,6 @@
     "dependencies": [
         "git"
     ],
-    "installConfig": {
-        "linux": "git clone https://github.com/michaelshimeles/ralphy.git && cd ralphy && chmod +x ralphy.sh",
-        "macos": "git clone https://github.com/michaelshimeles/ralphy.git && cd ralphy && chmod +x ralphy.sh",
-        "windows": "git clone https://github.com/michaelshimeles/ralphy.git"
-    },
     "commands": [
         {
             "id": "run-single-task",
