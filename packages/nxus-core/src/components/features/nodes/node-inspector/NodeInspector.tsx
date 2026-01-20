@@ -246,7 +246,7 @@ export function NodeInspector({
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pt-2">
         {/* Supertags Section */}
         <Section
           title="Supertags"
@@ -437,7 +437,7 @@ function Section({
           <span className="text-xs text-muted-foreground ml-auto">{count}</span>
         )}
       </button>
-      {expanded && <div className="px-4 pb-4">{children}</div>}
+      {expanded && <div className="px-4 pt-2 pb-4">{children}</div>}
     </div>
   )
 }

@@ -141,7 +141,7 @@ export function NodeBrowser({
       </div>
 
       {/* Node List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto pt-2">
         {isLoading ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -164,7 +164,7 @@ export function NodeBrowser({
                 <div key={supertagName} className="space-y-1">
                   {/* Group Header */}
                   <button
-                    className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
+                    className="flex items-center gap-2 px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
                     onClick={() => toggleGroup(supertagName)}
                   >
                     {expandedGroups.has(supertagName) ? (
@@ -181,7 +181,7 @@ export function NodeBrowser({
 
                   {/* Group Items */}
                   {expandedGroups.has(supertagName) && (
-                    <div className="ml-5 space-y-1">
+                    <div className="ml-5 pt-1 pb-2 space-y-1">
                       {groupNodes.map((node) => {
                         const globalIdx = flatNodeList.indexOf(node)
                         return (
