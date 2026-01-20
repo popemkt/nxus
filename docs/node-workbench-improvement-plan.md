@@ -275,26 +275,46 @@ src/
 
 ### 6.1 Immediate Improvements (< 1 day each)
 
-1. **Extract components from debug.tsx**
+1. **Extract components from debug.tsx** ✅
    - Pull inline code into dedicated files
    - No functionality change, just organization
 
-2. **Add keyboard navigation**
+2. **Add keyboard navigation** ✅
    - Arrow keys to move between nodes
    - Enter to select/edit
    - Escape to deselect
 
-3. **Better breadcrumbs**
+3. **Better breadcrumbs** ✅
    - Show full owner chain
    - Clickable navigation
 
-4. **Node content editing**
+4. **Node content editing** ✅
    - Double-click to edit node content inline
    - Auto-save on blur
 
 5. **Search with field filters**
    - Add dropdown to filter by specific field
    - Type-ahead for field values
+
+### 6.2 Node Inspector QoL Improvements
+
+1. **Field & Supertag Navigation**
+   - Make field names and supertag pills clickable.
+   - Navigate straight to the Field/Supertag definition node.
+
+2. **Dedicated Commands Section**
+   - For item nodes, add a collapsible section listing all owned commands.
+   - Leverages the `ownerId` hierarchy.
+
+3. **Enhanced Backlinks Rendering**
+   - Render backlinks using the `NodeBadge` component.
+   - Show icons and supertags for referencing nodes.
+
+4. **Property Type Visuals**
+   - Add icons to indicate property types (text, reference, JSON).
+
+5. **UUIDv7 Migration** ✅
+   - Ensure all new nodes use time-ordered UUIDs for performance.
 
 ---
 
