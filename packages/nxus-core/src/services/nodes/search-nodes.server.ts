@@ -15,18 +15,36 @@ import {
   type AssembledNode,
 } from './node.service'
 
+// ============================================================================
+// Result Types
+// ============================================================================
+
+type SearchNodesResult = { success: true; nodes: AssembledNode[] }
+type SupertagsResult = { success: true; supertags: AssembledNode[] }
+type AllNodesResult = { success: true; nodes: AssembledNode[] }
+type BacklinksResult = { success: true; backlinks: AssembledNode[] }
+type OwnerChainResult = {
+  success: true
+  chain: Array<{ id: string; content: string | null; systemId: string | null }>
+}
+type ChildNodesResult = { success: true; children: AssembledNode[] }
+
+// ============================================================================
+// Server Functions
+// ============================================================================
+
 /**
  * Search nodes by content (case-insensitive via content_plain)
  */
 export const searchNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ query: z.string(), limit: z.number().optional() }))
-  .handler(async (ctx) => {
+  .handler(async (ctx): Promise<SearchNodesResult> => {
     const { query, limit = 50 } = ctx.data
     initDatabase()
     const db = getDatabase()
 
     if (!query.trim()) {
-      return { success: true as const, nodes: [] }
+      return { success: true, nodes: [] }
     }
 
     // Search by content_plain (lowercase indexed field)
@@ -49,7 +67,7 @@ export const searchNodesServerFn = createServerFn({ method: 'GET' })
       }
     }
 
-    return { success: true as const, nodes: assembledNodes }
+    return { success: true, nodes: assembledNodes }
   })
 
 /**
@@ -57,7 +75,7 @@ export const searchNodesServerFn = createServerFn({ method: 'GET' })
  * Returns nodes with #Supertag supertag, including inheritance info
  */
 export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
-  async () => {
+  async (): Promise<SupertagsResult> => {
     initDatabase()
     const db = getDatabase()
 
@@ -69,7 +87,7 @@ export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
       .get()
 
     if (!supertagFieldNode) {
-      return { success: true as const, supertags: [] }
+      return { success: true, supertags: [] }
     }
 
     // Find the #Supertag supertag node
@@ -80,7 +98,7 @@ export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
       .get()
 
     if (!supertagSupertag) {
-      return { success: true as const, supertags: [] }
+      return { success: true, supertags: [] }
     }
 
     // Find all nodes that have supertag:supertag as their supertag
@@ -117,7 +135,7 @@ export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
       supertags.unshift(supertagNode)
     }
 
-    return { success: true as const, supertags }
+    return { success: true, supertags }
   },
 )
 
@@ -133,7 +151,7 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
       includeSystemNodes: z.boolean().optional(),
     }),
   )
-  .handler(async (ctx) => {
+  .handler(async (ctx): Promise<AllNodesResult> => {
     const {
       supertagSystemId,
       limit = 200,
@@ -149,7 +167,7 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
         supertagSystemId,
       )
       return {
-        success: true as const,
+        success: true,
         nodes: filteredNodes.slice(0, limit),
       }
     }
@@ -176,7 +194,7 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
       }
     }
 
-    return { success: true as const, nodes: assembledNodes }
+    return { success: true, nodes: assembledNodes }
   })
 
 /**
@@ -184,7 +202,7 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
  */
 export const getBacklinksServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
-  .handler(async (ctx) => {
+  .handler(async (ctx): Promise<BacklinksResult> => {
     const { nodeId } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -227,7 +245,7 @@ export const getBacklinksServerFn = createServerFn({ method: 'GET' })
       }
     }
 
-    return { success: true as const, backlinks }
+    return { success: true, backlinks }
   })
 
 /**
@@ -236,7 +254,7 @@ export const getBacklinksServerFn = createServerFn({ method: 'GET' })
  */
 export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
-  .handler(async (ctx) => {
+  .handler(async (ctx): Promise<OwnerChainResult> => {
     const { nodeId } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -267,5 +285,52 @@ export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
       currentId = node.ownerId
     }
 
-    return { success: true as const, chain }
+    return { success: true, chain }
+  })
+
+/**
+ * Get child nodes of a parent node (nodes where ownerId === parentId)
+ * Optionally filter by supertag (e.g., 'supertag:command')
+ */
+export const getChildNodesServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(
+    z.object({
+      parentId: z.string(),
+      supertagSystemId: z.string().optional(),
+      limit: z.number().optional(),
+    }),
+  )
+  .handler(async (ctx): Promise<ChildNodesResult> => {
+    const { parentId, supertagSystemId, limit = 50 } = ctx.data
+    initDatabase()
+    const db = getDatabase()
+
+    // Get all nodes owned by parent
+    const childNodes = db
+      .select()
+      .from(nodes)
+      .where(and(eq(nodes.ownerId, parentId), isNull(nodes.deletedAt)))
+      .limit(limit)
+      .all()
+
+    // Assemble each node
+    const assembledNodes: AssembledNode[] = []
+    for (const node of childNodes) {
+      const assembled = assembleNode(db, node.id)
+      if (assembled) {
+        // Filter by supertag if specified
+        if (supertagSystemId) {
+          const hasSupertag = assembled.supertags.some(
+            (st) => st.systemId === supertagSystemId,
+          )
+          if (hasSupertag) {
+            assembledNodes.push(assembled)
+          }
+        } else {
+          assembledNodes.push(assembled)
+        }
+      }
+    }
+
+    return { success: true, children: assembledNodes }
   })

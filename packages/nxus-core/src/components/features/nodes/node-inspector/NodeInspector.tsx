@@ -11,6 +11,7 @@
  * - Inline content editing (double-click header)
  */
 
+import { SYSTEM_SUPERTAGS } from '@/db/node-schema'
 import { cn } from '@/lib/utils'
 import type { AssembledNode } from '@/services/nodes/node.service'
 import {
@@ -19,20 +20,25 @@ import {
 } from '@/services/nodes/nodes.server'
 import {
   getBacklinksServerFn,
+  getChildNodesServerFn,
   getOwnerChainServerFn,
 } from '@/services/nodes/search-nodes.server'
 import {
   ArrowBendUpLeft,
-  ArrowsLeftRight,
   ArrowSquareOut,
+  BracketsCurly,
   CaretDown,
   CaretRight,
   Clock,
   Code,
+  Cube,
   Fingerprint,
   Hash,
   LinkSimple,
+  List,
   PencilSimple,
+  Terminal,
+  ToggleRight,
 } from '@phosphor-icons/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
@@ -124,6 +130,20 @@ export function NodeInspector({
     content: string | null
     systemId: string | null
   }> = ownerChainResult?.success ? ownerChainResult.chain : []
+
+  // Fetch child command nodes (for item nodes)
+  const { data: childCommandsResult } = useQuery({
+    queryKey: ['childCommands', node.id],
+    queryFn: () =>
+      getChildNodesServerFn({
+        data: { parentId: node.id, supertagSystemId: SYSTEM_SUPERTAGS.COMMAND },
+      }),
+    staleTime: 30000,
+  })
+
+  const childCommands: AssembledNode[] = childCommandsResult?.success
+    ? childCommandsResult.children
+    : []
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -316,23 +336,42 @@ export function NodeInspector({
           ) : (
             <div className="space-y-1">
               {nodeReferences.map((ref, idx) => (
-                <button
+                <OutgoingRefLink
                   key={`${ref.fieldName}-${ref.nodeId}-${idx}`}
-                  onClick={() => onNavigate(ref.nodeId)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-muted transition-colors text-left group"
-                >
-                  <LinkSimple className="size-3 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    {ref.fieldName}:
-                  </span>
-                  <span className="font-mono text-primary truncate group-hover:underline">
-                    {ref.nodeId.slice(0, 8)}...
-                  </span>
-                </button>
+                  fieldName={ref.fieldName}
+                  nodeId={ref.nodeId}
+                  onNavigate={onNavigate}
+                />
               ))}
             </div>
           )}
         </Section>
+
+        {/* Commands Section (for nodes with child commands) */}
+        {childCommands.length > 0 && (
+          <Section
+            title="Commands"
+            icon={<Terminal className="size-3.5" />}
+            count={childCommands.length}
+            expanded={expandedSections.has('commands')}
+            onToggle={() => toggleSection('commands')}
+          >
+            <div className="space-y-1">
+              {childCommands.map((cmd) => (
+                <button
+                  key={cmd.id}
+                  onClick={() => onNavigate(cmd.id)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-muted transition-colors text-left group"
+                >
+                  <Terminal className="size-3 text-primary" />
+                  <span className="truncate group-hover:underline font-medium">
+                    {cmd.content || cmd.systemId || cmd.id.slice(0, 8)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Section>
+        )}
 
         {/* Backlinks Section */}
         <Section
@@ -354,13 +393,14 @@ export function NodeInspector({
                   onClick={() => onNavigate(bl.id)}
                   className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-muted transition-colors text-left group"
                 >
-                  <ArrowsLeftRight className="size-3 text-muted-foreground" />
+                  <Cube className="size-3 text-muted-foreground" />
                   <span className="truncate group-hover:underline">
                     {bl.content || bl.systemId || bl.id.slice(0, 8)}
                   </span>
                   {bl.supertags.length > 0 && (
-                    <span className="text-muted-foreground ml-auto shrink-0">
-                      #{bl.supertags[0].content}
+                    <span className="inline-flex items-center gap-0.5 text-primary/70 ml-auto shrink-0">
+                      <Hash className="size-2.5" />
+                      {bl.supertags[0].content}
                     </span>
                   )}
                 </button>
@@ -453,12 +493,23 @@ function PropertyRow({
     value: unknown
     rawValue: string
     fieldSystemId: string | null
+    fieldNodeId: string
   }>
   onNavigate: (nodeId: string) => void
 }) {
+  // Get fieldNodeId from the first value (all values share the same field)
+  const fieldNodeId = values[0]?.fieldNodeId
+
   return (
     <div className="text-xs">
-      <div className="font-medium text-muted-foreground mb-1">{fieldName}</div>
+      <button
+        onClick={() => fieldNodeId && onNavigate(fieldNodeId)}
+        className="font-medium text-muted-foreground mb-1 hover:text-primary hover:underline transition-colors flex items-center gap-1"
+        title="Navigate to field definition"
+      >
+        <Code className="size-3" />
+        {fieldName}
+      </button>
       <div className="pl-2 space-y-0.5">
         {values.map((pv, idx) => (
           <PropertyValue
@@ -508,7 +559,46 @@ function NodeLink({
   )
 }
 
-// Smart property value renderer
+// Outgoing reference link - renders field name + node content + supertag
+function OutgoingRefLink({
+  fieldName,
+  nodeId,
+  onNavigate,
+}: {
+  fieldName: string
+  nodeId: string
+  onNavigate: (nodeId: string) => void
+}) {
+  const { data: nodeResult } = useQuery({
+    queryKey: ['node', nodeId],
+    queryFn: () => getNodeServerFn({ data: { identifier: nodeId } }),
+    staleTime: 60000,
+  })
+
+  const linkedNode = nodeResult?.success ? nodeResult.node : null
+  const displayName =
+    linkedNode?.content || linkedNode?.systemId || nodeId.slice(0, 8)
+  const supertag = linkedNode?.supertags?.[0]
+
+  return (
+    <button
+      onClick={() => onNavigate(nodeId)}
+      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-muted transition-colors text-left group"
+    >
+      <Cube className="size-3 text-muted-foreground" />
+      <span className="text-muted-foreground shrink-0">{fieldName}:</span>
+      <span className="truncate group-hover:underline">{displayName}</span>
+      {supertag && (
+        <span className="inline-flex items-center gap-0.5 text-primary/70 ml-auto shrink-0">
+          <Hash className="size-2.5" />
+          {supertag.content}
+        </span>
+      )}
+    </button>
+  )
+}
+
+// Smart property value renderer with type icons
 function PropertyValue({
   value,
   // rawValue kept in signature for future use (e.g., showing raw JSON)
@@ -526,25 +616,41 @@ function PropertyValue({
       value,
     )
   ) {
-    return <NodeLink nodeId={value} onNavigate={onNavigate} />
+    return (
+      <div className="flex items-center gap-1.5">
+        <LinkSimple className="size-3 text-blue-400 shrink-0" />
+        <NodeLink nodeId={value} onNavigate={onNavigate} />
+      </div>
+    )
   }
 
   // Array of values
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return <span className="text-muted-foreground italic">[]</span>
+      return (
+        <div className="flex items-center gap-1.5">
+          <List className="size-3 text-muted-foreground shrink-0" />
+          <span className="text-muted-foreground italic">[]</span>
+        </div>
+      )
     }
 
     return (
       <div className="space-y-0.5">
-        {value.map((v, idx) => (
-          <PropertyValue
-            key={idx}
-            value={v}
-            rawValue={JSON.stringify(v)}
-            onNavigate={onNavigate}
-          />
-        ))}
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <List className="size-3 shrink-0" />
+          <span className="text-[10px]">{value.length} items</span>
+        </div>
+        <div className="pl-4 space-y-0.5">
+          {value.map((v, idx) => (
+            <PropertyValue
+              key={idx}
+              value={v}
+              rawValue={JSON.stringify(v)}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
       </div>
     )
   }
@@ -552,26 +658,40 @@ function PropertyValue({
   // Object (JSON)
   if (typeof value === 'object' && value !== null) {
     return (
-      <pre className="bg-muted/50 p-2 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
-        {JSON.stringify(value, null, 2)}
-      </pre>
+      <div>
+        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+          <BracketsCurly className="size-3 shrink-0" />
+          <span className="text-[10px]">JSON</span>
+        </div>
+        <pre className="bg-muted/50 p-2 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      </div>
     )
   }
 
   // Boolean
   if (typeof value === 'boolean') {
     return (
-      <span
-        className={cn('font-mono', value ? 'text-green-500' : 'text-red-500')}
-      >
-        {String(value)}
-      </span>
+      <div className="flex items-center gap-1.5">
+        <ToggleRight className="size-3 text-purple-400 shrink-0" />
+        <span
+          className={cn('font-mono', value ? 'text-green-500' : 'text-red-500')}
+        >
+          {String(value)}
+        </span>
+      </div>
     )
   }
 
   // Number
   if (typeof value === 'number') {
-    return <span className="font-mono text-amber-500">{value}</span>
+    return (
+      <div className="flex items-center gap-1.5">
+        <Hash className="size-3 text-amber-400 shrink-0" />
+        <span className="font-mono text-amber-500">{value}</span>
+      </div>
+    )
   }
 
   // String or other
