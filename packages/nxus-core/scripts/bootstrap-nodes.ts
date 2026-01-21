@@ -218,6 +218,7 @@ async function bootstrap() {
       content: '#Workspace',
       extends: null,
     },
+    { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox', extends: null },
   ]
 
   for (const st of entitySupertags) {
@@ -318,6 +319,10 @@ async function bootstrap() {
       content: 'requirements',
       fieldType: 'json',
     },
+    // Inbox-specific
+    { systemId: SYSTEM_FIELDS.STATUS, content: 'status', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.NOTES, content: 'notes', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.TITLE, content: 'title', fieldType: 'text' },
   ]
 
   for (const field of commonFields) {

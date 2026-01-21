@@ -1,8 +1,104 @@
-import { initDatabase, saveDatabase } from '@/db/client'
+/**
+ * inbox.server.ts - Server functions for inbox CRUD operations
+ *
+ * Supports gradual migration to node-based architecture via feature toggle.
+ */
+
+import { isNodeArchitecture } from '@/config/feature-flags'
+import { getDatabase, initDatabase, saveDatabase } from '@/db/client'
+import {
+  nodeProperties,
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
+} from '@/db/node-schema'
 import { inbox, type InboxEntry } from '@/db/schema'
 import { createServerFn } from '@tanstack/react-start'
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import {
+  assembleNode,
+  createNode,
+  deleteNode,
+  getNodesBySupertagWithInheritance,
+  getProperty,
+  getSystemNode,
+  setProperty,
+  updateNodeContent,
+} from '../nodes/node.service'
+
+// ============================================================================
+// Node Helpers
+// ============================================================================
+
+/**
+ * Convert inbox node to legacy InboxEntry format
+ */
+function nodeToInboxEntry(
+  node: ReturnType<typeof assembleNode>,
+): InboxEntry | null {
+  if (!node) return null
+
+  const legacyId = getProperty<number>(node, 'legacyId')
+  const status = getProperty<string>(node, 'status') as
+    | 'pending'
+    | 'processing'
+    | 'done'
+
+  return {
+    id: legacyId || 0,
+    title: node.content || '',
+    notes: getProperty<string>(node, 'notes') ?? null,
+    status: status || 'pending',
+    createdAt: node.createdAt,
+    updatedAt: node.updatedAt,
+  }
+}
+
+/**
+ * Find inbox node by legacy ID
+ */
+function findInboxNodeByLegacyId(
+  db: ReturnType<typeof getDatabase>,
+  legacyId: number,
+): string | null {
+  const legacyIdField = getSystemNode(db, SYSTEM_FIELDS.LEGACY_ID)
+  if (!legacyIdField) return null
+
+  const prop = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, legacyIdField.id))
+    .all()
+    .find((p) => {
+      try {
+        return JSON.parse(p.value || '') === legacyId
+      } catch {
+        return false
+      }
+    })
+
+  return prop?.nodeId ?? null
+}
+
+/**
+ * Get next legacy ID for inbox (auto-increment simulation)
+ */
+function getNextInboxLegacyId(db: ReturnType<typeof getDatabase>): number {
+  const inboxNodes = getNodesBySupertagWithInheritance(
+    db,
+    SYSTEM_SUPERTAGS.INBOX,
+  )
+  let maxId = 0
+  for (const node of inboxNodes) {
+    const legacyId = getProperty<number>(node, 'legacyId')
+    if (legacyId && legacyId > maxId) maxId = legacyId
+  }
+  return maxId + 1
+}
+
+// ============================================================================
+// Server Functions
+// ============================================================================
 
 /**
  * Get all inbox items
@@ -11,6 +107,30 @@ export const getInboxItemsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     console.log('[getInboxItemsServerFn] Fetching all items')
     const db = initDatabase()
+
+    // Feature toggle: get from nodes
+    if (isNodeArchitecture()) {
+      console.log('[getInboxItemsServerFn] Using node-based architecture')
+      const inboxNodes = getNodesBySupertagWithInheritance(
+        db,
+        SYSTEM_SUPERTAGS.INBOX,
+      )
+
+      // Sort by createdAt descending
+      const sortedNodes = inboxNodes.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      )
+
+      const data = sortedNodes
+        .filter((n) => !n.deletedAt)
+        .map(nodeToInboxEntry)
+        .filter((e): e is InboxEntry => e !== null)
+
+      console.log('[getInboxItemsServerFn] Found:', data.length)
+      return { success: true, data }
+    }
+
+    // Legacy: get from inbox table
     const items = await db.select().from(inbox).orderBy(desc(inbox.createdAt))
     console.log('[getInboxItemsServerFn] Found:', items.length)
     return { success: true, data: items }
@@ -24,7 +144,31 @@ export const getPendingInboxItemsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   console.log('[getPendingInboxItemsServerFn] Fetching pending items')
-  const db = await initDatabase()
+  const db = initDatabase()
+
+  // Feature toggle: get from nodes
+  if (isNodeArchitecture()) {
+    console.log('[getPendingInboxItemsServerFn] Using node-based architecture')
+    const inboxNodes = getNodesBySupertagWithInheritance(
+      db,
+      SYSTEM_SUPERTAGS.INBOX,
+    )
+
+    const pendingNodes = inboxNodes
+      .filter(
+        (n) => !n.deletedAt && getProperty<string>(n, 'status') === 'pending',
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+    const data = pendingNodes
+      .map(nodeToInboxEntry)
+      .filter((e): e is InboxEntry => e !== null)
+
+    console.log('[getPendingInboxItemsServerFn] Found:', data.length)
+    return { success: true, data }
+  }
+
+  // Legacy
   const items = await db
     .select()
     .from(inbox)
@@ -50,6 +194,43 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
     const db = initDatabase()
     const now = new Date()
 
+    // Feature toggle: create in nodes
+    if (isNodeArchitecture()) {
+      console.log('[addInboxItemServerFn] Using node-based architecture')
+
+      const nodeId = createNode(db, {
+        content: title,
+        supertagSystemId: SYSTEM_SUPERTAGS.INBOX,
+      })
+
+      // Assign legacy ID
+      const legacyId = getNextInboxLegacyId(db)
+      setProperty(db, nodeId, SYSTEM_FIELDS.LEGACY_ID, legacyId)
+
+      // Set status to pending
+      setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, 'pending')
+
+      // Set notes if provided
+      if (notes) {
+        setProperty(db, nodeId, SYSTEM_FIELDS.NOTES, notes)
+      }
+
+      saveDatabase()
+
+      const newEntry: InboxEntry = {
+        id: legacyId,
+        title,
+        notes: notes ?? null,
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      console.log('[addInboxItemServerFn] Success:', legacyId)
+      return { success: true, data: newEntry }
+    }
+
+    // Legacy: insert into inbox table
     const result = await db
       .insert(inbox)
       .values({
@@ -83,6 +264,34 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
     const { id, ...updates } = ctx.data
     const db = initDatabase()
 
+    // Feature toggle: update in nodes
+    if (isNodeArchitecture()) {
+      console.log('[updateInboxItemServerFn] Using node-based architecture')
+      const nodeId = findInboxNodeByLegacyId(db, id)
+      if (!nodeId) {
+        return { success: false as const, error: 'Item not found' }
+      }
+
+      if (updates.title) {
+        updateNodeContent(db, nodeId, updates.title)
+      }
+      if (updates.notes !== undefined) {
+        setProperty(db, nodeId, SYSTEM_FIELDS.NOTES, updates.notes)
+      }
+      if (updates.status) {
+        setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, updates.status)
+      }
+
+      saveDatabase()
+
+      // Return updated entry
+      const node = assembleNode(db, nodeId)
+      const entry = nodeToInboxEntry(node)
+      console.log('[updateInboxItemServerFn] Success:', id)
+      return { success: true as const, data: entry }
+    }
+
+    // Legacy: update inbox table
     const result = await db
       .update(inbox)
       .set({
@@ -112,6 +321,21 @@ export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
     const { id } = ctx.data
     const db = initDatabase()
 
+    // Feature toggle: delete from nodes
+    if (isNodeArchitecture()) {
+      console.log('[deleteInboxItemServerFn] Using node-based architecture')
+      const nodeId = findInboxNodeByLegacyId(db, id)
+      if (!nodeId) {
+        return { success: false as const, error: 'Item not found' }
+      }
+
+      deleteNode(db, nodeId)
+      saveDatabase()
+      console.log('[deleteInboxItemServerFn] Success:', id)
+      return { success: true as const }
+    }
+
+    // Legacy: delete from inbox table
     const result = await db.delete(inbox).where(eq(inbox.id, id)).returning()
 
     if (result.length === 0) {
@@ -132,6 +356,25 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[markAsProcessingServerFn] Input:', ctx.data)
     const db = initDatabase()
+
+    // Feature toggle: update in nodes
+    if (isNodeArchitecture()) {
+      console.log('[markAsProcessingServerFn] Using node-based architecture')
+      const nodeId = findInboxNodeByLegacyId(db, ctx.data.id)
+      if (!nodeId) {
+        return { success: false as const, error: 'Item not found' }
+      }
+
+      setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, 'processing')
+      saveDatabase()
+
+      const node = assembleNode(db, nodeId)
+      const entry = nodeToInboxEntry(node)
+      console.log('[markAsProcessingServerFn] Success:', ctx.data.id)
+      return { success: true, data: entry }
+    }
+
+    // Legacy
     const result = await db
       .update(inbox)
       .set({ status: 'processing', updatedAt: new Date() })
@@ -151,6 +394,25 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[markAsDoneServerFn] Input:', ctx.data)
     const db = initDatabase()
+
+    // Feature toggle: update in nodes
+    if (isNodeArchitecture()) {
+      console.log('[markAsDoneServerFn] Using node-based architecture')
+      const nodeId = findInboxNodeByLegacyId(db, ctx.data.id)
+      if (!nodeId) {
+        return { success: false as const, error: 'Item not found' }
+      }
+
+      setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, 'done')
+      saveDatabase()
+
+      const node = assembleNode(db, nodeId)
+      const entry = nodeToInboxEntry(node)
+      console.log('[markAsDoneServerFn] Success:', ctx.data.id)
+      return { success: true, data: entry }
+    }
+
+    // Legacy
     const result = await db
       .update(inbox)
       .set({ status: 'done', updatedAt: new Date() })

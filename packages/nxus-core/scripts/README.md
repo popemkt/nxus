@@ -2,101 +2,69 @@
 
 Database and node-architecture maintenance scripts for Nxus.
 
-## Quick Reference
+## 🚀 Quick Start
 
-| Script                       | Reusable?   | Purpose                                        |
-| ---------------------------- | ----------- | ---------------------------------------------- |
-| `bootstrap-nodes.ts`         | ✅ Reusable | Create system schema (fields, supertags)       |
-| `db-seed-nodes.ts`           | ✅ Reusable | Seed items/commands from `manifest.json` files |
-| `db-seed.ts`                 | ✅ Reusable | Legacy: seed items table from manifests        |
-| `db-export.ts`               | ✅ Reusable | Export DB back to `manifest.json` files        |
-| `inspect-node.ts`            | ✅ Reusable | Debug utility to view assembled nodes          |
-| `migrate-to-nodes.ts`        | ⚠️ One-off  | Migrate legacy tables → node tables            |
-| `db-sync-tags.ts`            | ⚠️ One-off  | Sync tags from JSON → DB                       |
-| `migrate-manifests.ts`       | ⚠️ One-off  | Update manifest format                         |
-| `remove-slug-migration.ts`   | ⚠️ One-off  | Remove slug field                              |
-| `assemble-full-items.ts`     | 🔧 Debug    | Test full item assembly                        |
-| `compare-legacy-vs-nodes.ts` | 🔧 Debug    | Compare legacy vs node output                  |
-| `test-node-service.ts`       | 🔧 Debug    | Test node service functions                    |
+**Run from Nxus app** (recommended): Use the **Nxus Development** (`_nxus-dev`) commands in the command palette.
 
-## Common Workflows
-
-### Fresh Database Setup (Recommended)
+**Run from CLI**:
 
 ```bash
-# 1. Bootstrap system nodes (fields, supertags)
+# Fresh setup
 npx tsx scripts/bootstrap-nodes.ts
-
-# 2. Seed items from manifest.json files
 npx tsx scripts/db-seed-nodes.ts
 ```
 
-### Reset Node Tables Only
+## Scripts Reference
+
+| Script                | Reusable?  | Purpose                                     |
+| --------------------- | ---------- | ------------------------------------------- |
+| `bootstrap-nodes.ts`  | ✅         | Create system schema (supertags, fields)    |
+| `db-seed-nodes.ts`    | ✅         | Seed all data: items, commands, tags, inbox |
+| `db-seed.ts`          | ✅         | Legacy: seed items table from manifests     |
+| `db-export.ts`        | ✅         | Export DB changes back to manifest files    |
+| `inspect-node.ts`     | ✅         | Debug utility to view any node              |
+| `migrate-to-nodes.ts` | ⚠️ One-off | Migrate legacy → nodes                      |
+| `db-sync-tags.ts`     | ⚠️ One-off | Sync tags from JSON                         |
+| Debug scripts         | 🔧         | Testing utilities                           |
+
+## Workflows
+
+### Fresh Database Setup
 
 ```bash
-# Wipe nodes (keeps legacy tables intact)
+npx tsx scripts/bootstrap-nodes.ts
+npx tsx scripts/db-seed-nodes.ts
+```
+
+### Reset Node Tables
+
+```bash
 sqlite3 src/data/nxus.db "DELETE FROM node_properties; DELETE FROM nodes;"
-
-# Re-run bootstrap + seed
 npx tsx scripts/bootstrap-nodes.ts
 npx tsx scripts/db-seed-nodes.ts
 ```
 
-### Export Changes Back to JSON
+### Export Changes
 
 ```bash
 npx tsx scripts/db-export.ts
 ```
 
-### Inspect a Specific Node
+### Inspect a Node
 
 ```bash
-# By systemId
 npx tsx scripts/inspect-node.ts item:claude-code
-
-# By UUID
-npx tsx scripts/inspect-node.ts 019bdbd5-500f-710e-8f77-bf177ad9de53
+npx tsx scripts/inspect-node.ts supertag:inbox
 ```
 
-## Script Details
+## What `db-seed-nodes.ts` Seeds
 
-### `bootstrap-nodes.ts` ✅
-
-Creates the foundational system nodes:
-
-- **Core fields**: `supertag`, `extends`, `fieldType`
-- **Meta-supertags**: `#Supertag`, `#Field`, `#System`
-- **Entity supertags**: `#Item`, `#Tool`, `#Repo`, `#Tag`, `#Command`
-- **Common fields**: `type`, `path`, `homepage`, `description`, etc.
-
-**Run this first** before any other node operations.
-
-### `db-seed-nodes.ts` ✅
-
-Reads `manifest.json` files from `src/data/apps/*/` and creates nodes:
-
-- Creates item nodes with `#Tool`, `#Repo`, or `#Item` supertag
-- Creates command nodes as children
-- Resolves dependencies between items
-- Creates tag nodes as needed
-
-**Validation errors** skip items that don't match `ItemSchema`:
-
-- `tool` type requires `checkCommand`
-- `remote-repo` type requires valid URL in `path`
-
-### `db-export.ts` ✅
-
-Exports database back to `manifest.json` files. Useful after making changes in the UI.
-
-### `migrate-to-nodes.ts` ⚠️
-
-**One-time migration** from legacy `items`/`item_commands` tables to node architecture. Only run once during initial migration.
+1. **Tags** from `tags.json`
+2. **Items** from `manifest.json` files
+3. **Commands** as child nodes
+4. **Dependencies** between items
+5. **Inbox items** from legacy table
 
 ## UUIDs
 
-All node IDs use **UUIDv7** (time-ordered) for better SQLite B-tree performance:
-
-- Sequential by creation time
-- Format: `019bdbd5-xxxx-7xxx-xxxx-xxxxxxxxxxxx`
-- First 48 bits encode timestamp
+All node IDs use **UUIDv7** (time-ordered) for better SQLite B-tree performance.

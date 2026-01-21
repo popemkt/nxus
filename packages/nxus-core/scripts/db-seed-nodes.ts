@@ -423,8 +423,92 @@ async function seedNodes() {
   }
   console.log(`  Created ${depCount} dependency relationships`)
 
+  // ============================================================================
+  // Step 5: Seed inbox items from legacy table
+  // ============================================================================
+  console.log('[5/6] Seeding inbox items from legacy table...')
+
+  // Import inbox table dynamically to avoid circular deps
+  const { inbox } = await import('../src/db/schema')
+
+  const inboxSupertagId = getSystemNodeId(db, SYSTEM_SUPERTAGS.INBOX)
+  const statusFieldId = getSystemNodeId(db, SYSTEM_FIELDS.STATUS)
+  const notesFieldId = getSystemNodeId(db, SYSTEM_FIELDS.NOTES)
+
+  const legacyInboxItems = db.select().from(inbox).all()
+  let inboxCount = 0
+  let inboxSkipped = 0
+
+  for (const item of legacyInboxItems) {
+    // Check if already migrated (by legacyId)
+    const existingProp = db
+      .select()
+      .from(nodeProperties)
+      .where(eq(nodeProperties.fieldNodeId, F.legacyId))
+      .all()
+      .find((p) => {
+        try {
+          return JSON.parse(p.value || '') === item.id
+        } catch {
+          return false
+        }
+      })
+
+    // Also verify it has #Inbox supertag
+    if (existingProp) {
+      const nodeSupertags = db
+        .select()
+        .from(nodeProperties)
+        .where(eq(nodeProperties.nodeId, existingProp.nodeId))
+        .all()
+        .filter((p) => p.fieldNodeId === F.supertag)
+
+      const hasInboxSupertag = nodeSupertags.some((p) => {
+        try {
+          return JSON.parse(p.value || '') === inboxSupertagId
+        } catch {
+          return false
+        }
+      })
+
+      if (hasInboxSupertag) {
+        inboxSkipped++
+        continue
+      }
+    }
+
+    // Create new inbox node
+    const nodeId = uuidv7()
+    db.insert(nodes)
+      .values({
+        id: nodeId,
+        content: item.title,
+        contentPlain: item.title.toLowerCase(),
+        createdAt: item.createdAt || new Date(),
+        updatedAt: item.updatedAt || new Date(),
+      })
+      .run()
+
+    // Assign #Inbox supertag
+    addProperty(db, nodeId, F.supertag, JSON.stringify(inboxSupertagId))
+
+    // Set legacyId
+    addProperty(db, nodeId, F.legacyId, JSON.stringify(item.id))
+
+    // Set status
+    addProperty(db, nodeId, statusFieldId, JSON.stringify(item.status))
+
+    // Set notes if present
+    if (item.notes) {
+      addProperty(db, nodeId, notesFieldId, JSON.stringify(item.notes))
+    }
+
+    inboxCount++
+  }
+  console.log(`  Seeded ${inboxCount} inbox items (${inboxSkipped} skipped)`)
+
   // Summary
-  console.log('[5/5] Done!')
+  console.log('[6/6] Done!')
   const totalNodes = db.select().from(nodes).all().length
   const totalProps = db.select().from(nodeProperties).all().length
 
@@ -432,7 +516,9 @@ async function seedNodes() {
   console.log('✅ Node seed complete!')
   console.log(`   Total nodes: ${totalNodes}`)
   console.log(`   Total properties: ${totalProps}`)
-  console.log(`   Items: ${itemsCount}, Commands: ${commandsCount}`)
+  console.log(
+    `   Items: ${itemsCount}, Commands: ${commandsCount}, Inbox: ${inboxCount}`,
+  )
   console.log('='.repeat(50) + '\n')
 }
 

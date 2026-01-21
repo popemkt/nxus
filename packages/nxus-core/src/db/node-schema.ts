@@ -91,6 +91,7 @@ export const SYSTEM_SUPERTAGS = {
   TAG: 'supertag:tag',
   COMMAND: 'supertag:command',
   WORKSPACE: 'supertag:workspace',
+  INBOX: 'supertag:inbox',
 } as const
 
 export const SYSTEM_FIELDS = {
@@ -133,6 +134,11 @@ export const SYSTEM_FIELDS = {
   OPTIONS: 'field:options',
   PARAMS: 'field:params',
   REQUIREMENTS: 'field:requirements',
+
+  // Inbox-specific
+  STATUS: 'field:status',
+  NOTES: 'field:notes',
+  TITLE: 'field:title',
 } as const
 
 /**
