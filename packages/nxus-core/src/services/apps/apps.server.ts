@@ -8,7 +8,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
-import { NODE_BASED_ARCHITECTURE_ENABLED } from '../../config/feature-flags'
+import {
+  isGraphArchitecture,
+  isNodeArchitecture,
+} from '../../config/feature-flags'
 import { getDatabase, initDatabase } from '../../db/client'
 import { itemCommands, items, itemTags, tags } from '../../db/schema'
 import type {
@@ -91,7 +94,7 @@ function parseCommandRecord(
     scriptSource:
       (record.scriptSource as ItemCommand['scriptSource']) ?? undefined,
     cwd: record.cwd ?? undefined,
-    platforms: record.platforms ?? undefined,
+    platforms: (record.platforms as ItemCommand['platforms']) ?? undefined,
     requires: record.requires ?? undefined,
     options: record.options ?? undefined,
   }
@@ -103,8 +106,23 @@ function parseCommandRecord(
  */
 export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    // Feature toggle: use node-based architecture
-    if (NODE_BASED_ARCHITECTURE_ENABLED) {
+    // Architecture switch
+    if (isGraphArchitecture()) {
+      console.log('[getAllAppsServerFn] Using graph architecture (SurrealDB)')
+      const { getAllItemsFromGraphServerFn } = await import(
+        '../graph/graph.server'
+      )
+      const result = await getAllItemsFromGraphServerFn()
+      if (result.success) {
+        return { success: true as const, apps: result.items }
+      }
+      return {
+        success: false as const,
+        error: result.error || 'Graph query failed',
+      }
+    }
+
+    if (isNodeArchitecture()) {
       console.log('[getAllAppsServerFn] Using node-based architecture')
       const result = await getAllItemsFromNodesServerFn()
       if (result.success) {
