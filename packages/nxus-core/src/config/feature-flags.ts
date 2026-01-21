@@ -15,7 +15,7 @@
  */
 export type ArchitectureType = 'table' | 'node' | 'graph'
 
-export const ARCHITECTURE_TYPE: ArchitectureType = 'graph'
+export const ARCHITECTURE_TYPE: ArchitectureType = 'node'
 // (process.env.ARCHITECTURE_TYPE as ArchitectureType) || 'node'
 
 /**

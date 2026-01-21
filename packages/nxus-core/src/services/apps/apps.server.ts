@@ -188,13 +188,30 @@ const GetAppByIdSchema = z.object({
 
 /**
  * Get a single app by ID from SQLite
- * Tags are queried from junction table
+ * Uses node-based queries when NODE_BASED_ARCHITECTURE_ENABLED is true
+ * Tags are queried from junction table (legacy) or node properties (node-based)
  */
 export const getAppByIdServerFn = createServerFn({ method: 'GET' })
   .inputValidator(GetAppByIdSchema)
   .handler(async (ctx) => {
     const { id } = ctx.data
 
+    // Architecture switch - delegate to node-based function when enabled
+    if (isNodeArchitecture()) {
+      const { getItemByIdFromNodesServerFn } = await import(
+        '../nodes/nodes.server'
+      )
+      const result = await getItemByIdFromNodesServerFn({ data: { id } })
+      if (result.success) {
+        return { success: true as const, app: result.item }
+      }
+      return {
+        success: false as const,
+        error: result.error || 'Item not found',
+      }
+    }
+
+    // Legacy: query from items table
     initDatabase()
     const db = getDatabase()
 

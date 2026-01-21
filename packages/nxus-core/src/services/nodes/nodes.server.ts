@@ -11,18 +11,18 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDatabase, initDatabase } from '../../db/client'
 import {
-    nodeProperties,
-    nodes,
-    SYSTEM_FIELDS,
-    SYSTEM_SUPERTAGS,
+  nodeProperties,
+  nodes,
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
 } from '../../db/node-schema'
 import type { Item, ItemCommand, TagRef } from '../../types/item'
 import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
 import {
-    assembleNode,
-    findNode,
-    getNodesBySupertagWithInheritance,
-    getProperty,
+  assembleNode,
+  findNode,
+  getNodesBySupertagWithInheritance,
+  getProperty,
 } from './node.service'
 
 // ============================================================================
@@ -119,7 +119,8 @@ export const getAllItemsFromNodesServerFn = createServerFn({
   const commandsByItemId = new Map<string, ItemCommand[]>()
 
   for (const cmdNode of commandNodes) {
-    const parentId = getProperty<string>(cmdNode, 'parent')
+    // Commands use ownerId to link to their parent item
+    const parentId = cmdNode.ownerId
     if (parentId) {
       const cmds = commandsByItemId.get(parentId) ?? []
       cmds.push(nodeToCommand(cmdNode))
@@ -197,13 +198,13 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
       })
     }
 
-    // Get commands for this item
+    // Get commands for this item (commands use ownerId to link to their parent item)
     const commandNodes = getNodesBySupertagWithInheritance(
       db,
       SYSTEM_SUPERTAGS.COMMAND,
     )
     const commands = commandNodes
-      .filter((cmd) => getProperty<string>(cmd, 'parent') === node!.id)
+      .filter((cmd) => cmd.ownerId === node!.id)
       .map(nodeToCommand)
 
     const item = nodeToItem(node, {

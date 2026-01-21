@@ -139,6 +139,7 @@ async function seedNodes() {
     mode: getSystemNodeId(db, SYSTEM_FIELDS.MODE),
     target: getSystemNodeId(db, SYSTEM_FIELDS.TARGET),
     icon: getSystemNodeId(db, SYSTEM_FIELDS.ICON),
+    color: getSystemNodeId(db, SYSTEM_FIELDS.COLOR),
     scriptSource: getSystemNodeId(db, SYSTEM_FIELDS.SCRIPT_SOURCE),
     cwd: getSystemNodeId(db, SYSTEM_FIELDS.CWD),
     platforms: getSystemNodeId(db, SYSTEM_FIELDS.PLATFORMS),
@@ -158,7 +159,88 @@ async function seedNodes() {
   // Track created items for dependency resolution
   const itemNodeIds = new Map<string, string>()
 
-  console.log('[2/4] Seeding items from manifests...')
+  // ============================================================================
+  // Step 2: Seed all tags from tags.json
+  // ============================================================================
+  console.log('[2/5] Seeding tags from tags.json...')
+  const tagsJsonPath = resolve(dataDir, 'tags.json')
+  const tagsData = loadJsonFile<{
+    tags: Array<{
+      id: number
+      name: string
+      parentId: number | null
+      order: number
+      color: string | null
+      icon: string | null
+    }>
+  }>(tagsJsonPath)
+
+  // Build legacy ID to node ID mapping for parent resolution
+  const legacyTagIdToNodeId = new Map<number, string>()
+  let tagsCount = 0
+
+  if (tagsData?.tags) {
+    // First pass: create all tag nodes
+    for (const tag of tagsData.tags) {
+      // Check if tag already exists by content
+      const existing = db
+        .select()
+        .from(nodes)
+        .all()
+        .find(
+          (n) => n.content === tag.name && !n.systemId?.startsWith('supertag:'),
+        )
+
+      let nodeId: string
+      if (existing) {
+        nodeId = existing.id
+        // Delete existing properties to re-seed
+        db.delete(nodeProperties).where(eq(nodeProperties.nodeId, nodeId)).run()
+      } else {
+        nodeId = uuidv7()
+        db.insert(nodes)
+          .values({
+            id: nodeId,
+            content: tag.name,
+            contentPlain: tag.name.toLowerCase(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .run()
+      }
+
+      // Assign #Tag supertag
+      addProperty(db, nodeId, F.supertag, JSON.stringify(ST.tag))
+
+      // Set legacyId for backwards compatibility
+      addProperty(db, nodeId, F.legacyId, JSON.stringify(tag.id))
+
+      // Set optional properties
+      if (tag.color) addProperty(db, nodeId, F.color, JSON.stringify(tag.color))
+      if (tag.icon) addProperty(db, nodeId, F.icon, JSON.stringify(tag.icon))
+
+      legacyTagIdToNodeId.set(tag.id, nodeId)
+      tagNodeIds.set(tag.name, nodeId)
+      tagsCount++
+    }
+
+    // Second pass: resolve parent relationships
+    for (const tag of tagsData.tags) {
+      if (tag.parentId) {
+        const nodeId = legacyTagIdToNodeId.get(tag.id)
+        const parentNodeId = legacyTagIdToNodeId.get(tag.parentId)
+        if (nodeId && parentNodeId) {
+          addProperty(db, nodeId, F.parent, JSON.stringify(parentNodeId))
+        }
+      }
+    }
+  }
+  console.log(`  Seeded ${tagsCount} tags`)
+
+  // ============================================================================
+  // Step 3: Seed items from manifests
+  // ============================================================================
+  console.log('[3/5] Seeding items from manifests...')
   const appDirs = readdirSync(appsDir).filter((name) => {
     const fullPath = join(appsDir, name)
     return (
@@ -316,7 +398,7 @@ async function seedNodes() {
   console.log(`  Seeded ${itemsCount} items, ${commandsCount} commands`)
 
   // Resolve dependencies (second pass)
-  console.log('[3/4] Resolving dependencies...')
+  console.log('[4/5] Resolving dependencies...')
   let depCount = 0
 
   for (const appDir of appDirs) {
@@ -342,7 +424,7 @@ async function seedNodes() {
   console.log(`  Created ${depCount} dependency relationships`)
 
   // Summary
-  console.log('[4/4] Done!')
+  console.log('[5/5] Done!')
   const totalNodes = db.select().from(nodes).all().length
   const totalProps = db.select().from(nodeProperties).all().length
 

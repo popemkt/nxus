@@ -1,48 +1,51 @@
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#0F172A"/>
-  <rect width="800" height="450" fill="url(#bg-gradient)" fill-opacity="0.3"/>
-  
-  <!-- Abstract Representation of Code/AI -->
-  <g transform="translate(400, 225) scale(1.2)">
-    <!-- Central Hexagon/Node -->
-    <path d="M0 -80 L70 -40 L70 40 L0 80 L-70 40 L-70 -40 Z" 
-          fill="url(#primary-gradient)" 
-          stroke="url(#stroke-gradient)" 
-          stroke-width="4"/>
-          
-    <!-- Inner Circuit/Code Lines -->
-    <path d="M-30 -10 L0 20 L30 -10" 
-          stroke="white" 
-          stroke-width="8" 
-          stroke-linecap="round" 
-          stroke-linejoin="round"/>
-    <circle cx="0" cy="-35" r="8" fill="white"/>
-    
-    <!-- Orbiting Elements representing GLM/Integration -->
-    <circle cx="90" cy="0" r="12" fill="#D97757">
-      <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="10s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="-90" cy="0" r="12" fill="#60A5FA">
-      <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="-360 0 0" dur="10s" repeatCount="indefinite"/>
-    </circle>
-    
-    <!-- Connecting Rings -->
-    <circle cx="0" cy="0" r="110" stroke="#D97757" stroke-width="2" stroke-opacity="0.5" stroke-dasharray="20 10"/>
-    <circle cx="0" cy="0" r="130" stroke="#60A5FA" stroke-width="2" stroke-opacity="0.3" stroke-dasharray="10 20"/>
-  </g>
-
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg-gradient" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1E293B"/>
-      <stop offset="1" stop-color="#0F172A" stop-opacity="0"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#101827"/>
+      <stop offset="100%" stop-color="#1f2937"/>
     </linearGradient>
-    <linearGradient id="primary-gradient" x1="-70" y1="-80" x2="70" y2="80" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D97757"/> <!-- Claude-ish Orange -->
-      <stop offset="1" stop-color="#7C3AED"/> <!-- Deep Purple -->
+    <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
     </linearGradient>
-    <linearGradient id="stroke-gradient" x1="-70" y1="80" x2="70" y2="-80" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#60A5FA"/>
-      <stop offset="1" stop-color="#D97757"/>
+    <linearGradient id="secondary" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
     </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
   </defs>
+  
+  <rect width="800" height="450" fill="url(#bg)"/>
+  
+  <!-- Decorative background elements -->
+  <circle cx="100" cy="100" r="150" fill="url(#primary)" opacity="0.1"/>
+  <circle cx="700" cy="350" r="200" fill="url(#secondary)" opacity="0.1"/>
+  
+  <!-- Central Icon: Abstract Z / Connectivity Hub -->
+  <g transform="translate(400, 225)">
+    <!-- The Z shape constructed from connected nodes/paths -->
+    <path d="M-120 -80 L 80 -80 L -80 80 L 120 80" 
+          stroke="url(#primary)" 
+          stroke-width="40" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          fill="none" 
+          filter="url(#glow)"/>
+          
+    <!-- Intersecting "Integration" Line -->
+    <path d="M-140 0 L 140 0" 
+          stroke="url(#secondary)" 
+          stroke-width="15" 
+          stroke-linecap="round" 
+          opacity="0.8"
+          transform="rotate(-45)"/>
+          
+    <!-- Nodes -->
+    <circle cx="-120" cy="-80" r="25" fill="#f472b6"/>
+    <circle cx="120" cy="80" r="25" fill="#a78bfa"/>
+    <circle cx="0" cy="0" r="35" fill="white"/>
+  </g>
 </svg>
