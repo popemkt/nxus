@@ -53,6 +53,11 @@
         "node"
     ],
     "metadata": {
+        "category": "productivity",
+        "createdAt": "2026-01-20T21:07:00.000Z",
+        "updatedAt": "2026-01-20T21:07:00.000Z",
+        "version": "1.0.0",
+        "author": "logseq",
         "tags": [
             {
                 "id": 17,
@@ -62,12 +67,7 @@
                 "id": 10,
                 "name": "Tool"
             }
-        ],
-        "category": "productivity",
-        "createdAt": "2026-01-20T21:07:00.000Z",
-        "updatedAt": "2026-01-20T21:07:00.000Z",
-        "version": "1.0.0",
-        "author": "logseq"
+        ]
     },
     "status": "not-installed"
 }

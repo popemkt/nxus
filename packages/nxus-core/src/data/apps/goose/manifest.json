@@ -107,12 +107,12 @@
         }
     ],
     "metadata": {
-        "tags": [],
         "category": "ai-tools",
         "createdAt": "2026-01-17T05:17:00.000Z",
         "updatedAt": "2026-01-17T05:17:00.000Z",
         "version": "1.0.0",
-        "author": "Block"
+        "author": "Block",
+        "tags": []
     },
     "status": "not-installed"
 }

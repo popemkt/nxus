@@ -5,14 +5,6 @@
     "type": "remote-repo",
     "path": "https://github.com/michaelshimeles/ralphy",
     "homepage": "https://github.com/michaelshimeles/ralphy",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "dependencies": [
-        "git"
-    ],
     "commands": [
         {
             "id": "run-single-task",
@@ -133,18 +125,21 @@
             "icon": "BookOpen"
         }
     ],
+    "dependencies": [
+        "git"
+    ],
     "metadata": {
+        "category": "development-tools",
+        "createdAt": "2026-01-19T00:00:00.000Z",
+        "updatedAt": "2026-01-19T00:00:00.000Z",
+        "version": "4.0.0",
+        "author": "Michael Shimeles",
         "tags": [
             {
                 "id": 14,
                 "name": "AI CLI Provider"
             }
-        ],
-        "category": "development-tools",
-        "createdAt": "2026-01-19T00:00:00.000Z",
-        "updatedAt": "2026-01-19T00:00:00.000Z",
-        "version": "4.0.0",
-        "author": "Michael Shimeles"
+        ]
     },
     "status": "not-installed"
 }

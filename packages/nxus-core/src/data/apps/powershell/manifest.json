@@ -63,12 +63,12 @@
         }
     ],
     "metadata": {
-        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-03T09:15:00Z",
         "updatedAt": "2026-01-03T09:15:00Z",
         "version": "7.4.0",
-        "author": "Microsoft"
+        "author": "Microsoft",
+        "tags": []
     },
     "status": "not-installed"
 }

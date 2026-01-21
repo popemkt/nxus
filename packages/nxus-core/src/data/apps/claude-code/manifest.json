@@ -68,17 +68,17 @@
         }
     ],
     "metadata": {
+        "category": "development-tools",
+        "createdAt": "2026-01-01T15:32:00.000Z",
+        "updatedAt": "2026-01-11T11:58:47.519Z",
+        "version": "1.0.0",
+        "author": "nxus",
         "tags": [
             {
                 "id": 14,
                 "name": "AI CLI Provider"
             }
-        ],
-        "category": "development-tools",
-        "createdAt": "2026-01-01T15:32:00.000Z",
-        "updatedAt": "2026-01-11T11:58:47.519Z",
-        "version": "1.0.0",
-        "author": "nxus"
+        ]
     },
     "status": "not-installed"
 }

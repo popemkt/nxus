@@ -6,12 +6,12 @@
     "path": "https://github.com/example/remote-app.git",
     "homepage": "https://github.com/example/remote-app",
     "metadata": {
-        "tags": [],
         "category": "examples",
         "createdAt": "2024-01-02T00:00:00.000Z",
         "updatedAt": "2024-01-02T00:00:00.000Z",
         "version": "1.0.0",
-        "author": "Example Team"
+        "author": "Example Team",
+        "tags": []
     },
     "installConfig": {
         "script": "install.sh",
