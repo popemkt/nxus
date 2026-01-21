@@ -111,6 +111,16 @@ export const getAllItemsFromNodesServerFn = createServerFn({
     })
   }
 
+  // Build item lookup for dependency resolution (node ID → legacy ID)
+  const itemLookup = new Map<string, string>()
+  for (const itemNode of itemNodes) {
+    const legacyId =
+      getProperty<string>(itemNode, 'legacyId') ||
+      itemNode.systemId?.replace('item:', '') ||
+      itemNode.id
+    itemLookup.set(itemNode.id, legacyId)
+  }
+
   // Get all commands to group by parent item
   const commandNodes = getNodesBySupertagWithInheritance(
     db,
@@ -136,6 +146,10 @@ export const getAllItemsFromNodesServerFn = createServerFn({
           .map((id) => tagLookup.get(id))
           .filter((t): t is TagRef => !!t),
       resolveCommands: (itemId) => commandsByItemId.get(itemId) ?? [],
+      resolveDependencies: (depNodeIds) =>
+        depNodeIds
+          .map((id) => itemLookup.get(id))
+          .filter((id): id is string => !!id),
     }),
   )
 
@@ -198,6 +212,20 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
       })
     }
 
+    // Build item lookup for dependency resolution
+    const allItemNodes = getNodesBySupertagWithInheritance(
+      db,
+      SYSTEM_SUPERTAGS.ITEM,
+    )
+    const itemLookup = new Map<string, string>()
+    for (const itemNode of allItemNodes) {
+      const legacyId =
+        getProperty<string>(itemNode, 'legacyId') ||
+        itemNode.systemId?.replace('item:', '') ||
+        itemNode.id
+      itemLookup.set(itemNode.id, legacyId)
+    }
+
     // Get commands for this item (commands use ownerId to link to their parent item)
     const commandNodes = getNodesBySupertagWithInheritance(
       db,
@@ -213,6 +241,10 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
           .map((id) => tagLookup.get(id))
           .filter((t): t is TagRef => !!t),
       resolveCommands: () => commands,
+      resolveDependencies: (depNodeIds) =>
+        depNodeIds
+          .map((id) => itemLookup.get(id))
+          .filter((id): id is string => !!id),
     })
 
     return { success: true as const, item }
