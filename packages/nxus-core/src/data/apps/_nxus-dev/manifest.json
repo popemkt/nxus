@@ -75,6 +75,45 @@
             "target": "item",
             "mode": "script",
             "command": "inspect-node.ps1"
+        },
+        {
+            "id": "full-db-setup",
+            "name": "Full Database Setup",
+            "description": "Bootstrap and seed the database in sequence",
+            "icon": "FlowArrow",
+            "category": "Automation",
+            "target": "item",
+            "mode": "workflow",
+            "command": "",
+            "workflow": {
+                "steps": [
+                    {
+                        "id": "start",
+                        "type": "command",
+                        "ref": "bootstrap",
+                        "onSuccess": "seed",
+                        "onFailure": "error-handler"
+                    },
+                    {
+                        "id": "seed",
+                        "type": "command",
+                        "ref": "seed-nodes",
+                        "onSuccess": "done"
+                    },
+                    {
+                        "id": "error-handler",
+                        "type": "notify",
+                        "message": "Setup failed!",
+                        "level": "error"
+                    },
+                    {
+                        "id": "done",
+                        "type": "notify",
+                        "message": "Database setup complete!",
+                        "level": "success"
+                    }
+                ]
+            }
         }
     ],
     "docs": [

@@ -52,6 +52,11 @@ export function handleCommandMode(
       // Preview is handled separately by opening modal
       return { handled: true }
 
+    case 'workflow':
+      // Workflow mode is handled by the workflow executor
+      // Caller should use executeWorkflowCommand
+      return { handled: true }
+
     default:
       return { handled: false, error: `Unknown command mode: ${mode}` }
   }

@@ -1,14 +1,14 @@
-import { appRegistryService } from '@/services/apps/registry.service'
-import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
-import { openPathServerFn } from '@/services/shell/open-path.server'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
-import type { Item, ItemCommand } from '@/types/item'
+import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
+import { appRegistryService } from '@/services/apps/registry.service'
+import { openPathServerFn } from '@/services/shell/open-path.server'
 import type {
-  GenericCommand,
-  UnifiedCommand,
-  ItemBoundCommand,
-  GenericBoundCommand,
+    GenericBoundCommand,
+    GenericCommand,
+    ItemBoundCommand,
+    UnifiedCommand,
 } from '@/types/command'
+import type { Item, ItemCommand } from '@/types/item'
 
 /**
  * Command extended with app context for palette display
@@ -491,7 +491,8 @@ class CommandRegistry {
         scriptPath: string
         scriptSource?: string
         interactive: boolean
-      } {
+      }
+    | { type: 'workflow'; appId: string; commandId: string } {
     const mode = cmd.command.mode ?? 'execute'
     switch (mode) {
       case 'configure':
@@ -518,6 +519,12 @@ class CommandRegistry {
           interactive:
             (cmd.command.options as { interactive?: boolean })?.interactive ??
             false,
+        }
+      case 'workflow':
+        return {
+          type: 'workflow',
+          appId: cmd.app.id,
+          commandId: cmd.command.id,
         }
       case 'execute':
       default:

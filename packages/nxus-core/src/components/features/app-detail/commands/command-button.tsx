@@ -1,14 +1,14 @@
-import * as React from 'react'
-import * as PhosphorIcons from '@phosphor-icons/react'
-import { QuestionIcon, WarningIcon, CodeIcon } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
-import { useToolHealth } from '@/hooks/use-tool-health'
-import { useToolConfigured } from '@/services/state/tool-config-state'
-import { useCommandExecution } from '@/hooks/use-command-execution'
-import { configureModalService } from '@/stores/configure-modal.store'
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
+import { Button } from '@/components/ui/button'
+import { useCommandExecution } from '@/hooks/use-command-execution'
+import { useToolHealth } from '@/hooks/use-tool-health'
 import { handleCommandMode } from '@/lib/command-utils'
-import type { ItemCommand, ToolItem, Item } from '@/types/item'
+import { useToolConfigured } from '@/services/state/tool-config-state'
+import { configureModalService } from '@/stores/configure-modal.store'
+import type { Item, ItemCommand, ToolItem } from '@/types/item'
+import * as PhosphorIcons from '@phosphor-icons/react'
+import { CodeIcon, QuestionIcon, WarningIcon } from '@phosphor-icons/react'
+import * as React from 'react'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -81,6 +81,26 @@ export function CommandButton({
   const showPreviewButton = isScriptMode || isExecuteMode || isTerminalMode
 
   const handleClick = async () => {
+    // Handle workflow mode specially - requires async executor
+    if (command.mode === 'workflow') {
+      const { commandExecutor } = await import(
+        '@/services/command-palette/executor'
+      )
+      const { useTerminalStore } = await import('@/stores/terminal.store')
+      const terminalStore = useTerminalStore.getState()
+
+      await commandExecutor.executeWorkflowCommand({
+        appId: app.id,
+        commandId: command.id,
+        terminalStore,
+        onNotify: (message, level) => {
+          console.log(`[Workflow ${level}]: ${message}`)
+          // TODO: Show toast notification
+        },
+      })
+      return
+    }
+
     // Use shared handler for most modes
     const result = handleCommandMode(
       command.mode || 'execute',

@@ -21,7 +21,14 @@
  * ```
  */
 
+import { queryClient } from '@/lib/query-client'
+import { appRegistryService } from '@/services/apps/registry.service'
+import { streamCommandServerFn } from '@/services/shell/command-stream.server'
+import type { LogEntry } from '@/services/shell/command.schema'
 import { executeCommandServerFn } from '@/services/shell/command.server'
+import { createPtySessionServerFn } from '@/services/shell/pty.server'
+import { toolHealthKeys } from '@/services/tool-health/types'
+import type { ItemType } from '@/types/item'
 
 /**
  * Parse a command string into command and args, respecting quotes
@@ -87,13 +94,6 @@ function parseCommand(command: string): [string, string[]] {
   const [cmd, ...rest] = args
   return [cmd, rest]
 }
-import { streamCommandServerFn } from '@/services/shell/command-stream.server'
-import { createPtySessionServerFn } from '@/services/shell/pty.server'
-import { queryClient } from '@/lib/query-client'
-import { toolHealthKeys } from '@/services/tool-health/types'
-import { appRegistryService } from '@/services/apps/registry.service'
-import type { ItemType } from '@/types/item'
-import type { LogEntry } from '@/services/shell/command.schema'
 
 // Terminal store interface matching the actual store
 type TerminalStore = {
@@ -634,4 +634,91 @@ export const commandExecutor = {
       }
     }
   },
+
+  /**
+   * Execute a workflow command (mode: 'workflow')
+   *
+   * This handles workflow commands that chain multiple steps together.
+   * It uses the workflow executor to run steps in sequence.
+   *
+   * @param options.appId - The app ID containing the workflow command
+   * @param options.commandId - The command ID of the workflow
+   * @param options.params - Optional parameters for the workflow
+   * @param options.terminalStore - Terminal store for command execution
+   * @param options.onNotify - Callback for toast notifications
+   */
+  async executeWorkflowCommand(options: {
+    appId: string
+    commandId: string
+    params?: Record<string, unknown>
+    terminalStore?: TerminalStore
+    onNotify?: (
+      message: string,
+      level: 'info' | 'success' | 'warning' | 'error',
+    ) => void
+  }): Promise<CommandExecutionResult> {
+    const { appId, commandId, params, onNotify } = options
+
+    // Get the app and command
+    const appResult = appRegistryService.getAppById(appId)
+    if (!appResult.success) {
+      return {
+        success: false,
+        error: `App not found: ${appId}`,
+      }
+    }
+
+    const command = appResult.data.commands?.find((c) => c.id === commandId)
+    if (!command) {
+      return {
+        success: false,
+        error: `Command not found: ${commandId}`,
+      }
+    }
+
+    if (command.mode !== 'workflow' || !command.workflow) {
+      return {
+        success: false,
+        error: `Command ${commandId} is not a workflow command`,
+      }
+    }
+
+    // Import workflow executor
+    const { executeWorkflow } = await import('@/services/workflow')
+
+    // Execute the workflow
+    const result = await executeWorkflow({
+      item: appResult.data,
+      command,
+      params,
+      onNotify: (message, level) => {
+        // Call the callback if provided
+        if (onNotify) {
+          onNotify(message, level)
+        }
+        // Also log to console
+        console.log(`[Workflow] ${level.toUpperCase()}: ${message}`)
+      },
+      onStepStart: (stepId, ref) => {
+        console.log(`[Workflow] Starting step ${stepId}: ${ref}`)
+      },
+      onStepComplete: (stepId, stepResult) => {
+        console.log(
+          `[Workflow] Completed step ${stepId}: exit code ${stepResult.exitCode}`,
+        )
+      },
+    })
+
+    if (result.success) {
+      onNotify?.('Workflow completed successfully', 'success')
+    } else {
+      onNotify?.(result.error ?? 'Workflow failed', 'error')
+    }
+
+    return {
+      success: result.success,
+      error: result.error,
+    }
+  },
 }
+

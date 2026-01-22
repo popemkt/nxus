@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { CommandRequirementSchema, CommandParamSchema } from './command-params'
+import { CommandParamSchema, CommandRequirementSchema } from './command-params'
+import { WorkflowDefinitionSchema } from './workflow'
 
 /**
  * Supported platforms for app installation
@@ -91,6 +92,7 @@ export const CommandModeSchema = z.enum([
   'configure',
   'script',
   'preview',
+  'workflow',
 ])
 export type CommandMode = z.infer<typeof CommandModeSchema>
 
@@ -165,6 +167,8 @@ export const ItemCommandSchema = z.object({
   requirements: z.array(CommandRequirementSchema).optional(),
   /** User input parameters to collect before execution */
   params: z.array(CommandParamSchema).optional(),
+  /** Workflow definition (for mode: 'workflow') */
+  workflow: WorkflowDefinitionSchema.optional(),
 })
 export type ItemCommand = z.infer<typeof ItemCommandSchema>
 

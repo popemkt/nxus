@@ -1,12 +1,12 @@
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { commandExecutor } from '@/services/command-palette/executor'
 import {
-  commandRegistry,
-  type PaletteCommand,
+    commandRegistry,
+    type PaletteCommand,
 } from '@/services/command-palette/registry'
 import {
-  useCommandPaletteStore,
-  type ActionPanelCommand,
+    useCommandPaletteStore,
+    type ActionPanelCommand,
 } from '@/stores/command-palette.store'
 import { configureModalService } from '@/stores/configure-modal.store'
 import { matchesKeybinding, useSettingsStore } from '@/stores/settings.store'
@@ -14,16 +14,16 @@ import { useTerminalStore } from '@/stores/terminal.store'
 import type { GenericCommand } from '@/types/command'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
-  ArrowLeftIcon,
-  CaretRightIcon,
-  CommandIcon,
-  CopyIcon,
-  EyeIcon,
-  MagnifyingGlassIcon,
-  PlayIcon,
-  QuestionIcon,
-  TerminalWindowIcon,
-  WarningCircleIcon,
+    ArrowLeftIcon,
+    CaretRightIcon,
+    CommandIcon,
+    CopyIcon,
+    EyeIcon,
+    MagnifyingGlassIcon,
+    PlayIcon,
+    QuestionIcon,
+    TerminalWindowIcon,
+    WarningCircleIcon,
 } from '@phosphor-icons/react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -31,8 +31,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import {
-  aliasUtils,
-  getAliasesServerFn,
+    aliasUtils,
+    getAliasesServerFn,
 } from '@/services/command-palette/alias.server'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
@@ -538,6 +538,19 @@ export function CommandPalette() {
           appType: cmd.app.type,
           tabName: `${cmd.app.name}: ${cmd.command.name}`,
           terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+        })
+        break
+      }
+      case 'workflow': {
+        // Execute workflow command
+        await commandExecutor.executeWorkflowCommand({
+          appId: action.appId,
+          commandId: action.commandId,
+          terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
+          onNotify: (message, level) => {
+            // TODO: Show toast notification
+            console.log(`[Workflow ${level}]: ${message}`)
+          },
         })
         break
       }
