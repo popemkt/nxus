@@ -1,0 +1,32 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#040506"/>
+  <defs>
+    <linearGradient id="n8n-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EA4B71"/>
+      <stop offset="100%" stop-color="#FF8F73"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g transform="translate(400, 225)" filter="url(#glow)">
+    <!-- Connecting Lines -->
+    <path d="M-100 0 L 100 0" stroke="url(#n8n-gradient)" stroke-width="12" stroke-linecap="round" />
+    <path d="M-50 -86.6 L 50 86.6" stroke="url(#n8n-gradient)" stroke-width="12" stroke-linecap="round" />
+    <path d="M-50 86.6 L 50 -86.6" stroke="url(#n8n-gradient)" stroke-width="12" stroke-linecap="round" />
+    
+    <!-- Nodes -->
+    <circle cx="0" cy="0" r="25" fill="#040506" stroke="url(#n8n-gradient)" stroke-width="8"/>
+    <circle cx="-100" cy="0" r="15" fill="#EA4B71"/>
+    <circle cx="100" cy="0" r="15" fill="#EA4B71"/>
+    <circle cx="-50" cy="-86.6" r="15" fill="#EA4B71"/>
+    <circle cx="50" cy="86.6" r="15" fill="#EA4B71"/>
+    <circle cx="-50" cy="86.6" r="15" fill="#EA4B71"/>
+    <circle cx="50" cy="-86.6" r="15" fill="#EA4B71"/>
+  </g>
+</svg>

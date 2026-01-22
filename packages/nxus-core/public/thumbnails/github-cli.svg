@@ -1,51 +1,37 @@
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#161b22"/>
-      <stop offset="100%" stop-color="#8a63d2"/>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#24292f" /> <!-- GitHub Dark -->
+      <stop offset="100%" stop-color="#0969da" /> <!-- GitHub Blue -->
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
-      <feOffset dx="5" dy="5" result="offsetblur"/>
-      <feComponentTransfer>
-        <feFuncA type="linear" slope="0.3"/>
-      </feComponentTransfer>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
       <feMerge>
-        <feMergeNode/>
+        <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
   </defs>
   
-  <!-- Background -->
-  <rect width="800" height="450" fill="url(#bg)" />
+  <rect width="800" height="450" fill="url(#grad1)" />
   
-  <!-- Content Container -->
-  <g transform="translate(400, 225)" filter="url(#shadow)">
-    
-    <!-- Terminal Window Shape Hint (Optional, kept subtle) -->
-    <!-- <rect x="-150" y="-120" width="300" height="240" rx="15" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="2"/> -->
+  <!-- Stylized Terminal Window Background -->
+  <rect x="200" y="100" width="400" height="250" rx="10" ry="10" fill="#0d1117" stroke="#30363d" stroke-width="2" />
+  
+  <!-- Terminal Header Dots -->
+  <circle cx="225" cy="120" r="5" fill="#ff5f56" />
+  <circle cx="245" cy="120" r="5" fill="#ffbd2e" />
+  <circle cx="265" cy="120" r="5" fill="#27c93f" />
 
-    <!-- Git Branch Icon -->
-    <g stroke="#ffffff" stroke-width="18" stroke-linecap="round" fill="none">
-      <!-- Main Line -->
-      <path d="M-30,80 L-30,-80" />
-      <!-- Branch Line -->
-      <path d="M-30,20 C-30,-40 50,-40 50,-80" />
-    </g>
+  <!-- GitHub Logo Shape (Simplified Octocat) -->
+  <path d="M400,160 C333.7,160 280,213.7 280,280 C280,333 314.3,378 362,393.9 C368,395 370.2,391.3 370.2,388.1 C370.2,385.2 370.1,377.6 370,367.5 C336.7,374.7 329.7,351.4 329.7,351.4 C324.2,337.5 316.4,333.8 316.4,333.8 C305.5,326.4 317.2,326.5 317.2,326.5 C329.2,327.4 335.5,338.8 335.5,338.8 C346.2,357.2 363.6,351.8 370.4,348.7 C371.5,341 374.6,335.7 378,332.7 C351.4,329.7 323.4,319.4 323.4,273.4 C323.4,260.3 328.1,249.6 335.8,241.2 C334.6,238.2 330.4,226 337,209.4 C337,209.4 347,206.2 370,221.7 C379.5,219.1 389.7,217.8 400,217.7 C410.2,217.8 420.5,219.1 430,221.7 C452.9,206.2 462.9,209.4 462.9,209.4 C469.5,226 465.3,238.2 464.1,241.2 C471.8,249.6 476.5,260.3 476.5,273.4 C476.5,319.5 448.5,329.6 421.7,332.6 C425.9,336.3 429.7,343.5 429.7,354.6 C429.7,370.5 429.5,383.5 429.5,388.1 C429.5,391.3 431.7,395.1 437.8,393.9 C485.6,377.9 520,333 520,280 C520,213.7 466.3,160 400,160 Z" fill="white" transform="translate(0, -10)" />
 
-    <!-- Nodes -->
-    <g fill="#ffffff" stroke="none">
-      <circle cx="-30" cy="80" r="14" />
-      <circle cx="-30" cy="-80" r="14" />
-      <circle cx="50" cy="-80" r="14" />
-    </g>
-    
-    <!-- CLI Prompt Element -->
-    <g transform="translate(-130, 60)">
-        <path d="M0,0 L20,20 L0,40" stroke="#3fb950" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <rect x="30" y="30" width="25" height="10" fill="#3fb950" />
-    </g>
+  <!-- Prompt Cursor -->
+  <!-- Placed to look like it's interacting with the logo or part of the terminal -->
+  <rect x="440" y="320" width="20" height="40" fill="#27c93f" filter="url(#glow)">
+     <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite" />
+  </rect>
+  
+  <path d="M350,340 L370,360 L350,380" stroke="#27c93f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(-100, -20)" filter="url(#glow)" opacity="0.8"/>
 
-  </g>
 </svg>

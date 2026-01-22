@@ -1,7 +1,5 @@
 /**
- * db-seed-nodes.ts - Seed node tables directly from manifest.json files
- *
- * Usage: npx tsx scripts/db-seed-nodes.ts
+ * seed-nodes.ts - Seed node tables directly from manifest.json files
  *
  * Seeds the node-based architecture directly from manifest.json files,
  * bypassing the legacy items/commands tables.
@@ -109,9 +107,9 @@ function getOrCreateTagNode(
   return nodeId
 }
 
-async function seedNodes() {
+export async function seedNodes() {
   console.log('\n' + '='.repeat(50))
-  console.log('  DB Seed Nodes: JSON → Node Tables')
+  console.log('  DB Seed: JSON → Nodes')
   console.log('='.repeat(50) + '\n')
 
   console.log('[1/4] Initializing database...')
@@ -346,7 +344,17 @@ async function seedNodes() {
       addProperty(db, nodeId, F.tags, JSON.stringify(tagNodeId), i)
     }
 
-    // Commands
+    // Commands - delete existing and re-create
+    const existingCommands = db
+      .select()
+      .from(nodes)
+      .where(eq(nodes.ownerId, nodeId))
+      .all()
+    for (const cmd of existingCommands) {
+      db.delete(nodeProperties).where(eq(nodeProperties.nodeId, cmd.id)).run()
+      db.delete(nodes).where(eq(nodes.id, cmd.id)).run()
+    }
+
     for (const cmd of item.commands || []) {
       const cmdNodeId = uuidv7()
       db.insert(nodes)
@@ -361,7 +369,6 @@ async function seedNodes() {
         .run()
 
       addProperty(db, cmdNodeId, F.supertag, JSON.stringify(ST.command))
-      // Note: parent relationship is established via ownerId on the node itself
       addProperty(db, cmdNodeId, F.commandId, JSON.stringify(cmd.id))
 
       // Workflow commands have workflow field, others have command field
@@ -392,20 +399,26 @@ async function seedNodes() {
           F.description,
           JSON.stringify(cmd.description),
         )
-      if (cmd.scriptSource)
+      if ((cmd as any).scriptSource)
         addProperty(
           db,
           cmdNodeId,
           F.scriptSource,
-          JSON.stringify(cmd.scriptSource),
+          JSON.stringify((cmd as any).scriptSource),
         )
-      if (cmd.cwd) addProperty(db, cmdNodeId, F.cwd, JSON.stringify(cmd.cwd))
+      if ((cmd as any).cwd)
+        addProperty(db, cmdNodeId, F.cwd, JSON.stringify((cmd as any).cwd))
       if (cmd.platforms)
         addProperty(db, cmdNodeId, F.platforms, JSON.stringify(cmd.platforms))
       if (cmd.requires)
         addProperty(db, cmdNodeId, F.requires, JSON.stringify(cmd.requires))
-      if (cmd.options)
-        addProperty(db, cmdNodeId, F.options, JSON.stringify(cmd.options))
+      if ((cmd as any).options)
+        addProperty(
+          db,
+          cmdNodeId,
+          F.options,
+          JSON.stringify((cmd as any).options),
+        )
 
       commandsCount++
     }
@@ -444,7 +457,7 @@ async function seedNodes() {
   // ============================================================================
   // Step 5: Seed inbox items from legacy table
   // ============================================================================
-  console.log('[5/6] Seeding inbox items from legacy table...')
+  console.log('[5/5] Seeding inbox items from legacy table...')
 
   // Import inbox table dynamically to avoid circular deps
   const { inbox } = await import('../src/db/schema')
@@ -526,12 +539,11 @@ async function seedNodes() {
   console.log(`  Seeded ${inboxCount} inbox items (${inboxSkipped} skipped)`)
 
   // Summary
-  console.log('[6/6] Done!')
   const totalNodes = db.select().from(nodes).all().length
   const totalProps = db.select().from(nodeProperties).all().length
 
   console.log('\n' + '='.repeat(50))
-  console.log('✅ Node seed complete!')
+  console.log('✅ Nodes seed complete!')
   console.log(`   Total nodes: ${totalNodes}`)
   console.log(`   Total properties: ${totalProps}`)
   console.log(
@@ -539,5 +551,3 @@ async function seedNodes() {
   )
   console.log('='.repeat(50) + '\n')
 }
-
-seedNodes().catch(console.error)

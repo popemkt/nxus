@@ -1,0 +1,53 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bgGrad)" />
+  
+  <!-- Central Hub (The Proxy) -->
+  <g transform="translate(400, 225)">
+    <!-- Outer hexagon ring -->
+    <path d="M-70,-40 L0,-80 L70,-40 L70,40 L0,80 L-70,40 Z" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.3" />
+    <path d="M-60,-35 L0,-70 L60,-35 L60,35 L0,70 L-60,35 Z" fill="none" stroke="#3b82f6" stroke-width="4" stroke-dasharray="15 10" opacity="0.6">
+        <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="60s" repeatCount="indefinite" />
+    </path>
+    
+    <!-- Core Hexagon -->
+    <path d="M-30,-17 L0,-34 L30,-17 L30,17 L0,34 L-30,17 Z" fill="#2563eb" stroke="#60a5fa" stroke-width="3" filter="url(#glow)" />
+    
+    <!-- Arrows symbol inside -->
+    <path d="M-12,5 L0,12 L12,5 M0,-12 L0,12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  
+  <!-- Connections -->
+  <g stroke-width="3" stroke-dasharray="4 6">
+    <line x1="220" y1="225" x2="330" y2="225" stroke="#10b981" opacity="0.6" /> <!-- Left -->
+    <line x1="580" y1="225" x2="470" y2="225" stroke="#f59e0b" opacity="0.6" /> <!-- Right -->
+    <line x1="400" y1="100" x2="400" y2="155" stroke="#8b5cf6" opacity="0.6" /> <!-- Top -->
+  </g>
+  
+  <!-- Node 1: Left (Green - e.g., OpenAI) -->
+  <circle cx="220" cy="225" r="20" fill="#10b981" filter="url(#glow)" />
+  <circle cx="220" cy="225" r="10" fill="#ecfdf5" opacity="0.5" />
+  
+  <!-- Node 2: Right (Amber - e.g., Claude) -->
+  <circle cx="580" cy="225" r="20" fill="#f59e0b" filter="url(#glow)" />
+  <circle cx="580" cy="225" r="10" fill="#fffbeb" opacity="0.5" />
+  
+  <!-- Node 3: Top (Purple - e.g., Gemini) -->
+  <circle cx="400" cy="100" r="20" fill="#8b5cf6" filter="url(#glow)" />
+  <circle cx="400" cy="100" r="10" fill="#f5f3ff" opacity="0.5" />
+  
+</svg>

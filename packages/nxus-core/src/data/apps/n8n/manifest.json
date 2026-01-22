@@ -1,0 +1,132 @@
+{
+    "id": "n8n",
+    "name": "n8n",
+    "description": "Fair-code workflow automation platform - self-hostable alternative to Zapier with 400+ integrations",
+    "type": "tool",
+    "path": "https://n8n.io/",
+    "homepage": "https://n8n.io/",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "dependencies": [
+        "node"
+    ],
+    "checkCommand": "n8n --version",
+    "installInstructions": "Install via npm: npm install -g n8n",
+    "commands": [
+        {
+            "id": "install-n8n",
+            "name": "Install",
+            "description": "Install n8n globally via npm",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm install -g n8n",
+            "requires": {
+                "tools": ["node"],
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "n8n-start",
+            "name": "Start",
+            "description": "Start n8n workflow editor (opens at http://localhost:5678)",
+            "icon": "Play",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "n8n start",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "n8n-start-tunnel",
+            "name": "Start with Tunnel",
+            "description": "Start n8n with tunnel for webhooks testing",
+            "icon": "Globe",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "n8n start --tunnel",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "n8n-export",
+            "name": "Export Workflows",
+            "description": "Export all workflows to JSON files",
+            "icon": "Export",
+            "category": "Data",
+            "target": "item",
+            "mode": "terminal",
+            "command": "n8n export:workflow --all",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "n8n-import",
+            "name": "Import Workflows",
+            "description": "Import workflows from JSON files",
+            "icon": "Import",
+            "category": "Data",
+            "target": "item",
+            "mode": "terminal",
+            "command": "n8n import:workflow",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "n8n-docker",
+            "name": "Run via Docker",
+            "description": "Start n8n using Docker (no install required)",
+            "icon": "Cube",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "docker run -it --rm --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n n8nio/n8n",
+            "requires": {
+                "tools": ["docker"]
+            }
+        },
+        {
+            "id": "n8n-update",
+            "name": "Update",
+            "description": "Update n8n to latest version",
+            "icon": "ArrowsClockwise",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm update -g n8n",
+            "requires": {
+                "tools": ["node"],
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "n8n-docs",
+            "name": "Documentation",
+            "description": "Open n8n documentation",
+            "icon": "Book",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.n8n.io/"
+        }
+    ],
+    "metadata": {
+        "category": "automation",
+        "createdAt": "2026-01-22T00:00:00Z",
+        "updatedAt": "2026-01-22T00:00:00Z",
+        "version": "1.0.0",
+        "author": "n8n GmbH",
+        "tags": []
+    },
+    "status": "not-installed"
+}

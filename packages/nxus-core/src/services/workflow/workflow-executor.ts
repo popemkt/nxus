@@ -8,16 +8,16 @@
 import { appRegistryService } from '@/services/apps/registry.service'
 import type { Item, ItemCommand } from '@/types/item'
 import type {
-    CommandStep,
-    NotifyStep,
-    StepResult,
-    WorkflowContext,
-    WorkflowStep
+  CommandStep,
+  NotifyStep,
+  StepResult,
+  WorkflowContext,
+  WorkflowStep,
 } from '@/types/workflow'
 import {
-    createWorkflowContext,
-    evaluateExpression,
-    setStepResult,
+  createWorkflowContext,
+  evaluateExpression,
+  setStepResult,
 } from './workflow-context'
 
 // ============================================================================
@@ -39,7 +39,10 @@ export interface WorkflowExecutionOptions {
   /** Optional parameters passed to the workflow */
   params?: Record<string, unknown>
   /** Callback for notify steps */
-  onNotify?: (message: string, level: 'info' | 'success' | 'warning' | 'error') => void
+  onNotify?: (
+    message: string,
+    level: 'info' | 'success' | 'warning' | 'error',
+  ) => void
   /** Callback when a command step starts */
   onStepStart?: (stepId: string, ref: string) => void
   /** Callback when a command step completes */
@@ -132,11 +135,27 @@ async function executeCommandStep(
 
   // Execute the command using the command executor
   // This is a simplified execution - for now we just run shell commands
-  const { commandExecutor } = await import('@/services/command-palette/executor')
+  const { commandExecutor } = await import(
+    '@/services/command-palette/executor'
+  )
+
+  // Get the command string using the type-safe helper
+  const commandString = getCommandString(resolved.command)
+  if (!commandString) {
+    return {
+      exitCode: 1,
+      stdout: '',
+      stderr: `Command ${step.ref} does not have a command string (mode: ${resolved.command.mode})`,
+      duration: Date.now() - startTime,
+    }
+  }
+
+  // Get cwd if available (only on certain command modes)
+  const cwd = (resolved.command as { cwd?: string }).cwd
 
   const result = await commandExecutor.executeStreaming({
-    command: resolved.command.command,
-    cwd: resolved.command.cwd,
+    command: commandString,
+    cwd,
     appId: resolved.item.id,
     appType: resolved.item.type,
   })
@@ -238,8 +257,7 @@ export async function executeWorkflow(
         case 'condition': {
           const value = evaluateExpression(context, step.expression)
           const valueStr = String(value)
-          currentStepId =
-            step.branches[valueStr] ?? step.branches['default']
+          currentStepId = step.branches[valueStr] ?? step.branches['default']
           if (!currentStepId) {
             return {
               success: false,
