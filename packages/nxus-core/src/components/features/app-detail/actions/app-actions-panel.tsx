@@ -1,13 +1,7 @@
-import * as React from 'react'
-import { motion } from 'framer-motion'
-import * as PhosphorIcons from '@phosphor-icons/react'
-import {
-  QuestionIcon,
-  WarningIcon,
-  CodeIcon,
-  DotsThree,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react'
+import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
+import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
+import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -15,24 +9,31 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToolHealth } from '@/hooks/use-tool-health'
-import { useToolConfigured } from '@/services/state/tool-config-state'
-import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
-import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
-import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import { handleCommandMode } from '@/lib/command-utils'
+import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.server'
 import { getScriptFullPathServerFn } from '@/services/shell/read-script.server'
-import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import type { Item, ToolItem, ItemCommand } from '@/types/item'
+import { useToolConfigured } from '@/services/state/tool-config-state'
+import type { Item, ItemCommand, ToolItem } from '@/types/item'
+import { getCommandString } from '@/types/item'
+import * as PhosphorIcons from '@phosphor-icons/react'
+import {
+  CodeIcon,
+  DotsThree,
+  QuestionIcon,
+  TerminalWindowIcon,
+  WarningIcon,
+} from '@phosphor-icons/react'
+import { motion } from 'framer-motion'
+import * as React from 'react'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -85,8 +86,9 @@ export function AppActionsPanel({
   // Script params modal state
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
   const [scriptParams, setScriptParams] = React.useState<ScriptParam[]>([])
-  const [pendingScriptCommand, setPendingScriptCommand] =
-    React.useState<ItemCommand | null>(null)
+  const [pendingScriptCommand, setPendingScriptCommand] = React.useState<
+    (ItemCommand & { mode: 'script' }) | null
+  >(null)
 
   // Get health check for this tool (liveness) - uses TanStack Query via domain hook
   const healthCheck = useToolHealth(app)
@@ -140,7 +142,7 @@ export function AppActionsPanel({
         if (result.success && result.params.length > 0) {
           // Has parameters - show modal
           setScriptParams(result.params)
-          setPendingScriptCommand(cmd)
+          setPendingScriptCommand(cmd as ItemCommand & { mode: 'script' })
           setParamsModalOpen(true)
           return
         }
@@ -168,17 +170,41 @@ export function AppActionsPanel({
       }
     }
 
+    // Handle workflow mode specially - requires async executor
+    if (cmd.mode === 'workflow') {
+      try {
+        const { commandExecutor } = await import(
+          '@/services/command-palette/executor'
+        )
+        const { useTerminalStore } = await import('@/stores/terminal.store')
+        const terminalStore = useTerminalStore.getState()
+
+        await commandExecutor.executeWorkflowCommand({
+          appId: app.id,
+          commandId: cmd.id,
+          terminalStore,
+          onNotify: (message, level) => {
+            console.log(`[Workflow ${level}]: ${message}`)
+            // TODO: Show toast notification
+          },
+        })
+      } catch (err) {
+        setError(`Workflow execution failed: ${(err as Error).message}`)
+      }
+      return
+    }
+
     // Other modes handled by shared utility
-    const result = handleCommandMode(
-      cmd.mode || 'execute',
-      cmd.command,
-      app.id,
-      {
-        onExecute: onRunCommand,
-        onTerminal: onTerminal,
-        onConfigure: () => setConfigModalOpen(true),
-      },
-    )
+    const cmdString = getCommandString(cmd)
+    if (!cmdString) {
+      setError(`Command ${cmd.id} does not have a command string`)
+      return
+    }
+    const result = handleCommandMode(cmd.mode || 'execute', cmdString, app.id, {
+      onExecute: onRunCommand,
+      onTerminal: onTerminal,
+      onConfigure: () => setConfigModalOpen(true),
+    })
 
     if (!result.handled && result.error) {
       setError(result.error)

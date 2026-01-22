@@ -1,25 +1,3 @@
-import * as React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import * as PhosphorIcons from '@phosphor-icons/react'
-import {
-  FolderOpenIcon,
-  TerminalWindowIcon,
-  TrashIcon,
-  PackageIcon,
-  PlayIcon,
-  HammerIcon,
-  ArrowsClockwiseIcon,
-  WarningIcon,
-  QuestionIcon,
-} from '@phosphor-icons/react'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,20 +10,43 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import { openPathServerFn } from '@/services/shell/open-path.server'
-import { openTerminalServerFn } from '@/services/shell/open-terminal.server'
-import { uninstallAppServerFn } from '@/services/apps/uninstall.server'
-import {
-  appStateService,
-  type InstalledAppRecord,
-} from '@/services/state/app-state'
 import {
   checkGitStatusServerFn,
   type GitStatus,
 } from '@/services/apps/git-status.server'
+import { uninstallAppServerFn } from '@/services/apps/uninstall.server'
+import { openPathServerFn } from '@/services/shell/open-path.server'
+import { openTerminalServerFn } from '@/services/shell/open-terminal.server'
+import {
+  appStateService,
+  type InstalledAppRecord,
+} from '@/services/state/app-state'
 import type { Item, ItemType } from '@/types/item'
+import { getCommandString, hasCommandString } from '@/types/item'
+import * as PhosphorIcons from '@phosphor-icons/react'
+import {
+  ArrowsClockwiseIcon,
+  FolderOpenIcon,
+  HammerIcon,
+  PackageIcon,
+  PlayIcon,
+  QuestionIcon,
+  TerminalWindowIcon,
+  TrashIcon,
+  WarningIcon,
+} from '@phosphor-icons/react'
+import { AnimatePresence, motion } from 'framer-motion'
+import * as React from 'react'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -130,7 +131,7 @@ export function InstanceActionsPanel({
             label: cmd.name,
             description: cmd.description,
             icon: HammerIcon, // Will use CommandIcon dynamically
-            command: cmd.command,
+            command: hasCommandString(cmd) ? cmd.command : undefined,
           }
         }
       }
@@ -399,7 +400,10 @@ export function InstanceActionsPanel({
                       <Button
                         variant="outline"
                         className="w-full justify-start"
-                        onClick={() => handleRunCommand(cmd.command)}
+                        onClick={() => {
+                          const cmdString = getCommandString(cmd)
+                          if (cmdString) handleRunCommand(cmdString)
+                        }}
                       >
                         <CommandIcon iconName={cmd.icon} />
                         <span className="flex-1 text-left">{cmd.name}</span>

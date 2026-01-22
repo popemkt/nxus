@@ -6,6 +6,7 @@ import { handleCommandMode } from '@/lib/command-utils'
 import { useToolConfigured } from '@/services/state/tool-config-state'
 import { configureModalService } from '@/stores/configure-modal.store'
 import type { Item, ItemCommand, ToolItem } from '@/types/item'
+import { getCommandString } from '@/types/item'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import { CodeIcon, QuestionIcon, WarningIcon } from '@phosphor-icons/react'
 import * as React from 'react'
@@ -102,9 +103,14 @@ export function CommandButton({
     }
 
     // Use shared handler for most modes
+    const cmdString = getCommandString(command)
+    if (!cmdString) {
+      console.warn(`Command ${command.id} does not have a command string`)
+      return
+    }
     const result = handleCommandMode(
       command.mode || 'execute',
-      command.command,
+      cmdString,
       app.id,
       {
         onExecute:
@@ -182,7 +188,7 @@ export function CommandButton({
         {showPreviewButton && (
           <ScriptPreviewModal
             appId={app.id}
-            scriptPath={command.command}
+            scriptPath={getCommandString(command) ?? ''}
             open={previewOpen}
             onOpenChange={setPreviewOpen}
             isInlineCommand={isExecuteMode || isTerminalMode}
@@ -230,7 +236,7 @@ export function CommandButton({
       {showPreviewButton && (
         <ScriptPreviewModal
           appId={app.id}
-          scriptPath={command.command}
+          scriptPath={getCommandString(command) ?? ''}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           isInlineCommand={isExecuteMode || isTerminalMode}

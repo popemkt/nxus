@@ -134,6 +134,7 @@ export const SYSTEM_FIELDS = {
   OPTIONS: 'field:options',
   PARAMS: 'field:params',
   REQUIREMENTS: 'field:requirements',
+  WORKFLOW: 'field:workflow',
 
   // Inbox-specific
   STATUS: 'field:status',

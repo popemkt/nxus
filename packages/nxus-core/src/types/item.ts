@@ -138,39 +138,150 @@ export const ScriptModeOptionsSchema = z.object({
 export type ScriptModeOptions = z.infer<typeof ScriptModeOptionsSchema>
 
 /**
- * Config-driven command defined in app-registry.json
- * For shell/script commands with different parameters per app
+ * Base fields shared by all command types
  */
-export const ItemCommandSchema = z.object({
+const BaseCommandSchema = z.object({
   id: z.string().describe('Unique command identifier'),
   name: z.string().describe('Display name'),
   description: z.string().optional(),
   icon: z.string().describe('Phosphor icon name'),
   category: z.string().describe('Grouping for UI'),
   target: CommandTargetSchema.describe('What scope this operates on'),
-  mode: CommandModeSchema.default('execute').describe(
-    'How to execute this command',
-  ),
-  command: z.string().describe('Shell command to execute or URL for docs mode'),
-  /** Where to resolve script paths (for mode: 'script'). Default: 'nxus-app' */
-  scriptSource: ScriptSourceSchema.optional(),
-  /** Working directory override. Default derived from scriptSource for scripts, process.cwd() for execute */
-  cwd: CwdSchema.optional(),
   override: z.string().optional().describe('ID of default command to override'),
   /** Platforms where this command is available */
   platforms: z.array(PlatformSchema).optional(),
   /** Declarative requirements - what this command needs to run */
   requires: CommandRequirementsSchema.optional(),
-  /** Mode-specific options (stored as JSON in DB, parsed based on mode type) */
-  options: z.record(z.string(), z.any()).optional(),
   /** Tagged item selectors (e.g., pick an AI provider) */
   requirements: z.array(CommandRequirementSchema).optional(),
   /** User input parameters to collect before execution */
   params: z.array(CommandParamSchema).optional(),
-  /** Workflow definition (for mode: 'workflow') */
-  workflow: WorkflowDefinitionSchema.optional(),
 })
+
+/**
+ * Execute mode - run command directly in background
+ */
+const ExecuteCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('execute'),
+  command: z.string().describe('Shell command to execute'),
+  cwd: CwdSchema.optional(),
+})
+
+/**
+ * Terminal mode - open terminal with command pre-filled
+ */
+const TerminalCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('terminal'),
+  command: z.string().describe('Command to run in terminal'),
+  cwd: CwdSchema.optional(),
+})
+
+/**
+ * Copy mode - show popup with copyable command text
+ */
+const CopyCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('copy'),
+  command: z.string().describe('Text to copy'),
+})
+
+/**
+ * Docs mode - open documentation URL
+ */
+const DocsCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('docs'),
+  command: z.string().url().describe('Documentation URL to open'),
+})
+
+/**
+ * Configure mode - open configuration modal
+ */
+const ConfigureCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('configure'),
+  /** Configuration options */
+  options: z.record(z.string(), z.any()).optional(),
+})
+
+/**
+ * Script mode - run a script file
+ */
+const ScriptCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('script'),
+  command: z.string().describe('Script filename (e.g., install.ps1)'),
+  /** Where to resolve script paths. Default: 'nxus-app' */
+  scriptSource: ScriptSourceSchema.optional(),
+  /** Working directory override */
+  cwd: CwdSchema.optional(),
+  /** Script execution options (typed) */
+  scriptOptions: ScriptModeOptionsSchema.optional(),
+  /** Script options (generic, for backward compat with existing manifests) */
+  options: z.record(z.string(), z.any()).optional(),
+})
+
+/**
+ * Preview mode - view content in a modal
+ */
+const PreviewCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('preview'),
+  command: z.string().describe('Content or path to preview'),
+  /** Preview-specific options */
+  options: z.record(z.string(), z.any()).optional(),
+})
+
+/**
+ * Workflow mode - execute a multi-step workflow
+ */
+const WorkflowCommandSchema = BaseCommandSchema.extend({
+  mode: z.literal('workflow'),
+  workflow: WorkflowDefinitionSchema.describe('Workflow step definitions'),
+})
+
+/**
+ * Discriminated union of all command types based on mode
+ * Each mode has specific required/optional fields
+ */
+export const ItemCommandSchema = z.discriminatedUnion('mode', [
+  ExecuteCommandSchema,
+  TerminalCommandSchema,
+  CopyCommandSchema,
+  DocsCommandSchema,
+  ConfigureCommandSchema,
+  ScriptCommandSchema,
+  PreviewCommandSchema,
+  WorkflowCommandSchema,
+])
 export type ItemCommand = z.infer<typeof ItemCommandSchema>
+
+// Export individual command type schemas for type narrowing
+export type ExecuteCommand = z.infer<typeof ExecuteCommandSchema>
+export type TerminalCommand = z.infer<typeof TerminalCommandSchema>
+export type CopyCommand = z.infer<typeof CopyCommandSchema>
+export type DocsCommand = z.infer<typeof DocsCommandSchema>
+export type ConfigureCommand = z.infer<typeof ConfigureCommandSchema>
+export type ScriptCommand = z.infer<typeof ScriptCommandSchema>
+export type PreviewCommand = z.infer<typeof PreviewCommandSchema>
+export type WorkflowCommand = z.infer<typeof WorkflowCommandSchema>
+
+/** Union of commands that have a 'command' string field */
+export type CommandWithString =
+  | ExecuteCommand
+  | TerminalCommand
+  | CopyCommand
+  | DocsCommand
+  | ScriptCommand
+  | PreviewCommand
+
+/** Type guard: check if command has a 'command' string field */
+export function hasCommandString(cmd: ItemCommand): cmd is CommandWithString {
+  return 'command' in cmd && typeof cmd.command === 'string'
+}
+
+/** Safely get the command string from any command type */
+export function getCommandString(cmd: ItemCommand): string | undefined {
+  if (hasCommandString(cmd)) {
+    return cmd.command
+  }
+  return undefined
+}
 
 /**
  * Documentation entry for an app

@@ -319,6 +319,11 @@ async function bootstrap() {
       content: 'requirements',
       fieldType: 'json',
     },
+    {
+      systemId: SYSTEM_FIELDS.WORKFLOW,
+      content: 'workflow',
+      fieldType: 'json',
+    },
     // Inbox-specific
     { systemId: SYSTEM_FIELDS.STATUS, content: 'status', fieldType: 'select' },
     { systemId: SYSTEM_FIELDS.NOTES, content: 'notes', fieldType: 'text' },

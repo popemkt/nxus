@@ -145,6 +145,7 @@ async function seedNodes() {
     platforms: getSystemNodeId(db, SYSTEM_FIELDS.PLATFORMS),
     requires: getSystemNodeId(db, SYSTEM_FIELDS.REQUIRES),
     options: getSystemNodeId(db, SYSTEM_FIELDS.OPTIONS),
+    workflow: getSystemNodeId(db, SYSTEM_FIELDS.WORKFLOW),
   }
 
   // Supertag shortcuts
@@ -362,7 +363,24 @@ async function seedNodes() {
       addProperty(db, cmdNodeId, F.supertag, JSON.stringify(ST.command))
       // Note: parent relationship is established via ownerId on the node itself
       addProperty(db, cmdNodeId, F.commandId, JSON.stringify(cmd.id))
-      addProperty(db, cmdNodeId, F.command, JSON.stringify(cmd.command))
+
+      // Workflow commands have workflow field, others have command field
+      if ((cmd as any).workflow) {
+        addProperty(
+          db,
+          cmdNodeId,
+          F.workflow,
+          JSON.stringify((cmd as any).workflow),
+        )
+      } else if ((cmd as any).command) {
+        addProperty(
+          db,
+          cmdNodeId,
+          F.command,
+          JSON.stringify((cmd as any).command),
+        )
+      }
+
       addProperty(db, cmdNodeId, F.mode, JSON.stringify(cmd.mode))
       addProperty(db, cmdNodeId, F.target, JSON.stringify(cmd.target))
       addProperty(db, cmdNodeId, F.icon, JSON.stringify(cmd.icon))

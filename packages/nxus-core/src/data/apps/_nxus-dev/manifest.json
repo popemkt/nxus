@@ -84,7 +84,6 @@
             "category": "Automation",
             "target": "item",
             "mode": "workflow",
-            "command": "",
             "workflow": {
                 "steps": [
                     {
@@ -140,12 +139,12 @@
         "nodejs"
     ],
     "metadata": {
-        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-21T00:00:00Z",
         "updatedAt": "2026-01-21T00:00:00Z",
         "version": "1.0.0",
-        "author": "nxus"
+        "author": "nxus",
+        "tags": []
     },
     "status": "not-installed"
 }

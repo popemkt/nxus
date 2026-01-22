@@ -1,12 +1,12 @@
 import { checkCommandAvailability } from '@/hooks/use-command'
 import { commandExecutor } from '@/services/command-palette/executor'
 import {
-    commandRegistry,
-    type PaletteCommand,
+  commandRegistry,
+  type PaletteCommand,
 } from '@/services/command-palette/registry'
 import {
-    useCommandPaletteStore,
-    type ActionPanelCommand,
+  useCommandPaletteStore,
+  type ActionPanelCommand,
 } from '@/stores/command-palette.store'
 import { configureModalService } from '@/stores/configure-modal.store'
 import { matchesKeybinding, useSettingsStore } from '@/stores/settings.store'
@@ -14,16 +14,16 @@ import { useTerminalStore } from '@/stores/terminal.store'
 import type { GenericCommand } from '@/types/command'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
-    ArrowLeftIcon,
-    CaretRightIcon,
-    CommandIcon,
-    CopyIcon,
-    EyeIcon,
-    MagnifyingGlassIcon,
-    PlayIcon,
-    QuestionIcon,
-    TerminalWindowIcon,
-    WarningCircleIcon,
+  ArrowLeftIcon,
+  CaretRightIcon,
+  CommandIcon,
+  CopyIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
+  PlayIcon,
+  QuestionIcon,
+  TerminalWindowIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -31,12 +31,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import {
-    aliasUtils,
-    getAliasesServerFn,
+  aliasUtils,
+  getAliasesServerFn,
 } from '@/services/command-palette/alias.server'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
 import type { ItemType } from '@/types/item'
+import { getCommandString } from '@/types/item'
 
 function DynamicIcon({
   name,
@@ -416,7 +417,7 @@ export function CommandPalette() {
           appId: cmd.app.id,
           appName: cmd.app.name,
           mode: cmd.command.mode || 'execute',
-          command: cmd.command.command || '',
+          command: getCommandString(cmd.command) || '',
         })
       }
     } else if (e.key === 'Enter') {

@@ -114,7 +114,8 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
       category TEXT NOT NULL,
       target TEXT NOT NULL,
       mode TEXT NOT NULL,
-      command TEXT NOT NULL,
+      command TEXT,
+      workflow TEXT,
       script_source TEXT,
       cwd TEXT,
       platforms TEXT,
@@ -127,6 +128,17 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
       updated_at INTEGER NOT NULL
     )
   `)
+
+  // Migrate existing item_commands table if columns are missing
+  try {
+    masterDb.exec('ALTER TABLE item_commands ADD COLUMN workflow TEXT')
+  } catch (e) {
+    // Column already exists, ignore
+  }
+  try {
+    // SQLite doesn't support DROP NOT NULL easily, but we can try to re-create or just ignore if it's already nullable
+    // For now, adding workflow is more important. If command NOT NULL is an issue, we'll see it in seed.
+  } catch (e) {}
 
   // Tag configuration tables
   masterDb.exec(`

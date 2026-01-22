@@ -1,11 +1,12 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import { json } from './columns'
+import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type {
-  DocEntry,
-  ItemMetadata,
-  InstallConfig,
   ConfigSchema,
+  DocEntry,
+  InstallConfig,
+  ItemMetadata,
 } from '../types/item'
+import type { WorkflowDefinition } from '../types/workflow'
+import { json } from './columns'
 
 /**
  * Inbox items - backlog of tools/apps to add later via add-item workflow
@@ -131,6 +132,7 @@ export type CommandMode =
   | 'configure'
   | 'script'
   | 'preview'
+  | 'workflow'
 
 /**
  * Commands - individual commands extracted from apps for querying
@@ -145,7 +147,8 @@ export const itemCommands = sqliteTable('item_commands', {
   category: text('category').notNull(),
   target: text('target').$type<CommandTarget>().notNull(),
   mode: text('mode').$type<CommandMode>().notNull(),
-  command: text('command').notNull(),
+  command: text('command'),
+  workflow: json<WorkflowDefinition>()('workflow'),
   scriptSource: text('script_source'), // 'nxus-app' | 'repo' | 'shared'
   cwd: text('cwd'),
   platforms: json<string[]>()('platforms'),

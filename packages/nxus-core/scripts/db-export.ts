@@ -8,12 +8,12 @@
  * Also exports tags and inbox to seed folder.
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'fs'
-import { resolve, dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { initDatabase, getDatabase } from '../src/db/client'
-import { items, itemCommands, tags, inbox, itemTags } from '../src/db/schema'
 import { eq, isNull } from 'drizzle-orm'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { dirname, resolve } from 'path'
+import { fileURLToPath } from 'url'
+import { getDatabase, initDatabase } from '../src/db/client'
+import { inbox, itemCommands, items, itemTags, tags } from '../src/db/schema'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -135,7 +135,8 @@ async function exportData() {
         category: cmd.category,
         target: cmd.target,
         mode: cmd.mode,
-        command: cmd.command,
+        ...(cmd.command && { command: cmd.command }),
+        ...(cmd.workflow && { workflow: parseJsonField(cmd.workflow) }),
         ...(cmd.scriptSource && { scriptSource: cmd.scriptSource }),
         ...(cmd.cwd && { cwd: cmd.cwd }),
         ...(cmd.platforms && { platforms: parseJsonField(cmd.platforms) }),
