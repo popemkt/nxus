@@ -119,7 +119,11 @@ export function nodeToTag(
  * Convert an assembled node with #Command supertag to legacy ItemCommand type
  */
 export function nodeToCommand(node: AssembledNode): ItemCommand {
-  return {
+  const mode =
+    (getProperty<string>(node, 'mode') as ItemCommand['mode']) || 'execute'
+
+  // Base command properties
+  const baseCommand = {
     id: getProperty<string>(node, 'commandId') || node.id,
     name: node.content || '',
     description: getProperty<string>(node, 'description'),
@@ -127,21 +131,33 @@ export function nodeToCommand(node: AssembledNode): ItemCommand {
     category: getProperty<string>(node, 'category') || 'general',
     target:
       (getProperty<string>(node, 'target') as ItemCommand['target']) || 'item',
-    mode:
-      (getProperty<string>(node, 'mode') as ItemCommand['mode']) || 'execute',
+    mode,
+    platforms: getProperty<Array<'linux' | 'macos' | 'windows'>>(
+      node,
+      'platforms',
+    ),
+    requires: getProperty<Record<string, unknown>>(node, 'requires'),
+  }
+
+  // Workflow commands have 'workflow' field instead of 'command'
+  if (mode === 'workflow') {
+    return {
+      ...baseCommand,
+      workflow: getProperty<any>(node, 'workflow'),
+    } as ItemCommand
+  }
+
+  // Non-workflow commands have 'command' and related fields
+  return {
+    ...baseCommand,
     command: getProperty<string>(node, 'command') || '',
     scriptSource: getProperty<string>(
       node,
       'scriptSource',
     ) as ItemCommand['scriptSource'],
     cwd: getProperty<string>(node, 'cwd'),
-    platforms: getProperty<Array<'linux' | 'macos' | 'windows'>>(
-      node,
-      'platforms',
-    ),
-    requires: getProperty<Record<string, unknown>>(node, 'requires'),
     options: getProperty<Record<string, unknown>>(node, 'options'),
-  }
+  } as ItemCommand
 }
 
 // ============================================================================

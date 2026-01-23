@@ -7,6 +7,7 @@
 
 import { appRegistryService } from '@/services/apps/registry.service'
 import type { Item, ItemCommand } from '@/types/item'
+import { getCommandString } from '@/types/item'
 import type {
   CommandStep,
   NotifyStep,

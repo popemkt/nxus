@@ -659,17 +659,43 @@ export const commandExecutor = {
   }): Promise<CommandExecutionResult> {
     const { appId, commandId, params, onNotify } = options
 
+    console.log(
+      '[executeWorkflowCommand] Starting for app:',
+      appId,
+      'command:',
+      commandId,
+    )
+
     // Get the app and command
     const appResult = appRegistryService.getAppById(appId)
+    console.log(
+      '[executeWorkflowCommand] App lookup result:',
+      appResult.success,
+      appResult.success ? appResult.data?.name : appResult.error,
+    )
+
     if (!appResult.success) {
+      console.error('[executeWorkflowCommand] App not found:', appId)
       return {
         success: false,
         error: `App not found: ${appId}`,
       }
     }
 
+    console.log(
+      '[executeWorkflowCommand] App commands count:',
+      appResult.data.commands?.length ?? 0,
+    )
     const command = appResult.data.commands?.find((c) => c.id === commandId)
+    console.log(
+      '[executeWorkflowCommand] Found command:',
+      command?.id,
+      'mode:',
+      command?.mode,
+    )
+
     if (!command) {
+      console.error('[executeWorkflowCommand] Command not found:', commandId)
       return {
         success: false,
         error: `Command not found: ${commandId}`,
@@ -677,16 +703,28 @@ export const commandExecutor = {
     }
 
     if (command.mode !== 'workflow' || !command.workflow) {
+      console.error(
+        '[executeWorkflowCommand] Not a workflow command. mode:',
+        command.mode,
+        'has workflow:',
+        !!command.workflow,
+      )
       return {
         success: false,
         error: `Command ${commandId} is not a workflow command`,
       }
     }
 
+    console.log(
+      '[executeWorkflowCommand] Workflow steps:',
+      command.workflow.steps?.length ?? 0,
+    )
+
     // Import workflow executor
     const { executeWorkflow } = await import('@/services/workflow')
 
     // Execute the workflow
+    console.log('[executeWorkflowCommand] Calling executeWorkflow...')
     const result = await executeWorkflow({
       item: appResult.data,
       command,
@@ -709,6 +747,15 @@ export const commandExecutor = {
       },
     })
 
+    console.log(
+      '[executeWorkflowCommand] Workflow result:',
+      result.success,
+      'steps executed:',
+      result.stepsExecuted?.length,
+      'error:',
+      result.error,
+    )
+
     if (result.success) {
       onNotify?.('Workflow completed successfully', 'success')
     } else {
@@ -721,4 +768,3 @@ export const commandExecutor = {
     }
   },
 }
-

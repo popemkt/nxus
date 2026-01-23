@@ -122,6 +122,12 @@ export function AppActionsPanel({
   }, [appCommands])
 
   const handleCommandClick = async (cmd: ItemCommand) => {
+    console.log(
+      '[handleCommandClick] Called with command:',
+      cmd.id,
+      'mode:',
+      cmd.mode,
+    )
     setError(null)
 
     // For script mode, check if script has parameters
@@ -172,12 +178,20 @@ export function AppActionsPanel({
 
     // Handle workflow mode specially - requires async executor
     if (cmd.mode === 'workflow') {
+      console.log(
+        '[Workflow] Detected workflow command:',
+        cmd.id,
+        'mode:',
+        cmd.mode,
+      )
       try {
         const { commandExecutor } = await import(
           '@/services/command-palette/executor'
         )
+        console.log('[Workflow] Imported commandExecutor')
         const { useTerminalStore } = await import('@/stores/terminal.store')
         const terminalStore = useTerminalStore.getState()
+        console.log('[Workflow] Got terminal store, executing workflow...')
 
         await commandExecutor.executeWorkflowCommand({
           appId: app.id,
@@ -188,7 +202,9 @@ export function AppActionsPanel({
             // TODO: Show toast notification
           },
         })
+        console.log('[Workflow] Workflow execution completed')
       } catch (err) {
+        console.error('[Workflow] Execution failed:', err)
         setError(`Workflow execution failed: ${(err as Error).message}`)
       }
       return
