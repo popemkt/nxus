@@ -3,6 +3,10 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/outfit';
 
+/* Scan external packages for Tailwind classes */
+@source "../../nxus-ui/src/**/*.{ts,tsx}";
+@source "../../nxus-workbench/src/**/*.{ts,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
