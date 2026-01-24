@@ -12,6 +12,7 @@ import { z } from 'zod'
 import {
   getDatabase,
   initDatabase,
+  initDatabaseWithBootstrap,
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
@@ -93,8 +94,8 @@ export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
 export const getAllItemsFromNodesServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  initDatabase()
-  const db = getDatabase()
+  // Auto-bootstrap system nodes on first access (idempotent)
+  const db = await initDatabaseWithBootstrap()
 
   // Get all items (with inheritance: #Item, #Tool, #Repo)
   const itemNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.ITEM)

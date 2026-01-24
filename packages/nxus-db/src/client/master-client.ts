@@ -7,6 +7,18 @@ import { fileURLToPath } from 'url'
 import * as ephemeralSchema from '../schemas/ephemeral-schema.js'
 import * as schema from '../schemas/item-schema.js'
 
+/**
+ * Options for database initialization
+ */
+export interface InitDatabaseOptions {
+  /**
+   * Automatically bootstrap system nodes if not already bootstrapped.
+   * This creates the foundational supertags and fields required for node architecture.
+   * Default: false
+   */
+  autoBootstrap?: boolean
+}
+
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -34,11 +46,29 @@ if (!existsSync(userDataDir)) {
 let masterDb: Database.Database | null = null
 let masterDrizzleDb: BetterSQLite3Database<typeof schema> | null = null
 
+// Track if bootstrap has been attempted this session to avoid repeated checks
+let bootstrapAttempted = false
+
 /**
  * Initialize the master database connection
+ * @param options - Optional configuration for database initialization
  */
-export function initDatabase(): BetterSQLite3Database<typeof schema> {
-  if (masterDrizzleDb) return masterDrizzleDb
+export function initDatabase(
+  options: InitDatabaseOptions = {},
+): BetterSQLite3Database<typeof schema> {
+  const { autoBootstrap = false } = options
+
+  if (masterDrizzleDb) {
+    // Database already initialized, but check if we need to bootstrap
+    if (autoBootstrap && !bootstrapAttempted) {
+      bootstrapAttempted = true
+      // Lazy import to avoid circular dependency
+      import('../services/bootstrap.js').then(({ bootstrapSystemNodes }) => {
+        bootstrapSystemNodes({ skipInit: true }).catch(console.error)
+      })
+    }
+    return masterDrizzleDb
+  }
 
   // better-sqlite3 opens the file directly and persists changes automatically
   masterDb = new Database(masterDbPath)
@@ -218,6 +248,10 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   // No need to manually save - better-sqlite3 persists automatically
 
+  // Auto-bootstrap is handled by initDatabaseWithBootstrap() - see below
+  // The autoBootstrap option is kept for backward compatibility but is now a no-op
+  // Callers should use initDatabaseWithBootstrap() for synchronous bootstrap
+
   return masterDrizzleDb
 }
 
@@ -239,6 +273,29 @@ export function getDatabase(): BetterSQLite3Database<typeof schema> {
     throw new Error('Database not initialized. Call initDatabase() first.')
   }
   return masterDrizzleDb
+}
+
+/**
+ * Initialize database and bootstrap system nodes synchronously.
+ *
+ * This is the recommended way to initialize the database in node architecture mode.
+ * It ensures system nodes (supertags, fields) exist before any queries are made.
+ *
+ * @returns The database instance
+ */
+export async function initDatabaseWithBootstrap(): Promise<
+  BetterSQLite3Database<typeof schema>
+> {
+  const db = initDatabase()
+
+  // Check if bootstrap is needed and run it
+  if (!bootstrapAttempted) {
+    bootstrapAttempted = true
+    const { bootstrapSystemNodesSync } = await import('../services/bootstrap.js')
+    bootstrapSystemNodesSync(db, { verbose: false })
+  }
+
+  return db
 }
 
 // ============================================================================

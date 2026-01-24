@@ -8,14 +8,17 @@
  */
 
 import { eq } from 'drizzle-orm'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { uuidv7 } from 'uuidv7'
-import { getDatabase, initDatabase } from '../client/master-client.js'
+import type * as schema from '../schemas/item-schema.js'
 import {
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
 } from '../schemas/node-schema.js'
+
+type DatabaseInstance = BetterSQLite3Database<typeof schema>
 
 // UUID cache for system nodes (systemId -> UUID)
 const systemNodeIds = new Map<string, string>()
@@ -34,7 +37,7 @@ function getSystemNodeId(systemId: string): string {
  * Upsert a node by systemId
  */
 function upsertSystemNode(
-  db: ReturnType<typeof getDatabase>,
+  db: DatabaseInstance,
   systemId: string,
   content: string,
   verbose = false,
@@ -70,7 +73,7 @@ function upsertSystemNode(
  * Add a property to a node (upsert by node+field)
  */
 function setProperty(
-  db: ReturnType<typeof getDatabase>,
+  db: DatabaseInstance,
   nodeId: string,
   fieldNodeId: string,
   value: string,
@@ -101,7 +104,7 @@ function setProperty(
  * Assign a supertag to a node (via field:supertag property)
  */
 function assignSupertag(
-  db: ReturnType<typeof getDatabase>,
+  db: DatabaseInstance,
   nodeId: string,
   supertagNodeId: string,
   supertagFieldId: string,
@@ -113,8 +116,10 @@ function assignSupertag(
 export interface BootstrapOptions {
   /** Whether to print progress to console */
   verbose?: boolean
-  /** Skip initialization if db is already initialized */
+  /** Skip initialization if db is already initialized (deprecated - use db parameter instead) */
   skipInit?: boolean
+  /** Database instance to use (if not provided, will call initDatabase) */
+  db?: DatabaseInstance
 }
 
 export interface BootstrapResult {
@@ -125,12 +130,9 @@ export interface BootstrapResult {
 
 /**
  * Check if the system has already been bootstrapped
+ * @param db - Database instance (required to avoid circular dependency)
  */
-export function isBootstrapped(db?: ReturnType<typeof getDatabase>): boolean {
-  if (!db) {
-    initDatabase()
-    db = getDatabase()
-  }
+export function isBootstrapped(db: DatabaseInstance): boolean {
   const supertagField = db
     .select()
     .from(nodes)
@@ -140,7 +142,7 @@ export function isBootstrapped(db?: ReturnType<typeof getDatabase>): boolean {
 }
 
 /**
- * Bootstrap system nodes required for node-based architecture
+ * Bootstrap system nodes required for node-based architecture (synchronous version)
  *
  * Creates:
  * - Core system fields (field:supertag, field:extends, field:field_type)
@@ -149,16 +151,15 @@ export function isBootstrapped(db?: ReturnType<typeof getDatabase>): boolean {
  * - Common field definitions (type, path, description, etc.)
  *
  * This is idempotent - calling it multiple times is safe.
+ *
+ * @param db - Database instance (required)
+ * @param options - Bootstrap options
  */
-export async function bootstrapSystemNodes(
-  options: BootstrapOptions = {},
-): Promise<BootstrapResult> {
-  const { verbose = false, skipInit = false } = options
-
-  if (!skipInit) {
-    initDatabase()
-  }
-  const db = getDatabase()
+export function bootstrapSystemNodesSync(
+  db: DatabaseInstance,
+  options: Omit<BootstrapOptions, 'db' | 'skipInit'> = {},
+): BootstrapResult {
+  const { verbose = false } = options
 
   // Check if already bootstrapped
   if (isBootstrapped(db)) {
@@ -405,4 +406,31 @@ export async function bootstrapSystemNodes(
   }
 
   return { nodeCount, propertyCount, alreadyBootstrapped: false }
+}
+
+/**
+ * Bootstrap system nodes required for node-based architecture (async version)
+ *
+ * This is a convenience wrapper that handles database initialization.
+ * Use this when you don't already have a database instance.
+ */
+export async function bootstrapSystemNodes(
+  options: BootstrapOptions = {},
+): Promise<BootstrapResult> {
+  const { verbose = false, skipInit = false, db: providedDb } = options
+
+  // Get or initialize database
+  let db: DatabaseInstance
+  if (providedDb) {
+    db = providedDb
+  } else {
+    // Lazy import to avoid circular dependency
+    const { initDatabase, getDatabase } = await import('../client/master-client.js')
+    if (!skipInit) {
+      initDatabase({ autoBootstrap: false })
+    }
+    db = getDatabase()
+  }
+
+  return bootstrapSystemNodesSync(db, { verbose })
 }

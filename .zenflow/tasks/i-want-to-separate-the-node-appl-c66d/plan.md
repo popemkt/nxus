@@ -360,16 +360,29 @@ Add tests and documentation for the new packages.
 - [x] `nx run-many -t typecheck` passes
 - [x] `pnpm run build` (nxus-core) succeeds
 
+- [x] **6.5**: Add Auto-bootstrap on Data Load
+  - Created `initDatabaseWithBootstrap()` in `@nxus/db/server`
+  - Updated `getAllItemsFromNodesServerFn` in `@nxus/workbench` to use it
+  - System nodes are auto-created when first data query is made
+  - Still requires `pnpm db:seed` for app data (items, commands, tags)
+
 **Architecture Summary:**
 ```
 @nxus/db
 ├── bootstrapSystemNodes() - Creates core system schema (supertags, fields)
+├── initDatabaseWithBootstrap() - Init + bootstrap in one call
 └── Exported via @nxus/db/server
 
 nxus-core
 ├── scripts/db-seed.ts - Calls bootstrap + seeds app data
 ├── scripts/bootstrap-nodes.ts - Thin wrapper for manual bootstrap
 └── Command palette: "DB: Bootstrap" and "DB: Sync JSON → Database"
+
+First-run workflow:
+1. User runs `pnpm dev` or starts app
+2. On first data query, system nodes are auto-bootstrapped
+3. User runs "DB: Sync JSON → Database" from command palette (or pnpm db:seed)
+4. App data is seeded and app shows items/commands/tags
 ```
 ## Final Verification Checklist
 
