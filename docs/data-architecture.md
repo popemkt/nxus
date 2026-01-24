@@ -1,20 +1,21 @@
 # Nxus Data Architecture
 
-> **Status**: Implemented (Phase 5 - Dual SQLite with JSON Source)  
-> **Last Updated**: 2026-01-09
+> **Status**: Implemented (Phase 6 - Package Separation with Node Architecture)
+> **Last Updated**: 2026-01-24
 
 ## Overview
 
-Nxus uses a **dual SQLite architecture** with JSON files as the git-committed source of truth:
+Nxus uses a **node-based architecture** with SQLite (master data) and SurrealDB (graph relationships). The database layer is extracted into the `@nxus/db` package for reuse across mini-apps.
 
-- **Master Data** (apps, commands, tags, inbox): Individual JSON files → SQLite at runtime
-- **Ephemeral Data** (installations, tool health): Separate SQLite (gitignored)
+See also: [Package Architecture](./package-architecture.md) for the overall package structure.
+
+### Architecture Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        GIT-COMMITTED SOURCE OF TRUTH                     │
 ├─────────────────────────────────────────────────────────────────────────┤
-│   src/data/                                                              │
+│   nxus-core/src/data/                                                    │
 │   ├── apps/                    Individual app folders                    │
 │   │   ├── claude-code/                                                   │
 │   │   │   ├── manifest.json   ← App manifest (commands, metadata)        │
@@ -25,31 +26,52 @@ Nxus uses a **dual SQLite architecture** with JSON files as the git-committed so
 │   └── inbox.json              ← Backlog items                            │
 └─────────────────────────────────────────────────────────────────────────┘
                               │
-           npm run db:seed    │    npm run db:export
+           pnpm db:seed       │    pnpm db:export
            (JSON → SQLite)    ▼    (SQLite → JSON)
                               │
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           RUNTIME (SQLite)                               │
+│                       RUNTIME (Node-based SQLite)                        │
 ├─────────────────────────────────────────────────────────────────────────┤
-│   nxus.db (Master)                                                       │
-│   ├── apps          ← App manifests                                      │
-│   ├── commands      ← App commands (separate table for queries)          │
-│   ├── tags          ← Hierarchical tag tree                              │
-│   └── inbox_items   ← Backlog for add-item workflow                      │
+│   @nxus/db (packages/nxus-db)                                            │
+│   ├── nodes             ← All entities as nodes                          │
+│   ├── nodeProperties    ← Properties as field-value pairs                │
+│   └── System schema:                                                     │
+│       ├── SYSTEM_SUPERTAGS: Item, Command, Tag, Field, Supertag          │
+│       └── SYSTEM_FIELDS: path, icon, description, tags, etc.             │
 │                                                                          │
 │   ephemeral.db (Local-only, gitignored)                                  │
 │   ├── installations ← Machine-specific installs                          │
 │   └── tool_health   ← Cached health checks with TTL                      │
+│                                                                          │
+│   SurrealDB (Graph relationships)                                        │
+│   └── Backlinks, references, inheritance                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          SERVER FUNCTIONS                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│   @nxus/workbench/server                                                 │
+│   ├── getNodeServerFn()          ← Query single node                     │
+│   ├── getAllItemsFromNodesServerFn() ← Items with adapters               │
+│   ├── searchNodesServerFn()      ← Full-text search                      │
+│   └── nodeToItem(), nodeToTag()  ← Legacy adapters                       │
+│                                                                          │
+│   @nxus/db/server                                                        │
+│   ├── createNode(), findNode()   ← Node CRUD                             │
+│   ├── setProperty()              ← Property operations                   │
+│   └── bootstrapSystemNodes()     ← System schema init                    │
 └─────────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                             CLIENT                                       │
 ├─────────────────────────────────────────────────────────────────────────┤
-│   Server Functions (TanStack Start)                                      │
-│   ├── getAllAppsServerFn()  ← Query apps from SQLite                     │
-│   ├── Tag/Inbox CRUD        ← Server-side operations                     │
-│   └── Shell operations      ← PTY, command execution                     │
+│   @nxus/workbench (React components)                                     │
+│   ├── NodeWorkbenchRoute    ← Full node management UI                    │
+│   ├── NodeBrowser           ← Grid/list of nodes                         │
+│   ├── NodeInspector         ← Node detail view                           │
+│   └── SupertagSidebar       ← Filter by supertag                         │
 │                                                                          │
 │   Zustand Stores (Client)                                                │
 │   ├── Tool health (localStorage with TTL)                                │
@@ -60,42 +82,48 @@ Nxus uses a **dual SQLite architecture** with JSON files as the git-committed so
 
 ## Data Categories
 
-| Category          | Source (Git)                    | Runtime (SQLite)      | Notes                        |
-| ----------------- | ------------------------------- | --------------------- | ---------------------------- |
-| **Apps**          | `src/data/apps/*/manifest.json` | nxus.db `apps`        | Upsert by ID                 |
-| **Commands**      | Embedded in manifest.json       | nxus.db `commands`    | Separate table for queries   |
-| **Tags**          | `src/data/tags.json`            | nxus.db `tags`        | Tag tree                     |
-| **Inbox**         | `src/data/inbox.json`           | nxus.db `inbox_items` | Backlog                      |
-| **Installations** | —                               | ephemeral.db          | Machine-specific, gitignored |
-| **Tool Health**   | —                               | localStorage (TTL)    | Ephemeral cache              |
-| **Tool Config**   | —                               | localStorage          | API keys, never cleared      |
-| **UI State**      | —                               | Zustand (memory)      | Not persisted                |
+| Category          | Source (Git)                         | Runtime Storage          | Package             |
+| ----------------- | ------------------------------------ | ------------------------ | ------------------- |
+| **System Nodes**  | Auto-bootstrapped                    | nxus.db `nodes`          | `@nxus/db`          |
+| **Apps**          | `src/data/apps/*/manifest.json`      | nxus.db `nodes`          | `@nxus/db`          |
+| **Commands**      | Embedded in manifest.json            | nxus.db `nodes`          | `@nxus/db`          |
+| **Tags**          | `src/data/tags.json`                 | nxus.db `nodes`          | `@nxus/db`          |
+| **Node Props**    | Derived from manifests               | nxus.db `nodeProperties` | `@nxus/db`          |
+| **Installations** | —                                    | ephemeral.db             | `@nxus/db`          |
+| **Tool Health**   | —                                    | localStorage (TTL)       | nxus-core           |
+| **Tool Config**   | —                                    | localStorage             | nxus-core           |
+| **UI State**      | —                                    | Zustand (memory)         | nxus-core           |
 
-## Key Files
+## Package Structure
 
-### SQLite & Schemas
+### @nxus/db (Database Layer)
 
-| File                         | Purpose                                       |
-| ---------------------------- | --------------------------------------------- |
-| `src/db/schema.ts`           | Master schema (apps, commands, tags, inbox)   |
-| `src/db/ephemeral-schema.ts` | Ephemeral schema (installations, tool_health) |
-| `src/db/client.ts`           | Dual database initialization                  |
+| File                            | Purpose                                       |
+| ------------------------------- | --------------------------------------------- |
+| `schemas/node-schema.ts`        | Node & property tables, system constants      |
+| `schemas/ephemeral-schema.ts`   | Ephemeral schema (installations, tool_health) |
+| `client/master-client.ts`       | Database initialization                       |
+| `services/node.service.ts`      | Node CRUD operations                          |
+| `services/bootstrap.ts`         | System schema bootstrap                       |
+| `types/item.ts`, `command.ts`   | Legacy type definitions                       |
 
-### Scripts
+### @nxus/workbench (Node UI)
 
-| Script                         | Purpose                              |
-| ------------------------------ | ------------------------------------ |
-| `scripts/db-seed.ts`           | JSON → SQLite (upsert by ID)         |
-| `scripts/db-export.ts`         | SQLite → JSON (individual manifests) |
-| `scripts/migrate-manifests.ts` | One-time initial migration           |
+| File                            | Purpose                                       |
+| ------------------------------- | --------------------------------------------- |
+| `server/nodes.server.ts`        | Node server functions                         |
+| `server/adapters.ts`            | Node → Item/Tag/Command adapters              |
+| `components/node-browser/`      | Node browsing UI                              |
+| `components/node-inspector/`    | Node detail view                              |
 
-### Server Functions
+### nxus-core (Main App)
 
-| File                                 | Purpose                         |
-| ------------------------------------ | ------------------------------- |
-| `src/services/apps/apps.server.ts`   | App/command queries from SQLite |
-| `src/services/tag.server.ts`         | Tag CRUD operations             |
-| `src/services/inbox/inbox.server.ts` | Inbox CRUD operations           |
+| File                            | Purpose                                       |
+| ------------------------------- | --------------------------------------------- |
+| `scripts/db-seed.ts`            | JSON → SQLite (bootstrap + seed)              |
+| `scripts/db-export.ts`          | SQLite → JSON                                 |
+| `services/apps/apps.server.ts`  | App-specific server functions                 |
+| `routes/nodes.tsx`              | Mounts @nxus/workbench route                  |
 
 ## Type Safety at Data Boundary
 
@@ -147,28 +175,58 @@ the fix belongs in the parse layer, not in every consumer.
 
 ## Data Flow
 
-### Read Path
+### Read Path (Node Architecture)
 
 ```
-UI Component → Zustand Store → (hydrated from Dexie/localStorage on boot)
+UI Component
+    ↓ query
+@nxus/workbench Server Function
+    ↓ calls
+@nxus/db Node Service
+    ↓ queries
+SQLite (nodes + nodeProperties)
+    ↓ assembles
+AssembledNode
+    ↓ adapts (optional)
+Legacy Types (Item/Tag/Command)
+    ↓ returns
+UI Component
 ```
 
-### Write Path (Optimistic)
+### Write Path
 
 ```
-UI Action → Zustand (instant) → Dexie (persist) → Server Fn (SQLite, async)
-                                                      ↓
-                                            Mark as synced on success
+UI Action → Server Function → @nxus/db → SQLite
+                                ↓
+                       Invalidate React Query cache
+```
+
+### Bootstrap Flow
+
+```
+App Start
+    ↓
+First data query
+    ↓
+initDatabaseWithBootstrap() [@nxus/db]
+    ↓
+System nodes exist? ──No──→ bootstrapSystemNodes()
+    ↓ Yes                           ↓
+Query data                   Create supertags, fields
+    ↓                               ↓
+Return results              Query data
 ```
 
 ## Implementation Status
 
-| Phase                  | Status  | Description                             |
-| ---------------------- | ------- | --------------------------------------- |
-| 1. Client Cache        | ✅ Done | Dexie + Zustand for instant reads       |
-| 2. Dependency System   | ✅ Done | Command dependencies with health checks |
-| 3. localStorage Stores | ✅ Done | Tool health, config, installations      |
-| 4. SQLite Backend      | ✅ Done | nxus.db with inbox_items + tags tables  |
+| Phase                      | Status  | Description                               |
+| -------------------------- | ------- | ----------------------------------------- |
+| 1. Client Cache            | ✅ Done | Dexie + Zustand for instant reads         |
+| 2. Dependency System       | ✅ Done | Command dependencies with health checks   |
+| 3. localStorage Stores     | ✅ Done | Tool health, config, installations        |
+| 4. SQLite Backend          | ✅ Done | nxus.db with node-based architecture      |
+| 5. Package Separation      | ✅ Done | @nxus/db, @nxus/ui, @nxus/workbench       |
+| 6. Auto-bootstrap          | ✅ Done | System nodes created on first query       |
 
 ## Future Strategy: TanStack DB
 

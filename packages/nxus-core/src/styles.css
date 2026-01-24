@@ -3,7 +3,13 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/outfit';
 
-/* Scan external packages for Tailwind classes */
+/* Scan external packages for Tailwind classes.
+   IMPORTANT: When creating a new mini app package that uses Tailwind classes,
+   you MUST add a @source directive here pointing to your package.
+   Otherwise, Tailwind won't generate CSS for classes used in your package.
+
+   Example: @source "../../your-new-package/src/**/*.{ts,tsx}";
+*/
 @source "../../nxus-ui/src/**/*.{ts,tsx}";
 @source "../../nxus-workbench/src/**/*.{ts,tsx}";
 

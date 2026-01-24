@@ -386,6 +386,7 @@ First-run workflow:
 ```
 
 ### [ ] Step: Documentation
+<!-- chat-id: 2924370b-4334-458f-b92d-d0f3cf9e57b5 -->
 <!-- agent: claude-code -->
 
 Create documentation of the architecture we just made if not already
