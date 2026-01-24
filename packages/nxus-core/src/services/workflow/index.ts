@@ -11,4 +11,3 @@ export {
 export {
     createWorkflowContext, evaluateExpression, getStepResult, setStepResult, setVariable
 } from './workflow-context'
-
