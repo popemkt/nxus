@@ -112,7 +112,9 @@ export function FloatingHud({
         {/* Gallery View Mode with Dropdown - full chevron overlay like tag tree */}
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               className={cn(
                 btnBase,
                 viewMode === 'gallery' ? btnActive : btnInactive,
@@ -143,7 +145,7 @@ export function FloatingHud({
                   </div>
                 )}
               </div>
-            </button>
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center" className="min-w-[120px]">
             <DropdownMenuCheckboxItem
