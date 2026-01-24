@@ -201,3 +201,23 @@ End-to-end verification and polish.
 ### [x] Step: merge latest main into this
 <!-- chat-id: 0f2da4e0-2917-4221-b89b-880c131c24da -->
 <!-- agent: claude-code-light -->
+
+### [x] Step: Check
+<!-- chat-id: 1a9ebc5a-96a0-470d-a5a3-615c5089264a -->
+<!-- agent: claude-code-light -->
+
+strange, I'm not seeing the aux button showing the three dots icon
+for the Full database setup command
+
+**Resolution**:
+The issue was that workflow commands (`mode: 'workflow'`) were not included in the auxiliary button logic in `app-actions-panel.tsx`. The panel only showed the DotsThree dropdown for `script`, `execute`, and `terminal` modes.
+
+**Changes made**:
+1. Added `WorkflowPreviewModal` import to `app-actions-panel.tsx`
+2. Added `FlowArrow` icon import
+3. Added state for workflow preview modal (`workflowPreviewOpen`, `workflowPreviewCommand`)
+4. Added workflow mode detection (`isWorkflowMode`) and included it in `hasAuxButton` check
+5. Added workflow preview button (with `FlowArrow` icon) that appears next to workflow commands
+6. Added `WorkflowPreviewModal` component at the end to display the workflow graph
+
+**Note**: Workflow commands now show a `FlowArrow` icon button (not the three-dots dropdown) because they have a different action - visualizing the workflow graph rather than showing a dropdown menu with multiple options.

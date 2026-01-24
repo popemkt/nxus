@@ -1,18 +1,18 @@
 {
-    "id": "sample-html",
-    "name": "Sample HTML App",
-    "description": "A simple HTML application demonstrating single-file app support",
-    "type": "html",
-    "path": "/apps/sample-html/index.html",
-    "homepage": "https://example.com",
-    "thumbnail": "/thumbnails/sample-html.png",
-    "metadata": {
-        "tags": [],
-        "category": "examples",
-        "createdAt": "2024-01-01T00:00:00.000Z",
-        "updatedAt": "2024-01-01T00:00:00.000Z",
-        "version": "1.0.0",
-        "author": "Nxus Team"
-    },
-    "status": "not-installed"
+  "id": "sample-html",
+  "name": "Sample HTML App",
+  "description": "A simple HTML application demonstrating single-file app support",
+  "type": "html",
+  "path": "/apps/sample-html/index.html",
+  "homepage": "https://example.com",
+  "thumbnail": "/thumbnails/sample-html.png",
+  "metadata": {
+    "tags": [],
+    "category": "examples",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "version": "1.0.0",
+    "author": "Nxus Team"
+  },
+  "status": "not-installed"
 }

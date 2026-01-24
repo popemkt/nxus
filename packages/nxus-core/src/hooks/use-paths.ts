@@ -6,7 +6,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { getPathsServerFn, type PathValues } from '@/services/paths/paths.server'
+import {
+  getPathsServerFn,
+  type PathValues,
+} from '@/services/paths/paths.server'
 
 /**
  * Query key for paths cache

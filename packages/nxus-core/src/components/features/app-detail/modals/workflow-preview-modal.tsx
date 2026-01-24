@@ -40,7 +40,8 @@ export function WorkflowPreviewModal({
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription>
-            Workflow visualization with {stepCount} step{stepCount !== 1 ? 's' : ''}.
+            Workflow visualization with {stepCount} step
+            {stepCount !== 1 ? 's' : ''}.
             {workflow.description && ` ${workflow.description}`}
           </AlertDialogDescription>
         </AlertDialogHeader>

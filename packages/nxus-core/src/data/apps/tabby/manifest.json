@@ -1,47 +1,43 @@
 {
-    "id": "tabby",
-    "name": "Tabby",
-    "description": "A modern, highly configurable terminal emulator for the modern age",
-    "type": "tool",
-    "path": "https://tabby.sh/",
-    "homepage": "https://tabby.sh/",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "tabby --version",
-    "commands": [
-        {
-            "id": "open",
-            "name": "Open Tabby",
-            "description": "Launch Tabby terminal",
-            "icon": "Terminal",
-            "category": "General",
-            "target": "item",
-            "mode": "execute",
-            "command": "tabby",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "docs",
-            "name": "Documentation",
-            "description": "Open Tabby documentation",
-            "icon": "BookOpen",
-            "category": "Help",
-            "target": "item",
-            "mode": "docs",
-            "command": "https://tabby.sh/"
-        }
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "development-tools",
-        "version": "1.0.0",
-        "author": "Tabby",
-        "createdAt": "2026-02-18T12:00:00Z",
-        "updatedAt": "2026-02-18T12:00:00Z"
+  "id": "tabby",
+  "name": "Tabby",
+  "description": "A modern, highly configurable terminal emulator for the modern age",
+  "type": "tool",
+  "path": "https://tabby.sh/",
+  "homepage": "https://tabby.sh/",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "tabby --version",
+  "commands": [
+    {
+      "id": "open",
+      "name": "Open Tabby",
+      "description": "Launch Tabby terminal",
+      "icon": "Terminal",
+      "category": "General",
+      "target": "item",
+      "mode": "execute",
+      "command": "tabby",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "docs",
+      "name": "Documentation",
+      "description": "Open Tabby documentation",
+      "icon": "BookOpen",
+      "category": "Help",
+      "target": "item",
+      "mode": "docs",
+      "command": "https://tabby.sh/"
     }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "development-tools",
+    "version": "1.0.0",
+    "author": "Tabby",
+    "createdAt": "2026-02-18T12:00:00Z",
+    "updatedAt": "2026-02-18T12:00:00Z"
+  }
 }

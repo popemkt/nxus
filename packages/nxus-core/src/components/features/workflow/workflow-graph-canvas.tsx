@@ -15,7 +15,10 @@ import type { WorkflowDefinition } from '@nxus/db'
 import { cn } from '@nxus/ui'
 import { useWorkflowGraph } from './hooks/use-workflow-graph'
 import { workflowNodeTypes } from './components/workflow-step-node'
-import { workflowEdgeTypes, WorkflowEdgeMarkerDefs } from './components/workflow-edge'
+import {
+  workflowEdgeTypes,
+  WorkflowEdgeMarkerDefs,
+} from './components/workflow-edge'
 import { WorkflowLegend } from './components/workflow-legend'
 import { STEP_TYPE_COLORS } from './types'
 import type { WorkflowNodeData } from './types'

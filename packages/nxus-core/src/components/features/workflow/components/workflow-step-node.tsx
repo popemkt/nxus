@@ -31,7 +31,12 @@ const STEP_TYPE_ICONS: Record<WorkflowNodeData['type'], Icon> = {
 /**
  * Shape configuration for each step type
  */
-type ShapeType = 'rectangle' | 'diamond' | 'wide-rectangle' | 'circle' | 'rounded-rectangle'
+type ShapeType =
+  | 'rectangle'
+  | 'diamond'
+  | 'wide-rectangle'
+  | 'circle'
+  | 'rounded-rectangle'
 
 const STEP_TYPE_SHAPES: Record<WorkflowNodeData['type'], ShapeType> = {
   command: 'rectangle',
@@ -93,9 +98,7 @@ export const WorkflowStepNode = memo(function WorkflowStepNode({
 
   // Get the appropriate icon
   const IconComponent =
-    type === 'end' && status === 'failure'
-      ? XCircleIcon
-      : STEP_TYPE_ICONS[type]
+    type === 'end' && status === 'failure' ? XCircleIcon : STEP_TYPE_ICONS[type]
 
   // Get the appropriate color
   const color =
@@ -119,7 +122,9 @@ export const WorkflowStepNode = memo(function WorkflowStepNode({
       style={{
         borderColor: color,
         // Apply ring color that matches the step type
-        ...(selected ? { '--tw-ring-color': color } as React.CSSProperties : {}),
+        ...(selected
+          ? ({ '--tw-ring-color': color } as React.CSSProperties)
+          : {}),
       }}
     >
       <Handle
