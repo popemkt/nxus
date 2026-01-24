@@ -43,6 +43,10 @@ Create a detailed implementation plan based on `{@artifacts_path}/spec.md`.
 
 ---
 
+
+### [ ] Step: Implementation
+<!-- chat-id: b5a262db-3c79-4082-b206-a426b0968afc -->
+<!-- agent: claude-code -->
 ## Implementation Tasks
 
 ### Phase 0: Create @nxus/ui Package (Prevent Circular Dependencies)

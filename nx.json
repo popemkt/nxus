@@ -18,6 +18,16 @@
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
         }
+      },
+      "exclude": ["packages/nxus-ui/*"]
+    },
+    {
+      "plugin": "@nx/js/typescript",
+      "include": ["packages/nxus-ui/*"],
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
       }
     }
   ]
