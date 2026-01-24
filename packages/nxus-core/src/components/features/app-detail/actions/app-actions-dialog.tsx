@@ -18,10 +18,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Field, FieldLabel } from '@/components/ui/field'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Input } from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
 import { installAppServerFn } from '@/services/apps/install.server'
 import { useAppCheck, appStateService } from '@/services/state/app-state'
 import { useInstallPath } from '@/hooks/use-install-path'

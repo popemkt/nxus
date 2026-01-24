@@ -1,5 +1,5 @@
 import { Panel } from '@xyflow/react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import {
   LockIcon,
   LockOpenIcon,
@@ -15,14 +15,14 @@ import {
   TagIcon,
 } from '@phosphor-icons/react'
 import type { GraphOptions, GraphNodeStyle } from '@/stores/view-mode.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
-} from '@/components/ui/dropdown-menu'
+} from '@nxus/ui'
 
 interface GraphControlsProps {
   options: GraphOptions

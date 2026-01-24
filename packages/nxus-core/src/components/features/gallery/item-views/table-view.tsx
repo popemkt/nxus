@@ -10,8 +10,8 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import type { Item } from '@/types/item'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@nxus/ui'
+import { Button } from '@nxus/ui'
 import {
   ArrowUp,
   ArrowDown,
@@ -25,7 +25,7 @@ import {
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 
 interface TableViewProps {
   items: Item[]

@@ -33,5 +33,10 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "references": [
+    {
+      "path": "../nxus-ui"
+    }
+  ]
 }

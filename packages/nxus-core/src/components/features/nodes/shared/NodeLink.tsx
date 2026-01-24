@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import { ArrowSquareOut } from '@phosphor-icons/react'
 
 interface NodeLinkProps {

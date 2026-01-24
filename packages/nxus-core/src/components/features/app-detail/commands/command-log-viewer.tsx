@@ -7,9 +7,9 @@ import {
   CopyIcon,
   CheckIcon,
 } from '@phosphor-icons/react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Badge } from '@nxus/ui'
 
 export interface LogEntry {
   timestamp: number

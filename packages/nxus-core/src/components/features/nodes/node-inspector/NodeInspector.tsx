@@ -11,7 +11,7 @@
  * - Inline content editing (double-click header)
  */
 
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import type { AssembledNode } from '@/services/nodes/node.service'
 import {
   getNodeServerFn,

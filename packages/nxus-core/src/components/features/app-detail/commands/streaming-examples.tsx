@@ -6,16 +6,16 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Field, FieldLabel } from '@/components/ui/field'
+import { Button } from '@nxus/ui'
+import { Input } from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@nxus/ui'
 import { CommandLogViewer } from '@/components/features/app-detail/commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { appStateService } from '@/services/state/app-state'

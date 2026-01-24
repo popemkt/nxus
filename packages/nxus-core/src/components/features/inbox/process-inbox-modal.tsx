@@ -15,9 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Badge } from '@nxus/ui'
 import { getAppsByConfiguredTagServerFn } from '@/services/tag-config.server'
 import { getAllAppsServerFn } from '@/services/apps/apps.server'
 import {
@@ -27,7 +27,7 @@ import {
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
 import { useQuery } from '@tanstack/react-query'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import type { Item } from '@/types/item'

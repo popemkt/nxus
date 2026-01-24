@@ -1,20 +1,20 @@
 import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@nxus/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@nxus/ui'
 import { useToolHealth } from '@/hooks/use-tool-health'
 import { handleCommandMode } from '@/lib/command-utils'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'

@@ -1,5 +1,5 @@
 import { useDevInfo } from '@/services/state/app-state'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@nxus/ui'
 import { CodeIcon } from '@phosphor-icons/react'
 
 export function DevModeBadge() {

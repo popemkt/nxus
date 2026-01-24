@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { BaseEdge, getBezierPath } from '@xyflow/react'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 
 interface DependencyEdgeProps {
   id: string

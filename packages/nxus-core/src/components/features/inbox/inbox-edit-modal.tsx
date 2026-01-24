@@ -15,18 +15,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Field, FieldLabel } from '@/components/ui/field'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Input } from '@nxus/ui'
+import { Textarea } from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@nxus/ui'
 import {
   updateInboxItemServerFn,
   deleteInboxItemServerFn,

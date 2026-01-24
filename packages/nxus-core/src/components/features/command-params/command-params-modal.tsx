@@ -13,21 +13,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Input } from '@nxus/ui'
+import { Label } from '@nxus/ui'
+import { Checkbox } from '@nxus/ui'
+import { Textarea } from '@nxus/ui'
+import { Badge } from '@nxus/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+} from '@nxus/ui'
+import { cn } from '@nxus/ui'
 import type { CommandRequirement, CommandParam } from '@/types/command-params'
 import {
   isParamRequired,

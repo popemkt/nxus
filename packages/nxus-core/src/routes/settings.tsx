@@ -1,12 +1,12 @@
 import { ThemeChooser } from '@/components/features/settings/theme-chooser'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@nxus/ui'
 import {
   Combobox,
   ComboboxContent,
@@ -16,9 +16,9 @@ import {
   ComboboxItem,
   ComboboxLabel,
   ComboboxList,
-} from '@/components/ui/combobox'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+} from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
+import { Input } from '@nxus/ui'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import {

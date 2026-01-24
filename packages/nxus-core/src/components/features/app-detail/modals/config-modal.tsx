@@ -8,10 +8,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Field, FieldLabel } from '@/components/ui/field'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Input } from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
 import { toolConfigService } from '@/services/state/tool-config-state'
 import type { ConfigField, ToolItem } from '@/types/item'
 

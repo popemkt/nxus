@@ -14,13 +14,13 @@ import {
 } from '@phosphor-icons/react'
 import { useViewModeStore } from '@/stores/view-mode.store'
 import { useCommandPaletteStore } from '@/stores/command-palette.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@nxus/ui'
 
 interface FloatingHudProps {
   searchQuery: string

@@ -1,5 +1,5 @@
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { useToolHealth } from '@/hooks/use-tool-health'
 import { handleCommandMode } from '@/lib/command-utils'

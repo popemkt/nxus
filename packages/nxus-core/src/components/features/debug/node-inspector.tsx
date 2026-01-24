@@ -10,7 +10,7 @@
  * - Clickable links to navigate between nodes
  */
 
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import type { AssembledNode } from '@/services/nodes/node.service'
 import { getBacklinksServerFn } from '@/services/nodes/search-nodes.server'
 import {

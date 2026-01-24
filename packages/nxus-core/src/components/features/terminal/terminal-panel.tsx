@@ -11,7 +11,7 @@ import {
   XCircleIcon,
   DotsSixVerticalIcon,
 } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import { useTerminalStore, type TerminalTab } from '@/stores/terminal.store'
 import { useState } from 'react'
 import { InteractiveTerminal } from './interactive-terminal'
