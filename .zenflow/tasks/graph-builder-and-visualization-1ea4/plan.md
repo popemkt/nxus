@@ -104,7 +104,8 @@ Create the edge component for workflow transitions.
 
 ---
 
-### [ ] Step: Create Workflow Graph Canvas
+### [x] Step: Create Workflow Graph Canvas
+<!-- chat-id: 4186a4b8-5f2f-42a6-bc34-119ab385107c -->
 
 Create the main canvas component that displays the workflow graph.
 
