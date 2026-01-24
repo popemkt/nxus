@@ -18,47 +18,168 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
 
-Assess the task's difficulty, as underestimating it leads to poor outcomes.
-- easy: Straightforward implementation, trivial bug fix or feature
-- medium: Moderate complexity, some edge cases or caveats to consider
-- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
+**Difficulty Assessment**: Medium-Hard
 
-Create a technical specification for the task that is appropriate for the complexity level:
-- Review the existing codebase architecture and identify reusable components.
-- Define the implementation approach based on established patterns in the project.
-- Identify all source code files that will be created or modified.
-- Define any necessary data model, API, or interface changes.
-- Describe verification steps using the project's test and lint commands.
+**Summary**:
+- Workflow command system (Phase 1) is already implemented and working
+- Graph visualization infrastructure exists (React Flow, dagre, d3-force)
+- Need to create workflow-specific visualization components
+- Integration point is the command button component for workflow mode
 
-Save the output to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach
-- Source code structure changes
-- Data model / API / interface changes
-- Verification approach
-
-If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
-- Break down the work into concrete tasks (incrementable, testable milestones)
-- Each task should reference relevant contracts and include verification steps
-- Replace the Implementation step below with the planned tasks
-
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
-
-Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
+**Output**: See `spec.md` for full technical specification.
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Create Workflow Graph Hook
 
-Implement the task according to the technical specification and general engineering best practices.
+Create the conversion hook that transforms a `WorkflowDefinition` into React Flow nodes and edges.
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase.
-3. Add and run relevant tests and linters.
-4. Perform basic manual verification if applicable.
-5. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+**Files to create**:
+- `packages/nxus-core/src/components/features/workflow/types.ts`
+- `packages/nxus-core/src/components/features/workflow/hooks/use-workflow-graph.ts`
+
+**Implementation details**:
+1. Define `WorkflowNodeData` and `WorkflowEdgeData` interfaces
+2. Implement `workflowToGraph()` function that:
+   - Creates a node for each step in `workflow.steps`
+   - Creates edges for `onSuccess`, `onFailure`, `next`, and `branches`
+   - Handles the `parallel` step type by creating edges to child steps
+3. Apply dagre layout algorithm for clean node positioning
+
+**Verification**:
+- Unit test the conversion with various workflow structures
+- Run `pnpm -C packages/nxus-core typecheck`
+
+---
+
+### [ ] Step: Create Workflow Step Node Component
+
+Create the visual node component for workflow steps.
+
+**Files to create**:
+- `packages/nxus-core/src/components/features/workflow/components/workflow-step-node.tsx`
+
+**Implementation details**:
+1. Handle all 7 step types with distinct visuals:
+   - `command`: Terminal icon, blue, rectangle
+   - `condition`: GitBranch icon, purple, diamond shape
+   - `parallel`: Rows icon, cyan, wide rectangle
+   - `delay`: Clock icon, yellow, circle
+   - `notify`: Bell icon, green, rounded rectangle
+   - `prompt`: ChatCircle icon, orange, rounded rectangle
+   - `end`: CheckCircle/XCircle icon, green/red, circle
+2. Display step ID as label
+3. Show relevant info (command ref, expression, message) on hover or in node
+
+**Verification**:
+- Visual inspection of each node type
+- Run `pnpm -C packages/nxus-core typecheck`
+
+---
+
+### [ ] Step: Create Workflow Edge Component
+
+Create the edge component for workflow transitions.
+
+**Files to create**:
+- `packages/nxus-core/src/components/features/workflow/components/workflow-edge.tsx`
+
+**Implementation details**:
+1. Different styles for edge types:
+   - Success: Green solid line
+   - Failure: Red dashed line
+   - Next/Default: Gray solid line
+   - Branch: Gray with label
+2. Add arrow markers
+3. Optional edge labels for branch values
+
+**Verification**:
+- Visual inspection of edges
+- Run `pnpm -C packages/nxus-core typecheck`
+
+---
+
+### [ ] Step: Create Workflow Graph Canvas
+
+Create the main canvas component that displays the workflow graph.
+
+**Files to create**:
+- `packages/nxus-core/src/components/features/workflow/workflow-graph-canvas.tsx`
+- `packages/nxus-core/src/components/features/workflow/components/workflow-legend.tsx`
+- `packages/nxus-core/src/components/features/workflow/index.ts`
+
+**Implementation details**:
+1. Use ReactFlowProvider wrapper
+2. Register custom node and edge types
+3. Use `useWorkflowGraph` hook to get nodes/edges
+4. Apply dagre layout (LR direction for left-to-right flow)
+5. Add Background, MiniMap, and Controls
+6. Add legend showing step type colors
+
+**Verification**:
+- Test with a sample workflow definition
+- Run `pnpm -C packages/nxus-core typecheck`
+
+---
+
+### [ ] Step: Create Workflow Preview Modal
+
+Create the modal component to display the workflow graph.
+
+**Files to create**:
+- `packages/nxus-core/src/components/features/app-detail/modals/workflow-preview-modal.tsx`
+
+**Implementation details**:
+1. Use Dialog component from shadcn/ui
+2. Take `WorkflowDefinition` and command name as props
+3. Render `WorkflowGraphCanvas` inside the modal
+4. Set reasonable modal size (e.g., 800x600 or responsive)
+
+**Verification**:
+- Open modal and verify graph renders correctly
+- Run `pnpm -C packages/nxus-core typecheck`
+
+---
+
+### [ ] Step: Integrate with Command Button
+
+Add workflow visualization to the command button component.
+
+**Files to modify**:
+- `packages/nxus-core/src/components/features/app-detail/commands/command-button.tsx`
+
+**Implementation details**:
+1. For `mode === 'workflow'`, add a preview button (similar to script preview)
+2. Use a graph icon (e.g., `FlowArrow` or `TreeStructure`)
+3. On click, open `WorkflowPreviewModal`
+4. Pass the command's `workflow` definition to the modal
+
+**Verification**:
+- Navigate to an app with a workflow command
+- Click the preview button
+- Verify modal opens with correct graph
+
+---
+
+### [ ] Step: Final Testing & Polish
+
+End-to-end verification and polish.
+
+**Tasks**:
+1. Create a test workflow command in a manifest if none exists
+2. Test all step types visually
+3. Test edge rendering for all transition types
+4. Run full lint and typecheck:
+   ```bash
+   pnpm -C packages/nxus-core typecheck
+   pnpm -C packages/nxus-core lint
+   pnpm -C packages/nxus-core build
+   ```
+5. Fix any issues found
+6. Write `report.md` documenting the implementation
+
+**Verification**:
+- All commands pass
+- Feature works end-to-end
