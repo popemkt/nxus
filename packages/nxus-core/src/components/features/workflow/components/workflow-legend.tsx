@@ -52,12 +52,12 @@ export function WorkflowLegend() {
   return (
     <Panel
       position="bottom-left"
-      className="p-3 bg-popover/95 backdrop-blur-sm rounded-lg border shadow-sm max-w-xs"
+      className="p-2.5 bg-popover/95 backdrop-blur-sm rounded-lg border shadow-md text-[11px]"
     >
-      {/* Step Types */}
+      {/* Step Types - horizontal layout */}
       <div className="mb-2">
-        <div className="text-xs font-medium text-muted-foreground mb-1.5">
-          Step Types
+        <div className="font-medium text-foreground/70 mb-1.5 text-[10px] uppercase tracking-wide">
+          Steps
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {STEP_TYPE_LEGEND.map(({ type, label, Icon }) => (
@@ -67,15 +67,15 @@ export function WorkflowLegend() {
                 weight="fill"
                 style={{ color: STEP_TYPE_COLORS[type] }}
               />
-              <span className="text-[10px] text-muted-foreground">{label}</span>
+              <span className="text-foreground/80">{label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Edge Types */}
+      {/* Edge Types - horizontal layout */}
       <div>
-        <div className="text-xs font-medium text-muted-foreground mb-1.5">
+        <div className="font-medium text-foreground/70 mb-1.5 text-[10px] uppercase tracking-wide">
           Transitions
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1">
@@ -98,9 +98,7 @@ export function WorkflowLegend() {
                     }
                   />
                 </svg>
-                <span className="text-[10px] text-muted-foreground">
-                  {label}
-                </span>
+                <span className="text-foreground/80">{label}</span>
               </div>
             )
           })}

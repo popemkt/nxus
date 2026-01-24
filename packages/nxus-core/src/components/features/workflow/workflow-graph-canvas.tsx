@@ -65,11 +65,12 @@ function WorkflowGraphCanvasInner({
     return STEP_TYPE_COLORS[data.type] || 'var(--muted-foreground)'
   }, [])
 
-  // Handle initial fit view
+  // Handle initial fit view with optimal zoom for readability
   const onInit = useCallback(() => {
-    // Small delay to ensure nodes are rendered
+    // Small delay to ensure nodes are rendered, then fit with minimal padding
+    // to maximize graph size while keeping all nodes visible
     setTimeout(() => {
-      fitView({ padding: 0.2 })
+      fitView({ padding: 0.1, maxZoom: 1.5 })
     }, 50)
   }, [fitView])
 
@@ -82,23 +83,23 @@ function WorkflowGraphCanvasInner({
         edgeTypes={workflowEdgeTypes}
         onInit={onInit}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.1}
-        maxZoom={2}
+        fitViewOptions={{ padding: 0.1, maxZoom: 1.5 }}
+        minZoom={0.25}
+        maxZoom={3}
         panOnDrag
         zoomOnScroll
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable
         proOptions={{ hideAttribution: true }}
-        className="bg-background"
+        className="bg-background [&_.react-flow__controls]:!bg-popover [&_.react-flow__controls]:!border-border [&_.react-flow__controls]:!shadow-md [&_.react-flow__controls-button]:!bg-popover [&_.react-flow__controls-button]:!border-border [&_.react-flow__controls-button]:!fill-foreground [&_.react-flow__controls-button:hover]:!bg-accent"
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
+          gap={24}
           size={1}
           color="var(--border)"
-          className="opacity-50"
+          className="opacity-40"
         />
 
         {showMinimap && (
@@ -114,7 +115,8 @@ function WorkflowGraphCanvasInner({
         {showControls && (
           <Controls
             showInteractive={false}
-            className="!bg-popover/95 !border-border !rounded-lg !shadow-sm"
+            position="top-left"
+            className="!bg-popover !border-border !rounded-lg !shadow-md [&>button]:!bg-popover [&>button]:!border-border [&>button]:!fill-foreground [&>button:hover]:!bg-accent"
           />
         )}
 

@@ -50,19 +50,20 @@ const STEP_TYPE_SHAPES: Record<WorkflowNodeData['type'], ShapeType> = {
 
 /**
  * Get CSS classes for the node shape
+ * Sizes are optimized for readability in the workflow graph
  */
 function getShapeClasses(shape: ShapeType): string {
   switch (shape) {
     case 'rectangle':
-      return 'w-44 h-14 rounded-md'
+      return 'w-48 h-16 rounded-lg'
     case 'diamond':
-      return 'w-20 h-20 rotate-45'
+      return 'w-24 h-24 rotate-45'
     case 'wide-rectangle':
-      return 'w-52 h-14 rounded-md'
+      return 'w-56 h-16 rounded-lg'
     case 'circle':
-      return 'w-16 h-16 rounded-full'
+      return 'w-20 h-20 rounded-full'
     case 'rounded-rectangle':
-      return 'w-44 h-14 rounded-xl'
+      return 'w-48 h-16 rounded-2xl'
   }
 }
 
@@ -143,7 +144,7 @@ export const WorkflowStepNode = memo(function WorkflowStepNode({
       {/* Content - counter-rotate for diamond shape */}
       <div
         className={cn(
-          'flex flex-col items-center justify-center gap-0.5 p-2',
+          'flex flex-col items-center justify-center gap-1 p-2',
           isDiamond && '-rotate-45',
         )}
       >
@@ -151,13 +152,13 @@ export const WorkflowStepNode = memo(function WorkflowStepNode({
           className="shrink-0"
           style={{ color }}
           weight="fill"
-          size={isDiamond ? 20 : 18}
+          size={isDiamond ? 22 : 20}
         />
         <span
           className={cn(
-            'font-medium text-foreground leading-tight text-center',
-            isDiamond ? 'text-[9px]' : 'text-xs',
-            shape === 'circle' && 'text-[10px]',
+            'font-semibold text-foreground leading-tight text-center',
+            isDiamond ? 'text-[10px]' : 'text-sm',
+            shape === 'circle' && 'text-xs',
           )}
         >
           {stepId}
@@ -165,11 +166,11 @@ export const WorkflowStepNode = memo(function WorkflowStepNode({
         {/* Show description for non-diamond, non-circle shapes */}
         {description && !isDiamond && shape !== 'circle' && (
           <span
-            className="text-[10px] text-muted-foreground truncate max-w-full leading-tight"
+            className="text-[11px] text-muted-foreground truncate max-w-full leading-tight"
             title={description}
           >
-            {description.length > 25
-              ? `${description.slice(0, 25)}...`
+            {description.length > 28
+              ? `${description.slice(0, 28)}...`
               : description}
           </span>
         )}

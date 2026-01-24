@@ -31,32 +31,34 @@ export function WorkflowPreviewModal({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
-        <AlertDialogHeader>
+      <AlertDialogContent className="sm:max-w-6xl max-h-[95vh] flex flex-col p-4 gap-3">
+        <AlertDialogHeader className="pb-0">
           <div className="flex items-center gap-2">
             <FlowArrow className="h-5 w-5 text-primary" />
             <AlertDialogTitle className="font-mono text-sm">
               {commandName}
             </AlertDialogTitle>
           </div>
-          <AlertDialogDescription>
-            Workflow visualization with {stepCount} step
-            {stepCount !== 1 ? 's' : ''}.
-            {workflow.description && ` ${workflow.description}`}
+          <AlertDialogDescription className="text-xs">
+            {stepCount} step{stepCount !== 1 ? 's' : ''}
+            {workflow.description && ` · ${workflow.description}`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="overflow-hidden rounded-md border bg-muted/30" style={{ width: '100%', height: '500px' }}>
+        <div
+          className="overflow-hidden rounded-md border bg-muted/20"
+          style={{ width: '100%', height: '65vh', minHeight: '450px' }}
+        >
           <WorkflowGraphCanvas
             workflow={workflow}
             className="w-full h-full"
             showLegend
-            showMinimap
+            showMinimap={false}
             showControls
           />
         </div>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="pt-0">
           <AlertDialogCancel>Close</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
