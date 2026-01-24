@@ -221,3 +221,30 @@ The issue was that workflow commands (`mode: 'workflow'`) were not included in t
 6. Added `WorkflowPreviewModal` component at the end to display the workflow graph
 
 **Note**: Workflow commands now show a `FlowArrow` icon button (not the three-dots dropdown) because they have a different action - visualizing the workflow graph rather than showing a dropdown menu with multiple options.
+
+### [x] Step: Review fixes
+<!-- chat-id: 4cea6402-1c6c-4284-b271-96f079804e02 -->
+<!-- agent: claude-code -->
+
+Reviewed suggestions from another agent. Results:
+
+**1. `docs/reference/manifest-schema.md` - FIXED ✓**
+- Updated `commands` to be documented as array (was incorrectly documented as object)
+- Changed `label` to `name` to match schema
+- Updated `requires` from `string[]` to the object shape with `tools`, `selfInstalled`, `selfNotInstalled`
+- Updated `mode` enum to include all valid values: `execute`, `terminal`, `copy`, `docs`, `configure`, `script`, `preview`, `workflow`
+- Documented all additional command properties: `category`, `icon`, `target`, `override`, `platforms`, `requirements`, `params`, `scriptSource`, `cwd`, `scriptOptions`, `options`, `workflow`
+- Added comprehensive workflow step type documentation
+- Added new example manifest following the correct schema
+
+**2. `_nxus-dev/manifest.json` type field - NOT A BUG ✓**
+- The agent was WRONG. Checked `ItemTypeSchema` in `packages/nxus-db/src/types/item.ts`:
+  ```typescript
+  export const ItemTypeSchema = z.enum(['html', 'typescript', 'remote-repo', 'tool'])
+  ```
+- `tool` IS a valid type in the schema. There is no `script-tool` type.
+
+**3. `evidence/manifest.json` path with username - FIXED ✓**
+- Removed username from Azure DevOps URL
+- Changed from: `https://topicusdotfinance@dev.azure.com/...`
+- Changed to: `https://dev.azure.com/...`
