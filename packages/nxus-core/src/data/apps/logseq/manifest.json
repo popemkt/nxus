@@ -1,65 +1,73 @@
 {
-  "id": "logseq",
-  "name": "Logseq",
-  "description": "Privacy-first, open-source platform for knowledge management and collaboration. Supports task management, PDF annotations, flashcards, and whiteboards with Markdown and Org-mode.",
-  "type": "remote-repo",
-  "path": "https://github.com/logseq/logseq.git",
-  "homepage": "https://logseq.com",
-  "commands": [
-    {
-      "id": "git-pull",
-      "name": "Update from Git",
-      "description": "Pull latest changes from repository",
-      "icon": "ArrowsClockwise",
-      "category": "Development",
-      "target": "instance",
-      "mode": "execute",
-      "command": "git pull"
-    },
-    {
-      "id": "pnpm-install",
-      "name": "Install Dependencies",
-      "description": "Run pnpm install to set up the project",
-      "icon": "Download",
-      "category": "Development",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "pnpm install",
-      "requires": {
-        "tools": ["pnpm"]
-      }
-    },
-    {
-      "id": "dev",
-      "name": "Start Dev Server",
-      "description": "Start Logseq in development mode",
-      "icon": "Play",
-      "category": "Development",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "pnpm dev",
-      "requires": {
-        "tools": ["pnpm"]
-      }
-    }
-  ],
-  "dependencies": ["git", "pnpm", "node"],
-  "metadata": {
-    "tags": [
-      {
-        "id": 17,
-        "name": "Study"
-      },
-      {
-        "id": 10,
-        "name": "Tool"
-      }
+    "id": "logseq",
+    "name": "Logseq",
+    "description": "Privacy-first, open-source platform for knowledge management and collaboration. Supports task management, PDF annotations, flashcards, and whiteboards with Markdown and Org-mode.",
+    "type": "remote-repo",
+    "path": "https://github.com/logseq/logseq.git",
+    "homepage": "https://logseq.com",
+    "commands": [
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "git pull"
+        },
+        {
+            "id": "pnpm-install",
+            "name": "Install Dependencies",
+            "description": "Run pnpm install to set up the project",
+            "icon": "Download",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "pnpm install",
+            "requires": {
+                "tools": [
+                    "pnpm"
+                ]
+            }
+        },
+        {
+            "id": "dev",
+            "name": "Start Dev Server",
+            "description": "Start Logseq in development mode",
+            "icon": "Play",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "pnpm dev",
+            "requires": {
+                "tools": [
+                    "pnpm"
+                ]
+            }
+        }
     ],
-    "category": "productivity",
-    "createdAt": "2026-01-20T21:07:00.000Z",
-    "updatedAt": "2026-01-20T21:07:00.000Z",
-    "version": "1.0.0",
-    "author": "logseq"
-  },
-  "status": "not-installed"
+    "dependencies": [
+        "git",
+        "pnpm",
+        "node"
+    ],
+    "metadata": {
+        "tags": [
+            {
+                "id": 17,
+                "name": "Study"
+            },
+            {
+                "id": 10,
+                "name": "Tool"
+            }
+        ],
+        "category": "productivity",
+        "createdAt": "2026-01-20T21:07:00.000Z",
+        "updatedAt": "2026-01-20T21:07:00.000Z",
+        "version": "1.0.0",
+        "author": "logseq"
+    },
+    "status": "not-installed"
 }

@@ -29,7 +29,11 @@ import {
 } from '@nxus/ui'
 import { cn } from '@nxus/ui'
 import type { CommandRequirement, CommandParam } from '@nxus/db'
-import { isParamRequired, getParamLabel, getParamDefaultValue } from '@nxus/db'
+import {
+  isParamRequired,
+  getParamLabel,
+  getParamDefaultValue,
+} from '@nxus/db'
 import type { Item } from '@nxus/db'
 
 interface RequirementOption {

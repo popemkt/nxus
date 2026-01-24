@@ -28,8 +28,7 @@ export function handleCommandMode(
       // Script mode requires server-side resolution - caller should handle separately
       return {
         handled: false,
-        error:
-          'Script mode requires server-side path resolution - use getScriptFullPathServerFn',
+        error: 'Script mode requires server-side path resolution - use getScriptFullPathServerFn',
       }
 
     case 'copy':

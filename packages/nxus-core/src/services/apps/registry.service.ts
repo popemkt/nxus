@@ -5,7 +5,13 @@
  * The Vite glob import has been removed - SQLite is the only source.
  */
 
-import type { Item, ItemRegistry, ItemStatus, ItemType, Result } from '@nxus/db'
+import type {
+  Item,
+  ItemRegistry,
+  ItemStatus,
+  ItemType,
+  Result,
+} from '@nxus/db'
 
 /**
  * Service for managing the app registry

@@ -40,9 +40,7 @@ async function seed() {
     await seedTables()
     await seedNodes()
   } else {
-    console.log(
-      `⚠️  Architecture mode '${ARCHITECTURE_TYPE}' not yet supported`,
-    )
+    console.log(`⚠️  Architecture mode '${ARCHITECTURE_TYPE}' not yet supported`)
     process.exit(1)
   }
 }

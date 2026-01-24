@@ -11,19 +11,16 @@ OpenCode is an open-source AI coding agent with a Terminal User Interface (TUI).
 Or manually install using one of the following:
 
 **Linux/macOS:**
-
 ```bash
 curl -fsSL https://opencode.ai/install | bash
 ```
 
 **macOS (Homebrew):**
-
 ```bash
 brew install opencode-ai/tap/opencode
 ```
 
 **Windows:**
-
 ```bash
 winget install opencode
 ```
@@ -36,7 +33,6 @@ OpenCode requires API keys from AI providers. Choose one of the following method
 {{command:opencode-auth-login}}
 
 **Method B: Environment Variables**
-
 ```bash
 export ANTHROPIC_API_KEY="your-key-here"
 # or
@@ -68,14 +64,14 @@ Or manually edit `~/.opencode.json`:
 
 ## Core Commands
 
-| Command                         | Description                           |
-| ------------------------------- | ------------------------------------- |
-| {{command:opencode-start}}      | Launch the Terminal UI (TUI)          |
-| {{command:opencode-run}}        | Run a single prompt (non-interactive) |
-| {{command:opencode-continue}}   | Continue the last session             |
-| {{command:opencode-auth-login}} | Authenticate with an AI provider      |
-| {{command:opencode-models}}     | List available models                 |
-| {{command:opencode-stats}}      | View usage statistics                 |
+| Command | Description |
+|---------|-------------|
+| {{command:opencode-start}} | Launch the Terminal UI (TUI) |
+| {{command:opencode-run}} | Run a single prompt (non-interactive) |
+| {{command:opencode-continue}} | Continue the last session |
+| {{command:opencode-auth-login}} | Authenticate with an AI provider |
+| {{command:opencode-models}} | List available models |
+| {{command:opencode-stats}} | View usage statistics |
 
 ## Session Management
 
@@ -94,7 +90,6 @@ opencode import <file-or-url>
 {{command:opencode-agent-create}}
 
 This opens an interactive prompt to define:
-
 - Agent name
 - System prompt
 - Default model

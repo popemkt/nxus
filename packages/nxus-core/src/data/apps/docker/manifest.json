@@ -1,52 +1,56 @@
 {
-  "id": "docker",
-  "name": "Docker",
-  "description": "Platform for developing, shipping, and running applications in containers",
-  "type": "tool",
-  "path": "https://www.docker.com",
-  "homepage": "https://www.docker.com",
-  "platform": ["linux", "macos", "windows"],
-  "checkCommand": "docker --version",
-  "installInstructions": "Visit https://www.docker.com to download and install Docker Desktop for your platform",
-  "commands": [
-    {
-      "id": "install-docker-fedora",
-      "name": "Install (Fedora)",
-      "description": "Install Docker via dnf",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+    "id": "docker",
+    "name": "Docker",
+    "description": "Platform for developing, shipping, and running applications in containers",
+    "type": "tool",
+    "path": "https://www.docker.com",
+    "homepage": "https://www.docker.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "docker --version",
+    "installInstructions": "Visit https://www.docker.com to download and install Docker Desktop for your platform",
+    "commands": [
+        {
+            "id": "install-docker-fedora",
+            "name": "Install (Fedora)",
+            "description": "Install Docker via dnf",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+        },
+        {
+            "id": "install-docker-windows",
+            "name": "Install (Windows)",
+            "description": "Download Docker Desktop for Windows",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.docker.com/desktop/install/windows-install/"
+        },
+        {
+            "id": "docs-docker",
+            "name": "Documentation",
+            "description": "Open Docker documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.docker.com/"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "install-docker-windows",
-      "name": "Install (Windows)",
-      "description": "Download Docker Desktop for Windows",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://docs.docker.com/desktop/install/windows-install/"
-    },
-    {
-      "id": "docs-docker",
-      "name": "Documentation",
-      "description": "Open Docker documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://docs.docker.com/"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2025-12-31T16:48:00.000Z",
-    "updatedAt": "2026-01-01T22:37:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  },
-  "status": "not-installed"
+    "status": "not-installed"
 }
