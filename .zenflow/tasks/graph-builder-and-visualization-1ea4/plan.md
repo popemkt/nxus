@@ -148,7 +148,8 @@ Create the modal component to display the workflow graph.
 
 ---
 
-### [ ] Step: Integrate with Command Button
+### [x] Step: Integrate with Command Button
+<!-- chat-id: b81e0b7a-b131-4403-9136-e517e4419052 -->
 
 Add workflow visualization to the command button component.
 

@@ -1,4 +1,5 @@
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
+import { WorkflowPreviewModal } from '@/components/features/app-detail/modals/workflow-preview-modal'
 import { Button } from '@nxus/ui'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { useToolHealth } from '@/hooks/use-tool-health'
@@ -8,7 +9,12 @@ import { configureModalService } from '@/stores/configure-modal.store'
 import type { Item, ItemCommand, ToolItem } from '@nxus/db'
 import { getCommandString } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
-import { CodeIcon, QuestionIcon, WarningIcon } from '@phosphor-icons/react'
+import {
+  CodeIcon,
+  FlowArrow,
+  QuestionIcon,
+  WarningIcon,
+} from '@phosphor-icons/react'
 import * as React from 'react'
 
 /**
@@ -59,6 +65,7 @@ export function CommandButton({
 }: CommandButtonProps) {
   const { executeCommand } = useCommandExecution({})
   const [previewOpen, setPreviewOpen] = React.useState(false)
+  const [workflowPreviewOpen, setWorkflowPreviewOpen] = React.useState(false)
 
   // Get health check for tools - uses TanStack Query via domain hook
   const healthCheck = useToolHealth(app)
@@ -75,11 +82,14 @@ export function CommandButton({
   }, [app])
   const isConfigured = useToolConfigured(app.id, requiredFields)
 
-  // Check if command uses script, execute, or terminal mode
+  // Check if command uses script, execute, terminal, or workflow mode
   const isScriptMode = command.mode === 'script'
   const isExecuteMode = command.mode === 'execute'
   const isTerminalMode = command.mode === 'terminal'
-  const showPreviewButton = isScriptMode || isExecuteMode || isTerminalMode
+  const isWorkflowMode = command.mode === 'workflow'
+  const showScriptPreviewButton =
+    isScriptMode || isExecuteMode || isTerminalMode
+  const showWorkflowPreviewButton = isWorkflowMode && command.workflow
 
   const handleClick = async () => {
     // Handle workflow mode specially - requires async executor
@@ -152,6 +162,8 @@ export function CommandButton({
   const isDisabled = state === 'disabled'
   const needsAttention = state === 'needs-attention'
 
+  const hasPreviewButton = showScriptPreviewButton || showWorkflowPreviewButton
+
   if (compact) {
     return (
       <>
@@ -160,7 +172,7 @@ export function CommandButton({
             variant="outline"
             size="sm"
             className={`inline-flex gap-1.5 h-7 px-2 ${
-              showPreviewButton ? 'rounded-r-none border-r-0' : ''
+              hasPreviewButton ? 'rounded-r-none border-r-0' : ''
             } ${
               needsAttention ? 'border-amber-500/50 hover:border-amber-500' : ''
             } ${className ?? ''}`}
@@ -173,7 +185,7 @@ export function CommandButton({
               <WarningIcon className="h-3 w-3 text-amber-500" weight="fill" />
             )}
           </Button>
-          {showPreviewButton && (
+          {showScriptPreviewButton && (
             <Button
               variant="outline"
               size="sm"
@@ -184,14 +196,33 @@ export function CommandButton({
               <CodeIcon className="h-3.5 w-3.5" />
             </Button>
           )}
+          {showWorkflowPreviewButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-1.5 rounded-l-none"
+              onClick={() => setWorkflowPreviewOpen(true)}
+              title="View workflow"
+            >
+              <FlowArrow className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
-        {showPreviewButton && (
+        {showScriptPreviewButton && (
           <ScriptPreviewModal
             appId={app.id}
             scriptPath={getCommandString(command) ?? ''}
             open={previewOpen}
             onOpenChange={setPreviewOpen}
             isInlineCommand={isExecuteMode || isTerminalMode}
+          />
+        )}
+        {showWorkflowPreviewButton && (
+          <WorkflowPreviewModal
+            commandName={command.name}
+            workflow={command.workflow!}
+            open={workflowPreviewOpen}
+            onOpenChange={setWorkflowPreviewOpen}
           />
         )}
       </>
@@ -204,7 +235,7 @@ export function CommandButton({
         <Button
           variant="outline"
           className={`flex-1 justify-start ${
-            showPreviewButton ? 'rounded-r-none border-r-0' : ''
+            hasPreviewButton ? 'rounded-r-none border-r-0' : ''
           } ${
             needsAttention ? 'border-amber-500/50 hover:border-amber-500' : ''
           } ${className ?? ''}`}
@@ -222,7 +253,7 @@ export function CommandButton({
             </span>
           )}
         </Button>
-        {showPreviewButton && (
+        {showScriptPreviewButton && (
           <Button
             variant="outline"
             className="px-2 rounded-l-none"
@@ -232,14 +263,32 @@ export function CommandButton({
             <CodeIcon className="h-4 w-4" />
           </Button>
         )}
+        {showWorkflowPreviewButton && (
+          <Button
+            variant="outline"
+            className="px-2 rounded-l-none"
+            onClick={() => setWorkflowPreviewOpen(true)}
+            title="View workflow"
+          >
+            <FlowArrow className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-      {showPreviewButton && (
+      {showScriptPreviewButton && (
         <ScriptPreviewModal
           appId={app.id}
           scriptPath={getCommandString(command) ?? ''}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           isInlineCommand={isExecuteMode || isTerminalMode}
+        />
+      )}
+      {showWorkflowPreviewButton && (
+        <WorkflowPreviewModal
+          commandName={command.name}
+          workflow={command.workflow!}
+          open={workflowPreviewOpen}
+          onOpenChange={setWorkflowPreviewOpen}
         />
       )}
     </>
