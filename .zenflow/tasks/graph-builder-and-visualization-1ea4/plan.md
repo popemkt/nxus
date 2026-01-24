@@ -196,3 +196,8 @@ End-to-end verification and polish.
 - Added comprehensive `workflow-demo` command to `_nxus-dev` manifest with all 7 step types
 - Wrote `report.md` documenting the full implementation
 - Note: Build has pre-existing CSS/Tailwind issue unrelated to this feature
+
+
+### [x] Step: merge latest main into this
+<!-- chat-id: 0f2da4e0-2917-4221-b89b-880c131c24da -->
+<!-- agent: claude-code-light -->
