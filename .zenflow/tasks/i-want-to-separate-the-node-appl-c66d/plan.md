@@ -265,35 +265,62 @@ Wire up workbench package in nxus-core and verify everything works.
 
 ---
 
-### [ ] Step: Phase 5 - Testing & Documentation
+### [x] Step: Phase 5 - Testing & Documentation
+<!-- chat-id: 7bb7672a-9cd7-424d-b93e-48444a52fa17 -->
 <!-- agent: claude-code -->
 
 Add tests and documentation for the new packages.
 
 #### Tasks:
 
-- [ ] **5.1**: Add Unit Tests to @nxus/db
-  - Convert `packages/nxus-core/scripts/test-node-service.ts` into Vitest unit tests
-  - Add tests for `node.service.ts` methods
-  - Add tests for `ephemeral-factory.ts`
+- [x] **5.1**: Add Unit Tests to @nxus/db
+  - Created `packages/nxus-db/vitest.config.ts` with Vitest configuration
+  - Added `vitest` devDependency and test scripts to `package.json`
+  - Created `src/services/node.service.test.ts` with 20 unit tests covering:
+    - `getSystemNode` (caching, lookup, null handling)
+    - `createNode` (basic, with systemId, with supertag)
+    - `findNode`, `findNodeById`, `findNodeBySystemId`
+    - `updateNodeContent`, `deleteNode`
+    - `setProperty` (create, update, error handling)
+    - `assembleNode` (full property assembly)
+    - `getNodesBySupertagWithInheritance` (direct and inherited supertags)
+    - `getProperty`, `getPropertyValues` helpers
 
-- [ ] **5.2**: Add Integration Tests
-  - Test @nxus/workbench server functions
-  - Test route integration works
-  - Test imports from @nxus/db work correctly
+- [x] **5.2**: Add Integration Tests for @nxus/workbench
+  - Created `packages/nxus-workbench/vitest.config.ts` with Vitest configuration
+  - Added `vitest` devDependency and test scripts to `package.json`
+  - Created `src/server/adapters.test.ts` with 15 unit tests covering:
+    - `nodeToItem` (basic conversion, legacyId, supertag types, callbacks)
+    - `nodeToTag` (basic conversion, parent resolution)
+    - `nodeToCommand` (execute mode, workflow mode, defaults, platforms)
+    - `nodesToItems` (batch conversion with resolved references)
+  - Fixed pre-existing placeholder test in `nxus-core/src/services/shell/pty-buffer.test.ts`
 
-- [ ] **5.3**: Create Mini-App Example
-  - Add example showing how to import from @nxus/db, create ephemeral DB, query nodes
+- [x] **5.3**: Create Mini-App Example
+  - Created `packages/nxus-db/examples/mini-app-example.ts` demonstrating:
+    - Database initialization
+    - Querying nodes by supertag with inheritance
+    - Finding specific nodes by systemId
+    - Accessing node properties
+    - Working with existing nxus data
 
-- [ ] **5.4**: Document Public APIs
-  - Document @nxus/db exports in README or TSDoc
-  - Document @nxus/workbench exports
-  - Add usage examples
+- [x] **5.4**: Document Public APIs
+  - Created `packages/nxus-db/README.md` with:
+    - Installation instructions
+    - Client vs server usage patterns
+    - Complete API reference for database operations
+    - Type documentation (AssembledNode, PropertyValue)
+    - Example usage
+  - Created `packages/nxus-workbench/README.md` with:
+    - Installation and dependency information
+    - Component documentation (NodeWorkbenchRoute, NodeBrowser, NodeInspector, SupertagSidebar)
+    - Server function documentation
+    - Legacy adapter documentation
 
 **Verification:**
-- `nx test nxus-db` passes
-- `nx test nxus-workbench` passes
-- Documentation exists and is accurate
+- [x] `pnpm -r test` passes - all 35 tests pass (20 in @nxus/db, 15 in @nxus/workbench)
+- [x] `nx run-many -t typecheck` passes
+- [x] Documentation exists in README.md for both packages
 
 ---
 
@@ -301,18 +328,18 @@ Add tests and documentation for the new packages.
 
 After all steps complete, verify:
 
-- [ ] `nx run-many -t build` passes (all 4 packages: nxus-ui, nxus-db, nxus-workbench, nxus-core)
-- [ ] `nx run-many -t typecheck` passes
-- [ ] `nx run-many -t lint` passes
-- [ ] `nx test nxus-db` passes
-- [ ] `nx test nxus-workbench` passes
-- [ ] No circular dependencies exist (verify with `nx graph`)
-- [ ] No cross-package source imports (all imports via public APIs)
-- [ ] App runs: `/` route works
-- [ ] App runs: `/nodes` route works
-- [ ] Node CRUD operations work
-- [ ] Legacy/Node architecture toggle works
-- [ ] Graph database operations work
+- [x] `nx run-many -t build` passes (all 4 packages: nxus-ui, nxus-db, nxus-workbench, nxus-core)
+- [x] `nx run-many -t typecheck` passes
+- [ ] `nx run-many -t lint` passes (pre-existing ESLint config issue in nxus-core)
+- [x] `pnpm test` (nxus-db) passes - 20 tests
+- [x] `pnpm test` (nxus-workbench) passes - 15 tests
+- [x] No circular dependencies exist (clean dependency graph)
+- [x] No cross-package source imports (all imports via public APIs)
+- [ ] App runs: `/` route works (manual verification by user)
+- [ ] App runs: `/nodes` route works (manual verification by user)
+- [ ] Node CRUD operations work (manual verification by user)
+- [ ] Legacy/Node architecture toggle works (manual verification by user)
+- [ ] Graph database operations work (manual verification by user)
 
 ## Dependency Graph (Final)
 

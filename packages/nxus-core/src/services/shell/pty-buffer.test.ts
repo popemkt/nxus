@@ -1,24 +1,17 @@
-import { closePtySession, createPtySession } from './pty-session-manager.server'
+/**
+ * PTY Buffer tests - placeholder for future implementation
+ *
+ * These tests require proper PTY mocking which is complex to set up.
+ * Verification is currently done through manual testing in the app.
+ */
 
-async function _testBufferRollover() {
-  console.log('Testing PTY buffer rollover...')
+import { describe, it, expect } from 'vitest'
 
-  const session = createPtySession({ command: 'echo', args: ['hello'] })
-  const sessionId = session.id
+describe('pty-buffer', () => {
+  it.todo('should handle buffer rollover correctly')
+  it.todo('should handle rapid data arrival')
+  it.todo('should clean up resources on session close')
+})
 
-  // Mock data arrival
-  const _pty = session.pty as any
-  const _onData = (session as any).onData // We need to access the handler
-
-  // Since we can't easily trigger the internal handler from outside without modifying pty-session-manager,
-  // we'll rely on manual verification or unit tests if we had a proper test runner for server fns.
-
-  console.log('PTY session created:', sessionId)
-
-  // Clean up
-  closePtySession(sessionId)
-  console.log('Test complete.')
-}
-
-// This is just a placeholder as we don't have a test runner set up for these server-side mocks easily.
-// I will verify by running the app and checking the terminal behavior.
+// Note: Uncomment and implement when PTY mocking is available
+// import { closePtySession, createPtySession } from './pty-session-manager.server'
