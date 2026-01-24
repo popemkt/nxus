@@ -36,7 +36,13 @@
   },
   "references": [
     {
+      "path": "../nxus-workbench"
+    },
+    {
       "path": "../nxus-ui"
+    },
+    {
+      "path": "../nxus-db"
     }
   ]
 }

@@ -5,6 +5,12 @@
   "references": [
     {
       "path": "./packages/nxus-ui"
+    },
+    {
+      "path": "./packages/nxus-workbench"
+    },
+    {
+      "path": "./packages/nxus-db"
     }
   ]
 }
