@@ -27,7 +27,7 @@ import type {
   ItemMetadata,
   TagRef,
 } from '@nxus/db'
-import { getAllItemsFromNodesServerFn } from '../nodes/nodes.server'
+import { getAllItemsFromNodesServerFn } from '@nxus/workbench/server'
 
 /**
  * Map database record to App type
@@ -205,7 +205,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
     // Architecture switch - delegate to node-based function when enabled
     if (isNodeArchitecture()) {
       const { getItemByIdFromNodesServerFn } = await import(
-        '../nodes/nodes.server'
+        '@nxus/workbench/server'
       )
       const result = await getItemByIdFromNodesServerFn({ data: { id } })
       if (result.success) {

@@ -3,6 +3,9 @@
  *
  * For NEW mini-apps: Import Write API directly from @nxus/db
  * For LEGACY migration: Use adapters for backward compat
+ *
+ * NOTE: Server functions and adapters have been moved to @nxus/workbench.
+ * This file re-exports them for backward compatibility.
  */
 
 // ============================================================================
@@ -39,17 +42,25 @@ export {
 } from '@nxus/db/server'
 
 // ============================================================================
-// Adapters - Legacy type conversion (for existing apps)
-// ============================================================================
-export { nodeToCommand, nodeToItem, nodeToTag, nodesToItems } from './adapters'
-
-// ============================================================================
-// Server Functions
+// Re-export from @nxus/workbench/server
 // ============================================================================
 export {
+  // Adapters - Legacy type conversion (for existing apps)
+  nodeToCommand,
+  nodeToItem,
+  nodeToTag,
+  nodesToItems,
+  // Server Functions
   getAllItemsFromNodesServerFn,
   getAllTagsFromNodesServerFn,
   getItemByIdFromNodesServerFn,
   getNodeServerFn,
   getNodesBySupertagServerFn,
-} from './nodes.server'
+  // Search Server Functions
+  searchNodesServerFn,
+  getSupertagsServerFn,
+  getAllNodesServerFn,
+  getBacklinksServerFn,
+  getOwnerChainServerFn,
+  getChildNodesServerFn,
+} from '@nxus/workbench/server'

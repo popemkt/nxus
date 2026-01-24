@@ -12,7 +12,7 @@
 
 import { cn } from '@nxus/ui'
 import type { AssembledNode } from '@nxus/db'
-import { getBacklinksServerFn } from '@/services/nodes/search-nodes.server'
+import { getBacklinksServerFn } from '@nxus/workbench/server'
 import {
   ArrowBendUpLeft,
   ArrowsLeftRight,

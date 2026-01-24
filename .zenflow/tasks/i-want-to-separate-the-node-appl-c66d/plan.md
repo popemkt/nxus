@@ -185,47 +185,53 @@ Wire up the new @nxus/db package into nxus-core and clean up moved files.
 
 ---
 
-### [ ] Step: Phase 3 - Create @nxus/workbench Package
+### [x] Step: Phase 3 - Create @nxus/workbench Package
+<!-- chat-id: 4416d372-fa7f-4b23-a80f-f9f72caf802e -->
 <!-- agent: claude-code -->
 
 Create the workbench package containing node management UI components.
 
 #### Tasks:
 
-- [ ] **3.1**: Generate nxus-workbench Package Structure
-  - Run: `nx g @nx/react:library nxus-workbench --directory=packages/nxus-workbench --bundler=vite --unitTestRunner=vitest --importPath=@nxus/workbench`
-  - Clean up generated boilerplate
-  - Create directory structure: `components/`, `components/shared/`, `server/`, `hooks/`
-  - Add dependencies: `@nxus/db` and `@nxus/ui`
+- [x] **3.1**: Generate nxus-workbench Package Structure
+  - Created `packages/nxus-workbench/` directory manually
+  - Created directory structure: `components/`, `components/shared/`, `server/`, `hooks/`
+  - Created `package.json` with dependencies: `@nxus/db`, `@nxus/ui`, `@phosphor-icons/react`, `@tanstack/react-query`, `@tanstack/react-start`, `drizzle-orm`, `zod`
+  - Created `tsconfig.json` with DOM types for React components
 
-- [ ] **3.2**: Move Node Components to @nxus/workbench
-  - Use `git mv` to move: `components/features/nodes/node-browser/`, `node-inspector/`, `supertag-sidebar/`, `shared/`
-  - Update imports to use `@nxus/db` and `@nxus/ui`
+- [x] **3.2**: Move Node Components to @nxus/workbench
+  - Used `git mv` to move: `node-browser/`, `node-inspector/`, `supertag-sidebar/`, `shared/`
+  - Updated imports to use `@nxus/db` and `@nxus/ui`
+  - Updated internal imports with `.js` extensions for ESM
 
-- [ ] **3.3**: Move Node Server Functions to @nxus/workbench
-  - Use `git mv`: `services/nodes/nodes.server.ts` → `nxus-workbench/src/server/nodes.server.ts`
-  - Use `git mv`: `services/nodes/search-nodes.server.ts` → `nxus-workbench/src/server/search-nodes.server.ts`
-  - Update imports to use @nxus/db
-  - Create `server/index.ts` barrel export
+- [x] **3.3**: Move Node Server Functions to @nxus/workbench
+  - Used `git mv`: `nodes.server.ts`, `search-nodes.server.ts`, `adapters.ts` → `nxus-workbench/src/server/`
+  - Created `server/index.ts` barrel export with all server functions and adapters
 
-- [ ] **3.4**: Move Node Hooks to @nxus/workbench
-  - Identify and move node-specific hooks
-  - Update imports to use @nxus/db and @nxus/ui
-  - Create `hooks/index.ts` barrel export
+- [x] **3.4**: Move Node Hooks to @nxus/workbench
+  - No node-specific hooks found in codebase to move
+  - Hooks directory created for future use
 
-- [ ] **3.5**: Create NodeWorkbenchRoute Export
-  - Create `src/route.tsx` that composes NodeBrowser, NodeInspector, SupertagSidebar
-  - Export as `NodeWorkbenchRoute`
+- [x] **3.5**: Create NodeWorkbenchRoute Export
+  - Created `src/route.tsx` that composes NodeBrowser, NodeInspector, SupertagSidebar
+  - Exports `NodeWorkbenchRoute` and `NodeWorkbenchRouteProps`
 
-- [ ] **3.6**: Create Public API (index.ts)
-  - Export: `NodeWorkbenchRoute`, server functions, individual components
+- [x] **3.6**: Create Public API (index.ts)
+  - Created `src/index.ts` exporting: `NodeWorkbenchRoute`, all components
+  - Created `src/server/index.ts` for server-side exports (via `@nxus/workbench/server`)
 
-- [ ] **3.7**: Configure TypeScript Paths for @nxus/workbench
-  - Update `tsconfig.base.json` to add: `"@nxus/workbench": ["packages/nxus-workbench/src/index.ts"]`
+- [x] **3.7**: Configure TypeScript & Update Imports
+  - Using pnpm workspace protocol - no tsconfig paths needed
+  - Added `@nxus/workbench` to nxus-core/package.json dependencies
+  - Updated nxus-core/routes/nodes.tsx to use `NodeWorkbenchRoute` from `@nxus/workbench`
+  - Updated services/nodes/index.ts to re-export from `@nxus/workbench/server`
+  - Updated services/apps/apps.server.ts imports
+  - Updated components/features/debug/node-inspector.tsx import
+  - Added `AssembledNode` type export to `@nxus/db` main entry for UI components
 
 **Verification:**
-- `nx build nxus-workbench` succeeds
-- No cross-package source imports exist
+- [x] `pnpm run build` (nxus-core) succeeds - built in 3m 55s
+- [x] No cross-package source imports exist
 
 ---
 

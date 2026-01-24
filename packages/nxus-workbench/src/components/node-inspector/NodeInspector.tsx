@@ -16,12 +16,12 @@ import type { AssembledNode } from '@nxus/db'
 import {
   getNodeServerFn,
   updateNodeContentServerFn,
-} from '@/services/nodes/nodes.server'
+} from '../../server/nodes.server.js'
 import {
   getBacklinksServerFn,
   getChildNodesServerFn,
   getOwnerChainServerFn,
-} from '@/services/nodes/search-nodes.server'
+} from '../../server/search-nodes.server.js'
 import {
   ArrowBendUpLeft,
   ArrowSquareOut,
