@@ -32,7 +32,8 @@ Do not make assumptions on important decisions — get clarification first.
 
 ---
 
-### [ ] Step: Create Workflow Graph Hook
+### [x] Step: Create Workflow Graph Hook
+<!-- chat-id: 09da5add-73e0-4e67-8ef0-0ac904d244ec -->
 
 Create the conversion hook that transforms a `WorkflowDefinition` into React Flow nodes and edges.
 
