@@ -384,6 +384,11 @@ First-run workflow:
 3. User runs "DB: Sync JSON → Database" from command palette (or pnpm db:seed)
 4. App data is seeded and app shows items/commands/tags
 ```
+
+### [ ] Step: Documentation
+<!-- agent: claude-code -->
+
+Create documentation of the architecture we just made if not already
 ## Final Verification Checklist
 
 After all steps complete, verify:
