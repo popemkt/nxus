@@ -74,7 +74,8 @@ export function parseKeybinding(binding: string): {
   key: string
 } {
   const parts = binding.split('+').map((p) => p.trim().toLowerCase())
-  const key = parts[parts.length - 1].toUpperCase()
+  const lastPart = parts[parts.length - 1]
+  const key = lastPart ? lastPart.toUpperCase() : ''
 
   return {
     ctrl: parts.includes('ctrl'),

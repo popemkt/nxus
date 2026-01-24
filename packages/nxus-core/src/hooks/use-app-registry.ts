@@ -2,7 +2,7 @@ import { useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAllAppsServerFn } from '../services/apps/apps.server'
 import { appRegistryService } from '../services/apps/registry.service'
-import type { Item, ItemStatus, ItemType } from '../types/item'
+import type { Item, ItemStatus, ItemType } from '@nxus/db'
 
 interface UseAppRegistryOptions {
   searchQuery?: string

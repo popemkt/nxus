@@ -6,7 +6,7 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull } from '@nxus/db/server'
 import { z } from 'zod'
 import {
   isGraphArchitecture,
@@ -24,6 +24,7 @@ import type {
   DocEntry,
   Item,
   ItemCommand,
+  ScriptCommand,
   ItemMetadata,
   TagRef,
 } from '@nxus/db'
@@ -96,14 +97,14 @@ function parseCommandRecord(
     category: record.category,
     target: record.target as ItemCommand['target'],
     mode: record.mode as ItemCommand['mode'],
-    command: record.command,
+    command: record.command ?? '',
     scriptSource:
-      (record.scriptSource as ItemCommand['scriptSource']) ?? undefined,
+      (record.scriptSource as ScriptCommand['scriptSource']) ?? undefined,
     cwd: record.cwd ?? undefined,
     platforms: (record.platforms as ItemCommand['platforms']) ?? undefined,
     requires: record.requires ?? undefined,
     options: record.options ?? undefined,
-  }
+  } as unknown as ItemCommand
 }
 
 /**

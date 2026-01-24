@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm'
+import { sql } from '@nxus/db/server'
 import { initDatabase, getDatabase, saveDatabase } from '@nxus/db/server'
 
 async function dropSlugColumn() {

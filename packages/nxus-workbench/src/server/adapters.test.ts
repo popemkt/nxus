@@ -2,7 +2,7 @@
  * adapters.test.ts - Tests for node-to-legacy type adapters
  */
 
-import type { AssembledNode, TagRef, ItemCommand } from '@nxus/db'
+import type { AssembledNode, TagRef, ItemCommand, ExecuteCommand, WorkflowCommand } from '@nxus/db'
 import { describe, expect, it } from 'vitest'
 import { nodeToCommand, nodeToItem, nodeToTag, nodesToItems } from './adapters.js'
 
@@ -229,7 +229,7 @@ describe('adapters', () => {
         },
       })
 
-      const cmd = nodeToCommand(node)
+      const cmd = nodeToCommand(node) as ExecuteCommand
 
       expect(cmd.id).toBe('cmd-build')
       expect(cmd.name).toBe('Build Project')
@@ -259,10 +259,11 @@ describe('adapters', () => {
         },
       })
 
-      const cmd = nodeToCommand(node)
+      const cmd = nodeToCommand(node) as WorkflowCommand
 
       expect(cmd.mode).toBe('workflow')
       expect(cmd.workflow).toEqual(workflowDefinition)
+      // @ts-expect-error - workflow command does not have command property
       expect(cmd.command).toBeUndefined()
     })
 

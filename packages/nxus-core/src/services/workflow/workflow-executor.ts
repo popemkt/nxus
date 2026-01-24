@@ -10,6 +10,7 @@ import {
   getCommandString,
   type Item,
   type ItemCommand,
+  type WorkflowCommand,
   type CommandStep,
   type NotifyStep,
   type StepResult,
@@ -37,7 +38,7 @@ export interface WorkflowExecutionOptions {
   /** The item that owns this workflow command */
   item: Item
   /** The workflow command being executed */
-  command: ItemCommand
+  command: WorkflowCommand
   /** Optional parameters passed to the workflow */
   params?: Record<string, unknown>
   /** Callback for notify steps */

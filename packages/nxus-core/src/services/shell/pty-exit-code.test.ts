@@ -11,14 +11,12 @@ vi.mock('node-pty', () => {
 
 describe('PTY Exit Code', () => {
   let mockPtyProcess: any
-  let onDataCallback: (data: string) => void
   let onExitCallback: (event: { exitCode: number; signal?: number }) => void
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     // Setup mock PTY process
-    onDataCallback = vi.fn()
     onExitCallback = vi.fn()
 
     mockPtyProcess = {
@@ -26,8 +24,7 @@ describe('PTY Exit Code', () => {
       write: vi.fn(),
       resize: vi.fn(),
       kill: vi.fn(),
-      onData: vi.fn((cb) => {
-        onDataCallback = cb
+      onData: vi.fn((_cb) => {
         return { dispose: vi.fn() }
       }),
       onExit: vi.fn((cb) => {

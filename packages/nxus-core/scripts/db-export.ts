@@ -8,7 +8,7 @@
  * Also exports tags and inbox to seed folder.
  */
 
-import { eq, isNull } from 'drizzle-orm'
+import { eq, isNull } from '@nxus/db/server'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'

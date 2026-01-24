@@ -10,6 +10,7 @@ import type {
   DocEntry,
   Item,
   ItemCommand,
+  ScriptCommand,
   ItemMetadata,
   TagRef,
   AssembledNode,
@@ -154,7 +155,7 @@ export function nodeToCommand(node: AssembledNode): ItemCommand {
     scriptSource: getProperty<string>(
       node,
       'scriptSource',
-    ) as ItemCommand['scriptSource'],
+    ) as ScriptCommand['scriptSource'],
     cwd: getProperty<string>(node, 'cwd'),
     options: getProperty<Record<string, unknown>>(node, 'options'),
   } as ItemCommand

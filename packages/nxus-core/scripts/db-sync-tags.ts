@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq } from '@nxus/db/server'
 import {
   initDatabase,
   getDatabase,
@@ -46,7 +46,8 @@ async function sync() {
 
   for (const app of allApps) {
     if (!app.metadata) continue
-    const metadata = JSON.parse(app.metadata)
+    // Metadata is already parsed by Drizzle
+    const metadata = app.metadata as any
     const appTagRefs = metadata.tags || []
 
     // Handle both old format (string[]) and new format ({id, name}[])
@@ -82,8 +83,10 @@ async function sync() {
             })
             .returning({ id: tags.id })
 
-          tagId = res[0].id
-          nameToId.set(tagName.toLowerCase(), tagId)
+          if (res[0]) {
+            tagId = res[0].id
+            nameToId.set(tagName.toLowerCase(), tagId)
+          }
           createdCount++
           console.log(`Created missing tag: ${tagName} (id: ${tagId})`)
         } catch (err) {

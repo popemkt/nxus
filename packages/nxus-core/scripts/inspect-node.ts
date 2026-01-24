@@ -10,7 +10,7 @@
  *   npx tsx scripts/inspect-node.ts abc123-uuid
  */
 
-import { eq, or } from 'drizzle-orm'
+import { eq, or } from '@nxus/db/server'
 import {
   getDatabase,
   initDatabase,
@@ -158,7 +158,7 @@ async function inspectNode(identifier: string) {
   )
   for (const [fieldName, values] of Object.entries(assembled.properties)) {
     if (fieldName === 'supertag') continue // Already shown
-    if (values.length === 1) {
+    if (values.length === 1 && values[0]) {
       const v = values[0].value
       const display =
         typeof v === 'string' && v.length > 50 ? v.slice(0, 50) + '...' : v

@@ -13,3 +13,6 @@ export * from './client/index.js'
 
 // Services (require database clients)
 export * from './services/index.js'
+
+// Re-export Drizzle ORM to ensure type compatibility (avoids "private property" mismatches)
+export * from 'drizzle-orm'

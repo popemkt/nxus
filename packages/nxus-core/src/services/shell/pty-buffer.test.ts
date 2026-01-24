@@ -5,7 +5,7 @@
  * Verification is currently done through manual testing in the app.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it } from 'vitest'
 
 describe('pty-buffer', () => {
   it.todo('should handle buffer rollover correctly')

@@ -16,7 +16,7 @@ import {
   tagSchemas,
   itemTagConfigs,
 } from '@nxus/db/server'
-import { eq, and } from 'drizzle-orm'
+import { eq, and } from '@nxus/db/server'
 
 // ============================================================================
 // Schema definitions for tag config fields
@@ -97,7 +97,7 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
       success: true as const,
       data: {
         tagId: config.tagId,
-        schema: config.schema as TagConfigSchema,
+        schema: config.schema as unknown as TagConfigSchema,
         description: config.description,
       },
     }
@@ -118,7 +118,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
     success: true as const,
     data: configs.map((c) => ({
       tagId: c.tagId,
-      schema: c.schema as TagConfigSchema,
+      schema: c.schema as unknown as TagConfigSchema,
       description: c.description,
     })),
   }
@@ -269,7 +269,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     }
 
     // 2. Build dynamic Zod validator from schema
-    const schema = tagConfig.schema as TagConfigSchema
+    const schema = tagConfig.schema as unknown as TagConfigSchema
     const validationResult = validateValuesAgainstSchema(
       ctx.data.configValues,
       schema,
@@ -300,7 +300,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       await db
         .update(itemTagConfigs)
         .set({
-          configValues: validationResult.data,
+          configValues: validationResult.data!,
           updatedAt: now,
         })
         .where(
@@ -314,7 +314,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
       await db.insert(itemTagConfigs).values({
         appId: ctx.data.appId,
         tagId: ctx.data.tagId,
-        configValues: validationResult.data,
+        configValues: validationResult.data!,
         createdAt: now,
         updatedAt: now,
       })

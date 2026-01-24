@@ -45,7 +45,7 @@ export const CommandStepSchema = z.object({
   type: z.literal('command'),
   /** Command reference: 'local-command' or 'item-id:command-id' */
   ref: z.string(),
-  params: z.record(z.string(), z.unknown()).optional(),
+  params: z.record(z.string(), z.any()).optional(),
   onSuccess: z.string().optional(),
   onFailure: z.string().optional(),
   timeout: z.number().optional().describe('Timeout in milliseconds'),

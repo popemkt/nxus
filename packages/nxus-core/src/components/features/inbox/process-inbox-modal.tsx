@@ -90,7 +90,9 @@ export function ProcessInboxModal({
       // Check health for each provider in parallel
       const providerChecks = await Promise.all(
         tagValues.data.map(
-          async (tv: { appId: string; values: Record<string, unknown> }) => {
+          async (
+            tv: { appId: string; values: Record<string, unknown> },
+          ): Promise<AIProvider | null> => {
             const app = appsMap.get(tv.appId)
             if (!app) return null
 
@@ -146,7 +148,8 @@ export function ProcessInboxModal({
   React.useEffect(() => {
     if (open && providers.length > 0 && !selectedProvider) {
       const claude = providers.find((p) => p.appId === 'claude-code')
-      setSelectedProvider(claude?.appId ?? providers[0].appId)
+      const firstProvider = providers[0]
+      setSelectedProvider(claude?.appId ?? firstProvider?.appId ?? null)
     }
   }, [open, providers, selectedProvider])
 
