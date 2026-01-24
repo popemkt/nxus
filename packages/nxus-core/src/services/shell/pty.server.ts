@@ -145,7 +145,7 @@ export const pollPtyOutputServerFn = createServerFn({ method: 'POST' })
 
       // If session ended, include exit info
       if (!session.isAlive) {
-        chunks.push({ type: 'exit', exitCode: 0 }) // TODO: capture actual exit code
+        chunks.push({ type: 'exit', exitCode: session.exitCode ?? 0 })
       }
 
       return {
