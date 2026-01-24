@@ -3,10 +3,10 @@ import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { openPathServerFn } from '@/services/shell/open-path.server'
 import type {
-    GenericBoundCommand,
-    GenericCommand,
-    ItemBoundCommand,
-    UnifiedCommand,
+  GenericBoundCommand,
+  GenericCommand,
+  ItemBoundCommand,
+  UnifiedCommand,
 } from '@nxus/db'
 import type { Item, ItemCommand } from '@nxus/db'
 

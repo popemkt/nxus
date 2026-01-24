@@ -1,107 +1,101 @@
 {
-    "id": "factory-droid",
-    "name": "Factory Droid",
-    "description": "AI agentic coding assistant from Factory AI for agent-native software development",
-    "type": "tool",
-    "path": "https://factory.ai",
-    "homepage": "https://factory.ai",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "droid --version",
-    "installInstructions": "curl -fsSL https://app.factory.ai/cli | sh",
-    "commands": [
-        {
-            "id": "install-factory-droid",
-            "name": "Install",
-            "description": "Install Factory Droid CLI (auto-detects OS)",
-            "icon": "Download",
-            "category": "Setup",
-            "target": "item",
-            "mode": "script",
-            "command": "install.ps1",
-            "requires": {
-                "tools": [
-                    "powershell"
-                ],
-                "selfNotInstalled": true
-            }
-        },
-        {
-            "id": "update-factory-droid",
-            "name": "Update",
-            "description": "Update to latest version",
-            "icon": "ArrowsClockwise",
-            "category": "Maintenance",
-            "target": "item",
-            "mode": "execute",
-            "command": "droid update",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "start-droid",
-            "name": "Start Droid",
-            "description": "Start an interactive coding session",
-            "icon": "Play",
-            "category": "Usage",
-            "target": "item",
-            "mode": "terminal",
-            "command": "droid",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "droid-auth",
-            "name": "Authenticate",
-            "description": "Login to Factory account",
-            "icon": "Key",
-            "category": "Setup",
-            "target": "item",
-            "mode": "terminal",
-            "command": "droid auth login",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "droid-demo-key",
-            "name": "Set Demo Key",
-            "description": "Set API key to 'fk-demo' for demo purposes (persists to ~/.bashrc)",
-            "icon": "Key",
-            "category": "Setup",
-            "target": "item",
-            "mode": "execute",
-            "command": "echo 'export FACTORY_API_KEY=fk-demo' >> ~/.bashrc && export FACTORY_API_KEY=fk-demo",
-            "requires": {
-                "selfInstalled": true
-            }
-        }
-    ],
-    "docs": [
-        {
-            "id": "quickstart",
-            "title": "Quick Start",
-            "file": "quickstart.md",
-            "icon": "Play"
-        }
-    ],
-    "metadata": {
-        "tags": [
-            {
-                "id": 14,
-                "name": "AI CLI Provider"
-            }
-        ],
-        "category": "development-tools",
-        "createdAt": "2026-01-15T00:00:00.000Z",
-        "updatedAt": "2026-01-15T00:00:00.000Z",
-        "version": "1.0.0",
-        "author": "Factory AI"
+  "id": "factory-droid",
+  "name": "Factory Droid",
+  "description": "AI agentic coding assistant from Factory AI for agent-native software development",
+  "type": "tool",
+  "path": "https://factory.ai",
+  "homepage": "https://factory.ai",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "droid --version",
+  "installInstructions": "curl -fsSL https://app.factory.ai/cli | sh",
+  "commands": [
+    {
+      "id": "install-factory-droid",
+      "name": "Install",
+      "description": "Install Factory Droid CLI (auto-detects OS)",
+      "icon": "Download",
+      "category": "Setup",
+      "target": "item",
+      "mode": "script",
+      "command": "install.ps1",
+      "requires": {
+        "tools": ["powershell"],
+        "selfNotInstalled": true
+      }
     },
-    "status": "not-installed"
+    {
+      "id": "update-factory-droid",
+      "name": "Update",
+      "description": "Update to latest version",
+      "icon": "ArrowsClockwise",
+      "category": "Maintenance",
+      "target": "item",
+      "mode": "execute",
+      "command": "droid update",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "start-droid",
+      "name": "Start Droid",
+      "description": "Start an interactive coding session",
+      "icon": "Play",
+      "category": "Usage",
+      "target": "item",
+      "mode": "terminal",
+      "command": "droid",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "droid-auth",
+      "name": "Authenticate",
+      "description": "Login to Factory account",
+      "icon": "Key",
+      "category": "Setup",
+      "target": "item",
+      "mode": "terminal",
+      "command": "droid auth login",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "droid-demo-key",
+      "name": "Set Demo Key",
+      "description": "Set API key to 'fk-demo' for demo purposes (persists to ~/.bashrc)",
+      "icon": "Key",
+      "category": "Setup",
+      "target": "item",
+      "mode": "execute",
+      "command": "echo 'export FACTORY_API_KEY=fk-demo' >> ~/.bashrc && export FACTORY_API_KEY=fk-demo",
+      "requires": {
+        "selfInstalled": true
+      }
+    }
+  ],
+  "docs": [
+    {
+      "id": "quickstart",
+      "title": "Quick Start",
+      "file": "quickstart.md",
+      "icon": "Play"
+    }
+  ],
+  "metadata": {
+    "tags": [
+      {
+        "id": 14,
+        "name": "AI CLI Provider"
+      }
+    ],
+    "category": "development-tools",
+    "createdAt": "2026-01-15T00:00:00.000Z",
+    "updatedAt": "2026-01-15T00:00:00.000Z",
+    "version": "1.0.0",
+    "author": "Factory AI"
+  },
+  "status": "not-installed"
 }

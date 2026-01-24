@@ -1,6 +1,7 @@
 import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
+import { WorkflowPreviewModal } from '@/components/features/app-detail/modals/workflow-preview-modal'
 import { Button } from '@nxus/ui'
 import {
   Card,
@@ -28,6 +29,7 @@ import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   CodeIcon,
   DotsThree,
+  FlowArrow,
   QuestionIcon,
   TerminalWindowIcon,
   WarningIcon,
@@ -82,6 +84,9 @@ export function AppActionsPanel({
     string | null
   >(null)
   const [previewIsInline, setPreviewIsInline] = React.useState(false)
+  const [workflowPreviewOpen, setWorkflowPreviewOpen] = React.useState(false)
+  const [workflowPreviewCommand, setWorkflowPreviewCommand] =
+    React.useState<ItemCommand | null>(null)
 
   // Script params modal state
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
@@ -332,6 +337,12 @@ export function AppActionsPanel({
                 const isDisabled = state === 'disabled'
                 const needsAttention = state === 'needs-attention'
                 const isScriptMode = cmd.mode === 'script'
+                const isWorkflowMode = cmd.mode === 'workflow'
+                const hasAuxButton =
+                  isScriptMode ||
+                  cmd.mode === 'execute' ||
+                  cmd.mode === 'terminal' ||
+                  isWorkflowMode
 
                 return (
                   <motion.div
@@ -344,11 +355,7 @@ export function AppActionsPanel({
                       <Button
                         variant="outline"
                         className={`flex-1 justify-start ${
-                          isScriptMode ||
-                          cmd.mode === 'execute' ||
-                          cmd.mode === 'terminal'
-                            ? 'rounded-r-none border-r-0'
-                            : ''
+                          hasAuxButton ? 'rounded-r-none border-r-0' : ''
                         } ${
                           needsAttention
                             ? 'border-amber-500/50 hover:border-amber-500'
@@ -371,6 +378,20 @@ export function AppActionsPanel({
                           </span>
                         )}
                       </Button>
+                      {/* Workflow preview button */}
+                      {isWorkflowMode && cmd.workflow && (
+                        <Button
+                          variant="outline"
+                          className="px-2 rounded-l-none"
+                          onClick={() => {
+                            setWorkflowPreviewCommand(cmd)
+                            setWorkflowPreviewOpen(true)
+                          }}
+                          title="View workflow"
+                        >
+                          <FlowArrow className="h-4 w-4" />
+                        </Button>
+                      )}
                       {/* Auxiliary actions dropdown for script, execute, and terminal modes */}
                       {(isScriptMode ||
                         cmd.mode === 'execute' ||
@@ -471,6 +492,16 @@ export function AppActionsPanel({
           open={paramsModalOpen}
           onOpenChange={setParamsModalOpen}
           onRun={handleScriptRun}
+        />
+      )}
+
+      {/* Workflow Preview Modal */}
+      {workflowPreviewCommand?.workflow && (
+        <WorkflowPreviewModal
+          commandName={workflowPreviewCommand.name}
+          workflow={workflowPreviewCommand.workflow}
+          open={workflowPreviewOpen}
+          onOpenChange={setWorkflowPreviewOpen}
         />
       )}
     </>

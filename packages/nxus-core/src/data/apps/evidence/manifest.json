@@ -1,28 +1,22 @@
 {
-    "id": "evidence",
-    "name": "Evidence",
-    "description": "Mortgage Evidence sourcing",
-    "type": "remote-repo",
-    "path": "https://topicusdotfinance@dev.azure.com/topicusdotfinance/Finance.Evidence/_git/Finance.Evidence",
-    "homepage": "https://dev.azure.com/topicusdotfinance/Finance.Evidence",
-    "dependencies": [
-        "git"
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "company-apps",
-        "createdAt": "2026-01-05T10:03:00Z",
-        "updatedAt": "2026-01-05T10:09:00Z",
-        "version": "1.0.0",
-        "author": "Topicus"
-    },
-    "installConfig": {
-        "script": "echo 'Ready to use'",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
-    },
-    "status": "not-installed"
+  "id": "evidence",
+  "name": "Evidence",
+  "description": "Mortgage Evidence sourcing",
+  "type": "remote-repo",
+  "path": "https://dev.azure.com/topicusdotfinance/Finance.Evidence/_git/Finance.Evidence",
+  "homepage": "https://dev.azure.com/topicusdotfinance/Finance.Evidence",
+  "dependencies": ["git"],
+  "metadata": {
+    "tags": [],
+    "category": "company-apps",
+    "createdAt": "2026-01-05T10:03:00Z",
+    "updatedAt": "2026-01-05T10:09:00Z",
+    "version": "1.0.0",
+    "author": "Topicus"
+  },
+  "installConfig": {
+    "script": "echo 'Ready to use'",
+    "platform": ["linux", "macos", "windows"]
+  },
+  "status": "not-installed"
 }

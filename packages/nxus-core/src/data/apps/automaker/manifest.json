@@ -1,117 +1,109 @@
 {
-    "id": "automaker",
-    "name": "AutoMaker",
-    "description": "An autonomous AI development studio that transforms how you build software. Orchestrate AI agents powered by Claude Agent SDK to implement features automatically.",
-    "type": "remote-repo",
-    "path": "https://github.com/AutoMaker-Org/automaker.git",
-    "homepage": "https://github.com/AutoMaker-Org/automaker",
-    "commands": [
-        {
-            "id": "dev",
-            "name": "Start Development",
-            "description": "Interactive launcher - choose web or electron mode",
-            "icon": "Play",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run dev"
-        },
-        {
-            "id": "dev-electron",
-            "name": "Start Electron (Dev)",
-            "description": "Start in Electron desktop app mode",
-            "icon": "Desktop",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run dev:electron"
-        },
-        {
-            "id": "dev-web",
-            "name": "Start Web (Dev)",
-            "description": "Start in web browser mode",
-            "icon": "Globe",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run dev:web"
-        },
-        {
-            "id": "build",
-            "name": "Build for Web",
-            "description": "Build production web application",
-            "icon": "Hammer",
-            "category": "Build",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run build"
-        },
-        {
-            "id": "build-electron",
-            "name": "Build Electron App",
-            "description": "Build desktop application for current platform",
-            "icon": "Package",
-            "category": "Build",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run build:electron"
-        },
-        {
-            "id": "test",
-            "name": "Run Tests",
-            "description": "Run end-to-end tests (headless)",
-            "icon": "TestTube",
-            "category": "Testing",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run test"
-        },
-        {
-            "id": "lint",
-            "name": "Lint Code",
-            "description": "Run ESLint on codebase",
-            "icon": "MagnifyingGlass",
-            "category": "Quality",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run lint"
-        },
-        {
-            "id": "git-pull",
-            "name": "Update from Git",
-            "description": "Pull latest changes from repository",
-            "icon": "ArrowsClockwise",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "git pull"
-        }
-    ],
-    "dependencies": [
-        "node",
-        "npm",
-        "git"
-    ],
-    "metadata": {
-        "tags": [
-            {
-                "id": 18,
-                "name": "High Autonomy Builder"
-            }
-        ],
-        "category": "development-tools",
-        "createdAt": "2025-12-25T13:43:00.000Z",
-        "updatedAt": "2025-12-25T13:43:00.000Z",
-        "version": "1.0.0",
-        "author": "AutoMaker-Org"
+  "id": "automaker",
+  "name": "AutoMaker",
+  "description": "An autonomous AI development studio that transforms how you build software. Orchestrate AI agents powered by Claude Agent SDK to implement features automatically.",
+  "type": "remote-repo",
+  "path": "https://github.com/AutoMaker-Org/automaker.git",
+  "homepage": "https://github.com/AutoMaker-Org/automaker",
+  "commands": [
+    {
+      "id": "dev",
+      "name": "Start Development",
+      "description": "Interactive launcher - choose web or electron mode",
+      "icon": "Play",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run dev"
     },
-    "installConfig": {
-        "script": "npm install",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
+    {
+      "id": "dev-electron",
+      "name": "Start Electron (Dev)",
+      "description": "Start in Electron desktop app mode",
+      "icon": "Desktop",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run dev:electron"
     },
-    "status": "not-installed"
+    {
+      "id": "dev-web",
+      "name": "Start Web (Dev)",
+      "description": "Start in web browser mode",
+      "icon": "Globe",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run dev:web"
+    },
+    {
+      "id": "build",
+      "name": "Build for Web",
+      "description": "Build production web application",
+      "icon": "Hammer",
+      "category": "Build",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run build"
+    },
+    {
+      "id": "build-electron",
+      "name": "Build Electron App",
+      "description": "Build desktop application for current platform",
+      "icon": "Package",
+      "category": "Build",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run build:electron"
+    },
+    {
+      "id": "test",
+      "name": "Run Tests",
+      "description": "Run end-to-end tests (headless)",
+      "icon": "TestTube",
+      "category": "Testing",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run test"
+    },
+    {
+      "id": "lint",
+      "name": "Lint Code",
+      "description": "Run ESLint on codebase",
+      "icon": "MagnifyingGlass",
+      "category": "Quality",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run lint"
+    },
+    {
+      "id": "git-pull",
+      "name": "Update from Git",
+      "description": "Pull latest changes from repository",
+      "icon": "ArrowsClockwise",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "git pull"
+    }
+  ],
+  "dependencies": ["node", "npm", "git"],
+  "metadata": {
+    "tags": [
+      {
+        "id": 18,
+        "name": "High Autonomy Builder"
+      }
+    ],
+    "category": "development-tools",
+    "createdAt": "2025-12-25T13:43:00.000Z",
+    "updatedAt": "2025-12-25T13:43:00.000Z",
+    "version": "1.0.0",
+    "author": "AutoMaker-Org"
+  },
+  "installConfig": {
+    "script": "npm install",
+    "platform": ["linux", "macos", "windows"]
+  },
+  "status": "not-installed"
 }

@@ -1,44 +1,40 @@
 {
-    "id": "zenflow",
-    "name": "Zenflow",
-    "description": "The AI orchestration tool for spec-driven workflows and multi-agent coordination",
-    "type": "tool",
-    "path": "https://zencoder.ai/zenflow",
-    "homepage": "https://zencoder.ai/zenflow",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "zenflow --version",
-    "commands": [
-        {
-            "id": "download",
-            "name": "Download Zenflow",
-            "description": "Go to download page",
-            "icon": "Download",
-            "category": "Installation",
-            "target": "item",
-            "mode": "docs",
-            "command": "https://zencoder.ai/zenflow"
-        },
-        {
-            "id": "docs",
-            "name": "Documentation",
-            "description": "Open Zenflow documentation",
-            "icon": "BookOpen",
-            "category": "Help",
-            "target": "item",
-            "mode": "docs",
-            "command": "https://docs.zencoder.ai/zenflow"
-        }
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "ai-tools",
-        "version": "1.0.0",
-        "author": "Zencoder",
-        "createdAt": "2026-02-18T12:00:00Z",
-        "updatedAt": "2026-02-18T12:00:00Z"
+  "id": "zenflow",
+  "name": "Zenflow",
+  "description": "The AI orchestration tool for spec-driven workflows and multi-agent coordination",
+  "type": "tool",
+  "path": "https://zencoder.ai/zenflow",
+  "homepage": "https://zencoder.ai/zenflow",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "zenflow --version",
+  "commands": [
+    {
+      "id": "download",
+      "name": "Download Zenflow",
+      "description": "Go to download page",
+      "icon": "Download",
+      "category": "Installation",
+      "target": "item",
+      "mode": "docs",
+      "command": "https://zencoder.ai/zenflow"
+    },
+    {
+      "id": "docs",
+      "name": "Documentation",
+      "description": "Open Zenflow documentation",
+      "icon": "BookOpen",
+      "category": "Help",
+      "target": "item",
+      "mode": "docs",
+      "command": "https://docs.zencoder.ai/zenflow"
     }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "ai-tools",
+    "version": "1.0.0",
+    "author": "Zencoder",
+    "createdAt": "2026-02-18T12:00:00Z",
+    "updatedAt": "2026-02-18T12:00:00Z"
+  }
 }

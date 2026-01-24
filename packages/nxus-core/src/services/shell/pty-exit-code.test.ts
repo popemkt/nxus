@@ -27,12 +27,12 @@ describe('PTY Exit Code', () => {
       resize: vi.fn(),
       kill: vi.fn(),
       onData: vi.fn((cb) => {
-          onDataCallback = cb
-          return { dispose: vi.fn() }
+        onDataCallback = cb
+        return { dispose: vi.fn() }
       }),
       onExit: vi.fn((cb) => {
-          onExitCallback = cb
-          return { dispose: vi.fn() }
+        onExitCallback = cb
+        return { dispose: vi.fn() }
       }),
       pid: 12345,
     }
