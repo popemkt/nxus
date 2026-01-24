@@ -1,356 +1,309 @@
 {
-    "id": "cliproxyapi",
-    "name": "CLIProxyAPI",
-    "description": "Proxy server that provides OpenAI/Gemini/Claude/Codex compatible API interfaces for CLI-based AI services. Use your Claude Code, Codex, Gemini CLI subscriptions without API keys through OAuth authentication.",
-    "type": "tool",
-    "path": "https://github.com/router-for-me/CLIProxyAPI",
-    "homepage": "https://help.router-for.me/",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "cli-proxy-api --version",
-    "installInstructions": "Visit https://help.router-for.me/introduction/quick-start.html for installation instructions for your platform",
-    "commands": [
-        {
-            "id": "install-cliproxyapi",
-            "name": "Install CLIProxyAPI",
-            "description": "Install CLIProxyAPI using platform-specific installer",
-            "icon": "Download",
-            "category": "Setup",
-            "target": "item",
-            "mode": "script",
-            "command": "install.ps1",
-            "requires": {
-                "tools": [
-                    "powershell"
-                ],
-                "selfNotInstalled": true
-            }
-        },
-        {
-            "id": "start-service",
-            "name": "Start Service",
-            "description": "Start CLIProxyAPI service",
-            "icon": "Play",
-            "category": "Service",
-            "target": "item",
-            "mode": "execute",
-            "command": "systemctl --user start cliproxyapi.service",
-            "platforms": [
-                "linux"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "start-service-mac",
-            "name": "Start Service (macOS)",
-            "description": "Start CLIProxyAPI service via Homebrew",
-            "icon": "Play",
-            "category": "Service",
-            "target": "item",
-            "mode": "execute",
-            "command": "brew services start cliproxyapi",
-            "platforms": [
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "stop-service",
-            "name": "Stop Service",
-            "description": "Stop CLIProxyAPI service",
-            "icon": "Stop",
-            "category": "Service",
-            "target": "item",
-            "mode": "execute",
-            "command": "systemctl --user stop cliproxyapi.service",
-            "platforms": [
-                "linux"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "stop-service-mac",
-            "name": "Stop Service (macOS)",
-            "description": "Stop CLIProxyAPI service via Homebrew",
-            "icon": "Stop",
-            "category": "Service",
-            "target": "item",
-            "mode": "execute",
-            "command": "brew services stop cliproxyapi",
-            "platforms": [
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "restart-service",
-            "name": "Restart Service",
-            "description": "Restart CLIProxyAPI service",
-            "icon": "ArrowsClockwise",
-            "category": "Service",
-            "target": "item",
-            "mode": "execute",
-            "command": "systemctl --user restart cliproxyapi.service",
-            "platforms": [
-                "linux"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "status-service",
-            "name": "Check Service Status",
-            "description": "View CLIProxyAPI service status",
-            "icon": "Info",
-            "category": "Service",
-            "target": "item",
-            "mode": "terminal",
-            "command": "systemctl --user status cliproxyapi.service",
-            "platforms": [
-                "linux"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "view-logs",
-            "name": "View Logs",
-            "description": "View CLIProxyAPI service logs (live)",
-            "icon": "FileText",
-            "category": "Monitoring",
-            "target": "item",
-            "mode": "terminal",
-            "command": "journalctl --user -u cliproxyapi.service -f",
-            "platforms": [
-                "linux"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "login-claude",
-            "name": "Login to Claude Code",
-            "description": "Authenticate with Claude Code via OAuth",
-            "icon": "Key",
-            "category": "Authentication",
-            "target": "item",
-            "mode": "terminal",
-            "command": "cd ~/cliproxyapi && ./cli-proxy-api --claude-login",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "login-codex",
-            "name": "Login to Codex (OpenAI)",
-            "description": "Authenticate with OpenAI Codex via OAuth",
-            "icon": "Key",
-            "category": "Authentication",
-            "target": "item",
-            "mode": "terminal",
-            "command": "cd ~/cliproxyapi && ./cli-proxy-api --codex-login",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "login-gemini",
-            "name": "Login to Gemini CLI",
-            "description": "Authenticate with Google Gemini CLI via OAuth",
-            "icon": "Key",
-            "category": "Authentication",
-            "target": "item",
-            "mode": "terminal",
-            "command": "cd ~/cliproxyapi && ./cli-proxy-api --login",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "login-qwen",
-            "name": "Login to Qwen Code",
-            "description": "Authenticate with Qwen Code via OAuth",
-            "icon": "Key",
-            "category": "Authentication",
-            "target": "item",
-            "mode": "terminal",
-            "command": "cd ~/cliproxyapi && ./cli-proxy-api --qwen-login",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "login-iflow",
-            "name": "Login to iFlow",
-            "description": "Authenticate with iFlow via OAuth",
-            "icon": "Key",
-            "category": "Authentication",
-            "target": "item",
-            "mode": "terminal",
-            "command": "cd ~/cliproxyapi && ./cli-proxy-api --iflow-login",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "list-models",
-            "name": "List Available Models",
-            "description": "View all available AI models from your authenticated providers",
-            "icon": "ListBullets",
-            "category": "Info",
-            "target": "item",
-            "mode": "execute",
-            "command": "curl -s -H \"Authorization: Bearer sk-dummy\" http://127.0.0.1:8317/v1/models | jq '.data[] | {id: .id, owner: .owned_by}'",
-            "requires": {
-                "tools": [
-                    "curl"
-                ],
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "test-claude",
-            "name": "Test Claude API",
-            "description": "Send a test request to Claude API",
-            "icon": "CheckCircle",
-            "category": "Testing",
-            "target": "item",
-            "mode": "execute",
-            "command": "curl -s -H \"x-api-key: sk-dummy\" -H \"Content-Type: application/json\" -d '{\"model\":\"claude-opus-4-5-20251101\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":50}' http://127.0.0.1:8317/v1/messages | jq",
-            "requires": {
-                "tools": [
-                    "curl"
-                ],
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "edit-config",
-            "name": "Edit Configuration",
-            "description": "Open config.yaml in default editor",
-            "icon": "Gear",
-            "category": "Configuration",
-            "target": "item",
-            "mode": "terminal",
-            "command": "nano ~/cliproxyapi/config.yaml",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "view-auth-files",
-            "name": "View Auth Files",
-            "description": "List authenticated provider credentials",
-            "icon": "FileKey",
-            "category": "Configuration",
-            "target": "item",
-            "mode": "execute",
-            "command": "ls -lh ~/.cli-proxy-api/",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "configure-droid",
-            "name": "Configure Factory Droid",
-            "description": "Add Claude models to Factory Droid configuration",
-            "icon": "Wrench",
-            "category": "Integration",
-            "target": "item",
-            "mode": "script",
-            "command": "configure-droid.ps1",
-            "requires": {
-                "tools": [
-                    "factory-droid"
-                ],
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "open-docs",
-            "name": "Open Documentation",
-            "description": "Open CLIProxyAPI documentation website",
-            "icon": "BookOpen",
-            "category": "Help",
-            "target": "item",
-            "mode": "docs",
-            "command": "https://help.router-for.me/"
-        },
-        {
-            "id": "open-github",
-            "name": "Open GitHub Repository",
-            "description": "View source code and releases",
-            "icon": "GithubLogo",
-            "category": "Help",
-            "target": "item",
-            "mode": "docs",
-            "command": "https://github.com/router-for-me/CLIProxyAPI"
-        }
-    ],
-    "docs": [
-        {
-            "id": "guide",
-            "title": "Setup Guide",
-            "file": "guide.md",
-            "icon": "BookOpen"
-        },
-        {
-            "id": "droid-config",
-            "title": "Factory Droid Configuration",
-            "file": "droid-config.md",
-            "icon": "Gear"
-        }
-    ],
-    "dependencies": [],
-    "metadata": {
-        "tags": [],
-        "category": "ai-tools",
-        "createdAt": "2026-01-22T15:30:00Z",
-        "updatedAt": "2026-01-22T15:30:00Z",
-        "version": "6.7.17",
-        "author": "router-for-me"
+  "id": "cliproxyapi",
+  "name": "CLIProxyAPI",
+  "description": "Proxy server that provides OpenAI/Gemini/Claude/Codex compatible API interfaces for CLI-based AI services. Use your Claude Code, Codex, Gemini CLI subscriptions without API keys through OAuth authentication.",
+  "type": "tool",
+  "path": "https://github.com/router-for-me/CLIProxyAPI",
+  "homepage": "https://help.router-for.me/",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "cli-proxy-api --version",
+  "installInstructions": "Visit https://help.router-for.me/introduction/quick-start.html for installation instructions for your platform",
+  "commands": [
+    {
+      "id": "install-cliproxyapi",
+      "name": "Install CLIProxyAPI",
+      "description": "Install CLIProxyAPI using platform-specific installer",
+      "icon": "Download",
+      "category": "Setup",
+      "target": "item",
+      "mode": "script",
+      "command": "install.ps1",
+      "requires": {
+        "tools": ["powershell"],
+        "selfNotInstalled": true
+      }
     },
-    "status": "not-installed"
+    {
+      "id": "start-service",
+      "name": "Start Service",
+      "description": "Start CLIProxyAPI service",
+      "icon": "Play",
+      "category": "Service",
+      "target": "item",
+      "mode": "execute",
+      "command": "systemctl --user start cliproxyapi.service",
+      "platforms": ["linux"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "start-service-mac",
+      "name": "Start Service (macOS)",
+      "description": "Start CLIProxyAPI service via Homebrew",
+      "icon": "Play",
+      "category": "Service",
+      "target": "item",
+      "mode": "execute",
+      "command": "brew services start cliproxyapi",
+      "platforms": ["macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "stop-service",
+      "name": "Stop Service",
+      "description": "Stop CLIProxyAPI service",
+      "icon": "Stop",
+      "category": "Service",
+      "target": "item",
+      "mode": "execute",
+      "command": "systemctl --user stop cliproxyapi.service",
+      "platforms": ["linux"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "stop-service-mac",
+      "name": "Stop Service (macOS)",
+      "description": "Stop CLIProxyAPI service via Homebrew",
+      "icon": "Stop",
+      "category": "Service",
+      "target": "item",
+      "mode": "execute",
+      "command": "brew services stop cliproxyapi",
+      "platforms": ["macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "restart-service",
+      "name": "Restart Service",
+      "description": "Restart CLIProxyAPI service",
+      "icon": "ArrowsClockwise",
+      "category": "Service",
+      "target": "item",
+      "mode": "execute",
+      "command": "systemctl --user restart cliproxyapi.service",
+      "platforms": ["linux"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "status-service",
+      "name": "Check Service Status",
+      "description": "View CLIProxyAPI service status",
+      "icon": "Info",
+      "category": "Service",
+      "target": "item",
+      "mode": "terminal",
+      "command": "systemctl --user status cliproxyapi.service",
+      "platforms": ["linux"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "view-logs",
+      "name": "View Logs",
+      "description": "View CLIProxyAPI service logs (live)",
+      "icon": "FileText",
+      "category": "Monitoring",
+      "target": "item",
+      "mode": "terminal",
+      "command": "journalctl --user -u cliproxyapi.service -f",
+      "platforms": ["linux"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "login-claude",
+      "name": "Login to Claude Code",
+      "description": "Authenticate with Claude Code via OAuth",
+      "icon": "Key",
+      "category": "Authentication",
+      "target": "item",
+      "mode": "terminal",
+      "command": "cd ~/cliproxyapi && ./cli-proxy-api --claude-login",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "login-codex",
+      "name": "Login to Codex (OpenAI)",
+      "description": "Authenticate with OpenAI Codex via OAuth",
+      "icon": "Key",
+      "category": "Authentication",
+      "target": "item",
+      "mode": "terminal",
+      "command": "cd ~/cliproxyapi && ./cli-proxy-api --codex-login",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "login-gemini",
+      "name": "Login to Gemini CLI",
+      "description": "Authenticate with Google Gemini CLI via OAuth",
+      "icon": "Key",
+      "category": "Authentication",
+      "target": "item",
+      "mode": "terminal",
+      "command": "cd ~/cliproxyapi && ./cli-proxy-api --login",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "login-qwen",
+      "name": "Login to Qwen Code",
+      "description": "Authenticate with Qwen Code via OAuth",
+      "icon": "Key",
+      "category": "Authentication",
+      "target": "item",
+      "mode": "terminal",
+      "command": "cd ~/cliproxyapi && ./cli-proxy-api --qwen-login",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "login-iflow",
+      "name": "Login to iFlow",
+      "description": "Authenticate with iFlow via OAuth",
+      "icon": "Key",
+      "category": "Authentication",
+      "target": "item",
+      "mode": "terminal",
+      "command": "cd ~/cliproxyapi && ./cli-proxy-api --iflow-login",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "list-models",
+      "name": "List Available Models",
+      "description": "View all available AI models from your authenticated providers",
+      "icon": "ListBullets",
+      "category": "Info",
+      "target": "item",
+      "mode": "execute",
+      "command": "curl -s -H \"Authorization: Bearer sk-dummy\" http://127.0.0.1:8317/v1/models | jq '.data[] | {id: .id, owner: .owned_by}'",
+      "requires": {
+        "tools": ["curl"],
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "test-claude",
+      "name": "Test Claude API",
+      "description": "Send a test request to Claude API",
+      "icon": "CheckCircle",
+      "category": "Testing",
+      "target": "item",
+      "mode": "execute",
+      "command": "curl -s -H \"x-api-key: sk-dummy\" -H \"Content-Type: application/json\" -d '{\"model\":\"claude-opus-4-5-20251101\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":50}' http://127.0.0.1:8317/v1/messages | jq",
+      "requires": {
+        "tools": ["curl"],
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "edit-config",
+      "name": "Edit Configuration",
+      "description": "Open config.yaml in default editor",
+      "icon": "Gear",
+      "category": "Configuration",
+      "target": "item",
+      "mode": "terminal",
+      "command": "nano ~/cliproxyapi/config.yaml",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "view-auth-files",
+      "name": "View Auth Files",
+      "description": "List authenticated provider credentials",
+      "icon": "FileKey",
+      "category": "Configuration",
+      "target": "item",
+      "mode": "execute",
+      "command": "ls -lh ~/.cli-proxy-api/",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "configure-droid",
+      "name": "Configure Factory Droid",
+      "description": "Add Claude models to Factory Droid configuration",
+      "icon": "Wrench",
+      "category": "Integration",
+      "target": "item",
+      "mode": "script",
+      "command": "configure-droid.ps1",
+      "requires": {
+        "tools": ["factory-droid"],
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "open-docs",
+      "name": "Open Documentation",
+      "description": "Open CLIProxyAPI documentation website",
+      "icon": "BookOpen",
+      "category": "Help",
+      "target": "item",
+      "mode": "docs",
+      "command": "https://help.router-for.me/"
+    },
+    {
+      "id": "open-github",
+      "name": "Open GitHub Repository",
+      "description": "View source code and releases",
+      "icon": "GithubLogo",
+      "category": "Help",
+      "target": "item",
+      "mode": "docs",
+      "command": "https://github.com/router-for-me/CLIProxyAPI"
+    }
+  ],
+  "docs": [
+    {
+      "id": "guide",
+      "title": "Setup Guide",
+      "file": "guide.md",
+      "icon": "BookOpen"
+    },
+    {
+      "id": "droid-config",
+      "title": "Factory Droid Configuration",
+      "file": "droid-config.md",
+      "icon": "Gear"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "tags": [],
+    "category": "ai-tools",
+    "createdAt": "2026-01-22T15:30:00Z",
+    "updatedAt": "2026-01-22T15:30:00Z",
+    "version": "6.7.17",
+    "author": "router-for-me"
+  },
+  "status": "not-installed"
 }

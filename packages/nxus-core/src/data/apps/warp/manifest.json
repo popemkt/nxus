@@ -1,32 +1,28 @@
 {
-    "id": "warp",
-    "name": "Warp",
-    "description": "A modern, Rust-based terminal with AI and collaborative features",
-    "type": "tool",
-    "path": "https://www.warp.dev/",
-    "homepage": "https://www.warp.dev/",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
+  "id": "warp",
+  "name": "Warp",
+  "description": "A modern, Rust-based terminal with AI and collaborative features",
+  "type": "tool",
+  "path": "https://www.warp.dev/",
+  "homepage": "https://www.warp.dev/",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "warp-terminal --dump-debug-info | head -n 1",
+  "metadata": {
+    "tags": [
+      {
+        "id": 16,
+        "name": "terminal"
+      },
+      {
+        "id": 10,
+        "name": "Tool"
+      }
     ],
-    "checkCommand": "warp-terminal --dump-debug-info | head -n 1",
-    "metadata": {
-        "tags": [
-            {
-                "id": 16,
-                "name": "terminal"
-            },
-            {
-                "id": 10,
-                "name": "Tool"
-            }
-        ],
-        "category": "terminal",
-        "createdAt": "2026-01-17T13:00:00.000Z",
-        "updatedAt": "2026-01-17T13:00:00.000Z",
-        "version": "1.0.0",
-        "author": "Warp"
-    },
-    "status": "not-installed"
+    "category": "terminal",
+    "createdAt": "2026-01-17T13:00:00.000Z",
+    "updatedAt": "2026-01-17T13:00:00.000Z",
+    "version": "1.0.0",
+    "author": "Warp"
+  },
+  "status": "not-installed"
 }

@@ -1,42 +1,34 @@
 {
-    "id": "chrome-new-tab",
-    "name": "Chrome New Tab",
-    "description": "A clean and functional new tab page for Chrome with productivity tools",
-    "type": "remote-repo",
-    "path": "https://github.com/popemkt/chrome-new-tab.git",
-    "homepage": "https://github.com/popemkt/chrome-new-tab",
-    "commands": [
-        {
-            "id": "git-pull",
-            "name": "Update from Git",
-            "description": "Pull latest changes from repository",
-            "icon": "ArrowsClockwise",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "git pull"
-        }
-    ],
-    "dependencies": [
-        "node",
-        "npm",
-        "git"
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "extensions",
-        "createdAt": "2024-12-23T00:00:00.000Z",
-        "updatedAt": "2026-01-11T07:48:17.412Z",
-        "version": "1.0.0",
-        "author": "popemkt"
-    },
-    "installConfig": {
-        "script": "npm install",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
-    },
-    "status": "not-installed"
+  "id": "chrome-new-tab",
+  "name": "Chrome New Tab",
+  "description": "A clean and functional new tab page for Chrome with productivity tools",
+  "type": "remote-repo",
+  "path": "https://github.com/popemkt/chrome-new-tab.git",
+  "homepage": "https://github.com/popemkt/chrome-new-tab",
+  "commands": [
+    {
+      "id": "git-pull",
+      "name": "Update from Git",
+      "description": "Pull latest changes from repository",
+      "icon": "ArrowsClockwise",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "git pull"
+    }
+  ],
+  "dependencies": ["node", "npm", "git"],
+  "metadata": {
+    "tags": [],
+    "category": "extensions",
+    "createdAt": "2024-12-23T00:00:00.000Z",
+    "updatedAt": "2026-01-11T07:48:17.412Z",
+    "version": "1.0.0",
+    "author": "popemkt"
+  },
+  "installConfig": {
+    "script": "npm install",
+    "platform": ["linux", "macos", "windows"]
+  },
+  "status": "not-installed"
 }

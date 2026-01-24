@@ -1,118 +1,109 @@
 {
-    "id": "goose",
-    "name": "Goose",
-    "description": "An open source, extensible AI agent that goes beyond code suggestions - install, execute, edit, and test with any LLM",
-    "type": "tool",
-    "path": "https://block.github.io/goose/",
-    "homepage": "https://block.github.io/goose/",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "goose --version",
-    "commands": [
-        {
-            "id": "install",
-            "name": "Install Goose",
-            "description": "Install the Goose CLI tool",
-            "icon": "DownloadSimple",
-            "category": "Setup",
-            "target": "item",
-            "mode": "script",
-            "command": "install.sh",
-            "platforms": [
-                "linux",
-                "macos"
-            ],
-            "requires": {
-                "selfNotInstalled": true
-            }
-        },
-        {
-            "id": "install-windows",
-            "name": "Install Goose (Windows)",
-            "description": "Install the Goose CLI tool on Windows",
-            "icon": "DownloadSimple",
-            "category": "Setup",
-            "target": "item",
-            "mode": "script",
-            "command": "install.ps1",
-            "platforms": [
-                "windows"
-            ],
-            "requires": {
-                "selfNotInstalled": true
-            }
-        },
-        {
-            "id": "session",
-            "name": "Start Session",
-            "description": "Start an interactive AI developer session",
-            "icon": "ChatTeardropText",
-            "category": "Usage",
-            "target": "item",
-            "mode": "terminal",
-            "command": "goose session",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "web",
-            "name": "Open Web UI",
-            "description": "Launch the Goose web-based chat interface",
-            "icon": "Browser",
-            "category": "Usage",
-            "target": "item",
-            "mode": "execute",
-            "command": "goose web --open",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "configure",
-            "name": "Configure Goose",
-            "description": "Interactive setup for LLM providers and extensions",
-            "icon": "Gear",
-            "category": "Setup",
-            "target": "item",
-            "mode": "terminal",
-            "command": "goose configure",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "update",
-            "name": "Update Goose",
-            "description": "Update Goose to the latest version",
-            "icon": "ArrowClockwise",
-            "category": "Setup",
-            "target": "item",
-            "mode": "execute",
-            "command": "goose update",
-            "requires": {
-                "selfInstalled": true
-            }
-        }
-    ],
-    "docs": [
-        {
-            "id": "setup",
-            "title": "Setup & Usage",
-            "file": "setup.md",
-            "icon": "BookOpen"
-        }
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "ai-tools",
-        "createdAt": "2026-01-17T05:17:00.000Z",
-        "updatedAt": "2026-01-17T05:17:00.000Z",
-        "version": "1.0.0",
-        "author": "Block"
+  "id": "goose",
+  "name": "Goose",
+  "description": "An open source, extensible AI agent that goes beyond code suggestions - install, execute, edit, and test with any LLM",
+  "type": "tool",
+  "path": "https://block.github.io/goose/",
+  "homepage": "https://block.github.io/goose/",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "goose --version",
+  "commands": [
+    {
+      "id": "install",
+      "name": "Install Goose",
+      "description": "Install the Goose CLI tool",
+      "icon": "DownloadSimple",
+      "category": "Setup",
+      "target": "item",
+      "mode": "script",
+      "command": "install.sh",
+      "platforms": ["linux", "macos"],
+      "requires": {
+        "selfNotInstalled": true
+      }
     },
-    "status": "not-installed"
+    {
+      "id": "install-windows",
+      "name": "Install Goose (Windows)",
+      "description": "Install the Goose CLI tool on Windows",
+      "icon": "DownloadSimple",
+      "category": "Setup",
+      "target": "item",
+      "mode": "script",
+      "command": "install.ps1",
+      "platforms": ["windows"],
+      "requires": {
+        "selfNotInstalled": true
+      }
+    },
+    {
+      "id": "session",
+      "name": "Start Session",
+      "description": "Start an interactive AI developer session",
+      "icon": "ChatTeardropText",
+      "category": "Usage",
+      "target": "item",
+      "mode": "terminal",
+      "command": "goose session",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "web",
+      "name": "Open Web UI",
+      "description": "Launch the Goose web-based chat interface",
+      "icon": "Browser",
+      "category": "Usage",
+      "target": "item",
+      "mode": "execute",
+      "command": "goose web --open",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "configure",
+      "name": "Configure Goose",
+      "description": "Interactive setup for LLM providers and extensions",
+      "icon": "Gear",
+      "category": "Setup",
+      "target": "item",
+      "mode": "terminal",
+      "command": "goose configure",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "update",
+      "name": "Update Goose",
+      "description": "Update Goose to the latest version",
+      "icon": "ArrowClockwise",
+      "category": "Setup",
+      "target": "item",
+      "mode": "execute",
+      "command": "goose update",
+      "requires": {
+        "selfInstalled": true
+      }
+    }
+  ],
+  "docs": [
+    {
+      "id": "setup",
+      "title": "Setup & Usage",
+      "file": "setup.md",
+      "icon": "BookOpen"
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "ai-tools",
+    "createdAt": "2026-01-17T05:17:00.000Z",
+    "updatedAt": "2026-01-17T05:17:00.000Z",
+    "version": "1.0.0",
+    "author": "Block"
+  },
+  "status": "not-installed"
 }
