@@ -46,10 +46,10 @@ export function WorkflowPreviewModal({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="flex-1 overflow-hidden rounded-md border bg-muted/30 min-h-[400px] h-[500px]">
+        <div className="overflow-hidden rounded-md border bg-muted/30" style={{ width: '100%', height: '500px' }}>
           <WorkflowGraphCanvas
             workflow={workflow}
-            className="h-full"
+            className="w-full h-full"
             showLegend
             showMinimap
             showControls

@@ -74,7 +74,7 @@ function WorkflowGraphCanvasInner({
   }, [fitView])
 
   return (
-    <div className={cn('w-full h-full min-h-[400px]', className)}>
+    <div className={cn('w-full h-full', className)} style={{ minWidth: '100%', minHeight: '400px' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
