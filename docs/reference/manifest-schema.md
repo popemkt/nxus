@@ -56,4 +56,4 @@ When `mode` is `workflow`, the following property is used:
 
 ---
 
-Example Manifest: [curl manifest](file:///stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/curl/manifest.json)
+Example Manifest: For a real-world example, you can inspect the `manifest.json` file inside any app's directory, such as `packages/nxus-core/src/data/apps/curl/`.
