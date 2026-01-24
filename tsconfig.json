@@ -2,5 +2,15 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./packages/nxus-ui"
+    },
+    {
+      "path": "./packages/nxus-workbench"
+    },
+    {
+      "path": "./packages/nxus-db"
+    }
+  ]
 }

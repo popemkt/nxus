@@ -10,9 +10,9 @@
  * - Clickable links to navigate between nodes
  */
 
-import { cn } from '@/lib/utils'
-import type { AssembledNode } from '@/services/nodes/node.service'
-import { getBacklinksServerFn } from '@/services/nodes/search-nodes.server'
+import { cn } from '@nxus/ui'
+import type { AssembledNode } from '@nxus/db'
+import { getBacklinksServerFn } from '@nxus/workbench/server'
 import {
   ArrowBendUpLeft,
   ArrowsLeftRight,

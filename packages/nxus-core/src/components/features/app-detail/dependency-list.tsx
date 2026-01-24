@@ -1,9 +1,9 @@
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { Link } from '@tanstack/react-router'
 import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
 import { useToolHealth } from '@/hooks/use-tool-health'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LoadingSpinner } from '@nxus/ui'
 
 interface DependencyListProps {
   dependencies: Item[]

@@ -9,17 +9,17 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
+} from '@nxus/ui'
+import { Checkbox } from '@nxus/ui'
+import { Separator } from '@nxus/ui'
 import {
   checkGitStatusServerFn,
   type GitStatus,
@@ -31,8 +31,8 @@ import {
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
-import type { Item, ItemType } from '@/types/item'
-import { getCommandString, hasCommandString } from '@/types/item'
+import type { Item, ItemType } from '@nxus/db'
+import { getCommandString, hasCommandString } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   ArrowsClockwiseIcon,

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CommandRequirement, CommandParam } from '@/types/command-params'
+import type { CommandRequirement, CommandParam } from '@nxus/db'
 
 interface RequirementResult {
   appId: string

@@ -5,17 +5,14 @@
  */
 
 import { NODE_BASED_ARCHITECTURE_ENABLED } from '@/config/feature-flags'
-import { getDatabase, initDatabase, saveDatabase } from '@/db/client'
 import {
+  getDatabase,
+  initDatabase,
+  saveDatabase,
   nodeProperties,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '@/db/node-schema'
-import { tags } from '@/db/schema'
-import { createServerFn } from '@tanstack/react-start'
-import { eq } from 'drizzle-orm'
-import { z } from 'zod'
-import {
+  tags,
   clearProperty,
   createNode,
   deleteNode,
@@ -25,7 +22,10 @@ import {
   getSystemNode,
   setProperty,
   updateNodeContent,
-} from './nodes/node.service'
+} from '@nxus/db/server'
+import { createServerFn } from '@tanstack/react-start'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 // Input schemas
 const CreateTagInputSchema = z.object({

@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import type { Item } from '@/types/item'
-import { cn } from '@/lib/utils'
+import type { Item } from '@nxus/db'
+import { cn } from '@nxus/ui'
 
 // Type-based colors - solid, not transparent
 const TYPE_COLORS: Record<Item['type'], { bg: string; solid: string }> = {

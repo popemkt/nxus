@@ -10,7 +10,7 @@ import {
   useViewModeStore,
   useViewModeHasHydrated,
 } from '@/stores/view-mode.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import { useQuery } from '@tanstack/react-query'
 import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
 import {

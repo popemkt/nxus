@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import {
   ItemNode,
   CommandNode,
@@ -33,7 +33,7 @@ import {
 } from '@/stores/view-mode.store'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import { useNavigate } from '@tanstack/react-router'
 import dagre from 'dagre'
 import {

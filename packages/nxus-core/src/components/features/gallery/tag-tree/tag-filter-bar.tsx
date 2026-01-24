@@ -1,7 +1,7 @@
 import { X, CaretDown, Funnel } from '@phosphor-icons/react'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useTagUIStore } from '@/stores/tag-ui.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 
 interface TagFilterBarProps {
   className?: string

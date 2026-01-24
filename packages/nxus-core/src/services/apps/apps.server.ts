@@ -12,16 +12,22 @@ import {
   isGraphArchitecture,
   isNodeArchitecture,
 } from '../../config/feature-flags'
-import { getDatabase, initDatabase } from '../../db/client'
-import { itemCommands, items, itemTags, tags } from '../../db/schema'
+import {
+  getDatabase,
+  initDatabase,
+  itemCommands,
+  items,
+  itemTags,
+  tags,
+} from '@nxus/db/server'
 import type {
   DocEntry,
   Item,
   ItemCommand,
   ItemMetadata,
   TagRef,
-} from '../../types/item'
-import { getAllItemsFromNodesServerFn } from '../nodes/nodes.server'
+} from '@nxus/db'
+import { getAllItemsFromNodesServerFn } from '@nxus/workbench/server'
 
 /**
  * Map database record to App type
@@ -199,7 +205,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
     // Architecture switch - delegate to node-based function when enabled
     if (isNodeArchitecture()) {
       const { getItemByIdFromNodesServerFn } = await import(
-        '../nodes/nodes.server'
+        '@nxus/workbench/server'
       )
       const result = await getItemByIdFromNodesServerFn({ data: { id } })
       if (result.success) {

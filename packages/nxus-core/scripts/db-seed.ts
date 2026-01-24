@@ -9,6 +9,7 @@
  * - 'graph': (Future) Seeds graph database
  */
 
+import { bootstrapSystemNodes } from '@nxus/db/server'
 import {
   ARCHITECTURE_TYPE,
   isNodeArchitecture,
@@ -26,6 +27,15 @@ async function seed() {
     // This ensures legacy tables stay in sync if needed
     const { seedTables } = await import('./seed-tables')
     const { seedNodes } = await import('./seed-nodes')
+
+    // Bootstrap system nodes first (supertags, fields)
+    console.log('='.repeat(50))
+    console.log('  Bootstrap: Creating System Schema')
+    console.log('='.repeat(50) + '\n')
+    const result = await bootstrapSystemNodes({ verbose: true })
+    if (result.alreadyBootstrapped) {
+      console.log('System schema already exists, proceeding to seed...\n')
+    }
 
     await seedTables()
     await seedNodes()

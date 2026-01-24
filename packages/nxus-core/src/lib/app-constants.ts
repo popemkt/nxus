@@ -4,7 +4,7 @@ import {
   FolderOpenIcon,
   WrenchIcon,
 } from '@phosphor-icons/react'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 
 /**
  * Icon mapping for each app type.

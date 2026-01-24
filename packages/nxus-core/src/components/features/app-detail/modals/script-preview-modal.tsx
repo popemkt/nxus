@@ -8,8 +8,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
 import { readScriptFileServerFn } from '@/services/shell/read-script.server'
 
 interface ScriptPreviewModalProps {

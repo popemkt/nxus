@@ -37,7 +37,7 @@ import {
 } from '@/services/tool-health/types'
 import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { useTerminalStore } from '@/stores/terminal.store'
-import type { CommandRequirements, ItemCommand, ItemType } from '@/types/item'
+import type { CommandRequirements, ItemCommand, ItemType } from '@nxus/db'
 import { useQueries } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 

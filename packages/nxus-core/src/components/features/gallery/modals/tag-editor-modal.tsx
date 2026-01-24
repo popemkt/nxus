@@ -18,9 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Input } from '@nxus/ui'
 import { ConfigurableTag } from '@/components/shared/configurable-tag'
 import { TagConfigModal } from '@/components/shared/tag-config-modal'
 import { updateAppTagsServerFn } from '@/services/apps/apps-mutations.server'
@@ -30,8 +30,8 @@ import {
 } from '@/services/tag-config.server'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { cn } from '@/lib/utils'
-import type { Item, TagRef } from '@/types/item'
+import { cn } from '@nxus/ui'
+import type { Item, TagRef } from '@nxus/db'
 
 export interface TagEditorModalProps {
   app: Item

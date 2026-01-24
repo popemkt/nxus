@@ -11,8 +11,8 @@
  */
 
 import { Gear, Warning, Lightning } from '@phosphor-icons/react'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { Badge } from '@nxus/ui'
+import { cn } from '@nxus/ui'
 
 export interface ConfigurableTagProps {
   /** The tag ID/name */

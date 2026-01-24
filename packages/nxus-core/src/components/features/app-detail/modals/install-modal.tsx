@@ -6,10 +6,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
+import { Input } from '@nxus/ui'
 import { useInstallPath } from '@/hooks/use-install-path'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'

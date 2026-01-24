@@ -1,4 +1,4 @@
-import type { Platform } from '@/types/item'
+import type { Platform } from '@nxus/db'
 
 export interface OsInfo {
   platform: Platform

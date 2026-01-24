@@ -6,25 +6,26 @@
  */
 
 import { NODE_BASED_ARCHITECTURE_ENABLED } from '@/config/feature-flags'
-import { getDatabase, initDatabase, saveDatabase } from '@/db/client'
 import {
+  getDatabase,
+  initDatabase,
+  saveDatabase,
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '@/db/node-schema'
-import { items, itemTags } from '@/db/schema'
-import type { ItemMetadata } from '@/types/item'
-import { createServerFn } from '@tanstack/react-start'
-import { eq } from 'drizzle-orm'
-import { z } from 'zod'
-import {
+  items,
+  itemTags,
+  type ItemMetadata,
   addPropertyValue,
   clearProperty,
   findNodeBySystemId,
   getSystemNode,
   setProperty,
-} from '../nodes/node.service'
+} from '@nxus/db/server'
+import { createServerFn } from '@tanstack/react-start'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 // ============================================================================
 // Node-based write helpers

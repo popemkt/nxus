@@ -1,4 +1,4 @@
-import { COMMAND_IDS, COMMAND_CATEGORIES, type Command } from '@/types/command'
+import { COMMAND_IDS, COMMAND_CATEGORIES, type Command } from '@nxus/db'
 import { DEPENDENCY_IDS } from '@/types/dependency'
 
 /**

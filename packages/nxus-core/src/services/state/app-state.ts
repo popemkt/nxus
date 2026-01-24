@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, devtools } from 'zustand/middleware'
-import type { Platform } from '../../types/item'
+import type { Platform } from '@nxus/db'
 
 // --- Internal Store (Implementation Detail) ---
 

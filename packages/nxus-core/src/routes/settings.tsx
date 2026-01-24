@@ -1,12 +1,12 @@
 import { ThemeChooser } from '@/components/features/settings/theme-chooser'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@nxus/ui'
 import {
   Combobox,
   ComboboxContent,
@@ -16,9 +16,9 @@ import {
   ComboboxItem,
   ComboboxLabel,
   ComboboxList,
-} from '@/components/ui/combobox'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+} from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
+import { Input } from '@nxus/ui'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import {
@@ -29,7 +29,7 @@ import {
 import { commandRegistry } from '@/services/command-palette/registry'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { useSettingsStore } from '@/stores/settings.store'
-import type { ToolItem } from '@/types/item'
+import type { ToolItem } from '@nxus/db'
 import {
   ArrowLeftIcon,
   CommandIcon,

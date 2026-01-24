@@ -11,8 +11,12 @@
  */
 
 import { eq, or } from 'drizzle-orm'
-import { getDatabase, initDatabase } from '../src/db/client'
-import { nodeProperties, nodes } from '../src/db/node-schema'
+import {
+  getDatabase,
+  initDatabase,
+  nodeProperties,
+  nodes,
+} from '@nxus/db/server'
 
 interface AssembledNode {
   id: string

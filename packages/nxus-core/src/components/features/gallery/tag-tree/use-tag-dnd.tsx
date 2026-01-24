@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useTagDataStore } from '@/stores/tag-data.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 
 interface UseTagDndOptions {
   onMoveTag?: (id: string, parentId: string | null, order: number) => void

@@ -10,14 +10,18 @@ import { eq, isNull } from 'drizzle-orm'
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { uuidv7 } from 'uuidv7'
-import { getDatabase, initDatabase } from '../src/db/client'
 import {
+  getDatabase,
+  initDatabase,
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '../src/db/node-schema'
-import { itemCommands, items, itemTags, tags } from '../src/db/schema'
+  itemCommands,
+  items,
+  itemTags,
+  tags,
+} from '@nxus/db/server'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

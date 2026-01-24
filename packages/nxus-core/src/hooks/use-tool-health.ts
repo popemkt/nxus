@@ -4,7 +4,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import {
   toolHealthKeys,
   type ToolHealthResult,

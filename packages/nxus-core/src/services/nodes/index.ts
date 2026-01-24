@@ -1,61 +1,66 @@
 /**
  * Node Services - Entry point for node-based architecture
  *
- * For NEW mini-apps: Import Write API directly
+ * For NEW mini-apps: Import Write API directly from @nxus/db
  * For LEGACY migration: Use adapters for backward compat
+ *
+ * NOTE: Server functions and adapters have been moved to @nxus/workbench.
+ * This file re-exports them for backward compatibility.
  */
 
 // ============================================================================
-// Read API - Query and Assemble
+// Re-export from @nxus/db/server for convenience
 // ============================================================================
 export {
-    assembleNode,
-    assembleNodeWithInheritance,
-    clearSystemNodeCache,
-    findNode,
-    findNodeById,
-    findNodeBySystemId,
-    getAncestorSupertags,
-    getNodeIdsBySupertagWithInheritance,
-    getNodesBySupertagWithInheritance,
-    getSupertagFieldDefinitions,
-    getSystemNode,
-    type AssembledNode,
-    type CreateNodeOptions,
-    type PropertyValue
-} from './node.service'
+  // Read API
+  assembleNode,
+  assembleNodeWithInheritance,
+  clearSystemNodeCache,
+  findNode,
+  findNodeById,
+  findNodeBySystemId,
+  getAncestorSupertags,
+  getNodeIdsBySupertagWithInheritance,
+  getNodesBySupertagWithInheritance,
+  getSupertagFieldDefinitions,
+  getSystemNode,
+  // Write API
+  addPropertyValue,
+  clearProperty,
+  createNode,
+  deleteNode,
+  linkNodes,
+  setProperty,
+  updateNodeContent,
+  // Property Helpers
+  getProperty,
+  getPropertyValues,
+  // Types
+  type AssembledNode,
+  type CreateNodeOptions,
+  type PropertyValue,
+} from '@nxus/db/server'
 
 // ============================================================================
-// Write API - Create/Update/Delete (for new mini-apps)
+// Re-export from @nxus/workbench/server
 // ============================================================================
 export {
-    addPropertyValue,
-    clearProperty,
-    createNode,
-    deleteNode,
-    linkNodes,
-    setProperty,
-    updateNodeContent
-} from './node.service'
-
-// ============================================================================
-// Property Helpers
-// ============================================================================
-export { getProperty, getPropertyValues } from './node.service'
-
-// ============================================================================
-// Adapters - Legacy type conversion (for existing apps)
-// ============================================================================
-export { nodeToCommand, nodeToItem, nodeToTag, nodesToItems } from './adapters'
-
-// ============================================================================
-// Server Functions
-// ============================================================================
-export {
-    getAllItemsFromNodesServerFn,
-    getAllTagsFromNodesServerFn,
-    getItemByIdFromNodesServerFn,
-    getNodeServerFn,
-    getNodesBySupertagServerFn
-} from './nodes.server'
-
+  // Adapters - Legacy type conversion (for existing apps)
+  nodeToCommand,
+  nodeToItem,
+  nodeToTag,
+  nodesToItems,
+  // Server Functions
+  getAllItemsFromNodesServerFn,
+  getAllTagsFromNodesServerFn,
+  getItemByIdFromNodesServerFn,
+  getNodeServerFn,
+  getNodesBySupertagServerFn,
+  // Search Server Functions
+  searchNodesServerFn,
+  getSupertagsServerFn,
+  getAllNodesServerFn,
+  getBacklinksServerFn,
+  getOwnerChainServerFn,
+  getChildNodesServerFn,
+} from '@nxus/workbench/server'

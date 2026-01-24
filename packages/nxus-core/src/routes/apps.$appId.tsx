@@ -25,22 +25,22 @@ import {
   useToolHealthInvalidation,
 } from '@/hooks/use-tool-health'
 import { useTerminalStore } from '@/stores/terminal.store'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@nxus/ui'
+import { Badge } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@nxus/ui'
 import { InstanceSelector } from '@/components/features/app-detail/instance/instance-selector'
 import { InstanceActionsPanel } from '@/components/features/app-detail/actions/instance-actions-panel'
 import { AppActionsPanel } from '@/components/features/app-detail/actions/app-actions-panel'
 import { DocViewer } from '@/components/features/app-detail/doc-viewer'
 import { InstallModal } from '@/components/features/app-detail/modals/install-modal'
 import { AppDetailTags } from '@/components/features/app-detail/app-detail-tags'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@nxus/ui'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
@@ -57,7 +57,7 @@ import {
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
 import { openApp } from '@/lib/app-actions'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@nxus/ui'
 import { useDelayedLoading } from '@/hooks/use-delayed-loading'
 
 /**

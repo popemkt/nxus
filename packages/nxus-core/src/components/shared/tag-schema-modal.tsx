@@ -16,8 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
+} from '@nxus/ui'
+import { Badge } from '@nxus/ui'
 import { getTagConfigServerFn } from '@/services/tag-config.server'
 import { useQuery } from '@tanstack/react-query'
 

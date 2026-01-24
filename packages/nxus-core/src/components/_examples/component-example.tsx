@@ -42,9 +42,9 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+} from '@nxus/ui'
+import { Badge } from '@nxus/ui'
+import { Button } from '@nxus/ui'
 import {
   Card,
   CardAction,
@@ -53,7 +53,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@nxus/ui'
 import {
   Combobox,
   ComboboxContent,
@@ -61,7 +61,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from '@/components/ui/combobox'
+} from '@nxus/ui'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -78,9 +78,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+} from '@nxus/ui'
+import { Field, FieldGroup, FieldLabel } from '@nxus/ui'
+import { Input } from '@nxus/ui'
 import {
   Select,
   SelectContent,
@@ -88,8 +88,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+} from '@nxus/ui'
+import { Textarea } from '@nxus/ui'
 
 export function ComponentExample() {
   return (

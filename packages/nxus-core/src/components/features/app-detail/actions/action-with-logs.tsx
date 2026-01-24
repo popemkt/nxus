@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 import { PlayIcon, TerminalWindowIcon } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@nxus/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Field, FieldLabel } from '@/components/ui/field'
+} from '@nxus/ui'
+import { Input } from '@nxus/ui'
+import { Field, FieldLabel } from '@nxus/ui'
 import { CommandLogViewer } from '../commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { usePath } from '@/hooks/use-paths'

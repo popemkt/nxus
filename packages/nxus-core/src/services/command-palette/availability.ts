@@ -17,7 +17,7 @@
 import { queryClient } from '@/lib/query-client'
 import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { ItemType } from '@/types/item'
+import type { ItemType } from '@nxus/db'
 import type { InstalledAppRecord } from '@/services/state/app-state'
 
 /**

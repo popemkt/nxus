@@ -7,8 +7,8 @@ import type {
     GenericCommand,
     ItemBoundCommand,
     UnifiedCommand,
-} from '@/types/command'
-import type { Item, ItemCommand } from '@/types/item'
+} from '@nxus/db'
+import type { Item, ItemCommand } from '@nxus/db'
 
 /**
  * Command extended with app context for palette display
@@ -24,7 +24,7 @@ export interface PaletteCommand {
 }
 
 // Re-export GenericCommand for consumers that import from registry
-export type { GenericCommand } from '@/types/command'
+export type { GenericCommand } from '@nxus/db'
 
 /**
  * Generic commands available globally
@@ -246,8 +246,31 @@ export const genericCommands: GenericCommand[] = [
   },
   // Database sync commands - run in terminal for visibility
   {
+    id: 'db-bootstrap',
+    name: 'DB: Bootstrap System Nodes',
+    icon: 'CircuitBoard',
+    target: 'none',
+    execute: async () => {
+      const { getPackageRootServerFn } = await import(
+        '@/services/db/db-actions.server'
+      )
+      const { commandExecutor } = await import(
+        '@/services/command-palette/executor'
+      )
+      const { useTerminalStore } = await import('@/stores/terminal.store')
+      const { path: cwd } = await getPackageRootServerFn()
+      const terminalStore = useTerminalStore.getState()
+      await commandExecutor.executeInteractive({
+        command: 'pnpm exec tsx scripts/bootstrap-nodes.ts',
+        cwd,
+        tabName: 'DB: Bootstrap System Nodes',
+        terminalStore,
+      })
+    },
+  },
+  {
     id: 'db-seed',
-    name: 'DB: Sync JSON → Database',
+    name: 'DB: Sync JSON → Database (includes Bootstrap)',
     icon: 'ArrowDown',
     target: 'none',
     execute: async () => {

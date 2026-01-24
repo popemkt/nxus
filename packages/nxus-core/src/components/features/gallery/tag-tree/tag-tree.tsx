@@ -16,7 +16,7 @@ import {
   buildTagTree,
 } from '@/stores/tag-data.store'
 import { useTagUIStore } from '@/stores/tag-ui.store'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import {
   TagDndContext,
   SortableTagItem,

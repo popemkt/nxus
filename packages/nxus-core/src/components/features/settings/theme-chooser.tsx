@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import { useThemeStore } from '@/stores/theme.store'
 import { themeOptions } from '@/config/theme-options'
 import { Moon, Sun } from '@phosphor-icons/react'

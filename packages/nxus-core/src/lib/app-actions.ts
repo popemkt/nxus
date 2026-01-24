@@ -1,4 +1,4 @@
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 
 /**
  * Opens an app based on its type.

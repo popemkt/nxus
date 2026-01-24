@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import path from 'node:path'
-import { CwdSchema } from '@/types/item'
+import { CwdSchema } from '@nxus/db'
 import { PATHS } from '@/paths'
 
 const CommonSchema = z.object({

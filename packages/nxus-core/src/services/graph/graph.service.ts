@@ -7,7 +7,7 @@
 
 import type Surreal from 'surrealdb'
 import type { RecordId } from 'surrealdb'
-import { getGraphDatabase, initGraphDatabase } from '../../db/graph-client'
+import { getGraphDatabase, initGraphDatabase } from '@nxus/db/server'
 
 // ============================================================================
 // Types

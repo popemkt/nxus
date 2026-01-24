@@ -6,15 +6,16 @@
  */
 
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { Item, ItemCommand } from '@/types/item'
-import { getCommandString } from '@/types/item'
-import type {
-  CommandStep,
-  NotifyStep,
-  StepResult,
-  WorkflowContext,
-  WorkflowStep,
-} from '@/types/workflow'
+import {
+  getCommandString,
+  type Item,
+  type ItemCommand,
+  type CommandStep,
+  type NotifyStep,
+  type StepResult,
+  type WorkflowContext,
+  type WorkflowStep,
+} from '@nxus/db'
 import {
   createWorkflowContext,
   evaluateExpression,

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import {
   Card,
   CardContent,
@@ -7,9 +7,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+} from '@nxus/ui'
+import { Badge } from '@nxus/ui'
+import { Button } from '@nxus/ui'
 import {
   ArrowRightIcon,
   CheckCircle,
@@ -23,7 +23,7 @@ import {
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@nxus/ui'
 import type { GalleryMode } from '@/stores/view-mode.store'
 import { TagEditorModal } from '../modals/tag-editor-modal'
 

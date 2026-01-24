@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 
 interface InstallModalState {
   isOpen: boolean

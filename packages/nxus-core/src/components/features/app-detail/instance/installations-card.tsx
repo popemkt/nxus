@@ -12,8 +12,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+} from '@nxus/ui'
+import { Button } from '@nxus/ui'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +25,8 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Checkbox } from '@/components/ui/checkbox'
+} from '@nxus/ui'
+import { Checkbox } from '@nxus/ui'
 import {
   useAppInstallations,
   appStateService,

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import os from 'os'
-import type { Platform } from '../../types/item'
+import type { Platform } from '@nxus/db'
 
 export type OsInfo = {
   platform: Platform
