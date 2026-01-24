@@ -55,7 +55,8 @@ Create the conversion hook that transforms a `WorkflowDefinition` into React Flo
 
 ---
 
-### [ ] Step: Create Workflow Step Node Component
+### [x] Step: Create Workflow Step Node Component
+<!-- chat-id: 48c85d2c-b8ae-4a86-9a35-6d5363030b20 -->
 
 Create the visual node component for workflow steps.
 
