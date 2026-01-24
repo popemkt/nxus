@@ -12,11 +12,6 @@
     ],
     "checkCommand": "warp-terminal --dump-debug-info | head -n 1",
     "metadata": {
-        "category": "terminal",
-        "createdAt": "2026-01-17T13:00:00.000Z",
-        "updatedAt": "2026-01-17T13:00:00.000Z",
-        "version": "1.0.0",
-        "author": "Warp",
         "tags": [
             {
                 "id": 16,
@@ -26,7 +21,12 @@
                 "id": 10,
                 "name": "Tool"
             }
-        ]
+        ],
+        "category": "terminal",
+        "createdAt": "2026-01-17T13:00:00.000Z",
+        "updatedAt": "2026-01-17T13:00:00.000Z",
+        "version": "1.0.0",
+        "author": "Warp"
     },
     "status": "not-installed"
 }

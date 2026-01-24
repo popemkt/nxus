@@ -88,12 +88,12 @@
         }
     ],
     "metadata": {
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-11T21:55:46Z",
         "updatedAt": "2026-01-11T21:55:46Z",
         "version": "1.0.0",
-        "author": "Vercel",
-        "tags": []
+        "author": "Vercel"
     },
     "status": "not-installed"
 }

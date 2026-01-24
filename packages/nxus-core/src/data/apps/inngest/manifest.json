@@ -10,9 +10,6 @@
         "macos",
         "windows"
     ],
-    "dependencies": [
-        "node"
-    ],
     "checkCommand": "npx inngest-cli --version",
     "installInstructions": "Install via npm: npm install -g inngest-cli",
     "commands": [
@@ -26,7 +23,9 @@
             "mode": "execute",
             "command": "npm install -g inngest-cli",
             "requires": {
-                "tools": ["node"],
+                "tools": [
+                    "node"
+                ],
                 "selfNotInstalled": true
             }
         },
@@ -40,7 +39,9 @@
             "mode": "terminal",
             "command": "npx inngest-cli dev",
             "requires": {
-                "tools": ["node"]
+                "tools": [
+                    "node"
+                ]
             }
         },
         {
@@ -53,7 +54,9 @@
             "mode": "terminal",
             "command": "npx inngest-cli init",
             "requires": {
-                "tools": ["node"]
+                "tools": [
+                    "node"
+                ]
             }
         },
         {
@@ -66,7 +69,9 @@
             "mode": "terminal",
             "command": "npx inngest-cli deploy",
             "requires": {
-                "tools": ["node"]
+                "tools": [
+                    "node"
+                ]
             }
         },
         {
@@ -80,13 +85,16 @@
             "command": "https://www.inngest.com/docs"
         }
     ],
+    "dependencies": [
+        "node"
+    ],
     "metadata": {
+        "tags": [],
         "category": "automation",
         "createdAt": "2026-01-22T00:00:00Z",
         "updatedAt": "2026-01-22T00:00:00Z",
         "version": "1.0.0",
-        "author": "Inngest",
-        "tags": []
+        "author": "Inngest"
     },
     "status": "not-installed"
 }

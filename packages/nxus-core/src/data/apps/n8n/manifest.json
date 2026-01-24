@@ -10,9 +10,6 @@
         "macos",
         "windows"
     ],
-    "dependencies": [
-        "node"
-    ],
     "checkCommand": "n8n --version",
     "installInstructions": "Install via npm: npm install -g n8n",
     "commands": [
@@ -26,7 +23,9 @@
             "mode": "execute",
             "command": "npm install -g n8n",
             "requires": {
-                "tools": ["node"],
+                "tools": [
+                    "node"
+                ],
                 "selfNotInstalled": true
             }
         },
@@ -92,7 +91,9 @@
             "mode": "terminal",
             "command": "docker run -it --rm --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n n8nio/n8n",
             "requires": {
-                "tools": ["docker"]
+                "tools": [
+                    "docker"
+                ]
             }
         },
         {
@@ -105,7 +106,9 @@
             "mode": "execute",
             "command": "npm update -g n8n",
             "requires": {
-                "tools": ["node"],
+                "tools": [
+                    "node"
+                ],
                 "selfInstalled": true
             }
         },
@@ -120,13 +123,16 @@
             "command": "https://docs.n8n.io/"
         }
     ],
+    "dependencies": [
+        "node"
+    ],
     "metadata": {
+        "tags": [],
         "category": "automation",
         "createdAt": "2026-01-22T00:00:00Z",
         "updatedAt": "2026-01-22T00:00:00Z",
         "version": "1.0.0",
-        "author": "n8n GmbH",
-        "tags": []
+        "author": "n8n GmbH"
     },
     "status": "not-installed"
 }

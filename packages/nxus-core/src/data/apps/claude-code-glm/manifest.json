@@ -87,12 +87,12 @@
         "claude-code"
     ],
     "metadata": {
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-01T15:32:00.000Z",
         "updatedAt": "2026-01-17T04:30:00.000Z",
         "version": "1.0.0",
-        "author": "nxus",
-        "tags": []
+        "author": "nxus"
     },
     "configSchema": {
         "fields": [

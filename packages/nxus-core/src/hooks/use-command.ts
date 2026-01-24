@@ -27,19 +27,19 @@
  * ```
  */
 
-import { useMemo, useCallback } from 'react'
-import { useQueries } from '@tanstack/react-query'
+import { queryClient } from '@/lib/query-client'
+import { appRegistryService } from '@/services/apps/registry.service'
+import { commandExecutor } from '@/services/command-palette/executor'
+import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import {
   toolHealthKeys,
   type ToolHealthResult,
 } from '@/services/tool-health/types'
 import { getToolHealthFromCache } from '@/services/tool-health/utils'
-import { checkToolHealth } from '@/services/tool-health/tool-health.server'
-import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
-import { queryClient } from '@/lib/query-client'
-import { appRegistryService } from '@/services/apps/registry.service'
-import type { ItemCommand, ItemType, CommandRequirements } from '@/types/item'
+import type { CommandRequirements, ItemCommand, ItemType } from '@/types/item'
+import { useQueries } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 
 /**
  * Get the actual checkCommand for a tool ID by looking it up in the registry.
@@ -50,14 +50,16 @@ function getCheckCommandForTool(toolId: string): string {
   if (appResult.success && appResult.data.type === 'tool') {
     return appResult.data.checkCommand
   }
-  // Tool not found in registry or not a tool type - this is a data integrity issue
-  throw new Error(
+  // Tool not found in registry or not a tool type - log warning but don't crash
+  const fallback = `${toolId} --version`
+  console.warn(
     `Cannot resolve checkCommand for tool "${toolId}": ${
       appResult.success
         ? 'item is not a tool type'
         : 'item not found in registry'
-    }`,
+    }. Using fallback: ${fallback}`,
   )
+  return fallback
 }
 
 /**

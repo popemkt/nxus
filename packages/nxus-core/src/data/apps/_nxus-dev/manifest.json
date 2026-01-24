@@ -139,12 +139,12 @@
         "nodejs"
     ],
     "metadata": {
+        "tags": [],
         "category": "development-tools",
         "createdAt": "2026-01-21T00:00:00Z",
         "updatedAt": "2026-01-21T00:00:00Z",
         "version": "1.0.0",
-        "author": "nxus",
-        "tags": []
+        "author": "nxus"
     },
     "status": "not-installed"
 }
