@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import {
   Card,
   CardContent,

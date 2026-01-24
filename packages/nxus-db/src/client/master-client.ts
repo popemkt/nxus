@@ -4,8 +4,8 @@ import { existsSync, mkdirSync } from 'fs'
 import { homedir } from 'os'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import * as ephemeralSchema from './ephemeral-schema'
-import * as schema from './schema'
+import * as ephemeralSchema from '../schemas/ephemeral-schema.js'
+import * as schema from '../schemas/item-schema.js'
 
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)

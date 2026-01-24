@@ -30,7 +30,7 @@ import { useQuery } from '@tanstack/react-query'
 import { cn } from '@nxus/ui'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { usePath } from '@/hooks/use-paths'
 
 export interface ProcessInboxModalProps {

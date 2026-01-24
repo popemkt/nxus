@@ -28,7 +28,7 @@ import type { LogEntry } from '@/services/shell/command.schema'
 import { executeCommandServerFn } from '@/services/shell/command.server'
 import { createPtySessionServerFn } from '@/services/shell/pty.server'
 import { toolHealthKeys } from '@/services/tool-health/types'
-import type { ItemType } from '@/types/item'
+import type { ItemType } from '@nxus/db'
 
 /**
  * Parse a command string into command and args, respecting quotes

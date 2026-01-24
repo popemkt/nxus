@@ -11,7 +11,7 @@ import {
 import { configureModalService } from '@/stores/configure-modal.store'
 import { matchesKeybinding, useSettingsStore } from '@/stores/settings.store'
 import { useTerminalStore } from '@/stores/terminal.store'
-import type { GenericCommand } from '@/types/command'
+import type { GenericCommand } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   ArrowLeftIcon,
@@ -36,8 +36,8 @@ import {
 } from '@/services/command-palette/alias.server'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import type { ItemType } from '@/types/item'
-import { getCommandString } from '@/types/item'
+import type { ItemType } from '@nxus/db'
+import { getCommandString } from '@nxus/db'
 
 function DynamicIcon({
   name,

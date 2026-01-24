@@ -12,15 +12,21 @@ import {
   isGraphArchitecture,
   isNodeArchitecture,
 } from '../../config/feature-flags'
-import { getDatabase, initDatabase } from '../../db/client'
-import { itemCommands, items, itemTags, tags } from '../../db/schema'
+import {
+  getDatabase,
+  initDatabase,
+  itemCommands,
+  items,
+  itemTags,
+  tags,
+} from '@nxus/db/server'
 import type {
   DocEntry,
   Item,
   ItemCommand,
   ItemMetadata,
   TagRef,
-} from '../../types/item'
+} from '@nxus/db'
 import { getAllItemsFromNodesServerFn } from '../nodes/nodes.server'
 
 /**

@@ -1,4 +1,4 @@
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { GraphCanvas } from './graph-view/graph-canvas'
 
 interface GraphViewProps {

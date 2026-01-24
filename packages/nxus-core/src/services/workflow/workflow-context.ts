@@ -1,4 +1,4 @@
-import type { StepResult, WorkflowContext } from '@/types/workflow'
+import type { StepResult, WorkflowContext } from '@nxus/db'
 
 /**
  * Create a new workflow context with default values

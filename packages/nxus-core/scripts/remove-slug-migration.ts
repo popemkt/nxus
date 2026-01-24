@@ -1,5 +1,5 @@
-import { initDatabase, getDatabase, saveDatabase } from '../src/db/client'
 import { sql } from 'drizzle-orm'
+import { initDatabase, getDatabase, saveDatabase } from '@nxus/db/server'
 
 async function dropSlugColumn() {
   console.log('Starting slug column removal migration...')

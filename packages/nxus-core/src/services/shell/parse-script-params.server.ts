@@ -4,7 +4,7 @@ import path from 'node:path'
 import { parsePowerShellParamsServerFn } from './script-param-adapters/powershell.server'
 import { resolveScriptServerFn } from './script-resolver.server'
 import type { ResolveScriptInput } from './script-resolver.server'
-import { ScriptSourceSchema } from '@/types/item'
+import { ScriptSourceSchema } from '@nxus/db'
 import type { ParseScriptParamsResult } from './script-param-adapters/types'
 
 const ParseScriptParamsSchema = z.object({

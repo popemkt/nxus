@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { CommandParamSchema, CommandRequirementSchema } from './command-params'
-import { WorkflowDefinitionSchema } from './workflow'
+import { CommandParamSchema, CommandRequirementSchema } from './command-params.js'
+import { WorkflowDefinitionSchema } from './workflow.js'
 
 /**
  * Supported platforms for app installation

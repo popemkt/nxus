@@ -3,7 +3,7 @@ import Markdown from 'react-markdown'
 import { getDocContentServerFn } from '@/services/apps/docs.server'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { CommandButton } from '@/components/features/app-detail/commands/command-button'
-import type { Item, ItemCommand } from '@/types/item'
+import type { Item, ItemCommand } from '@nxus/db'
 
 interface DocViewerProps {
   appId: string

@@ -18,7 +18,7 @@ import { useState } from 'react'
 import { NodeBrowser } from '@/components/features/nodes/node-browser'
 import { NodeInspector } from '@/components/features/nodes/node-inspector'
 import { SupertagSidebar } from '@/components/features/nodes/supertag-sidebar'
-import type { AssembledNode } from '@/services/nodes/node.service'
+import type { AssembledNode } from '@nxus/db'
 import { getNodeServerFn } from '@/services/nodes/nodes.server'
 import {
   getAllNodesServerFn,

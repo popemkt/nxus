@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { UnifiedCommand } from '@/types/command'
+import type { UnifiedCommand } from '@nxus/db'
 
 /**
  * Represents a command in the action panel context

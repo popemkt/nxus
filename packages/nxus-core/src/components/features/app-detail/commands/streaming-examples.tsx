@@ -19,7 +19,7 @@ import {
 import { CommandLogViewer } from '@/components/features/app-detail/commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { appStateService } from '@/services/state/app-state'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { usePath } from '@/hooks/use-paths'
 
 interface StreamingInstallationProps {

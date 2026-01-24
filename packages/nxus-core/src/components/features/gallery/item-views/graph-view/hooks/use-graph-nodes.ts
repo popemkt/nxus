@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/react'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { APP_TYPE_ICONS } from '@/lib/app-constants'
 import type { GraphFilterResult } from './use-graph-filter'
 import type { GraphOptions } from '@/stores/view-mode.store'

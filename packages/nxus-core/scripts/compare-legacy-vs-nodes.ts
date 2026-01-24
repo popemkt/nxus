@@ -5,14 +5,17 @@
  */
 
 import { isNull } from 'drizzle-orm'
-import { getDatabase, initDatabase } from '../src/db/client'
-import { SYSTEM_SUPERTAGS } from '../src/db/node-schema'
-import { itemCommands, items, tags } from '../src/db/schema'
-import { nodeToCommand, nodeToItem } from '../src/services/nodes/adapters'
 import {
+  getDatabase,
+  initDatabase,
+  SYSTEM_SUPERTAGS,
+  itemCommands,
+  items,
+  tags,
   getNodesBySupertagWithInheritance,
   getProperty,
-} from '../src/services/nodes/node.service'
+} from '@nxus/db/server'
+import { nodeToCommand, nodeToItem } from '../src/services/nodes/adapters'
 
 function compareItems() {
   const db = getDatabase()

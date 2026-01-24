@@ -11,7 +11,7 @@
  */
 
 import { cn } from '@nxus/ui'
-import type { AssembledNode } from '@/services/nodes/node.service'
+import type { AssembledNode } from '@nxus/db'
 import { getBacklinksServerFn } from '@/services/nodes/search-nodes.server'
 import {
   ArrowBendUpLeft,

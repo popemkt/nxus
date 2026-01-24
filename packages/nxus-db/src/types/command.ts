@@ -8,8 +8,8 @@
  * @see GenericCommand - System commands defined in registry.ts
  */
 
-import type { Item, ItemCommand, CommandRequirements } from './item'
-import type { CommandRequirement, CommandParam } from './command-params'
+import type { Item, ItemCommand, CommandRequirements } from './item.js'
+import type { CommandRequirement, CommandParam } from './command-params.js'
 
 // ============================================================================
 // Generic Command Target (includes 'none' for global commands)

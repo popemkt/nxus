@@ -4,13 +4,14 @@
  * Usage: npx tsx scripts/test-node-service.ts
  */
 
-import { getDatabase, initDatabase } from '../src/db/client'
-import { SYSTEM_SUPERTAGS } from '../src/db/node-schema'
-import { nodeToItem } from '../src/services/nodes/adapters'
 import {
+  getDatabase,
+  initDatabase,
+  SYSTEM_SUPERTAGS,
   findNode,
   getNodesBySupertagWithInheritance,
-} from '../src/services/nodes/node.service'
+} from '@nxus/db/server'
+import { nodeToItem } from '../src/services/nodes/adapters'
 
 async function test() {
   console.log('\n' + '='.repeat(50))

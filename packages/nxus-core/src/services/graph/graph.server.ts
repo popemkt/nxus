@@ -7,7 +7,7 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import type { Item, ItemCommand, ItemMetadata, TagRef } from '../../types/item'
+import type { Item, ItemCommand, ItemMetadata, TagRef } from '@nxus/db'
 import {
   addRelation,
   componentsRec,

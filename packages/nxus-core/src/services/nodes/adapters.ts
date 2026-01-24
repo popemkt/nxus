@@ -5,16 +5,16 @@
  * that expects Item, Tag, ItemCommand types.
  */
 
-import type { Tag } from '../../db/schema'
 import type {
+  Tag,
   DocEntry,
   Item,
   ItemCommand,
   ItemMetadata,
   TagRef,
-} from '../../types/item'
-import type { AssembledNode } from './node.service'
-import { getProperty, getPropertyValues } from './node.service'
+  AssembledNode,
+} from '@nxus/db'
+import { getProperty, getPropertyValues } from '@nxus/db/server'
 
 // ============================================================================
 // Node → Item Adapter

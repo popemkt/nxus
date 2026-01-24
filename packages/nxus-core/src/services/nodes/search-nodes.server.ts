@@ -7,13 +7,16 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, isNull, like } from 'drizzle-orm'
 import { z } from 'zod'
-import { getDatabase, initDatabase } from '../../db/client'
-import { nodeProperties, nodes, SYSTEM_FIELDS } from '../../db/node-schema'
 import {
+  getDatabase,
+  initDatabase,
+  nodeProperties,
+  nodes,
+  SYSTEM_FIELDS,
   assembleNode,
   getNodesBySupertagWithInheritance,
   type AssembledNode,
-} from './node.service'
+} from '@nxus/db/server'
 
 // ============================================================================
 // Result Types

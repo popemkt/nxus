@@ -11,7 +11,7 @@ import type {
   ItemStatus,
   ItemType,
   Result,
-} from '../../types/item'
+} from '@nxus/db'
 
 /**
  * Service for managing the app registry

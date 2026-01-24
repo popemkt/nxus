@@ -29,7 +29,7 @@ import {
 import { commandRegistry } from '@/services/command-palette/registry'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { useSettingsStore } from '@/stores/settings.store'
-import type { ToolItem } from '@/types/item'
+import type { ToolItem } from '@nxus/db'
 import {
   ArrowLeftIcon,
   CommandIcon,

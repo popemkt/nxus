@@ -31,7 +31,7 @@ import {
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@nxus/ui'
-import type { Item, TagRef } from '@/types/item'
+import type { Item, TagRef } from '@nxus/db'
 
 export interface TagEditorModalProps {
   app: Item

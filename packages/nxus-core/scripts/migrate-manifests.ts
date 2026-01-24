@@ -12,9 +12,14 @@ import { eq } from 'drizzle-orm'
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { getDatabase, initDatabase, saveMasterDatabase } from '../src/db/client'
-import { itemCommands, items } from '../src/db/schema'
-import { ItemSchema } from '../src/types/item'
+import {
+  getDatabase,
+  initDatabase,
+  saveMasterDatabase,
+  itemCommands,
+  items,
+  ItemSchema,
+} from '@nxus/db/server'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

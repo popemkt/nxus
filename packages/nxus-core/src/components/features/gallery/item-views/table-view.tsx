@@ -9,7 +9,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { Badge } from '@nxus/ui'
 import { Button } from '@nxus/ui'
 import {

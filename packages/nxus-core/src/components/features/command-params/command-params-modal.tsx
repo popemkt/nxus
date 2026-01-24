@@ -28,13 +28,13 @@ import {
   SelectValue,
 } from '@nxus/ui'
 import { cn } from '@nxus/ui'
-import type { CommandRequirement, CommandParam } from '@/types/command-params'
+import type { CommandRequirement, CommandParam } from '@nxus/db'
 import {
   isParamRequired,
   getParamLabel,
   getParamDefaultValue,
-} from '@/types/command-params'
-import type { Item } from '@/types/item'
+} from '@nxus/db'
+import type { Item } from '@nxus/db'
 
 interface RequirementOption {
   appId: string

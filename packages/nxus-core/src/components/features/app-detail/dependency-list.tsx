@@ -1,4 +1,4 @@
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import { Link } from '@tanstack/react-router'
 import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'

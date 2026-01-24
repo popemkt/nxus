@@ -9,21 +9,20 @@
 import { createServerFn } from '@tanstack/react-start'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { getDatabase, initDatabase } from '../../db/client'
 import {
+  getDatabase,
+  initDatabase,
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '../../db/node-schema'
-import type { Item, ItemCommand, TagRef } from '../../types/item'
-import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
-import {
   assembleNode,
   findNode,
   getNodesBySupertagWithInheritance,
   getProperty,
-} from './node.service'
+} from '@nxus/db/server'
+import type { Item, ItemCommand, TagRef } from '@nxus/db'
+import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
 
 // ============================================================================
 // Raw Node Queries (return AssembledNode)
@@ -70,7 +69,7 @@ export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
     const db = getDatabase()
 
     // Import the function dynamically to avoid circular deps
-    const { updateNodeContent: updateFn } = await import('./node.service')
+    const { updateNodeContent: updateFn } = await import('@nxus/db/server')
     updateFn(db, nodeId, content)
 
     // Return the updated node

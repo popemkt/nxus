@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import {
   ItemNode,
   CommandNode,

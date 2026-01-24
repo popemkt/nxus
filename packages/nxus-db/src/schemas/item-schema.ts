@@ -4,9 +4,9 @@ import type {
   DocEntry,
   InstallConfig,
   ItemMetadata,
-} from '../types/item'
-import type { WorkflowDefinition } from '../types/workflow'
-import { json } from './columns'
+} from '../types/item.js'
+import type { WorkflowDefinition } from '../types/workflow.js'
+import { json } from './columns.js'
 
 /**
  * Inbox items - backlog of tools/apps to add later via add-item workflow
@@ -109,22 +109,22 @@ export const items = sqliteTable('items', {
     .notNull(),
 })
 
-export type Item = typeof items.$inferSelect
-export type NewItem = typeof items.$inferInsert
+export type DbItem = typeof items.$inferSelect
+export type NewDbItem = typeof items.$inferInsert
 
 // ============================================================================
 // Commands - Extracted from apps for better querying
 // ============================================================================
 
 /**
- * Command target - what scope the command operates on
+ * Command target - what scope the command operates on (Drizzle schema type)
  */
-export type CommandTarget = 'item' | 'instance'
+export type DbCommandTarget = 'item' | 'instance'
 
 /**
- * Command mode - how the command should be executed
+ * Command mode - how the command should be executed (Drizzle schema type)
  */
-export type CommandMode =
+export type DbCommandMode =
   | 'execute'
   | 'copy'
   | 'terminal'
@@ -145,8 +145,8 @@ export const itemCommands = sqliteTable('item_commands', {
   description: text('description'),
   icon: text('icon').notNull(),
   category: text('category').notNull(),
-  target: text('target').$type<CommandTarget>().notNull(),
-  mode: text('mode').$type<CommandMode>().notNull(),
+  target: text('target').$type<DbCommandTarget>().notNull(),
+  mode: text('mode').$type<DbCommandMode>().notNull(),
   command: text('command'),
   workflow: json<WorkflowDefinition>()('workflow'),
   scriptSource: text('script_source'), // 'nxus-app' | 'repo' | 'shared'
@@ -170,8 +170,8 @@ export const itemCommands = sqliteTable('item_commands', {
     .notNull(),
 })
 
-export type ItemCommand = typeof itemCommands.$inferSelect
-export type NewItemCommand = typeof itemCommands.$inferInsert
+export type DbItemCommand = typeof itemCommands.$inferSelect
+export type NewDbItemCommand = typeof itemCommands.$inferInsert
 
 // ============================================================================
 // Tag Configurations - Schema definitions for configurable tags

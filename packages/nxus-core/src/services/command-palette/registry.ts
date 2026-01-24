@@ -7,8 +7,8 @@ import type {
     GenericCommand,
     ItemBoundCommand,
     UnifiedCommand,
-} from '@/types/command'
-import type { Item, ItemCommand } from '@/types/item'
+} from '@nxus/db'
+import type { Item, ItemCommand } from '@nxus/db'
 
 /**
  * Command extended with app context for palette display
@@ -24,7 +24,7 @@ export interface PaletteCommand {
 }
 
 // Re-export GenericCommand for consumers that import from registry
-export type { GenericCommand } from '@/types/command'
+export type { GenericCommand } from '@nxus/db'
 
 /**
  * Generic commands available globally

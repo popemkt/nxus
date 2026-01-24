@@ -5,7 +5,7 @@ import { Field, FieldLabel } from '@nxus/ui'
 import { useConfigureModalStore } from '@/stores/configure-modal.store'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { ToolItem } from '@/types/item'
+import type { ToolItem } from '@nxus/db'
 
 const EMPTY_CONFIG = {}
 

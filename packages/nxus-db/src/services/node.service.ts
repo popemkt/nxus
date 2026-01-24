@@ -9,8 +9,8 @@
 
 import { eq } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
-import { getDatabase } from '../../db/client'
-import { nodeProperties, nodes, SYSTEM_FIELDS } from '../../db/node-schema'
+import { getDatabase } from '../client/master-client.js'
+import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
 
 // ============================================================================
 // Types

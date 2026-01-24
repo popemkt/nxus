@@ -13,7 +13,7 @@ import { Button } from '@nxus/ui'
 import { Input } from '@nxus/ui'
 import { Field, FieldLabel } from '@nxus/ui'
 import { toolConfigService } from '@/services/state/tool-config-state'
-import type { ConfigField, ToolItem } from '@/types/item'
+import type { ConfigField, ToolItem } from '@nxus/db'
 
 interface ConfigModalProps {
   app: ToolItem

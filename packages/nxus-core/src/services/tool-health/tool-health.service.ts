@@ -2,8 +2,8 @@ import {
   getEphemeralDatabase,
   saveEphemeralDatabase,
   initEphemeralDatabase,
-} from '@/db/client'
-import { healthCache } from '@/db/ephemeral-schema'
+  healthCache,
+} from '@nxus/db/server'
 import { eq } from 'drizzle-orm'
 import { exec } from 'child_process'
 import { promisify } from 'util'

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import fs from 'node:fs/promises'
 import { resolveScriptServerFn } from './script-resolver.server'
 import type { ResolveScriptInput } from './script-resolver.server'
-import { ScriptSourceSchema } from '@/types/item'
+import { ScriptSourceSchema } from '@nxus/db'
 
 const ReadScriptSchema = z.object({
   appId: z.string(),

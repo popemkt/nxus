@@ -1,6 +1,12 @@
-import { initDatabase, getDatabase, saveDatabase } from '../src/db/client'
-import { items, tags, itemTags } from '../src/db/schema'
 import { eq } from 'drizzle-orm'
+import {
+  initDatabase,
+  getDatabase,
+  saveDatabase,
+  items,
+  tags,
+  itemTags,
+} from '@nxus/db/server'
 
 /**
  * Sync app_tags junction table from app metadata

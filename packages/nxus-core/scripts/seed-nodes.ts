@@ -10,14 +10,16 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { uuidv7 } from 'uuidv7'
-import { getDatabase, initDatabase } from '../src/db/client'
 import {
+  getDatabase,
+  initDatabase,
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '../src/db/node-schema'
-import { ItemSchema, type TagRef } from '../src/types/item'
+  ItemSchema,
+  type TagRef,
+} from '@nxus/db/server'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -460,7 +462,7 @@ export async function seedNodes() {
   console.log('[5/5] Seeding inbox items from legacy table...')
 
   // Import inbox table dynamically to avoid circular deps
-  const { inbox } = await import('../src/db/schema')
+  const { inbox } = await import('@nxus/db/server')
 
   const inboxSupertagId = getSystemNodeId(db, SYSTEM_SUPERTAGS.INBOX)
   const statusFieldId = getSystemNodeId(db, SYSTEM_FIELDS.STATUS)

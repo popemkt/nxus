@@ -9,16 +9,21 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { getDatabase, initDatabase } from '../src/db/client'
-import { SYSTEM_SUPERTAGS } from '../src/db/node-schema'
-import { itemCommands, items, itemTags, tags } from '../src/db/schema'
-import { nodeToCommand, nodeToItem } from '../src/services/nodes/adapters'
 import {
+  getDatabase,
+  initDatabase,
+  SYSTEM_SUPERTAGS,
+  itemCommands,
+  items,
+  itemTags,
+  tags,
   findNode,
   getNodesBySupertagWithInheritance,
   getProperty,
-} from '../src/services/nodes/node.service'
-import type { Item, TagRef } from '../src/types/item'
+  type Item,
+  type TagRef,
+} from '@nxus/db/server'
+import { nodeToCommand, nodeToItem } from '../src/services/nodes/adapters'
 
 function getFullLegacyItem(
   db: ReturnType<typeof getDatabase>,

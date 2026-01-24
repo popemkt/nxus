@@ -1,5 +1,5 @@
 import { cn } from '@nxus/ui'
-import type { AssembledNode } from '@/services/nodes/node.service'
+import type { AssembledNode } from '@nxus/db'
 import { Hash, TreeStructure } from '@phosphor-icons/react'
 
 export interface SupertagSidebarProps {

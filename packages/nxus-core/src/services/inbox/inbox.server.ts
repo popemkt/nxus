@@ -5,17 +5,15 @@
  */
 
 import { isNodeArchitecture } from '@/config/feature-flags'
-import { getDatabase, initDatabase, saveDatabase } from '@/db/client'
 import {
+  getDatabase,
+  initDatabase,
+  saveDatabase,
   nodeProperties,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '@/db/node-schema'
-import { inbox, type InboxEntry } from '@/db/schema'
-import { createServerFn } from '@tanstack/react-start'
-import { desc, eq } from 'drizzle-orm'
-import { z } from 'zod'
-import {
+  inbox,
+  type InboxEntry,
   assembleNode,
   createNode,
   deleteNode,
@@ -24,7 +22,10 @@ import {
   getSystemNode,
   setProperty,
   updateNodeContent,
-} from '../nodes/node.service'
+} from '@nxus/db/server'
+import { createServerFn } from '@tanstack/react-start'
+import { desc, eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 // ============================================================================
 // Node Helpers

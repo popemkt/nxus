@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 
 export interface GraphFilterResult {
   matchedIds: Set<string>

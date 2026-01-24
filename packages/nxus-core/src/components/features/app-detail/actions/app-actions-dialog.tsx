@@ -7,7 +7,7 @@ import {
   GithubLogoIcon,
   XCircleIcon,
 } from '@phosphor-icons/react'
-import type { Item } from '@/types/item'
+import type { Item } from '@nxus/db'
 import {
   AlertDialog,
   AlertDialogAction,

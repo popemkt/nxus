@@ -22,8 +22,8 @@ import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.
 import { getScriptFullPathServerFn } from '@/services/shell/read-script.server'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
 import { useToolConfigured } from '@/services/state/tool-config-state'
-import type { Item, ItemCommand, ToolItem } from '@/types/item'
-import { getCommandString } from '@/types/item'
+import type { Item, ItemCommand, ToolItem } from '@nxus/db'
+import { getCommandString } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   CodeIcon,

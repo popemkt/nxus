@@ -4,8 +4,8 @@ import {
   getEphemeralDatabase,
   initEphemeralDatabase,
   saveEphemeralDatabase,
-} from '@/db/client'
-import { aliases } from '@/db/ephemeral-schema'
+  aliases,
+} from '@nxus/db/server'
 
 /**
  * Get all aliases as a map of alias → commandId

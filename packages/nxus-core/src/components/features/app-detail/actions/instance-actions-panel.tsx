@@ -31,8 +31,8 @@ import {
   appStateService,
   type InstalledAppRecord,
 } from '@/services/state/app-state'
-import type { Item, ItemType } from '@/types/item'
-import { getCommandString, hasCommandString } from '@/types/item'
+import type { Item, ItemType } from '@nxus/db'
+import { getCommandString, hasCommandString } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   ArrowsClockwiseIcon,
