@@ -128,7 +128,8 @@ Create the main canvas component that displays the workflow graph.
 
 ---
 
-### [ ] Step: Create Workflow Preview Modal
+### [x] Step: Create Workflow Preview Modal
+<!-- chat-id: 98b65faa-3730-4594-8097-59d44a5e904f -->
 
 Create the modal component to display the workflow graph.
 
