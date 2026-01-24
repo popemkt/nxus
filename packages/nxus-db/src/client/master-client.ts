@@ -7,18 +7,6 @@ import { fileURLToPath } from 'url'
 import * as ephemeralSchema from '../schemas/ephemeral-schema.js'
 import * as schema from '../schemas/item-schema.js'
 
-/**
- * Options for database initialization
- */
-export interface InitDatabaseOptions {
-  /**
-   * Automatically bootstrap system nodes if not already bootstrapped.
-   * This creates the foundational supertags and fields required for node architecture.
-   * Default: false
-   */
-  autoBootstrap?: boolean
-}
-
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -50,23 +38,13 @@ let masterDrizzleDb: BetterSQLite3Database<typeof schema> | null = null
 let bootstrapAttempted = false
 
 /**
- * Initialize the master database connection
- * @param options - Optional configuration for database initialization
+ * Initialize the master database connection (synchronous).
+ *
+ * For initialization with automatic bootstrapping of system nodes,
+ * use the async `initDatabaseWithBootstrap()` instead.
  */
-export function initDatabase(
-  options: InitDatabaseOptions = {},
-): BetterSQLite3Database<typeof schema> {
-  const { autoBootstrap = false } = options
-
+export function initDatabase(): BetterSQLite3Database<typeof schema> {
   if (masterDrizzleDb) {
-    // Database already initialized, but check if we need to bootstrap
-    if (autoBootstrap && !bootstrapAttempted) {
-      bootstrapAttempted = true
-      // Lazy import to avoid circular dependency
-      import('../services/bootstrap.js').then(({ bootstrapSystemNodes }) => {
-        bootstrapSystemNodes({ skipInit: true }).catch(console.error)
-      })
-    }
     return masterDrizzleDb
   }
 
@@ -247,10 +225,6 @@ export function initDatabase(
   `)
 
   // No need to manually save - better-sqlite3 persists automatically
-
-  // Auto-bootstrap is handled by initDatabaseWithBootstrap() - see below
-  // The autoBootstrap option is kept for backward compatibility but is now a no-op
-  // Callers should use initDatabaseWithBootstrap() for synchronous bootstrap
 
   return masterDrizzleDb
 }

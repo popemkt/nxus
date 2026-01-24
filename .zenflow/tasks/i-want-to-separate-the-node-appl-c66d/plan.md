@@ -413,6 +413,35 @@ Create documentation of the architecture we just made if not already
     - Package locations for schemas and services
     - Updated data flow diagrams (read, write, bootstrap)
     - New implementation phases (package separation, auto-bootstrap)
+
+### [x] Step: after implementaion fix
+<!-- chat-id: f3079f3b-40b6-4e05-8272-14b43ce0cb7e -->
+<!-- agent: claude-code -->
+
+**Issue Identified:**
+The `autoBootstrap` option in the synchronous `initDatabase` function introduced a potential race condition. It triggered an asynchronous bootstrap process (`import().then(...)`) but the function returned immediately without waiting for it to complete.
+
+**Fix Implemented:**
+
+- [x] **Removed `InitDatabaseOptions` interface** from `packages/nxus-db/src/client/master-client.ts`
+- [x] **Removed `autoBootstrap` option** and all associated async logic from `initDatabase()`
+- [x] **Simplified `initDatabase()`** to be purely synchronous with no options parameter
+- [x] **Updated `bootstrap.ts`** to call `initDatabase()` without arguments (was previously passing `{ autoBootstrap: false }`)
+- [x] **Documented the recommended pattern** in the function's JSDoc: use `initDatabaseWithBootstrap()` for initialization with automatic bootstrapping
+
+**API After Fix:**
+```typescript
+// Synchronous initialization (no bootstrapping)
+initDatabase(): BetterSQLite3Database<typeof schema>
+
+// Async initialization with bootstrapping (recommended)
+initDatabaseWithBootstrap(): Promise<BetterSQLite3Database<typeof schema>>
+```
+
+**Verification:**
+- [x] `nx run-many -t typecheck` passes
+- [x] `pnpm -r test` passes (35 tests)
+- Note: nxus-core build has a pre-existing Tailwind CSS configuration issue unrelated to this change
 ## Final Verification Checklist
 
 After all steps complete, verify:

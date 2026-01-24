@@ -427,7 +427,7 @@ export async function bootstrapSystemNodes(
     // Lazy import to avoid circular dependency
     const { initDatabase, getDatabase } = await import('../client/master-client.js')
     if (!skipInit) {
-      initDatabase({ autoBootstrap: false })
+      initDatabase()
     }
     db = getDatabase()
   }
