@@ -113,6 +113,95 @@
                     }
                 ]
             }
+        },
+        {
+            "id": "workflow-demo",
+            "name": "Workflow Demo (All Step Types)",
+            "description": "Demonstrates all workflow step types for testing graph visualization",
+            "icon": "TreeStructure",
+            "category": "Demo",
+            "target": "item",
+            "mode": "workflow",
+            "workflow": {
+                "description": "A comprehensive workflow demonstrating all step types",
+                "steps": [
+                    {
+                        "id": "check-env",
+                        "type": "condition",
+                        "expression": "env.NODE_ENV",
+                        "branches": {
+                            "production": "prod-path",
+                            "development": "dev-path",
+                            "default": "ask-user"
+                        }
+                    },
+                    {
+                        "id": "prod-path",
+                        "type": "notify",
+                        "message": "Running in production mode",
+                        "level": "warning",
+                        "next": "parallel-tasks"
+                    },
+                    {
+                        "id": "dev-path",
+                        "type": "notify",
+                        "message": "Running in development mode",
+                        "level": "info",
+                        "next": "parallel-tasks"
+                    },
+                    {
+                        "id": "ask-user",
+                        "type": "prompt",
+                        "message": "Select environment:",
+                        "variable": "selectedEnv",
+                        "options": ["production", "development", "test"],
+                        "next": "parallel-tasks"
+                    },
+                    {
+                        "id": "parallel-tasks",
+                        "type": "parallel",
+                        "steps": ["task-a", "task-b"],
+                        "onComplete": "wait-step"
+                    },
+                    {
+                        "id": "task-a",
+                        "type": "command",
+                        "ref": "bootstrap",
+                        "onSuccess": "end-success",
+                        "onFailure": "end-failure"
+                    },
+                    {
+                        "id": "task-b",
+                        "type": "command",
+                        "ref": "seed-nodes",
+                        "onSuccess": "end-success",
+                        "onFailure": "end-failure"
+                    },
+                    {
+                        "id": "wait-step",
+                        "type": "delay",
+                        "duration": 1000,
+                        "next": "final-notify"
+                    },
+                    {
+                        "id": "final-notify",
+                        "type": "notify",
+                        "message": "Workflow completed successfully!",
+                        "level": "success",
+                        "next": "end-success"
+                    },
+                    {
+                        "id": "end-success",
+                        "type": "end",
+                        "status": "success"
+                    },
+                    {
+                        "id": "end-failure",
+                        "type": "end",
+                        "status": "failure"
+                    }
+                ]
+            }
         }
     ],
     "docs": [
