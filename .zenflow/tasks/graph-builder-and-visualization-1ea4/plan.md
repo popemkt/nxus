@@ -81,7 +81,8 @@ Create the visual node component for workflow steps.
 
 ---
 
-### [ ] Step: Create Workflow Edge Component
+### [x] Step: Create Workflow Edge Component
+<!-- chat-id: 14d124da-d5e2-4691-8575-e86144e4755f -->
 
 Create the edge component for workflow transitions.
 
