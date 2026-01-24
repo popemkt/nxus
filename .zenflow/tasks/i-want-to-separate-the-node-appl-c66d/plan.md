@@ -324,6 +324,53 @@ Add tests and documentation for the new packages.
 
 ---
 
+
+### [x] Step: After implementation fixes
+<!-- chat-id: 698cabb1-2ce8-41fe-9ae6-6cd5362982eb -->
+<!-- agent: claude-code -->
+
+**Issues Identified:**
+1. No apps or data seeded when booting - db:seed needed to be run manually
+2. db:seed failed because bootstrap nodes weren't created first
+
+**Fixes Implemented:**
+
+- [x] **6.1**: Move Bootstrap Logic to @nxus/db
+  - Created `packages/nxus-db/src/services/bootstrap.ts` with:
+    - `bootstrapSystemNodes()` - idempotent function to create system schema
+    - `isBootstrapped()` - check if system already bootstrapped
+    - `BootstrapOptions` and `BootstrapResult` types
+  - Exported via `@nxus/db/server` entry point
+
+- [x] **6.2**: Update db-seed.ts to Call Bootstrap First
+  - Modified `nxus-core/scripts/db-seed.ts` to import and call `bootstrapSystemNodes()` before seeding
+  - Bootstrap is now automatically run as part of `pnpm db:seed`
+
+- [x] **6.3**: Simplify bootstrap-nodes.ts Script
+  - Updated to be a thin wrapper around `bootstrapSystemNodes()` from `@nxus/db/server`
+  - Maintains backward compatibility for direct script execution
+
+- [x] **6.4**: Add Command Palette Options
+  - Added "DB: Bootstrap System Nodes" command (id: `db-bootstrap`) for standalone bootstrap
+  - Updated "DB: Sync JSON → Database" description to indicate it includes bootstrap
+  - Both commands available in command palette for user convenience
+
+**Verification:**
+- [x] `pnpm db:seed` now succeeds (bootstrap + tables + nodes)
+- [x] `nx run-many -t typecheck` passes
+- [x] `pnpm run build` (nxus-core) succeeds
+
+**Architecture Summary:**
+```
+@nxus/db
+├── bootstrapSystemNodes() - Creates core system schema (supertags, fields)
+└── Exported via @nxus/db/server
+
+nxus-core
+├── scripts/db-seed.ts - Calls bootstrap + seeds app data
+├── scripts/bootstrap-nodes.ts - Thin wrapper for manual bootstrap
+└── Command palette: "DB: Bootstrap" and "DB: Sync JSON → Database"
+```
 ## Final Verification Checklist
 
 After all steps complete, verify:
