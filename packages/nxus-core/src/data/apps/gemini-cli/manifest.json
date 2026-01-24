@@ -1,65 +1,61 @@
 {
-    "id": "gemini-cli",
-    "name": "Gemini CLI",
-    "description": "Multi-modal AI CLI powered by Gemini Pro. Used for thumbnail generation and AI workflows.",
-    "type": "tool",
-    "path": "https://github.com/google-gemini/gemini-cli",
-    "homepage": "https://github.com/google-gemini/gemini-cli",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "gemini --version",
-    "installInstructions": "Install via npm: npm install -g @google/gemini-cli",
-    "commands": [
-        {
-            "id": "install-gemini-cli",
-            "name": "Install",
-            "description": "Install Gemini CLI globally",
-            "icon": "Download",
-            "category": "Setup",
-            "target": "item",
-            "mode": "execute",
-            "command": "npm install -g @google/gemini-cli",
-            "requires": {
-                "selfNotInstalled": true
-            }
-        },
-        {
-            "id": "update-gemini-cli",
-            "name": "Update",
-            "description": "Update to latest version",
-            "icon": "ArrowsClockwise",
-            "category": "Maintenance",
-            "target": "item",
-            "mode": "execute",
-            "command": "npm update -g @google/gemini-cli",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "uninstall-gemini-cli",
-            "name": "Uninstall",
-            "description": "Remove Gemini CLI",
-            "icon": "Trash",
-            "category": "Setup",
-            "target": "item",
-            "mode": "execute",
-            "command": "npm uninstall -g @google/gemini-cli",
-            "requires": {
-                "selfInstalled": true
-            }
-        }
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "development-tools",
-        "createdAt": "2026-01-01T00:00:00.000Z",
-        "updatedAt": "2026-01-01T22:37:00.000Z",
-        "version": "1.0.0",
-        "author": "Google"
+  "id": "gemini-cli",
+  "name": "Gemini CLI",
+  "description": "Multi-modal AI CLI powered by Gemini Pro. Used for thumbnail generation and AI workflows.",
+  "type": "tool",
+  "path": "https://github.com/google-gemini/gemini-cli",
+  "homepage": "https://github.com/google-gemini/gemini-cli",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "gemini --version",
+  "installInstructions": "Install via npm: npm install -g @google/gemini-cli",
+  "commands": [
+    {
+      "id": "install-gemini-cli",
+      "name": "Install",
+      "description": "Install Gemini CLI globally",
+      "icon": "Download",
+      "category": "Setup",
+      "target": "item",
+      "mode": "execute",
+      "command": "npm install -g @google/gemini-cli",
+      "requires": {
+        "selfNotInstalled": true
+      }
     },
-    "status": "not-installed"
+    {
+      "id": "update-gemini-cli",
+      "name": "Update",
+      "description": "Update to latest version",
+      "icon": "ArrowsClockwise",
+      "category": "Maintenance",
+      "target": "item",
+      "mode": "execute",
+      "command": "npm update -g @google/gemini-cli",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "uninstall-gemini-cli",
+      "name": "Uninstall",
+      "description": "Remove Gemini CLI",
+      "icon": "Trash",
+      "category": "Setup",
+      "target": "item",
+      "mode": "execute",
+      "command": "npm uninstall -g @google/gemini-cli",
+      "requires": {
+        "selfInstalled": true
+      }
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "development-tools",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T22:37:00.000Z",
+    "version": "1.0.0",
+    "author": "Google"
+  },
+  "status": "not-installed"
 }

@@ -1,0 +1,48 @@
+{
+  "id": "tana-helper",
+  "name": "Tana Helper",
+  "description": "Small web service to handle API calls from Tana and do useful things",
+  "type": "remote-repo",
+  "path": "https://github.com/verveguy/tana-helper.git",
+  "homepage": "https://github.com/verveguy/tana-helper",
+  "commands": [
+    {
+      "id": "clone",
+      "name": "Clone Repo",
+      "description": "Clone the Tana Helper repository",
+      "icon": "DownloadSimple",
+      "category": "Source",
+      "target": "item",
+      "mode": "execute",
+      "command": "git clone https://github.com/verveguy/tana-helper.git"
+    },
+    {
+      "id": "pull",
+      "name": "Pull Latest",
+      "description": "Pull latest changes from the repository",
+      "icon": "ArrowDown",
+      "category": "Source",
+      "target": "item",
+      "mode": "execute",
+      "command": "git pull"
+    },
+    {
+      "id": "releases",
+      "name": "Download Releases",
+      "description": "Go to releases page for pre-built binaries",
+      "icon": "Download",
+      "category": "Installation",
+      "target": "item",
+      "mode": "docs",
+      "command": "https://github.com/verveguy/tana-helper/releases"
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "utilities",
+    "version": "1.0.0",
+    "author": "verveguy",
+    "createdAt": "2026-02-18T12:00:00Z",
+    "updatedAt": "2026-02-18T12:00:00Z"
+  }
+}

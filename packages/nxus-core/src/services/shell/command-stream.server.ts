@@ -1,3 +1,7 @@
+import fs from 'fs'
+import path from 'path'
+import url from 'url'
+import { spawn } from 'child_process'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
@@ -18,41 +22,40 @@ const StreamCommandInputSchema = z.object({
 })
 
 // Cache for project root (computed once per server instance)
-let _projectRoot: string | null = null
+let _projectRootPromise: Promise<string> | null = null
 
 /**
  * Find the monorepo root by traversing up to find pnpm-workspace.yaml
- * Must be called inside handler (uses require for fs)
+ * Uses async fs methods to avoid blocking the event loop
  */
-function getProjectRoot(): string {
-  if (_projectRoot) return _projectRoot
+function getProjectRoot(): Promise<string> {
+  if (_projectRootPromise) return _projectRootPromise
 
-  const fs = require('fs')
-  const path = require('path')
-  const url = require('url')
+  _projectRootPromise = (async () => {
+    const __filename = url.fileURLToPath(import.meta.url)
+    let dir = path.dirname(__filename)
 
-  const __filename = url.fileURLToPath(import.meta.url)
-  let dir = path.dirname(__filename)
-
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
-      _projectRoot = dir
-      return dir
-    }
-    const pkgPath = path.join(dir, 'package.json')
-    if (fs.existsSync(pkgPath)) {
+    while (dir !== path.dirname(dir)) {
       try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+        await fs.promises.access(path.join(dir, 'pnpm-workspace.yaml'))
+        return dir
+      } catch {}
+
+      const pkgPath = path.join(dir, 'package.json')
+      try {
+        await fs.promises.access(pkgPath)
+        const pkgContent = await fs.promises.readFile(pkgPath, 'utf-8')
+        const pkg = JSON.parse(pkgContent)
         if (pkg.workspaces) {
-          _projectRoot = dir
           return dir
         }
       } catch {}
+      dir = path.dirname(dir)
     }
-    dir = path.dirname(dir)
-  }
-  _projectRoot = process.cwd()
-  return _projectRoot
+    return process.cwd()
+  })()
+
+  return _projectRootPromise
 }
 
 /**
@@ -62,14 +65,11 @@ function getProjectRoot(): string {
 export const streamCommandServerFn = createServerFn({ method: 'POST' })
   .inputValidator(StreamCommandInputSchema)
   .handler(async function* (ctx) {
-    const { spawn } = require('child_process')
-    const path = require('path')
-
     console.log('[streamCommandServerFn] Input:', ctx.data)
     const { command, args = [], cwd, env } = ctx.data
 
     // Get project root and resolve cwd
-    const projectRoot = getProjectRoot()
+    const projectRoot = await getProjectRoot()
     let resolvedCwd = process.cwd()
     if (cwd) {
       resolvedCwd = path.isAbsolute(cwd) ? cwd : path.join(projectRoot, cwd)

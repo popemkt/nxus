@@ -20,7 +20,9 @@ async function bootstrap() {
     console.log('\nSystem was already bootstrapped.')
   }
 
-  console.log(`\nFinal counts: ${result.nodeCount} nodes, ${result.propertyCount} properties`)
+  console.log(
+    `\nFinal counts: ${result.nodeCount} nodes, ${result.propertyCount} properties`,
+  )
 }
 
 bootstrap().catch(console.error)

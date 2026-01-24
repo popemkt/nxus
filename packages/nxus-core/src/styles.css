@@ -8,10 +8,12 @@
    you MUST add a @source directive here pointing to your package.
    Otherwise, Tailwind won't generate CSS for classes used in your package.
 
-   Example: @source "../../your-new-package/src/**/*.{ts,tsx}";
+   Example: @source "../../your-new-package/src";
 */
-@source "../../nxus-ui/src/**/*.{ts,tsx}";
-@source "../../nxus-workbench/src/**/*.{ts,tsx}";
+@source "../../nxus-ui/src/**/*.ts";
+@source "../../nxus-ui/src/**/*.tsx";
+@source "../../nxus-workbench/src/**/*.ts";
+@source "../../nxus-workbench/src/**/*.tsx";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -10,7 +10,12 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { initDatabase, saveDatabase, tagSchemas, itemTagConfigs } from '@nxus/db/server'
+import {
+  initDatabase,
+  saveDatabase,
+  tagSchemas,
+  itemTagConfigs,
+} from '@nxus/db/server'
 import { eq, and } from 'drizzle-orm'
 
 // ============================================================================

@@ -1,423 +1,411 @@
 {
-    "id": "github-cli",
-    "name": "GitHub CLI",
-    "description": "Official GitHub command line tool for managing repositories, pull requests, issues, and more",
-    "type": "tool",
-    "path": "https://cli.github.com/",
-    "homepage": "https://cli.github.com/",
-    "platform": [
-        "linux",
-        "macos",
-        "windows"
-    ],
-    "checkCommand": "gh --version",
-    "installInstructions": "Visit https://cli.github.com/ for installation instructions for your platform",
-    "commands": [
-        {
-            "id": "install-gh-cli",
-            "name": "Install",
-            "description": "Smart install (auto-detect OS)",
-            "icon": "Download",
-            "category": "Setup",
-            "target": "item",
-            "mode": "script",
-            "command": "install.ps1",
-            "requires": {
-                "tools": [
-                    "powershell"
-                ],
-                "selfNotInstalled": true
-            }
-        },
-        {
-            "id": "uninstall-gh-cli",
-            "name": "Uninstall",
-            "description": "Remove GitHub CLI from system",
-            "icon": "Trash",
-            "category": "Setup",
-            "target": "item",
-            "mode": "execute",
-            "command": "sudo dnf remove -y gh",
-            "platforms": [
-                "linux"
-            ],
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-auth-login",
-            "name": "Authenticate",
-            "description": "Login to GitHub account",
-            "icon": "Key",
-            "category": "Setup",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh auth login",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-auth-status",
-            "name": "Check Auth Status",
-            "description": "Check GitHub authentication status",
-            "icon": "CheckCircle",
-            "category": "Setup",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh auth status",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-repo-create",
-            "name": "Create Repository",
-            "description": "Create a new GitHub repository",
-            "icon": "Plus",
-            "category": "Repository",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh repo create",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-repo-clone",
-            "name": "Clone Repository",
-            "description": "Clone a repository locally",
-            "icon": "GitBranch",
-            "category": "Repository",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh repo clone",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-repo-view",
-            "name": "View Repository",
-            "description": "View repository details",
-            "icon": "Eye",
-            "category": "Repository",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh repo view",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-repo-list",
-            "name": "List Repositories",
-            "description": "List your repositories",
-            "icon": "List",
-            "category": "Repository",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh repo list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-pr-create",
-            "name": "Create Pull Request",
-            "description": "Create a new pull request",
-            "icon": "GitPullRequest",
-            "category": "Pull Request",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh pr create",
-            "requires": {
-                "tools": [
-                    "git"
-                ],
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-pr-list",
-            "name": "List Pull Requests",
-            "description": "List pull requests",
-            "icon": "ListBullets",
-            "category": "Pull Request",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh pr list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-pr-checkout",
-            "name": "Checkout PR",
-            "description": "Checkout a pull request locally",
-            "icon": "ArrowsClockwise",
-            "category": "Pull Request",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh pr checkout",
-            "requires": {
-                "tools": [
-                    "git"
-                ],
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-pr-view",
-            "name": "View Pull Request",
-            "description": "View details of a pull request",
-            "icon": "Eye",
-            "category": "Pull Request",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh pr view",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-pr-merge",
-            "name": "Merge Pull Request",
-            "description": "Merge a pull request",
-            "icon": "GitMerge",
-            "category": "Pull Request",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh pr merge",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-issue-create",
-            "name": "Create Issue",
-            "description": "Create a new issue",
-            "icon": "Plus",
-            "category": "Issues",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh issue create",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-issue-list",
-            "name": "List Issues",
-            "description": "List issues in a repository",
-            "icon": "ListBullets",
-            "category": "Issues",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh issue list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-issue-view",
-            "name": "View Issue",
-            "description": "View details of an issue",
-            "icon": "Eye",
-            "category": "Issues",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh issue view",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-issue-close",
-            "name": "Close Issue",
-            "description": "Close an issue",
-            "icon": "XCircle",
-            "category": "Issues",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh issue close",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-release-create",
-            "name": "Create Release",
-            "description": "Create a new release",
-            "icon": "Tag",
-            "category": "Release",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh release create",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-release-list",
-            "name": "List Releases",
-            "description": "List releases",
-            "icon": "ListBullets",
-            "category": "Release",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh release list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-release-view",
-            "name": "View Release",
-            "description": "View details of a release",
-            "icon": "Eye",
-            "category": "Release",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh release view",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-workflow-list",
-            "name": "List Workflows",
-            "description": "List GitHub Actions workflows",
-            "icon": "Gear",
-            "category": "Workflows",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh workflow list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-workflow-run",
-            "name": "Run Workflow",
-            "description": "Run a workflow",
-            "icon": "Play",
-            "category": "Workflows",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh workflow run",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-run-list",
-            "name": "List Workflow Runs",
-            "description": "List recent workflow runs",
-            "icon": "ListBullets",
-            "category": "Workflows",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh run list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-run-view",
-            "name": "View Workflow Run",
-            "description": "View details of a workflow run",
-            "icon": "Eye",
-            "category": "Workflows",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh run view",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-gist-create",
-            "name": "Create Gist",
-            "description": "Create a new gist",
-            "icon": "FileCode",
-            "category": "Gist",
-            "target": "item",
-            "mode": "terminal",
-            "command": "gh gist create",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-gist-list",
-            "name": "List Gists",
-            "description": "List your gists",
-            "icon": "ListBullets",
-            "category": "Gist",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh gist list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-browse",
-            "name": "Open in Browser",
-            "description": "Open repository in browser",
-            "icon": "Globe",
-            "category": "Repository",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh browse",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-config-list",
-            "name": "List Config",
-            "description": "View GitHub CLI configuration",
-            "icon": "Gear",
-            "category": "Configuration",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh config list",
-            "requires": {
-                "selfInstalled": true
-            }
-        },
-        {
-            "id": "gh-status",
-            "name": "View Status",
-            "description": "View GitHub status across repos",
-            "icon": "Info",
-            "category": "Info",
-            "target": "item",
-            "mode": "execute",
-            "command": "gh status",
-            "requires": {
-                "selfInstalled": true
-            }
-        }
-    ],
-    "docs": [
-        {
-            "id": "gh-install-docs",
-            "title": "Installation",
-            "file": "install.md",
-            "icon": "Download"
-        }
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "development-tools",
-        "createdAt": "2026-01-03T07:59:33Z",
-        "updatedAt": "2026-01-03T07:59:33Z",
-        "version": "1.0.0",
-        "author": "GitHub"
+  "id": "github-cli",
+  "name": "GitHub CLI",
+  "description": "Official GitHub command line tool for managing repositories, pull requests, issues, and more",
+  "type": "tool",
+  "path": "https://cli.github.com/",
+  "homepage": "https://cli.github.com/",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "gh --version",
+  "installInstructions": "Visit https://cli.github.com/ for installation instructions for your platform",
+  "commands": [
+    {
+      "id": "install-gh-cli",
+      "name": "Install",
+      "description": "Smart install (auto-detect OS)",
+      "icon": "Download",
+      "category": "Setup",
+      "target": "item",
+      "mode": "script",
+      "command": "install.ps1",
+      "requires": {
+        "tools": ["powershell"],
+        "selfNotInstalled": true
+      }
     },
-    "status": "not-installed"
+    {
+      "id": "uninstall-gh-cli",
+      "name": "Uninstall",
+      "description": "Remove GitHub CLI from system",
+      "icon": "Trash",
+      "category": "Setup",
+      "target": "item",
+      "mode": "execute",
+      "command": "sudo dnf remove -y gh",
+      "platforms": ["linux"],
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-auth-login",
+      "name": "Authenticate",
+      "description": "Login to GitHub account",
+      "icon": "Key",
+      "category": "Setup",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh auth login",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-auth-status",
+      "name": "Check Auth Status",
+      "description": "Check GitHub authentication status",
+      "icon": "CheckCircle",
+      "category": "Setup",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh auth status",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-repo-create",
+      "name": "Create Repository",
+      "description": "Create a new GitHub repository",
+      "icon": "Plus",
+      "category": "Repository",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh repo create",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-repo-clone",
+      "name": "Clone Repository",
+      "description": "Clone a repository locally",
+      "icon": "GitBranch",
+      "category": "Repository",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh repo clone",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-repo-view",
+      "name": "View Repository",
+      "description": "View repository details",
+      "icon": "Eye",
+      "category": "Repository",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh repo view",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-repo-list",
+      "name": "List Repositories",
+      "description": "List your repositories",
+      "icon": "List",
+      "category": "Repository",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh repo list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-pr-create",
+      "name": "Create Pull Request",
+      "description": "Create a new pull request",
+      "icon": "GitPullRequest",
+      "category": "Pull Request",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh pr create",
+      "requires": {
+        "tools": ["git"],
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-pr-list",
+      "name": "List Pull Requests",
+      "description": "List pull requests",
+      "icon": "ListBullets",
+      "category": "Pull Request",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh pr list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-pr-checkout",
+      "name": "Checkout PR",
+      "description": "Checkout a pull request locally",
+      "icon": "ArrowsClockwise",
+      "category": "Pull Request",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh pr checkout",
+      "requires": {
+        "tools": ["git"],
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-pr-view",
+      "name": "View Pull Request",
+      "description": "View details of a pull request",
+      "icon": "Eye",
+      "category": "Pull Request",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh pr view",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-pr-merge",
+      "name": "Merge Pull Request",
+      "description": "Merge a pull request",
+      "icon": "GitMerge",
+      "category": "Pull Request",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh pr merge",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-issue-create",
+      "name": "Create Issue",
+      "description": "Create a new issue",
+      "icon": "Plus",
+      "category": "Issues",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh issue create",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-issue-list",
+      "name": "List Issues",
+      "description": "List issues in a repository",
+      "icon": "ListBullets",
+      "category": "Issues",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh issue list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-issue-view",
+      "name": "View Issue",
+      "description": "View details of an issue",
+      "icon": "Eye",
+      "category": "Issues",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh issue view",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-issue-close",
+      "name": "Close Issue",
+      "description": "Close an issue",
+      "icon": "XCircle",
+      "category": "Issues",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh issue close",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-release-create",
+      "name": "Create Release",
+      "description": "Create a new release",
+      "icon": "Tag",
+      "category": "Release",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh release create",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-release-list",
+      "name": "List Releases",
+      "description": "List releases",
+      "icon": "ListBullets",
+      "category": "Release",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh release list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-release-view",
+      "name": "View Release",
+      "description": "View details of a release",
+      "icon": "Eye",
+      "category": "Release",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh release view",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-workflow-list",
+      "name": "List Workflows",
+      "description": "List GitHub Actions workflows",
+      "icon": "Gear",
+      "category": "Workflows",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh workflow list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-workflow-run",
+      "name": "Run Workflow",
+      "description": "Run a workflow",
+      "icon": "Play",
+      "category": "Workflows",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh workflow run",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-run-list",
+      "name": "List Workflow Runs",
+      "description": "List recent workflow runs",
+      "icon": "ListBullets",
+      "category": "Workflows",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh run list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-run-view",
+      "name": "View Workflow Run",
+      "description": "View details of a workflow run",
+      "icon": "Eye",
+      "category": "Workflows",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh run view",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-gist-create",
+      "name": "Create Gist",
+      "description": "Create a new gist",
+      "icon": "FileCode",
+      "category": "Gist",
+      "target": "item",
+      "mode": "terminal",
+      "command": "gh gist create",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-gist-list",
+      "name": "List Gists",
+      "description": "List your gists",
+      "icon": "ListBullets",
+      "category": "Gist",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh gist list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-browse",
+      "name": "Open in Browser",
+      "description": "Open repository in browser",
+      "icon": "Globe",
+      "category": "Repository",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh browse",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-config-list",
+      "name": "List Config",
+      "description": "View GitHub CLI configuration",
+      "icon": "Gear",
+      "category": "Configuration",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh config list",
+      "requires": {
+        "selfInstalled": true
+      }
+    },
+    {
+      "id": "gh-status",
+      "name": "View Status",
+      "description": "View GitHub status across repos",
+      "icon": "Info",
+      "category": "Info",
+      "target": "item",
+      "mode": "execute",
+      "command": "gh status",
+      "requires": {
+        "selfInstalled": true
+      }
+    }
+  ],
+  "docs": [
+    {
+      "id": "gh-install-docs",
+      "title": "Installation",
+      "file": "install.md",
+      "icon": "Download"
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "development-tools",
+    "createdAt": "2026-01-03T07:59:33Z",
+    "updatedAt": "2026-01-03T07:59:33Z",
+    "version": "1.0.0",
+    "author": "GitHub"
+  },
+  "status": "not-installed"
 }

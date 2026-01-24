@@ -1,112 +1,104 @@
 {
-    "id": "client-side-databases",
-    "name": "Client Side Databases",
-    "description": "An implementation of the exact same app in Firestore, AWS Datastore, PouchDB, RxDB and WatermelonDB.",
-    "type": "remote-repo",
-    "path": "https://github.com/pubkey/client-side-databases.git",
-    "homepage": "https://github.com/pubkey/client-side-databases",
-    "commands": [
-        {
-            "id": "install-deps",
-            "name": "Install Dependencies",
-            "description": "npm install",
-            "icon": "Package",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm install"
-        },
-        {
-            "id": "build-all",
-            "name": "Build All Projects",
-            "description": "Build all database implementations",
-            "icon": "Hammer",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run build"
-        },
-        {
-            "id": "run-firestore",
-            "name": "Run Firestore",
-            "description": "Start the Firestore implementation",
-            "icon": "Fire",
-            "category": "Run",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run start:firestore"
-        },
-        {
-            "id": "run-rxdb",
-            "name": "Run RxDB",
-            "description": "Start the RxDB implementation",
-            "icon": "Database",
-            "category": "Run",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run start:rxdb"
-        },
-        {
-            "id": "run-pouchdb",
-            "name": "Run PouchDB",
-            "description": "Start the PouchDB implementation",
-            "icon": "Database",
-            "category": "Run",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run start:pouchdb"
-        },
-        {
-            "id": "run-watermelondb",
-            "name": "Run WatermelonDB",
-            "description": "Start the WatermelonDB implementation",
-            "icon": "Database",
-            "category": "Run",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run start:watermelondb"
-        },
-        {
-            "id": "run-aws",
-            "name": "Run AWS Datastore",
-            "description": "Start the AWS Datastore implementation",
-            "icon": "CloudArrowUp",
-            "category": "Run",
-            "target": "instance",
-            "mode": "execute",
-            "command": "npm run start:aws"
-        },
-        {
-            "id": "git-pull",
-            "name": "Update from Git",
-            "description": "Pull latest changes from repository",
-            "icon": "ArrowsClockwise",
-            "category": "Development",
-            "target": "instance",
-            "mode": "execute",
-            "command": "git pull"
-        }
-    ],
-    "dependencies": [
-        "node",
-        "npm",
-        "git"
-    ],
-    "metadata": {
-        "tags": [],
-        "category": "development-tools",
-        "createdAt": "2025-12-29T02:25:00.000Z",
-        "updatedAt": "2025-12-29T02:25:00.000Z",
-        "version": "1.0.0",
-        "author": "pubkey"
+  "id": "client-side-databases",
+  "name": "Client Side Databases",
+  "description": "An implementation of the exact same app in Firestore, AWS Datastore, PouchDB, RxDB and WatermelonDB.",
+  "type": "remote-repo",
+  "path": "https://github.com/pubkey/client-side-databases.git",
+  "homepage": "https://github.com/pubkey/client-side-databases",
+  "commands": [
+    {
+      "id": "install-deps",
+      "name": "Install Dependencies",
+      "description": "npm install",
+      "icon": "Package",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm install"
     },
-    "installConfig": {
-        "script": "npm install && npm run build",
-        "platform": [
-            "linux",
-            "macos",
-            "windows"
-        ]
+    {
+      "id": "build-all",
+      "name": "Build All Projects",
+      "description": "Build all database implementations",
+      "icon": "Hammer",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run build"
     },
-    "status": "not-installed"
+    {
+      "id": "run-firestore",
+      "name": "Run Firestore",
+      "description": "Start the Firestore implementation",
+      "icon": "Fire",
+      "category": "Run",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run start:firestore"
+    },
+    {
+      "id": "run-rxdb",
+      "name": "Run RxDB",
+      "description": "Start the RxDB implementation",
+      "icon": "Database",
+      "category": "Run",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run start:rxdb"
+    },
+    {
+      "id": "run-pouchdb",
+      "name": "Run PouchDB",
+      "description": "Start the PouchDB implementation",
+      "icon": "Database",
+      "category": "Run",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run start:pouchdb"
+    },
+    {
+      "id": "run-watermelondb",
+      "name": "Run WatermelonDB",
+      "description": "Start the WatermelonDB implementation",
+      "icon": "Database",
+      "category": "Run",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run start:watermelondb"
+    },
+    {
+      "id": "run-aws",
+      "name": "Run AWS Datastore",
+      "description": "Start the AWS Datastore implementation",
+      "icon": "CloudArrowUp",
+      "category": "Run",
+      "target": "instance",
+      "mode": "execute",
+      "command": "npm run start:aws"
+    },
+    {
+      "id": "git-pull",
+      "name": "Update from Git",
+      "description": "Pull latest changes from repository",
+      "icon": "ArrowsClockwise",
+      "category": "Development",
+      "target": "instance",
+      "mode": "execute",
+      "command": "git pull"
+    }
+  ],
+  "dependencies": ["node", "npm", "git"],
+  "metadata": {
+    "tags": [],
+    "category": "development-tools",
+    "createdAt": "2025-12-29T02:25:00.000Z",
+    "updatedAt": "2025-12-29T02:25:00.000Z",
+    "version": "1.0.0",
+    "author": "pubkey"
+  },
+  "installConfig": {
+    "script": "npm install && npm run build",
+    "platform": ["linux", "macos", "windows"]
+  },
+  "status": "not-installed"
 }

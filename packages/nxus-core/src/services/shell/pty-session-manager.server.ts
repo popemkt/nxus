@@ -18,6 +18,7 @@ export interface PtySession {
   outputBuffer: string[] // Buffer for reconnection
   bufferOffset: number // Total characters shifted out of the buffer
   isAlive: boolean
+  exitCode?: number
   resizeInProgress: boolean // Flag to suppress output during resize
   resizeDebounceTimeout: NodeJS.Timeout | null // Resize settle timer
 }
@@ -177,6 +178,7 @@ export function createPtySession(options?: {
   ptyProcess.onExit(({ exitCode }) => {
     console.log(`[PTY] Session ${id} exited with code ${exitCode}`)
     session.isAlive = false
+    session.exitCode = exitCode
   })
 
   // Set cleanup timer
