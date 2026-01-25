@@ -86,9 +86,9 @@ async function sync() {
           if (res[0]) {
             tagId = res[0].id
             nameToId.set(tagName.toLowerCase(), tagId)
+            createdCount++
+            console.log(`Created missing tag: ${tagName} (id: ${tagId})`)
           }
-          createdCount++
-          console.log(`Created missing tag: ${tagName} (id: ${tagId})`)
         } catch (err) {
           console.error(`Failed to create tag ${tagName}:`, err)
           continue

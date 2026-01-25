@@ -162,7 +162,7 @@ export function NodeInspector({
     fieldSystemId: string | null
   }> = []
 
-  for (const [fieldName, values] of Object.entries(node.properties)) {
+  for (const [fieldName, values] of Object.entries(node.properties) as [string, Array<{ value: unknown; rawValue: string; fieldSystemId: string | null; fieldNodeId: string }>][]) {
     for (const pv of values) {
       const value = pv.value
       // Check if value looks like a UUID (node reference)
@@ -279,7 +279,7 @@ export function NodeInspector({
             </div>
           ) : (
             <div className="flex flex-wrap gap-1.5">
-              {node.supertags.map((st) => (
+              {node.supertags.map((st: { id: string; content: string; systemId: string | null }) => (
                 <button
                   key={st.id}
                   onClick={() => onNavigate(st.id)}
@@ -307,7 +307,7 @@ export function NodeInspector({
             </div>
           ) : (
             <div className="space-y-2">
-              {Object.entries(node.properties).map(([fieldName, values]) => (
+              {(Object.entries(node.properties) as [string, Array<{ value: unknown; rawValue: string; fieldSystemId: string | null; fieldNodeId: string }>][]).map(([fieldName, values]) => (
                 <PropertyRow
                   key={fieldName}
                   fieldName={fieldName}

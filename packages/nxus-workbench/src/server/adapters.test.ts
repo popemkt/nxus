@@ -263,7 +263,7 @@ describe('adapters', () => {
 
       expect(cmd.mode).toBe('workflow')
       expect(cmd.workflow).toEqual(workflowDefinition)
-      // @ts-expect-error - workflow command does not have command property
+      // @ts-expect-error - workflow command should not have 'command' property
       expect(cmd.command).toBeUndefined()
     })
 

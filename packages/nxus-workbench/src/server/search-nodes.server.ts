@@ -19,6 +19,7 @@ import {
   assembleNode,
   getNodesBySupertagWithInheritance,
   type AssembledNode,
+  type Node,
 } from '@nxus/db/server'
 
 // ============================================================================
@@ -278,7 +279,7 @@ export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
       if (visited.has(currentId)) break
       visited.add(currentId)
 
-      const node = db.select().from(nodes).where(eq(nodes.id, currentId)).get()
+      const node: Node | undefined = db.select().from(nodes).where(eq(nodes.id, currentId)).get()
 
       if (!node) break
 
@@ -327,7 +328,7 @@ export const getChildNodesServerFn = createServerFn({ method: 'GET' })
         // Filter by supertag if specified
         if (supertagSystemId) {
           const hasSupertag = assembled.supertags.some(
-            (st) => st.systemId === supertagSystemId,
+            (st: { id: string; content: string; systemId: string | null }) => st.systemId === supertagSystemId,
           )
           if (hasSupertag) {
             assembledNodes.push(assembled)

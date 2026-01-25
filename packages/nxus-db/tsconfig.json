@@ -5,6 +5,8 @@
     "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
+    "composite": true,
+    "emitDeclarationOnly": true,
     "lib": ["es2022"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
