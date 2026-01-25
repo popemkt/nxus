@@ -873,7 +873,8 @@ Create the main GraphView component that orchestrates everything.
 
 ---
 
-### [ ] Step: Update Workbench Route
+### [x] Step: Update Workbench Route
+<!-- chat-id: acc59c93-9fb4-43ed-b547-645bbd524c63 -->
 
 Integrate sidebar and graph view into workbench with proper focus synchronization.
 
@@ -897,6 +898,36 @@ Integrate sidebar and graph view into workbench with proper focus synchronizatio
 - **Node selection syncs bidirectionally** (Browser ↔ Graph ↔ Inspector)
 - Supertag sidebar still works
 - Local graph focus follows selection
+
+**Completed**: Integrated Sidebar and GraphView into the workbench route with full focus synchronization:
+
+1. **route.tsx**: Updated main workbench component
+   - Added `viewMode` state ('list' | 'graph') to toggle between views
+   - Added `Sidebar` component on far left for view mode switching
+   - Added `GraphView` import and conditional rendering
+   - Connected to `useGraphStore` for local graph settings
+
+2. **Focus Synchronization Handlers**:
+   - `handleNodeBrowserSelect()` - Syncs local graph focus when selecting in browser
+   - `handleGraphNodeClick()` - Updates selection and local graph focus on graph click
+   - `handleGraphNodeDoubleClick()` - Same as click, enables "drill down" behavior
+   - `handleGraphBackgroundClick()` - Clears selection but keeps local graph focus
+
+3. **useEffect for Local Graph Toggle**:
+   - When local graph is enabled and we have a selection but no focus node, automatically sets the selected node as focus
+   - Ensures smooth transition when toggling local graph ON
+
+4. **Layout Structure**:
+   - Far Left: Sidebar (always visible)
+   - Left: SupertagSidebar (list view only)
+   - Center: NodeBrowser (list view) or GraphView (graph view)
+   - Right: NodeInspector (always visible, shows selected node)
+
+5. **Context-aware Empty State**:
+   - Different help text for list view ("Use ↑↓ to navigate, Enter to select")
+   - Different help text for graph view ("Click a node in the graph to select")
+
+**Tests**: All 150 tests passing
 
 ---
 
