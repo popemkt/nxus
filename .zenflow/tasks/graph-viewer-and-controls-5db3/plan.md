@@ -773,7 +773,8 @@ Create the 3D graph renderer.
 
 ## Phase 5: Integration
 
-### [ ] Step: Create Sidebar Component
+### [x] Step: Create Sidebar Component
+<!-- chat-id: 0dc15221-28f6-486e-94d6-6e3a70c1e4ab -->
 
 Build the Discord-style icon sidebar.
 
@@ -792,6 +793,31 @@ Build the Discord-style icon sidebar.
 - Sidebar renders on left
 - Icons show tooltips
 - Active state displays correctly
+
+**Completed**: Implemented Discord-style icon sidebar with tooltip support:
+
+1. **SidebarIcon.tsx**: Individual icon button component
+   - Accepts any Phosphor icon via `icon` prop
+   - Tooltip with arrow pointing left, positioned to the right of icon
+   - 200ms delay before tooltip appears
+   - Active state: primary color background, filled icon weight
+   - Active indicator: vertical bar on left edge
+   - Smooth transitions for all states
+
+2. **Sidebar.tsx**: Vertical container component
+   - `ViewMode` type: 'list' | 'graph'
+   - Compact 64px width (w-16)
+   - Contains List and Graph icons
+   - Callbacks for view switching via `onViewChange`
+   - Space for future icons at bottom (Settings, Help)
+
+3. **index.ts**: Barrel exports
+   - All components and types exported
+   - Types: `SidebarProps`, `ViewMode`, `SidebarIconProps`
+
+4. **Updated components/index.ts**: Added layout exports to main components barrel
+
+**Tests**: All 150 existing tests pass
 
 ---
 
