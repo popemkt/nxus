@@ -691,7 +691,8 @@ Install and configure 3d-force-graph with lazy loading to avoid bundle bloat.
 
 ---
 
-### [ ] Step: Build Graph3D Component
+### [x] Step: Build Graph3D Component
+<!-- chat-id: 56ed1985-e2a1-4cee-b56f-856f6ae53b8d -->
 
 Create the 3D graph renderer.
 
@@ -715,6 +716,58 @@ Create the 3D graph renderer.
 - Camera controls work
 - Physics params affect simulation
 - Node interactions work
+
+**Completed**: Implemented the Graph3D component with full 3d-force-graph integration:
+
+1. **Added dependency**: `@types/three` for TypeScript support
+
+2. **use-3d-graph.ts**: Main hook for managing 3d-force-graph instance
+   - `Graph3DNode` and `Graph3DLink` types extending three-forcegraph types
+   - `use3DGraph()` hook with React lifecycle management
+   - Physics integration with store parameters (centerForce, repelForce, linkForce, linkDistance)
+   - Node callbacks: `onNodeClick`, `onNodeRightClick`, `onNodeDoubleClick`, `onNodeHover`
+   - Link callbacks: `onLinkHover`
+   - Background click handling
+   - Camera controls: `focusOnNode()`, `resetCamera()`
+   - Simulation controls: `pauseSimulation()`, `resumeSimulation()`, `reheatSimulation()`
+   - ResizeObserver for responsive sizing
+
+3. **node-renderer.ts**: Custom 3D node rendering utilities
+   - `NODE_COLORS` and `NODE_TYPE_COLORS` constants
+   - `SIZE_MULTIPLIERS` for different node states
+   - `getNodeColor()` - Color based on supertag, type, or state
+   - `getNodeSize()` - Size based on connections with state multipliers
+   - `getNodeOpacity()` - Opacity based on local graph state
+   - `computeNodeVisuals()` - All visual properties in one call
+   - `calculateNodeVal()` - Value for 3d-force-graph's nodeVal callback
+
+4. **edge-renderer.ts**: Custom 3D edge/link rendering utilities
+   - `EDGE_DIRECTION_COLORS` - Teal for outgoing, violet for incoming (matches 2D)
+   - `EDGE_TYPE_COLORS` and `PARTICLE_SETTINGS`
+   - `getEdgeColor()`, `getEdgeWidth()`, `getEdgeOpacity()`
+   - `getParticleCount()`, `getParticleSpeed()` for animation
+   - Callback factories for 3d-force-graph configuration
+   - `calculateLinkCurvature()` for bidirectional edge separation
+
+5. **Graph3D.tsx**: Main 3D graph component
+   - Lazy loading with `useLazyForceGraph()` hook
+   - Loading and error states with `Graph3DLoading`
+   - Data conversion: `convertToGraph3DNodes()`, `convertToGraph3DLinks()`
+   - Full store integration (physics, display, localGraph)
+   - Node interaction handlers (click, double-click, hover)
+   - Stats panel (nodes, edges, orphans count)
+   - Simulation pause/resume controls
+   - Hovered node tooltip with supertag info
+   - Direction legend (outgoing/incoming colors)
+
+6. **index.ts**: Updated barrel exports
+   - `Graph3D` and `Graph3DProps`
+   - All hooks: `use3DGraph`, `useLazyForceGraph`
+   - All types: `Graph3DNode`, `Graph3DLink`, `Graph3DData`
+   - All rendering utilities from node-renderer and edge-renderer
+   - Loading component exports
+
+**Tests**: All 150 existing tests pass
 
 ---
 
