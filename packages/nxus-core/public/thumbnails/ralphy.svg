@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a1a" />
+      <stop offset="100%" stop-color="#2d2d2d" />
+    </linearGradient>
+    <linearGradient id="ralphyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bgGradient)" />
+
+  <!-- Ralphy Icon - stylized R -->
+  <g transform="translate(400, 225)" filter="url(#shadow)">
+    <!-- Rounded square background -->
+    <rect x="-80" y="-80" width="160" height="160" rx="24" fill="url(#ralphyGradient)" />
+
+    <!-- Stylized R letter -->
+    <text x="0" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="white">R</text>
+  </g>
+</svg>

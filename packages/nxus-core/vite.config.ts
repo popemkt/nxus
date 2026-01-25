@@ -9,7 +9,11 @@ import { nitro } from 'nitro/vite'
 const config = defineConfig({
   plugins: [
     tanstackStart(),
-    devtools(),
+    devtools({
+      injectSource: {
+        enabled: false,
+      },
+    }),
     nitro(),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
