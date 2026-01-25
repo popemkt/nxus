@@ -25,3 +25,48 @@ export {
   DEFAULT_GRAPH_DATA_OPTIONS,
   DEFAULT_LOCAL_GRAPH_OPTIONS,
 } from './types.js'
+
+// Main hook
+export {
+  useGraphData,
+  transformToGraphData,
+  isLargeGraph,
+  LARGE_GRAPH_THRESHOLD,
+} from './use-graph-data.js'
+
+// Edge extractors
+export {
+  extractAllEdges,
+  createExtractionContext,
+  extractDependencyEdges,
+  extractBacklinkEdges,
+  extractReferenceEdges,
+  extractHierarchyEdges,
+  buildBacklinkMap,
+  buildChildrenMap,
+} from './extractors/index.js'
+
+// Utilities
+export {
+  // Color palette
+  DEFAULT_SUPERTAG_COLORS,
+  NO_SUPERTAG_COLOR,
+  VIRTUAL_NODE_COLOR,
+  getSupertagColor,
+  generateSupertagColorMap,
+  adjustBrightness,
+  getDimmedColor,
+  getHighlightedColor,
+  // Graph statistics
+  computeGraphStats,
+  countConnectedComponents,
+  countOrphans,
+  computeConnectionMetrics,
+  getMostConnectedNodes,
+  getEdgeTypeDistribution,
+  // Tag synthesis
+  synthesizeTags,
+  mergeTagSynthesis,
+} from './utils/index.js'
+
+export type { TagSynthesisResult } from './utils/index.js'

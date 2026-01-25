@@ -114,7 +114,8 @@ Create modular functions to extract edges from different relationship types.
 
 ---
 
-### [ ] Step: Implement Graph Data Provider Hook
+### [x] Step: Implement Graph Data Provider Hook
+<!-- chat-id: 53f241a5-6af3-4532-91e5-da263f1c5509 -->
 
 Create the main hook that transforms AssembledNode[] into GraphData.
 
@@ -139,6 +140,34 @@ Create the main hook that transforms AssembledNode[] into GraphData.
 - Colors are consistent across renders
 - Virtual tag nodes created when includeTags=true
 - Tag nodes have `isVirtual: true` flag
+
+**Completed**: Implemented the Graph Data Provider Hook with 3 utility files and comprehensive unit tests (93 total tests passing):
+
+1. **use-graph-data.ts**: Main hook implementation
+   - `transformToGraphData()` - Core transformation function for AssembledNode[] → GraphData
+   - `useGraphData()` - React hook with memoization based on all options
+   - `isLargeGraph()` - Threshold check (>500 nodes) for future Web Worker offloading
+   - Supports filtering by supertag, search query highlighting, and orphan filtering
+   - Integrates with edge extractors from previous step
+
+2. **utils/color-palette.ts**: Consistent supertag colors
+   - `getSupertagColor()` - Deterministic color from djb2 hash of ID
+   - `generateSupertagColorMap()` - Pre-compute colors for all supertags
+   - `adjustBrightness()`, `getDimmedColor()`, `getHighlightedColor()` - Color variants for states
+   - 12-color default palette with good visual separation
+
+3. **utils/graph-stats.ts**: Graph statistics computation
+   - `computeGraphStats()` - Main stats computation (nodes, edges, orphans, components)
+   - `countConnectedComponents()` - Union-Find (DSU) algorithm for O(n * α(n)) performance
+   - `computeConnectionMetrics()` - Update node in/out/total counts and isOrphan flags
+   - `getMostConnectedNodes()`, `getEdgeTypeDistribution()` - Additional analytics
+
+4. **utils/tag-synthesizer.ts**: Virtual tag nodes
+   - `synthesizeTags()` - Create virtual GraphNodes and GraphEdges for tags
+   - `mergeTagSynthesis()` - Integrate virtual nodes/edges into existing graph
+   - Extracts tag IDs from field:tags property, skips existing real nodes
+
+5. **Updated provider/index.ts**: Barrel exports for all new functionality
 
 ---
 
