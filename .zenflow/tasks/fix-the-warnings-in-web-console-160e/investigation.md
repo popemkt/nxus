@@ -99,6 +99,45 @@ Alternatively, generate these using the Gemini CLI thumbnail generation tool tha
 - **No side effects:** Adding thumbnails only improves the UI
 - **Alternative consideration:** The components already handle missing thumbnails gracefully (hiding the thumbnail area), so this is more of a polish issue than a functional bug
 
+## Implementation Notes
+
+### Fix 1: Disabled injectSource in devtools (vite.config.ts)
+
+Changed:
+```typescript
+devtools(),
+```
+
+To:
+```typescript
+devtools({
+  injectSource: {
+    enabled: false,
+  },
+}),
+```
+
+This prevents the `data-tsd-source` attribute injection that was causing hydration mismatches between server and client.
+
+### Fix 2: Created missing thumbnail SVGs
+
+Added three new SVG thumbnails to `packages/nxus-core/public/thumbnails/`:
+
+1. **sample-html.svg** - HTML5 shield icon with `</>` symbol in orange/red gradient
+2. **curl.svg** - Circular icon with wave/arrow symbol in blue gradient
+3. **ralphy.svg** - Rounded square with stylized "R" letter in purple gradient
+
+All thumbnails follow the existing design pattern (800x450 viewBox, dark gradient background, drop shadow filter, centered icon).
+
 ## Test Results
 
-Not yet implemented - will be updated after implementation.
+**Verified on 2026-01-25:**
+
+1. **Console errors**: None - no hydration mismatch errors or 404 errors
+2. **Network requests**: All thumbnail requests return 200 OK
+   - `/thumbnails/sample-html.svg => [200] OK`
+   - `/thumbnails/curl.svg => [200] OK`
+   - `/thumbnails/ralphy.svg => [200] OK`
+3. **Hydration**: No `data-tsd-source` attribute mismatch warnings
+
+Both fixes successfully eliminate the console warnings/errors.
