@@ -67,7 +67,8 @@ Define the core data types for the renderer-agnostic graph system.
 
 ---
 
-### [ ] Step: Implement Edge Extractors
+### [x] Step: Implement Edge Extractors
+<!-- chat-id: 561f46f5-ab84-4fc7-b6e5-f68ede947199 -->
 
 Create modular functions to extract edges from different relationship types.
 
@@ -83,6 +84,33 @@ Create modular functions to extract edges from different relationship types.
 **Verification**:
 - Unit tests for each extractor with mock data
 - Extractors correctly identify edge direction
+
+**Completed**: Implemented all 4 edge extractors with comprehensive unit tests (24 tests passing):
+
+1. **dependency-extractor.ts**: Extracts edges from `field:dependencies` property
+   - Handles single ID, array of IDs, and JSON-encoded arrays
+   - Validates targets exist in graph before creating edges
+
+2. **backlink-extractor.ts**: Finds incoming references using pre-computed backlink map
+   - `buildBacklinkMap()` scans all nodes once for O(n) backlink detection
+   - Excludes explicit relationship fields (dependencies, parent, tags, etc.)
+   - Uses UUID pattern matching to identify node references
+
+3. **reference-extractor.ts**: Extracts edges from generic node-type properties
+   - Skips fields handled by dedicated extractors
+   - Supports known reference fields (commands, requires, target)
+   - Uses UUID pattern detection for reference identification
+
+4. **hierarchy-extractor.ts**: Extracts parent-child relationships
+   - Supports both `field:parent` property and `ownerId` field
+   - `buildChildrenMap()` utility for reverse lookups
+   - Deduplicates when both parent sources point to same node
+
+5. **index.ts**: Barrel export with `extractAllEdges()` orchestration
+   - Pre-computes backlink map for efficiency
+   - Deduplicates edges by ID
+   - Respects `includeRefs` and `includeHierarchy` options
+   - `createExtractionContext()` utility for building context from nodes
 
 ---
 
