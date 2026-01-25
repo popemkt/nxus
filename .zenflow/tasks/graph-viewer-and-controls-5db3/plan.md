@@ -222,7 +222,8 @@ Create the BFS-based local graph filtering hook.
 
 ---
 
-### [ ] Step: Create Graph Store
+### [x] Step: Create Graph Store
+<!-- chat-id: ab552e16-c13b-44c2-8b4f-471854d00db9 -->
 
 Create the Zustand store for shared graph options.
 
@@ -246,6 +247,36 @@ Create the Zustand store for shared graph options.
 - Store initializes with defaults
 - Options persist to localStorage
 - Actions update state correctly
+
+**Completed**: Implemented the Graph Store with Zustand + persist middleware (24 unit tests passing, 150 total tests):
+
+1. **store/types.ts**: Complete type definitions
+   - `GraphPhysicsOptions` with centerForce, repelForce, linkForce, linkDistance
+   - `GraphDisplayOptions` with colorBy, nodeLabels, edgeLabels, nodeSize, edgeStyle
+   - `GraphFilterOptions` with includeTags, includeRefs, includeHierarchy, showOrphans, supertagFilter, searchQuery
+   - `GraphLocalGraphOptions` with enabled, focusNodeId, depth, linkTypes
+   - `GraphViewOptions` with renderer ('2d' | '3d') and layout ('force' | 'hierarchical')
+   - `WorkbenchGraphStore` combining state and actions
+
+2. **store/defaults.ts**: Obsidian-inspired default values
+   - Physics: centerForce=0.5, repelForce=200, linkForce=0.4, linkDistance=100
+   - Display: colorBy='supertag', nodeLabels='hover', edgeStyle='animated', nodeSize='connections'
+   - Filter: includeTags=false, includeRefs=true, includeHierarchy=true, showOrphans=true
+   - `PHYSICS_CONSTRAINTS` for slider bounds (min, max, step)
+
+3. **store/graph.store.ts**: Zustand store implementation
+   - `useGraphStore` main hook with persist middleware (key: 'nxus-graph-options')
+   - Selector hooks: `useGraphPhysics`, `useGraphDisplay`, `useGraphFilter`, `useGraphLocalGraph`, `useGraphView`
+   - `graphStoreService` for imperative access outside React components
+   - Convenience methods: `enableLocalGraph`, `disableLocalGraph`, `toggleRenderer`, `setFocusNode`
+
+4. **store/index.ts**: Barrel export for all types, defaults, and hooks
+
+5. **store/graph.store.test.ts**: Comprehensive unit tests (24 tests)
+   - Initial state verification
+   - Partial update testing for all option groups
+   - Reset to defaults testing
+   - Service method testing
 
 ---
 
