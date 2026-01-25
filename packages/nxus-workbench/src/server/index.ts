@@ -24,6 +24,17 @@ export {
   getChildNodesServerFn,
 } from './search-nodes.server.js'
 
+// Graph server functions (optimized for visualization)
+export {
+  getGraphStructureServerFn,
+  getBacklinksWithDepthServerFn,
+  getEdgesBetweenNodesServerFn,
+  type LightweightGraphNode,
+  type LightweightGraphEdge,
+  type GraphStructureResult,
+  type RecursiveBacklinksResult,
+} from './graph.server.js'
+
 // Adapters for legacy type conversion
 export {
   nodeToItem,

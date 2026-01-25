@@ -34,6 +34,18 @@ export {
   LARGE_GRAPH_THRESHOLD,
 } from './use-graph-data.js'
 
+// Lightweight graph hook (for large graphs 500+ nodes)
+export {
+  useLightweightGraph,
+  transformLightweightToGraphData,
+  shouldUseLightweightFetch,
+} from './use-lightweight-graph.js'
+
+export type {
+  LightweightGraphOptions,
+  UseLightweightGraphResult,
+} from './use-lightweight-graph.js'
+
 // Edge extractors
 export {
   extractAllEdges,

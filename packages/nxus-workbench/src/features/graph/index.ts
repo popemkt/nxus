@@ -22,11 +22,14 @@
  */
 
 // ============================================================================
-// Main Component
+// Main Components
 // ============================================================================
 
 export { GraphView, default as GraphViewComponent } from './GraphView'
 export type { GraphViewProps } from './GraphView'
+
+export { LightweightGraphView, default as LightweightGraphViewComponent } from './LightweightGraphView'
+export type { LightweightGraphViewProps } from './LightweightGraphView'
 
 // ============================================================================
 // Data Provider
@@ -38,6 +41,10 @@ export {
   transformToGraphData,
   isLargeGraph,
   LARGE_GRAPH_THRESHOLD,
+  // Lightweight graph hook (for large graphs 500+ nodes)
+  useLightweightGraph,
+  transformLightweightToGraphData,
+  shouldUseLightweightFetch,
   // Local graph
   useLocalGraph,
   useLocalGraphResult,
@@ -90,6 +97,8 @@ export type {
   EdgeExtractor,
   LocalGraphResult,
   TagSynthesisResult,
+  LightweightGraphOptions,
+  UseLightweightGraphResult,
 } from './provider'
 
 // ============================================================================

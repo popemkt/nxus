@@ -931,7 +931,8 @@ Integrate sidebar and graph view into workbench with proper focus synchronizatio
 
 ---
 
-### [ ] Step: Integrate Existing Backlink Query & Add Lightweight Endpoint
+### [x] Step: Integrate Existing Backlink Query & Add Lightweight Endpoint
+<!-- chat-id: 52d28fff-b4ff-4a13-bea0-cfe9da271734 -->
 
 Leverage existing server functions and add optimized endpoint for large graphs.
 
@@ -949,6 +950,57 @@ Leverage existing server functions and add optimized endpoint for large graphs.
 - Backlinks integrate correctly with existing endpoint
 - Lightweight endpoint returns correct structure
 - Global graph performs well with 500+ nodes
+
+**Completed**: Implemented comprehensive server endpoints and client hooks for optimized graph data fetching:
+
+1. **graph.server.ts**: New server functions file with 3 endpoints
+
+   - **`getGraphStructureServerFn`**: Lightweight graph structure endpoint
+     - Returns minimal `LightweightGraphNode` (id, label, systemId, supertagId, supertagName, ownerId)
+     - Returns `LightweightGraphEdge` (source, target, type)
+     - Returns `supertagNames` map for legend display
+     - Configurable: `supertagSystemId` filter, `limit`, `includeHierarchy`, `includeReferences`
+     - Efficient: Single query for all properties, filtered in memory
+     - Avoids expensive `assembleNode()` calls for each node
+
+   - **`getBacklinksWithDepthServerFn`**: Recursive backlinks with BFS
+     - Optional `depth` parameter (1-3)
+     - Returns backlinks organized by depth level
+     - BFS traversal to find indirect backlinks
+     - Returns `totalCount` for quick access
+
+   - **`getEdgesBetweenNodesServerFn`**: Edge-only queries
+     - Returns edges between a set of node IDs
+     - Useful for incremental graph updates
+     - Configurable `includeReferences` option
+
+2. **use-lightweight-graph.ts**: React hook for large graphs
+   - `useLightweightGraph()` - Fetches via `getGraphStructureServerFn`
+   - `transformLightweightToGraphData()` - Converts to `GraphData` format
+   - `shouldUseLightweightFetch()` - Helper to decide when to use lightweight
+   - 30-second cache via React Query
+   - Loading, error, and refetch states
+
+3. **LightweightGraphView.tsx**: Dedicated component for large graphs
+   - Fetches data directly from server (no pre-loaded nodes needed)
+   - Same controls and renderers as `GraphView`
+   - Performance indicator showing node/edge count
+   - Proper error state with retry button
+
+4. **Updated exports**:
+   - `server/index.ts`: Exports all new server functions and types
+   - `provider/index.ts`: Exports `useLightweightGraph`, `transformLightweightToGraphData`, `shouldUseLightweightFetch`
+   - `features/graph/index.ts`: Exports `LightweightGraphView` and all related types
+
+5. **Type definitions**:
+   - `LightweightGraphNode`: Minimal node structure
+   - `LightweightGraphEdge`: Source/target/type tuple
+   - `GraphStructureResult`: Complete response type
+   - `RecursiveBacklinksResult`: Backlinks with depth info
+   - `LightweightGraphOptions`: Hook configuration
+   - `UseLightweightGraphResult`: Hook return type
+
+**Tests**: All 150 existing tests pass
 
 ---
 
