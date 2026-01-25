@@ -49,3 +49,6 @@ packages/repos
 # Prevent database from being created in wrong location
 # Correct location: packages/nxus-core/src/data/nxus.db
 packages/nxus-core/src/data/.fuse*
+
+# TypeScript build info
+*.tsbuildinfo
