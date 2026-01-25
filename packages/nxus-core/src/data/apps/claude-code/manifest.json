@@ -1,80 +1,84 @@
 {
-  "id": "claude-code",
-  "name": "Claude Code",
-  "description": "Anthropic's agentic AI coding assistant for the terminal",
-  "type": "tool",
-  "path": "https://claude.ai/code",
-  "homepage": "https://claude.ai/code",
-  "platform": ["linux", "macos", "windows"],
-  "checkCommand": "claude --version",
-  "installInstructions": "npm install -g @anthropic-ai/claude-code",
-  "commands": [
-    {
-      "id": "install-claude-code",
-      "name": "Install",
-      "description": "Install Claude Code globally",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm install -g @anthropic-ai/claude-code",
-      "requires": {
-        "selfNotInstalled": true
-      }
-    },
-    {
-      "id": "update-claude-code",
-      "name": "Update",
-      "description": "Update to latest version",
-      "icon": "ArrowsClockwise",
-      "category": "Maintenance",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm update -g @anthropic-ai/claude-code",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "uninstall-claude-code",
-      "name": "Uninstall",
-      "description": "Remove Claude Code",
-      "icon": "Trash",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm uninstall -g @anthropic-ai/claude-code",
-      "requires": {
-        "selfInstalled": true
-      }
-    }
-  ],
-  "docs": [
-    {
-      "id": "quickstart",
-      "title": "Quick Start",
-      "file": "quickstart.md",
-      "icon": "Play"
-    },
-    {
-      "id": "integrations",
-      "title": "Other Integrations",
-      "file": "integrations.md",
-      "icon": "Plugs"
-    }
-  ],
-  "metadata": {
-    "tags": [
-      {
-        "id": 14,
-        "name": "AI CLI Provider"
-      }
+    "id": "claude-code",
+    "name": "Claude Code",
+    "description": "Anthropic's agentic AI coding assistant for the terminal",
+    "type": "tool",
+    "path": "https://claude.ai/code",
+    "homepage": "https://claude.ai/code",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
     ],
-    "category": "development-tools",
-    "createdAt": "2026-01-01T15:32:00.000Z",
-    "updatedAt": "2026-01-11T11:58:47.519Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  },
-  "status": "not-installed"
+    "checkCommand": "claude --version",
+    "installInstructions": "npm install -g @anthropic-ai/claude-code",
+    "commands": [
+        {
+            "id": "install-claude-code",
+            "name": "Install",
+            "description": "Install Claude Code globally",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm install -g @anthropic-ai/claude-code",
+            "requires": {
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "update-claude-code",
+            "name": "Update",
+            "description": "Update to latest version",
+            "icon": "ArrowsClockwise",
+            "category": "Maintenance",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm update -g @anthropic-ai/claude-code",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "uninstall-claude-code",
+            "name": "Uninstall",
+            "description": "Remove Claude Code",
+            "icon": "Trash",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm uninstall -g @anthropic-ai/claude-code",
+            "requires": {
+                "selfInstalled": true
+            }
+        }
+    ],
+    "docs": [
+        {
+            "id": "quickstart",
+            "title": "Quick Start",
+            "file": "quickstart.md",
+            "icon": "Play"
+        },
+        {
+            "id": "integrations",
+            "title": "Other Integrations",
+            "file": "integrations.md",
+            "icon": "Plugs"
+        }
+    ],
+    "metadata": {
+        "tags": [
+            {
+                "id": 14,
+                "name": "AI CLI Provider"
+            }
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-01T15:32:00.000Z",
+        "updatedAt": "2026-01-11T11:58:47.519Z",
+        "version": "1.0.0",
+        "author": "nxus"
+    },
+    "status": "not-installed"
 }

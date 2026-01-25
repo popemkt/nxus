@@ -16,6 +16,14 @@ The **Claude Code agent** works with JetBrains IDEs (IntelliJ, WebStorm, PyCharm
 - Available as a plugin for all JetBrains products
 - [JetBrains Plugin Marketplace](https://plugins.jetbrains.com/)
 
+## Community Configurations
+
+**Everything Claude Code**
+
+A comprehensive collection of agents, skills, and hooks for Claude Code.
+
+{{command:everything-claude-code:clone}}
+
 ## Learn More
 
 For full documentation on all integrations:

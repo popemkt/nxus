@@ -1,216 +1,222 @@
 {
-  "id": "opencode",
-  "name": "OpenCode",
-  "description": "Open-source AI coding agent with a Terminal User Interface (TUI). Supports multiple AI providers including Anthropic, OpenAI, Google, and more.",
-  "type": "tool",
-  "path": "https://opencode.ai",
-  "homepage": "https://opencode.ai",
-  "platform": ["linux", "macos", "windows"],
-  "checkCommand": "opencode version",
-  "installInstructions": "OpenCode can be installed via:\n- Linux/macOS: curl -fsSL https://opencode.ai/install | bash\n- Homebrew: brew install opencode-ai/tap/opencode\n- Windows: winget install opencode\n- Go: go install github.com/opencode-ai/opencode@latest",
-  "commands": [
-    {
-      "id": "install-opencode",
-      "name": "Install",
-      "description": "Smart install (auto-detect OS)",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "script",
-      "command": "install.ps1",
-      "requires": {
-        "tools": ["powershell"],
-        "selfNotInstalled": true
-      }
+    "id": "opencode",
+    "name": "OpenCode",
+    "description": "Open-source AI coding agent with a Terminal User Interface (TUI). Supports multiple AI providers including Anthropic, OpenAI, Google, and more.",
+    "type": "tool",
+    "path": "https://opencode.ai",
+    "homepage": "https://opencode.ai",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "opencode version",
+    "installInstructions": "OpenCode can be installed via:\n- Linux/macOS: curl -fsSL https://opencode.ai/install | bash\n- Homebrew: brew install opencode-ai/tap/opencode\n- Windows: winget install opencode\n- Go: go install github.com/opencode-ai/opencode@latest",
+    "commands": [
+        {
+            "id": "install-opencode",
+            "name": "Install",
+            "description": "Smart install (auto-detect OS)",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "script",
+            "command": "install.ps1",
+            "requires": {
+                "tools": [
+                    "powershell"
+                ],
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "opencode-start",
+            "name": "Start TUI",
+            "description": "Launch OpenCode Terminal UI",
+            "icon": "Terminal",
+            "category": "Core",
+            "target": "item",
+            "mode": "terminal",
+            "command": "opencode",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-run",
+            "name": "Run Prompt",
+            "description": "Run a single AI prompt (non-interactive)",
+            "icon": "Play",
+            "category": "Core",
+            "target": "item",
+            "mode": "terminal",
+            "command": "opencode run",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-continue",
+            "name": "Continue Session",
+            "description": "Continue the last session",
+            "icon": "ArrowsClockwise",
+            "category": "Core",
+            "target": "item",
+            "mode": "terminal",
+            "command": "opencode tui --continue",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-auth-login",
+            "name": "Authenticate",
+            "description": "Login to AI provider account",
+            "icon": "Key",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "opencode auth login",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-auth-list",
+            "name": "List Auth",
+            "description": "List configured authentication",
+            "icon": "List",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "opencode auth list",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-models",
+            "name": "List Models",
+            "description": "List available AI models",
+            "icon": "Stack",
+            "category": "Info",
+            "target": "item",
+            "mode": "execute",
+            "command": "opencode models",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-session-list",
+            "name": "List Sessions",
+            "description": "List all sessions",
+            "icon": "ListBullets",
+            "category": "Session",
+            "target": "item",
+            "mode": "execute",
+            "command": "opencode session list",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-stats",
+            "name": "View Stats",
+            "description": "View usage statistics",
+            "icon": "ChartBar",
+            "category": "Info",
+            "target": "item",
+            "mode": "execute",
+            "command": "opencode stats --days 30",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-agent-create",
+            "name": "Create Agent",
+            "description": "Create a custom agent",
+            "icon": "Robot",
+            "category": "Configuration",
+            "target": "item",
+            "mode": "terminal",
+            "command": "opencode agent create",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "opencode-docs",
+            "name": "Documentation",
+            "description": "Open OpenCode documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://opencode.ai/docs/"
+        },
+        {
+            "id": "opencode-config",
+            "name": "Open Config",
+            "description": "Open OpenCode config file",
+            "icon": "Gear",
+            "category": "Configuration",
+            "target": "item",
+            "mode": "script",
+            "command": "open-config.ps1",
+            "requires": {
+                "selfInstalled": true
+            }
+        }
+    ],
+    "docs": [
+        {
+            "id": "guide",
+            "title": "User Guide",
+            "file": "guide.md",
+            "icon": "BookOpen"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-01-11T00:00:00.000Z",
+        "updatedAt": "2026-01-11T00:00:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "opencode-start",
-      "name": "Start TUI",
-      "description": "Launch OpenCode Terminal UI",
-      "icon": "Terminal",
-      "category": "Core",
-      "target": "item",
-      "mode": "terminal",
-      "command": "opencode",
-      "requires": {
-        "selfInstalled": true
-      }
+    "configSchema": {
+        "fields": [
+            {
+                "key": "ANTHROPIC_API_KEY",
+                "label": "Anthropic API Key",
+                "type": "password",
+                "required": false,
+                "placeholder": "sk-ant-..."
+            },
+            {
+                "key": "OPENAI_API_KEY",
+                "label": "OpenAI API Key",
+                "type": "password",
+                "required": false,
+                "placeholder": "sk-..."
+            },
+            {
+                "key": "GEMINI_API_KEY",
+                "label": "Google Gemini API Key",
+                "type": "password",
+                "required": false,
+                "placeholder": "AIza..."
+            },
+            {
+                "key": "OPENCODE_MODEL",
+                "label": "Default Model",
+                "type": "text",
+                "required": false,
+                "placeholder": "anthropic:claude-sonnet-4-20250514"
+            }
+        ]
     },
-    {
-      "id": "opencode-run",
-      "name": "Run Prompt",
-      "description": "Run a single AI prompt (non-interactive)",
-      "icon": "Play",
-      "category": "Core",
-      "target": "item",
-      "mode": "terminal",
-      "command": "opencode run",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-continue",
-      "name": "Continue Session",
-      "description": "Continue the last session",
-      "icon": "ArrowsClockwise",
-      "category": "Core",
-      "target": "item",
-      "mode": "terminal",
-      "command": "opencode tui --continue",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-auth-login",
-      "name": "Authenticate",
-      "description": "Login to AI provider account",
-      "icon": "Key",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "opencode auth login",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-auth-list",
-      "name": "List Auth",
-      "description": "List configured authentication",
-      "icon": "List",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "opencode auth list",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-models",
-      "name": "List Models",
-      "description": "List available AI models",
-      "icon": "Stack",
-      "category": "Info",
-      "target": "item",
-      "mode": "execute",
-      "command": "opencode models",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-session-list",
-      "name": "List Sessions",
-      "description": "List all sessions",
-      "icon": "ListBullets",
-      "category": "Session",
-      "target": "item",
-      "mode": "execute",
-      "command": "opencode session list",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-stats",
-      "name": "View Stats",
-      "description": "View usage statistics",
-      "icon": "ChartBar",
-      "category": "Info",
-      "target": "item",
-      "mode": "execute",
-      "command": "opencode stats --days 30",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-agent-create",
-      "name": "Create Agent",
-      "description": "Create a custom agent",
-      "icon": "Robot",
-      "category": "Configuration",
-      "target": "item",
-      "mode": "terminal",
-      "command": "opencode agent create",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "opencode-docs",
-      "name": "Documentation",
-      "description": "Open OpenCode documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://opencode.ai/docs/"
-    },
-    {
-      "id": "opencode-config",
-      "name": "Open Config",
-      "description": "Open OpenCode config file",
-      "icon": "Gear",
-      "category": "Configuration",
-      "target": "item",
-      "mode": "script",
-      "command": "open-config.ps1",
-      "requires": {
-        "selfInstalled": true
-      }
-    }
-  ],
-  "docs": [
-    {
-      "id": "guide",
-      "title": "User Guide",
-      "file": "guide.md",
-      "icon": "BookOpen"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2026-01-11T00:00:00.000Z",
-    "updatedAt": "2026-01-11T00:00:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  },
-  "configSchema": {
-    "fields": [
-      {
-        "key": "ANTHROPIC_API_KEY",
-        "label": "Anthropic API Key",
-        "type": "password",
-        "required": false,
-        "placeholder": "sk-ant-..."
-      },
-      {
-        "key": "OPENAI_API_KEY",
-        "label": "OpenAI API Key",
-        "type": "password",
-        "required": false,
-        "placeholder": "sk-..."
-      },
-      {
-        "key": "GEMINI_API_KEY",
-        "label": "Google Gemini API Key",
-        "type": "password",
-        "required": false,
-        "placeholder": "AIza..."
-      },
-      {
-        "key": "OPENCODE_MODEL",
-        "label": "Default Model",
-        "type": "text",
-        "required": false,
-        "placeholder": "anthropic:claude-sonnet-4-20250514"
-      }
-    ]
-  },
-  "status": "not-installed"
+    "status": "not-installed"
 }
