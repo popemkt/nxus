@@ -389,7 +389,8 @@ Build the React Flow edge components with direction visualization.
 
 ---
 
-### [ ] Step: Implement 2D Layout Hooks
+### [x] Step: Implement 2D Layout Hooks
+<!-- chat-id: dde42521-76b1-4880-ad12-7bbc784ef1db -->
 
 Create layout hooks for hierarchical and force-directed layouts.
 
@@ -409,6 +410,41 @@ Create layout hooks for hierarchical and force-directed layouts.
 - Dagre positions nodes correctly
 - Force simulation responds to physics params
 - Layout transitions are smooth
+
+**Completed**: Implemented 2D Layout Hooks with dagre and d3-force integration:
+
+1. **Added dependencies**: `d3-force`, `dagre`, `@types/d3-force`, `@types/dagre` to nxus-workbench
+
+2. **use-dagre-layout.ts**: Hierarchical layout using dagre
+   - `computeLayout()` - Static layout computation without updating React Flow
+   - `runLayout()` - Compute and apply layout with fitView animation
+   - Supports 4 directions: TB (top-bottom), BT, LR (left-right), RL
+   - Configurable nodeSep, rankSep, margins
+   - Handle positions auto-adjust based on direction
+   - Position caching for smooth transitions
+
+3. **use-force-layout.ts**: Force-directed layout using d3-force
+   - Full physics integration with store parameters:
+     - `centerForce` → forceCenter + forceX/forceY strength
+     - `repelForce` → forceManyBody strength (negated)
+     - `linkForce` → forceLink strength
+     - `linkDistance` → forceLink distance
+   - `computeLayout()` - Static mode (runs N iterations)
+   - `startSimulation()` / `stopSimulation()` - Continuous mode with tick updates
+   - `reheatSimulation()` - Restart simulation with high alpha
+   - `updatePhysics()` - Live update physics on running simulation
+   - `pinNode()` / `unpinNode()` - Fix node positions
+   - Collision force prevents node overlap
+   - Position caching across layout changes
+
+4. **index.ts**: Unified layout selector hook
+   - `useGraphLayout()` - Switches between dagre and force based on LayoutType
+   - Common interface: `computeLayout()`, `runLayout()`, `clearCache()`
+   - Exposes force-specific methods (simulation control, physics updates)
+   - Exposes dagre-specific methods (direction control)
+   - `layoutInfo` object with type and convenience booleans
+
+**Tests**: All 150 existing tests pass
 
 ---
 
