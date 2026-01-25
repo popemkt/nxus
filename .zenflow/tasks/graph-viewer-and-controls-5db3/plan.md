@@ -512,7 +512,8 @@ Create the main 2D graph component.
 
 ## Phase 3: Controls
 
-### [ ] Step: Build Control Sections
+### [x] Step: Build Control Sections
+<!-- chat-id: 48f0fcb5-cb6e-40b0-85a8-af05fc1bf79c -->
 
 Create individual control panel sections.
 
@@ -530,6 +531,46 @@ Create individual control panel sections.
 - Sliders update store values
 - Toggles reflect and update state
 - Sections collapse/expand
+
+**Completed**: Implemented all 4 control sections with collapsible panels:
+
+1. **CollapsibleSection.tsx**: Reusable collapsible panel component
+   - Expandable/collapsible with caret icon toggle
+   - Icon slot for section identification
+   - Clean border-bottom styling for stacking
+
+2. **PhysicsSection.tsx**: Force simulation sliders
+   - SliderControl component with value display
+   - Center Force (0-1, step 0.05)
+   - Repel Force (0-500, step 10)
+   - Link Force (0-1, step 0.05)
+   - Link Distance (50-300px, step 10)
+   - Uses PHYSICS_CONSTRAINTS from defaults for slider bounds
+   - Custom styled range inputs with primary-colored thumb
+
+3. **FilterSection.tsx**: Data filtering toggles
+   - ToggleControl component with description support
+   - Custom toggle switch (no native checkbox styling)
+   - Show Tags, Show References, Show Hierarchy, Show Orphans
+   - Each toggle connects to filter store via useGraphFilter/setFilter
+
+4. **DisplaySection.tsx**: Visual styling dropdowns
+   - SelectControl component with custom chevron
+   - Color By (Supertag, Node Type, None)
+   - Node Labels (Always, On Hover, Never)
+   - Node Size (By Connections, Uniform)
+   - Edge Style (Animated, Static)
+
+5. **LocalGraphSection.tsx**: Ego network controls
+   - Enable/disable toggle for local graph mode
+   - Focus node indicator with clear button
+   - Depth selector buttons (1, 2, 3 degrees)
+   - Link type checkboxes (Outgoing →, Incoming ←, Both ↔)
+   - Ensures at least one link type is always selected
+
+6. **index.ts**: Barrel export for all sections
+
+**Tests**: All 150 existing tests pass
 
 ---
 
