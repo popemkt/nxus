@@ -4,7 +4,7 @@
  * Usage: npx tsx scripts/compare-legacy-vs-nodes.ts
  */
 
-import { isNull } from 'drizzle-orm'
+import { isNull } from '@nxus/db/server'
 import {
   getDatabase,
   initDatabase,
@@ -15,7 +15,7 @@ import {
   getNodesBySupertagWithInheritance,
   getProperty,
 } from '@nxus/db/server'
-import { nodeToCommand, nodeToItem } from '../src/services/nodes/adapters'
+import { nodeToCommand, nodeToItem } from '@nxus/workbench/server'
 
 function compareItems() {
   const db = getDatabase()

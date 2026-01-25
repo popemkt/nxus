@@ -8,7 +8,7 @@
  *   npx tsx scripts/assemble-full-items.ts  # Shows first 3
  */
 
-import { eq } from 'drizzle-orm'
+import { eq } from '@nxus/db/server'
 import {
   getDatabase,
   initDatabase,
@@ -23,7 +23,7 @@ import {
   type Item,
   type TagRef,
 } from '@nxus/db/server'
-import { nodeToCommand, nodeToItem } from '../src/services/nodes/adapters'
+import { nodeToCommand, nodeToItem } from '@nxus/workbench/server'
 
 function getFullLegacyItem(
   db: ReturnType<typeof getDatabase>,
@@ -114,8 +114,10 @@ function getFullNodeItem(
     .map(nodeToCommand)
 
   return nodeToItem(node, {
-    resolveTagRefs: (tagNodeIds) =>
-      tagNodeIds.map((id) => tagLookup.get(id)).filter((t): t is TagRef => !!t),
+    resolveTagRefs: (tagNodeIds: string[]) =>
+      tagNodeIds
+        .map((id: string) => tagLookup.get(id))
+        .filter((t: TagRef | undefined): t is TagRef => !!t),
     resolveCommands: () => commands,
   })
 }

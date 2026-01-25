@@ -7,9 +7,9 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import {
+  eq,
   getDatabase,
   initDatabase,
   initDatabaseWithBootstrap,
@@ -21,8 +21,9 @@ import {
   findNode,
   getNodesBySupertagWithInheritance,
   getProperty,
+  type NodeProperty,
 } from '@nxus/db/server'
-import type { Item, ItemCommand, TagRef } from '@nxus/db'
+import type { AssembledNode, Item, ItemCommand, TagRef } from '@nxus/db'
 import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
 
 // ============================================================================
@@ -139,7 +140,7 @@ export const getAllItemsFromNodesServerFn = createServerFn({
   }
 
   // Convert to legacy Item type
-  const items: Item[] = itemNodes.map((node) =>
+  const items: Item[] = itemNodes.map((node: AssembledNode) =>
     nodeToItem(node, {
       resolveTagRefs: (tagNodeIds) =>
         tagNodeIds
@@ -183,7 +184,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
           .from(nodeProperties)
           .where(eq(nodeProperties.fieldNodeId, legacyIdField.id))
           .all()
-          .find((p) => {
+          .find((p: NodeProperty) => {
             try {
               return JSON.parse(p.value || '') === id
             } catch {
@@ -232,7 +233,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
       SYSTEM_SUPERTAGS.COMMAND,
     )
     const commands = commandNodes
-      .filter((cmd) => cmd.ownerId === node!.id)
+      .filter((cmd: AssembledNode) => cmd.ownerId === node!.id)
       .map(nodeToCommand)
 
     const item = nodeToItem(node, {
@@ -270,7 +271,7 @@ export const getAllTagsFromNodesServerFn = createServerFn({
     }
   }
 
-  const tags = tagNodes.map((node) =>
+  const tags = tagNodes.map((node: AssembledNode) =>
     nodeToTag(node, {
       resolveParentId: (nodeId) => nodeIdToLegacyId.get(nodeId) ?? null,
     }),

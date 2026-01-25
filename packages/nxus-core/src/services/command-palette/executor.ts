@@ -562,7 +562,7 @@ export const commandExecutor = {
           data: {
             appId,
             scriptPath,
-            scriptSource,
+            scriptSource: scriptSource as any,
           },
         })
 
@@ -583,7 +583,7 @@ export const commandExecutor = {
         data: {
           appId,
           scriptPath,
-          scriptSource,
+          scriptSource: scriptSource as any,
         },
       })
 
@@ -610,7 +610,7 @@ export const commandExecutor = {
         // Interactive: run in PTY terminal
         return this.executeInteractive({
           command: fullCommand,
-          cwd: cwd ?? resolved.scriptDir,
+          cwd: cwd ?? resolved.cwd,
           appId,
           appType,
           tabName: tabName ?? scriptPath,
@@ -620,7 +620,7 @@ export const commandExecutor = {
         // Non-interactive: run in background with streaming output
         return this.executeStreaming({
           command: fullCommand,
-          cwd: cwd ?? resolved.scriptDir,
+          cwd: cwd ?? resolved.cwd,
           appId,
           appType,
           tabName: tabName ?? scriptPath,
@@ -702,12 +702,10 @@ export const commandExecutor = {
       }
     }
 
-    if (command.mode !== 'workflow' || !command.workflow) {
+    if (command.mode !== 'workflow') {
       console.error(
         '[executeWorkflowCommand] Not a workflow command. mode:',
         command.mode,
-        'has workflow:',
-        !!command.workflow,
       )
       return {
         success: false,

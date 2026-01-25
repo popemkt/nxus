@@ -24,7 +24,7 @@ import {
   updateNodeContent,
 } from '@nxus/db/server'
 import { createServerFn } from '@tanstack/react-start'
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq } from '@nxus/db/server'
 import { z } from 'zod'
 
 // ============================================================================
@@ -244,8 +244,10 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
       .returning()
 
     saveDatabase()
-    console.log('[addInboxItemServerFn] Success:', result[0].id)
-    return { success: true, data: result[0] }
+    const entry = result[0]
+    if (!entry) throw new Error('Failed to create inbox item')
+    console.log('[addInboxItemServerFn] Success:', entry.id)
+    return { success: true, data: entry }
   })
 
 /**

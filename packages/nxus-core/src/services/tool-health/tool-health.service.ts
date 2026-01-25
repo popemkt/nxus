@@ -4,7 +4,7 @@ import {
   initEphemeralDatabase,
   healthCache,
 } from '@nxus/db/server'
-import { eq } from 'drizzle-orm'
+import { eq } from '@nxus/db/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 

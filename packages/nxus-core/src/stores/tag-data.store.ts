@@ -215,6 +215,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     // Update all sibling orders
     for (let i = 0; i < siblings.length; i++) {
       const sibling = siblings[i]
+      if (!sibling) continue
       const updated: Tag = {
         ...sibling,
         parentId: sibling.id === id ? newParentId : sibling.parentId,

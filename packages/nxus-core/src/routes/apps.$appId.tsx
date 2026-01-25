@@ -722,7 +722,7 @@ function AppDetailPage() {
               <TabsContent value="overview" className="space-y-6">
                 <OverviewContent
                   app={app}
-                  appId={appId}
+                  appId={app.id}
                   effectiveStatus={effectiveStatus}
                   selectedInstance={selectedInstance}
                   setSelectedInstance={setSelectedInstance}
@@ -764,7 +764,7 @@ function AppDetailPage() {
               {/* No tabs - just render overview content directly */}
               <OverviewContent
                 app={app}
-                appId={appId}
+                appId={app.id}
                 effectiveStatus={effectiveStatus}
                 selectedInstance={selectedInstance}
                 setSelectedInstance={setSelectedInstance}

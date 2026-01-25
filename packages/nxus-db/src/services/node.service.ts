@@ -29,7 +29,7 @@ export interface AssembledNode {
 }
 
 export interface PropertyValue {
-  value: unknown
+  value: any
   rawValue: string
   fieldNodeId: string
   fieldName: string

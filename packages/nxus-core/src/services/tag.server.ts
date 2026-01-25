@@ -24,7 +24,7 @@ import {
   updateNodeContent,
 } from '@nxus/db/server'
 import { createServerFn } from '@tanstack/react-start'
-import { eq } from 'drizzle-orm'
+import { eq } from '@nxus/db/server'
 import { z } from 'zod'
 
 // Input schemas

@@ -8,7 +8,7 @@
  * from existing manifests.
  */
 
-import { eq } from 'drizzle-orm'
+import { eq } from '@nxus/db/server'
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'

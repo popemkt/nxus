@@ -516,8 +516,7 @@ class CommandRegistry {
         interactive: boolean
       }
     | { type: 'workflow'; appId: string; commandId: string } {
-    const mode = cmd.command.mode ?? 'execute'
-    switch (mode) {
+    switch (cmd.command.mode) {
       case 'configure':
         return {
           type: 'configure',
@@ -551,7 +550,11 @@ class CommandRegistry {
         }
       case 'execute':
       default:
-        return { type: 'execute', command: cmd.command.command }
+        // default needs casting because cmd.command is not fully narrowed
+        if ('command' in cmd.command) {
+          return { type: 'execute', command: cmd.command.command as string }
+        }
+        return { type: 'execute', command: '' }
     }
   }
 }

@@ -6,9 +6,7 @@
  * Migrates items, tags, and commands from old tables to the node architecture.
  */
 
-import { eq, isNull } from 'drizzle-orm'
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { eq, isNull } from '@nxus/db/server'
 import { uuidv7 } from 'uuidv7'
 import {
   getDatabase,
@@ -22,9 +20,6 @@ import {
   itemTags,
   tags,
 } from '@nxus/db/server'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 // ID mappings: oldId → newNodeId
 const itemIdMap = new Map<string, string>()

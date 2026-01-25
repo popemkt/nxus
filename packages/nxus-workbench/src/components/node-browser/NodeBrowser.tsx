@@ -48,7 +48,7 @@ export function NodeBrowser({
     for (const node of nodes) {
       const supertagName =
         node.supertags.length > 0
-          ? node.supertags.map((st) => st.content).join(', ')
+          ? node.supertags.map((st: { id: string; content: string; systemId: string | null }) => st.content).join(', ')
           : 'No Supertag'
 
       if (!groups.has(supertagName)) {
