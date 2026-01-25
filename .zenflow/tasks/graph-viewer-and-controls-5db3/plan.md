@@ -574,7 +574,8 @@ Create individual control panel sections.
 
 ---
 
-### [ ] Step: Build GraphControls Container
+### [x] Step: Build GraphControls Container
+<!-- chat-id: d3dfec1d-02d9-4349-8401-694e7157c480 -->
 
 Create the main control panel container.
 
@@ -595,6 +596,38 @@ Create the main control panel container.
 - Controls render correctly
 - All sections functional
 - Renderer switcher updates view
+
+**Completed**: Implemented all 3 container components with full store integration:
+
+1. **GraphControls.tsx**: Main floating control panel
+   - Toggleable open/closed state with gear icon button
+   - Contains all 4 control sections (Physics, Display, Filter, LocalGraph)
+   - Header with title and close button
+   - "Reset to Defaults" button in footer
+   - Backdrop blur styling with border and shadow
+   - Max height 80vh with scroll overflow
+
+2. **RendererSwitcher.tsx**: 2D/3D toggle component
+   - Segmented button control for renderer selection
+   - Uses Phosphor icons (Hexagon for 2D, Cube for 3D)
+   - Two size variants: 'sm' and 'md'
+   - Active state highlighting with shadow
+   - Connects to useGraphView/setView for state
+
+3. **GraphLegend.tsx**: Supertag color legend with filtering
+   - Displays all supertags with their assigned colors
+   - Click to toggle supertag filter (add/remove)
+   - Visual feedback for active filters (highlighted items, dimmed others)
+   - Filter count badge in header
+   - "Clear all filters" button when filters active
+   - Collapsible for space efficiency
+   - Accepts supertagColors and supertagNames Maps
+
+4. **controls/index.ts**: Updated barrel export
+   - Exports all 3 new components with their props types
+   - Re-exports all sections from ./sections
+
+**Tests**: All 150 existing tests pass
 
 ---
 
