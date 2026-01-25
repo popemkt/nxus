@@ -464,19 +464,144 @@ pnpm build
 - **Culling**: Only render nodes in viewport (2D)
 - **LOD**: Simplify nodes when zoomed out
 - **Pagination**: Limit initial load, fetch more on demand
-- **Web Workers**: Offload force simulation to worker thread
+- **Web Workers**: Offload data transformation to worker thread when node count > 500
+
+### Lightweight Graph Data Endpoint
+For global graph with thousands of nodes, add a specialized server function:
+```typescript
+// Returns minimal data for graph structure only
+interface LightweightGraphNode {
+  id: string
+  label: string
+  supertagId: string | null
+}
+
+interface LightweightGraphEdge {
+  source: string
+  target: string
+  type: 'dependency' | 'backlink' | 'hierarchy'
+}
+
+export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
+  .handler(async (): Promise<{ nodes: LightweightGraphNode[], edges: LightweightGraphEdge[] }>
+```
+
+This avoids fetching full `AssembledNode` objects for visualization-only purposes.
 
 ### 3D Specific
+- **Lazy loading**: 3d-force-graph and three.js loaded only when 3D view is selected
+- **Dynamic import**: `const ForceGraph3D = await import('3d-force-graph')`
 - **Instanced rendering**: Reuse geometries for similar nodes
 - **Texture atlases**: Combine node textures
 - **Frustum culling**: Built into three.js
 
+### Data Transformation Offloading
+When node count exceeds threshold (e.g., >500 nodes):
+- Use Web Workers for `useGraphData` transformation
+- Consider incremental updates instead of full recalculation
+- Debounce filter/search operations
+
 ---
 
-## 10. Future Extensibility
+## 10. Tag Node Representation
+
+### Virtual vs Real Nodes
+Tags displayed in the graph are **virtual nodes** synthesized by the Provider:
+
+```typescript
+interface GraphNode {
+  // ...
+  type: 'node' | 'tag' | 'supertag'  // 'tag' = virtual tag node
+  isVirtual: boolean                  // true for synthesized nodes
+}
+```
+
+### Tag Node Behavior
+| Interaction | Behavior |
+|-------------|----------|
+| Hover | Show tooltip with tag usage count |
+| Click | Filter graph to show only nodes with this tag |
+| Double-click | Clear filter (show all) OR navigate to tag management |
+| In Local Graph | Tags are included if connected to focus node |
+
+### Tag Edge Creation
+When `includeTags: true`:
+1. Scan all nodes for `field:tags` property
+2. Create virtual `GraphNode` for each unique tag
+3. Create edges: `node --[tag]--> tagNode`
+
+---
+
+## 11. Focus Synchronization
+
+### Single Source of Truth
+The `selectedNodeId` from the workbench route should be the single source of truth:
+
+```typescript
+// In GraphView.tsx
+const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+
+// Sync with local graph focus
+useEffect(() => {
+  if (localGraphOptions.enabled && selectedNodeId) {
+    setLocalGraph({ focusNodeId: selectedNodeId })
+  }
+}, [selectedNodeId, localGraphOptions.enabled])
+```
+
+### Focus Triggers
+| Action | Result |
+|--------|--------|
+| Click node in NodeBrowser | Updates selectedNodeId → Local graph refocuses |
+| Click node in Graph | Updates selectedNodeId → NodeInspector shows details |
+| Click node in NodeInspector links | Updates selectedNodeId → Both views update |
+| Toggle local graph ON | Uses current selectedNodeId as focus |
+| Toggle local graph OFF | Shows full graph, selection unchanged |
+
+---
+
+## 12. Code Consolidation Strategy
+
+### Phase 1: New Foundation in Workbench
+Build the modular graph system in `nxus-workbench` as specified.
+
+### Phase 2: Refactor nxus-core (Future)
+After the workbench graph is stable:
+1. Extract `graph/provider` and `graph/store` to shared package (`@nxus/graph-core`)
+2. Refactor `nxus-core/components/features/gallery/item-views/graph-view/` to use shared provider
+3. Benefit: Consistent physics, visuals, and behavior across the app
+
+### Shared Package Structure (Future)
+```
+packages/nxus-graph-core/
+├── provider/          # GraphNode, GraphEdge, useGraphData
+├── store/             # Shared Zustand store
+├── utils/             # Color palette, stats, BFS
+└── index.ts
+```
+
+---
+
+## 13. Existing Infrastructure to Leverage
+
+### Already Implemented (search-nodes.server.ts)
+- `getBacklinksServerFn` - Returns nodes that reference a target node (lines 210-256)
+- `getAllNodesServerFn` - Fetches nodes with optional supertag filter
+- `getChildNodesServerFn` - Gets children of a parent node
+
+### Reuse Strategy
+Instead of reimplementing, the Provider should:
+1. Use `getAllNodesServerFn` for initial node fetch
+2. Use `getBacklinksServerFn` for edge extraction
+3. Consider adding `getGraphStructureServerFn` for lightweight global graph
+
+---
+
+## 14. Future Extensibility
 
 The modular architecture supports:
 - **New renderers**: VR/AR, WebGPU, static export (SVG/PNG)
 - **New edge types**: Custom relationship types
 - **Plugins**: Third-party graph enhancements
 - **AI features**: Auto-clustering, similarity edges
+- **Shared core**: Extract to `@nxus/graph-core` for app-wide consistency

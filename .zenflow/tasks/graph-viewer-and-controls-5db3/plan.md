@@ -86,15 +86,20 @@ Create the main hook that transforms AssembledNode[] into GraphData.
    - Use extractors to generate `GraphEdge[]`
    - Generate consistent supertag color palette
    - Compute graph stats (total nodes, edges, orphans, components)
+   - **Handle tag nodes**: When `includeTags: true`, synthesize virtual tag nodes
    - Return `GraphData` object
 2. Create `packages/nxus-workbench/src/features/graph/provider/utils/`:
    - `color-palette.ts` - Generate consistent colors for supertags
    - `graph-stats.ts` - Compute graph statistics
+   - `tag-synthesizer.ts` - Create virtual tag nodes and edges
+3. **Performance consideration**: Add threshold check (>500 nodes) for Web Worker offloading (stub for now)
 
 **Verification**:
 - Unit test with sample AssembledNode data
 - Correct node/edge counts
 - Colors are consistent across renders
+- Virtual tag nodes created when includeTags=true
+- Tag nodes have `isVirtual: true` flag
 
 ---
 
@@ -285,18 +290,23 @@ Create the main control panel container.
 
 ## Phase 4: 3D Renderer
 
-### [ ] Step: Add 3D Force Graph Dependency
+### [ ] Step: Add 3D Force Graph Dependency (Lazy-Loaded)
 
-Install and configure 3d-force-graph.
+Install and configure 3d-force-graph with lazy loading to avoid bundle bloat.
 
 **Tasks**:
 1. Add dependency: `pnpm add 3d-force-graph --filter=nxus-workbench`
-2. Update `.gitignore` if needed
-3. Verify bundle size impact
+2. **Configure lazy loading**:
+   - Use dynamic import: `const ForceGraph3D = await import('3d-force-graph')`
+   - Only load when user switches to 3D view
+   - Show loading indicator during import
+3. Verify bundle size impact (3d-force-graph + three.js should not affect initial load)
 
 **Verification**:
 - Dependency installs correctly
 - No type errors
+- 3D dependencies NOT in initial bundle (check with bundle analyzer)
+- Loading indicator shows during first 3D switch
 
 ---
 
@@ -375,7 +385,7 @@ Create the main GraphView component that orchestrates everything.
 
 ### [ ] Step: Update Workbench Route
 
-Integrate sidebar and graph view into workbench.
+Integrate sidebar and graph view into workbench with proper focus synchronization.
 
 **Tasks**:
 1. Modify `packages/nxus-workbench/src/route.tsx`:
@@ -383,34 +393,41 @@ Integrate sidebar and graph view into workbench.
    - Add Sidebar component on left
    - Conditionally render NodeBrowser or GraphView
    - Pass selected node between views
-2. Ensure supertag sidebar remains functional
-3. Handle navigation from graph to node inspector
+2. **Implement focus synchronization**:
+   - `selectedNodeId` is single source of truth
+   - Selecting node in NodeBrowser → updates graph local focus
+   - Clicking node in Graph → updates NodeBrowser selection + NodeInspector
+   - Toggling local graph ON → uses current selectedNodeId as focus
+3. Ensure supertag sidebar remains functional
+4. Handle navigation from graph to node inspector
 
 **Verification**:
 - Sidebar navigation works
 - Views switch correctly
-- Node selection syncs between views
+- **Node selection syncs bidirectionally** (Browser ↔ Graph ↔ Inspector)
 - Supertag sidebar still works
+- Local graph focus follows selection
 
 ---
 
-### [ ] Step: Add Backlink Query Support
+### [ ] Step: Integrate Existing Backlink Query & Add Lightweight Endpoint
 
-Implement server-side backlink query for complete edge data.
+Leverage existing server functions and add optimized endpoint for large graphs.
 
 **Tasks**:
-1. Modify `packages/nxus-workbench/src/server/search-nodes.server.ts`:
-   - Add `getBacklinksServerFn` function
-   - Query `node_properties` where value contains target node ID
-   - Filter to node-type fields only
-   - Return list of referencing nodes
-2. Integrate into graph data provider
-3. Consider caching strategy
+1. **Use existing `getBacklinksServerFn`** (already in `search-nodes.server.ts:210-256`):
+   - Integrate into backlink-extractor.ts
+   - Consider adding optional depth parameter for recursive backlinks
+2. **Add lightweight graph structure endpoint** for performance:
+   - Create `getGraphStructureServerFn` returning only `{ id, label, supertagId }` for nodes
+   - Return edges as `{ source, target, type }` without full node assembly
+   - Use for global graph view with 500+ nodes
+3. Update Provider to choose between full/lightweight fetch based on node count
 
 **Verification**:
-- Backlinks query returns correct results
-- Edges appear bidirectionally in graph
-- Performance acceptable
+- Backlinks integrate correctly with existing endpoint
+- Lightweight endpoint returns correct structure
+- Global graph performs well with 500+ nodes
 
 ---
 
@@ -456,3 +473,20 @@ Document the implementation.
    - Future improvement suggestions
 
 **Output**: `report.md`
+
+---
+
+## Future Work (Out of Scope)
+
+### Code Consolidation with nxus-core
+Once this implementation is stable, consider:
+1. Extract `graph/provider` and `graph/store` to shared package (`@nxus/graph-core`)
+2. Refactor `nxus-core/components/features/gallery/item-views/graph-view/` to use shared provider
+3. Benefit: Consistent physics, visuals, and behavior across the entire app
+
+### Additional Enhancements
+- Web Worker for data transformation (when >500 nodes)
+- Global graph with lightweight endpoint
+- VR/AR renderer
+- Graph export (SVG/PNG)
+- AI-powered clustering
