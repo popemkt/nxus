@@ -448,7 +448,8 @@ Create layout hooks for hierarchical and force-directed layouts.
 
 ---
 
-### [ ] Step: Build Graph2D Component
+### [x] Step: Build Graph2D Component
+<!-- chat-id: cf35291a-ece2-4b8a-bafc-3fcefa8261b2 -->
 
 Create the main 2D graph component.
 
@@ -469,6 +470,43 @@ Create the main 2D graph component.
 - Nodes and edges display correctly
 - Interactions work (click, double-click, drag)
 - Physics changes update simulation
+
+**Completed**: Implemented the Graph2D component with full React Flow integration:
+
+1. **Graph2D.tsx**: Main 2D graph component
+   - `Graph2DProps` interface with callbacks for node interactions
+   - `convertToFlowNodes()` - Converts GraphNode[] to React Flow nodes with display options
+   - `convertToFlowEdges()` - Converts GraphEdge[] to React Flow edges with edge style
+   - `Graph2DInner` - Inner component that uses React Flow hooks (must be inside ReactFlowProvider)
+   - `Graph2D` - Main exported component with ReactFlowProvider wrapper
+   - Integrated with all store hooks (physics, display, view, localGraph)
+   - Uses `useGraphLayout` hook for force/hierarchical layout switching
+
+2. **Key Features**:
+   - ReactFlow with custom `graphNodeTypes` and `graphEdgeTypes`
+   - Background with dots variant
+   - MiniMap with supertag-based node coloring
+   - Controls panel for zoom/fit view
+   - Stats panel showing node/edge/orphan counts
+   - Node hover state management for label visibility
+   - Edge hover state for label visibility
+   - Drag handling with node pinning for force simulation
+   - Double-click to update local graph focus
+
+3. **Interaction Handlers**:
+   - `onNodeClick` - Node selection callback
+   - `onNodeDoubleClick` - Navigation or local graph focus update
+   - `onNodeMouseEnter/Leave` - Hover state management
+   - `onEdgeMouseEnter/Leave` - Edge hover state
+   - `onPaneClick` - Background click to clear selection
+   - `handleNodesChange` - Node drag with simulation pinning
+
+4. **index.ts**: Barrel export for all 2D renderer components
+   - Exports Graph2D, Graph2DComponent, Graph2DProps
+   - Re-exports all node/edge components and types
+   - Re-exports all layout hooks and types
+
+**Tests**: All 150 existing tests pass
 
 ---
 
