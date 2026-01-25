@@ -282,7 +282,8 @@ Create the Zustand store for shared graph options.
 
 ## Phase 2: 2D Renderer
 
-### [ ] Step: Create 2D Node Components
+### [x] Step: Create 2D Node Components
+<!-- chat-id: e9f3d323-3755-4eaa-819e-f8b2028db064 -->
 
 Build the React Flow node components.
 
@@ -296,6 +297,38 @@ Build the React Flow node components.
 
 **Verification**:
 - Components render without errors
+
+**Completed**: Implemented 2D Node Components with React Flow integration:
+
+1. **Installed @xyflow/react** dependency in nxus-workbench
+
+2. **nodes/types.ts**: Shared types and utilities
+   - `GraphNodeData` - Extends GraphNode with display options (nodeSize, labelVisibility, isHovered)
+   - `GraphNodeProps` - Standard props interface for node components
+   - `calculateNodeSize()` - Size nodes based on connections (0.8x - 2.5x base size)
+   - `shouldShowLabel()` - Determine label visibility based on hover/focus state
+
+3. **nodes/DetailedNode.tsx**: Card-style node component
+   - Left border colored by supertag
+   - Type indicator icon (Hash for tags, Circle for nodes)
+   - Supertag badge with color styling
+   - Connection counts (outgoing → teal, incoming ← violet)
+   - Orphan indicator
+   - States: selected (primary ring), focused (amber ring), highlighted, dimmed
+
+4. **nodes/SimpleNode.tsx**: Minimalist dot-style node
+   - Colored circle based on supertag
+   - Size scales with connection count
+   - Virtual node indicator (dashed inner ring)
+   - Orphan indicator (dashed outer ring)
+   - Centered handles for force-directed layout
+   - Local hover state for label visibility
+   - States: selected, focused, highlighted, dimmed
+
+5. **nodes/index.ts**: Barrel export
+   - `graphNodeTypes` map for React Flow registration
+   - `GraphNodeType` type alias ('detailed' | 'simple')
+   - All utility functions exported
 - States display correctly
 - Responsive to hover
 
