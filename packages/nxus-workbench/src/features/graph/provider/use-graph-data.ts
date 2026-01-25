@@ -127,7 +127,7 @@ function filterNodes(
   if (options.supertagFilter.length > 0) {
     const allowedSupertags = new Set(options.supertagFilter)
     filtered = filtered.filter((node) =>
-      node.supertags.some((st) => allowedSupertags.has(st.id)),
+      node.supertags.some((st: { id: string }) => allowedSupertags.has(st.id)),
     )
   }
 

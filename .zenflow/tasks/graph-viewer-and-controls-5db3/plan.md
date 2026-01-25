@@ -821,7 +821,8 @@ Build the Discord-style icon sidebar.
 
 ---
 
-### [ ] Step: Build GraphView Orchestrator
+### [x] Step: Build GraphView Orchestrator
+<!-- chat-id: aff6c7ae-3b84-4d30-91a5-b5a18285f38e -->
 
 Create the main GraphView component that orchestrates everything.
 
@@ -840,6 +841,35 @@ Create the main GraphView component that orchestrates everything.
 - Switches between 2D and 3D
 - Controls affect both renderers
 - Local graph works
+
+**Completed**: Implemented the GraphView Orchestrator component with full integration (150 tests passing):
+
+1. **GraphView.tsx**: Main orchestrator component
+   - `GraphViewProps` interface with nodes, callbacks, selectedNodeId, loading state
+   - `buildDataOptions()` - Convert store filter/localGraph to GraphDataOptions
+   - `buildSupertagNames()` - Build supertag name map for legend display
+   - `GraphViewLoading` - Loading state with spinner animation
+   - `GraphViewEmpty` - Empty state when no nodes to display
+   - Integrates all store hooks (filter, localGraph, view)
+   - Uses `useGraphData` to transform AssembledNode[] to GraphData
+   - Uses `useLocalGraph` to apply local graph filtering/annotation
+   - Conditionally renders `Graph2D` or `Graph3D` based on view.renderer
+   - Renders `RendererSwitcher` (top-left), `GraphControls` (top-right), `GraphLegend` (bottom-right)
+
+2. **index.ts**: Comprehensive barrel export
+   - Main component: `GraphView`, `GraphViewComponent`, `GraphViewProps`
+   - Provider exports: all hooks, extractors, utilities, types
+   - Store exports: all hooks, defaults, types
+   - Controls exports: all components and section components
+   - 2D renderer exports: all components, node/edge types, layout hooks
+   - 3D renderer exports: all components, lazy loader, rendering utilities
+
+3. **Key Design Decisions**:
+   - Data fetching is handled by parent (passed as `nodes` prop) for flexibility
+   - Store settings are read directly via hooks for reactivity
+   - Loading and empty states provide good UX
+   - All controls overlay the graph for minimal UI chrome
+   - Legend only shown when supertags exist
 
 ---
 
