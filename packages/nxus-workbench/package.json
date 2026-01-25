@@ -24,6 +24,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "3d-force-graph": "^1.79.0",
     "@nxus/db": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@phosphor-icons/react": "^2.1.10",
@@ -33,6 +34,8 @@
     "d3-force": "^3.0.0",
     "dagre": "^0.8.5",
     "drizzle-orm": "^0.45.1",
+    "three": "^0.182.0",
+    "three-forcegraph": "^1.43.0",
     "zod": "^4.2.1",
     "zustand": "^5.0.9"
   },

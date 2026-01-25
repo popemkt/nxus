@@ -633,7 +633,8 @@ Create the main control panel container.
 
 ## Phase 4: 3D Renderer
 
-### [ ] Step: Add 3D Force Graph Dependency (Lazy-Loaded)
+### [x] Step: Add 3D Force Graph Dependency (Lazy-Loaded)
+<!-- chat-id: f48a9649-f5f8-4564-96c7-916d8316cfcf -->
 
 Install and configure 3d-force-graph with lazy loading to avoid bundle bloat.
 
@@ -650,6 +651,43 @@ Install and configure 3d-force-graph with lazy loading to avoid bundle bloat.
 - No type errors
 - 3D dependencies NOT in initial bundle (check with bundle analyzer)
 - Loading indicator shows during first 3D switch
+
+**Completed**: Implemented lazy loading infrastructure for 3D Force Graph:
+
+1. **Dependencies added** to `@nxus/workbench`:
+   - `3d-force-graph` (^1.79.0) - Main 3D graph library
+   - `three` (^0.182.0) - WebGL rendering engine
+   - `three-forcegraph` (^1.43.0) - Force graph for Three.js (types only needed at compile time)
+
+2. **lazy-loader.ts**: Core lazy loading module
+   - `loadForceGraph3D()` - Async function with dynamic import `await import('3d-force-graph')`
+   - Module caching to avoid re-importing (singleton pattern)
+   - `isForceGraph3DLoaded()` - Check if already loaded
+   - `preloadForceGraph3D()` - Fire-and-forget preload for hover optimization
+   - `clearForceGraph3DCache()` - Reset for testing
+   - Generic type support for custom node/link types
+
+3. **use-lazy-force-graph.ts**: React hook for lazy loading
+   - `useLazyForceGraph()` hook with loading state management
+   - States: `idle`, `loading`, `loaded`, `error`
+   - `autoLoad` option for automatic loading on mount
+   - Callbacks: `onLoad`, `onError` for lifecycle events
+   - `preload()` function for eager background loading
+
+4. **Graph3DLoading.tsx**: Loading indicator component
+   - Spinner animation with 3D cube icon
+   - Error state with retry button
+   - "Initializing WebGL and physics engine" message
+
+5. **index.ts**: Barrel exports for graph-3d module
+   - All loader utilities and types exported
+   - React hook and loading component exported
+
+6. **RendererSwitcher.tsx**: Updated with preload on hover
+   - `onMouseEnter={() => preloadForceGraph3D()}` on 3D button
+   - Reduces perceived latency when switching to 3D view
+
+**Tests**: All 150 existing tests pass
 
 ---
 

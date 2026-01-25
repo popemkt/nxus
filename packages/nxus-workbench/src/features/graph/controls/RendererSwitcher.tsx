@@ -10,6 +10,7 @@ import { cn } from '@nxus/ui'
 
 import { useGraphStore, useGraphView } from '../store'
 import type { RendererType } from '../store/types'
+import { preloadForceGraph3D } from '../renderers/graph-3d'
 
 export interface RendererSwitcherProps {
   /** Additional classes */
@@ -69,10 +70,15 @@ export function RendererSwitcher({
     >
       {RENDERER_OPTIONS.map((option) => {
         const isActive = view.renderer === option.value
+        // Preload 3D library when hovering over the 3D button
+        const handleMouseEnter = option.value === '3d'
+          ? () => preloadForceGraph3D()
+          : undefined
         return (
           <button
             key={option.value}
             onClick={() => handleSwitch(option.value)}
+            onMouseEnter={handleMouseEnter}
             className={cn(
               'flex items-center rounded-sm transition-all',
               buttonClasses,
