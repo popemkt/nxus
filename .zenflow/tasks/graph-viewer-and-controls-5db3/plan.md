@@ -334,7 +334,8 @@ Build the React Flow node components.
 
 ---
 
-### [ ] Step: Create 2D Edge Components
+### [x] Step: Create 2D Edge Components
+<!-- chat-id: b44bfb3b-13df-4ee9-9ae3-3dcaea48b867 -->
 
 Build the React Flow edge components with direction visualization.
 
@@ -351,6 +352,40 @@ Build the React Flow edge components with direction visualization.
 - Edges render correctly
 - Particles animate in correct direction
 - Highlight colors work on hover
+
+**Completed**: Implemented 2D Edge Components with React Flow integration:
+
+1. **edges/types.ts**: Shared types and utilities
+   - `GraphEdgeData` - Extends GraphEdge with display options (edgeStyle, labelVisibility, isHovered)
+   - `GraphEdgeProps` - Standard props interface for edge components
+   - `EDGE_DIRECTION_COLORS` - Teal (#14b8a6) for outgoing, violet (#8b5cf6) for incoming
+   - `EDGE_TYPE_COLORS` - Color mapping for dependency, backlink, reference, hierarchy, tag
+   - `getEdgeColor()` - Get color based on direction or type
+   - `getEdgeOpacity()` - Calculate opacity (1.0 highlighted, 0.6 normal, 0.15 dimmed)
+   - `getEdgeStrokeWidth()` - 2.5px highlighted, 1.5px normal
+   - `shouldShowEdgeLabel()` - Label visibility based on hover/highlight state
+
+2. **edges/AnimatedEdge.tsx**: Edge with directional particle animation
+   - Animated particles flowing along bezier path using SVG `<animateMotion>`
+   - 2 particles normally, 3 when highlighted
+   - Animation duration: 2s normal, 1.5s highlighted
+   - Arrow marker at target end
+   - Color-coded by direction (teal outgoing, violet incoming)
+   - Opacity states: normal, highlighted, dimmed
+   - Optional edge label with EdgeLabelRenderer
+
+3. **edges/StaticEdge.tsx**: Simple static edge with arrow marker
+   - Bezier path with arrow marker at target end
+   - No animation - better performance for large graphs
+   - Same color coding and opacity states as AnimatedEdge
+   - Optional edge label
+
+4. **edges/index.ts**: Barrel export
+   - `graphEdgeTypes` map for React Flow registration
+   - `GraphEdgeType` type alias ('animated' | 'static')
+   - All utility functions and constants exported
+
+**Tests**: All 150 tests passing
 
 ---
 
