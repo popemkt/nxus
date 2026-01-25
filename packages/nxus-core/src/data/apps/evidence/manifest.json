@@ -3,8 +3,8 @@
   "name": "Evidence",
   "description": "Mortgage Evidence sourcing",
   "type": "remote-repo",
-  "path": "https://dev.azure.com/topicusdotfinance/Finance.Evidence/_git/Finance.Evidence",
-  "homepage": "https://dev.azure.com/topicusdotfinance/Finance.Evidence",
+  "path": "random",
+  "homepage": "random",
   "dependencies": ["git"],
   "metadata": {
     "tags": [],
