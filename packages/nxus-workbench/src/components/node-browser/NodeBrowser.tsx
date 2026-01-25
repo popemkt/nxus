@@ -159,50 +159,54 @@ export function NodeBrowser({
           </div>
         ) : (
           <div className="space-y-4">
-            {Array.from(groupedNodes.entries()).map(
-              ([supertagName, groupNodes]) => (
-                <div key={supertagName} className="space-y-1">
-                  {/* Group Header */}
-                  <button
-                    className="flex items-center gap-2 px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
-                    onClick={() => toggleGroup(supertagName)}
-                  >
-                    {expandedGroups.has(supertagName) ? (
-                      <CaretDown className="size-3" />
-                    ) : (
-                      <CaretRight className="size-3" />
-                    )}
-                    <Hash className="size-3" />
-                    {supertagName}
-                    <span className="text-muted-foreground/60 font-normal">
-                      ({groupNodes.length})
-                    </span>
-                  </button>
+            {(() => {
+              let globalIndexCounter = 0
+              return Array.from(groupedNodes.entries()).map(
+                ([supertagName, groupNodes]) => (
+                  <div key={supertagName} className="space-y-1">
+                    {/* Group Header */}
+                    <button
+                      className="flex items-center gap-2 px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
+                      onClick={() => toggleGroup(supertagName)}
+                    >
+                      {expandedGroups.has(supertagName) ? (
+                        <CaretDown className="size-3" />
+                      ) : (
+                        <CaretRight className="size-3" />
+                      )}
+                      <Hash className="size-3" />
+                      {supertagName}
+                      <span className="text-muted-foreground/60 font-normal">
+                        ({groupNodes.length})
+                      </span>
+                    </button>
 
-                  {/* Group Items */}
-                  {expandedGroups.has(supertagName) && (
-                    <div className="ml-5 pt-1 pb-2 space-y-1">
-                      {groupNodes.map((node) => {
-                        const globalIdx = flatNodeList.indexOf(node)
-                        return (
-                          <NodeBadge
-                            key={node.id}
-                            content={node.content}
-                            systemId={node.systemId}
-                            isSelected={selectedNodeId === node.id}
-                            onClick={() => onSelectNode(node.id)}
-                            className={cn(
-                              globalIdx === focusedIndex &&
-                                'ring-2 ring-primary/50',
-                            )}
-                          />
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              ),
-            )}
+                    {/* Group Items */}
+                    {expandedGroups.has(supertagName) && (
+                      <div className="ml-5 pt-1 pb-2 space-y-1">
+                        {groupNodes.map((node) => {
+                          // Optimization: Use counter instead of indexOf which is O(n^2)
+                          const globalIdx = globalIndexCounter++
+                          return (
+                            <NodeBadge
+                              key={node.id}
+                              content={node.content}
+                              systemId={node.systemId}
+                              isSelected={selectedNodeId === node.id}
+                              onClick={() => onSelectNode(node.id)}
+                              className={cn(
+                                globalIdx === focusedIndex &&
+                                  'ring-2 ring-primary/50',
+                              )}
+                            />
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ),
+              )
+            })()}
           </div>
         )}
       </div>
