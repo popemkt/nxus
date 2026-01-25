@@ -171,7 +171,8 @@ Create the main hook that transforms AssembledNode[] into GraphData.
 
 ---
 
-### [ ] Step: Implement Local Graph Filtering
+### [x] Step: Implement Local Graph Filtering
+<!-- chat-id: 238d0961-be13-4784-a3c3-db7971d50a80 -->
 
 Create the BFS-based local graph filtering hook.
 
@@ -191,6 +192,33 @@ Create the BFS-based local graph filtering hook.
 - Unit test BFS at depth 1, 2, 3
 - Test direction filtering (outgoing only, incoming only, both)
 - Test circular reference handling
+
+**Completed**: Implemented the Local Graph Filtering hook with comprehensive unit tests (32 local graph tests, 126 total tests passing):
+
+1. **use-local-graph.ts**: BFS-based local graph traversal
+   - `buildAdjacencyLists()` - Pre-compute bidirectional adjacency for efficient traversal
+   - `bfsTraversal()` - BFS with configurable depth and link direction filtering
+   - `filterLocalGraph()` - Annotate full graph with isInLocalGraph, isFocused, isHighlighted flags
+   - `getLocalGraphOnly()` - Return filtered graph containing only local nodes/edges
+   - `useLocalGraph()` - React hook with memoization, supports annotate and filter modes
+   - `useLocalGraphResult()` - Hook returning detailed result with distances and ID sets
+
+2. **Key Features**:
+   - Supports depth 1-3 traversal from focus node
+   - Direction filtering: 'outgoing', 'incoming', 'both', or any combination
+   - Handles circular references without infinite loops
+   - Handles isolated nodes (no connections)
+   - Marks direct connections as isHighlighted for visual emphasis
+   - Records distance from focus node for each included node
+
+3. **LocalGraphResult** type provides:
+   - `data` - Annotated GraphData
+   - `localNodeIds` - Set of node IDs within local graph
+   - `localEdgeIds` - Set of edge IDs within local graph
+   - `focusNode` - The focus node (or null)
+   - `nodeDistances` - Map of node ID to distance from focus
+
+4. **Exported from provider/index.ts** for use by renderers
 
 ---
 

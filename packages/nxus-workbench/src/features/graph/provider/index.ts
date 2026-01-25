@@ -46,6 +46,18 @@ export {
   buildChildrenMap,
 } from './extractors/index.js'
 
+// Local graph filtering
+export {
+  useLocalGraph,
+  useLocalGraphResult,
+  filterLocalGraph,
+  getLocalGraphOnly,
+  buildAdjacencyLists,
+  bfsTraversal,
+} from './use-local-graph.js'
+
+export type { LocalGraphResult } from './use-local-graph.js'
+
 // Utilities
 export {
   // Color palette
