@@ -246,5 +246,5 @@ Reviewed suggestions from another agent. Results:
 
 **3. `evidence/manifest.json` path with username - FIXED ✓**
 - Removed username from Azure DevOps URL
-- Changed from: `https://topicusdotfinance@dev.azure.com/...`
+- Changed from: `https://...@dev.azure.com/...`
 - Changed to: `https://dev.azure.com/...`
