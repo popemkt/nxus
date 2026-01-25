@@ -2,6 +2,8 @@
 
 ## Configuration
 - **Artifacts Path**: `.zenflow/tasks/graph-viewer-and-controls-5db3`
+- **Difficulty**: Hard
+- **Architecture**: Modular graph system with isolated data provider and pluggable renderers
 
 ---
 
@@ -24,201 +26,414 @@ Do not make assumptions on important decisions — get clarification first.
 
 Created comprehensive technical specification covering:
 - Research on Obsidian, Tana-helper, and Anytype graph implementations
-- Analysis of existing graph view code in nxus-core
-- Architecture design for workbench graph integration
-- Data model mapping from AssembledNode to graph nodes/edges
+- Modular architecture design with isolated data provider
+- Pluggable renderer system (2D and 3D)
+- Data model: GraphNode, GraphEdge, GraphData types
+- Edge direction UX (animated particles, color coding)
+- Discord-style sidebar design
 
 **Output**: `spec.md`
 
 ---
 
-### [ ] Step: Create Workbench Graph Store
+## Phase 1: Foundation
 
-Create the Zustand store for workbench graph state management.
+### [ ] Step: Create Provider Types and Interfaces
+
+Define the core data types for the renderer-agnostic graph system.
 
 **Tasks**:
-1. Create `packages/nxus-workbench/src/stores/workbench-graph.store.ts`
-2. Define `WorkbenchGraphOptions` interface with:
-   - Layout options (force/hierarchical)
-   - Physics controls (centerForce, repelForce, linkForce, linkDistance)
-   - Display options (nodeStyle, showLabels, colorBy, nodeSizing)
-   - Filter options (showOrphans, filterMode)
-   - Local graph options (localGraphMode, localGraphDepth, localGraphLinkTypes)
-   - Interaction options (nodesLocked)
-3. Implement persisted store with Zustand persist middleware
-4. Export store and related types
+1. Create `packages/nxus-workbench/src/features/graph/provider/types.ts`:
+   - `GraphNode` interface (id, label, supertag, metrics, state)
+   - `GraphEdge` interface (id, source, target, type, direction, state)
+   - `GraphData` interface (nodes, edges, supertagColors, stats)
+   - `GraphDataOptions` interface (includeTags, includeRefs, filters, localGraph)
+2. Create `packages/nxus-workbench/src/features/graph/provider/index.ts` barrel export
 
 **Verification**:
 - TypeScript compiles without errors
-- Store can be imported and used
+- Types can be imported from other modules
 
 ---
 
-### [ ] Step: Implement Graph Data Transformation Hook
+### [ ] Step: Implement Edge Extractors
 
-Create the hook that transforms AssembledNode data into React Flow format.
+Create modular functions to extract edges from different relationship types.
 
 **Tasks**:
-1. Create `packages/nxus-workbench/src/components/graph-view/hooks/use-workbench-graph.ts`
-2. Implement node creation from AssembledNode:
-   - Extract content as label
-   - Map supertags to colors
-   - Calculate connection counts for sizing
-3. Implement edge extraction:
-   - Parse `field:dependencies` property values
-   - Parse `field:parent` for hierarchy edges
-4. Generate consistent supertag color palette
-5. Export `useWorkbenchGraph` hook
+1. Create `packages/nxus-workbench/src/features/graph/provider/extractors/`:
+   - `dependency-extractor.ts` - Extract from `field:dependencies` property
+   - `backlink-extractor.ts` - Find nodes that reference the target (requires node map)
+   - `reference-extractor.ts` - Extract from generic node-type properties
+   - `hierarchy-extractor.ts` - Extract from `field:parent` property
+   - `index.ts` - Barrel export with unified `extractAllEdges` function
+2. Each extractor returns `GraphEdge[]` and is independently testable
+
+**Verification**:
+- Unit tests for each extractor with mock data
+- Extractors correctly identify edge direction
+
+---
+
+### [ ] Step: Implement Graph Data Provider Hook
+
+Create the main hook that transforms AssembledNode[] into GraphData.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/provider/use-graph-data.ts`:
+   - Accept `AssembledNode[]` and `GraphDataOptions`
+   - Transform nodes to `GraphNode[]` with supertag info and metrics
+   - Use extractors to generate `GraphEdge[]`
+   - Generate consistent supertag color palette
+   - Compute graph stats (total nodes, edges, orphans, components)
+   - Return `GraphData` object
+2. Create `packages/nxus-workbench/src/features/graph/provider/utils/`:
+   - `color-palette.ts` - Generate consistent colors for supertags
+   - `graph-stats.ts` - Compute graph statistics
 
 **Verification**:
 - Unit test with sample AssembledNode data
-- Correct node/edge count output
+- Correct node/edge counts
+- Colors are consistent across renders
 
 ---
 
-### [ ] Step: Implement Local Graph Filtering Hook
+### [ ] Step: Implement Local Graph Filtering
 
-Create the hook for filtering graph to N-degree connections from a focus node.
+Create the BFS-based local graph filtering hook.
 
 **Tasks**:
-1. Create `packages/nxus-workbench/src/components/graph-view/hooks/use-local-graph.ts`
-2. Implement BFS traversal from focus node:
-   - Track visited nodes at each depth level
-   - Support configurable max depth (1-3)
-   - Filter by link direction (incoming/outgoing/both)
-3. Return filtered nodes and edges
-4. Handle edge case: no focus node (return all)
+1. Create `packages/nxus-workbench/src/features/graph/provider/use-local-graph.ts`:
+   - Accept `GraphData`, `focusNodeId`, `depth`, `linkTypes`
+   - Implement BFS traversal from focus node
+   - Support filtering by link direction (outgoing/incoming/both)
+   - Mark nodes and edges with `isInLocalGraph` flag
+   - Return filtered `GraphData` or annotated full graph
+2. Handle edge cases:
+   - No focus node (return all)
+   - Focus node has no connections
+   - Circular references
 
 **Verification**:
 - Unit test BFS at depth 1, 2, 3
-- Test direction filtering
+- Test direction filtering (outgoing only, incoming only, both)
+- Test circular reference handling
 
 ---
 
-### [ ] Step: Create Node and Edge Components
+### [ ] Step: Create Graph Store
 
-Build the React Flow node and edge components for workbench.
+Create the Zustand store for shared graph options.
 
 **Tasks**:
-1. Create `packages/nxus-workbench/src/components/graph-view/components/workbench-node.tsx`:
-   - Detailed mode: Card with content, supertag badge, connection count
-   - Simple mode: Colored dot with optional label
-   - Support dimmed/highlighted states
-2. Create `packages/nxus-workbench/src/components/graph-view/components/relation-edge.tsx`:
-   - Animated edge for force layout
-   - Directional arrow marker
-   - Optional relation type label
+1. Create `packages/nxus-workbench/src/features/graph/store/types.ts`:
+   - `GraphPhysicsOptions` (centerForce, repelForce, linkForce, linkDistance)
+   - `GraphDisplayOptions` (colorBy, nodeLabels, edgeLabels, nodeSize, edgeStyle)
+   - `GraphFilterOptions` (includeTags, includeRefs, showOrphans, supertagFilter, searchQuery)
+   - `GraphLocalGraphOptions` (enabled, focusNodeId, depth, linkTypes)
+   - `GraphViewOptions` (renderer, layout)
+   - `WorkbenchGraphState` (all options + actions)
+2. Create `packages/nxus-workbench/src/features/graph/store/defaults.ts`:
+   - Default values for all options (Obsidian-inspired physics defaults)
+3. Create `packages/nxus-workbench/src/features/graph/store/graph.store.ts`:
+   - Zustand store with persist middleware
+   - Actions for updating each option group
+   - `resetToDefaults` action
+4. Create `packages/nxus-workbench/src/features/graph/store/index.ts` barrel export
+
+**Verification**:
+- Store initializes with defaults
+- Options persist to localStorage
+- Actions update state correctly
+
+---
+
+## Phase 2: 2D Renderer
+
+### [ ] Step: Create 2D Node Components
+
+Build the React Flow node components.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/renderers/graph-2d/nodes/`:
+   - `DetailedNode.tsx` - Card-style with label, supertag badge, connection count
+   - `SimpleNode.tsx` - Colored dot with optional label, sized by connections
+   - `index.ts` - Export node types map
+2. Support states: normal, dimmed, highlighted, focused
+3. Use supertag color for styling
 
 **Verification**:
 - Components render without errors
-- Visual appearance matches design
+- States display correctly
+- Responsive to hover
 
 ---
 
-### [ ] Step: Build Main Graph Canvas Component
+### [ ] Step: Create 2D Edge Components
 
-Create the main WorkbenchGraphCanvas component.
+Build the React Flow edge components with direction visualization.
 
 **Tasks**:
-1. Create `packages/nxus-workbench/src/components/graph-view/WorkbenchGraphCanvas.tsx`
-2. Integrate React Flow with:
-   - Custom node types (workbench-node)
-   - Custom edge types (relation-edge)
-   - Background grid
-   - MiniMap
-3. Implement Dagre hierarchical layout
-4. Implement D3 force simulation with configurable physics:
-   - forceCenter with centerForce parameter
-   - forceManyBody with repelForce parameter
-   - forceLink with linkForce and linkDistance parameters
-   - forceCollide for overlap prevention
-5. Handle layout transitions smoothly
-6. Connect to workbench graph store
+1. Create `packages/nxus-workbench/src/features/graph/renderers/graph-2d/edges/`:
+   - `AnimatedEdge.tsx` - With directional particles flowing along path
+   - `StaticEdge.tsx` - Simple line with arrow marker
+   - `index.ts` - Export edge types map
+2. Implement particle animation using CSS keyframes or requestAnimationFrame
+3. Support highlight colors: teal for outgoing, violet for incoming
+4. Support dimmed state for non-connected edges
+
+**Verification**:
+- Edges render correctly
+- Particles animate in correct direction
+- Highlight colors work on hover
+
+---
+
+### [ ] Step: Implement 2D Layout Hooks
+
+Create layout hooks for hierarchical and force-directed layouts.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/renderers/graph-2d/layouts/`:
+   - `use-dagre-layout.ts` - Hierarchical layout using dagre
+   - `use-force-layout.ts` - Force-directed using d3-force with physics params
+   - `index.ts` - Export layout selector hook
+2. Force layout should accept physics params from store:
+   - `centerForce` → forceCenter strength
+   - `repelForce` → forceManyBody strength
+   - `linkForce` → forceLink strength
+   - `linkDistance` → forceLink distance
+3. Support smooth transitions between layouts
+
+**Verification**:
+- Dagre positions nodes correctly
+- Force simulation responds to physics params
+- Layout transitions are smooth
+
+---
+
+### [ ] Step: Build Graph2D Component
+
+Create the main 2D graph component.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/renderers/graph-2d/Graph2D.tsx`:
+   - Accept `GraphData` from provider
+   - Convert `GraphNode[]` to React Flow nodes
+   - Convert `GraphEdge[]` to React Flow edges
+   - Register custom node and edge types
+   - Add Background, MiniMap, Controls
+   - Connect to store for physics and display options
+   - Handle node click for local graph focus
+   - Handle node double-click for navigation
+2. Create `packages/nxus-workbench/src/features/graph/renderers/graph-2d/index.ts`
 
 **Verification**:
 - Graph renders with sample data
-- Force simulation runs
-- Hierarchical layout positions correctly
+- Nodes and edges display correctly
+- Interactions work (click, double-click, drag)
+- Physics changes update simulation
 
 ---
 
-### [ ] Step: Build Graph Controls Component
+## Phase 3: Controls
 
-Create the enhanced controls panel with Obsidian-inspired physics sliders.
+### [ ] Step: Build Control Sections
+
+Create individual control panel sections.
 
 **Tasks**:
-1. Create `packages/nxus-workbench/src/components/graph-view/WorkbenchGraphControls.tsx`
-2. Implement control groups:
-   - **Layout**: Force/Hierarchical toggle buttons
-   - **Physics** (collapsible): Sliders for center, repel, link force, link distance
-   - **Display**: Node style toggle, labels toggle, color by dropdown
-   - **Filter**: Orphans toggle, filter mode selector
-   - **Local Graph**: Toggle, depth selector (1/2/3)
-   - **Actions**: Fit view, run layout buttons
-3. Add supertag color legend (bottom panel)
-4. Connect all controls to store
+1. Create `packages/nxus-workbench/src/features/graph/controls/sections/`:
+   - `PhysicsSection.tsx` - Sliders for center, repel, link force, link distance
+   - `FilterSection.tsx` - Toggles for includeTags, includeRefs, showOrphans
+   - `DisplaySection.tsx` - Dropdowns for colorBy, nodeLabels, nodeSize, edgeStyle
+   - `LocalGraphSection.tsx` - Toggle, depth selector, link type checkboxes
+   - `index.ts`
+2. Each section connects to store via hooks
+3. Use collapsible panels for space efficiency
+
+**Verification**:
+- Sliders update store values
+- Toggles reflect and update state
+- Sections collapse/expand
+
+---
+
+### [ ] Step: Build GraphControls Container
+
+Create the main control panel container.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/controls/GraphControls.tsx`:
+   - Floating panel (top-right or docked)
+   - Contains all control sections
+   - "Reset to defaults" button
+2. Create `packages/nxus-workbench/src/features/graph/controls/RendererSwitcher.tsx`:
+   - 2D/3D toggle buttons
+   - Updates `view.renderer` in store
+3. Create `packages/nxus-workbench/src/features/graph/controls/GraphLegend.tsx`:
+   - Shows supertag colors
+   - Click to filter by supertag
+4. Create `packages/nxus-workbench/src/features/graph/controls/index.ts`
 
 **Verification**:
 - Controls render correctly
-- Slider changes update store
-- Physics changes affect simulation
+- All sections functional
+- Renderer switcher updates view
 
 ---
 
-### [ ] Step: Integrate Graph View into Workbench Route
+## Phase 4: 3D Renderer
 
-Add graph view mode to the existing workbench layout.
+### [ ] Step: Add 3D Force Graph Dependency
+
+Install and configure 3d-force-graph.
+
+**Tasks**:
+1. Add dependency: `pnpm add 3d-force-graph --filter=nxus-workbench`
+2. Update `.gitignore` if needed
+3. Verify bundle size impact
+
+**Verification**:
+- Dependency installs correctly
+- No type errors
+
+---
+
+### [ ] Step: Build Graph3D Component
+
+Create the 3D graph renderer.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/renderers/graph-3d/`:
+   - `use-3d-graph.ts` - Wrapper hook for 3d-force-graph instance
+   - `node-renderer.ts` - Custom 3D node sprites (colored spheres with labels)
+   - `edge-renderer.ts` - Custom 3D edge lines with arrows
+   - `Graph3D.tsx` - Main component
+   - `index.ts`
+2. Graph3D should:
+   - Accept same `GraphData` as Graph2D
+   - Convert to 3d-force-graph format
+   - Apply physics params from store
+   - Handle click for local graph focus
+   - Support orbit camera controls
+3. Match visual style with 2D version (colors, sizing)
+
+**Verification**:
+- 3D graph renders
+- Camera controls work
+- Physics params affect simulation
+- Node interactions work
+
+---
+
+## Phase 5: Integration
+
+### [ ] Step: Create Sidebar Component
+
+Build the Discord-style icon sidebar.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/components/layout/`:
+   - `SidebarIcon.tsx` - Individual icon button with tooltip
+   - `Sidebar.tsx` - Vertical icon bar container
+   - `index.ts`
+2. Icons using Phosphor:
+   - `List` - NodeBrowser view
+   - `Graph` - Graph view
+3. Active state styling (indicator bar, background)
+4. Hover tooltips
+
+**Verification**:
+- Sidebar renders on left
+- Icons show tooltips
+- Active state displays correctly
+
+---
+
+### [ ] Step: Build GraphView Orchestrator
+
+Create the main GraphView component that orchestrates everything.
+
+**Tasks**:
+1. Create `packages/nxus-workbench/src/features/graph/GraphView.tsx`:
+   - Fetch nodes from server (reuse existing query)
+   - Use `useGraphData` hook to transform data
+   - Use `useLocalGraph` if local graph enabled
+   - Render Graph2D or Graph3D based on store
+   - Render GraphControls
+   - Handle node selection callback
+2. Create `packages/nxus-workbench/src/features/graph/index.ts`
+
+**Verification**:
+- GraphView renders with real data
+- Switches between 2D and 3D
+- Controls affect both renderers
+- Local graph works
+
+---
+
+### [ ] Step: Update Workbench Route
+
+Integrate sidebar and graph view into workbench.
 
 **Tasks**:
 1. Modify `packages/nxus-workbench/src/route.tsx`:
-   - Add view mode state (list | graph)
-   - Add view mode switcher in header
-   - Conditionally render NodeBrowser or WorkbenchGraphCanvas
-2. Pass selected node ID for local graph focus
-3. Handle node selection from graph (double-click navigates to inspector)
-4. Ensure search/filter integration works with graph
+   - Add view mode state ('list' | 'graph')
+   - Add Sidebar component on left
+   - Conditionally render NodeBrowser or GraphView
+   - Pass selected node between views
+2. Ensure supertag sidebar remains functional
+3. Handle navigation from graph to node inspector
 
 **Verification**:
-- Can switch between list and graph views
-- Graph shows correct nodes based on filters
-- Node selection works bidirectionally
+- Sidebar navigation works
+- Views switch correctly
+- Node selection syncs between views
+- Supertag sidebar still works
 
 ---
 
 ### [ ] Step: Add Backlink Query Support
 
-Enhance the server to support backlink queries for complete graph edges.
+Implement server-side backlink query for complete edge data.
 
 **Tasks**:
-1. Review `packages/nxus-workbench/src/server/search-nodes.server.ts`
-2. Add `getBacklinksServerFn` function:
-   - Query node_properties where value contains node ID
-   - Return list of nodes that reference the target
-3. Integrate backlinks into graph edge creation
-4. Consider caching for performance
+1. Modify `packages/nxus-workbench/src/server/search-nodes.server.ts`:
+   - Add `getBacklinksServerFn` function
+   - Query `node_properties` where value contains target node ID
+   - Filter to node-type fields only
+   - Return list of referencing nodes
+2. Integrate into graph data provider
+3. Consider caching strategy
 
 **Verification**:
 - Backlinks query returns correct results
-- Edges appear for both directions
+- Edges appear bidirectionally in graph
+- Performance acceptable
 
 ---
 
-### [ ] Step: Testing and Polish
+## Phase 6: Polish
 
-Final testing, bug fixes, and polish.
+### [ ] Step: Testing and Bug Fixes
+
+Comprehensive testing and bug fixing.
 
 **Tasks**:
-1. Run full type check: `pnpm typecheck`
+1. Run type check: `pnpm typecheck`
 2. Run linter: `pnpm lint`
 3. Run tests: `pnpm test --filter=nxus-workbench`
 4. Manual testing:
-   - Test with various node counts (10, 50, 100+)
-   - Test all control interactions
+   - Test with 10, 50, 100, 500 nodes
+   - Test all physics sliders
    - Test local graph at all depths
-   - Test layout transitions
-   - Test filter/search integration
-5. Fix any bugs discovered
-6. Optimize performance if needed (culling, reduced updates)
+   - Test filter combinations (tags, refs, orphans)
+   - Test 2D ↔ 3D switching
+   - Test edge direction highlighting
+   - Test sidebar navigation
+5. Fix discovered bugs
+6. Optimize performance if needed
 
 **Verification**:
 - All tests pass
@@ -229,14 +444,15 @@ Final testing, bug fixes, and polish.
 
 ### [ ] Step: Write Implementation Report
 
-Document what was implemented and any challenges.
+Document the implementation.
 
 **Tasks**:
 1. Write `report.md` with:
    - Summary of implemented features
-   - Architecture decisions made
+   - Architecture decisions and rationale
    - Testing approach and results
    - Challenges encountered and solutions
+   - Performance considerations
    - Future improvement suggestions
 
 **Output**: `report.md`

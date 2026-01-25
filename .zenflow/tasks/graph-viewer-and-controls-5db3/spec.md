@@ -1,13 +1,13 @@
-# Technical Specification: Graph Viewer and Controls for Workbench
+# Technical Specification: Modular Graph System for Workbench
 
-## Task Difficulty Assessment: **Medium-Hard**
+## Task Difficulty Assessment: **Hard**
 
-This is a medium-to-hard task because:
-- Extends an existing well-architected graph view system
-- Requires integration with a new data source (workbench nodes)
-- Involves multiple components (graph canvas, controls, layout algorithms)
-- Needs careful UX consideration to match Obsidian/Tana patterns
-- Performance considerations for potentially large graphs
+This is a hard task because:
+- Requires designing a modular, extensible architecture from scratch
+- Multiple renderers (2D and 3D) sharing a common data layer
+- Complex data transformations (nodes, edges, backlinks, refs)
+- Performance considerations for large graphs
+- Rich UX with physics controls, filtering, local graph mode
 
 ---
 
@@ -19,296 +19,464 @@ This is a medium-to-hard task because:
 - **State Management**: Zustand 5.0
 - **Routing**: TanStack Router
 
-### Key Dependencies
-- **@xyflow/react** (v12.10.0) - React Flow for graph rendering
-- **dagre** (v0.8.5) - Hierarchical layout algorithm
-- **d3-force** (v3.0.0) - Force-directed layout simulation
-- **@phosphor-icons/react** - Icon library
-- **TailwindCSS v4** - Styling
+### Existing Dependencies (to reuse)
+- **@xyflow/react** (v12.10.0) - 2D graph rendering
+- **dagre** (v0.8.5) - Hierarchical layout
+- **d3-force** (v3.0.0) - Force-directed simulation
 
-### Existing Graph Implementation
-The codebase already has a robust graph view in `packages/nxus-core/src/components/features/gallery/item-views/graph-view/`:
-- `graph-canvas.tsx` - Main React Flow wrapper (762 lines)
-- `graph-controls.tsx` - Control panel UI
-- `components/item-node.tsx`, `simple-node.tsx`, `command-node.tsx` - Node types
-- `components/dependency-edge.tsx`, `force-arrow-edge.tsx` - Edge types
-- `hooks/use-graph-nodes.ts`, `use-graph-layout.ts` - Layout utilities
-- `stores/view-mode.store.ts` - Persisted graph options (Zustand)
+### New Dependency
+- **3d-force-graph** - 3D WebGL graph rendering (~50KB)
 
-### Target Package: nxus-workbench
-Located at `packages/nxus-workbench/`, this is a Tana-inspired node exploration interface with:
-- `NodeBrowser` - List/search panel
-- `NodeInspector` - Detail panel
-- `SupertagSidebar` - Filter sidebar
-- Node-based data model with `AssembledNode` type
+### Reference Implementations Studied
+1. **Obsidian** - Pixi.js, physics controls, local/global graph
+2. **Tana-Helper** - 3d-force-graph, include tags toggle, refs as connections
+3. **Anytype** - Type-based coloring, Flow mode
 
 ---
 
-## 2. Research Summary: Obsidian, Tana, and Anytype Graph Views
+## 2. Architecture Overview
 
-### Obsidian Graph View Features
-- **Rendering**: Pixi.js (WebGL) for performance (previously D3.js)
-- **Dual modes**: Global graph (all notes) + Local graph (connections to current note)
-- **Force physics controls**:
-  - Center force (~0.48) - compactness
-  - Repel force (~16.41) - node separation
-  - Link force (~0.44) - connection tightness
-  - Link distance (~198) - target spacing
-- **Filtering**: Search files, show/hide tags, attachments, orphans, existing-only
-- **Visual**: Node size by backlink count, color groups, directional arrows
-- **Local graph**: Depth control (1st/2nd degree), link type filtering (incoming/outgoing/neighbor)
-
-### Tana-Helper Visualizer
-- **Library**: 3D Force-Directed Graph (vasturiano/3d-force-graph)
-- **Approach**: Server-side processing, client-side rendering
-- **Data**: Converts Tana JSON exports to `nodes[]` and `links[]`
-- **Features**: File upload, browser filtering, 3D navigation
-
-### Anytype Graph
-- **Model**: Objects as nodes, Relations as edges
-- **Features**: Type-based grouping, Flow mode (before/after links), icon/title display
-- **Controls**: Drag to rearrange, filter by type, toggle unlinked
-
-### Key Patterns to Adopt
-1. **Physics controls** - Expose force simulation parameters (center, repel, link force, distance)
-2. **Node sizing by importance** - Size by connection count (existing: dependents count)
-3. **Local graph mode** - Focus on single node + N-degree connections
-4. **Filter modes** - By supertag, by search, show orphans toggle
-5. **Color coding** - By supertag or custom groups
-6. **Smooth transitions** - Animate layout changes
-
----
-
-## 3. Implementation Approach
-
-### Strategy: Extend Existing Graph Infrastructure
-
-Rather than building from scratch, we will:
-1. Create workbench-specific adaptations of the existing graph components
-2. Extend the GraphOptions store for workbench-specific settings
-3. Add new features inspired by Obsidian (physics controls, local graph)
-
-### Architecture Overview
+### Core Principle: Separation of Concerns
 
 ```
-packages/nxus-workbench/
-├── src/
-│   ├── components/
-│   │   ├── graph-view/                     # NEW: Graph view for workbench
-│   │   │   ├── WorkbenchGraphCanvas.tsx    # Main graph component
-│   │   │   ├── WorkbenchGraphControls.tsx  # Enhanced controls
-│   │   │   ├── components/
-│   │   │   │   ├── workbench-node.tsx      # Node component
-│   │   │   │   └── relation-edge.tsx       # Edge component
-│   │   │   ├── hooks/
-│   │   │   │   ├── use-workbench-graph.ts  # Node/edge creation
-│   │   │   │   └── use-local-graph.ts      # Local graph filtering
-│   │   │   └── index.ts
-│   │   └── ... (existing components)
-│   ├── stores/
-│   │   └── workbench-graph.store.ts        # NEW: Graph-specific state
-│   └── route.tsx                           # Update to include graph view
+┌─────────────────────────────────────────────────────────────────┐
+│                     Graph Data Provider                         │
+│  (Pure data transformation - renderer agnostic)                 │
+│  - AssembledNode[] → GraphNode[], GraphEdge[]                   │
+│  - Edge extraction: dependencies, backlinks, refs               │
+│  - Filtering: supertags, search, orphans                        │
+│  - Local graph: BFS traversal with depth control                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Graph Options Store                         │
+│  (Shared state for all renderers - Zustand)                     │
+│  - Physics: centerForce, repelForce, linkForce, linkDistance    │
+│  - Display: colorBy, showLabels, showOrphans                    │
+│  - Filter: includeTags, includeRefs, supertagFilter             │
+│  - LocalGraph: enabled, focusNodeId, depth, linkTypes           │
+│  - Renderer: '2d' | '3d'                                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+        ┌──────────────┐              ┌──────────────┐
+        │   2D View    │              │   3D View    │
+        │  (@xyflow)   │              │ (3d-force)   │
+        │              │              │              │
+        │ - ReactFlow  │              │ - WebGL      │
+        │ - Dagre      │              │ - 3D camera  │
+        │ - D3-force   │              │ - Orbit ctrl │
+        └──────────────┘              └──────────────┘
 ```
+
+### Design Principles
+
+1. **Provider is renderer-agnostic**: Returns plain `GraphNode[]` and `GraphEdge[]` that any renderer can consume
+2. **Store is shared**: Both 2D and 3D read from the same Zustand store
+3. **Controls are shared**: Single control panel works for both renderers
+4. **Renderers are pluggable**: Easy to add new renderers (future: WebGPU, AR, etc.)
 
 ---
 
-## 4. Source Code Structure Changes
+## 3. Data Model
 
-### New Files to Create
+### Core Types (`provider/types.ts`)
 
-#### 4.1 `packages/nxus-workbench/src/stores/workbench-graph.store.ts`
-Graph state management for workbench:
 ```typescript
-interface WorkbenchGraphOptions {
-  // Layout
-  layout: 'force' | 'hierarchical'
+// ============================================================================
+// Graph Node (renderer-agnostic)
+// ============================================================================
+export interface GraphNode {
+  id: string
+  label: string
+  type: 'node' | 'tag' | 'supertag'  // For include tags feature
 
-  // Physics controls (Obsidian-inspired)
-  centerForce: number      // 0-1, default 0.5
-  repelForce: number       // 0-500, default 200
-  linkForce: number        // 0-1, default 0.4
-  linkDistance: number     // 50-300, default 100
+  // Metadata
+  supertag: {
+    id: string
+    name: string
+    color: string
+  } | null
 
-  // Display
-  nodeStyle: 'detailed' | 'simple'
-  showLabels: boolean
-  colorBy: 'supertag' | 'none'
-  nodeSizing: 'uniform' | 'connections'
+  // Metrics (for sizing/importance)
+  outgoingCount: number   // Dependencies
+  incomingCount: number   // Backlinks
+  totalConnections: number
+
+  // State
+  isOrphan: boolean
+  isMatched: boolean      // Search/filter match
+  isFocused: boolean      // Local graph focus
+  isInLocalGraph: boolean // Within N degrees of focus
+
+  // Original data reference
+  sourceNode: AssembledNode
+}
+
+// ============================================================================
+// Graph Edge (renderer-agnostic)
+// ============================================================================
+export interface GraphEdge {
+  id: string
+  source: string          // Node ID
+  target: string          // Node ID
+
+  // Edge metadata
+  type: 'dependency' | 'backlink' | 'reference' | 'hierarchy' | 'tag'
+  label?: string          // Optional label (field name)
+
+  // Direction semantics
+  direction: 'outgoing' | 'incoming'  // Relative to source
+
+  // State
+  isHighlighted: boolean  // Part of focused node's connections
+  isInLocalGraph: boolean
+}
+
+// ============================================================================
+// Graph Data (complete graph state)
+// ============================================================================
+export interface GraphData {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+
+  // Computed metadata
+  supertagColors: Map<string, string>  // Consistent color mapping
+  stats: {
+    totalNodes: number
+    totalEdges: number
+    orphanCount: number
+    connectedComponents: number
+  }
+}
+
+// ============================================================================
+// Provider Options
+// ============================================================================
+export interface GraphDataOptions {
+  // What to include
+  includeTags: boolean        // Show tags as separate nodes
+  includeRefs: boolean        // Treat references as connections
+  includeHierarchy: boolean   // Show parent/child edges
 
   // Filtering
-  showOrphans: boolean
-  filterMode: 'highlight' | 'show-only'
+  supertagFilter: string[]    // Only show nodes with these supertags
+  searchQuery: string         // Highlight matching nodes
+  showOrphans: boolean        // Include disconnected nodes
 
   // Local graph
-  localGraphMode: boolean
-  localGraphDepth: 1 | 2 | 3
-  localGraphLinkTypes: ('outgoing' | 'incoming' | 'both')[]
-
-  // Interaction
-  nodesLocked: boolean
+  localGraph: {
+    enabled: boolean
+    focusNodeId: string | null
+    depth: 1 | 2 | 3
+    linkTypes: ('outgoing' | 'incoming' | 'both')[]
+  }
 }
 ```
 
-#### 4.2 `packages/nxus-workbench/src/components/graph-view/WorkbenchGraphCanvas.tsx`
-Main graph component adapted for AssembledNode data:
-- Convert `AssembledNode[]` to React Flow nodes/edges
-- Extract relationships from node properties (field:dependencies, backlinks)
-- Support local graph mode (filter to N-degree connections)
-- Expose physics parameters to D3 force simulation
+### Store Types (`store/types.ts`)
 
-#### 4.3 `packages/nxus-workbench/src/components/graph-view/WorkbenchGraphControls.tsx`
-Enhanced control panel with:
-- Physics sliders (center, repel, link force, distance)
-- Local graph toggle + depth selector
-- Supertag color legend
-- Orphan visibility toggle
-- Layout switcher
-
-#### 4.4 `packages/nxus-workbench/src/components/graph-view/components/workbench-node.tsx`
-Node component showing:
-- Content (title)
-- Supertag badge with color
-- Connection count indicator
-- Hover state with full details
-
-#### 4.5 `packages/nxus-workbench/src/components/graph-view/components/relation-edge.tsx`
-Edge component showing:
-- Directional arrows
-- Optional label (relation type)
-- Animated state for force layout
-
-#### 4.6 `packages/nxus-workbench/src/components/graph-view/hooks/use-workbench-graph.ts`
-Hook to transform AssembledNode data:
 ```typescript
-function useWorkbenchGraph(nodes: AssembledNode[], options: WorkbenchGraphOptions) {
-  // Extract edges from node properties
-  // - field:dependencies -> dependency edges
-  // - Backlinks via property value matching
-  // - field:parent -> hierarchy edges
+export interface GraphPhysicsOptions {
+  // Force simulation parameters (Obsidian-style)
+  centerForce: number      // 0-1, default 0.5 - pull toward center
+  repelForce: number       // 0-500, default 200 - push nodes apart
+  linkForce: number        // 0-1, default 0.4 - connection tightness
+  linkDistance: number     // 50-300, default 100 - target edge length
+}
 
-  // Return: { flowNodes, flowEdges, supertagColors }
+export interface GraphDisplayOptions {
+  colorBy: 'supertag' | 'type' | 'none'
+  nodeLabels: 'always' | 'hover' | 'never'
+  edgeLabels: 'always' | 'hover' | 'never'
+  nodeSize: 'uniform' | 'connections'  // Size by connection count
+  edgeStyle: 'solid' | 'animated'      // Animated = directional particles
+}
+
+export interface GraphFilterOptions {
+  includeTags: boolean
+  includeRefs: boolean
+  showOrphans: boolean
+  supertagFilter: string[]  // Empty = show all
+  searchQuery: string
+}
+
+export interface GraphLocalGraphOptions {
+  enabled: boolean
+  focusNodeId: string | null
+  depth: 1 | 2 | 3
+  linkTypes: ('outgoing' | 'incoming' | 'both')[]
+}
+
+export interface GraphViewOptions {
+  renderer: '2d' | '3d'
+  layout: 'force' | 'hierarchical'  // 2D only
+}
+
+export interface WorkbenchGraphState {
+  physics: GraphPhysicsOptions
+  display: GraphDisplayOptions
+  filter: GraphFilterOptions
+  localGraph: GraphLocalGraphOptions
+  view: GraphViewOptions
+
+  // Actions
+  setPhysics: (options: Partial<GraphPhysicsOptions>) => void
+  setDisplay: (options: Partial<GraphDisplayOptions>) => void
+  setFilter: (options: Partial<GraphFilterOptions>) => void
+  setLocalGraph: (options: Partial<GraphLocalGraphOptions>) => void
+  setView: (options: Partial<GraphViewOptions>) => void
+  resetToDefaults: () => void
 }
 ```
-
-#### 4.7 `packages/nxus-workbench/src/components/graph-view/hooks/use-local-graph.ts`
-Hook for local graph filtering:
-```typescript
-function useLocalGraph(
-  allNodes: AssembledNode[],
-  allEdges: Edge[],
-  focusNodeId: string | null,
-  depth: number,
-  linkTypes: string[]
-) {
-  // BFS from focus node to depth N
-  // Filter by link type (incoming/outgoing/both)
-  // Return filtered nodes and edges
-}
-```
-
-### Files to Modify
-
-#### 4.8 `packages/nxus-workbench/src/route.tsx`
-Add graph view as a fourth panel option or toggle:
-- Add view mode switcher (list | graph)
-- Render `WorkbenchGraphCanvas` when in graph mode
-- Pass selected node for local graph focus
-
-#### 4.9 `packages/nxus-workbench/src/server/search-nodes.server.ts`
-May need to add endpoint for fetching node relationships:
-- Get backlinks for a node
-- Get N-degree connected nodes efficiently
 
 ---
 
-## 5. Data Model / API Changes
+## 4. File Structure
 
-### Node-to-Graph Mapping
-
-| AssembledNode Property | Graph Representation |
-|------------------------|---------------------|
-| `id` | Node ID |
-| `content` | Node label |
-| `supertags[0]` | Node color/group |
-| `properties['dependencies']` | Outgoing edges |
-| Backlinks (query) | Incoming edges |
-| `properties['parent']` | Hierarchy edge |
-
-### Edge Types
-1. **dependency** - From `field:dependencies` property
-2. **backlink** - Reverse lookup (nodes referencing this node)
-3. **hierarchy** - From `field:parent` property
-
-### Backlink Query
-To find backlinks, query `node_properties` where:
-- `value` contains the target node's ID
-- `fieldNodeId` is a node-type field (dependencies, parent, etc.)
+```
+packages/nxus-workbench/src/
+├── features/
+│   └── graph/
+│       │
+│       ├── provider/                      # Data layer (renderer-agnostic)
+│       │   ├── types.ts                   # GraphNode, GraphEdge, GraphData
+│       │   ├── use-graph-data.ts          # Main transformation hook
+│       │   ├── use-local-graph.ts         # BFS filtering for local graph
+│       │   ├── use-graph-filter.ts        # Search/tag/orphan filtering
+│       │   ├── extractors/
+│       │   │   ├── dependency-extractor.ts   # field:dependencies
+│       │   │   ├── backlink-extractor.ts     # Reverse lookups
+│       │   │   ├── reference-extractor.ts    # Generic node refs
+│       │   │   ├── hierarchy-extractor.ts    # field:parent
+│       │   │   └── index.ts
+│       │   ├── utils/
+│       │   │   ├── color-palette.ts       # Consistent supertag colors
+│       │   │   └── graph-stats.ts         # Compute stats
+│       │   └── index.ts
+│       │
+│       ├── store/
+│       │   ├── types.ts                   # Store interfaces
+│       │   ├── graph.store.ts             # Zustand store
+│       │   ├── defaults.ts                # Default option values
+│       │   └── index.ts
+│       │
+│       ├── renderers/
+│       │   ├── graph-2d/
+│       │   │   ├── Graph2D.tsx            # Main 2D component
+│       │   │   ├── nodes/
+│       │   │   │   ├── DetailedNode.tsx   # Card-style node
+│       │   │   │   ├── SimpleNode.tsx     # Dot node
+│       │   │   │   └── index.ts
+│       │   │   ├── edges/
+│       │   │   │   ├── AnimatedEdge.tsx   # With directional particles
+│       │   │   │   ├── StaticEdge.tsx     # Simple line
+│       │   │   │   └── index.ts
+│       │   │   ├── layouts/
+│       │   │   │   ├── use-dagre-layout.ts
+│       │   │   │   ├── use-force-layout.ts
+│       │   │   │   └── index.ts
+│       │   │   └── index.ts
+│       │   │
+│       │   ├── graph-3d/
+│       │   │   ├── Graph3D.tsx            # Main 3D component
+│       │   │   ├── use-3d-graph.ts        # 3d-force-graph wrapper
+│       │   │   ├── node-renderer.ts       # Custom 3D node sprites
+│       │   │   ├── edge-renderer.ts       # Custom 3D edge lines
+│       │   │   └── index.ts
+│       │   │
+│       │   └── index.ts                   # Re-exports both
+│       │
+│       ├── controls/
+│       │   ├── GraphControls.tsx          # Main control panel container
+│       │   ├── sections/
+│       │   │   ├── PhysicsSection.tsx     # Force sliders
+│       │   │   ├── FilterSection.tsx      # Tags, refs, orphans toggles
+│       │   │   ├── DisplaySection.tsx     # Labels, colors, sizing
+│       │   │   ├── LocalGraphSection.tsx  # Focus node, depth, link types
+│       │   │   └── index.ts
+│       │   ├── RendererSwitcher.tsx       # 2D/3D toggle
+│       │   ├── GraphLegend.tsx            # Supertag color legend
+│       │   └── index.ts
+│       │
+│       ├── GraphView.tsx                  # Main container (orchestrates all)
+│       └── index.ts
+│
+├── components/
+│   ├── layout/
+│   │   ├── Sidebar.tsx                    # Discord-style icon sidebar
+│   │   ├── SidebarIcon.tsx                # Individual icon button
+│   │   └── index.ts
+│   └── ... (existing components)
+│
+├── routes/
+│   └── workbench.tsx                      # Updated route with sidebar
+│
+└── ... (existing files)
+```
 
 ---
 
-## 6. Verification Approach
+## 5. Edge Direction UX Design
 
-### Unit Tests
-1. `use-workbench-graph.test.ts` - Test node/edge creation from AssembledNode
-2. `use-local-graph.test.ts` - Test BFS filtering at various depths
-3. `workbench-graph.store.test.ts` - Test state persistence
+### Visual Language
 
-### Integration Tests
-1. Graph renders with sample nodes
-2. Local graph filters correctly when node selected
-3. Physics controls update simulation
-4. Layout switching works smoothly
+**Edges show data flow direction:**
+- **Arrow markers** at the target end of each edge
+- **Animated particles** flowing along the edge (like data packets)
+  - Outgoing: particles flow from source → target
+  - Incoming: particles flow from target → source
 
-### Manual Verification
-1. Navigate to workbench route
-2. Switch to graph view
-3. Verify nodes display with correct supertag colors
-4. Click node to enable local graph
-5. Adjust physics sliders and observe changes
-6. Switch between hierarchical and force layouts
-7. Test search/filter integration
+**On node hover/focus:**
+- Outgoing edges: highlighted in **teal/cyan** (#06b6d4)
+- Incoming edges: highlighted in **violet** (#8b5cf6)
+- Unrelated edges: dimmed to 20% opacity
 
-### Commands
-```bash
-# Type checking
-pnpm typecheck
+**In local graph mode:**
+- Edges within the local graph: full opacity
+- Edges outside: hidden or very faint
 
-# Unit tests
-pnpm test --filter=nxus-workbench
+### Implementation
 
-# Lint
-pnpm lint
+```typescript
+// Edge component receives direction context
+interface EdgeProps {
+  edge: GraphEdge
+  isHighlighted: boolean
+  highlightType: 'outgoing' | 'incoming' | null
+}
 
-# Build
-pnpm build
+// Particle animation via CSS or requestAnimationFrame
+// - Small circles moving along path
+// - Speed indicates "data flow"
 ```
+
+---
+
+## 6. Sidebar Design (Discord-style)
+
+### Layout
+
+```
+┌──────┬────────────────────────────────────────────────────┐
+│ ICON │                                                    │
+│ BAR  │              MAIN CONTENT AREA                     │
+│      │                                                    │
+│ [📋] │  ┌──────────────┐  ┌─────────────────────────────┐ │
+│ [🔗] │  │  Supertag    │  │                             │ │
+│ [⚙️] │  │  Sidebar     │  │     NodeBrowser / Graph     │ │
+│      │  │  (existing)  │  │                             │ │
+│      │  │              │  │                             │ │
+│      │  └──────────────┘  └─────────────────────────────┘ │
+│      │                                                    │
+└──────┴────────────────────────────────────────────────────┘
+
+Icons:
+📋 = List view (NodeBrowser)
+🔗 = Graph view
+⚙️ = Settings (optional)
+```
+
+### Sidebar Icons
+
+| Icon | View | Description |
+|------|------|-------------|
+| `List` (Phosphor) | NodeBrowser | Current list/search view |
+| `GraphIcon` (Phosphor) | GraphView | 2D/3D graph visualization |
+| `GearSix` (Phosphor) | Settings | Optional: global settings |
 
 ---
 
 ## 7. Implementation Steps
 
-See updated `plan.md` for detailed breakdown.
+### Phase 1: Foundation (Provider + Store)
+1. Create provider types and interfaces
+2. Implement edge extractors (dependency, backlink, reference)
+3. Implement `useGraphData` hook
+4. Create Zustand store with persistence
+
+### Phase 2: 2D Renderer
+5. Create 2D node components (Detailed, Simple)
+6. Create 2D edge components (Animated, Static)
+7. Implement layout hooks (Dagre, D3-force)
+8. Build Graph2D main component
+
+### Phase 3: Controls
+9. Build control sections (Physics, Filter, Display, LocalGraph)
+10. Create GraphControls container
+11. Add RendererSwitcher and Legend
+
+### Phase 4: 3D Renderer
+12. Add 3d-force-graph dependency
+13. Create Graph3D component
+14. Implement custom node/edge renderers
+
+### Phase 5: Integration
+15. Create Sidebar component
+16. Build GraphView orchestrator
+17. Update workbench route
+18. Add server-side backlink query
+
+### Phase 6: Polish
+19. Testing and bug fixes
+20. Performance optimization
+21. Documentation
 
 ---
 
-## 8. Risk Assessment
+## 8. Verification Approach
 
-### Technical Risks
-1. **Performance with large graphs** - Mitigate with pagination, culling, simplified nodes
-2. **Backlink query performance** - May need index optimization or caching
-3. **React Flow + D3 force interaction** - Already solved in existing code
+### Unit Tests
+- Provider: Test data transformation with mock AssembledNode data
+- Extractors: Test each edge type extraction
+- Local graph: Test BFS at different depths
+- Store: Test state updates and persistence
 
-### UX Risks
-1. **Complexity overload** - Start with simple controls, add advanced in dropdown
-2. **Layout instability** - Use proper alpha decay and velocity damping
+### Integration Tests
+- 2D graph renders correctly
+- 3D graph renders correctly
+- Controls update both renderers
+- Sidebar navigation works
+
+### Manual Testing
+- Test with 10, 50, 100, 500 nodes
+- Test all physics sliders
+- Test local graph at all depths
+- Test filter combinations
+- Test 2D ↔ 3D switching
+- Test edge direction highlighting
+
+### Commands
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test --filter=nxus-workbench
+pnpm build
+```
 
 ---
 
-## 9. Future Enhancements (Out of Scope)
+## 9. Performance Considerations
 
-- 3D graph view (like tana-helper)
-- Graph export/import
-- Custom relationship types
-- Graph-based node creation
-- Mini-map enhancements
-- Keyboard shortcuts for graph navigation
+### Large Graph Handling
+- **Culling**: Only render nodes in viewport (2D)
+- **LOD**: Simplify nodes when zoomed out
+- **Pagination**: Limit initial load, fetch more on demand
+- **Web Workers**: Offload force simulation to worker thread
+
+### 3D Specific
+- **Instanced rendering**: Reuse geometries for similar nodes
+- **Texture atlases**: Combine node textures
+- **Frustum culling**: Built into three.js
+
+---
+
+## 10. Future Extensibility
+
+The modular architecture supports:
+- **New renderers**: VR/AR, WebGPU, static export (SVG/PNG)
+- **New edge types**: Custom relationship types
+- **Plugins**: Third-party graph enhancements
+- **AI features**: Auto-clustering, similarity edges
