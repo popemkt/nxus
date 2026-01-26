@@ -61,28 +61,34 @@ Created comprehensive technical specification in `spec.md` covering:
 
 ---
 
-### [ ] Step: Phase 2 - Query Evaluation Engine
+### [x] Step: Phase 2 - Query Evaluation Engine
+<!-- chat-id: 328ddc9d-d61c-430b-b37c-2adc5a2d053c -->
 
 **Goal**: Implement backend query execution logic
 
-**Tasks**:
-1. Create `packages/nxus-db/src/services/query-evaluator.service.ts`:
-   - `evaluateQuery(db, definition)` - main entry point
-   - `evaluateFilter(db, filter, candidateNodeIds)` - dispatcher
-   - `evaluateSupertagFilter()` - uses existing `getNodesBySupertagWithInheritance`
-   - `evaluatePropertyFilter()` - field value comparisons
-   - `evaluateContentFilter()` - full-text search on `contentPlain`
-   - `evaluateHasFieldFilter()` - check field existence
-   - `evaluateTemporalFilter()` - date-based filtering
-   - `evaluateRelationFilter()` - ownership/backlink queries
-   - `evaluateLogicalFilter()` - AND/OR/NOT combinations
-   - Sorting and limiting
+**Completed**:
+1. Created `packages/nxus-db/src/services/query-evaluator.service.ts` with:
+   - `evaluateQuery(db, definition)` - main entry point returning `QueryEvaluationResult`
+   - `evaluateFilter(db, filter, candidateNodeIds)` - dispatcher for all filter types
+   - `evaluateSupertagFilter()` - uses `getNodeIdsBySupertagWithInheritance` with optional direct-match mode
+   - `evaluatePropertyFilter()` - supports all comparison operators (eq, neq, gt, gte, lt, lte, contains, startsWith, endsWith, isEmpty, isNotEmpty)
+   - `evaluateContentFilter()` - full-text search on `contentPlain` with case-sensitivity option
+   - `evaluateHasFieldFilter()` - check field existence with negate option
+   - `evaluateTemporalFilter()` - date-based filtering (within, before, after)
+   - `evaluateRelationFilter()` - ownership/backlink queries (childOf, ownedBy, linksTo, linkedFrom)
+   - `evaluateLogicalFilter()` - AND/OR/NOT combinations with nested support
+   - `sortNodes()` - sorting by content, timestamps, or property fields
+   - Limit enforcement with totalCount tracking
 
-2. Write unit tests for each filter type
+2. Created comprehensive unit tests in `query-evaluator.service.test.ts`:
+   - 34 tests covering all filter types
+   - Tests for complex queries, sorting, limiting, and edge cases
+
+3. Exported from `packages/nxus-db/src/services/index.ts`
 
 **Verification**:
-- Unit tests pass: `pnpm --filter @nxus/db test`
-- Manual test with sample query definitions
+- All 54 tests pass: `pnpm --filter @nxus/db test`
+- TypeScript compiles without errors
 
 ---
 
