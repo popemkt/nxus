@@ -158,20 +158,40 @@ Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
-### [ ] Step 5: Node-Based Integration - Supertag Helpers
+### [x] Step 5: Node-Based Integration - Supertag Helpers
+<!-- chat-id: 88c85537-1b44-4e37-adee-ed27fb730fdc -->
 
-**Files to modify:**
-- `packages/nxus-db/src/services/node.service.ts` - Add supertag query helpers
+**Completed**: Added comprehensive supertag helper functions for node-based multi-type support:
 
-**Implementation:**
-1. Add `getNodeSupertags(nodeId)` function
-2. Add `setNodeSupertags(nodeId, supertags[])` function
-3. Add `getNodesBySupertags(supertags[], matchAll)` function
-4. Sync supertag assignments with `itemTypes` table when `NODE_BASED_ARCHITECTURE_ENABLED`
+**Files modified:**
+- `packages/nxus-db/src/services/node.service.ts` - Added supertag query and sync helpers
 
-**Verification:**
-- Supertag queries work in node-based mode
-- Type changes sync between both systems
+**Implementation details:**
+
+1. **Supertag Query Helpers:**
+   - `getNodeSupertags(db, nodeId)` - Returns all supertags with id, systemId, content, order
+   - `getNodeSupertagSystemIds(db, nodeId)` - Convenience function returning just systemIds
+   - `setNodeSupertags(db, nodeId, supertagSystemIds[])` - Replace all supertags for a node
+   - `addNodeSupertag(db, nodeId, supertagSystemId)` - Add a single supertag (returns false if already present)
+   - `removeNodeSupertag(db, nodeId, supertagSystemId)` - Remove a single supertag
+   - `getNodesBySupertags(db, supertagSystemIds[], matchAll)` - Query nodes by supertags with OR/AND logic
+   - `getNodeIdsBySupertags(db, supertagSystemIds[], matchAll)` - Lightweight version returning just IDs
+
+2. **Supertag <-> ItemType Mapping:**
+   - `SUPERTAG_TO_ITEM_TYPE` - Maps supertag systemIds to AppType values
+   - `ITEM_TYPE_TO_SUPERTAG` - Maps AppType values to supertag systemIds
+   - `supertagsToItemTypes(supertags[])` - Convert supertags to ItemType array
+   - `itemTypesToSupertags(types[])` - Convert ItemTypes to supertag array
+
+3. **Sync Functions:**
+   - `syncNodeSupertagsToItemTypes(db, nodeId, itemId)` - Sync node's supertags to itemTypes table
+   - `syncItemTypesToNodeSupertags(db, itemId, nodeId)` - Sync itemTypes to node's supertags
+   - `extractItemIdFromNodeSystemId(nodeSystemId)` - Extract item ID from 'item:{id}' format
+   - `syncAllNodeSupertagsToItemTypes(db)` - Batch sync all item nodes to itemTypes table
+
+**Verification completed:**
+- Build passes: `pnpm nx run nxus-core:build` succeeds
+- All tests pass: `pnpm nx run-many --target=test --all` (all 3 projects pass)
 
 ---
 

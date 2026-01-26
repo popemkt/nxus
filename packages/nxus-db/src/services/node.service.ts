@@ -7,10 +7,16 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
-import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
+import {
+  nodeProperties,
+  nodes,
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
+} from '../schemas/node-schema.js'
+import { itemTypes, type AppType } from '../schemas/item-schema.js'
 
 // ============================================================================
 // Types
@@ -689,4 +695,510 @@ export function getPropertyValues<T = unknown>(
   const props = node.properties[fieldName]
   if (!props) return []
   return props.sort((a, b) => a.order - b.order).map((p) => p.value as T)
+}
+
+// ============================================================================
+// Supertag Helpers (for multi-type support)
+// ============================================================================
+
+export interface SupertagInfo {
+  id: string
+  systemId: string | null
+  content: string
+  order: number
+}
+
+/**
+ * Get all supertags assigned to a node
+ * Returns supertag info including id, systemId, content, and order
+ */
+export function getNodeSupertags(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): SupertagInfo[] {
+  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+  if (!supertagField) return []
+
+  // Get all supertag properties for this node
+  const supertagProps = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.nodeId, nodeId))
+    .all()
+    .filter((p) => p.fieldNodeId === supertagField.id)
+
+  const supertags: SupertagInfo[] = []
+  for (const prop of supertagProps) {
+    let supertagId: string
+    try {
+      supertagId = JSON.parse(prop.value || '')
+    } catch {
+      continue
+    }
+
+    if (typeof supertagId !== 'string' || !supertagId) continue
+
+    // Look up the supertag node
+    const supertagNode = db
+      .select()
+      .from(nodes)
+      .where(eq(nodes.id, supertagId))
+      .get()
+
+    if (supertagNode) {
+      supertags.push({
+        id: supertagNode.id,
+        systemId: supertagNode.systemId,
+        content: supertagNode.content || '',
+        order: prop.order || 0,
+      })
+    }
+  }
+
+  return supertags.sort((a, b) => a.order - b.order)
+}
+
+/**
+ * Get all supertag systemIds for a node (convenience function)
+ * Returns array of systemIds like ['supertag:tool', 'supertag:repo']
+ */
+export function getNodeSupertagSystemIds(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): string[] {
+  const supertags = getNodeSupertags(db, nodeId)
+  return supertags
+    .filter((st) => st.systemId !== null)
+    .map((st) => st.systemId as string)
+}
+
+/**
+ * Set supertags for a node (replaces all existing supertags)
+ * @param db Database instance
+ * @param nodeId Node UUID to update
+ * @param supertagSystemIds Array of supertag systemIds (e.g., ['supertag:tool', 'supertag:repo'])
+ */
+export function setNodeSupertags(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  supertagSystemIds: string[],
+): void {
+  // Verify node exists
+  const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+  if (!node) throw new Error(`Node not found: ${nodeId}`)
+
+  // Clear existing supertags
+  clearProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG)
+
+  // Add new supertags
+  for (let i = 0; i < supertagSystemIds.length; i++) {
+    const supertagSystemId = supertagSystemIds[i]
+    const supertagNode = getSystemNode(db, supertagSystemId)
+    if (supertagNode) {
+      addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
+    }
+  }
+
+  // Update node timestamp
+  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+}
+
+/**
+ * Add a supertag to a node (if not already present)
+ * @param db Database instance
+ * @param nodeId Node UUID to update
+ * @param supertagSystemId Supertag systemId (e.g., 'supertag:tool')
+ * @returns true if added, false if already present
+ */
+export function addNodeSupertag(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  supertagSystemId: string,
+): boolean {
+  // Check if already has this supertag
+  const currentSupertags = getNodeSupertagSystemIds(db, nodeId)
+  if (currentSupertags.includes(supertagSystemId)) {
+    return false
+  }
+
+  const supertagNode = getSystemNode(db, supertagSystemId)
+  if (!supertagNode) throw new Error(`Supertag not found: ${supertagSystemId}`)
+
+  addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
+
+  // Update node timestamp
+  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+
+  return true
+}
+
+/**
+ * Remove a supertag from a node
+ * @param db Database instance
+ * @param nodeId Node UUID to update
+ * @param supertagSystemId Supertag systemId to remove
+ * @returns true if removed, false if not found
+ */
+export function removeNodeSupertag(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  supertagSystemId: string,
+): boolean {
+  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+  const supertagNode = getSystemNode(db, supertagSystemId)
+  if (!supertagField || !supertagNode) return false
+
+  // Find and delete the specific supertag property
+  const props = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.nodeId, nodeId))
+    .all()
+    .filter((p) => {
+      if (p.fieldNodeId !== supertagField.id) return false
+      try {
+        return JSON.parse(p.value || '') === supertagNode.id
+      } catch {
+        return false
+      }
+    })
+
+  if (props.length === 0) return false
+
+  for (const prop of props) {
+    db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
+  }
+
+  // Update node timestamp
+  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+
+  return true
+}
+
+/**
+ * Query nodes by supertag(s)
+ * @param db Database instance
+ * @param supertagSystemIds Array of supertag systemIds to filter by
+ * @param matchAll If true, returns nodes that have ALL supertags (AND). If false, returns nodes that have ANY supertag (OR). Default: false
+ * @returns Array of assembled nodes matching the criteria
+ */
+export function getNodesBySupertags(
+  db: ReturnType<typeof getDatabase>,
+  supertagSystemIds: string[],
+  matchAll: boolean = false,
+): AssembledNode[] {
+  if (supertagSystemIds.length === 0) return []
+
+  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+  if (!supertagField) return []
+
+  // Resolve supertag systemIds to node IDs
+  const supertagNodeIds = supertagSystemIds
+    .map((sysId) => getSystemNode(db, sysId)?.id)
+    .filter((id): id is string => id !== null && id !== undefined)
+
+  if (supertagNodeIds.length === 0) return []
+
+  // Get all supertag property assignments
+  const allSupertagProps = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
+    .all()
+
+  // Build a map of nodeId -> set of supertag IDs it has
+  const nodeSupertags = new Map<string, Set<string>>()
+  for (const prop of allSupertagProps) {
+    let supertagId: string
+    try {
+      supertagId = JSON.parse(prop.value || '')
+    } catch {
+      continue
+    }
+
+    if (typeof supertagId !== 'string') continue
+
+    if (!nodeSupertags.has(prop.nodeId)) {
+      nodeSupertags.set(prop.nodeId, new Set())
+    }
+    nodeSupertags.get(prop.nodeId)!.add(supertagId)
+  }
+
+  // Filter nodes based on matchAll flag
+  const matchingNodeIds: string[] = []
+  for (const [nodeId, tags] of nodeSupertags) {
+    if (matchAll) {
+      // AND logic: node must have ALL requested supertags
+      if (supertagNodeIds.every((stId) => tags.has(stId))) {
+        matchingNodeIds.push(nodeId)
+      }
+    } else {
+      // OR logic: node must have ANY requested supertag
+      if (supertagNodeIds.some((stId) => tags.has(stId))) {
+        matchingNodeIds.push(nodeId)
+      }
+    }
+  }
+
+  // Assemble and return nodes
+  return matchingNodeIds
+    .map((id) => assembleNode(db, id))
+    .filter((n): n is AssembledNode => n !== null)
+}
+
+/**
+ * Get all node IDs that have specific supertag(s)
+ * This is a lighter-weight version of getNodesBySupertags that doesn't assemble nodes
+ */
+export function getNodeIdsBySupertags(
+  db: ReturnType<typeof getDatabase>,
+  supertagSystemIds: string[],
+  matchAll: boolean = false,
+): string[] {
+  if (supertagSystemIds.length === 0) return []
+
+  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+  if (!supertagField) return []
+
+  // Resolve supertag systemIds to node IDs
+  const supertagNodeIds = supertagSystemIds
+    .map((sysId) => getSystemNode(db, sysId)?.id)
+    .filter((id): id is string => id !== null && id !== undefined)
+
+  if (supertagNodeIds.length === 0) return []
+
+  // Get all supertag property assignments
+  const allSupertagProps = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
+    .all()
+
+  // Build a map of nodeId -> set of supertag IDs it has
+  const nodeSupertags = new Map<string, Set<string>>()
+  for (const prop of allSupertagProps) {
+    let supertagId: string
+    try {
+      supertagId = JSON.parse(prop.value || '')
+    } catch {
+      continue
+    }
+
+    if (typeof supertagId !== 'string') continue
+
+    if (!nodeSupertags.has(prop.nodeId)) {
+      nodeSupertags.set(prop.nodeId, new Set())
+    }
+    nodeSupertags.get(prop.nodeId)!.add(supertagId)
+  }
+
+  // Filter nodes based on matchAll flag
+  const matchingNodeIds: string[] = []
+  for (const [nodeId, tags] of nodeSupertags) {
+    if (matchAll) {
+      if (supertagNodeIds.every((stId) => tags.has(stId))) {
+        matchingNodeIds.push(nodeId)
+      }
+    } else {
+      if (supertagNodeIds.some((stId) => tags.has(stId))) {
+        matchingNodeIds.push(nodeId)
+      }
+    }
+  }
+
+  return matchingNodeIds
+}
+
+// ============================================================================
+// Supertag <-> ItemType Sync (for legacy system compatibility)
+// ============================================================================
+
+/**
+ * Mapping from supertag systemIds to ItemType values
+ * Used to sync node-based supertags with legacy itemTypes table
+ */
+export const SUPERTAG_TO_ITEM_TYPE: Record<string, AppType> = {
+  [SYSTEM_SUPERTAGS.TOOL]: 'tool',
+  [SYSTEM_SUPERTAGS.REPO]: 'remote-repo',
+  // Generic item supertag maps to 'html' as default
+  [SYSTEM_SUPERTAGS.ITEM]: 'html',
+}
+
+/**
+ * Mapping from ItemType values to supertag systemIds
+ */
+export const ITEM_TYPE_TO_SUPERTAG: Record<AppType, string> = {
+  tool: SYSTEM_SUPERTAGS.TOOL,
+  'remote-repo': SYSTEM_SUPERTAGS.REPO,
+  html: SYSTEM_SUPERTAGS.ITEM,
+  typescript: SYSTEM_SUPERTAGS.ITEM, // typescript items use generic item supertag
+}
+
+/**
+ * Convert a node's supertags to ItemType values
+ * @param supertags Array of supertag systemIds
+ * @returns Array of ItemType values (deduplicated)
+ */
+export function supertagsToItemTypes(supertags: string[]): AppType[] {
+  const types = new Set<AppType>()
+  for (const st of supertags) {
+    const itemType = SUPERTAG_TO_ITEM_TYPE[st]
+    if (itemType) {
+      types.add(itemType)
+    }
+  }
+  return Array.from(types)
+}
+
+/**
+ * Convert ItemType values to supertag systemIds
+ * @param itemTypes Array of ItemType values
+ * @returns Array of supertag systemIds (deduplicated)
+ */
+export function itemTypesToSupertags(types: AppType[]): string[] {
+  const supertags = new Set<string>()
+  for (const t of types) {
+    const supertag = ITEM_TYPE_TO_SUPERTAG[t]
+    if (supertag) {
+      supertags.add(supertag)
+    }
+  }
+  return Array.from(supertags)
+}
+
+/**
+ * Sync a node's supertags to the itemTypes junction table
+ * This function:
+ * 1. Reads the node's supertags
+ * 2. Converts them to ItemType values
+ * 3. Updates the itemTypes table to match
+ *
+ * @param db Database instance
+ * @param nodeId Node UUID
+ * @param itemId Legacy item ID (from node's systemId, e.g., 'item:my-app' -> 'my-app')
+ * @returns true if sync succeeded, false if node not found
+ */
+export function syncNodeSupertagsToItemTypes(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  itemId: string,
+): boolean {
+  // Get current supertags from node
+  const supertagSystemIds = getNodeSupertagSystemIds(db, nodeId)
+  if (supertagSystemIds.length === 0) return false
+
+  // Convert to ItemTypes
+  const types = supertagsToItemTypes(supertagSystemIds)
+  if (types.length === 0) return false
+
+  // Delete existing itemTypes entries for this item
+  db.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
+
+  // Insert new itemTypes entries
+  // First type is primary by default
+  for (let i = 0; i < types.length; i++) {
+    db.insert(itemTypes)
+      .values({
+        itemId,
+        type: types[i],
+        isPrimary: i === 0,
+        order: i,
+      })
+      .run()
+  }
+
+  return true
+}
+
+/**
+ * Sync the itemTypes table to a node's supertags
+ * This function:
+ * 1. Reads the item's types from itemTypes table
+ * 2. Converts them to supertag systemIds
+ * 3. Updates the node's supertags to match
+ *
+ * @param db Database instance
+ * @param itemId Legacy item ID
+ * @param nodeId Node UUID
+ * @returns true if sync succeeded, false if item has no types
+ */
+export function syncItemTypesToNodeSupertags(
+  db: ReturnType<typeof getDatabase>,
+  itemId: string,
+  nodeId: string,
+): boolean {
+  // Get current types from itemTypes table
+  const typeEntries = db
+    .select()
+    .from(itemTypes)
+    .where(eq(itemTypes.itemId, itemId))
+    .all()
+
+  if (typeEntries.length === 0) return false
+
+  // Sort by order, primary first
+  typeEntries.sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1
+    if (!a.isPrimary && b.isPrimary) return 1
+    return (a.order ?? 0) - (b.order ?? 0)
+  })
+
+  // Convert to supertag systemIds
+  const types = typeEntries.map((e) => e.type)
+  const supertagSystemIds = itemTypesToSupertags(types)
+
+  if (supertagSystemIds.length === 0) return false
+
+  // Update node's supertags
+  setNodeSupertags(db, nodeId, supertagSystemIds)
+
+  return true
+}
+
+/**
+ * Get the item ID from a node's systemId
+ * Node systemIds follow the pattern 'item:{itemId}'
+ *
+ * @param nodeSystemId Node's systemId (e.g., 'item:my-app')
+ * @returns The item ID (e.g., 'my-app'), or null if not an item node
+ */
+export function extractItemIdFromNodeSystemId(
+  nodeSystemId: string | null,
+): string | null {
+  if (!nodeSystemId || !nodeSystemId.startsWith('item:')) return null
+  return nodeSystemId.slice(5) // Remove 'item:' prefix
+}
+
+/**
+ * Sync all item nodes' supertags to the itemTypes table
+ * This is useful for batch migration or consistency checks
+ *
+ * @param db Database instance
+ * @returns Number of items synced
+ */
+export function syncAllNodeSupertagsToItemTypes(
+  db: ReturnType<typeof getDatabase>,
+): number {
+  // Find all item nodes (systemId starts with 'item:')
+  const itemNodes = db
+    .select()
+    .from(nodes)
+    .all()
+    .filter(
+      (n) =>
+        n.systemId !== null &&
+        n.systemId.startsWith('item:') &&
+        n.deletedAt === null,
+    )
+
+  let syncedCount = 0
+  for (const node of itemNodes) {
+    const itemId = extractItemIdFromNodeSystemId(node.systemId)
+    if (itemId) {
+      const success = syncNodeSupertagsToItemTypes(db, node.id, itemId)
+      if (success) syncedCount++
+    }
+  }
+
+  return syncedCount
 }
