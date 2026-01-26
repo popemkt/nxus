@@ -198,8 +198,17 @@ export function FloatingHud({
         {/* Inbox */}
         <Link
           to="/inbox"
-          className={cn(btnBase, btnInactive, 'relative')}
-          title="Inbox"
+          className={cn(
+            btnBase,
+            btnInactive,
+            'relative focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
+          )}
+          title={
+            inboxCount > 0 ? `Inbox, ${inboxCount} pending items` : 'Inbox'
+          }
+          aria-label={
+            inboxCount > 0 ? `Inbox, ${inboxCount} pending items` : 'Inbox'
+          }
         >
           <TrayArrowDownIcon className="size-4" />
           {inboxCount > 0 && (
