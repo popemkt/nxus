@@ -418,3 +418,84 @@ pnpm type-check
 6. ✅ Supertag system aligned with type system
 7. ✅ All existing tests pass
 8. ✅ No performance regression on item queries
+
+---
+
+## 13. Review Feedback & Additional Considerations
+
+### 13.1 Type-Specific Fields Handling
+
+**Issue**: The current discriminated union allows type-specific fields:
+- `checkCommand` for tools
+- `startCommand`, `buildCommand` for TypeScript apps
+- `clonePath`, `branch` for remote-repos
+
+**Solution**: When transitioning from discriminated union to a merged schema with `types[]`:
+
+1. Create a merged `ItemSchema` with all type-specific fields as **optional**
+2. Add Zod refinements to validate that if a type is in `types[]`, its required fields are present:
+
+```typescript
+export const ItemSchema = ItemBaseSchema.extend({
+  types: z.array(ItemTypeSchema).min(1),
+  primaryType: ItemTypeSchema,
+  // Type-specific fields (all optional at schema level)
+  checkCommand: z.string().optional(),     // Required if 'tool' in types
+  startCommand: z.string().optional(),     // Required if 'typescript' in types
+  buildCommand: z.string().optional(),     // Required if 'typescript' in types
+  clonePath: z.string().optional(),        // Required if 'remote-repo' in types
+  branch: z.string().optional(),           // Optional for 'remote-repo'
+}).superRefine((data, ctx) => {
+  // Validate tool-specific fields
+  if (data.types.includes('tool') && !data.checkCommand) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "checkCommand required when 'tool' is in types",
+      path: ['checkCommand'],
+    })
+  }
+  // Similar refinements for other type-specific fields...
+})
+```
+
+### 13.2 Database Schema Gaps
+
+**Issue**: Some Zod schema fields may not exist in the SQLite `items` table:
+- `startCommand` and `buildCommand` for TypeScriptItem
+- These may be stored in `installConfig` JSON field instead
+
+**Action Required**: During implementation, audit the `items` table columns vs Zod schema fields:
+- Verify where `startCommand`, `buildCommand` are actually stored
+- If in `installConfig` JSON, update parsing logic accordingly
+- If missing entirely, decide: add columns or use JSON storage
+
+### 13.3 UI Filtering Updates
+
+**Issue**: `useAppRegistry` hook's filtering logic uses single `type` field.
+
+**Action Required**: Update filtering to check `types` array:
+
+```typescript
+// Before
+const filtered = apps.filter(app => app.type === selectedType)
+
+// After
+const filtered = apps.filter(app => app.types.includes(selectedType))
+```
+
+### 13.4 Node-Based Source of Truth
+
+**Clarification**: When `NODE_BASED_ARCHITECTURE_ENABLED` is true:
+- Supertags become the authoritative source for types
+- On writes: Update supertags first, then sync to `item_types` table
+- On reads: Can read from either (supertags preferred)
+- This ensures both systems stay consistent during transition
+
+### 13.5 Recommended UI Display (Pre-emptive Answer)
+
+Based on reviewer feedback, recommended approach for **Primary Type Display**:
+- Show primary type badge prominently
+- Show "+N" indicator or smaller icons for additional types
+- On hover/click: Show full list of types
+
+This balances visual clarity with information density.
