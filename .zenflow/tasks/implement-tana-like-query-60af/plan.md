@@ -125,44 +125,48 @@ Created comprehensive technical specification in `spec.md` covering:
 
 ---
 
-### [ ] Step: Phase 4 - Query Builder UI (Basic)
+### [x] Step: Phase 4 - Query Builder UI (Basic)
+<!-- chat-id: 9ae68e92-8bf5-44c9-a65f-004ec588841e -->
 
 **Goal**: Create visual query builder component
 
-**Tasks**:
-1. Create component structure:
+**Completed**:
+1. Created component structure:
    ```
    packages/nxus-core/src/components/features/query-builder/
-   ├── index.ts
-   ├── query-builder.tsx       # Main container
-   ├── filter-list.tsx         # Renders filter chips
-   ├── filter-chip.tsx         # Individual filter display
-   ├── add-filter-menu.tsx     # Dropdown to add new filters
+   ├── index.ts                 # Exports all components
+   ├── query-builder.tsx        # Main container with filter management
+   ├── filter-list.tsx          # Renders filter chips
+   ├── filter-chip.tsx          # Individual filter display with inline editing
+   ├── add-filter-menu.tsx      # Dropdown menu for adding filters
    └── filters/
        ├── index.ts
-       ├── supertag-filter.tsx
-       ├── property-filter.tsx
-       └── content-filter.tsx
+       ├── supertag-filter.tsx  # Supertag selection with inheritance toggle
+       ├── property-filter.tsx  # Field + operator + value selector
+       └── content-filter.tsx   # Full-text search with case sensitivity
    ```
 
-2. Implement `QueryBuilder` component:
-   - Props: `value`, `onChange`, `onExecute`, `compact`
-   - State: editing filter, add menu open
-   - Layout: filter chips + add button + execute button
+2. Implemented `QueryBuilder` component:
+   - Props: `value`, `onChange`, `onExecute`, `onSave`, `onClose`, `compact`, `showExecute`, `showSave`, `resultCount`, `isLoading`
+   - Filter management: add/update/remove/clear all
+   - Action buttons: Execute, Save (optional), Clear all
 
-3. Implement basic filter editors:
-   - `SupertagFilter`: dropdown of available supertags
-   - `PropertyFilter`: field selector + operator + value input
-   - `ContentFilter`: text search input
+3. Implemented basic filter editors:
+   - `SupertagFilterEditor`: Fetches supertags via server function, includes inheritance toggle
+   - `PropertyFilterEditor`: Field selector with 11 SYSTEM_FIELDS, 11 operators (eq, neq, gt, gte, lt, lte, contains, startsWith, endsWith, isEmpty, isNotEmpty)
+   - `ContentFilterEditor`: Text search with case-sensitivity option
 
-4. Create Zustand store `packages/nxus-core/src/stores/query.store.ts`:
-   - Current query definition
-   - Query builder UI state
+4. Created Zustand store `packages/nxus-core/src/stores/query.store.ts`:
+   - `currentQuery`: QueryDefinition being built
+   - `isBuilderOpen`, `editingFilterId`, `isAddMenuOpen`: UI state
+   - Actions: `setCurrentQuery`, `resetQuery`, `addFilter`, `updateFilter`, `removeFilter`, `setSort`, `setLimit`
 
 **Verification**:
-- Component renders without errors
-- Can add/remove filters
-- Execute button triggers query
+- All 54 @nxus/db tests pass
+- Components compile without TypeScript errors (excluding pre-existing TS6305 error for workbench build artifacts)
+- Filter chip UI shows filter type icon, formatted label, and remove button
+- Clicking filter chip opens inline editor popup
+- Add filter dropdown categorizes filters into Basic (supertag, property, content) and Advanced (temporal, relation, hasField)
 
 ---
 
