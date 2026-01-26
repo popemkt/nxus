@@ -162,3 +162,71 @@ The query builder integrates with the gallery via a floating panel:
 4. Save queries for reuse
 
 Future mini-apps can use `useQueryEvaluation` directly without the visual builder.
+
+## Server Function Import Patterns
+
+When using TanStack Start server functions, there are important patterns to follow to avoid bundling Node.js-only code into the client.
+
+### The Problem
+
+Server functions created with `createServerFn` should only run on the server. However, if you import a server function from an **external package** at the top of a file, Vite's bundler will follow the import chain and may pull in Node.js-only dependencies (like `better-sqlite3`) into the client bundle.
+
+```tsx
+// ❌ BAD: Top-level import from external package
+import { someServerFn } from '@nxus/workbench/server'
+
+// This causes Vite to follow the import chain:
+// @nxus/workbench/server → @nxus/db/server → better-sqlite3 ❌
+```
+
+### The Solution: Local Wrappers with Dynamic Imports
+
+For server functions from **external packages**, create local wrapper functions that use **dynamic imports** inside the handler:
+
+```tsx
+// ✅ GOOD: Local wrapper with dynamic import
+// packages/nxus-core/src/services/query/query.server.ts
+
+import { createServerFn } from '@tanstack/react-start'
+
+export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
+  .handler(async (ctx) => {
+    // Dynamic import inside handler - only runs on server
+    const { evaluateQueryServerFn: fn } = await import('@nxus/workbench/server')
+    return fn({ data: ctx.data })
+  })
+```
+
+Then import from the local wrapper:
+
+```tsx
+// In hooks or components
+import { evaluateQueryServerFn } from '@/services/query/query.server'
+```
+
+### When This Pattern is Required
+
+| Scenario | Pattern Required |
+|----------|-----------------|
+| Server function in same app's `.server.ts` file | No - top-level imports OK |
+| Server function from external package | **Yes - use dynamic imports** |
+| Types from external package | No - type-only imports are safe |
+
+### Files Using This Pattern
+
+- `packages/nxus-core/src/services/query/query.server.ts` - Wraps all query-related server functions from `@nxus/workbench/server`
+
+### Vite Configuration
+
+The following packages are configured in `vite.config.ts` to help with SSR:
+
+```ts
+optimizeDeps: {
+  exclude: ['better-sqlite3', 'drizzle-orm/better-sqlite3', '@nxus/db', '@nxus/workbench'],
+},
+ssr: {
+  noExternal: ['@nxus/db', '@nxus/workbench'],
+}
+```
+
+This ensures these packages are treated as server-only and not pre-bundled for the client.
