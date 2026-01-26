@@ -8,6 +8,7 @@
  * - Creating, updating, and deleting saved queries
  */
 
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { QueryDefinition, SavedQuery, AssembledNode } from '@nxus/db'
 import {
@@ -92,6 +93,8 @@ interface UseQueryEvaluationOptions {
   enabled?: boolean
   /** Stale time in ms (defaults to 30 seconds) */
   staleTime?: number
+  /** Debounce delay in ms (defaults to 0 = no debounce) */
+  debounceMs?: number
 }
 
 /**
@@ -113,13 +116,34 @@ export function useQueryEvaluation(
   definition: QueryDefinition,
   options: UseQueryEvaluationOptions = {}
 ): QueryEvaluationResult {
-  const { limit, enabled = true, staleTime = 30 * 1000 } = options
+  const { limit, enabled = true, staleTime = 30 * 1000, debounceMs = 0 } = options
+
+  // Debounce the definition to avoid excessive re-evaluations
+  const [debouncedDefinition, setDebouncedDefinition] = useState(definition)
+
+  // Track if we're in a debouncing state (definition changed but debounce hasn't fired)
+  const definitionHash = useMemo(() => hashDefinition(definition), [definition])
+  const debouncedHash = useMemo(() => hashDefinition(debouncedDefinition), [debouncedDefinition])
+  const isDebouncing = debounceMs > 0 && definitionHash !== debouncedHash
+
+  useEffect(() => {
+    if (debounceMs <= 0) {
+      setDebouncedDefinition(definition)
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setDebouncedDefinition(definition)
+    }, debounceMs)
+
+    return () => clearTimeout(timer)
+  }, [definition, debounceMs])
 
   const query = useQuery({
-    queryKey: queryKeys.evaluation(definition),
+    queryKey: queryKeys.evaluation(debouncedDefinition),
     queryFn: async () => {
       const result = await evaluateQueryServerFn({
-        data: { definition, limit },
+        data: { definition: debouncedDefinition, limit },
       })
       if (!result.success) {
         throw new Error('Failed to evaluate query')
@@ -130,7 +154,7 @@ export function useQueryEvaluation(
         evaluatedAt: new Date(result.evaluatedAt),
       }
     },
-    enabled: enabled && definition.filters.length > 0,
+    enabled: enabled && debouncedDefinition.filters.length > 0,
     staleTime,
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   })
@@ -139,7 +163,7 @@ export function useQueryEvaluation(
     nodes: query.data?.nodes ?? [],
     totalCount: query.data?.totalCount ?? 0,
     evaluatedAt: query.data?.evaluatedAt ?? new Date(),
-    isLoading: query.isLoading,
+    isLoading: query.isLoading || isDebouncing,
     isError: query.isError,
     error: query.error as Error | null,
     refetch: () => query.refetch(),

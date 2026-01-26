@@ -95,12 +95,21 @@ export function FilterChip({
           className={cn(
             'flex items-center justify-center shrink-0 bg-transparent border-none cursor-pointer',
             'opacity-50 hover:opacity-100 transition-opacity',
+            'focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-primary/50 rounded-sm',
           )}
           onClick={(e) => {
             e.stopPropagation()
             onRemove()
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation()
+              onRemove()
+            }
+          }}
           title="Remove filter"
+          aria-label="Remove filter"
+          tabIndex={0}
         >
           <X className={compact ? 'size-2.5' : 'size-3'} weight="bold" />
         </button>
@@ -138,12 +147,23 @@ function FilterEditor({ filter, onUpdate, onClose, compact }: FilterEditorProps)
     }
   }
 
+  // Close on Escape key
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      onClose()
+    }
+  }
+
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40"
         onClick={handleBackdropClick}
+        onKeyDown={handleKeyDown}
+        role="presentation"
       />
 
       {/* Editor popup */}

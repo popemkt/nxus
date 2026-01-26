@@ -82,3 +82,83 @@ Start with the simplest structure. Only add additional layers (e.g., `domain/`, 
 - Components import from centralized location
 
 **Benefits:** Consistency across UI, easier to add new app types, type-safe constants.
+
+## Query System
+
+The query system provides Tana-like reactive queries over nodes. It enables filtering, sorting, and searching across the node-based architecture.
+
+### Overview
+
+```
+@nxus/db (types & evaluation)
+├── types/query.ts              # Query schema definitions
+└── services/query-evaluator.ts # Backend query evaluation engine
+
+@nxus/workbench (server API)
+└── server/query.server.ts      # Server functions for query CRUD
+
+@nxus/core (UI & hooks)
+├── hooks/use-query.ts          # React hooks for query operations
+├── stores/query.store.ts       # Zustand store for query builder state
+└── components/features/query-builder/
+    ├── query-builder.tsx       # Main query builder component
+    ├── filter-chip.tsx         # Individual filter display
+    ├── saved-queries-panel.tsx # Saved queries management
+    └── filters/                # Filter type editors
+```
+
+### Query Definition Schema
+
+A query consists of:
+- **filters**: Array of filter conditions (AND by default)
+- **sort**: Optional sort configuration (field + direction)
+- **limit**: Optional result limit (default: 500)
+
+### Filter Types
+
+| Type | Description | Example Use |
+|------|-------------|-------------|
+| `supertag` | Match nodes by supertag (with optional inheritance) | `#Item`, `#Tool+` |
+| `property` | Match by field value with operators | `status = installed` |
+| `content` | Full-text search on node content | `contains "Claude"` |
+| `temporal` | Date-based filtering | `created within 7 days` |
+| `relation` | Relationship-based queries | `childOf`, `linksTo` |
+| `hasField` | Check field existence | `has title`, `missing status` |
+| `and/or/not` | Logical grouping | Complex boolean queries |
+
+### Hooks
+
+```tsx
+// Evaluate an ad-hoc query with debouncing
+const { nodes, totalCount, isLoading, isError } = useQueryEvaluation(definition, {
+  debounceMs: 300, // Prevent excessive evaluations
+})
+
+// Manage saved queries
+const { queries } = useSavedQueries()
+const { createQuery } = useCreateQuery()
+const { updateQuery } = useUpdateQuery()
+const { deleteQuery } = useDeleteQuery()
+
+// Execute a saved query
+const { nodes } = useSavedQuery(queryId)
+```
+
+### Reactivity
+
+Query results automatically update when:
+1. Nodes are created, updated, or deleted
+2. Node properties change
+3. Query definition changes (with debounce)
+
+This is achieved through TanStack Query cache invalidation - all node mutation hooks invalidate query caches automatically.
+
+### Integration
+
+The query builder integrates with the gallery via a floating panel:
+1. Click "Advanced Filter" button in the HUD
+2. Build query using filter chips
+3. Results preview shows matching nodes
+4. Save queries for reuse
+
+Future mini-apps can use `useQueryEvaluation` directly without the visual builder.

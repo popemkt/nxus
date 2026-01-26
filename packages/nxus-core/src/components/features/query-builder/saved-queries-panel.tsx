@@ -255,14 +255,15 @@ function SavedQueryItem({
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Action buttons - visible on hover and focus-within */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           {onExecute && (
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={() => onExecute(query)}
               title="Execute query"
+              aria-label={`Execute ${query.content || 'query'}`}
             >
               <Play weight="fill" className="size-3.5" />
             </Button>
@@ -273,6 +274,7 @@ function SavedQueryItem({
               size="icon-sm"
               onClick={() => onEdit(query)}
               title="Edit query"
+              aria-label={`Edit ${query.content || 'query'}`}
             >
               <PencilSimple weight="bold" className="size-3.5" />
             </Button>
@@ -283,6 +285,7 @@ function SavedQueryItem({
             onClick={onDelete}
             disabled={isDeleting}
             title={showDeleteConfirm ? 'Click again to confirm' : 'Delete query'}
+            aria-label={showDeleteConfirm ? 'Confirm delete' : `Delete ${query.content || 'query'}`}
           >
             <Trash weight="bold" className="size-3.5" />
           </Button>

@@ -5,7 +5,7 @@
  * Displays active filters as chips with add/edit/remove controls.
  */
 
-import { Play, X, FloppyDisk } from '@phosphor-icons/react'
+import { Play, X, FloppyDisk, CircleNotch, Funnel, WarningCircle } from '@phosphor-icons/react'
 import { Button, cn } from '@nxus/ui'
 import type { QueryDefinition, QuerySort } from '@nxus/db'
 import { FilterList } from './filter-list'
@@ -40,6 +40,10 @@ export interface QueryBuilderProps {
   resultCount?: number
   /** Loading state */
   isLoading?: boolean
+  /** Error state */
+  isError?: boolean
+  /** Error message to display */
+  errorMessage?: string
   /** Show sort configuration */
   showSort?: boolean
   /** Show query linter (plain text representation) */
@@ -62,6 +66,8 @@ export function QueryBuilder({
   className,
   resultCount,
   isLoading = false,
+  isError = false,
+  errorMessage,
   showSort = true,
   showLinter = true,
 }: QueryBuilderProps) {
@@ -186,13 +192,24 @@ export function QueryBuilder({
         {/* Result count */}
         <div className="text-xs text-muted-foreground">
           {isLoading ? (
-            <span>Loading...</span>
+            <span className="flex items-center gap-1.5">
+              <CircleNotch className="size-3 animate-spin" weight="bold" />
+              Evaluating query...
+            </span>
+          ) : isError ? (
+            <span className="flex items-center gap-1.5 text-destructive">
+              <WarningCircle className="size-3" weight="fill" />
+              {errorMessage || 'Query failed'}
+            </span>
           ) : resultCount !== undefined ? (
             <span>
               {resultCount} {resultCount === 1 ? 'result' : 'results'}
             </span>
           ) : hasFilters ? (
-            <span>Click execute to see results</span>
+            <span className="flex items-center gap-1.5">
+              <Funnel className="size-3" weight="bold" />
+              Ready to execute
+            </span>
           ) : (
             <span>Add filters to build your query</span>
           )}

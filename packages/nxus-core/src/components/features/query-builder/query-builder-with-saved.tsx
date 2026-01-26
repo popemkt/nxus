@@ -46,6 +46,10 @@ export interface QueryBuilderWithSavedProps extends Omit<QueryBuilderProps, 'onS
   onQueryIdChange?: (queryId: string | null) => void
   /** Show saved queries panel button */
   showSavedQueriesButton?: boolean
+  /** Error state for query evaluation */
+  isError?: boolean
+  /** Error message to display */
+  errorMessage?: string
 }
 
 type ViewMode = 'builder' | 'saved-queries'

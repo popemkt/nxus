@@ -99,8 +99,11 @@ function AppManager() {
     nodes: queryNodes,
     totalCount: queryTotalCount,
     isLoading: queryIsLoading,
+  isError: queryIsError,
+    error: queryError,
   } = useQueryEvaluation(currentQuery, {
     enabled: queryBuilderOpen && hasQueryFilters,
+    debounceMs: 300, // Debounce to avoid excessive evaluations while typing
   })
 
   // Handle query builder toggle
@@ -243,6 +246,8 @@ function AppManager() {
           onQueryIdChange={setLoadedQueryId}
           resultCount={hasQueryFilters ? queryTotalCount : undefined}
           isLoading={queryIsLoading}
+          isError={queryIsError}
+          errorMessage={queryError?.message}
         />
 
         {/* Query results preview */}
