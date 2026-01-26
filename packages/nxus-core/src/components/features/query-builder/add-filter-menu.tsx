@@ -12,6 +12,7 @@ import {
   Calendar,
   LinkSimple,
   CheckSquare,
+  TreeStructure,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -28,7 +29,7 @@ import {
 // Types
 // ============================================================================
 
-type FilterType = 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField'
+type FilterType = 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField' | 'and' | 'or' | 'not'
 
 export interface AddFilterMenuProps {
   /** Called when a filter type is selected */
@@ -91,6 +92,30 @@ const ADVANCED_FILTER_OPTIONS = [
   },
 ] as const
 
+const LOGICAL_FILTER_OPTIONS = [
+  {
+    type: 'and' as const,
+    label: 'AND Group',
+    description: 'All conditions must match',
+    icon: TreeStructure,
+    color: '#6b7280', // Gray
+  },
+  {
+    type: 'or' as const,
+    label: 'OR Group',
+    description: 'Any condition can match',
+    icon: TreeStructure,
+    color: '#6b7280', // Gray
+  },
+  {
+    type: 'not' as const,
+    label: 'NOT Group',
+    description: 'Exclude matching nodes',
+    icon: TreeStructure,
+    color: '#6b7280', // Gray
+  },
+] as const
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -145,6 +170,28 @@ export function AddFilterMenu({
         <DropdownMenuLabel>Advanced Filters</DropdownMenuLabel>
 
         {ADVANCED_FILTER_OPTIONS.map((option) => (
+          <DropdownMenuItem
+            key={option.type}
+            onClick={() => onAddFilter(option.type)}
+          >
+            <option.icon
+              className="size-4 shrink-0"
+              weight="bold"
+              style={{ color: option.color }}
+            />
+            <div className="flex flex-col gap-0.5">
+              <span>{option.label}</span>
+              <span className="text-[10px] text-muted-foreground">
+                {option.description}
+              </span>
+            </div>
+          </DropdownMenuItem>
+        ))}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Logical Groups</DropdownMenuLabel>
+
+        {LOGICAL_FILTER_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option.type}
             onClick={() => onAddFilter(option.type)}

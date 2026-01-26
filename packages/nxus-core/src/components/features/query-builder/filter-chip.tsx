@@ -14,12 +14,17 @@ import {
   Calendar,
   LinkSimple,
   CheckSquare,
+  TreeStructure,
 } from '@phosphor-icons/react'
-import { Button, cn } from '@nxus/ui'
+import { cn } from '@nxus/ui'
 import type { QueryFilter, FilterOp } from '@nxus/db'
 import { SupertagFilterEditor } from './filters/supertag-filter'
 import { PropertyFilterEditor } from './filters/property-filter'
 import { ContentFilterEditor } from './filters/content-filter'
+import { RelationFilterEditor } from './filters/relation-filter'
+import { TemporalFilterEditor } from './filters/temporal-filter'
+import { HasFieldFilterEditor } from './filters/hasfield-filter'
+import { LogicalFilterEditor } from './filters/logical-filter'
 
 // ============================================================================
 // Types
@@ -171,22 +176,33 @@ function FilterEditor({ filter, onUpdate, onClose, compact }: FilterEditorProps)
             onClose={onClose}
           />
         )}
-        {/* Other filter types show a placeholder for now */}
-        {!['supertag', 'property', 'content'].includes(filter.type) && (
-          <div className="text-xs text-muted-foreground">
-            <p className="mb-2">
-              Filter type: <strong>{filter.type}</strong>
-            </p>
-            <p>Editor coming soon...</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              className="mt-2 w-full"
-            >
-              Close
-            </Button>
-          </div>
+        {filter.type === 'relation' && (
+          <RelationFilterEditor
+            filter={filter}
+            onUpdate={onUpdate}
+            onClose={onClose}
+          />
+        )}
+        {filter.type === 'temporal' && (
+          <TemporalFilterEditor
+            filter={filter}
+            onUpdate={onUpdate}
+            onClose={onClose}
+          />
+        )}
+        {filter.type === 'hasField' && (
+          <HasFieldFilterEditor
+            filter={filter}
+            onUpdate={onUpdate}
+            onClose={onClose}
+          />
+        )}
+        {(filter.type === 'and' || filter.type === 'or' || filter.type === 'not') && (
+          <LogicalFilterEditor
+            filter={filter}
+            onUpdate={onUpdate}
+            onClose={onClose}
+          />
         )}
       </div>
     </>
@@ -260,7 +276,7 @@ function getFilterDisplay(filter: QueryFilter): {
     case 'or':
     case 'not':
       return {
-        icon: TextT,
+        icon: TreeStructure,
         label: `${filter.type.toUpperCase()} (${filter.filters.length} filters)`,
         color: '#6b7280', // Gray for logical
       }

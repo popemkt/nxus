@@ -7,9 +7,11 @@
 
 import { Play, X, FloppyDisk } from '@phosphor-icons/react'
 import { Button, cn } from '@nxus/ui'
-import type { QueryDefinition } from '@nxus/db'
+import type { QueryDefinition, QuerySort } from '@nxus/db'
 import { FilterList } from './filter-list'
 import { AddFilterMenu } from './add-filter-menu'
+import { SortConfig } from './sort-config'
+import { QueryLinter } from './query-linter'
 
 // ============================================================================
 // Types
@@ -38,6 +40,10 @@ export interface QueryBuilderProps {
   resultCount?: number
   /** Loading state */
   isLoading?: boolean
+  /** Show sort configuration */
+  showSort?: boolean
+  /** Show query linter (plain text representation) */
+  showLinter?: boolean
 }
 
 // ============================================================================
@@ -56,12 +62,14 @@ export function QueryBuilder({
   className,
   resultCount,
   isLoading = false,
+  showSort = true,
+  showLinter = true,
 }: QueryBuilderProps) {
   const hasFilters = value.filters.length > 0
 
   // Handle adding a new filter
   const handleAddFilter = (
-    filterType: 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField',
+    filterType: 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField' | 'and' | 'or' | 'not',
   ) => {
     const newFilter = createDefaultFilter(filterType)
     onChange({
@@ -93,6 +101,15 @@ export function QueryBuilder({
     onChange({
       ...value,
       filters: [],
+      sort: undefined,
+    })
+  }
+
+  // Handle sort change
+  const handleSortChange = (sort: QuerySort | undefined) => {
+    onChange({
+      ...value,
+      sort,
     })
   }
 
@@ -135,6 +152,15 @@ export function QueryBuilder({
         {/* Add filter menu */}
         <AddFilterMenu onAddFilter={handleAddFilter} compact={compact} />
 
+        {/* Sort configuration */}
+        {showSort && (
+          <SortConfig
+            value={value.sort}
+            onChange={handleSortChange}
+            compact={compact}
+          />
+        )}
+
         {/* Clear all button */}
         {hasFilters && (
           <Button
@@ -147,6 +173,13 @@ export function QueryBuilder({
           </Button>
         )}
       </div>
+
+      {/* Query linter - plain text representation */}
+      {showLinter && hasFilters && (
+        <div className="border-t border-border pt-2">
+          <QueryLinter query={value} compact={compact} />
+        </div>
+      )}
 
       {/* Result count and action buttons */}
       <div className="flex items-center justify-between">
@@ -203,7 +236,7 @@ export function QueryBuilder({
  * Create a default filter of the given type with placeholder values
  */
 function createDefaultFilter(
-  filterType: 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField',
+  filterType: 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField' | 'and' | 'or' | 'not',
 ) {
   const id = crypto.randomUUID().slice(0, 8)
 
@@ -251,6 +284,24 @@ function createDefaultFilter(
         type: 'hasField' as const,
         fieldSystemId: '',
         negate: false,
+      }
+    case 'and':
+      return {
+        id,
+        type: 'and' as const,
+        filters: [],
+      }
+    case 'or':
+      return {
+        id,
+        type: 'or' as const,
+        filters: [],
+      }
+    case 'not':
+      return {
+        id,
+        type: 'not' as const,
+        filters: [],
       }
     default:
       throw new Error(`Unknown filter type: ${filterType}`)

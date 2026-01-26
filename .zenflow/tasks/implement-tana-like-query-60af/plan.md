@@ -249,27 +249,58 @@ is ready to replace the legacy approach.
 
 ---
 
-### [ ] Step: Phase 7 - Advanced Filters
+### [x] Step: Phase 7 - Advanced Filters
+<!-- chat-id: 755ca16b-aad8-44b8-bedd-551138903924 -->
 
 **Goal**: Complete the filter type coverage
 
-**Tasks**:
-1. Implement remaining filter editors:
-   - `RelationFilter`: relationship type + optional target node
-   - `TemporalFilter`: date picker or "last N days" input
-   - `LogicalFilter`: nested filter group with AND/OR/NOT
+**Completed**:
+1. Implemented all remaining filter editors in `packages/nxus-core/src/components/features/query-builder/filters/`:
+   - `relation-filter.tsx`: Relationship type selector (childOf, ownedBy, linksTo, linkedFrom) with optional target node ID
+   - `temporal-filter.tsx`: Date field (createdAt/updatedAt), operators (within/before/after), days presets (1, 7, 14, 30, 90, 365), or date picker
+   - `hasfield-filter.tsx`: Field existence check with negate option
+   - `logical-filter.tsx`: Nested filter groups with AND/OR/NOT operators, supports adding any filter type as nested children
 
-2. Implement `query-linter.tsx`:
-   - Display query as plain text (like Tana's linter)
-   - Format: "Nodes with #Item AND type = tool AND created in last 7 days"
+2. Implemented `query-linter.tsx`:
+   - Displays query as human-readable plain text
+   - Format examples:
+     - "Nodes with #Item+ AND where Status = installed"
+     - "Nodes containing 'Claude' created in last 7 days"
+     - "Nodes (with #Tool OR child of any) sorted by created ↓"
+   - Shows sort direction indicator (↑/↓)
+   - Shows limit if non-default
 
-3. Add sort configuration UI:
-   - Field selector
-   - Direction toggle
+3. Added `sort-config.tsx`:
+   - Sort field selector (Name, Created, Updated, Type, Status, Category, Title)
+   - Direction toggle button (asc/desc)
+   - Clear button to remove sort
+
+4. Updated `filter-chip.tsx`:
+   - Added imports for all new filter editors
+   - Added conditional rendering for each filter type in FilterEditor
+   - Updated logical filter icon to use TreeStructure
+
+5. Updated `add-filter-menu.tsx`:
+   - Added TreeStructure icon import
+   - Extended FilterType to include 'and' | 'or' | 'not'
+   - Added "Logical Groups" section with AND/OR/NOT options
+
+6. Updated `query-builder.tsx`:
+   - Added SortConfig and QueryLinter imports
+   - Added showSort and showLinter props
+   - Integrated SortConfig in filter row
+   - Integrated QueryLinter below filters when hasFilters
+   - Extended createDefaultFilter to handle logical filter types
+
+7. Updated exports:
+   - `filters/index.ts`: Exports all 7 filter editors
+   - `query-builder/index.ts`: Exports SortConfig, QueryLinter, and all filter editors
 
 **Verification**:
-- All filter types work correctly
-- Complex queries with nested logic evaluate properly
+- All 54 @nxus/db tests pass
+- TypeScript compiles (only pre-existing TS6305 errors for workbench build artifacts)
+- All filter types have complete editors
+- Complex queries with nested logical groups supported
 
 ---
 
