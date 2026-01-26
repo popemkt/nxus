@@ -18,12 +18,15 @@ export function InboxButton() {
   })
 
   const pendingCount = result?.success ? result.data.length : 0
+  const label =
+    pendingCount > 0 ? `Inbox, ${pendingCount} pending items` : 'Inbox'
 
   return (
     <Link
       to="/inbox"
-      className="relative rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-      title={`Inbox${pendingCount > 0 ? ` (${pendingCount} pending)` : ''}`}
+      className="relative rounded-md p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      title={label}
+      aria-label={label}
     >
       <TrayIcon className="h-5 w-5" />
 
