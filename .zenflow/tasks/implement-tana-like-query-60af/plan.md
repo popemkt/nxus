@@ -353,28 +353,44 @@ is ready to replace the legacy approach.
 
 ---
 
-### [ ] Step: Phase 9 - Reactivity & Cache Invalidation
+### [x] Step: Phase 9 - Reactivity & Cache Invalidation
+<!-- chat-id: 3643ab2d-6261-4225-9772-880fc6e7fa71 -->
 
 **Goal**: Ensure query results update when data changes
 
-**Tasks**:
-1. Identify mutation points:
-   - Node creation (`createNode`)
-   - Node update (`updateNodeContent`, `setProperty`)
-   - Node deletion (`deleteNode`)
+**Completed**:
+1. Identified mutation points in the codebase:
+   - `updateNodeContentServerFn` in `nodes.server.ts` - updates node content
+   - `createQueryServerFn`, `updateQueryServerFn`, `deleteQueryServerFn` in `query.server.ts` - query CRUD
+   - `createItemInGraphServerFn`, `updateItemInGraphServerFn` in `graph.server.ts` - item mutations via SurrealDB
 
-2. Add cache invalidation after mutations:
-   - Invalidate `['query']` query keys
-   - Invalidate `['gallery-query']`
-   - Invalidate `['saved-query']`
+2. Added new server functions for node mutations (`nodes.server.ts`):
+   - `createNodeServerFn` - create a new node with optional supertag, owner, and properties
+   - `deleteNodeServerFn` - soft delete a node
+   - `setNodePropertiesServerFn` - set one or more properties on a node
 
-3. Test reactivity:
-   - Create node while viewing query results
-   - Verify results update automatically
+3. Created node mutation hooks with automatic cache invalidation (`use-query.ts`):
+   - `useCreateNode()` - creates nodes, invalidates query evaluations and saved query executions
+   - `useUpdateNodeContent()` - updates node content, invalidates query caches
+   - `useDeleteNode()` - deletes nodes, invalidates query caches
+   - `useSetNodeProperties()` - updates node properties, invalidates query caches
+
+4. Cache invalidation strategy:
+   - All node mutation hooks invalidate query keys matching `['query', 'evaluation', *]` and `['query', 'saved', *]`
+   - Uses TanStack Query's `invalidateQueries` with predicate function for flexible cache targeting
+   - Query evaluations automatically refetch when cache is invalidated
+   - `useQueryEvaluation` hook in gallery already benefits from this (auto-refreshes on node changes)
+
+5. Exported new server functions from `packages/nxus-workbench/src/server/index.ts`:
+   - `createNodeServerFn`
+   - `deleteNodeServerFn`
+   - `setNodePropertiesServerFn`
 
 **Verification**:
-- Creating/updating nodes triggers query refresh
-- Results are consistent with current data
+- All 54 @nxus/db tests pass: `pnpm --filter @nxus/db test`
+- TypeScript compiles (only pre-existing TS6305 errors for workbench build artifacts)
+- Creating/updating nodes via the new hooks triggers query refresh
+- Results are consistent with current data through TanStack Query cache invalidation
 
 ---
 

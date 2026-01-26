@@ -17,6 +17,10 @@ import {
   deleteQueryServerFn,
   getSavedQueriesServerFn,
   executeSavedQueryServerFn,
+  createNodeServerFn,
+  deleteNodeServerFn,
+  updateNodeContentServerFn,
+  setNodePropertiesServerFn,
 } from '@nxus/workbench/server'
 
 // ============================================================================
@@ -469,5 +473,232 @@ export function useQueryInvalidation() {
         queryKey: queryKeys.savedQueryExecution(queryId),
       })
     },
+  }
+}
+
+// ============================================================================
+// Node Mutation Hooks (with Query Cache Invalidation)
+// ============================================================================
+
+interface CreateNodeVariables {
+  content: string
+  systemId?: string
+  supertagSystemId?: string
+  ownerId?: string
+  properties?: Record<string, string | number | boolean | null>
+}
+
+interface UpdateNodeContentVariables {
+  nodeId: string
+  content: string
+}
+
+interface DeleteNodeVariables {
+  nodeId: string
+}
+
+interface SetNodePropertiesVariables {
+  nodeId: string
+  properties: Record<string, string | number | boolean | null | string[]>
+}
+
+/**
+ * Hook for creating nodes with automatic query cache invalidation
+ *
+ * When a node is created, all query evaluations are invalidated
+ * since the new node might match active queries.
+ *
+ * @returns Mutation function and state
+ *
+ * @example
+ * ```tsx
+ * const { createNode, isCreating } = useCreateNode()
+ * await createNode({
+ *   content: 'New Item',
+ *   supertagSystemId: 'supertag:item'
+ * })
+ * ```
+ */
+export function useCreateNode() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (variables: CreateNodeVariables) => {
+      const result = await createNodeServerFn({
+        data: variables,
+      })
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create node')
+      }
+      return result
+    },
+    onSuccess: () => {
+      // Invalidate all query evaluations since new node might match queries
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey
+          return (
+            Array.isArray(key) &&
+            key[0] === 'query' &&
+            (key[1] === 'evaluation' || key[1] === 'saved')
+          )
+        },
+      })
+    },
+  })
+
+  return {
+    createNode: mutation.mutateAsync,
+    isCreating: mutation.isPending,
+    error: mutation.error as Error | null,
+  }
+}
+
+/**
+ * Hook for updating node content with automatic query cache invalidation
+ *
+ * When a node's content is updated, query evaluations are invalidated
+ * since content-based queries might now match or not match.
+ *
+ * @returns Mutation function and state
+ *
+ * @example
+ * ```tsx
+ * const { updateNodeContent, isUpdating } = useUpdateNodeContent()
+ * await updateNodeContent({ nodeId: 'xxx', content: 'Updated content' })
+ * ```
+ */
+export function useUpdateNodeContent() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (variables: UpdateNodeContentVariables) => {
+      const result = await updateNodeContentServerFn({
+        data: variables,
+      })
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update node content')
+      }
+      return result
+    },
+    onSuccess: () => {
+      // Invalidate all query evaluations since content filters might be affected
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey
+          return (
+            Array.isArray(key) &&
+            key[0] === 'query' &&
+            (key[1] === 'evaluation' || key[1] === 'saved')
+          )
+        },
+      })
+    },
+  })
+
+  return {
+    updateNodeContent: mutation.mutateAsync,
+    isUpdating: mutation.isPending,
+    error: mutation.error as Error | null,
+  }
+}
+
+/**
+ * Hook for deleting nodes with automatic query cache invalidation
+ *
+ * When a node is deleted, query evaluations are invalidated
+ * since the deleted node might have been in query results.
+ *
+ * @returns Mutation function and state
+ *
+ * @example
+ * ```tsx
+ * const { deleteNode, isDeleting } = useDeleteNode()
+ * await deleteNode({ nodeId: 'xxx' })
+ * ```
+ */
+export function useDeleteNode() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (variables: DeleteNodeVariables) => {
+      const result = await deleteNodeServerFn({
+        data: variables,
+      })
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete node')
+      }
+    },
+    onSuccess: () => {
+      // Invalidate all query evaluations since deleted node might have been in results
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey
+          return (
+            Array.isArray(key) &&
+            key[0] === 'query' &&
+            (key[1] === 'evaluation' || key[1] === 'saved')
+          )
+        },
+      })
+    },
+  })
+
+  return {
+    deleteNode: mutation.mutateAsync,
+    isDeleting: mutation.isPending,
+    error: mutation.error as Error | null,
+  }
+}
+
+/**
+ * Hook for setting node properties with automatic query cache invalidation
+ *
+ * When node properties are updated, query evaluations are invalidated
+ * since property-based filters might now match or not match.
+ *
+ * @returns Mutation function and state
+ *
+ * @example
+ * ```tsx
+ * const { setNodeProperties, isUpdating } = useSetNodeProperties()
+ * await setNodeProperties({
+ *   nodeId: 'xxx',
+ *   properties: { 'field:status': 'active' }
+ * })
+ * ```
+ */
+export function useSetNodeProperties() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (variables: SetNodePropertiesVariables) => {
+      const result = await setNodePropertiesServerFn({
+        data: variables,
+      })
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to set node properties')
+      }
+      return result
+    },
+    onSuccess: () => {
+      // Invalidate all query evaluations since property filters might be affected
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey
+          return (
+            Array.isArray(key) &&
+            key[0] === 'query' &&
+            (key[1] === 'evaluation' || key[1] === 'saved')
+          )
+        },
+      })
+    },
+  })
+
+  return {
+    setNodeProperties: mutation.mutateAsync,
+    isUpdating: mutation.isPending,
+    error: mutation.error as Error | null,
   }
 }
