@@ -273,6 +273,7 @@ export function bootstrapSystemNodesSync(
       extends: null,
     },
     { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.QUERY, content: '#Query', extends: null },
   ]
 
   for (const st of entitySupertags) {
@@ -382,6 +383,12 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.STATUS, content: 'status', fieldType: 'select' },
     { systemId: SYSTEM_FIELDS.NOTES, content: 'notes', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.TITLE, content: 'title', fieldType: 'text' },
+    // Query-specific (for saved queries with supertag:query)
+    { systemId: SYSTEM_FIELDS.QUERY_DEFINITION, content: 'queryDefinition', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.QUERY_SORT, content: 'querySort', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.QUERY_LIMIT, content: 'queryLimit', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.QUERY_RESULT_CACHE, content: 'queryResultCache', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT, content: 'queryEvaluatedAt', fieldType: 'text' },
   ]
 
   for (const field of commonFields) {

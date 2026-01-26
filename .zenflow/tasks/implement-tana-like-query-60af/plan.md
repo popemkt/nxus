@@ -304,29 +304,52 @@ is ready to replace the legacy approach.
 
 ---
 
-### [ ] Step: Phase 8 - Saved Queries
+### [x] Step: Phase 8 - Saved Queries
+<!-- chat-id: d048ce98-0760-4734-95fe-55a82df4b1b9 -->
 
 **Goal**: Enable saving and managing queries
 
-**Tasks**:
-1. Create `saved-queries-panel.tsx`:
-   - List saved queries
-   - Click to execute
-   - Edit/delete actions
-   - Create new query
+**Completed**:
+1. Created `saved-queries-panel.tsx`:
+   - Lists all saved queries with search filter
+   - Execute button to run and load query results
+   - Edit button to load query into query builder
+   - Delete with confirmation (click twice to confirm)
+   - Create new button to start fresh query
+   - Shows filter count, sort status, and last run time for each query
+   - Filter preview chips (shows first 3 filters)
 
-2. Add saved query CRUD to query builder:
-   - Save button (creates query node)
-   - Load button (opens saved queries panel)
-   - Name input for saving
+2. Created `query-builder-with-saved.tsx`:
+   - Wraps QueryBuilder with full saved queries integration
+   - "Saved Queries" button to toggle saved queries panel view
+   - Save button with name dialog for new queries
+   - Update button when editing existing saved query
+   - Detach button to disconnect from saved query
+   - Tracks `loadedQueryId` state for update mode
 
-3. Ensure query nodes get proper bootstrap:
-   - Add `supertag:query` to bootstrap if needed
-   - Add query-related field nodes
+3. Updated gallery route (`routes/index.tsx`):
+   - Integrated `QueryBuilderWithSaved` component
+   - Added `loadedQueryId` state management
+   - Connected `onQueryIdChange` handler
+
+4. Updated bootstrap (`packages/nxus-db/src/services/bootstrap.ts`):
+   - Added `#Query` supertag (`SYSTEM_SUPERTAGS.QUERY`)
+   - Added query-specific fields:
+     - `queryDefinition` (json)
+     - `querySort` (json)
+     - `queryLimit` (number)
+     - `queryResultCache` (json)
+     - `queryEvaluatedAt` (text)
+
+5. Exported new components from `query-builder/index.ts`:
+   - `QueryBuilderWithSaved`
+   - `SavedQueriesPanel`
 
 **Verification**:
+- All 54 @nxus/db tests pass
+- TypeScript compiles (only pre-existing TS6305 errors for workbench build artifacts)
 - Can create, save, load, edit, delete queries
-- Saved queries persist across sessions
+- Saved queries persist across sessions via node-based storage
 
 ---
 

@@ -5,7 +5,7 @@ import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'
 import { useQueryEvaluation } from '@/hooks/use-query'
 import { TagTree } from '@/components/features/gallery/tag-tree'
-import { QueryBuilder } from '@/components/features/query-builder'
+import { QueryBuilderWithSaved } from '@/components/features/query-builder'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useQueryStore } from '@/stores/query.store'
@@ -35,6 +35,7 @@ function AppManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [queryBuilderOpen, setQueryBuilderOpen] = useState(false)
+  const [loadedQueryId, setLoadedQueryId] = useState<string | null>(null)
 
   // View mode state
   const viewMode = useViewModeStore((s) => s.viewMode)
@@ -231,12 +232,15 @@ function AppManager() {
             : 'opacity-0 translate-x-5 pointer-events-none',
         )}
       >
-        <QueryBuilder
+        <QueryBuilderWithSaved
           value={currentQuery}
           onChange={handleQueryChange}
           onClose={handleQueryBuilderClose}
           showExecute={false}
-          showSave={false}
+          showSave={true}
+          showSavedQueriesButton={true}
+          loadedQueryId={loadedQueryId}
+          onQueryIdChange={setLoadedQueryId}
           resultCount={hasQueryFilters ? queryTotalCount : undefined}
           isLoading={queryIsLoading}
         />

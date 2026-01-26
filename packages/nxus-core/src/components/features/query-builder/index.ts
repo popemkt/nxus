@@ -6,11 +6,13 @@
  */
 
 export { QueryBuilder } from './query-builder'
+export { QueryBuilderWithSaved } from './query-builder-with-saved'
 export { FilterList } from './filter-list'
 export { FilterChip } from './filter-chip'
 export { AddFilterMenu } from './add-filter-menu'
 export { SortConfig } from './sort-config'
 export { QueryLinter } from './query-linter'
+export { SavedQueriesPanel } from './saved-queries-panel'
 
 // Filter editors
 export { SupertagFilterEditor } from './filters/supertag-filter'
