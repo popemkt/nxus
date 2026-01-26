@@ -36,6 +36,7 @@ Do not make assumptions on important decisions — get clarification first.
 ## Implementation Steps
 
 ### [ ] Step 1: User Clarification - Resolve Open Questions
+<!-- chat-id: e614631d-8a6c-4d89-9e81-01e21107721a -->
 
 Before implementation, get user input on:
 
