@@ -22,7 +22,7 @@ import {
   STATUS_VARIANTS,
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { cn } from '@nxus/ui'
 import type { GalleryMode } from '@/stores/view-mode.store'
 import { TagEditorModal } from '../modals/tag-editor-modal'
@@ -34,7 +34,7 @@ interface GalleryViewProps {
 }
 
 // Thumbnail component with fallback paths
-function ThumbnailWithFallback({
+const ThumbnailWithFallback = memo(function ThumbnailWithFallback({
   appId,
   appName,
   compact,
@@ -88,10 +88,16 @@ function ThumbnailWithFallback({
       />
     </div>
   )
-}
+})
 
-// Individual card component
-function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
+// Individual card component - memoized to prevent re-renders when parent state (like filters) changes
+const ItemCard = memo(function ItemCard({
+  app,
+  compact,
+}: {
+  app: Item
+  compact: boolean
+}) {
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false)
   const TypeIcon = APP_TYPE_ICONS[app.type]
   const isTool = app.type === 'tool'
@@ -270,9 +276,9 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
       />
     </>
   )
-}
+})
 
-export function GalleryView({
+export const GalleryView = memo(function GalleryView({
   items,
   mode,
   groupByType = false,
@@ -339,4 +345,4 @@ export function GalleryView({
       )}
     </div>
   )
-}
+})
