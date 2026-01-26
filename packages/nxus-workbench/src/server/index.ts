@@ -51,12 +51,5 @@ export {
   nodesToItems,
 } from './adapters.js'
 
-// Query server functions (Tana-like reactive queries)
-export {
-  evaluateQueryServerFn,
-  createQueryServerFn,
-  updateQueryServerFn,
-  deleteQueryServerFn,
-  getSavedQueriesServerFn,
-  executeSavedQueryServerFn,
-} from './query.server.js'
+// NOTE: Query server functions have been moved to nxus-core/src/services/query/query.server.ts
+// They use dynamic imports from @nxus/db/server to avoid bundling better-sqlite3 into the client.
