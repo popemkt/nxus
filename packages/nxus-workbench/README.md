@@ -199,6 +199,59 @@ const command = nodeToCommand(node)
 const items = nodesToItems(nodes, tagLookup, commandsByItemId)
 ```
 
+## Graph Viewer
+
+Interactive graph visualization for exploring nodes and relationships.
+
+```tsx
+import { GraphView } from '@nxus/workbench/features/graph'
+
+<GraphView
+  nodes={nodes}
+  selectedNodeId={selectedId}
+  onNodeClick={(id) => setSelectedId(id)}
+  onNodeDoubleClick={(id) => navigate(`/nodes/${id}`)}
+/>
+```
+
+### Features
+
+- **Dual Renderers**: 2D (React Flow) and 3D (3d-force-graph/WebGL)
+- **Interactive Controls**: Physics, display, filtering, local graph mode
+- **Edge Direction**: Animated particles (teal=outgoing, violet=incoming)
+- **Local Graph Mode**: BFS traversal with 1-3 degrees of separation
+- **Lazy 3D Loading**: WebGL dependencies loaded on demand
+
+### Store Hooks
+
+```typescript
+import {
+  useGraphPhysics,
+  useGraphDisplay,
+  useGraphFilter,
+  useGraphLocalGraph,
+  useGraphView,
+} from '@nxus/workbench/features/graph'
+
+const { physics, setPhysics } = useGraphPhysics()
+setPhysics({ centerForce: 0.7 })
+```
+
+### For Large Graphs (500+ nodes)
+
+```tsx
+// Import directly to avoid server bundling
+import { LightweightGraphView } from '@nxus/workbench/features/graph/LightweightGraphView'
+
+<LightweightGraphView
+  supertagSystemId="task"
+  limit={1000}
+  onNodeClick={handleClick}
+/>
+```
+
+See [Graph Viewer Documentation](./src/features/graph/docs/README.md) for full API reference.
+
 ## Testing
 
 ```bash

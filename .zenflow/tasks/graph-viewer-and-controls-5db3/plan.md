@@ -1198,7 +1198,7 @@ Last, are these all well architected and I can easily add more types of diagrams
 
 Created comprehensive documentation for the Graph Viewer feature.
 
-**Documentation Created** (in `.zenflow/tasks/graph-viewer-and-controls-5db3/docs/`):
+**Documentation Created** in project (in `packages/nxus-workbench/src/features/graph/docs/`):
 
 1. **README.md** - Quick start, feature overview, architecture diagram, file structure
 2. **api-reference.md** - Complete API documentation for all exports:
@@ -1232,6 +1232,9 @@ Created comprehensive documentation for the Graph Viewer feature.
    - Troubleshooting common issues
    - Future optimization roadmap
    - Configuration recommendations
+
+**Also Updated**:
+- `packages/nxus-workbench/README.md` - Added Graph Viewer section with quick start and feature overview
 
 ---
 
