@@ -88,10 +88,29 @@ const DEFAULT_DETAILED_NODE_HEIGHT = 80
 /** Default layout options */
 const DEFAULT_OPTIONS: Required<UseForceLayoutOptions> = {
   physics: DEFAULT_PHYSICS,
-  continuous: false,
+  continuous: true, // Default to continuous for Obsidian-like feel
   iterations: 300,
   centerX: 400,
   centerY: 300,
+}
+
+/**
+ * Simulation tuning constants for smooth, Obsidian-like behavior.
+ * Based on Logseq's graph implementation which uses d3-force.
+ */
+const SIMULATION_CONFIG = {
+  // High velocity decay (0.5) = more damped, settles quickly, feels controlled
+  velocityDecay: 0.5,
+  // Low alpha decay = simulation cools slowly, keeps subtle adjusting
+  alphaDecay: 0.02,
+  // Alpha min = when to stop the simulation (low value keeps it running longer)
+  alphaMin: 0.001,
+  // Initial alpha for starting simulation
+  alphaStart: 1,
+  // Alpha for reheating during interactions
+  alphaReheat: 0.3,
+  // Barnes-Hut approximation theta (0.5 = good balance of speed vs accuracy)
+  theta: 0.5,
 }
 
 // ============================================================================
@@ -178,12 +197,17 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
 
   /**
    * Create and configure a d3-force simulation.
+   * Tuned for smooth, Obsidian-like behavior.
    */
   const createSimulation = useCallback(
     (forceNodes: ForceNode[], forceLinks: ForceLink[]): Simulation<ForceNode, ForceLink> => {
       const physics = physicsRef.current
 
       const simulation = forceSimulation(forceNodes)
+        // Configure simulation behavior for smooth feel (Logseq-inspired)
+        .velocityDecay(SIMULATION_CONFIG.velocityDecay)
+        .alphaDecay(SIMULATION_CONFIG.alphaDecay)
+        .alphaMin(SIMULATION_CONFIG.alphaMin)
         // Link force: pulls connected nodes together
         .force(
           'link',
@@ -197,7 +221,9 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
           'charge',
           forceManyBody<ForceNode>()
             .strength(-physics.repelForce)
-            .distanceMax(500), // Limit range for performance
+            .theta(SIMULATION_CONFIG.theta) // Barnes-Hut approximation for performance
+            .distanceMin(1)
+            .distanceMax(400), // Localized forces improve perception
         )
         // Center force: pulls graph toward center
         .force(
@@ -205,24 +231,25 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
           forceCenter(config.centerX, config.centerY)
             .strength(physics.centerForce),
         )
-        // X positioning force (helps with centering)
+        // X positioning force (very weak - lets links dominate)
         .force(
           'x',
           forceX<ForceNode>(config.centerX)
-            .strength(physics.centerForce * 0.1),
+            .strength(physics.centerForce * 0.02),
         )
-        // Y positioning force (helps with centering)
+        // Y positioning force (very weak - lets links dominate)
         .force(
           'y',
           forceY<ForceNode>(config.centerY)
-            .strength(physics.centerForce * 0.1),
+            .strength(physics.centerForce * 0.02),
         )
         // Collision force: prevents node overlap
         .force(
           'collide',
           forceCollide<ForceNode>()
             .radius(getCollisionRadius)
-            .strength(0.7),
+            .strength(0.7)
+            .iterations(2), // Balance accuracy vs performance
         )
 
       return simulation
@@ -394,12 +421,12 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
         }))
       })
 
-      // Start simulation
-      simulation.alpha(1).restart()
+      // Start simulation with configured alpha
+      simulation.alpha(SIMULATION_CONFIG.alphaStart).restart()
 
       setSimulationState({
         isRunning: true,
-        alpha: 1,
+        alpha: SIMULATION_CONFIG.alphaStart,
         tickCount: 0,
       })
     },
@@ -420,15 +447,15 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
   }, [])
 
   /**
-   * Reheat the simulation (restart with high alpha).
+   * Reheat the simulation (restart with configured alpha).
    */
   const reheatSimulation = useCallback(() => {
     if (simulationRef.current) {
-      simulationRef.current.alpha(1).restart()
+      simulationRef.current.alpha(SIMULATION_CONFIG.alphaReheat).restart()
       setSimulationState((prev) => ({
         ...prev,
         isRunning: true,
-        alpha: 1,
+        alpha: SIMULATION_CONFIG.alphaReheat,
       }))
     }
   }, [])
@@ -461,14 +488,14 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
           centerForce.strength(physics.centerForce)
         }
 
-        // Update X/Y forces
+        // Update X/Y forces (keep them weak)
         const xForce = simulationRef.current.force('x') as ReturnType<typeof forceX>
         const yForce = simulationRef.current.force('y') as ReturnType<typeof forceY>
-        if (xForce) xForce.strength(physics.centerForce * 0.1)
-        if (yForce) yForce.strength(physics.centerForce * 0.1)
+        if (xForce) xForce.strength(physics.centerForce * 0.02)
+        if (yForce) yForce.strength(physics.centerForce * 0.02)
 
-        // Reheat simulation to apply changes
-        simulationRef.current.alpha(0.5).restart()
+        // Reheat simulation to apply changes (use moderate alpha for smooth transition)
+        simulationRef.current.alpha(SIMULATION_CONFIG.alphaReheat).restart()
       }
     },
     [],
@@ -484,7 +511,7 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
       if (node) {
         node.fx = x
         node.fy = y
-        simulationRef.current.alpha(0.3).restart()
+        simulationRef.current.alpha(SIMULATION_CONFIG.alphaReheat).restart()
       }
     }
   }, [])
@@ -499,7 +526,7 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
       if (node) {
         node.fx = null
         node.fy = null
-        simulationRef.current.alpha(0.3).restart()
+        simulationRef.current.alpha(SIMULATION_CONFIG.alphaReheat).restart()
       }
     }
   }, [])

@@ -51,7 +51,7 @@ export const DEFAULT_DISPLAY: GraphDisplayOptions = {
   nodeLabels: 'hover', // Show labels on hover for performance
   edgeLabels: 'never', // Edge labels are usually noisy
   nodeSize: 'connections', // Size by connection count for importance visualization
-  edgeStyle: 'animated', // Animated edges show direction clearly
+  edgeStyle: 'solid', // Solid edges for clean, minimalist look (like Obsidian)
 }
 
 // ============================================================================

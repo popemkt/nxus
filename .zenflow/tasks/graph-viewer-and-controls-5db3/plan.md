@@ -1124,6 +1124,61 @@ TypeError: promisify is not a function
 - `packages/nxus-workbench/src/features/graph/index.ts` (removed LightweightGraphView and useLightweightGraph exports)
 
 **Verification**: All 150 tests pass
+
+### [x] Step: More fixes
+<!-- chat-id: c2cfdc67-9d35-4712-aa82-4e2b318f8756 -->
+
+**Issues Reported**:
+1. No force simulation like Obsidian (static layout)
+2. Edges use curved bezier paths (React Flow default) instead of straight lines
+3. Nodes clump together when hovering
+
+**Root Cause Analysis**:
+1. **Static Layout**: The Graph2D component was using `computeLayout()` which runs a fixed number of iterations (300) then stops, instead of continuous simulation
+2. **Curved Edges**: Using `getBezierPath()` from React Flow which creates curved bezier edges
+3. **Hover Clumping**: When `hoveredNodeId` changed, the entire `flowNodes` array was recreated (due to dependency), which triggered the layout `useEffect`, resetting all positions to initial values
+
+**Solution Implemented**:
+
+1. **Continuous Force Simulation (Obsidian-like)**:
+   - Changed `Graph2D.tsx` to use `startSimulation()` instead of `computeLayout()`
+   - Added `continuous: true` option to force layout
+   - Simulation now runs continuously, keeping nodes gently floating
+   - Tuned physics with Logseq-inspired parameters:
+     - `velocityDecay: 0.5` - Higher = more damped, settles quickly
+     - `alphaDecay: 0.02` - Lower = simulation cools slowly
+     - `alphaMin: 0.001` - Simulation runs longer
+     - `theta: 0.5` - Barnes-Hut approximation for performance
+   - Reduced X/Y force strength from 0.1 to 0.02 (lets links dominate)
+
+2. **Straight-Line Edges**:
+   - Created new `StraightEdge.tsx` component using `getStraightPath()` instead of `getBezierPath()`
+   - Minimalist styling: 1px stroke width (1.5px when highlighted)
+   - Small arrow markers (size 3)
+   - Added to `graphEdgeTypes` map
+   - Updated `convertToFlowEdges()` to use 'straight' type for solid edges
+
+3. **Fixed Hover-Induced Clumping**:
+   - Removed `hoveredNodeId` from `flowNodes` useMemo dependencies
+   - Added `previousDataRef` to track actual graph structure changes
+   - Only restart simulation when `data.nodes.length` or `data.edges.length` changes
+   - Update node hover state directly via `setNodes()` callback instead of recreating array
+   - Removed edge hover handlers (unnecessary complexity)
+
+4. **Default Style Changes**:
+   - Changed default `edgeStyle` from 'animated' to 'solid' for cleaner look
+   - Updated test to expect 'solid' default
+
+**Files Modified**:
+- `packages/nxus-workbench/src/features/graph/renderers/graph-2d/Graph2D.tsx`
+- `packages/nxus-workbench/src/features/graph/renderers/graph-2d/layouts/use-force-layout.ts`
+- `packages/nxus-workbench/src/features/graph/renderers/graph-2d/edges/StraightEdge.tsx` (new)
+- `packages/nxus-workbench/src/features/graph/renderers/graph-2d/edges/index.ts`
+- `packages/nxus-workbench/src/features/graph/store/defaults.ts`
+- `packages/nxus-workbench/src/features/graph/store/graph.store.test.ts`
+- `packages/nxus-workbench/src/features/graph/LightweightGraphView.tsx`
+
+**Verification**: All 150 tests pass
 ## Future Work (Out of Scope)
 
 ### Code Consolidation with nxus-core

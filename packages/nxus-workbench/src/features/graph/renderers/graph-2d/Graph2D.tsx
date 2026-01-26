@@ -3,6 +3,8 @@
  *
  * Main 2D graph renderer using React Flow.
  * Converts GraphData from the provider into an interactive visualization.
+ *
+ * Uses continuous force simulation like Obsidian for smooth, interactive graphs.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -29,12 +31,11 @@ import {
   useGraphStore,
   useGraphPhysics,
   useGraphDisplay,
-  useGraphView,
   useGraphLocalGraph,
 } from '../../store'
 import { graphNodeTypes, type GraphNodeData } from './nodes'
 import { graphEdgeTypes, type GraphEdgeData } from './edges'
-import { useGraphLayout } from './layouts'
+import { useForceLayout } from './layouts'
 
 // ============================================================================
 // Types
@@ -112,11 +113,14 @@ function convertToFlowEdges(
       labelVisibility: displayOptions.edgeLabels,
       isHovered: graphEdge.id === hoveredEdgeId,
     }
+    // Use straight edges for minimalist look like Obsidian
+    // 'animated' uses particles, 'solid' uses simple straight lines
+    const edgeType = displayOptions.edgeStyle === 'animated' ? 'animated' : 'straight'
     return {
       id: graphEdge.id,
       source: graphEdge.source,
       target: graphEdge.target,
-      type: displayOptions.edgeStyle === 'animated' ? ('animated' as const) : ('static' as const),
+      type: edgeType,
       data: edgeData as unknown as Record<string, unknown>,
     }
   })
@@ -138,30 +142,29 @@ function Graph2DInner({
   // Store hooks
   const physics = useGraphPhysics()
   const display = useGraphDisplay()
-  const view = useGraphView()
   const localGraph = useGraphLocalGraph()
   const setLocalGraph = useGraphStore((s) => s.setLocalGraph)
 
-  // Local state
+  // Local state - use refs to avoid triggering re-renders that reset layout
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
-  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const isInitialLayoutDone = useRef(false)
+  const previousDataRef = useRef<{ nodeCount: number; edgeCount: number }>({ nodeCount: 0, edgeCount: 0 })
 
   // Create node map for quick lookups
   const nodeMap = useMemo(() => {
     return new Map(data.nodes.map((n) => [n.id, n]))
   }, [data.nodes])
 
-  // Convert GraphData to React Flow format
+  // Convert GraphData to React Flow format - exclude hover state to prevent re-layout
   const flowNodes = useMemo(
     () =>
       convertToFlowNodes(
         data.nodes,
         { nodeSize: display.nodeSize, nodeLabels: display.nodeLabels },
-        hoveredNodeId,
+        null, // Don't include hover in initial conversion
         selectedNodeId ?? null,
       ),
-    [data.nodes, display.nodeSize, display.nodeLabels, hoveredNodeId, selectedNodeId],
+    [data.nodes, display.nodeSize, display.nodeLabels, selectedNodeId],
   )
 
   const flowEdges = useMemo(
@@ -169,52 +172,57 @@ function Graph2DInner({
       convertToFlowEdges(
         data.edges,
         { edgeStyle: display.edgeStyle, edgeLabels: display.edgeLabels },
-        hoveredEdgeId,
+        null, // Don't include hover in initial conversion
       ),
-    [data.edges, display.edgeStyle, display.edgeLabels, hoveredEdgeId],
+    [data.edges, display.edgeStyle, display.edgeLabels],
   )
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  // Layout hook
-  const layout = useGraphLayout({
-    layout: view.layout,
+  // Force layout hook with continuous simulation
+  const layout = useForceLayout({
     physics,
+    continuous: true, // Enable continuous simulation like Obsidian
     centerX: 400,
     centerY: 300,
   })
 
-  // Update nodes/edges when data changes
+  // Start continuous simulation when data changes (not on hover!)
   useEffect(() => {
-    setNodes(flowNodes)
-    setEdges(flowEdges)
-  }, [flowNodes, flowEdges, setNodes, setEdges])
+    const currentNodeCount = data.nodes.length
+    const currentEdgeCount = data.edges.length
+    const prev = previousDataRef.current
 
-  // Apply layout when data changes
-  useEffect(() => {
-    if (nodes.length === 0) return
+    // Only restart simulation if actual graph structure changed
+    if (currentNodeCount !== prev.nodeCount || currentEdgeCount !== prev.edgeCount) {
+      previousDataRef.current = { nodeCount: currentNodeCount, edgeCount: currentEdgeCount }
 
-    // Compute layout positions
-    const { nodes: positionedNodes } = layout.computeLayout(nodes, edges)
-    setNodes(positionedNodes)
+      if (flowNodes.length > 0) {
+        // Start continuous simulation
+        layout.startSimulation(flowNodes, flowEdges)
 
-    // Fit view after initial layout
-    if (!isInitialLayoutDone.current) {
-      isInitialLayoutDone.current = true
-      setTimeout(() => {
-        reactFlowInstance.fitView({ padding: 0.2, duration: 300 })
-      }, 100)
+        // Fit view after initial layout settles
+        if (!isInitialLayoutDone.current) {
+          isInitialLayoutDone.current = true
+          setTimeout(() => {
+            reactFlowInstance.fitView({ padding: 0.2, duration: 300 })
+          }, 500) // Wait for simulation to settle a bit
+        }
+      }
     }
-  }, [data.nodes.length, data.edges.length]) // Only recompute when graph structure changes
+  }, [data.nodes.length, data.edges.length, flowNodes, flowEdges, layout, reactFlowInstance])
+
+  // Update edges when they change (without affecting simulation)
+  useEffect(() => {
+    setEdges(flowEdges)
+  }, [flowEdges, setEdges])
 
   // Update physics when they change (for force layout)
   useEffect(() => {
-    if (view.layout === 'force' && layout.updatePhysics) {
-      layout.updatePhysics(physics)
-    }
-  }, [physics, view.layout, layout])
+    layout.updatePhysics(physics)
+  }, [physics, layout])
 
   // Handle node click
   const handleNodeClick: NodeMouseHandler = useCallback(
@@ -245,31 +253,45 @@ function Graph2DInner({
     [nodeMap, localGraph.enabled, setLocalGraph, onNodeDoubleClick],
   )
 
-  // Handle node hover
+  // Handle node hover - update node data directly without triggering full re-render
   const handleNodeMouseEnter: NodeMouseHandler = useCallback((event, node) => {
     setHoveredNodeId(node.id)
-  }, [])
+    // Update just the hovered node's data without changing positions
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === node.id) {
+          return {
+            ...n,
+            data: { ...n.data, isHovered: true },
+          }
+        }
+        return n
+      }),
+    )
+  }, [setNodes])
 
   const handleNodeMouseLeave: NodeMouseHandler = useCallback(() => {
+    const prevHoveredId = hoveredNodeId
     setHoveredNodeId(null)
-  }, [])
-
-  // Handle edge hover
-  const handleEdgeMouseEnter = useCallback(
-    (event: React.MouseEvent, edge: Edge) => {
-      setHoveredEdgeId(edge.id)
-    },
-    [],
-  )
-
-  const handleEdgeMouseLeave = useCallback(() => {
-    setHoveredEdgeId(null)
-  }, [])
+    // Update just the previously hovered node's data
+    if (prevHoveredId) {
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === prevHoveredId) {
+            return {
+              ...n,
+              data: { ...n.data, isHovered: false },
+            }
+          }
+          return n
+        }),
+      )
+    }
+  }, [hoveredNodeId, setNodes])
 
   // Handle pane click (background)
   const handlePaneClick = useCallback(() => {
     setHoveredNodeId(null)
-    setHoveredEdgeId(null)
     if (onBackgroundClick) {
       onBackgroundClick()
     }
@@ -322,8 +344,6 @@ function Graph2DInner({
       onNodeDoubleClick={handleNodeDoubleClick}
       onNodeMouseEnter={handleNodeMouseEnter}
       onNodeMouseLeave={handleNodeMouseLeave}
-      onEdgeMouseEnter={handleEdgeMouseEnter}
-      onEdgeMouseLeave={handleEdgeMouseLeave}
       onPaneClick={handlePaneClick}
       connectionMode={ConnectionMode.Loose}
       fitView
