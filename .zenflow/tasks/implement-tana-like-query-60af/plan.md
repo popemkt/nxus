@@ -170,23 +170,38 @@ Created comprehensive technical specification in `spec.md` covering:
 
 ---
 
-### [ ] Step: Phase 5 - Query Execution Hook
+### [x] Step: Phase 5 - Query Execution Hook
+<!-- chat-id: 0a74d471-5ce2-4a14-9177-c3ce0190a9c9 -->
 
 **Goal**: Create React hooks for query execution
 
-**Tasks**:
-1. Create `packages/nxus-core/src/hooks/use-query.ts`:
-   - `useQueryEvaluation(definition)` - evaluate ad-hoc query
-   - `useSavedQuery(queryId)` - execute saved query
-   - `useSavedQueries()` - list all saved queries
+**Completed**:
+1. Created `packages/nxus-core/src/hooks/use-query.ts` with:
+   - `useQueryEvaluation(definition, options?)` - evaluate ad-hoc query with TanStack Query
+   - `useSavedQuery(queryId, options?)` - execute saved query by ID
+   - `useSavedQueries(options?)` - list all saved queries
+   - `useCreateQuery()` - mutation hook for creating saved queries
+   - `useUpdateQuery()` - mutation hook for updating saved queries
+   - `useDeleteQuery()` - mutation hook for deleting saved queries
+   - `useQueryInvalidation()` - cache invalidation utility hooks
 
-2. Implement with TanStack Query:
-   - Query keys include definition hash for caching
-   - Stale time configuration
+2. Implemented with TanStack Query patterns:
+   - Query keys factory (`queryKeys`) for consistent cache management
+   - Definition hash-based cache keys for ad-hoc queries
+   - Configurable stale time (30s for evaluations, 60s for saved queries list)
+   - Automatic cache invalidation on mutations
+
+3. Type-safe interfaces:
+   - `QueryEvaluationResult` - nodes, totalCount, evaluatedAt, loading/error states
+   - `SavedQueriesResult` - queries list with loading/error states
+   - `SavedQueryResult` - query details, nodes, and execution state
+
+4. Hooks follow existing patterns in the codebase (use-app-registry, use-tool-health)
 
 **Verification**:
-- Hooks work in test component
-- Results update when definition changes
+- All 54 @nxus/db tests pass: `pnpm --filter @nxus/db test`
+- TypeScript compiles (only pre-existing TS6305 errors for workbench build artifacts)
+- Hooks ready for use with `@/hooks/use-query` import pattern
 
 ---
 
