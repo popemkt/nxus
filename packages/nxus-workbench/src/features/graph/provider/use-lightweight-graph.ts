@@ -14,10 +14,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-import {
-  getGraphStructureServerFn,
-  type GraphStructureResult,
-} from '../../../server/index.js'
+// Import types from the client-safe types file (no server dependencies)
+import type { GraphStructureResult } from '../../../server/graph.types.js'
+// Import server function directly from .server.ts file (TanStack handles code splitting)
+import { getGraphStructureServerFn } from '../../../server/graph.server.js'
 import type { GraphData, GraphNode, GraphEdge } from './types.js'
 import { getSupertagColor, computeGraphStats } from './utils/index.js'
 

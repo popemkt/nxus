@@ -1096,6 +1096,34 @@ Document the implementation.
 
 ---
 
+
+### [x] Step: Bug fixes
+<!-- chat-id: 131aece5-9fa5-4e3a-9dbf-a3c6a325f10c -->
+
+**Issue**: `better-sqlite3` module was being bundled into the client bundle, causing a runtime error when navigating to `/nodes`.
+
+```
+TypeError: promisify is not a function
+    at better-sqlite3/lib/methods/backup.js
+```
+
+**Root Cause**: The `use-lightweight-graph.ts` file imported `getGraphStructureServerFn` from `graph.server.ts`, which imports from `@nxus/db/server`. When this module was re-exported through the barrel files (`provider/index.ts` → `features/graph/index.ts`), the entire import chain was being bundled into the client code, including the server-only `better-sqlite3` dependency.
+
+**Solution**:
+1. Created `server/graph.types.ts` - A client-safe types file containing only type definitions (no runtime code)
+2. Updated `graph.server.ts` to import and re-export types from the new types file
+3. Removed `useLightweightGraph` and `LightweightGraphView` from barrel exports to prevent client-side bundling of server code
+4. Added comments documenting how to import these components directly when needed
+
+**Files Modified**:
+- `packages/nxus-workbench/src/server/graph.types.ts` (new file)
+- `packages/nxus-workbench/src/server/graph.server.ts` (re-export types from graph.types.ts)
+- `packages/nxus-workbench/src/server/index.ts` (export types separately)
+- `packages/nxus-workbench/src/features/graph/provider/use-lightweight-graph.ts` (import from graph.types.ts)
+- `packages/nxus-workbench/src/features/graph/provider/index.ts` (removed useLightweightGraph export)
+- `packages/nxus-workbench/src/features/graph/index.ts` (removed LightweightGraphView and useLightweightGraph exports)
+
+**Verification**: All 150 tests pass
 ## Future Work (Out of Scope)
 
 ### Code Consolidation with nxus-core

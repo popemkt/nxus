@@ -24,67 +24,21 @@ import {
   type AssembledNode,
 } from '@nxus/db/server'
 
-// ============================================================================
-// Result Types
-// ============================================================================
+// Re-export types from the client-safe types file
+export type {
+  LightweightGraphNode,
+  LightweightGraphEdge,
+  GraphStructureResult,
+  RecursiveBacklinksResult,
+} from './graph.types.js'
 
-/**
- * Lightweight node structure for graph visualization.
- * Contains only essential data for rendering - no full property assembly.
- */
-export interface LightweightGraphNode {
-  /** Node ID */
-  id: string
-  /** Display label (content or systemId) */
-  label: string
-  /** System ID if present */
-  systemId: string | null
-  /** Primary supertag ID */
-  supertagId: string | null
-  /** Primary supertag name */
-  supertagName: string | null
-  /** Owner ID for hierarchy */
-  ownerId: string | null
-}
-
-/**
- * Lightweight edge structure for graph visualization.
- */
-export interface LightweightGraphEdge {
-  /** Source node ID */
-  source: string
-  /** Target node ID */
-  target: string
-  /** Edge type: 'dependency' | 'reference' | 'hierarchy' | 'backlink' */
-  type: 'dependency' | 'reference' | 'hierarchy' | 'backlink'
-}
-
-/**
- * Complete lightweight graph structure result.
- */
-export interface GraphStructureResult {
-  success: true
-  nodes: LightweightGraphNode[]
-  edges: LightweightGraphEdge[]
-  /** Map of supertag ID to name for color legend */
-  supertagNames: Record<string, string>
-}
-
-/**
- * Recursive backlinks result with depth information.
- */
-export interface RecursiveBacklinksResult {
-  success: true
-  /** Backlinks organized by depth level */
-  backlinks: Array<{
-    nodeId: string
-    label: string
-    supertagId: string | null
-    depth: number
-  }>
-  /** Total count of unique backlinks */
-  totalCount: number
-}
+// Import types for use in this file
+import type {
+  LightweightGraphNode,
+  LightweightGraphEdge,
+  GraphStructureResult,
+  RecursiveBacklinksResult,
+} from './graph.types.js'
 
 // ============================================================================
 // Helper Functions
