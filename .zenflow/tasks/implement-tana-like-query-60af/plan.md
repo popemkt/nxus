@@ -32,7 +32,7 @@ Created comprehensive technical specification in `spec.md` covering:
 
 ---
 
-### [ ] Step: Phase 1 - Core Query Types & Schema
+### [x] Step: Phase 1 - Core Query Types & Schema
 
 **Goal**: Add query data model to `@nxus/db`
 

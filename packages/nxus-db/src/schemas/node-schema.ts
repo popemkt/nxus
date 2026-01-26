@@ -92,6 +92,9 @@ export const SYSTEM_SUPERTAGS = {
   COMMAND: 'supertag:command',
   WORKSPACE: 'supertag:workspace',
   INBOX: 'supertag:inbox',
+
+  // Query supertag - for saved queries (Tana-like reactive queries)
+  QUERY: 'supertag:query',
 } as const
 
 export const SYSTEM_FIELDS = {
@@ -140,6 +143,13 @@ export const SYSTEM_FIELDS = {
   STATUS: 'field:status',
   NOTES: 'field:notes',
   TITLE: 'field:title',
+
+  // Query-specific fields (for saved queries with supertag:query)
+  QUERY_DEFINITION: 'field:query_definition', // JSON query definition
+  QUERY_SORT: 'field:query_sort', // Sort configuration
+  QUERY_LIMIT: 'field:query_limit', // Max results
+  QUERY_RESULT_CACHE: 'field:query_result_cache', // Cached node IDs (optional)
+  QUERY_EVALUATED_AT: 'field:query_evaluated_at', // Last evaluation timestamp
 } as const
 
 /**

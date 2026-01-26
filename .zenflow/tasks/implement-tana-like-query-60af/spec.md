@@ -702,22 +702,15 @@ pnpm --filter @nxus/workbench test -- --grep "query.server"
 
 ---
 
-## 11. Open Questions (Need User Input)
+## 11. Design Decisions (Confirmed)
 
-1. **Saved Queries Storage**: Should saved queries be stored as nodes (allowing them to appear in search results) or in a separate mechanism?
-   - **Recommendation**: Store as nodes with `supertag:query` for consistency with Tana's "everything is a node" philosophy.
+1. **Saved Queries Storage**: ✅ Store as nodes with `supertag:query` for consistency with "everything is a node" philosophy.
 
-2. **Query Results Limit**: What should be the default and maximum limit for query results?
-   - **Recommendation**: Default 100, max 500 (Tana uses 2500 but we can start conservative)
+2. **Query Results Limit**: ✅ Default limit of 500. No hard max for now - will revisit if performance issues arise.
 
-3. **Gallery Backward Compatibility**: Should we keep the legacy `getAllAppsServerFn` or fully migrate to query-based?
-   - **Recommendation**: Keep legacy as fallback, use feature flag for migration
+3. **Gallery Backward Compatibility**: Keep legacy as fallback, use feature flag for migration.
 
-4. **Query Builder Location**: Where should the advanced query builder appear?
-   - **Option A**: Floating panel from gallery HUD (like tags panel)
-   - **Option B**: Separate route `/queries`
-   - **Option C**: Both
-   - **Recommendation**: Option A for MVP, add Option B later
+4. **Query Builder Location**: ✅ **New sidebar item** next to the graph view option. This gives queries first-class status in the UI navigation.
 
 ---
 
