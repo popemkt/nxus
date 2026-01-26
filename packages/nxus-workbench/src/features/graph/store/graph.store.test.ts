@@ -37,7 +37,7 @@ describe('Graph Store', () => {
       expect(state.display.nodeLabels).toBe('hover')
       expect(state.display.edgeLabels).toBe('never')
       expect(state.display.nodeSize).toBe('connections')
-      expect(state.display.edgeStyle).toBe('animated')
+      expect(state.display.edgeStyle).toBe('solid') // Default to solid for minimalist look
     })
 
     it('should initialize with default filter values', () => {

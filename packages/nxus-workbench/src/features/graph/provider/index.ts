@@ -34,17 +34,10 @@ export {
   LARGE_GRAPH_THRESHOLD,
 } from './use-graph-data.js'
 
-// Lightweight graph hook (for large graphs 500+ nodes)
-export {
-  useLightweightGraph,
-  transformLightweightToGraphData,
-  shouldUseLightweightFetch,
-} from './use-lightweight-graph.js'
-
-export type {
-  LightweightGraphOptions,
-  UseLightweightGraphResult,
-} from './use-lightweight-graph.js'
+// NOTE: useLightweightGraph is NOT exported from this barrel file to avoid
+// bundling server dependencies (better-sqlite3) into client code.
+// Import directly when needed:
+//   import { useLightweightGraph } from './use-lightweight-graph.js'
 
 // Edge extractors
 export {

@@ -6,6 +6,7 @@
 
 export { AnimatedEdge } from './AnimatedEdge'
 export { StaticEdge } from './StaticEdge'
+export { StraightEdge } from './StraightEdge'
 
 // Types
 export type { GraphEdgeData, GraphEdgeProps } from './types'
@@ -25,6 +26,7 @@ export {
 import type { EdgeTypes } from '@xyflow/react'
 import { AnimatedEdge } from './AnimatedEdge'
 import { StaticEdge } from './StaticEdge'
+import { StraightEdge } from './StraightEdge'
 
 /**
  * Map of custom edge types for React Flow.
@@ -40,9 +42,10 @@ import { StaticEdge } from './StaticEdge'
 export const graphEdgeTypes = {
   animated: AnimatedEdge,
   static: StaticEdge,
+  straight: StraightEdge,
 } as EdgeTypes
 
 /**
  * Available edge type identifiers.
  */
-export type GraphEdgeType = 'animated' | 'static'
+export type GraphEdgeType = 'animated' | 'static' | 'straight'

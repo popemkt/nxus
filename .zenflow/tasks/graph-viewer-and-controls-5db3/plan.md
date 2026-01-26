@@ -1096,6 +1096,148 @@ Document the implementation.
 
 ---
 
+
+### [x] Step: Bug fixes
+<!-- chat-id: 131aece5-9fa5-4e3a-9dbf-a3c6a325f10c -->
+
+**Issue**: `better-sqlite3` module was being bundled into the client bundle, causing a runtime error when navigating to `/nodes`.
+
+```
+TypeError: promisify is not a function
+    at better-sqlite3/lib/methods/backup.js
+```
+
+**Root Cause**: The `use-lightweight-graph.ts` file imported `getGraphStructureServerFn` from `graph.server.ts`, which imports from `@nxus/db/server`. When this module was re-exported through the barrel files (`provider/index.ts` → `features/graph/index.ts`), the entire import chain was being bundled into the client code, including the server-only `better-sqlite3` dependency.
+
+**Solution**:
+1. Created `server/graph.types.ts` - A client-safe types file containing only type definitions (no runtime code)
+2. Updated `graph.server.ts` to import and re-export types from the new types file
+3. Removed `useLightweightGraph` and `LightweightGraphView` from barrel exports to prevent client-side bundling of server code
+4. Added comments documenting how to import these components directly when needed
+
+**Files Modified**:
+- `packages/nxus-workbench/src/server/graph.types.ts` (new file)
+- `packages/nxus-workbench/src/server/graph.server.ts` (re-export types from graph.types.ts)
+- `packages/nxus-workbench/src/server/index.ts` (export types separately)
+- `packages/nxus-workbench/src/features/graph/provider/use-lightweight-graph.ts` (import from graph.types.ts)
+- `packages/nxus-workbench/src/features/graph/provider/index.ts` (removed useLightweightGraph export)
+- `packages/nxus-workbench/src/features/graph/index.ts` (removed LightweightGraphView and useLightweightGraph exports)
+
+**Verification**: All 150 tests pass
+
+
+### [x] Step: Bug fix
+<!-- chat-id: 34829515-a598-4bcc-867c-4933049b5846 -->
+
+**Issue**: Nodes disappear after the force simulation settles. When resizing the viewport/window, nodes briefly appear and then disappear again.
+
+**Root Cause**: In React Flow v11.11+, nodes maintain internal `measured` properties (`width`/`height`) that React Flow needs to render nodes properly. The force simulation's `tick` handler was creating new node objects from the **initial** `inputNodes` passed to `startSimulation()`, which didn't have the `measured` dimensions that React Flow adds after initial render. When the simulation called `setNodes(updatedNodes)`, it replaced the nodes with copies that lacked these measured dimensions, causing React Flow to lose track of node bounds.
+
+Reference: [xyflow/xyflow#4287](https://github.com/xyflow/xyflow/issues/4287)
+
+**Solution**:
+Changed the simulation `tick` handler to use the callback form of `setNodes`:
+```typescript
+// Before (broken):
+const updatedNodes = inputNodes.map((node) => { ... })
+setNodes(updatedNodes)
+
+// After (fixed):
+setNodes((currentNodes) =>
+  currentNodes.map((node) => {
+    const forceNode = forceNodeMap.get(node.id)
+    if (!forceNode) return node
+    // Only update position, preserve all other properties including 'measured'
+    return { ...node, position: newPosition }
+  })
+)
+```
+
+This ensures:
+1. We always work with the **current** nodes from React Flow state (which have `measured` dimensions)
+2. We preserve all node properties including internal React Flow state
+3. We only update nodes whose positions actually changed (minor optimization)
+
+**Files Modified**:
+- `packages/nxus-workbench/src/features/graph/renderers/graph-2d/layouts/use-force-layout.ts` (lines 388-420)
+
+**Verification**: All 150 tests pass
+
+---
+
+
+### [x] Step: After consideration
+<!-- chat-id: 93d467d0-93be-4671-8720-59787d0168f5 -->
+
+Would you still say react flow is a good fit for this usecase, as we have more and more nodes in the future
+Next, what would you do to actually add more QoL to this
+Last, are these all well architected and I can easily add more types of diagrams in the future?
+
+**Analysis Completed**:
+
+1. **React Flow Scalability Assessment**:
+   - ✅ Good fit for 1,000-2,000 nodes (Obsidian-like workloads)
+   - DOM-based with virtualization handles typical knowledge graphs well
+   - Migration path exists: `@xyflow/react-canvas` (WebGL), clustering, or swap to Sigma.js for 5k+ nodes
+   - Current architecture's pluggable renderer design allows future swaps without provider changes
+
+2. **Recommended QoL Improvements** (prioritized):
+   - **High**: Search/filter UI, right-click context menu, keyboard navigation (Tab/Enter/Escape), persistent layout positions
+   - **Medium**: Edge labels on hover, multi-select with bulk operations, graph history/breadcrumbs
+   - **Lower**: PNG/SVG export, user-defined node grouping/clustering
+
+3. **Architecture Extensibility**:
+   - ✅ Well-designed for adding new diagram types
+   - Renderer-agnostic `GraphData` means any new renderer just consumes the same data
+   - Pluggable edge extractors allow new relationship types without core changes
+   - Suggested improvement: Add renderer registry pattern for cleaner switching
+
+---
+
+### [x] Step: Comprehensive Documentation
+
+Created comprehensive documentation for the Graph Viewer feature.
+
+**Documentation Created** in project (in `packages/nxus-workbench/src/features/graph/docs/`):
+
+1. **README.md** - Quick start, feature overview, architecture diagram, file structure
+2. **api-reference.md** - Complete API documentation for all exports:
+   - Main components (GraphView, LightweightGraphView)
+   - Data provider (types, hooks, extractors, utilities)
+   - State management (store hooks, types, defaults)
+   - Controls (GraphControls, RendererSwitcher, GraphLegend, sections)
+   - 2D renderer (Graph2D, nodes, edges, layouts)
+   - 3D renderer (Graph3D, lazy loading, node/edge rendering)
+
+3. **user-guide.md** - End-user documentation:
+   - Getting started
+   - 2D/3D view switching
+   - Navigation controls
+   - Control panel usage
+   - Local graph mode
+   - Supertag legend filtering
+
+4. **developer-guide.md** - Developer documentation:
+   - Architecture overview and design decisions
+   - Data flow explanation
+   - How to add new features (edge types, store options, control sections)
+   - How to create custom renderers
+   - Testing guidelines
+   - Best practices and patterns
+
+5. **performance-guide.md** - Performance optimization:
+   - Node count thresholds and recommendations
+   - Current optimizations (lazy loading, lightweight endpoint, caching, etc.)
+   - Scaling guidelines for different graph sizes
+   - Troubleshooting common issues
+   - Future optimization roadmap
+   - Configuration recommendations
+
+**Also Updated**:
+- `packages/nxus-workbench/README.md` - Added Graph Viewer section with quick start and feature overview
+
+---
+
 ## Future Work (Out of Scope)
 
 ### Code Consolidation with nxus-core

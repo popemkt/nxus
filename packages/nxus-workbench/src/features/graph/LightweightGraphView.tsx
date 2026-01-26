@@ -17,12 +17,15 @@ import { Graph2D } from './renderers/graph-2d'
 import { Graph3D } from './renderers/graph-3d'
 import { GraphControls, RendererSwitcher, GraphLegend } from './controls'
 import {
-  useLightweightGraph,
   useLocalGraph,
   type GraphData,
   type GraphNode,
-  type LightweightGraphOptions,
 } from './provider'
+// Import directly to avoid bundling server code in client
+import {
+  useLightweightGraph,
+  type LightweightGraphOptions,
+} from './provider/use-lightweight-graph'
 import {
   useGraphFilter,
   useGraphLocalGraph,

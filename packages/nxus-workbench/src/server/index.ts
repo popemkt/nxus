@@ -32,11 +32,16 @@ export {
   getGraphStructureServerFn,
   getBacklinksWithDepthServerFn,
   getEdgesBetweenNodesServerFn,
-  type LightweightGraphNode,
-  type LightweightGraphEdge,
-  type GraphStructureResult,
-  type RecursiveBacklinksResult,
 } from './graph.server.js'
+
+// Graph types (client-safe, no server dependencies)
+export type {
+  LightweightGraphNode,
+  LightweightGraphEdge,
+  GraphStructureResult,
+  RecursiveBacklinksResult,
+  EdgesBetweenNodesResult,
+} from './graph.types.js'
 
 // Adapters for legacy type conversion
 export {
