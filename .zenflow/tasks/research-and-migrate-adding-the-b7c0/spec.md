@@ -491,11 +491,25 @@ const filtered = apps.filter(app => app.types.includes(selectedType))
 - On reads: Can read from either (supertags preferred)
 - This ensures both systems stay consistent during transition
 
-### 13.5 Recommended UI Display (Pre-emptive Answer)
+### 13.5 User Decisions (Resolved)
 
-Based on reviewer feedback, recommended approach for **Primary Type Display**:
-- Show primary type badge prominently
-- Show "+N" indicator or smaller icons for additional types
-- On hover/click: Show full list of types
+**1. Primary Type Display**: **Option B - Show all type badges side by side**
+- Display all type badges for each item
+- No need for "+N" indicators or hover states
+- Clear visibility of all item types at a glance
 
-This balances visual clarity with information density.
+**2. Type Filtering**: **Option C - Both options (advanced filter toggle)**
+- Default: ANY selected types (OR logic)
+- Advanced toggle: ALL selected types (AND logic)
+- Provides flexibility for different use cases
+
+**3. Migration Scope**: **Option C - Full migration to node-based supertags as source of truth**
+- Supertags become the authoritative source for item types
+- `item_types` junction table synced from supertags
+- Legacy `items.type` field kept for backward compatibility only
+- This simplifies long-term architecture
+
+**4. Manifest Support**: **Yes - Support `types: []` array in manifests**
+- Change from `type: "tool"` to `types: ["tool", "repo"]`
+- Migration approach: Export current items to JSON, update format
+- Backward compatibility: Still accept single `type` field, convert to `types: [type]`

@@ -35,27 +35,30 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Implementation Steps
 
-### [ ] Step 1: User Clarification - Resolve Open Questions
+### [x] Step 1: User Clarification - Resolve Open Questions
 <!-- chat-id: e614631d-8a6c-4d89-9e81-01e21107721a -->
 
-Before implementation, get user input on:
+**Completed**: User provided decisions on all open questions:
 
-1. **Primary Type Display**: How to show multi-type items in UI?
-   - A: Primary badge + count (e.g., "Tool +1")
-   - B: All type badges
-   - C: Composite label (e.g., "Tool & Repository")
+1. **Primary Type Display**: **B - Show all type badges side by side**
+   - Display all type badges for each item
+   - Clear visibility of all item types at a glance
 
-2. **Type Filtering**: When filtering by type, show items with:
-   - A: ANY selected types
-   - B: ALL selected types
-   - C: Both options (advanced filter)
+2. **Type Filtering**: **C - Both options (advanced filter toggle)**
+   - Default: ANY selected types (OR logic)
+   - Advanced toggle: ALL selected types (AND logic)
 
-3. **Migration Scope**: Should migration include:
-   - A: Just junction table (minimum)
-   - B: Also create supertags
-   - C: Full node-based migration
+3. **Migration Scope**: **C - Full node-based migration**
+   - Supertags become the authoritative source of truth
+   - `item_types` table synced from supertags
+   - Legacy `items.type` kept for backward compatibility only
 
-4. **Manifest Support**: Should `manifest.json` support `types: []` array?
+4. **Manifest Support**: **Yes - Support `types: []` array**
+   - Change from `type: "tool"` to `types: ["tool", "repo"]`
+   - Migration: Export current items to JSON, update format
+   - Backward compat: Accept single `type`, convert to `types: [type]`
+
+Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
