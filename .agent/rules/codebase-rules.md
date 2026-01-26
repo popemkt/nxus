@@ -78,7 +78,14 @@ import { someServerFn } from '@/services/xyz/xyz.server'
 ### Why This Matters
 Without dynamic imports, Vite follows the import chain at build time:
 `@nxus/workbench/server` → `@nxus/db/server` → `better-sqlite3` → **client bundle breaks**
+
+**NOTE**: Simple re-exports from `.server.ts` files DON'T work. Even with:
+```typescript
+// ❌ This STILL bundles better-sqlite3 into client!
+// File: xyz.server.ts
+export { someServerFn } from '@nxus/workbench/server'
 ```
+Vite follows top-level imports at build time regardless of the `.server.ts` suffix. Dynamic imports inside handlers are the only solution.
 
 ## Styling
 - Use `cn()` for className merging, never string concatenation
