@@ -36,54 +36,59 @@ export const xyzServerFn = createServerFn({ method: 'GET' }).handler(async () =>
 ```
 
 ### External Package Pattern (CRITICAL)
-When importing server functions from **external packages** (e.g., `@nxus/workbench/server`, `@nxus/db/server`), you MUST use dynamic imports to prevent Node.js-only code from being bundled into the client.
+When using database functions from `@nxus/db/server`, you MUST use dynamic imports to prevent Node.js-only code (better-sqlite3) from being bundled into the client.
+
+**Architecture:**
+- `@nxus/db`: Pure types and schemas (client-safe)
+- `@nxus/db/server`: Pure functions requiring Node.js (evaluateQuery, createNode, etc.)
+- `nxus-core`: TanStack `createServerFn` wrappers with dynamic imports
 
 ```typescript
-// ❌ BAD: Top-level import from external package
-import { someServerFn } from '@nxus/workbench/server'
+// ❌ BAD: Top-level import from @nxus/db/server
+import { evaluateQuery } from '@nxus/db/server'
 // This bundles better-sqlite3 into client code!
 
-// ✅ GOOD: Create local wrapper with dynamic import
-// File: src/services/xyz/xyz.server.ts
+// ✅ GOOD: Create local server function with dynamic import
+// File: src/services/query/query.server.ts
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
-export const someServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ /* ... */ }))
+export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ definition: z.any(), limit: z.number().optional() }))
   .handler(async (ctx) => {
     // Dynamic import INSIDE handler - only runs on server
-    const { someServerFn: fn } = await import('@nxus/workbench/server')
-    return fn({ data: ctx.data })
+    const { initDatabaseWithBootstrap, evaluateQuery } = await import('@nxus/db/server')
+    const db = await initDatabaseWithBootstrap()
+    return evaluateQuery(db, ctx.data.definition)
   })
 ```
 
 Then import from the local wrapper:
 ```typescript
 // In hooks or components
-import { someServerFn } from '@/services/xyz/xyz.server'
+import { evaluateQueryServerFn } from '@/services/query/query.server'
 ```
 
 ### When to Use Each Pattern
 
 | Scenario | Pattern |
 |----------|---------|
-| Server function in same app's `.server.ts` file | Basic pattern (top-level imports OK) |
-| Server function from `@nxus/workbench/server` | **Dynamic import wrapper required** |
-| Server function from `@nxus/db/server` | **Dynamic import wrapper required** |
+| Server function in same app's `.server.ts` file | Basic pattern (top-level imports OK within handler) |
+| Pure functions from `@nxus/db/server` | **Dynamic import inside handler required** |
 | Type-only imports from external packages | Safe (use `import type`) |
 
 ### Existing Wrappers
-- `src/services/query/query.server.ts` - Wraps query and node mutation functions from `@nxus/workbench/server`
+- `src/services/query/query.server.ts` - TanStack server functions wrapping `@nxus/db/server` pure functions
 
 ### Why This Matters
 Without dynamic imports, Vite follows the import chain at build time:
-`@nxus/workbench/server` → `@nxus/db/server` → `better-sqlite3` → **client bundle breaks**
+`@nxus/db/server` → `better-sqlite3` → **client bundle breaks**
 
 **NOTE**: Simple re-exports from `.server.ts` files DON'T work. Even with:
 ```typescript
 // ❌ This STILL bundles better-sqlite3 into client!
 // File: xyz.server.ts
-export { someServerFn } from '@nxus/workbench/server'
+export { evaluateQuery } from '@nxus/db/server'
 ```
 Vite follows top-level imports at build time regardless of the `.server.ts` suffix. Dynamic imports inside handlers are the only solution.
 
