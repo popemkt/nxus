@@ -1194,6 +1194,47 @@ Last, are these all well architected and I can easily add more types of diagrams
 
 ---
 
+### [x] Step: Comprehensive Documentation
+
+Created comprehensive documentation for the Graph Viewer feature.
+
+**Documentation Created** (in `.zenflow/tasks/graph-viewer-and-controls-5db3/docs/`):
+
+1. **README.md** - Quick start, feature overview, architecture diagram, file structure
+2. **api-reference.md** - Complete API documentation for all exports:
+   - Main components (GraphView, LightweightGraphView)
+   - Data provider (types, hooks, extractors, utilities)
+   - State management (store hooks, types, defaults)
+   - Controls (GraphControls, RendererSwitcher, GraphLegend, sections)
+   - 2D renderer (Graph2D, nodes, edges, layouts)
+   - 3D renderer (Graph3D, lazy loading, node/edge rendering)
+
+3. **user-guide.md** - End-user documentation:
+   - Getting started
+   - 2D/3D view switching
+   - Navigation controls
+   - Control panel usage
+   - Local graph mode
+   - Supertag legend filtering
+
+4. **developer-guide.md** - Developer documentation:
+   - Architecture overview and design decisions
+   - Data flow explanation
+   - How to add new features (edge types, store options, control sections)
+   - How to create custom renderers
+   - Testing guidelines
+   - Best practices and patterns
+
+5. **performance-guide.md** - Performance optimization:
+   - Node count thresholds and recommendations
+   - Current optimizations (lazy loading, lightweight endpoint, caching, etc.)
+   - Scaling guidelines for different graph sizes
+   - Troubleshooting common issues
+   - Future optimization roadmap
+   - Configuration recommendations
+
+---
+
 ## Future Work (Out of Scope)
 
 ### Code Consolidation with nxus-core
