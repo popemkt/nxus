@@ -16,15 +16,18 @@ import {
   SYSTEM_SUPERTAGS,
   items,
   itemTags,
+  itemTypes,
   type ItemMetadata,
   addPropertyValue,
   clearProperty,
   findNodeBySystemId,
   getSystemNode,
   setProperty,
+  and,
+  eq,
 } from '@nxus/db/server'
+import type { ItemType } from '@nxus/db'
 import { createServerFn } from '@tanstack/react-start'
-import { eq } from '@nxus/db/server'
 import { z } from 'zod'
 
 // ============================================================================
@@ -230,5 +233,347 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
 
     saveDatabase()
     console.log('[updateAppCategoryServerFn] Success:', appId)
+    return { success: true as const }
+  })
+
+// ============================================================================
+// Item Type Mutations - Multi-type support
+// ============================================================================
+
+const ItemTypeSchema = z.enum(['html', 'typescript', 'remote-repo', 'tool'])
+
+/**
+ * Type entry for item types
+ */
+interface TypeEntry {
+  type: ItemType
+  isPrimary: boolean
+  order: number
+}
+
+/**
+ * Set all types for an item (replace existing types)
+ * Also updates items.type to match the primary type for backward compatibility
+ */
+export const setItemTypesServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      itemId: z.string(),
+      types: z
+        .array(
+          z.object({
+            type: ItemTypeSchema,
+            isPrimary: z.boolean().default(false),
+            order: z.number().default(0),
+          }),
+        )
+        .min(1, 'At least one type is required'),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { itemId, types } = ctx.data
+    console.log('[setItemTypesServerFn] Setting types:', itemId, types)
+
+    initDatabase()
+    const db = getDatabase()
+
+    // Verify item exists
+    const itemRecord = db.select().from(items).where(eq(items.id, itemId)).get()
+    if (!itemRecord) {
+      console.log('[setItemTypesServerFn] Item not found:', itemId)
+      return { success: false as const, error: 'Item not found' }
+    }
+
+    // Ensure exactly one primary type
+    const primaryTypes = types.filter((t) => t.isPrimary)
+    let normalizedTypes = types
+    if (primaryTypes.length === 0) {
+      // No primary set, make first one primary
+      normalizedTypes = types.map((t, idx) => ({
+        ...t,
+        isPrimary: idx === 0,
+      }))
+    } else if (primaryTypes.length > 1) {
+      // Multiple primaries, keep only first
+      let foundFirst = false
+      normalizedTypes = types.map((t) => {
+        if (t.isPrimary && !foundFirst) {
+          foundFirst = true
+          return t
+        }
+        return { ...t, isPrimary: false }
+      })
+    }
+
+    // Delete existing types
+    db.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
+
+    // Insert new types
+    for (const typeEntry of normalizedTypes) {
+      db.insert(itemTypes)
+        .values({
+          itemId,
+          type: typeEntry.type,
+          isPrimary: typeEntry.isPrimary,
+          order: typeEntry.order,
+        })
+        .run()
+    }
+
+    // Update items.type to primary type for backward compatibility
+    const primaryType = normalizedTypes.find((t) => t.isPrimary)?.type
+    if (primaryType) {
+      db.update(items)
+        .set({ type: primaryType, updatedAt: new Date() })
+        .where(eq(items.id, itemId))
+        .run()
+    }
+
+    saveDatabase()
+    console.log('[setItemTypesServerFn] Success:', itemId)
+    return {
+      success: true as const,
+      data: { types: normalizedTypes as TypeEntry[] },
+    }
+  })
+
+/**
+ * Add a type to an item (if not already present)
+ * Does not change existing types' primary/order settings
+ */
+export const addItemTypeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      itemId: z.string(),
+      type: ItemTypeSchema,
+      isPrimary: z.boolean().default(false),
+      order: z.number().optional(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { itemId, type, isPrimary, order } = ctx.data
+    console.log('[addItemTypeServerFn] Adding type:', itemId, type)
+
+    initDatabase()
+    const db = getDatabase()
+
+    // Verify item exists
+    const itemRecord = db.select().from(items).where(eq(items.id, itemId)).get()
+    if (!itemRecord) {
+      console.log('[addItemTypeServerFn] Item not found:', itemId)
+      return { success: false as const, error: 'Item not found' }
+    }
+
+    // Check if type already exists
+    const existingType = db
+      .select()
+      .from(itemTypes)
+      .where(and(eq(itemTypes.itemId, itemId), eq(itemTypes.type, type)))
+      .get()
+
+    if (existingType) {
+      console.log('[addItemTypeServerFn] Type already exists:', itemId, type)
+      return { success: false as const, error: 'Type already exists for item' }
+    }
+
+    // Get current types to determine order
+    const currentTypes = db
+      .select()
+      .from(itemTypes)
+      .where(eq(itemTypes.itemId, itemId))
+      .all()
+
+    const maxOrder = Math.max(0, ...currentTypes.map((t) => t.order ?? 0))
+    const newOrder = order ?? maxOrder + 1
+
+    // If setting as primary, clear other primaries
+    if (isPrimary && currentTypes.length > 0) {
+      db.update(itemTypes)
+        .set({ isPrimary: false })
+        .where(eq(itemTypes.itemId, itemId))
+        .run()
+    }
+
+    // Insert new type
+    db.insert(itemTypes)
+      .values({
+        itemId,
+        type,
+        isPrimary: isPrimary || currentTypes.length === 0, // First type is always primary
+        order: newOrder,
+      })
+      .run()
+
+    // Update items.type if this is the new primary
+    if (isPrimary || currentTypes.length === 0) {
+      db.update(items)
+        .set({ type, updatedAt: new Date() })
+        .where(eq(items.id, itemId))
+        .run()
+    } else {
+      // Just update timestamp
+      db.update(items)
+        .set({ updatedAt: new Date() })
+        .where(eq(items.id, itemId))
+        .run()
+    }
+
+    saveDatabase()
+    console.log('[addItemTypeServerFn] Success:', itemId, type)
+    return { success: true as const }
+  })
+
+/**
+ * Remove a type from an item
+ * Cannot remove the last type (items must have at least one type)
+ * If removing the primary type, promotes the next type to primary
+ */
+export const removeItemTypeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      itemId: z.string(),
+      type: ItemTypeSchema,
+    }),
+  )
+  .handler(async (ctx) => {
+    const { itemId, type } = ctx.data
+    console.log('[removeItemTypeServerFn] Removing type:', itemId, type)
+
+    initDatabase()
+    const db = getDatabase()
+
+    // Verify item exists
+    const itemRecord = db.select().from(items).where(eq(items.id, itemId)).get()
+    if (!itemRecord) {
+      console.log('[removeItemTypeServerFn] Item not found:', itemId)
+      return { success: false as const, error: 'Item not found' }
+    }
+
+    // Get current types
+    const currentTypes = db
+      .select()
+      .from(itemTypes)
+      .where(eq(itemTypes.itemId, itemId))
+      .all()
+
+    // Cannot remove if only one type
+    if (currentTypes.length <= 1) {
+      console.log(
+        '[removeItemTypeServerFn] Cannot remove last type:',
+        itemId,
+        type,
+      )
+      return {
+        success: false as const,
+        error: 'Cannot remove the last type from an item',
+      }
+    }
+
+    // Check if type exists
+    const typeToRemove = currentTypes.find((t) => t.type === type)
+    if (!typeToRemove) {
+      console.log('[removeItemTypeServerFn] Type not found:', itemId, type)
+      return { success: false as const, error: 'Type not found for item' }
+    }
+
+    // Delete the type
+    db.delete(itemTypes)
+      .where(and(eq(itemTypes.itemId, itemId), eq(itemTypes.type, type)))
+      .run()
+
+    // If we removed the primary type, promote the next one
+    if (typeToRemove.isPrimary) {
+      const remainingTypes = currentTypes
+        .filter((t) => t.type !== type)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+
+      if (remainingTypes.length > 0) {
+        const newPrimary = remainingTypes[0]
+        db.update(itemTypes)
+          .set({ isPrimary: true })
+          .where(
+            and(
+              eq(itemTypes.itemId, itemId),
+              eq(itemTypes.type, newPrimary.type),
+            ),
+          )
+          .run()
+
+        // Update items.type for backward compatibility
+        db.update(items)
+          .set({ type: newPrimary.type, updatedAt: new Date() })
+          .where(eq(items.id, itemId))
+          .run()
+      }
+    } else {
+      // Just update timestamp
+      db.update(items)
+        .set({ updatedAt: new Date() })
+        .where(eq(items.id, itemId))
+        .run()
+    }
+
+    saveDatabase()
+    console.log('[removeItemTypeServerFn] Success:', itemId, type)
+    return { success: true as const }
+  })
+
+/**
+ * Set the primary type for an item
+ * The type must already be assigned to the item
+ */
+export const setPrimaryTypeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      itemId: z.string(),
+      type: ItemTypeSchema,
+    }),
+  )
+  .handler(async (ctx) => {
+    const { itemId, type } = ctx.data
+    console.log('[setPrimaryTypeServerFn] Setting primary:', itemId, type)
+
+    initDatabase()
+    const db = getDatabase()
+
+    // Verify item exists
+    const itemRecord = db.select().from(items).where(eq(items.id, itemId)).get()
+    if (!itemRecord) {
+      console.log('[setPrimaryTypeServerFn] Item not found:', itemId)
+      return { success: false as const, error: 'Item not found' }
+    }
+
+    // Check if type exists for this item
+    const existingType = db
+      .select()
+      .from(itemTypes)
+      .where(and(eq(itemTypes.itemId, itemId), eq(itemTypes.type, type)))
+      .get()
+
+    if (!existingType) {
+      console.log('[setPrimaryTypeServerFn] Type not found:', itemId, type)
+      return { success: false as const, error: 'Type not assigned to item' }
+    }
+
+    // Clear all primary flags for this item
+    db.update(itemTypes)
+      .set({ isPrimary: false })
+      .where(eq(itemTypes.itemId, itemId))
+      .run()
+
+    // Set the new primary
+    db.update(itemTypes)
+      .set({ isPrimary: true })
+      .where(and(eq(itemTypes.itemId, itemId), eq(itemTypes.type, type)))
+      .run()
+
+    // Update items.type for backward compatibility
+    db.update(items)
+      .set({ type, updatedAt: new Date() })
+      .where(eq(items.id, itemId))
+      .run()
+
+    saveDatabase()
+    console.log('[setPrimaryTypeServerFn] Success:', itemId, type)
     return { success: true as const }
   })

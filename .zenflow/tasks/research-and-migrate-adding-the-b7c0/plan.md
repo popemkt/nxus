@@ -120,24 +120,41 @@ Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
-### [ ] Step 4: Service Layer - Update Query Logic
+### [x] Step 4: Service Layer - Update Query Logic
+<!-- chat-id: aad3db17-f0a1-4a93-87a0-cf36933a5f22 -->
 
-**Files to modify:**
-- `packages/nxus-core/src/services/apps/apps.server.ts` - Update queries to join types
-- `packages/nxus-core/src/services/apps/apps-mutations.server.ts` - Add type mutations
+**Completed**: Updated service layer for multi-type query and mutation support:
 
-**Implementation:**
-1. Update `getAllApps()` to join with `itemTypes` table
-2. Update `parseAppRecord()` to accept types array parameter
-3. Add `setItemTypes()` function
-4. Add `addItemType()` function
-5. Add `removeItemType()` function
-6. Ensure writes update both `items.type` and `itemTypes` table
+**Files modified:**
+- `packages/nxus-core/src/services/apps/apps.server.ts` - Updated queries to join with itemTypes table
+- `packages/nxus-core/src/services/apps/apps-mutations.server.ts` - Added type mutation functions
 
-**Verification:**
-- Queries return items with `types` array populated
-- Single-type items work correctly (backward compat)
-- Type mutations create/update/delete correctly
+**Implementation details:**
+
+1. **apps.server.ts changes:**
+   - Added `itemTypes` import from `@nxus/db/server`
+   - Added `ItemType` type import from `@nxus/db`
+   - Created `ItemTypeEntry` interface for type data from junction table
+   - Updated `parseAppRecord()` to accept a third parameter `typesFromJunction: ItemTypeEntry[]`
+   - `parseAppRecord()` now builds `types` array from junction table, falls back to single type from record
+   - `parseAppRecord()` determines `primaryType` from junction table (`isPrimary=true`) or record.type
+   - Returns items with `types`, `primaryType`, and deprecated `type` fields populated
+   - Updated `getAllAppsServerFn()` to query `item_types` table and group by itemId
+   - Updated `getAppByIdServerFn()` to query types for the specific item
+
+2. **apps-mutations.server.ts changes:**
+   - Added `itemTypes` table import and `ItemType` type
+   - Added `and` import from drizzle-orm for compound where clauses
+   - Created local `TypeEntry` interface
+   - Added `setItemTypesServerFn()` - Replace all types for an item (with primary normalization)
+   - Added `addItemTypeServerFn()` - Add a single type to an item
+   - Added `removeItemTypeServerFn()` - Remove a type (prevents removing last type, promotes new primary)
+   - Added `setPrimaryTypeServerFn()` - Change which type is primary
+   - All mutations update both `itemTypes` junction table AND `items.type` for backward compatibility
+
+**Verification completed:**
+- Build passes: `pnpm nx run nxus-core:build` succeeds
+- All tests pass: `pnpm nx run-many --target=test --all` (171 tests across 3 projects)
 
 ---
 

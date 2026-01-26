@@ -18,17 +18,28 @@ import {
   itemCommands,
   items,
   itemTags,
+  itemTypes,
   tags,
 } from '@nxus/db/server'
 import type {
   DocEntry,
   Item,
   ItemCommand,
+  ItemType,
   ScriptCommand,
   ItemMetadata,
   TagRef,
 } from '@nxus/db'
 import { getAllItemsFromNodesServerFn } from '@nxus/workbench/server'
+
+/**
+ * Type entry from item_types junction table
+ */
+interface ItemTypeEntry {
+  type: ItemType
+  isPrimary: boolean
+  order: number
+}
 
 /**
  * Map database record to App type
@@ -39,10 +50,12 @@ import { getAllItemsFromNodesServerFn } from '@nxus/workbench/server'
  *
  * @param record - Database record from apps table
  * @param tagsFromJunction - Tags queried from app_tags junction table (single source of truth)
+ * @param typesFromJunction - Types queried from item_types junction table (multi-type support)
  */
 function parseAppRecord(
   record: typeof items.$inferSelect,
   tagsFromJunction: TagRef[] = [],
+  typesFromJunction: ItemTypeEntry[] = [],
 ): Item {
   // Ensure metadata has proper defaults - this is the type-safe boundary
   // Tags now come from junction table, not from stored JSON
@@ -61,11 +74,27 @@ function parseAppRecord(
   const ensureArray = <T>(val: any): T[] | undefined =>
     Array.isArray(val) ? (val as T[]) : undefined
 
+  // Build types array from junction table or fall back to single type from record
+  // Sort by order, then extract type values
+  const sortedTypes = [...typesFromJunction].sort((a, b) => a.order - b.order)
+  const types: ItemType[] =
+    sortedTypes.length > 0
+      ? sortedTypes.map((t) => t.type)
+      : [record.type as ItemType]
+
+  // Determine primary type: from junction table (isPrimary=true) or fall back to record.type
+  const primaryEntry = typesFromJunction.find((t) => t.isPrimary)
+  const primaryType: ItemType = primaryEntry
+    ? primaryEntry.type
+    : (record.type as ItemType)
+
   return {
     id: record.id,
     name: record.name,
     description: record.description,
-    type: record.type as Item['type'],
+    types,
+    primaryType,
+    type: primaryType, // Deprecated alias for backward compatibility
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
@@ -178,9 +207,28 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
       tagsByApp.set(r.appId, arr)
     }
 
-    // Parse and assemble apps with their commands and tags
+    // Query types from junction table - multi-type support
+    const appTypeRecords = db.select().from(itemTypes).all()
+
+    // Group types by itemId
+    const typesByApp = new Map<string, ItemTypeEntry[]>()
+    for (const r of appTypeRecords) {
+      const arr = typesByApp.get(r.itemId) ?? []
+      arr.push({
+        type: r.type as ItemType,
+        isPrimary: r.isPrimary ?? false,
+        order: r.order ?? 0,
+      })
+      typesByApp.set(r.itemId, arr)
+    }
+
+    // Parse and assemble apps with their commands, tags, and types
     const parsedApps = appRecords.map((record) => {
-      const app = parseAppRecord(record, tagsByApp.get(record.id) ?? [])
+      const app = parseAppRecord(
+        record,
+        tagsByApp.get(record.id) ?? [],
+        typesByApp.get(record.id) ?? [],
+      )
       app.commands = commandsByApp.get(record.id) ?? []
       return app
     })
@@ -246,7 +294,20 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
 
     const tagRefs = appTagRecords.map((r) => ({ id: r.tagId, name: r.tagName }))
 
-    const app = parseAppRecord(appRecord, tagRefs)
+    // Query types from junction table
+    const appTypeRecords = db
+      .select()
+      .from(itemTypes)
+      .where(eq(itemTypes.itemId, id))
+      .all()
+
+    const typeRefs: ItemTypeEntry[] = appTypeRecords.map((r) => ({
+      type: r.type as ItemType,
+      isPrimary: r.isPrimary ?? false,
+      order: r.order ?? 0,
+    }))
+
+    const app = parseAppRecord(appRecord, tagRefs, typeRefs)
     app.commands = commandRecords.map(parseCommandRecord)
 
     return { success: true as const, app }
