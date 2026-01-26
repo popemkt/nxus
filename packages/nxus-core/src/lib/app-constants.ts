@@ -3,8 +3,9 @@ import {
   FileIcon,
   FolderOpenIcon,
   WrenchIcon,
+  type Icon,
 } from '@phosphor-icons/react'
-import type { Item } from '@nxus/db'
+import type { Item, ItemType } from '@nxus/db'
 
 /**
  * Icon mapping for each app type.
@@ -52,3 +53,124 @@ export const STATUS_VARIANTS = {
 // Type exports for consumers
 export type AppType = keyof typeof APP_TYPE_ICONS
 export type AppStatus = keyof typeof STATUS_VARIANTS
+
+/**
+ * Badge configuration for displaying type information
+ */
+export interface TypeBadgeConfig {
+  type: ItemType
+  label: string
+  icon: Icon
+  isPrimary: boolean
+}
+
+/**
+ * Gets the icon for a single type.
+ * Returns the icon component for the specified type, or FileIcon as fallback.
+ */
+export function getTypeIcon(type: ItemType): Icon {
+  return APP_TYPE_ICONS[type] ?? FileIcon
+}
+
+/**
+ * Gets the primary type icon for an item with multiple types.
+ * Uses the `primaryType` field if available, otherwise falls back to the first type in the array.
+ * Returns FileIcon if types array is empty or invalid.
+ */
+export function getPrimaryTypeIcon(item: Pick<Item, 'types' | 'primaryType'>): Icon {
+  // Use primaryType if available
+  if (item.primaryType && APP_TYPE_ICONS[item.primaryType]) {
+    return APP_TYPE_ICONS[item.primaryType]
+  }
+  // Fall back to first type in array
+  if (item.types && item.types.length > 0) {
+    return APP_TYPE_ICONS[item.types[0]] ?? FileIcon
+  }
+  return FileIcon
+}
+
+/**
+ * Gets the short label for a single type.
+ * Returns the short label string for the specified type, or 'Unknown' as fallback.
+ */
+export function getTypeLabel(type: ItemType): string {
+  return APP_TYPE_LABELS_SHORT[type] ?? 'Unknown'
+}
+
+/**
+ * Gets the long label for a single type.
+ * Returns the long label string for the specified type, or 'Unknown Type' as fallback.
+ */
+export function getTypeLabelLong(type: ItemType): string {
+  return APP_TYPE_LABELS_LONG[type] ?? 'Unknown Type'
+}
+
+/**
+ * Gets the primary type label for an item with multiple types.
+ * Uses the `primaryType` field if available, otherwise falls back to the first type in the array.
+ */
+export function getPrimaryTypeLabel(item: Pick<Item, 'types' | 'primaryType'>): string {
+  // Use primaryType if available
+  if (item.primaryType && APP_TYPE_LABELS_SHORT[item.primaryType]) {
+    return APP_TYPE_LABELS_SHORT[item.primaryType]
+  }
+  // Fall back to first type in array
+  if (item.types && item.types.length > 0) {
+    return APP_TYPE_LABELS_SHORT[item.types[0]] ?? 'Unknown'
+  }
+  return 'Unknown'
+}
+
+/**
+ * Gets all type labels for an item with multiple types.
+ * Returns labels in the order they appear in the types array.
+ */
+export function getAllTypeLabels(item: Pick<Item, 'types'>): string[] {
+  if (!item.types || item.types.length === 0) {
+    return ['Unknown']
+  }
+  return item.types.map((type) => APP_TYPE_LABELS_SHORT[type] ?? 'Unknown')
+}
+
+/**
+ * Gets badge configurations for all types of an item.
+ * Used for displaying multiple type badges side by side.
+ * The primary type badge is marked with `isPrimary: true`.
+ */
+export function getTypeBadges(item: Pick<Item, 'types' | 'primaryType'>): TypeBadgeConfig[] {
+  if (!item.types || item.types.length === 0) {
+    return []
+  }
+
+  return item.types.map((type) => ({
+    type,
+    label: APP_TYPE_LABELS_SHORT[type] ?? 'Unknown',
+    icon: APP_TYPE_ICONS[type] ?? FileIcon,
+    isPrimary: type === item.primaryType,
+  }))
+}
+
+/**
+ * Gets all icons for an item with multiple types.
+ * Returns icons in the order they appear in the types array.
+ */
+export function getAllTypeIcons(item: Pick<Item, 'types'>): Icon[] {
+  if (!item.types || item.types.length === 0) {
+    return [FileIcon]
+  }
+  return item.types.map((type) => APP_TYPE_ICONS[type] ?? FileIcon)
+}
+
+/**
+ * Checks if an item has multiple types.
+ */
+export function hasMultipleTypes(item: Pick<Item, 'types'>): boolean {
+  return item.types && item.types.length > 1
+}
+
+/**
+ * Gets the count of types for an item.
+ */
+export function getTypeCount(item: Pick<Item, 'types'>): number {
+  return item.types?.length ?? 0
+}

@@ -195,20 +195,45 @@ Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
-### [ ] Step 6: UI Constants - Multi-Type Display Helpers
+### [x] Step 6: UI Constants - Multi-Type Display Helpers
+<!-- chat-id: af7283a2-325f-4ed3-88d5-b16b7690b3e3 -->
 
-**Files to modify:**
-- `packages/nxus-core/src/lib/app-constants.ts` - Add display helpers for multi-type
+**Completed**: Added comprehensive multi-type display helper functions:
 
-**Implementation:**
-1. Add `getTypeIcon(types: ItemType[])` - returns primary type icon
-2. Add `getTypeLabel(types: ItemType[])` - returns display label
-3. Add `getTypeBadges(types: ItemType[])` - returns badge configurations
-4. Handle edge cases (empty array, unknown types)
+**Files modified:**
+- `packages/nxus-core/src/lib/app-constants.ts` - Added display helpers for multi-type
 
-**Verification:**
-- Helper functions return expected values
-- UI components can use new helpers
+**Implementation details:**
+
+1. **Type imports:**
+   - Added `Icon` type import from `@phosphor-icons/react`
+   - Added `ItemType` type import from `@nxus/db`
+
+2. **TypeBadgeConfig interface:**
+   - `type: ItemType` - The type value
+   - `label: string` - Display label
+   - `icon: Icon` - Phosphor icon component
+   - `isPrimary: boolean` - Whether this is the primary type
+
+3. **Single-type helpers:**
+   - `getTypeIcon(type: ItemType)` - Returns icon for a single type
+   - `getTypeLabel(type: ItemType)` - Returns short label for a single type
+   - `getTypeLabelLong(type: ItemType)` - Returns long label for a single type
+
+4. **Multi-type helpers (work with Item objects):**
+   - `getPrimaryTypeIcon(item)` - Returns primary type icon using `primaryType` field
+   - `getPrimaryTypeLabel(item)` - Returns primary type short label
+   - `getAllTypeLabels(item)` - Returns array of all type labels
+   - `getAllTypeIcons(item)` - Returns array of all type icons
+   - `getTypeBadges(item)` - Returns full badge configurations for all types
+
+5. **Utility helpers:**
+   - `hasMultipleTypes(item)` - Boolean check if item has more than one type
+   - `getTypeCount(item)` - Returns count of types for an item
+
+**Verification completed:**
+- Build passes: `pnpm nx run nxus-core:build` succeeds
+- All tests pass: `pnpm nx run-many --target=test --all` (171 tests across 3 projects)
 
 ---
 
