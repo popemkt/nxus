@@ -171,6 +171,36 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   `)
 
   // ============================================================================
+  // Item Types Junction Table - Multi-type support for items
+  // Allows items to have multiple types (e.g., both "tool" and "remote-repo")
+  // ============================================================================
+
+  masterDb.exec(`
+    CREATE TABLE IF NOT EXISTS item_types (
+      item_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      is_primary INTEGER DEFAULT 0,
+      "order" INTEGER DEFAULT 0,
+      PRIMARY KEY (item_id, type)
+    )
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_item_types_item_id ON item_types(item_id)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_item_types_type ON item_types(type)
+  `)
+
+  // Populate item_types from existing items.type for migration
+  // This ensures all existing items have their type in the junction table
+  masterDb.exec(`
+    INSERT OR IGNORE INTO item_types (item_id, type, is_primary, "order")
+    SELECT id, type, 1, 0 FROM items
+  `)
+
+  // ============================================================================
   // Node-Based Architecture Tables (Simplified: 2 tables only)
   // Everything is encoded through field values, including supertags!
   // ============================================================================

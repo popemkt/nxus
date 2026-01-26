@@ -62,22 +62,30 @@ Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
-### [ ] Step 2: Database Schema - Add itemTypes Junction Table
+### [x] Step 2: Database Schema - Add itemTypes Junction Table
+<!-- chat-id: fe635e0a-bcff-42e5-8745-7bde5e124fdf -->
 
-**Files to modify:**
-- `packages/nxus-db/src/schemas/item-schema.ts` - Add `itemTypes` table definition
-- `packages/nxus-db/src/index.ts` - Export new table
-- Create migration file
+**Completed**: Added the `item_types` junction table for multi-type support:
 
-**Implementation:**
-1. Add `itemTypes` table with columns: `item_id`, `type`, `is_primary`, `order`
-2. Add composite primary key on (item_id, type)
-3. Generate and run migration
-4. Populate from existing `items.type` column
+**Files modified:**
+- `packages/nxus-db/src/schemas/item-schema.ts` - Added `itemTypes` table definition with Drizzle ORM
+- `packages/nxus-db/src/client/master-client.ts` - Added migration SQL with auto-population from existing items
 
-**Verification:**
-- Migration runs without errors
-- Data integrity: all existing items have one entry in `itemTypes`
+**Implementation details:**
+1. Added `itemTypes` table with columns:
+   - `item_id` (TEXT, NOT NULL) - Foreign key to items.id
+   - `type` (TEXT, NOT NULL) - One of 'html', 'typescript', 'remote-repo', 'tool'
+   - `is_primary` (INTEGER, DEFAULT 0) - Boolean flag for primary type
+   - `order` (INTEGER, DEFAULT 0) - Sort order for display
+2. Composite primary key on (item_id, type)
+3. Added indexes on `item_id` and `type` for query performance
+4. Auto-migration: `INSERT OR IGNORE INTO item_types SELECT id, type, 1, 0 FROM items`
+5. Export via barrel in `schemas/index.ts` (already exports all from item-schema.js)
+
+**Verification completed:**
+- Build passes: `pnpm nx run nxus-core:build` succeeds
+- All tests pass: `pnpm nx run-many --target=test --all` (21 tests)
+- Type definitions exported: `ItemTypeEntry`, `NewItemTypeEntry`
 
 ---
 
