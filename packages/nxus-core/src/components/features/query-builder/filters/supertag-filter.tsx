@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@nxus/ui'
-import { getSupertagsServerFn } from '@nxus/workbench/server'
+import { getSupertagsServerFn } from '@/services/query/query.server'
 import type { SupertagFilter, AssembledNode } from '@nxus/db'
 
 // ============================================================================

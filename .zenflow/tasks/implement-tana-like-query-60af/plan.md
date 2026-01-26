@@ -435,6 +435,37 @@ is ready to replace the legacy approach.
 
 ---
 
+
+### [x] Step: Fix up
+<!-- chat-id: e5246762-c188-403d-97b0-1d51cb868e9e -->
+
+**Problem**: `better-sqlite3` was being bundled into the client-side code, causing "promisify is not a function" error.
+
+**Root Cause**: When importing server functions from `@nxus/workbench/server` at module top-level, Vite's bundler would follow the import chain: `@nxus/workbench/server` → `@nxus/db/server` → `better-sqlite3`. Even though the functions were created with TanStack Start's `createServerFn`, the bundler doesn't know to skip external package imports.
+
+**Solution**:
+1. Created separate types file `packages/nxus-db/src/types/node.ts` for client-safe types (AssembledNode, PropertyValue, CreateNodeOptions, SavedQuery)
+2. Updated `@nxus/db/src/index.ts` to export types from the new types file instead of from node.service.ts
+3. Created local server function wrappers in `packages/nxus-core/src/services/query/query.server.ts`:
+   - Each wrapper uses `createServerFn` locally
+   - Uses **dynamic imports** inside the handler functions to import from `@nxus/workbench/server`
+   - Dynamic imports prevent the bundler from following the import chain at build time
+4. Updated client files to import from the local `@/services/query/query.server` instead of directly from `@nxus/workbench/server`:
+   - `packages/nxus-core/src/hooks/use-query.ts`
+   - `packages/nxus-core/src/components/features/query-builder/filters/supertag-filter.tsx`
+   - `packages/nxus-core/src/components/features/debug/node-inspector.tsx`
+5. Updated `vite.config.ts` to exclude Node.js-only packages from optimization:
+   - Added `better-sqlite3`, `drizzle-orm/better-sqlite3`, `@nxus/db`, `@nxus/workbench` to `optimizeDeps.exclude`
+   - Added `ssr.noExternal` for `@nxus/db` and `@nxus/workbench`
+
+**Verification**:
+- All 54 @nxus/db tests pass
+- Application loads without errors at http://localhost:3000
+- Query builder UI works correctly
+
+The above error occurred in the <Lazy> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl.
 ## Completion Criteria
 
 - [x] Query types defined and exported from `@nxus/db`
@@ -460,3 +491,4 @@ is ready to replace the legacy approach.
 - Technical spec: `spec.md`
 - Archived docs: `/docs/archived/node-based-arch-queries.md`
 - Tana search docs: https://tana.inc/docs/search-nodes
+o

@@ -22,7 +22,7 @@ import {
   deleteNodeServerFn,
   updateNodeContentServerFn,
   setNodePropertiesServerFn,
-} from '@nxus/workbench/server'
+} from '@/services/query/query.server'
 
 // ============================================================================
 // Query Keys
