@@ -3,12 +3,10 @@ import { useState, useMemo, useCallback } from 'react'
 import { XIcon } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'
-import { useQueryEvaluation } from '@/hooks/use-query'
 import { TagTree } from '@/components/features/gallery/tag-tree'
-import { QueryBuilderWithSaved } from '@/components/features/query-builder'
+import { QueryBuilderWithSaved, useQueryEvaluation, useQueryStore } from '@nxus/workbench'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
-import { useQueryStore } from '@/stores/query.store'
 import {
   useViewModeStore,
   useViewModeHasHydrated,

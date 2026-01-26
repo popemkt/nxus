@@ -466,6 +466,65 @@ is ready to replace the legacy approach.
 The above error occurred in the <Lazy> component.
 
 React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl.
+
+### [x] Step: Moving the thing
+<!-- chat-id: 94fce90d-a7a6-428d-bbc5-21e5b7b67cdc -->
+
+**Goal**: Move query builder to `@nxus/workbench` as a third sidebar view alongside List and Graph views, serving as foundation for future mini-apps and Tana editor feature.
+
+**Completed**:
+1. Added 'query' view mode to workbench sidebar (`Sidebar.tsx`):
+   - Extended `ViewMode` type to `'list' | 'graph' | 'query'`
+   - Added `Funnel` icon for Query Builder view
+   - Updated component docs
+
+2. Created `QueryResultsView` component (`components/query-results/`):
+   - Full-height panel with QueryBuilderWithSaved at top
+   - Results list grouped by supertag (similar to NodeBrowser)
+   - Keyboard navigation support (↑↓ to navigate, Enter to select)
+   - Integration with `useQueryStore` and `useQueryEvaluation` hooks
+   - Stats bar showing result count and filter count
+
+3. Integrated into workbench route (`route.tsx`):
+   - Added `QueryResultsView` import and rendering for query view mode
+   - Updated help text in inspector empty state for query view
+
+4. Created workbench-local server functions (`server/query.server.ts`):
+   - Moved all query server functions with dynamic imports to avoid better-sqlite3 bundling
+   - Added node mutation server functions for reactivity
+
+5. Created workbench-local hooks (`hooks/use-query.ts`):
+   - Complete query hooks (useQueryEvaluation, useSavedQueries, etc.)
+   - Node mutation hooks with cache invalidation
+
+6. Created workbench-local Zustand store (`stores/query.store.ts`):
+   - Query UI state management
+
+7. Moved query builder components to `features/query-builder/`:
+   - Main components: QueryBuilder, QueryBuilderWithSaved, SavedQueriesPanel
+   - All filter editors (7 types)
+   - Supporting components: FilterList, FilterChip, AddFilterMenu, SortConfig, QueryLinter
+
+8. Updated exports:
+   - `src/index.ts` - exports all query builder components, hooks, and store
+   - `src/components/index.ts` - exports QueryResultsView
+   - `src/features/query-builder/index.ts` - exports all query builder components
+
+9. Updated gallery (`packages/nxus-core/src/routes/index.tsx`):
+   - Changed imports to use `@nxus/workbench` for QueryBuilderWithSaved, useQueryEvaluation, and useQueryStore
+
+**Architecture**:
+- Query builder is now fully self-contained in `@nxus/workbench`
+- Workbench provides three views: List (NodeBrowser), Graph (GraphView), Query (QueryResultsView)
+- Query view serves as foundation for:
+  - Future mini-apps that need query-based data access
+  - Tana editor feature (query results can be edited inline)
+- Gallery can still use the query builder via floating panel (imports from workbench)
+
+**Verification**:
+- Dev server starts without errors
+- Pre-existing TypeScript errors unrelated to changes
+- Query view accessible via Funnel icon in workbench sidebar
 ## Completion Criteria
 
 - [x] Query types defined and exported from `@nxus/db`
