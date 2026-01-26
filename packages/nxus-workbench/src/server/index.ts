@@ -42,3 +42,13 @@ export {
   nodeToCommand,
   nodesToItems,
 } from './adapters.js'
+
+// Query server functions (Tana-like reactive queries)
+export {
+  evaluateQueryServerFn,
+  createQueryServerFn,
+  updateQueryServerFn,
+  deleteQueryServerFn,
+  getSavedQueriesServerFn,
+  executeSavedQueryServerFn,
+} from './query.server.js'

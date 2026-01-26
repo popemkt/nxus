@@ -92,25 +92,36 @@ Created comprehensive technical specification in `spec.md` covering:
 
 ---
 
-### [ ] Step: Phase 3 - Query Server Functions
+### [x] Step: Phase 3 - Query Server Functions
+<!-- chat-id: f60be5b0-c875-47b2-8cac-a7b30836cfaa -->
 
 **Goal**: Create server API for query operations
 
-**Tasks**:
-1. Create `packages/nxus-workbench/src/server/query.server.ts`:
-   - `evaluateQueryServerFn` - evaluate query definition, return nodes
-   - `createQueryServerFn` - create saved query node
-   - `updateQueryServerFn` - update saved query
-   - `getSavedQueriesServerFn` - list all saved queries
-   - `executeSavedQueryServerFn` - run saved query by ID
+**Completed**:
+1. Created `packages/nxus-workbench/src/server/query.server.ts` with:
+   - `evaluateQueryServerFn` - evaluate query definition, return AssembledNode[] with totalCount and evaluatedAt
+   - `createQueryServerFn` - create saved query node with supertag:query
+   - `updateQueryServerFn` - update saved query name and/or definition
+   - `deleteQueryServerFn` - soft-delete saved query
+   - `getSavedQueriesServerFn` - list all saved queries with definitions
+   - `executeSavedQueryServerFn` - run saved query by ID with optional result caching
 
-2. Export from `packages/nxus-workbench/src/server/index.ts`
+2. All server functions use:
+   - TanStack `createServerFn` with proper method types (GET/POST)
+   - Zod schema validation via `.inputValidator()` using schemas from `@nxus/db`:
+     - `EvaluateQueryInputSchema`
+     - `CreateQueryInputSchema`
+     - `UpdateQueryInputSchema`
+   - Database initialization with bootstrap for system nodes
 
-3. Add input validation with Zod schemas
+3. Exported all functions from `packages/nxus-workbench/src/server/index.ts`
+
+4. Helper function `nodeToSavedQuery()` converts AssembledNode to SavedQueryResponse
 
 **Verification**:
-- Server functions callable from client
-- Manual test via React component or dev tools
+- TypeScript compiles without errors (no query.server.ts errors in tsc output)
+- All 54 @nxus/db tests pass: `pnpm --filter @nxus/db test`
+- Server functions ready for client consumption
 
 ---
 
