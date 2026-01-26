@@ -1,63 +1,80 @@
 {
-  "id": "_scripts",
-  "name": "My Scripts",
-  "description": "Collection of custom scripts for generic automation tasks",
-  "type": "tool",
-  "path": ".",
-  "platform": ["linux", "macos", "windows"],
-  "checkCommand": "echo true",
-  "commands": [
-    {
-      "id": "create-github-repo",
-      "name": "Create GitHub Repo",
-      "description": "Create a new GitHub repository and initialize local git folder",
-      "icon": "GitBranch",
-      "category": "Git",
-      "target": "item",
-      "mode": "script",
-      "command": "create-repo.ps1",
-      "requires": {
-        "tools": ["github-cli", "git", "powershell"]
-      }
+    "id": "_scripts",
+    "name": "My Scripts",
+    "description": "Collection of custom scripts for generic automation tasks",
+    "type": "tool",
+    "path": ".",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "echo true",
+    "commands": [
+        {
+            "id": "create-github-repo",
+            "name": "Create GitHub Repo",
+            "description": "Create a new GitHub repository and initialize local git folder",
+            "icon": "GitBranch",
+            "category": "Git",
+            "target": "item",
+            "mode": "script",
+            "command": "create-repo.ps1",
+            "requires": {
+                "tools": [
+                    "github-cli",
+                    "git",
+                    "powershell"
+                ]
+            }
+        },
+        {
+            "id": "bash-config",
+            "name": "Bash Config Manager",
+            "description": "Edit .bashrc or start interactive bash session with vi",
+            "icon": "Terminal",
+            "category": "Configuration",
+            "target": "item",
+            "mode": "script",
+            "command": "bash-config.ps1",
+            "requires": {
+                "tools": [
+                    "powershell"
+                ]
+            },
+            "options": {
+                "interactive": true
+            }
+        },
+        {
+            "id": "launch-agents-warp",
+            "name": "Launch Agents in Warp",
+            "description": "Open a multi-agent workspace in Warp terminal (Claude, OpenCode, Droid, Goose)",
+            "icon": "ProjectorScreen",
+            "category": "Automation",
+            "target": "item",
+            "mode": "script",
+            "command": "launch-agents.ps1",
+            "requires": {
+                "tools": [
+                    "warp",
+                    "powershell"
+                ]
+            }
+        }
+    ],
+    "dependencies": [
+        "github-cli",
+        "git",
+        "powershell"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-01-03T07:59:33Z",
+        "updatedAt": "2026-01-03T09:40:00Z",
+        "version": "1.0.0",
+        "author": "popemkt"
     },
-    {
-      "id": "bash-config",
-      "name": "Bash Config Manager",
-      "description": "Edit .bashrc or start interactive bash session with vi",
-      "icon": "Terminal",
-      "category": "Configuration",
-      "target": "item",
-      "mode": "script",
-      "command": "bash-config.ps1",
-      "requires": {
-        "tools": ["powershell"]
-      },
-      "options": {
-        "interactive": true
-      }
-    },
-    {
-      "id": "launch-agents-warp",
-      "name": "Launch Agents in Warp",
-      "description": "Open a multi-agent workspace in Warp terminal (Claude, OpenCode, Droid, Goose)",
-      "icon": "ProjectorScreen",
-      "category": "Automation",
-      "target": "item",
-      "mode": "script",
-      "command": "launch-agents.ps1",
-      "requires": {
-        "tools": ["warp", "powershell"]
-      }
-    }
-  ],
-  "dependencies": ["github-cli", "git", "powershell"],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2026-01-03T07:59:33Z",
-    "updatedAt": "2026-01-03T09:40:00Z",
-    "version": "1.0.0",
-    "author": "popemkt"
-  },
-  "status": "not-installed"
+    "status": "not-installed"
 }

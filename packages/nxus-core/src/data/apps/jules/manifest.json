@@ -1,27 +1,31 @@
 {
-  "id": "jules",
-  "name": "Jules",
-  "description": "Your helpful AI software engineer agent",
-  "type": "tool",
-  "path": "https://github.com/popemkt/nxus",
-  "homepage": "https://github.com/popemkt/nxus",
-  "platform": ["linux", "macos", "windows"],
-  "checkCommand": "echo true",
-  "commands": [],
-  "docs": [
-    {
-      "id": "guide",
-      "title": "About Jules",
-      "file": "guide.md",
-      "icon": "Robot"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "ai-tools",
-    "version": "1.0.0",
-    "author": "Google",
-    "createdAt": "2026-02-18T12:00:00Z",
-    "updatedAt": "2026-02-18T12:00:00Z"
-  }
+    "id": "jules",
+    "name": "Jules",
+    "description": "Your helpful AI software engineer agent",
+    "type": "tool",
+    "path": "https://github.com/popemkt/nxus",
+    "homepage": "https://github.com/popemkt/nxus",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "echo true",
+    "docs": [
+        {
+            "id": "guide",
+            "title": "About Jules",
+            "file": "guide.md",
+            "icon": "Robot"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-18T12:00:00Z",
+        "updatedAt": "2026-02-18T12:00:00Z",
+        "version": "1.0.0",
+        "author": "Google"
+    },
+    "status": "not-installed"
 }

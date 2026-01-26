@@ -1,143 +1,145 @@
 {
-  "id": "ralphy",
-  "name": "Ralphy",
-  "description": "Autonomous AI coding loop that runs Claude Code, Codex, OpenCode, Cursor, Qwen & Droid in a loop until your PRD is complete",
-  "type": "remote-repo",
-  "path": "https://github.com/michaelshimeles/ralphy",
-  "homepage": "https://github.com/michaelshimeles/ralphy",
-  "commands": [
-    {
-      "id": "run-single-task",
-      "name": "Run Single Task",
-      "description": "Run Ralphy with a single task prompt",
-      "icon": "Play",
-      "category": "Usage",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh \"your task here\""
-    },
-    {
-      "id": "run-prd",
-      "name": "Run with PRD",
-      "description": "Work through a PRD task list",
-      "icon": "FileCode",
-      "category": "Usage",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --prd PRD.md"
-    },
-    {
-      "id": "run-parallel",
-      "name": "Run Parallel",
-      "description": "Run multiple agents in parallel (3 by default)",
-      "icon": "GitBranch",
-      "category": "Usage",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --parallel"
-    },
-    {
-      "id": "init-config",
-      "name": "Initialize Config",
-      "description": "Auto-detect project settings and create .ralphy/ config",
-      "icon": "Gear",
-      "category": "Setup",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --init"
-    },
-    {
-      "id": "view-config",
-      "name": "View Config",
-      "description": "View current Ralphy configuration",
-      "icon": "Eye",
-      "category": "Setup",
-      "target": "instance",
-      "mode": "execute",
-      "command": "./ralphy.sh --config"
-    },
-    {
-      "id": "run-with-opencode",
-      "name": "Run with OpenCode",
-      "description": "Use OpenCode as the AI engine",
-      "icon": "Terminal",
-      "category": "Engines",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --opencode"
-    },
-    {
-      "id": "run-with-cursor",
-      "name": "Run with Cursor",
-      "description": "Use Cursor as the AI engine",
-      "icon": "Terminal",
-      "category": "Engines",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --cursor"
-    },
-    {
-      "id": "run-with-droid",
-      "name": "Run with Droid",
-      "description": "Use Factory Droid as the AI engine",
-      "icon": "Robot",
-      "category": "Engines",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --droid"
-    },
-    {
-      "id": "run-branch-workflow",
-      "name": "Branch Workflow",
-      "description": "Create a branch per task with auto-PR",
-      "icon": "GitPullRequest",
-      "category": "Advanced",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "./ralphy.sh --branch-per-task --create-pr"
-    },
-    {
-      "id": "dry-run",
-      "name": "Dry Run",
-      "description": "Preview what would be done without executing",
-      "icon": "Info",
-      "category": "Advanced",
-      "target": "instance",
-      "mode": "execute",
-      "command": "./ralphy.sh --dry-run"
-    },
-    {
-      "id": "github-repo",
-      "name": "GitHub Repository",
-      "description": "Open Ralphy GitHub repository",
-      "icon": "GithubLogo",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://github.com/michaelshimeles/ralphy"
-    }
-  ],
-  "docs": [
-    {
-      "id": "guide",
-      "title": "User Guide",
-      "file": "guide.md",
-      "icon": "BookOpen"
-    }
-  ],
-  "dependencies": ["git"],
-  "metadata": {
-    "tags": [
-      {
-        "id": 14,
-        "name": "AI CLI Provider"
-      }
+    "id": "ralphy",
+    "name": "Ralphy",
+    "description": "Autonomous AI coding loop that runs Claude Code, Codex, OpenCode, Cursor, Qwen & Droid in a loop until your PRD is complete",
+    "type": "remote-repo",
+    "path": "https://github.com/michaelshimeles/ralphy",
+    "homepage": "https://github.com/michaelshimeles/ralphy",
+    "commands": [
+        {
+            "id": "run-single-task",
+            "name": "Run Single Task",
+            "description": "Run Ralphy with a single task prompt",
+            "icon": "Play",
+            "category": "Usage",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh \"your task here\""
+        },
+        {
+            "id": "run-prd",
+            "name": "Run with PRD",
+            "description": "Work through a PRD task list",
+            "icon": "FileCode",
+            "category": "Usage",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --prd PRD.md"
+        },
+        {
+            "id": "run-parallel",
+            "name": "Run Parallel",
+            "description": "Run multiple agents in parallel (3 by default)",
+            "icon": "GitBranch",
+            "category": "Usage",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --parallel"
+        },
+        {
+            "id": "init-config",
+            "name": "Initialize Config",
+            "description": "Auto-detect project settings and create .ralphy/ config",
+            "icon": "Gear",
+            "category": "Setup",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --init"
+        },
+        {
+            "id": "view-config",
+            "name": "View Config",
+            "description": "View current Ralphy configuration",
+            "icon": "Eye",
+            "category": "Setup",
+            "target": "instance",
+            "mode": "execute",
+            "command": "./ralphy.sh --config"
+        },
+        {
+            "id": "run-with-opencode",
+            "name": "Run with OpenCode",
+            "description": "Use OpenCode as the AI engine",
+            "icon": "Terminal",
+            "category": "Engines",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --opencode"
+        },
+        {
+            "id": "run-with-cursor",
+            "name": "Run with Cursor",
+            "description": "Use Cursor as the AI engine",
+            "icon": "Terminal",
+            "category": "Engines",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --cursor"
+        },
+        {
+            "id": "run-with-droid",
+            "name": "Run with Droid",
+            "description": "Use Factory Droid as the AI engine",
+            "icon": "Robot",
+            "category": "Engines",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --droid"
+        },
+        {
+            "id": "run-branch-workflow",
+            "name": "Branch Workflow",
+            "description": "Create a branch per task with auto-PR",
+            "icon": "GitPullRequest",
+            "category": "Advanced",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "./ralphy.sh --branch-per-task --create-pr"
+        },
+        {
+            "id": "dry-run",
+            "name": "Dry Run",
+            "description": "Preview what would be done without executing",
+            "icon": "Info",
+            "category": "Advanced",
+            "target": "instance",
+            "mode": "execute",
+            "command": "./ralphy.sh --dry-run"
+        },
+        {
+            "id": "github-repo",
+            "name": "GitHub Repository",
+            "description": "Open Ralphy GitHub repository",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/michaelshimeles/ralphy"
+        }
     ],
-    "category": "development-tools",
-    "createdAt": "2026-01-19T00:00:00.000Z",
-    "updatedAt": "2026-01-19T00:00:00.000Z",
-    "version": "4.0.0",
-    "author": "Michael Shimeles"
-  },
-  "status": "not-installed"
+    "docs": [
+        {
+            "id": "guide",
+            "title": "User Guide",
+            "file": "guide.md",
+            "icon": "BookOpen"
+        }
+    ],
+    "dependencies": [
+        "git"
+    ],
+    "metadata": {
+        "tags": [
+            {
+                "id": 14,
+                "name": "AI CLI Provider"
+            }
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-01-19T00:00:00.000Z",
+        "updatedAt": "2026-01-19T00:00:00.000Z",
+        "version": "4.0.0",
+        "author": "Michael Shimeles"
+    },
+    "status": "not-installed"
 }

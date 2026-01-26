@@ -1,90 +1,100 @@
 {
-  "id": "reor",
-  "name": "Reor",
-  "description": "Open-source, local-first AI note-taking app. Build a local knowledge base with RAG and chat with your notes using local LLMs.",
-  "type": "remote-repo",
-  "path": "https://github.com/reorproject/reor.git",
-  "homepage": "https://reorproject.org",
-  "commands": [
-    {
-      "id": "git-pull",
-      "name": "Update from Git",
-      "description": "Pull latest changes from repository",
-      "icon": "ArrowsClockwise",
-      "category": "Development",
-      "target": "instance",
-      "mode": "execute",
-      "command": "git pull"
-    },
-    {
-      "id": "npm-install",
-      "name": "Install Dependencies",
-      "description": "Run npm install to set up the project",
-      "icon": "Download",
-      "category": "Development",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "npm install",
-      "requires": {
-        "tools": ["npm"]
-      }
-    },
-    {
-      "id": "npm-build",
-      "name": "Build App",
-      "description": "Build the Reor application",
-      "icon": "Hammer",
-      "category": "Development",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "npm run build",
-      "requires": {
-        "tools": ["npm"]
-      }
-    },
-    {
-      "id": "npm-start",
-      "name": "Start App (Dev)",
-      "description": "Start Reor in development mode",
-      "icon": "Play",
-      "category": "Development",
-      "target": "instance",
-      "mode": "terminal",
-      "command": "npm start",
-      "requires": {
-        "tools": ["npm"]
-      }
-    }
-  ],
-  "docs": [
-    {
-      "id": "guide",
-      "title": "User Guide",
-      "file": "guide.md",
-      "icon": "BookOpen"
-    }
-  ],
-  "dependencies": ["git", "npm", "node"],
-  "metadata": {
-    "tags": [
-      {
-        "id": 12,
-        "name": "AI"
-      },
-      {
-        "id": 17,
-        "name": "Study"
-      },
-      {
-        "id": 10,
-        "name": "Tool"
-      }
+    "id": "reor",
+    "name": "Reor",
+    "description": "Open-source, local-first AI note-taking app. Build a local knowledge base with RAG and chat with your notes using local LLMs.",
+    "type": "remote-repo",
+    "path": "https://github.com/reorproject/reor.git",
+    "homepage": "https://reorproject.org",
+    "commands": [
+        {
+            "id": "git-pull",
+            "name": "Update from Git",
+            "description": "Pull latest changes from repository",
+            "icon": "ArrowsClockwise",
+            "category": "Development",
+            "target": "instance",
+            "mode": "execute",
+            "command": "git pull"
+        },
+        {
+            "id": "npm-install",
+            "name": "Install Dependencies",
+            "description": "Run npm install to set up the project",
+            "icon": "Download",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "npm install",
+            "requires": {
+                "tools": [
+                    "npm"
+                ]
+            }
+        },
+        {
+            "id": "npm-build",
+            "name": "Build App",
+            "description": "Build the Reor application",
+            "icon": "Hammer",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "npm run build",
+            "requires": {
+                "tools": [
+                    "npm"
+                ]
+            }
+        },
+        {
+            "id": "npm-start",
+            "name": "Start App (Dev)",
+            "description": "Start Reor in development mode",
+            "icon": "Play",
+            "category": "Development",
+            "target": "instance",
+            "mode": "terminal",
+            "command": "npm start",
+            "requires": {
+                "tools": [
+                    "npm"
+                ]
+            }
+        }
     ],
-    "category": "productivity",
-    "createdAt": "2026-01-15T20:50:00.000Z",
-    "updatedAt": "2026-01-15T21:15:00.000Z",
-    "version": "1.0.0",
-    "author": "reorproject"
-  },
-  "status": "not-installed"
+    "docs": [
+        {
+            "id": "guide",
+            "title": "User Guide",
+            "file": "guide.md",
+            "icon": "BookOpen"
+        }
+    ],
+    "dependencies": [
+        "git",
+        "npm",
+        "node"
+    ],
+    "metadata": {
+        "tags": [
+            {
+                "id": 12,
+                "name": "AI"
+            },
+            {
+                "id": 17,
+                "name": "Study"
+            },
+            {
+                "id": 10,
+                "name": "Tool"
+            }
+        ],
+        "category": "productivity",
+        "createdAt": "2026-01-15T20:50:00.000Z",
+        "updatedAt": "2026-01-15T21:15:00.000Z",
+        "version": "1.0.0",
+        "author": "reorproject"
+    },
+    "status": "not-installed"
 }
