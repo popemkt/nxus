@@ -148,7 +148,6 @@ function Graph2DInner({
   // Local state - use refs to avoid triggering re-renders that reset layout
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const isInitialLayoutDone = useRef(false)
-  const previousDataRef = useRef<{ nodeCount: number; edgeCount: number }>({ nodeCount: 0, edgeCount: 0 })
 
   // Create node map for quick lookups
   const nodeMap = useMemo(() => {
@@ -182,37 +181,59 @@ function Graph2DInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
   // Force layout hook with continuous simulation
+  // Center at origin (0,0) - React Flow handles viewport positioning
   const layout = useForceLayout({
     physics,
     continuous: true, // Enable continuous simulation like Obsidian
-    centerX: 400,
-    centerY: 300,
+    centerX: 0,
+    centerY: 0,
   })
+
+  // Track node IDs to detect actual structure changes
+  const nodeIdsRef = useRef<string>('')
+  const edgeIdsRef = useRef<string>('')
 
   // Start continuous simulation when data changes (not on hover!)
   useEffect(() => {
-    const currentNodeCount = data.nodes.length
-    const currentEdgeCount = data.edges.length
-    const prev = previousDataRef.current
+    // Create stable identifiers for the graph structure
+    const currentNodeIds = data.nodes.map((n) => n.id).sort().join(',')
+    const currentEdgeIds = data.edges.map((e) => e.id).sort().join(',')
 
     // Only restart simulation if actual graph structure changed
-    if (currentNodeCount !== prev.nodeCount || currentEdgeCount !== prev.edgeCount) {
-      previousDataRef.current = { nodeCount: currentNodeCount, edgeCount: currentEdgeCount }
+    if (currentNodeIds !== nodeIdsRef.current || currentEdgeIds !== edgeIdsRef.current) {
+      nodeIdsRef.current = currentNodeIds
+      edgeIdsRef.current = currentEdgeIds
 
       if (flowNodes.length > 0) {
         // Start continuous simulation
         layout.startSimulation(flowNodes, flowEdges)
 
-        // Fit view after initial layout settles
+        // Fit view after simulation settles a bit
         if (!isInitialLayoutDone.current) {
           isInitialLayoutDone.current = true
-          setTimeout(() => {
-            reactFlowInstance.fitView({ padding: 0.2, duration: 300 })
-          }, 500) // Wait for simulation to settle a bit
         }
+        // Always fit view when graph structure changes
+        setTimeout(() => {
+          reactFlowInstance.fitView({ padding: 0.2, duration: 300 })
+        }, 100)
       }
     }
-  }, [data.nodes.length, data.edges.length, flowNodes, flowEdges, layout, reactFlowInstance])
+  }, [data.nodes, data.edges, flowNodes, flowEdges, layout, reactFlowInstance])
+
+  // Fit view once after simulation has settled (alpha drops below threshold)
+  const hasAutoFittedRef = useRef(false)
+  useEffect(() => {
+    const alpha = layout.simulationState?.alpha ?? 1
+    // When simulation cools down enough (alpha < 0.1), fit view once
+    if (alpha < 0.1 && !hasAutoFittedRef.current && nodes.length > 0) {
+      hasAutoFittedRef.current = true
+      reactFlowInstance.fitView({ padding: 0.2, duration: 300 })
+    }
+    // Reset the flag when simulation restarts (alpha goes back up)
+    if (alpha > 0.5) {
+      hasAutoFittedRef.current = false
+    }
+  }, [layout.simulationState?.alpha, nodes.length, reactFlowInstance])
 
   // Update edges when they change (without affecting simulation)
   useEffect(() => {
