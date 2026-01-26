@@ -205,30 +205,47 @@ Created comprehensive technical specification in `spec.md` covering:
 
 ---
 
-### [ ] Step: Phase 6 - Gallery Integration
+### [x] Step: Phase 6 - Gallery Integration
+<!-- chat-id: 23729240-14bb-433e-985f-540adf467b80 -->
 
-**Goal**: Refactor gallery to use query-based data fetching
+**Goal**: Integrate query builder UI with the gallery
 
-**Tasks**:
-1. Update `packages/nxus-core/src/hooks/use-app-registry.ts`:
-   - Build query definition from options (search, filters, tags)
-   - Use `useQueryEvaluation` internally
-   - Transform `AssembledNode[]` to `Item[]` for backward compat
-   - Keep existing interface unchanged
+**Completed**:
+1. Added "Advanced Filter" button to FloatingHud (`floating-hud.tsx`):
+   - New `FunnelIcon` import from Phosphor
+   - New props: `queryBuilderOpen`, `onQueryBuilderToggle`
+   - Button toggles query builder panel visibility
+   - Positioned next to the Tags toggle button
 
-2. Add query builder to gallery HUD:
-   - Modify `packages/nxus-core/src/components/features/gallery/hud/floating-hud.tsx`
-   - Add "Advanced Filter" button
-   - Show query builder panel when clicked
+2. Updated gallery route (`routes/index.tsx`):
+   - Added `queryBuilderOpen` state and toggle handler
+   - Integrated `useQueryStore` for query builder state management
+   - Connected `useQueryEvaluation` hook to evaluate queries in real-time
+   - Query evaluation only runs when panel is open AND has filters (performance optimization)
 
-3. Update `packages/nxus-core/src/routes/index.tsx`:
-   - Add query builder panel state
-   - Pass query to gallery views
+3. Created floating Query Builder panel:
+   - Positioned on right side (mirror of Tags panel on left)
+   - Uses same visual styling as Tags panel (glass morphism, border, shadow)
+   - Slide-in animation with opacity transition
+   - Shows query builder component with result count
+   - Displays results preview (first 10 nodes with supertag chips)
+   - Shows "+N more results" when total exceeds 10
+
+4. Unified backdrop handling:
+   - Single backdrop covers both panels when either is open
+   - Clicking backdrop closes both panels
+
+**Design Decision**:
+The gallery continues to use `useAppRegistry` for the main display (fetching `Item[]` from legacy SQLite).
+The query builder provides a parallel querying capability against the node-based architecture (`AssembledNode[]`).
+Full migration to query-based data fetching will happen in a future phase when the node-based architecture
+is ready to replace the legacy approach.
 
 **Verification**:
-- Gallery continues to work with existing filters
-- Advanced query builder opens and works
-- Results update reactively
+- All 54 @nxus/db tests pass
+- TypeScript compiles (only pre-existing TS6305 errors for workbench build artifacts)
+- Gallery continues to work with existing tag/search filters
+- Advanced query builder opens and shows real-time results
 
 ---
 

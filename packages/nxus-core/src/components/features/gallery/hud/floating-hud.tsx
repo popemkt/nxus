@@ -11,6 +11,7 @@ import {
   CommandIcon,
   GridFourIcon,
   CaretDownIcon,
+  FunnelIcon,
 } from '@phosphor-icons/react'
 import { useViewModeStore } from '@/stores/view-mode.store'
 import { useCommandPaletteStore } from '@/stores/command-palette.store'
@@ -27,6 +28,8 @@ interface FloatingHudProps {
   onSearchChange: (query: string) => void
   sidebarOpen: boolean
   onSidebarToggle: () => void
+  queryBuilderOpen?: boolean
+  onQueryBuilderToggle?: () => void
   inboxCount?: number
 }
 
@@ -35,6 +38,8 @@ export function FloatingHud({
   onSearchChange,
   sidebarOpen,
   onSidebarToggle,
+  queryBuilderOpen = false,
+  onQueryBuilderToggle,
   inboxCount = 0,
 }: FloatingHudProps) {
   const viewMode = useViewModeStore((s) => s.viewMode)
@@ -106,6 +111,20 @@ export function FloatingHud({
             weight={sidebarOpen ? 'fill' : 'regular'}
           />
         </button>
+
+        {/* Advanced Filter / Query Builder Toggle */}
+        {onQueryBuilderToggle && (
+          <button
+            className={cn(btnBase, queryBuilderOpen ? btnActive : btnInactive)}
+            onClick={onQueryBuilderToggle}
+            title={queryBuilderOpen ? 'Hide query builder' : 'Advanced filters'}
+          >
+            <FunnelIcon
+              className="size-4"
+              weight={queryBuilderOpen ? 'fill' : 'regular'}
+            />
+          </button>
+        )}
 
         <div className="w-px h-5 bg-foreground/10 mx-1" />
 
