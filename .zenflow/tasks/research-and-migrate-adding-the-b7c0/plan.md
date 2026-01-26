@@ -89,21 +89,34 @@ Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
-### [ ] Step 3: Type Definitions - Update Item Types
+### [x] Step 3: Type Definitions - Update Item Types
+<!-- chat-id: 6e005528-d4b1-4c52-9e50-79d7de03c85f -->
 
-**Files to modify:**
-- `packages/nxus-db/src/types/item.ts` - Add `types` array, keep `type` for compat
+**Completed**: Updated Item type definitions for multi-type support:
 
-**Implementation:**
-1. Add `types: z.array(ItemTypeSchema).min(1)` to base schema
-2. Add `primaryType: ItemTypeSchema` field
-3. Keep `type` as alias to `primaryType` for backward compatibility
-4. Update zod schemas with refinement (primaryType must be in types)
-5. Remove discriminated union (no longer needed)
+**Files modified:**
+- `packages/nxus-db/src/types/item.ts` - Complete rewrite of item schema
 
-**Verification:**
-- Type checking passes: `pnpm type-check`
-- Existing tests still pass
+**Implementation details:**
+1. Added `types: z.array(ItemTypeSchema).min(1)` to base schema
+2. Added `primaryType: ItemTypeSchema` field for display and backward compatibility
+3. Kept `type` as alias to `primaryType` (marked deprecated)
+4. Moved `ConfigFieldSchema` and `ConfigSchemaSchema` before `BaseItemSchema` (dependency order)
+5. Added all type-specific fields as optional to `BaseItemSchema`:
+   - `checkCommand`, `platform`, `installInstructions`, `configSchema` (for tool type)
+   - `startCommand`, `buildCommand` (for typescript type)
+   - `clonePath`, `branch` (for remote-repo type)
+6. Replaced discriminated union with unified `ItemSchema` using `superRefine`:
+   - Validates `primaryType` is in `types` array
+   - Validates `type` matches `primaryType`
+   - Validates tool-specific fields when 'tool' in types
+   - Validates remote-repo path is valid URL when 'remote-repo' in types
+7. Added type aliases: `ToolItem`, `TypeScriptItem`, `RemoteRepoItem`, `HtmlItem`
+8. Added type guards: `isToolItem()`, `isTypeScriptItem()`, `isRemoteRepoItem()`, `isHtmlItem()`
+
+**Verification completed:**
+- Build passes: `pnpm nx run nxus-core:build` succeeds
+- All tests pass: `pnpm nx run-many --target=test --all` (171 tests across 3 projects)
 
 ---
 
