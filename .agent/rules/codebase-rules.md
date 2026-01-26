@@ -17,10 +17,14 @@ description: Codebase conventions for nxus-core
 - Server functions: `*.server.ts`
 
 ## Server Functions
+
+### Naming & Return Types
 - Name with `ServerFn` suffix: `executeCommandServerFn`
 - Return `{ success: true; data } | { success: false; error: string }`
-- Use this exact format (other patterns don't work):
+
+### Basic Pattern (same package)
 ```typescript
+// For server functions defined in the SAME app (nxus-core)
 export const xyzServerFn = createServerFn({ method: 'POST' })
   .inputValidator(ZodSchema)
   .handler(async (ctx) => {
@@ -29,6 +33,51 @@ export const xyzServerFn = createServerFn({ method: 'POST' })
 
 // GET without input:
 export const xyzServerFn = createServerFn({ method: 'GET' }).handler(async () => {})
+```
+
+### External Package Pattern (CRITICAL)
+When importing server functions from **external packages** (e.g., `@nxus/workbench/server`, `@nxus/db/server`), you MUST use dynamic imports to prevent Node.js-only code from being bundled into the client.
+
+```typescript
+// ❌ BAD: Top-level import from external package
+import { someServerFn } from '@nxus/workbench/server'
+// This bundles better-sqlite3 into client code!
+
+// ✅ GOOD: Create local wrapper with dynamic import
+// File: src/services/xyz/xyz.server.ts
+import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
+
+export const someServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ /* ... */ }))
+  .handler(async (ctx) => {
+    // Dynamic import INSIDE handler - only runs on server
+    const { someServerFn: fn } = await import('@nxus/workbench/server')
+    return fn({ data: ctx.data })
+  })
+```
+
+Then import from the local wrapper:
+```typescript
+// In hooks or components
+import { someServerFn } from '@/services/xyz/xyz.server'
+```
+
+### When to Use Each Pattern
+
+| Scenario | Pattern |
+|----------|---------|
+| Server function in same app's `.server.ts` file | Basic pattern (top-level imports OK) |
+| Server function from `@nxus/workbench/server` | **Dynamic import wrapper required** |
+| Server function from `@nxus/db/server` | **Dynamic import wrapper required** |
+| Type-only imports from external packages | Safe (use `import type`) |
+
+### Existing Wrappers
+- `src/services/query/query.server.ts` - Wraps query and node mutation functions from `@nxus/workbench/server`
+
+### Why This Matters
+Without dynamic imports, Vite follows the import chain at build time:
+`@nxus/workbench/server` → `@nxus/db/server` → `better-sqlite3` → **client bundle breaks**
 ```
 
 ## Styling
