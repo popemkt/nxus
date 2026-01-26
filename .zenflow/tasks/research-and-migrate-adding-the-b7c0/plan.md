@@ -237,20 +237,44 @@ Updated `spec.md` section 13.5 with these decisions.
 
 ---
 
-### [ ] Step 7: Migration Script - Update Manifest Migration
+### [x] Step 7: Migration Script - Update Manifest Migration
+<!-- chat-id: 5c3778eb-c2a8-483d-902c-21badb67e7ba -->
 
-**Files to modify:**
-- `packages/nxus-core/scripts/migrate-manifests.ts` - Handle multi-type during migration
+**Completed**: Updated migration script to handle multi-type manifests:
 
-**Implementation:**
-1. Update to read `types` array from manifest (if present)
-2. Fall back to single `type` field for backward compat
-3. Populate `itemTypes` table during migration
-4. Set primary type from first element or explicit `primaryType` field
+**Files modified:**
+- `packages/nxus-core/scripts/migrate-manifests.ts` - Multi-type migration support
 
-**Verification:**
+**Implementation details:**
+
+1. **Added imports:**
+   - `itemTypes` table from `@nxus/db/server`
+   - `ItemType` type from `@nxus/db`
+
+2. **Added `normalizeManifestTypes()` function:**
+   - Handles both old format (`type: "tool"`) and new format (`types: ["tool", "repo"]`)
+   - Converts single `type` to `types: [type]` array
+   - Determines `primaryType` from explicit field or first element in `types` array
+   - Returns normalized `{ types, primaryType, type }` object
+
+3. **Updated migration flow:**
+   - Reads raw manifest from JSON file
+   - Normalizes type fields before validation
+   - Merges normalized types into manifest for schema validation
+   - Uses `primaryType` for the legacy `items.type` column (backward compatibility)
+
+4. **Added `itemTypes` table population:**
+   - Deletes existing types for the item (clean slate approach)
+   - Inserts all types from the `types` array
+   - Sets `isPrimary` flag based on match with `primaryType`
+   - Sets `order` based on position in array
+   - Logs multi-type items during migration
+
+**Verification completed:**
+- Build passes: `pnpm nx run nxus-core:build` succeeds
+- All tests pass: `pnpm nx run-many --target=test --all` (all 3 projects pass)
 - Migration handles both old and new manifest formats
-- All items have correct types after migration
+- All items populated in `itemTypes` junction table
 
 ---
 

@@ -4,8 +4,14 @@
  * Usage: npx tsx scripts/migrate-manifests.ts
  *
  * Reads all manifest.json files from src/data/apps/ and inserts them into
- * the apps and commands tables. Run this once to populate the database
- * from existing manifests.
+ * the items, item_types, and item_commands tables. Run this once to populate
+ * the database from existing manifests.
+ *
+ * Supports both legacy single-type format and new multi-type format:
+ * - Legacy: { "type": "tool" } → converted to { "types": ["tool"], "primaryType": "tool" }
+ * - New: { "types": ["tool", "remote-repo"], "primaryType": "tool" }
+ *
+ * The migration populates the item_types junction table for multi-type support.
  */
 
 import { eq } from '@nxus/db/server'
@@ -18,8 +24,10 @@ import {
   saveMasterDatabase,
   itemCommands,
   items,
+  itemTypes,
   ItemSchema,
 } from '@nxus/db/server'
+import type { ItemType } from '@nxus/db'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -30,6 +38,52 @@ const appsDir = resolve(__dirname, '../src/data/apps')
  */
 function toRawOrNull(value: unknown): any {
   return value ?? null
+}
+
+/**
+ * Normalize manifest type fields to multi-type format.
+ * Handles both old format (type: "tool") and new format (types: ["tool", "repo"]).
+ *
+ * @param manifest - Raw manifest object from JSON
+ * @returns Object with normalized types array, primaryType, and type fields
+ */
+function normalizeManifestTypes(manifest: Record<string, unknown>): {
+  types: ItemType[]
+  primaryType: ItemType
+  type: ItemType
+} {
+  const rawTypes = manifest.types as ItemType[] | undefined
+  const rawType = manifest.type as ItemType | undefined
+  const rawPrimaryType = manifest.primaryType as ItemType | undefined
+
+  // Determine types array
+  let types: ItemType[]
+  if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
+    // New format: types array provided
+    types = rawTypes
+  } else if (rawType) {
+    // Old format: single type, convert to array
+    types = [rawType]
+  } else {
+    // Fallback - shouldn't happen with valid manifests
+    throw new Error('Manifest must have either "type" or "types" field')
+  }
+
+  // Determine primary type
+  let primaryType: ItemType
+  if (rawPrimaryType && types.includes(rawPrimaryType)) {
+    // Explicit primaryType provided and is valid
+    primaryType = rawPrimaryType
+  } else {
+    // Use first type as primary
+    primaryType = types[0]
+  }
+
+  return {
+    types,
+    primaryType,
+    type: primaryType, // Deprecated alias
+  }
 }
 
 async function migrate() {
@@ -61,7 +115,29 @@ async function migrate() {
     console.log(`Processing ${appDir}...`)
 
     try {
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+      const rawManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+
+      // Normalize type fields (old single-type to new multi-type format)
+      let normalizedTypes: { types: ItemType[]; primaryType: ItemType; type: ItemType }
+      try {
+        normalizedTypes = normalizeManifestTypes(rawManifest)
+      } catch (err) {
+        validationErrors.push({
+          app: appDir,
+          errors: [`  - ${(err as Error).message}`],
+        })
+        console.log(`  ⚠ Type normalization error: ${(err as Error).message}`)
+        console.log(`  Skipping ${appDir}...`)
+        continue
+      }
+
+      // Merge normalized types into manifest for validation
+      const manifest = {
+        ...rawManifest,
+        types: normalizedTypes.types,
+        primaryType: normalizedTypes.primaryType,
+        type: normalizedTypes.type,
+      }
 
       // Validate full manifest against schema
       const validationResult = ItemSchema.safeParse(manifest)
@@ -81,12 +157,12 @@ async function migrate() {
       // Extract commands from manifest
       const appCommands = validatedManifest.commands || []
 
-      // Prepare app record
+      // Prepare app record (using primaryType for backward-compatible type field)
       const appRecord = {
         id: validatedManifest.id,
         name: validatedManifest.name,
         description: validatedManifest.description || '',
-        type: validatedManifest.type,
+        type: validatedManifest.primaryType, // Use primaryType for backward compat
         path: validatedManifest.path,
         homepage: validatedManifest.homepage || null,
         thumbnail: validatedManifest.thumbnail || null,
@@ -121,6 +197,28 @@ async function migrate() {
         console.log(`  + Inserted app: ${appRecord.id}`)
       }
       appsCount++
+
+      // Populate itemTypes junction table for multi-type support
+      // First, delete existing types for this item (clean slate)
+      db.delete(itemTypes).where(eq(itemTypes.itemId, validatedManifest.id)).run()
+
+      // Insert all types from the types array
+      const typesArray = validatedManifest.types
+      for (let i = 0; i < typesArray.length; i++) {
+        const itemType = typesArray[i]
+        const isPrimary = itemType === validatedManifest.primaryType
+        db.insert(itemTypes)
+          .values({
+            itemId: validatedManifest.id,
+            type: itemType,
+            isPrimary,
+            order: i,
+          })
+          .run()
+      }
+      if (typesArray.length > 1) {
+        console.log(`    Types: ${typesArray.join(', ')} (primary: ${validatedManifest.primaryType})`)
+      }
 
       // Insert commands
       for (const cmd of appCommands) {
