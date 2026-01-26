@@ -386,25 +386,39 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
       let tickCount = 0
 
       // On each tick, update node positions
+      // IMPORTANT: Use callback form of setNodes to preserve React Flow's internal state
+      // (measured dimensions, etc.) - see https://github.com/xyflow/xyflow/issues/4287
       simulation.on('tick', () => {
         tickCount++
-        const nodeMap = new Map(forceNodes.map((n) => [n.id, n]))
+        const forceNodeMap = new Map(forceNodes.map((n) => [n.id, n]))
 
-        const updatedNodes = inputNodes.map((node) => {
-          const forceNode = nodeMap.get(node.id)
-          const position = {
-            x: forceNode?.x ?? 0,
-            y: forceNode?.y ?? 0,
-          }
-          positionCache.current.set(node.id, position)
+        // Use callback to get current nodes with their measured dimensions
+        setNodes((currentNodes) =>
+          currentNodes.map((node) => {
+            const forceNode = forceNodeMap.get(node.id)
+            if (!forceNode) return node
 
-          return {
-            ...node,
-            position,
-          } as Node
-        })
+            const newPosition = {
+              x: forceNode.x ?? 0,
+              y: forceNode.y ?? 0,
+            }
+            positionCache.current.set(node.id, newPosition)
 
-        setNodes(updatedNodes)
+            // Only update if position changed (avoid unnecessary re-renders)
+            if (
+              node.position?.x === newPosition.x &&
+              node.position?.y === newPosition.y
+            ) {
+              return node
+            }
+
+            // Preserve all node properties including 'measured' dimensions
+            return {
+              ...node,
+              position: newPosition,
+            }
+          }),
+        )
 
         setSimulationState({
           isRunning: true,
