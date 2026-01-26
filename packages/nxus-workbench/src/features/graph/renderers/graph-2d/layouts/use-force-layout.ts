@@ -178,10 +178,6 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
     physics: { ...DEFAULT_PHYSICS, ...options.physics },
   }
 
-  // Keep center coordinates in ref for stable access in callbacks
-  const centerRef = useRef({ x: config.centerX, y: config.centerY })
-  centerRef.current = { x: config.centerX, y: config.centerY }
-
   // Simulation state
   const [simulationState, setSimulationState] = useState<SimulationState>({
     isRunning: false,
@@ -390,33 +386,25 @@ export function useForceLayout(options: UseForceLayoutOptions = {}) {
       let tickCount = 0
 
       // On each tick, update node positions
-      // Use setNodes callback form to preserve any state changes (like hover)
       simulation.on('tick', () => {
         tickCount++
-        const forceNodeMap = new Map(forceNodes.map((n) => [n.id, n]))
+        const nodeMap = new Map(forceNodes.map((n) => [n.id, n]))
 
-        // Update positions using callback to preserve current node state
-        setNodes((currentNodes) =>
-          currentNodes.map((node) => {
-            const forceNode = forceNodeMap.get(node.id)
-            if (forceNode) {
-              // Safety check for NaN/undefined positions - use ref for stable center values
-              const x = forceNode.x ?? 0
-              const y = forceNode.y ?? 0
-              const center = centerRef.current
-              const position: { x: number; y: number } = {
-                x: Number.isFinite(x) ? x : center.x,
-                y: Number.isFinite(y) ? y : center.y,
-              }
-              positionCache.current.set(node.id, position)
-              return {
-                ...node,
-                position,
-              }
-            }
-            return node
-          }),
-        )
+        const updatedNodes = inputNodes.map((node) => {
+          const forceNode = nodeMap.get(node.id)
+          const position = {
+            x: forceNode?.x ?? 0,
+            y: forceNode?.y ?? 0,
+          }
+          positionCache.current.set(node.id, position)
+
+          return {
+            ...node,
+            position,
+          } as Node
+        })
+
+        setNodes(updatedNodes)
 
         setSimulationState({
           isRunning: true,
