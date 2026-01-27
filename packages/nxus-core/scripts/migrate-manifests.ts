@@ -25,7 +25,9 @@ import {
   itemCommands,
   items,
   itemTypes,
+  nodes,
   ItemSchema,
+  syncItemTypesToNodeSupertags,
 } from '@nxus/db/server'
 import type { ItemType } from '@nxus/db'
 
@@ -218,6 +220,21 @@ async function migrate() {
       }
       if (typesArray.length > 1) {
         console.log(`    Types: ${typesArray.join(', ')} (primary: ${validatedManifest.primaryType})`)
+      }
+
+      // Sync to node-based architecture (if node exists)
+      const nodeSystemId = `item:${validatedManifest.id}`
+      const existingNode = db
+        .select()
+        .from(nodes)
+        .where(eq(nodes.systemId, nodeSystemId))
+        .get()
+
+      if (existingNode) {
+        const synced = syncItemTypesToNodeSupertags(db, validatedManifest.id, existingNode.id)
+        if (synced && typesArray.length > 1) {
+          console.log(`    Node supertags synced`)
+        }
       }
 
       // Insert commands
