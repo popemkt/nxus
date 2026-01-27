@@ -38,10 +38,12 @@ function ThumbnailWithFallback({
   appId,
   appName,
   compact,
+  priority = false,
 }: {
   appId: string
   appName: string
   compact?: boolean
+  priority?: boolean
 }) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
     'loading',
@@ -63,6 +65,8 @@ function ThumbnailWithFallback({
           src={src}
           alt={appName}
           className="h-full w-full object-cover"
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
           onLoad={() => setStatus('loaded')}
           onError={() => {
             if (src.endsWith('.svg')) {
@@ -84,6 +88,8 @@ function ThumbnailWithFallback({
         src={src}
         alt={appName}
         className="h-full w-full object-cover"
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
         style={{ viewTransitionName: `app-thumbnail-${appId}` }}
       />
     </div>
@@ -91,7 +97,15 @@ function ThumbnailWithFallback({
 }
 
 // Individual card component
-function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
+function ItemCard({
+  app,
+  compact,
+  priority = false,
+}: {
+  app: Item
+  compact: boolean
+  priority?: boolean
+}) {
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false)
   const TypeIcon = APP_TYPE_ICONS[app.type]
   const isTool = app.type === 'tool'
@@ -138,6 +152,8 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
                 src={app.thumbnail}
                 alt={app.name}
                 className="h-full w-full object-cover"
+                loading={priority ? 'eager' : 'lazy'}
+                decoding="async"
                 style={{ viewTransitionName: `app-thumbnail-${app.id}` }}
               />
             </div>
@@ -146,6 +162,7 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
               appId={app.id}
               appName={app.name}
               compact={compact}
+              priority={priority}
             />
           )}
 
@@ -290,8 +307,13 @@ export function GalleryView({
   if (!groupByType) {
     return (
       <div className={gridClass}>
-        {items.map((app) => (
-          <ItemCard key={app.id} app={app} compact={compact} />
+        {items.map((app, index) => (
+          <ItemCard
+            key={app.id}
+            app={app}
+            compact={compact}
+            priority={index < 12}
+          />
         ))}
       </div>
     )
@@ -313,8 +335,13 @@ export function GalleryView({
             Tools & Dependencies
           </h2>
           <div className={gridClass}>
-            {tools.map((app) => (
-              <ItemCard key={app.id} app={app} compact={compact} />
+            {tools.map((app, index) => (
+              <ItemCard
+                key={app.id}
+                app={app}
+                compact={compact}
+                priority={index < 12}
+              />
             ))}
           </div>
         </section>
@@ -331,8 +358,13 @@ export function GalleryView({
             Applications
           </h2>
           <div className={gridClass}>
-            {repos.map((app) => (
-              <ItemCard key={app.id} app={app} compact={compact} />
+            {repos.map((app, index) => (
+              <ItemCard
+                key={app.id}
+                app={app}
+                compact={compact}
+                priority={index < 12}
+              />
             ))}
           </div>
         </section>
