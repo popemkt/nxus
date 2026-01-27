@@ -117,7 +117,7 @@ export function AppActionsDialog({
                 </Button>
               )}
 
-              {app.type === 'remote-repo' &&
+              {app.types?.includes('remote-repo') &&
                 effectiveStatus !== 'installed' && (
                   <Button
                     onClick={() => setStep('configure-install')}

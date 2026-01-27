@@ -53,8 +53,11 @@ import { installModalService } from '@/stores/install-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import {
   APP_TYPE_ICONS,
-  APP_TYPE_LABELS_LONG,
+  APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
+  getFirstTypeIcon,
+  getTypeBadges,
+  hasMultipleTypes,
 } from '@/lib/app-constants'
 import { openApp } from '@/lib/app-actions'
 import { Skeleton } from '@nxus/ui'
@@ -288,7 +291,7 @@ function OverviewContent({
 
     if (result.success && result.path) {
       // For remote-repo apps, validate that the folder is a git repo with the correct remote
-      if (app.type === 'remote-repo' && app.path) {
+      if (app.types?.includes('remote-repo') && app.path) {
         console.log(
           '[handleChooseExisting] Checking git remote for:',
           result.path,
@@ -367,10 +370,10 @@ function OverviewContent({
       {/* Instance Selector */}
       <InstanceSelector
         appId={appId}
-        canAddInstance={app.type === 'remote-repo'}
+        canAddInstance={app.types?.includes('remote-repo') ?? false}
         onAddInstanceClick={() => installModalService.open(app)}
         onChooseExistingClick={
-          app.type === 'remote-repo' ? handleChooseExisting : undefined
+          app.types?.includes('remote-repo') ? handleChooseExisting : undefined
         }
         isAddingInstance={false}
         onInstanceSelect={setSelectedInstance}
@@ -383,8 +386,8 @@ function OverviewContent({
           <CardDescription>Interact with this application</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Primary Actions */}
-          {effectiveStatus === 'installed' && app.type === 'html' && (
+          {/* Primary Actions - show all applicable based on types */}
+          {effectiveStatus === 'installed' && app.types?.includes('html') && (
             <Button onClick={handleOpen} className="w-full justify-start">
               <PlayIcon data-icon="inline-start" />
               Open Application
@@ -392,7 +395,7 @@ function OverviewContent({
           )}
 
           {/* Refresh Status button for tools */}
-          {app.type === 'tool' && (
+          {app.types?.includes('tool') && (
             <Button
               variant="outline"
               className="w-full justify-start"
@@ -404,7 +407,7 @@ function OverviewContent({
           )}
 
           {/* Refresh Git Status button for remote repos */}
-          {app.type === 'remote-repo' && selectedInstance && (
+          {app.types?.includes('remote-repo') && selectedInstance && (
             <Button
               variant="outline"
               className="w-full justify-start"
@@ -516,7 +519,7 @@ function AppDetailPage() {
   const { isInstalled } = useAppCheck(appId)
 
   // Health check for the tool itself - uses TanStack Query via domain hook
-  const isTool = app?.type === 'tool'
+  const isTool = app?.types?.includes('tool') ?? false
   const hasCheckCommand =
     isTool && app && 'checkCommand' in app && !!app.checkCommand
   const healthCheck = useToolHealth(app, hasCheckCommand)
@@ -550,7 +553,7 @@ function AppDetailPage() {
     })
 
     // Increment git status refresh key for remote repos after successful command
-    if (result.success && app?.type === 'remote-repo') {
+    if (result.success && app?.types?.includes('remote-repo')) {
       setGitStatusRefreshKey((k) => k + 1)
     }
   }
@@ -606,7 +609,8 @@ function AppDetailPage() {
     )
   }
 
-  const TypeIcon = APP_TYPE_ICONS[app.type]
+  const TypeIcon = getFirstTypeIcon(app)
+  const typeBadges = getTypeBadges(app)
   const effectiveStatus = isInstalled ? 'installed' : app.status
 
   const handleOpen = () => {
@@ -654,7 +658,20 @@ function AppDetailPage() {
           <Badge variant={STATUS_VARIANTS[effectiveStatus]}>
             {effectiveStatus.replace('-', ' ')}
           </Badge>
-          <Badge variant="secondary">{APP_TYPE_LABELS_LONG[app.type]}</Badge>
+          {/* Show all type badges */}
+          {typeBadges.map((badge) => {
+            const BadgeIcon = badge.icon
+            return (
+              <Badge
+                key={badge.type}
+                variant={badge.isFirst ? 'secondary' : 'outline'}
+                className="flex items-center gap-1"
+              >
+                <BadgeIcon className="h-3 w-3" />
+                {badge.label}
+              </Badge>
+            )
+          })}
 
           {/* Health check status for tools in header */}
           {hasCheckCommand && healthCheck.isLoading && (
@@ -782,7 +799,7 @@ function AppDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* App Actions Panel (for tools) */}
-          {app.type === 'tool' && (
+          {app.types?.includes('tool') && (
             <AppActionsPanel
               app={app}
               onRunCommand={async (command) => {
@@ -875,7 +892,7 @@ function AppDetailPage() {
           </Card>
 
           {/* Repository Info for remote repos */}
-          {app.type === 'remote-repo' && (
+          {app.types?.includes('remote-repo') && (
             <Card>
               <CardHeader>
                 <CardTitle>Repository</CardTitle>

@@ -430,7 +430,7 @@ function AppConfigSettings({ searchQuery }: { searchQuery: string }) {
     const apps = appsResult.success ? appsResult.data : []
     return apps.filter(
       (app): app is ToolItem =>
-        app.type === 'tool' && !!(app as ToolItem).configSchema,
+        (app.types?.includes('tool') ?? false) && !!(app as ToolItem).configSchema,
     )
   }, [])
 

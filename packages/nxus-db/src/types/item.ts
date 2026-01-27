@@ -295,65 +295,6 @@ export const DocEntrySchema = z.object({
 export type DocEntry = z.infer<typeof DocEntrySchema>
 
 /**
- * Base app configuration schema
- */
-const BaseItemSchema = z.object({
-  id: z.string().describe('Unique identifier'),
-  name: z.string().min(1).describe('Display name'),
-  description: z.string().describe('App description'),
-  type: ItemTypeSchema,
-  path: z.string().describe('Local path or remote URL'),
-  homepage: z.string().url().optional().describe('URL to homepage/preview'),
-  thumbnail: z.string().optional().describe('Path or URL to thumbnail image'),
-  installConfig: InstallConfigSchema.optional(),
-  metadata: ItemMetadataSchema,
-  status: ItemStatusSchema.default('not-installed'),
-  dependencies: z
-    .array(z.string())
-    .optional()
-    .describe('Item IDs this item depends on'),
-  commands: z
-    .array(ItemCommandSchema)
-    .optional()
-    .describe('Config-driven commands'),
-  docs: z
-    .array(DocEntrySchema)
-    .optional()
-    .describe('Documentation files for this app'),
-})
-
-/**
- * HTML app - single HTML file that can be opened in browser
- */
-export const HtmlItemSchema = BaseItemSchema.extend({
-  type: z.literal('html'),
-  path: z.string().describe('Path to HTML file'),
-})
-export type HtmlItem = z.infer<typeof HtmlItemSchema>
-
-/**
- * TypeScript app - full TypeScript application
- */
-export const TypeScriptItemSchema = BaseItemSchema.extend({
-  type: z.literal('typescript'),
-  path: z.string().describe('Path to TypeScript project root'),
-  startCommand: z.string().optional().describe('Command to start the app'),
-  buildCommand: z.string().optional().describe('Command to build the app'),
-})
-export type TypeScriptItem = z.infer<typeof TypeScriptItemSchema>
-
-/**
- * Remote repository - GitHub/GitLab repo to clone
- */
-export const RemoteRepoItemSchema = BaseItemSchema.extend({
-  type: z.literal('remote-repo'),
-  path: z.string().url().describe('Git repository URL'),
-  clonePath: z.string().optional().describe('Local path to clone to'),
-  branch: z.string().optional().describe('Branch to checkout'),
-})
-export type RemoteRepoItem = z.infer<typeof RemoteRepoItemSchema>
-
-/**
  * Configuration field schema for tools that need configuration
  */
 export const ConfigFieldSchema = z.object({
@@ -375,35 +316,205 @@ export const ConfigSchemaSchema = z.object({
 export type ConfigSchema = z.infer<typeof ConfigSchemaSchema>
 
 /**
- * Tool app - installable tools/dependencies like node, npm, git
+ * Base app configuration schema
+ *
+ * Multi-type support: Items can have multiple types via the `types` array.
+ * The first type in the array (`types[0]`) is used for display purposes (icon, color, grouping).
+ * The `type` field is kept for backward compatibility and equals `types[0]`.
  */
-export const ToolItemSchema = BaseItemSchema.extend({
-  type: z.literal('tool'),
-  path: z.string().describe('Installation source or package name'),
+const BaseItemSchema = z.object({
+  id: z.string().describe('Unique identifier'),
+  name: z.string().min(1).describe('Display name'),
+  description: z.string().describe('App description'),
+  /**
+   * All types assigned to this item.
+   * At least one type is required.
+   * The first type (`types[0]`) is used for display (icon, color, grouping).
+   */
+  types: z.array(ItemTypeSchema).min(1).describe('All types for this item'),
+  /**
+   * @deprecated Use `types[0]` instead. Kept for backward compatibility.
+   * This equals `types[0]` (the first/display type).
+   */
+  type: ItemTypeSchema.describe('First type (deprecated, use types[0])'),
+  path: z.string().describe('Local path or remote URL'),
+  homepage: z.string().url().optional().describe('URL to homepage/preview'),
+  thumbnail: z.string().optional().describe('Path or URL to thumbnail image'),
+  installConfig: InstallConfigSchema.optional(),
+  metadata: ItemMetadataSchema,
+  status: ItemStatusSchema.default('not-installed'),
+  dependencies: z
+    .array(z.string())
+    .optional()
+    .describe('Item IDs this item depends on'),
+  commands: z
+    .array(ItemCommandSchema)
+    .optional()
+    .describe('Config-driven commands'),
+  docs: z
+    .array(DocEntrySchema)
+    .optional()
+    .describe('Documentation files for this app'),
+
+  // Type-specific fields (optional at schema level, validated via refinements)
+  /**
+   * Command to check if tool is installed (e.g., "node --version").
+   * Required when 'tool' is in types array.
+   */
+  checkCommand: z
+    .string()
+    .optional()
+    .describe('Command to check if installed (required for tool type)'),
+  /**
+   * Supported platforms for tool installation.
+   * Required when 'tool' is in types array.
+   */
+  platform: z
+    .array(PlatformSchema)
+    .optional()
+    .describe('Supported platforms (required for tool type)'),
+  /**
+   * How to install this tool.
+   */
   installInstructions: z
     .string()
     .optional()
     .describe('How to install this tool'),
-  checkCommand: z
-    .string()
-    .describe('Command to check if installed (e.g., "node --version")'),
-  platform: z.array(PlatformSchema).describe('Supported platforms'),
+  /**
+   * Configuration fields for this tool (e.g., API keys).
+   */
   configSchema: ConfigSchemaSchema.optional().describe(
     'Configuration fields for this tool (e.g., API keys)',
   ),
+  /**
+   * Command to start the TypeScript app.
+   */
+  startCommand: z.string().optional().describe('Command to start the app'),
+  /**
+   * Command to build the TypeScript app.
+   */
+  buildCommand: z.string().optional().describe('Command to build the app'),
+  /**
+   * Local path to clone remote-repo to.
+   */
+  clonePath: z.string().optional().describe('Local path to clone to'),
+  /**
+   * Branch to checkout for remote-repo.
+   */
+  branch: z.string().optional().describe('Branch to checkout'),
 })
-export type ToolItem = z.infer<typeof ToolItemSchema>
 
 /**
- * Discriminated union of all app types
+ * Unified Item schema with multi-type support.
+ *
+ * Replaces the previous discriminated union to allow items to have multiple types.
+ * Type-specific fields are validated via refinements based on the `types` array.
  */
-export const ItemSchema = z.discriminatedUnion('type', [
-  HtmlItemSchema,
-  TypeScriptItemSchema,
-  RemoteRepoItemSchema,
-  ToolItemSchema,
-])
+export const ItemSchema = BaseItemSchema.superRefine((data, ctx) => {
+  // Validate: type (deprecated) must match types[0]
+  if (data.type !== data.types[0]) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'type must match types[0] (type is deprecated)',
+      path: ['type'],
+    })
+  }
+
+  // Validate tool-specific fields
+  if (data.types.includes('tool')) {
+    if (!data.checkCommand) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "checkCommand is required when 'tool' is in types",
+        path: ['checkCommand'],
+      })
+    }
+    if (!data.platform || data.platform.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "platform is required when 'tool' is in types",
+        path: ['platform'],
+      })
+    }
+  }
+
+  // Validate remote-repo-specific fields
+  if (data.types.includes('remote-repo')) {
+    // path should be a valid URL for remote-repo
+    try {
+      new URL(data.path)
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "path must be a valid URL when 'remote-repo' is in types",
+        path: ['path'],
+      })
+    }
+  }
+})
 export type Item = z.infer<typeof ItemSchema>
+
+/**
+ * Type alias for items that have 'tool' in their types array.
+ * Use type guard `isToolItem` to narrow the type.
+ */
+export type ToolItem = Item & {
+  checkCommand: string
+  platform: Platform[]
+}
+
+/**
+ * Type alias for items that have 'typescript' in their types array.
+ */
+export type TypeScriptItem = Item & {
+  startCommand?: string
+  buildCommand?: string
+}
+
+/**
+ * Type alias for items that have 'remote-repo' in their types array.
+ */
+export type RemoteRepoItem = Item & {
+  clonePath?: string
+  branch?: string
+}
+
+/**
+ * Type alias for items that have 'html' in their types array.
+ */
+export type HtmlItem = Item
+
+/**
+ * Type guard: check if item has 'tool' type
+ */
+export function isToolItem(item: Item): item is ToolItem {
+  return (
+    item.types.includes('tool') &&
+    typeof item.checkCommand === 'string' &&
+    Array.isArray(item.platform)
+  )
+}
+
+/**
+ * Type guard: check if item has 'typescript' type
+ */
+export function isTypeScriptItem(item: Item): item is TypeScriptItem {
+  return item.types.includes('typescript')
+}
+
+/**
+ * Type guard: check if item has 'remote-repo' type
+ */
+export function isRemoteRepoItem(item: Item): item is RemoteRepoItem {
+  return item.types.includes('remote-repo')
+}
+
+/**
+ * Type guard: check if item has 'html' type
+ */
+export function isHtmlItem(item: Item): item is HtmlItem {
+  return item.types.includes('html')
+}
 
 /**
  * App registry containing all apps

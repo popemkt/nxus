@@ -215,3 +215,28 @@ export const itemTagConfigs = sqliteTable('item_tag_configs', {
 
 export type ItemTagConfig = typeof itemTagConfigs.$inferSelect
 export type NewItemTagConfig = typeof itemTagConfigs.$inferInsert
+
+// ============================================================================
+// Item Types Junction Table - Multi-type support for items
+// ============================================================================
+
+/**
+ * Item types junction table - allows items to have multiple types
+ * e.g., an item can be both a "tool" and a "remote-repo"
+ *
+ * Primary key: (item_id, type) - each item can have each type at most once
+ * order: Sort order for display. order=0 is the first/display type.
+ *        The first type (order=0) is used for display purposes (icon, color, grouping).
+ */
+export const itemTypes = sqliteTable(
+  'item_types',
+  {
+    itemId: text('item_id').notNull(),
+    type: text('type').$type<AppType>().notNull(),
+    order: integer('order').default(0),
+  },
+  (table) => [primaryKey({ columns: [table.itemId, table.type] })],
+)
+
+export type ItemTypeEntry = typeof itemTypes.$inferSelect
+export type NewItemTypeEntry = typeof itemTypes.$inferInsert

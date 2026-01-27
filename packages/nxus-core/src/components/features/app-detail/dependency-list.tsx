@@ -40,7 +40,7 @@ interface DependencyItemProps {
 }
 
 function DependencyItem({ dependency, onInstall }: DependencyItemProps) {
-  const isTool = dependency.type === 'tool'
+  const isTool = dependency.types?.includes('tool') ?? false
   const { isInstalled: isRepoInstalled } = useAppCheck(dependency.id)
 
   // Health check for tools - uses TanStack Query via domain hook

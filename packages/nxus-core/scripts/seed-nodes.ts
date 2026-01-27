@@ -18,8 +18,10 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   ItemSchema,
+  ITEM_TYPE_TO_SUPERTAG,
   type TagRef,
 } from '@nxus/db/server'
+import type { ItemType } from '@nxus/db'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -255,8 +257,35 @@ export async function seedNodes() {
 
   for (const appDir of appDirs) {
     const manifestPath = join(appsDir, appDir, 'manifest.json')
-    const manifest = loadJsonFile<Record<string, unknown>>(manifestPath)
-    if (!manifest) continue
+    const rawManifest = loadJsonFile<Record<string, unknown>>(manifestPath)
+    if (!rawManifest) continue
+
+    // Normalize type fields (old single-type to new multi-type format)
+    const rawTypes = rawManifest.types as ItemType[] | undefined
+    const rawType = rawManifest.type as ItemType | undefined
+    const rawPrimaryType = rawManifest.primaryType as ItemType | undefined
+
+    let types: ItemType[]
+    if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
+      types = rawTypes
+    } else if (rawType) {
+      types = [rawType]
+    } else {
+      console.error(`❌ No type field for ${appDir}, skipping...`)
+      continue
+    }
+
+    const primaryType = (rawPrimaryType && types.includes(rawPrimaryType))
+      ? rawPrimaryType
+      : types[0]
+
+    // Merge normalized types into manifest for validation
+    const manifest = {
+      ...rawManifest,
+      types,
+      primaryType,
+      type: primaryType,
+    }
 
     const validationResult = ItemSchema.safeParse(manifest)
     if (!validationResult.success) {
@@ -295,14 +324,29 @@ export async function seedNodes() {
 
     itemNodeIds.set(item.id, nodeId)
 
-    // Assign supertag
-    let supertagId = ST.item
-    if (item.type === 'tool') supertagId = ST.tool
-    else if (item.type === 'remote-repo') supertagId = ST.repo
-    addProperty(db, nodeId, F.supertag, JSON.stringify(supertagId))
+    // Assign supertag(s) - support multi-type
+    // Get all types from the item (types array or fallback to single type)
+    const itemTypes: ItemType[] = item.types && item.types.length > 0
+      ? item.types
+      : [item.primaryType || item.type]
 
-    // Properties
-    addProperty(db, nodeId, F.type, JSON.stringify(item.type))
+    // Add supertag for each type
+    for (let i = 0; i < itemTypes.length; i++) {
+      const itemType = itemTypes[i]
+      const supertagSystemId = ITEM_TYPE_TO_SUPERTAG[itemType]
+      if (supertagSystemId) {
+        const supertagId = getSystemNodeId(db, supertagSystemId)
+        addProperty(db, nodeId, F.supertag, JSON.stringify(supertagId), i)
+      }
+    }
+
+    // If no specific supertags, fall back to generic item supertag
+    if (itemTypes.every(t => !ITEM_TYPE_TO_SUPERTAG[t])) {
+      addProperty(db, nodeId, F.supertag, JSON.stringify(ST.item))
+    }
+
+    // Properties - use primaryType for backward compat
+    addProperty(db, nodeId, F.type, JSON.stringify(item.primaryType || item.type))
     addProperty(db, nodeId, F.path, JSON.stringify(item.path))
     if (item.description)
       addProperty(db, nodeId, F.description, JSON.stringify(item.description))
@@ -553,3 +597,6 @@ export async function seedNodes() {
   )
   console.log('='.repeat(50) + '\n')
 }
+
+// Run if executed directly
+seedNodes().catch(console.error)

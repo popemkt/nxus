@@ -180,7 +180,7 @@ export const genericCommands: GenericCommand[] = [
     name: 'Add Instance',
     icon: 'Plus',
     target: 'item',
-    targetFilter: (app) => app.type === 'remote-repo',
+    targetFilter: (app) => app.types?.includes('remote-repo') ?? false,
     execute: async (appId) => {
       if (!appId) return
       // Import dynamically to avoid circular deps
@@ -191,7 +191,7 @@ export const genericCommands: GenericCommand[] = [
         '@/services/apps/registry.service'
       )
       const result = appRegistryService.getAppById(appId)
-      if (result.success && result.data.type === 'remote-repo') {
+      if (result.success && result.data.types?.includes('remote-repo')) {
         installModalService.open(result.data)
       }
     },
@@ -201,7 +201,7 @@ export const genericCommands: GenericCommand[] = [
     name: 'Choose Existing Instance',
     icon: 'FolderPlus',
     target: 'item',
-    targetFilter: (app) => app.type === 'remote-repo',
+    targetFilter: (app) => app.types?.includes('remote-repo') ?? false,
     execute: async (appId) => {
       if (!appId) return
       const { openFolderPickerServerFn } = await import(

@@ -465,7 +465,7 @@ export function AppActionsPanel({
       </Card>
 
       {/* Config Modal */}
-      {app.type === 'tool' && (app as ToolItem).configSchema && (
+      {app.types?.includes('tool') && (app as ToolItem).configSchema && (
         <ConfigModal
           app={app as ToolItem}
           open={configModalOpen}
