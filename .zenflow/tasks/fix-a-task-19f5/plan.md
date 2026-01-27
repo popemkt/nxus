@@ -18,47 +18,58 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
+<!-- chat-id: fd6ec081-c138-47a7-ad6c-aca59e62d4d9 -->
 
-Assess the task's difficulty, as underestimating it leads to poor outcomes.
-- easy: Straightforward implementation, trivial bug fix or feature
-- medium: Moderate complexity, some edge cases or caveats to consider
-- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
+**Difficulty**: Medium
 
-Create a technical specification for the task that is appropriate for the complexity level:
-- Review the existing codebase architecture and identify reusable components.
-- Define the implementation approach based on established patterns in the project.
-- Identify all source code files that will be created or modified.
-- Define any necessary data model, API, or interface changes.
-- Describe verification steps using the project's test and lint commands.
+Investigated the query system duplication between nxus-core and nxus-workbench. The main route already correctly imports from workbench, but duplicate files remain in nxus-core.
 
-Save the output to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach
-- Source code structure changes
-- Data model / API / interface changes
-- Verification approach
+**Findings**:
+- 20 duplicate files to delete from nxus-core
+- 1 file needs import update before deletion (node-inspector.tsx)
+- All required exports available from @nxus/workbench and @nxus/workbench/server
 
-If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
-- Break down the work into concrete tasks (incrementable, testable milestones)
-- Each task should reference relevant contracts and include verification steps
-- Replace the Implementation step below with the planned tasks
-
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
-
-Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
+See `spec.md` for full technical specification.
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Update Import in node-inspector.tsx
 
-Implement the task according to the technical specification and general engineering best practices.
+Update the node-inspector.tsx file to import `getBacklinksServerFn` from `@nxus/workbench/server` instead of the local duplicate.
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase.
-3. Add and run relevant tests and linters.
-4. Perform basic manual verification if applicable.
-5. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+**File**: `packages/nxus-core/src/components/features/debug/node-inspector.tsx`
+
+Change:
+```typescript
+import { getBacklinksServerFn } from '@/services/query/query.server'
+```
+To:
+```typescript
+import { getBacklinksServerFn } from '@nxus/workbench/server'
+```
+
+---
+
+### [ ] Step: Delete Duplicate Query Files
+
+Remove all duplicate query-related files from nxus-core:
+
+1. Delete entire directory: `src/components/features/query-builder/` (17 files)
+2. Delete: `src/services/query/query.server.ts`
+3. Delete: `src/hooks/use-query.ts`
+4. Delete: `src/stores/query.store.ts`
+5. Clean up empty `src/services/query/` directory if applicable
+
+---
+
+### [ ] Step: Verify Build and Types
+
+Run verification commands to ensure no broken imports:
+
+1. Run `pnpm tsc --noEmit` in nxus-core package
+2. Run `pnpm lint` to check for lint issues
+3. Run `pnpm build` to verify the application builds
+4. Write report to `{@artifacts_path}/report.md`
+
+Note: SQLite error in browser is expected per task description (separate issue)
