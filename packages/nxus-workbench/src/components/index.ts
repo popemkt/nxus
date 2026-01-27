@@ -16,3 +16,7 @@ export type { SupertagSidebarProps } from './supertag-sidebar/SupertagSidebar.js
 
 // Shared components
 export { NodeBadge, NodeLink, SupertagChip } from './shared/index.js'
+
+// Layout components
+export { Sidebar, SidebarIcon } from './layout/index.js'
+export type { SidebarProps, ViewMode, SidebarIconProps } from './layout/index.js'
