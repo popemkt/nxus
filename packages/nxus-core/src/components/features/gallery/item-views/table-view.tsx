@@ -23,6 +23,7 @@ import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
+  getTypeBadges,
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
 import { cn } from '@nxus/ui'
@@ -35,7 +36,7 @@ const columnHelper = createColumnHelper<Item>()
 
 // Cell component for health status - uses TanStack Query via domain hook
 function HealthCell({ app }: { app: Item }) {
-  const isTool = app.type === 'tool'
+  const isTool = app.types?.includes('tool') ?? false
   const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
   const healthCheck = useToolHealth(app, hasCheckCommand)
 
@@ -83,15 +84,26 @@ export function TableView({ items }: TableViewProps) {
           </div>
         ),
       }),
-      columnHelper.accessor('type', {
+      columnHelper.accessor('types', {
         header: 'Type',
         cell: (info) => {
-          const type = info.getValue()
-          const TypeIcon = APP_TYPE_ICONS[type]
+          const types = info.getValue()
+          const badges = getTypeBadges({ types })
           return (
-            <div className="flex items-center gap-2">
-              <TypeIcon className="h-4 w-4 text-muted-foreground" />
-              <span>{APP_TYPE_LABELS_SHORT[type]}</span>
+            <div className="flex items-center gap-1">
+              {badges.map((badge) => {
+                const TypeIcon = badge.icon
+                return (
+                  <Badge
+                    key={badge.type}
+                    variant={badge.isFirst ? 'secondary' : 'outline'}
+                    className="flex items-center gap-1 text-xs"
+                  >
+                    <TypeIcon className="h-3 w-3" />
+                    {badge.label}
+                  </Badge>
+                )
+              })}
             </div>
           )
         },

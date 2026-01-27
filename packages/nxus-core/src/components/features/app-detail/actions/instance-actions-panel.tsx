@@ -104,10 +104,10 @@ export function InstanceActionsPanel({
   const [gitStatus, setGitStatus] = React.useState<GitStatus | null>(null)
   const [checkingGit, setCheckingGit] = React.useState(false)
 
-  // Get type-specific actions
+  // Get type-specific actions - merge from all types
   const defaultActions = React.useMemo(
-    () => getActionsForType(app.type),
-    [app.type],
+    () => getActionsForTypes(app.types),
+    [app.types],
   )
 
   // Get custom commands from app config
@@ -142,7 +142,7 @@ export function InstanceActionsPanel({
 
   // Check git status when instance changes or refresh key increments
   React.useEffect(() => {
-    if (!instance || app.type !== 'remote-repo') {
+    if (!instance || !app.types?.includes('remote-repo')) {
       setGitStatus(null)
       return
     }
@@ -163,7 +163,7 @@ export function InstanceActionsPanel({
     }
 
     checkGit()
-  }, [instance, app.type, gitStatusRefreshKey])
+  }, [instance, app.types, gitStatusRefreshKey])
 
   if (!instance) {
     return (
@@ -322,7 +322,7 @@ export function InstanceActionsPanel({
             )}
 
             {/* Git Updates for remote repos */}
-            {app.type === 'remote-repo' && actions.secondary.length > 0 && (
+            {app.types?.includes('remote-repo') && actions.secondary.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Updates
@@ -523,96 +523,110 @@ export function InstanceActionsPanel({
 }
 
 /**
- * Get type-specific actions
+ * Actions defined per type - used for merging when item has multiple types
  */
-function getActionsForType(appType: ItemType): {
+const TYPE_ACTIONS: Record<ItemType, { primary: InstanceAction[]; secondary: InstanceAction[] }> = {
+  'remote-repo': {
+    primary: [
+      {
+        id: 'install-deps',
+        label: 'Install Dependencies',
+        description: 'npm install',
+        icon: PackageIcon,
+        command: 'npm install',
+      },
+      {
+        id: 'build',
+        label: 'Build',
+        description: 'npm run build',
+        icon: HammerIcon,
+        command: 'npm run build',
+      },
+      {
+        id: 'start',
+        label: 'Start Dev Server',
+        description: 'npm run dev',
+        icon: PlayIcon,
+        command: 'npm run dev',
+      },
+    ],
+    secondary: [
+      {
+        id: 'git-pull',
+        label: 'Pull Latest',
+        icon: ArrowsClockwiseIcon,
+        command: 'git pull',
+      },
+    ],
+  },
+  typescript: {
+    primary: [
+      {
+        id: 'build',
+        label: 'Build',
+        description: 'npm run build',
+        icon: HammerIcon,
+        command: 'npm run build',
+      },
+      {
+        id: 'start',
+        label: 'Start',
+        description: 'npm run start',
+        icon: PlayIcon,
+        command: 'npm run start',
+      },
+    ],
+    secondary: [],
+  },
+  html: {
+    primary: [
+      {
+        id: 'open-browser',
+        label: 'Open in Browser',
+        icon: PlayIcon,
+        handler: 'open-folder',
+      },
+    ],
+    secondary: [],
+  },
+  tool: {
+    primary: [],
+    secondary: [],
+  },
+}
+
+/**
+ * Get merged actions from all types.
+ * Actions are deduplicated by ID (first occurrence wins).
+ */
+function getActionsForTypes(types: ItemType[]): {
   primary: InstanceAction[]
   secondary: InstanceAction[]
 } {
-  switch (appType) {
-    case 'remote-repo':
-      return {
-        primary: [
-          {
-            id: 'install-deps',
-            label: 'Install Dependencies',
-            description: 'npm install',
-            icon: PackageIcon,
-            command: 'npm install',
-          },
-          {
-            id: 'build',
-            label: 'Build',
-            description: 'npm run build',
-            icon: HammerIcon,
-            command: 'npm run build',
-          },
-          {
-            id: 'start',
-            label: 'Start Dev Server',
-            description: 'npm run dev',
-            icon: PlayIcon,
-            command: 'npm run dev',
-          },
-        ],
-        secondary: [
-          {
-            id: 'git-pull',
-            label: 'Pull Latest',
-            icon: ArrowsClockwiseIcon,
-            command: 'git pull',
-          },
-        ],
-      }
+  const primaryMap = new Map<string, InstanceAction>()
+  const secondaryMap = new Map<string, InstanceAction>()
 
-    case 'typescript':
-      return {
-        primary: [
-          {
-            id: 'build',
-            label: 'Build',
-            description: 'npm run build',
-            icon: HammerIcon,
-            command: 'npm run build',
-          },
-          {
-            id: 'start',
-            label: 'Start',
-            description: 'npm run start',
-            icon: PlayIcon,
-            command: 'npm run start',
-          },
-        ],
-        secondary: [],
-      }
+  for (const type of types) {
+    const actions = TYPE_ACTIONS[type]
+    if (!actions) continue
 
-    case 'html':
-      return {
-        primary: [
-          {
-            id: 'open-browser',
-            label: 'Open in Browser',
-            icon: PlayIcon,
-            handler: 'open-folder',
-          },
-        ],
-        secondary: [],
+    // Add primary actions (deduplicate by ID)
+    for (const action of actions.primary) {
+      if (!primaryMap.has(action.id)) {
+        primaryMap.set(action.id, action)
       }
+    }
 
-    case 'script-tool':
-      return {
-        primary: [
-          {
-            id: 'run-script',
-            label: 'Run Script',
-            icon: PlayIcon,
-            command: './run.sh',
-          },
-        ],
-        secondary: [],
+    // Add secondary actions (deduplicate by ID)
+    for (const action of actions.secondary) {
+      if (!secondaryMap.has(action.id)) {
+        secondaryMap.set(action.id, action)
       }
+    }
+  }
 
-    default:
-      return { primary: [], secondary: [] }
+  return {
+    primary: Array.from(primaryMap.values()),
+    secondary: Array.from(secondaryMap.values()),
   }
 }

@@ -1,13 +1,15 @@
 import type { Node, Edge } from '@xyflow/react'
-import type { Item } from '@nxus/db'
-import { APP_TYPE_ICONS } from '@/lib/app-constants'
+import type { Item, ItemType } from '@nxus/db'
+import { getFirstTypeIcon } from '@/lib/app-constants'
 import type { GraphFilterResult } from './use-graph-filter'
 import type { GraphOptions } from '@/stores/view-mode.store'
 
 export interface ItemNodeData extends Record<string, unknown> {
   label: string
   description: string
-  type: Item['type']
+  types: ItemType[]
+  /** @deprecated Use types[0] instead */
+  type: ItemType
   status: Item['status']
   isMatched: boolean
   isDimmed: boolean
@@ -68,12 +70,13 @@ export function useGraphNodes({
         data: {
           label: item.name,
           description: item.description,
-          type: item.type,
+          types: item.types,
+          type: item.types[0], // Backward compat
           status: item.status,
           isMatched,
           isDimmed,
           app: item,
-          TypeIcon: APP_TYPE_ICONS[item.type],
+          TypeIcon: getFirstTypeIcon(item),
         },
       }
     })

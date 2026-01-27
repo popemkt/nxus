@@ -50,6 +50,17 @@ export const STATUS_VARIANTS = {
   available: 'outline',
 } as const satisfies Record<Item['status'], 'default' | 'secondary' | 'outline'>
 
+/**
+ * Color mapping for each app type.
+ * Used in graph view and other visualizations.
+ */
+export const APP_TYPE_COLORS = {
+  tool: '#22c55e',        // green
+  'remote-repo': '#a855f7', // purple
+  typescript: '#3b82f6',   // blue
+  html: '#f97316',         // orange
+} as const
+
 // Type exports for consumers
 export type AppType = keyof typeof APP_TYPE_ICONS
 export type AppStatus = keyof typeof STATUS_VARIANTS
@@ -61,7 +72,7 @@ export interface TypeBadgeConfig {
   type: ItemType
   label: string
   icon: Icon
-  isPrimary: boolean
+  isFirst: boolean
 }
 
 /**
@@ -73,16 +84,11 @@ export function getTypeIcon(type: ItemType): Icon {
 }
 
 /**
- * Gets the primary type icon for an item with multiple types.
- * Uses the `primaryType` field if available, otherwise falls back to the first type in the array.
+ * Gets the first type icon for an item (used for display in compact views).
+ * Uses `types[0]` as the display type.
  * Returns FileIcon if types array is empty or invalid.
  */
-export function getPrimaryTypeIcon(item: Pick<Item, 'types' | 'primaryType'>): Icon {
-  // Use primaryType if available
-  if (item.primaryType && APP_TYPE_ICONS[item.primaryType]) {
-    return APP_TYPE_ICONS[item.primaryType]
-  }
-  // Fall back to first type in array
+export function getFirstTypeIcon(item: Pick<Item, 'types'>): Icon {
   if (item.types && item.types.length > 0) {
     return APP_TYPE_ICONS[item.types[0]] ?? FileIcon
   }
@@ -106,15 +112,10 @@ export function getTypeLabelLong(type: ItemType): string {
 }
 
 /**
- * Gets the primary type label for an item with multiple types.
- * Uses the `primaryType` field if available, otherwise falls back to the first type in the array.
+ * Gets the first type label for an item (used for display in compact views).
+ * Uses `types[0]` as the display type.
  */
-export function getPrimaryTypeLabel(item: Pick<Item, 'types' | 'primaryType'>): string {
-  // Use primaryType if available
-  if (item.primaryType && APP_TYPE_LABELS_SHORT[item.primaryType]) {
-    return APP_TYPE_LABELS_SHORT[item.primaryType]
-  }
-  // Fall back to first type in array
+export function getFirstTypeLabel(item: Pick<Item, 'types'>): string {
   if (item.types && item.types.length > 0) {
     return APP_TYPE_LABELS_SHORT[item.types[0]] ?? 'Unknown'
   }
@@ -135,18 +136,18 @@ export function getAllTypeLabels(item: Pick<Item, 'types'>): string[] {
 /**
  * Gets badge configurations for all types of an item.
  * Used for displaying multiple type badges side by side.
- * The primary type badge is marked with `isPrimary: true`.
+ * The first type badge is marked with `isFirst: true`.
  */
-export function getTypeBadges(item: Pick<Item, 'types' | 'primaryType'>): TypeBadgeConfig[] {
+export function getTypeBadges(item: Pick<Item, 'types'>): TypeBadgeConfig[] {
   if (!item.types || item.types.length === 0) {
     return []
   }
 
-  return item.types.map((type) => ({
+  return item.types.map((type, index) => ({
     type,
     label: APP_TYPE_LABELS_SHORT[type] ?? 'Unknown',
     icon: APP_TYPE_ICONS[type] ?? FileIcon,
-    isPrimary: type === item.primaryType,
+    isFirst: index === 0,
   }))
 }
 
@@ -173,4 +174,23 @@ export function hasMultipleTypes(item: Pick<Item, 'types'>): boolean {
  */
 export function getTypeCount(item: Pick<Item, 'types'>): number {
   return item.types?.length ?? 0
+}
+
+/**
+ * Gets the color for a single type.
+ * Returns the color string for the specified type, or muted foreground as fallback.
+ */
+export function getTypeColor(type: ItemType): string {
+  return APP_TYPE_COLORS[type] ?? 'var(--muted-foreground)'
+}
+
+/**
+ * Gets the first type color for an item (used for display in graph view).
+ * Uses `types[0]` as the display type.
+ */
+export function getFirstTypeColor(item: Pick<Item, 'types'>): string {
+  if (item.types && item.types.length > 0) {
+    return APP_TYPE_COLORS[item.types[0]] ?? 'var(--muted-foreground)'
+  }
+  return 'var(--muted-foreground)'
 }

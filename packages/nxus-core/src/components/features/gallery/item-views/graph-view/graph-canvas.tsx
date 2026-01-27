@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import type { Item } from '@nxus/db'
+import type { Item, ItemType } from '@nxus/db'
 import {
   ItemNode,
   CommandNode,
@@ -31,6 +31,7 @@ import {
   type GraphLayout,
   type GraphNodeStyle,
 } from '@/stores/view-mode.store'
+import { APP_TYPE_COLORS } from '@/lib/app-constants'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { cn } from '@nxus/ui'
@@ -675,20 +676,14 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
 
   const minimapNodeColor = useCallback((node: Node) => {
     if (node.type === 'simple') {
-      const data = node.data as { type: Item['type']; isDimmed: boolean }
+      const data = node.data as { types?: ItemType[]; type?: ItemType; isDimmed: boolean }
       if (data?.isDimmed) return 'var(--muted)'
-      switch (data?.type) {
-        case 'tool':
-          return '#22c55e'
-        case 'remote-repo':
-          return '#a855f7'
-        case 'typescript':
-          return '#3b82f6'
-        case 'html':
-          return '#f97316'
-        default:
-          return 'var(--muted-foreground)'
+      // Use first type from types array, fallback to single type
+      const firstType = data?.types?.[0] ?? data?.type
+      if (firstType && APP_TYPE_COLORS[firstType]) {
+        return APP_TYPE_COLORS[firstType]
       }
+      return 'var(--muted-foreground)'
     }
     const data = node.data as ItemNodeData | undefined
     if (data?.isDimmed) return 'var(--muted)'

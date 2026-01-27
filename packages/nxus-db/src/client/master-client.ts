@@ -179,7 +179,6 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
     CREATE TABLE IF NOT EXISTS item_types (
       item_id TEXT NOT NULL,
       type TEXT NOT NULL,
-      is_primary INTEGER DEFAULT 0,
       "order" INTEGER DEFAULT 0,
       PRIMARY KEY (item_id, type)
     )
@@ -195,9 +194,10 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   // Populate item_types from existing items.type for migration
   // This ensures all existing items have their type in the junction table
+  // New items get order=0 (first/display type)
   masterDb.exec(`
-    INSERT OR IGNORE INTO item_types (item_id, type, is_primary, "order")
-    SELECT id, type, 1, 0 FROM items
+    INSERT OR IGNORE INTO item_types (item_id, type, "order")
+    SELECT id, type, 0 FROM items
   `)
 
   // ============================================================================

@@ -37,7 +37,6 @@ import { getAllItemsFromNodesServerFn } from '@nxus/workbench/server'
  */
 interface ItemTypeEntry {
   type: ItemType
-  isPrimary: boolean
   order: number
 }
 
@@ -75,26 +74,19 @@ function parseAppRecord(
     Array.isArray(val) ? (val as T[]) : undefined
 
   // Build types array from junction table or fall back to single type from record
-  // Sort by order, then extract type values
+  // Sort by order, then extract type values. types[0] is the display type.
   const sortedTypes = [...typesFromJunction].sort((a, b) => a.order - b.order)
   const types: ItemType[] =
     sortedTypes.length > 0
       ? sortedTypes.map((t) => t.type)
       : [record.type as ItemType]
 
-  // Determine primary type: from junction table (isPrimary=true) or fall back to record.type
-  const primaryEntry = typesFromJunction.find((t) => t.isPrimary)
-  const primaryType: ItemType = primaryEntry
-    ? primaryEntry.type
-    : (record.type as ItemType)
-
   return {
     id: record.id,
     name: record.name,
     description: record.description,
     types,
-    primaryType,
-    type: primaryType, // Deprecated alias for backward compatibility
+    type: types[0], // Deprecated alias for backward compatibility (equals types[0])
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,

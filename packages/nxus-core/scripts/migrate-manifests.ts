@@ -8,9 +8,10 @@
  * the database from existing manifests.
  *
  * Supports both legacy single-type format and new multi-type format:
- * - Legacy: { "type": "tool" } → converted to { "types": ["tool"], "primaryType": "tool" }
- * - New: { "types": ["tool", "remote-repo"], "primaryType": "tool" }
+ * - Legacy: { "type": "tool" } → converted to { "types": ["tool"] }
+ * - New: { "types": ["tool", "remote-repo"] }
  *
+ * The first type in the array (types[0]) is used for display (icon, color, grouping).
  * The migration populates the item_types junction table for multi-type support.
  */
 
@@ -45,18 +46,17 @@ function toRawOrNull(value: unknown): any {
 /**
  * Normalize manifest type fields to multi-type format.
  * Handles both old format (type: "tool") and new format (types: ["tool", "repo"]).
+ * The first type in the array is used for display (icon, color, grouping).
  *
  * @param manifest - Raw manifest object from JSON
- * @returns Object with normalized types array, primaryType, and type fields
+ * @returns Object with normalized types array and type (deprecated, equals types[0])
  */
 function normalizeManifestTypes(manifest: Record<string, unknown>): {
   types: ItemType[]
-  primaryType: ItemType
   type: ItemType
 } {
   const rawTypes = manifest.types as ItemType[] | undefined
   const rawType = manifest.type as ItemType | undefined
-  const rawPrimaryType = manifest.primaryType as ItemType | undefined
 
   // Determine types array
   let types: ItemType[]
@@ -71,20 +71,9 @@ function normalizeManifestTypes(manifest: Record<string, unknown>): {
     throw new Error('Manifest must have either "type" or "types" field')
   }
 
-  // Determine primary type
-  let primaryType: ItemType
-  if (rawPrimaryType && types.includes(rawPrimaryType)) {
-    // Explicit primaryType provided and is valid
-    primaryType = rawPrimaryType
-  } else {
-    // Use first type as primary
-    primaryType = types[0]
-  }
-
   return {
     types,
-    primaryType,
-    type: primaryType, // Deprecated alias
+    type: types[0], // Deprecated alias, equals first type
   }
 }
 
@@ -120,7 +109,7 @@ async function migrate() {
       const rawManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
 
       // Normalize type fields (old single-type to new multi-type format)
-      let normalizedTypes: { types: ItemType[]; primaryType: ItemType; type: ItemType }
+      let normalizedTypes: { types: ItemType[]; type: ItemType }
       try {
         normalizedTypes = normalizeManifestTypes(rawManifest)
       } catch (err) {
@@ -137,7 +126,6 @@ async function migrate() {
       const manifest = {
         ...rawManifest,
         types: normalizedTypes.types,
-        primaryType: normalizedTypes.primaryType,
         type: normalizedTypes.type,
       }
 
@@ -159,12 +147,12 @@ async function migrate() {
       // Extract commands from manifest
       const appCommands = validatedManifest.commands || []
 
-      // Prepare app record (using primaryType for backward-compatible type field)
+      // Prepare app record (using types[0] for backward-compatible type field)
       const appRecord = {
         id: validatedManifest.id,
         name: validatedManifest.name,
         description: validatedManifest.description || '',
-        type: validatedManifest.primaryType, // Use primaryType for backward compat
+        type: validatedManifest.types[0], // Use first type for backward compat
         path: validatedManifest.path,
         homepage: validatedManifest.homepage || null,
         thumbnail: validatedManifest.thumbnail || null,
@@ -204,22 +192,20 @@ async function migrate() {
       // First, delete existing types for this item (clean slate)
       db.delete(itemTypes).where(eq(itemTypes.itemId, validatedManifest.id)).run()
 
-      // Insert all types from the types array
+      // Insert all types from the types array (order determines display type)
       const typesArray = validatedManifest.types
       for (let i = 0; i < typesArray.length; i++) {
         const itemType = typesArray[i]
-        const isPrimary = itemType === validatedManifest.primaryType
         db.insert(itemTypes)
           .values({
             itemId: validatedManifest.id,
             type: itemType,
-            isPrimary,
             order: i,
           })
           .run()
       }
       if (typesArray.length > 1) {
-        console.log(`    Types: ${typesArray.join(', ')} (primary: ${validatedManifest.primaryType})`)
+        console.log(`    Types: ${typesArray.join(', ')} (display: ${typesArray[0]})`)
       }
 
       // Sync to node-based architecture (if node exists)

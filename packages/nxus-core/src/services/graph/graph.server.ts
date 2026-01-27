@@ -153,16 +153,19 @@ function itemToGraphProps(item: Partial<Item>): Record<string, unknown> {
   }
 
   // Type-specific properties using type assertion
+  // For multi-type items, include properties from ALL applicable types
   const anyItem = item as Record<string, unknown>
-  if (item.type === 'tool') {
+  if (item.types?.includes('tool')) {
     props.checkCommand = anyItem.checkCommand
     props.platform = anyItem.platform
     props.installInstructions = anyItem.installInstructions
     props.configSchema = anyItem.configSchema
-  } else if (item.type === 'typescript') {
+  }
+  if (item.types?.includes('typescript')) {
     props.startCommand = anyItem.startCommand
     props.buildCommand = anyItem.buildCommand
-  } else if (item.type === 'remote-repo') {
+  }
+  if (item.types?.includes('remote-repo')) {
     props.clonePath = anyItem.clonePath
     props.branch = anyItem.branch
   }

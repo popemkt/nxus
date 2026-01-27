@@ -338,11 +338,66 @@ Updated `spec.md` section 13.5 with these decisions.
 **Verification:**
 - Report is complete and accurate ✅
 
-### [ ] Step: Adapt multitype throughout the UI of nxus -core
+### [x] Step: Adapt multitype throughout the UI of nxus -core
 <!-- chat-id: edae267a-d7ae-49e9-9d23-d5ef643f3f50 -->
 
-the back-bone is already supporting multitype. It's time now to support that in the UI. not sure what the main type's supposed to do now? I imagine the UI will support multitype, and things like the app details screen will handle all types (i think right now they switch on the type for handling not combining all type functionality)
+**Completed**: Adapted multi-type support throughout the UI of nxus-core.
 
-And at the type level, does ts support this, multi shape object/combined object (but also satisfy individual subtype constraint)
+**Key decisions made with user:**
+1. **Eliminated `primaryType`** - Now `types[0]` is the display type (used for icon, color, grouping)
+2. **Show all actions** - Instance actions panel merges actions from ALL types (deduplicated by ID)
+3. **Items appear in all groups** - Gallery view shows items in all applicable type sections
+4. **Use first type for colors** - Graph view uses `types[0]` for node color
 
-What's your take on this?
+**TypeScript multi-shape support:**
+- Unified `Item` type with optional type-specific fields
+- Runtime narrowing via type guards: `isToolItem()`, `isRemoteRepoItem()`, etc.
+- For a `['tool', 'remote-repo']` item: both tool constraints AND repo constraints apply (intersection)
+- The `superRefine` validator checks requirements for ALL types in the array
+
+**Files modified:**
+
+1. **Schema changes (removed primaryType):**
+   - `packages/nxus-db/src/types/item.ts` - Removed `primaryType` field, `type` = `types[0]`
+   - `packages/nxus-db/src/schemas/item-schema.ts` - Removed `isPrimary` column from `itemTypes` table
+   - `packages/nxus-db/src/client/master-client.ts` - Updated migration SQL
+
+2. **Service layer:**
+   - `packages/nxus-core/src/services/apps/apps.server.ts` - Uses `types[0]` as display type
+   - `packages/nxus-core/src/services/apps/apps-mutations.server.ts` - Refactored: `setFirstTypeServerFn`, `addItemTypeServerFn` uses order
+   - `packages/nxus-core/src/services/apps/registry.service.ts` - `filterByType` uses `types?.includes()`
+   - `packages/nxus-core/src/services/graph/graph.server.ts` - Include fields from ALL types
+
+3. **UI constants:**
+   - `packages/nxus-core/src/lib/app-constants.ts` - Added `APP_TYPE_COLORS`, renamed to `getFirstTypeIcon`, `getFirstTypeLabel`, `getFirstTypeColor`, badge `isFirst`
+
+4. **App details page (`apps.$appId.tsx`):**
+   - Changed all `app.type === 'x'` to `app.types?.includes('x')`
+   - Shows all type badges side by side (first type highlighted)
+   - Shows all applicable quick actions (Refresh Status for tools, Refresh Git for repos)
+
+5. **Instance actions panel:**
+   - `getActionsForTypes()` merges actions from ALL types
+   - Actions deduplicated by ID (first occurrence wins)
+   - Shows git updates section if `types.includes('remote-repo')`
+
+6. **Gallery views:**
+   - `gallery-view.tsx` - Items appear in all applicable groups, shows all type badges
+   - `table-view.tsx` - Type column shows all badges
+   - `graph-canvas.tsx` - Uses `APP_TYPE_COLORS` and `types[0]` for node color
+   - `use-graph-nodes.ts` - Passes `types` array to node data
+
+7. **Other UI files updated:**
+   - `dependency-list.tsx`, `app-actions-panel.tsx`, `app-actions-dialog.tsx`
+   - `command-palette/command-palette.tsx`, `command-palette/registry.ts`
+   - `process-inbox-modal.tsx`, `command-params-modal.tsx`
+   - `use-tool-health.ts`, `use-app-registry.ts`
+   - `settings.tsx`, `app-actions.ts`
+
+8. **Migration script:**
+   - `migrate-manifests.ts` - Removed `primaryType`, uses `types[0]`
+
+**Verification:**
+- Build passes: `pnpm nx run nxus-core:build` ✅
+- All tests pass: 174 tests across 3 projects ✅
+- No TypeScript errors ✅

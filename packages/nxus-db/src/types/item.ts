@@ -318,8 +318,9 @@ export type ConfigSchema = z.infer<typeof ConfigSchemaSchema>
 /**
  * Base app configuration schema
  *
- * Multi-type support: Items can now have multiple types via the `types` array.
- * The `type` field is kept for backward compatibility and represents the primary type.
+ * Multi-type support: Items can have multiple types via the `types` array.
+ * The first type in the array (`types[0]`) is used for display purposes (icon, color, grouping).
+ * The `type` field is kept for backward compatibility and equals `types[0]`.
  */
 const BaseItemSchema = z.object({
   id: z.string().describe('Unique identifier'),
@@ -328,18 +329,14 @@ const BaseItemSchema = z.object({
   /**
    * All types assigned to this item.
    * At least one type is required.
+   * The first type (`types[0]`) is used for display (icon, color, grouping).
    */
   types: z.array(ItemTypeSchema).min(1).describe('All types for this item'),
   /**
-   * Primary type used for display and backward compatibility.
-   * Must be one of the values in the `types` array.
+   * @deprecated Use `types[0]` instead. Kept for backward compatibility.
+   * This equals `types[0]` (the first/display type).
    */
-  primaryType: ItemTypeSchema.describe('Primary type for display'),
-  /**
-   * @deprecated Use `primaryType` instead. Kept for backward compatibility.
-   * This is an alias for `primaryType`.
-   */
-  type: ItemTypeSchema.describe('Primary type (deprecated, use primaryType)'),
+  type: ItemTypeSchema.describe('First type (deprecated, use types[0])'),
   path: z.string().describe('Local path or remote URL'),
   homepage: z.string().url().optional().describe('URL to homepage/preview'),
   thumbnail: z.string().optional().describe('Path or URL to thumbnail image'),
@@ -414,20 +411,11 @@ const BaseItemSchema = z.object({
  * Type-specific fields are validated via refinements based on the `types` array.
  */
 export const ItemSchema = BaseItemSchema.superRefine((data, ctx) => {
-  // Validate: primaryType must be in types array
-  if (!data.types.includes(data.primaryType)) {
+  // Validate: type (deprecated) must match types[0]
+  if (data.type !== data.types[0]) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'primaryType must be one of the values in the types array',
-      path: ['primaryType'],
-    })
-  }
-
-  // Validate: type (deprecated) must match primaryType
-  if (data.type !== data.primaryType) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'type must match primaryType (type is deprecated)',
+      message: 'type must match types[0] (type is deprecated)',
       path: ['type'],
     })
   }

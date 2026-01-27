@@ -98,7 +98,7 @@ export class AppRegistryService {
   }
 
   /**
-   * Filter apps by type
+   * Filter apps by type (items that include this type in their types array)
    */
   filterByType(type: ItemType): Result<Array<Item>> {
     const appsResult = this.getAllApps()
@@ -106,7 +106,7 @@ export class AppRegistryService {
       return appsResult
     }
 
-    const filtered = appsResult.data.filter((app) => app.type === type)
+    const filtered = appsResult.data.filter((app) => app.types?.includes(type))
     return { success: true, data: filtered }
   }
 
@@ -184,7 +184,7 @@ export class AppRegistryService {
   }
 
   /**
-   * Get all tool-type items
+   * Get all items that have 'tool' type
    */
   getTools(): Result<Array<Item>> {
     const appsResult = this.getAllApps()
@@ -192,12 +192,12 @@ export class AppRegistryService {
       return appsResult
     }
 
-    const tools = appsResult.data.filter((app) => app.type === 'tool')
+    const tools = appsResult.data.filter((app) => app.types?.includes('tool'))
     return { success: true, data: tools }
   }
 
   /**
-   * Get all non-tool items (repos/apps)
+   * Get all items that have non-tool types (may include items that are also tools)
    */
   getRepos(): Result<Array<Item>> {
     const appsResult = this.getAllApps()
@@ -205,7 +205,9 @@ export class AppRegistryService {
       return appsResult
     }
 
-    const repos = appsResult.data.filter((app) => app.type !== 'tool')
+    const repos = appsResult.data.filter((app) =>
+      app.types?.some(t => t !== 'tool')
+    )
     return { success: true, data: repos }
   }
 
