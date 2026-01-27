@@ -208,7 +208,6 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
       const arr = typesByApp.get(r.itemId) ?? []
       arr.push({
         type: r.type as ItemType,
-        isPrimary: r.isPrimary ?? false,
         order: r.order ?? 0,
       })
       typesByApp.set(r.itemId, arr)
@@ -295,7 +294,6 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
 
     const typeRefs: ItemTypeEntry[] = appTypeRecords.map((r) => ({
       type: r.type as ItemType,
-      isPrimary: r.isPrimary ?? false,
       order: r.order ?? 0,
     }))
 
