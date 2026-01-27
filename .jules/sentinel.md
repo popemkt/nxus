@@ -1,0 +1,4 @@
+## 2025-02-18 - Command Injection in Platform Commands
+**Vulnerability:** Found unescaped user input (file paths) being concatenated directly into shell commands (`start`, `open`, `xdg-open`) in `packages/nxus-core/src/lib/platform-commands.ts`. This allowed arbitrary command execution via malicious paths containing shell metacharacters.
+**Learning:** The project had a security rule in `AGENTS.md` referencing a sanitization library (`src/lib/shell-utils.ts`) that did not actually exist in the codebase. This created a false sense of security where developers might have assumed mechanisms were in place or simply ignored the missing import.
+**Prevention:** implemented the missing `shell-utils.ts` with `escapePosixArg` and `sanitizeWindowsPath` and enforced its usage in `platform-commands.ts`. Future shell command construction must strictly use these helpers. Whenever possible, prefer `spawn` with an argument array over `exec` to avoid shell parsing entirely.
