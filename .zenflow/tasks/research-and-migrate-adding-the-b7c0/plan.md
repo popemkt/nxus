@@ -337,3 +337,12 @@ Updated `spec.md` section 13.5 with these decisions.
 
 **Verification:**
 - Report is complete and accurate ✅
+
+### [ ] Step: Adapt multitype throughout the UI of nxus -core
+<!-- chat-id: edae267a-d7ae-49e9-9d23-d5ef643f3f50 -->
+
+the back-bone is already supporting multitype. It's time now to support that in the UI. not sure what the main type's supposed to do now? I imagine the UI will support multitype, and things like the app details screen will handle all types (i think right now they switch on the type for handling not combining all type functionality)
+
+And at the type level, does ts support this, multi shape object/combined object (but also satisfy individual subtype constraint)
+
+What's your take on this?
