@@ -92,6 +92,7 @@ export function FloatingHud({
             className="absolute right-2 flex items-center gap-0.5 px-2 py-1 bg-foreground/8 rounded-md text-[10px] text-foreground/50 hover:bg-foreground/15 hover:text-foreground/80 transition-all cursor-pointer border-none"
             onClick={() => openPalette(true)}
             title="Open command palette"
+            aria-label="Open command palette"
           >
             <CommandIcon className="size-3" weight="bold" />
             <span>K</span>
@@ -105,6 +106,7 @@ export function FloatingHud({
           className={cn(btnBase, sidebarOpen ? btnActive : btnInactive)}
           onClick={onSidebarToggle}
           title={sidebarOpen ? 'Hide tags' : 'Show tags'}
+          aria-label={sidebarOpen ? 'Hide tags' : 'Show tags'}
         >
           <TagIcon
             className="size-4"
@@ -146,6 +148,7 @@ export function FloatingHud({
                 }
               }}
               title="Gallery view"
+              aria-label="Gallery view"
             >
               {/* Container for icon + chevron overlay */}
               <div className="relative flex items-center justify-center w-5 h-5">
@@ -153,13 +156,14 @@ export function FloatingHud({
                 <GalleryIcon
                   className={cn(
                     'size-4 transition-opacity',
-                    viewMode === 'gallery' && 'group-hover:opacity-0',
+                    viewMode === 'gallery' &&
+                      'group-hover:opacity-0 group-focus:opacity-0',
                   )}
                   weight={viewMode === 'gallery' ? 'fill' : 'regular'}
                 />
                 {/* Chevron overlay - appears on hover, same size as icon container */}
                 {viewMode === 'gallery' && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
                     <CaretDownIcon className="size-4" weight="bold" />
                   </div>
                 )}
@@ -191,6 +195,7 @@ export function FloatingHud({
           )}
           onClick={() => setViewMode('table')}
           title="Table view"
+          aria-label="Table view"
         >
           <TableIcon
             className="size-4"
@@ -205,6 +210,7 @@ export function FloatingHud({
           )}
           onClick={() => setViewMode('graph')}
           title="Graph view"
+          aria-label="Graph view"
         >
           <GraphIcon
             className="size-4"
@@ -219,6 +225,7 @@ export function FloatingHud({
           to="/inbox"
           className={cn(btnBase, btnInactive, 'relative')}
           title="Inbox"
+          aria-label="Inbox"
         >
           <TrayArrowDownIcon className="size-4" />
           {inboxCount > 0 && (
@@ -233,6 +240,7 @@ export function FloatingHud({
           to="/settings"
           className={cn(btnBase, btnInactive)}
           title="Settings"
+          aria-label="Settings"
         >
           <GearIcon className="size-4" />
         </Link>
