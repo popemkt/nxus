@@ -1,26 +1,24 @@
 import { Link } from '@tanstack/react-router'
-import { motion, LayoutGroup } from 'framer-motion'
+import { LayoutGroup, motion } from 'framer-motion'
 import {
+  CaretDownIcon,
+  CommandIcon,
+  GearIcon,
+  GraphIcon,
+  GridFourIcon,
   MagnifyingGlassIcon,
   SquaresFourIcon,
   TableIcon,
-  GraphIcon,
   TagIcon,
-  GearIcon,
   TrayArrowDownIcon,
-  CommandIcon,
-  GridFourIcon,
-  CaretDownIcon,
 } from '@phosphor-icons/react'
+import { DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  cn } from '@nxus/ui'
 import { useViewModeStore } from '@/stores/view-mode.store'
 import { useCommandPaletteStore } from '@/stores/command-palette.store'
-import { cn } from '@nxus/ui'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-} from '@nxus/ui'
 
 interface FloatingHudProps {
   searchQuery: string
@@ -80,6 +78,7 @@ export function FloatingHud({
             type="text"
             className="w-full h-full bg-foreground/5 border-none radius-card pl-8 pr-20 text-foreground text-[13px] outline-none transition-colors focus:bg-foreground/10 placeholder:text-foreground/40"
             placeholder="Search apps..."
+            aria-label="Search apps"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -100,6 +99,7 @@ export function FloatingHud({
           className={cn(btnBase, sidebarOpen ? btnActive : btnInactive)}
           onClick={onSidebarToggle}
           title={sidebarOpen ? 'Hide tags' : 'Show tags'}
+          aria-label={sidebarOpen ? 'Hide tags' : 'Show tags'}
         >
           <TagIcon
             className="size-4"
@@ -127,6 +127,7 @@ export function FloatingHud({
                 }
               }}
               title="Gallery view"
+              aria-label="Gallery view options"
             >
               {/* Container for icon + chevron overlay */}
               <div className="relative flex items-center justify-center w-5 h-5">
@@ -134,13 +135,14 @@ export function FloatingHud({
                 <GalleryIcon
                   className={cn(
                     'size-4 transition-opacity',
-                    viewMode === 'gallery' && 'group-hover:opacity-0',
+                    viewMode === 'gallery' &&
+                      'group-hover:opacity-0 group-focus-within:opacity-0',
                   )}
                   weight={viewMode === 'gallery' ? 'fill' : 'regular'}
                 />
                 {/* Chevron overlay - appears on hover, same size as icon container */}
                 {viewMode === 'gallery' && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <CaretDownIcon className="size-4" weight="bold" />
                   </div>
                 )}
@@ -200,6 +202,9 @@ export function FloatingHud({
           to="/inbox"
           className={cn(btnBase, btnInactive, 'relative')}
           title="Inbox"
+          aria-label={
+            inboxCount > 0 ? `Inbox, ${inboxCount} unread items` : 'Inbox'
+          }
         >
           <TrayArrowDownIcon className="size-4" />
           {inboxCount > 0 && (
@@ -214,6 +219,7 @@ export function FloatingHud({
           to="/settings"
           className={cn(btnBase, btnInactive)}
           title="Settings"
+          aria-label="Settings"
         >
           <GearIcon className="size-4" />
         </Link>
