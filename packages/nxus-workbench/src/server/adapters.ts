@@ -32,13 +32,19 @@ export function nodeToItem(
     resolveDependencies?: (depNodeIds: string[]) => string[]
   },
 ): Item {
-  // Determine item type from supertag
-  let type: Item['type'] = 'tool'
+  // Build types array from supertags (supports multi-type items)
+  const types: Item['type'][] = []
   for (const st of node.supertags) {
-    if (st.systemId === 'supertag:tool') type = 'tool'
-    else if (st.systemId === 'supertag:repo') type = 'remote-repo'
-    else if (st.systemId === 'supertag:item') type = 'html' // Default for generic items
+    if (st.systemId === 'supertag:tool') types.push('tool')
+    else if (st.systemId === 'supertag:repo') types.push('remote-repo')
+    else if (st.systemId === 'supertag:typescript') types.push('typescript')
+    else if (st.systemId === 'supertag:html') types.push('html')
+    else if (st.systemId === 'supertag:item') types.push('html') // Default for generic items
   }
+  // Ensure at least one type (fallback to 'tool')
+  if (types.length === 0) types.push('tool')
+  // First type is the display type (for backward compat)
+  const type = types[0]
 
   // Get tags via resolver or empty
   const tagNodeIds = getPropertyValues<string>(node, 'tags')
@@ -65,7 +71,8 @@ export function nodeToItem(
       node.id,
     name: node.content || '',
     description: getProperty<string>(node, 'description') || '',
-    type,
+    types,
+    type, // Deprecated, equals types[0]
     path: getProperty<string>(node, 'path') || '',
     homepage: getProperty<string>(node, 'homepage'),
     thumbnail: undefined,

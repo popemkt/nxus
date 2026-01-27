@@ -109,7 +109,7 @@ export function CommandParamsModal({
             if (!app) return null
 
             const checkCommand =
-              app.type === 'tool' && 'checkCommand' in app
+              app.types?.includes('tool') && 'checkCommand' in app
                 ? (app as any).checkCommand
                 : undefined
 

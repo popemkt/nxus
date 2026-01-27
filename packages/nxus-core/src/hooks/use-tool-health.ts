@@ -87,7 +87,7 @@ export function useBatchToolHealth(apps: Item[], enabled = true) {
     apps
       .filter(
         (app) =>
-          app.type === 'tool' && 'checkCommand' in app && app.checkCommand,
+          app.types?.includes('tool') && 'checkCommand' in app && app.checkCommand,
       )
       .forEach((app) => {
         const cmd = (app as any).checkCommand!

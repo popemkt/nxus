@@ -11,7 +11,7 @@ import type { Item } from '@nxus/db'
  * - Other types: No action (for future extension)
  */
 export function openApp(app: Item): void {
-  if (app.type === 'html') {
+  if (app.types?.includes('html')) {
     window.open(app.path, '_blank')
   }
   // Future: Add handlers for other app types
