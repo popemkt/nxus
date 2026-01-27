@@ -397,7 +397,14 @@ Updated `spec.md` section 13.5 with these decisions.
 8. **Migration script:**
    - `migrate-manifests.ts` - Removed `primaryType`, uses `types[0]`
 
+**Bug fixes after initial implementation:**
+- Fixed "types not iterable" error in `instance-actions-panel.tsx` - Added `app.types ?? []` fallback
+- Fixed missing `types` array in `apps.server.ts` - Removed stale `isPrimary` references
+- Fixed `nodeToItem` in `packages/nxus-workbench/src/server/adapters.ts` - Added `types` array from supertags
+- Fixed `graphNodeToItem` in `graph.server.ts` - Added `types` array from props
+
 **Verification:**
 - Build passes: `pnpm nx run nxus-core:build` ✅
 - All tests pass: 174 tests across 3 projects ✅
 - No TypeScript errors ✅
+- Database verification: Goose item has both types (`tool`, `remote-repo`) and 8 commands correctly stored ✅

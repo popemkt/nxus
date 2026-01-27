@@ -54,11 +54,15 @@ function serializeGraphNode(node: GraphNode): SerializableGraphNode {
 
 /**
  * Convert a graph node to an Item
- * Note: Item is a discriminated union, so we need to construct the right shape
+ * Now supports multi-type items via the types array
  */
 function graphNodeToItem(node: GraphNode, tags: TagRef[] = []): Item {
   const props = node.props || {}
-  const itemType = (props.type as string) || 'html'
+  // Support both single type and types array from graph
+  const storedTypes = props.types as string[] | undefined
+  const singleType = (props.type as string) || 'html'
+  const types = (storedTypes && storedTypes.length > 0 ? storedTypes : [singleType]) as Item['type'][]
+  const itemType = types[0] // First type for type-specific fields
 
   const metadata: ItemMetadata = {
     tags,
@@ -70,11 +74,13 @@ function graphNodeToItem(node: GraphNode, tags: TagRef[] = []): Item {
     license: props.license as string | undefined,
   }
 
-  // Base item properties
+  // Base item properties with multi-type support
   const baseItem = {
     id: (props.item_id as string) || String(node.id),
     name: node.content || '',
     description: (props.description as string) || '',
+    types, // Multi-type support
+    type: types[0], // Deprecated, equals types[0]
     path: (props.path as string) || '',
     homepage: props.homepage as string | undefined,
     thumbnail: props.thumbnail as string | undefined,
@@ -86,49 +92,38 @@ function graphNodeToItem(node: GraphNode, tags: TagRef[] = []): Item {
     commands: (props.commands as ItemCommand[]) || [],
   }
 
-  // Return type-specific item
-  switch (itemType) {
-    case 'tool':
-      return {
-        ...baseItem,
-        type: 'tool' as const,
-        checkCommand: (props.checkCommand as string) || '',
-        platform: (props.platform as ('windows' | 'linux' | 'macos')[]) || [],
-        installInstructions: props.installInstructions as string | undefined,
-        configSchema: props.configSchema as
-          | {
-              fields: Array<{
-                key: string
-                label: string
-                type: 'text' | 'password' | 'url'
-                required: boolean
-                defaultValue?: string
-                placeholder?: string
-              }>
-            }
-          | undefined,
-      }
-    case 'typescript':
-      return {
-        ...baseItem,
-        type: 'typescript' as const,
-        startCommand: props.startCommand as string | undefined,
-        buildCommand: props.buildCommand as string | undefined,
-      }
-    case 'remote-repo':
-      return {
-        ...baseItem,
-        type: 'remote-repo' as const,
-        clonePath: props.clonePath as string | undefined,
-        branch: props.branch as string | undefined,
-      }
-    case 'html':
-    default:
-      return {
-        ...baseItem,
-        type: 'html' as const,
-      }
+  // Add type-specific fields based on ALL types in the array
+  const result: any = { ...baseItem }
+
+  if (types.includes('tool')) {
+    result.checkCommand = (props.checkCommand as string) || ''
+    result.platform = (props.platform as ('windows' | 'linux' | 'macos')[]) || []
+    result.installInstructions = props.installInstructions as string | undefined
+    result.configSchema = props.configSchema as
+      | {
+          fields: Array<{
+            key: string
+            label: string
+            type: 'text' | 'password' | 'url'
+            required: boolean
+            defaultValue?: string
+            placeholder?: string
+          }>
+        }
+      | undefined
   }
+
+  if (types.includes('typescript')) {
+    result.startCommand = props.startCommand as string | undefined
+    result.buildCommand = props.buildCommand as string | undefined
+  }
+
+  if (types.includes('remote-repo')) {
+    result.clonePath = props.clonePath as string | undefined
+    result.branch = props.branch as string | undefined
+  }
+
+  return result as Item
 }
 
 /**

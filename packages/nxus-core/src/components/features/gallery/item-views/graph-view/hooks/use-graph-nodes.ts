@@ -70,8 +70,8 @@ export function useGraphNodes({
         data: {
           label: item.name,
           description: item.description,
-          types: item.types,
-          type: item.types[0], // Backward compat
+          types: item.types ?? [],
+          type: item.types?.[0] ?? item.type, // Backward compat
           status: item.status,
           isMatched,
           isDimmed,

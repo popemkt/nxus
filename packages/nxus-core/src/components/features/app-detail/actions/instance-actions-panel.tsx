@@ -106,7 +106,7 @@ export function InstanceActionsPanel({
 
   // Get type-specific actions - merge from all types
   const defaultActions = React.useMemo(
-    () => getActionsForTypes(app.types),
+    () => getActionsForTypes(app.types ?? []),
     [app.types],
   )
 
