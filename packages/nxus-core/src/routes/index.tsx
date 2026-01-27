@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { XIcon } from '@phosphor-icons/react'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'
 import { TagTree } from '@/components/features/gallery/tag-tree'
+import { QueryBuilderWithSaved, useQueryEvaluation, useQueryStore } from '@nxus/workbench'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import {
@@ -24,16 +25,23 @@ import {
   FloatingThemeToggle,
   SystemTray,
 } from '@/components/features/gallery/hud'
+import type { QueryDefinition } from '@nxus/db'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 
 function AppManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [queryBuilderOpen, setQueryBuilderOpen] = useState(false)
+  const [loadedQueryId, setLoadedQueryId] = useState<string | null>(null)
 
   // View mode state
   const viewMode = useViewModeStore((s) => s.viewMode)
   const galleryMode = useViewModeStore((s) => s.galleryMode)
+
+  // Query builder state from Zustand store
+  const currentQuery = useQueryStore((s) => s.currentQuery)
+  const setCurrentQuery = useQueryStore((s) => s.setCurrentQuery)
 
   // Get selected tag filters
   const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
@@ -82,6 +90,37 @@ function AppManager() {
     refetchInterval: 60000,
   })
   const inboxCount = inboxResult?.success ? inboxResult.data.length : 0
+
+  // Query evaluation - only runs when queryBuilderOpen and has filters
+  const hasQueryFilters = currentQuery.filters.length > 0
+  const {
+    nodes: queryNodes,
+    totalCount: queryTotalCount,
+    isLoading: queryIsLoading,
+  isError: queryIsError,
+    error: queryError,
+  } = useQueryEvaluation(currentQuery, {
+    enabled: queryBuilderOpen && hasQueryFilters,
+    debounceMs: 300, // Debounce to avoid excessive evaluations while typing
+  })
+
+  // Handle query builder toggle
+  const handleQueryBuilderToggle = useCallback(() => {
+    setQueryBuilderOpen((prev) => !prev)
+  }, [])
+
+  // Handle query change from query builder
+  const handleQueryChange = useCallback(
+    (query: QueryDefinition) => {
+      setCurrentQuery(query)
+    },
+    [setCurrentQuery]
+  )
+
+  // Handle closing query builder
+  const handleQueryBuilderClose = useCallback(() => {
+    setQueryBuilderOpen(false)
+  }, [])
 
   // Check if view mode has hydrated from localStorage
   const hasHydrated = useViewModeHasHydrated()
@@ -146,6 +185,8 @@ function AppManager() {
           onSearchChange={setSearchQuery}
           sidebarOpen={sidebarOpen}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+          queryBuilderOpen={queryBuilderOpen}
+          onQueryBuilderToggle={handleQueryBuilderToggle}
           inboxCount={inboxCount}
         />
         <FloatingFilterRow resultCount={apps.length} />
@@ -183,11 +224,79 @@ function AppManager() {
         </div>
       </div>
 
+      {/* Floating Query Builder Panel (overlay, right side) */}
+      <div
+        className={cn(
+          'fixed top-[100px] right-6 bottom-20 w-[380px] bg-card backdrop-blur-xl border border-border rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.25),inset_0_0_0_1px_rgba(255,255,255,0.05)] z-50 flex flex-col overflow-hidden transition-all duration-300',
+          queryBuilderOpen
+            ? 'opacity-100 translate-x-0'
+            : 'opacity-0 translate-x-5 pointer-events-none',
+        )}
+      >
+        <QueryBuilderWithSaved
+          value={currentQuery}
+          onChange={handleQueryChange}
+          onClose={handleQueryBuilderClose}
+          showExecute={false}
+          showSave={true}
+          showSavedQueriesButton={true}
+          loadedQueryId={loadedQueryId}
+          onQueryIdChange={setLoadedQueryId}
+          resultCount={hasQueryFilters ? queryTotalCount : undefined}
+          isLoading={queryIsLoading}
+          isError={queryIsError}
+          errorMessage={queryError?.message}
+        />
+
+        {/* Query results preview */}
+        {hasQueryFilters && queryNodes.length > 0 && (
+          <div className="flex-1 overflow-y-auto border-t border-border">
+            <div className="px-4 py-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Results Preview
+              </span>
+            </div>
+            <div className="px-4 pb-4 space-y-2">
+              {queryNodes.slice(0, 10).map((node) => (
+                <div
+                  key={node.id}
+                  className="p-2 rounded-lg bg-muted/50 text-sm"
+                >
+                  <div className="font-medium truncate">
+                    {node.content || '(No content)'}
+                  </div>
+                  {node.supertags.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {node.supertags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="px-1.5 py-0.5 text-xs rounded bg-primary/10 text-primary"
+                        >
+                          #{tag.content}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {queryTotalCount > 10 && (
+                <div className="text-xs text-muted-foreground text-center pt-2">
+                  +{queryTotalCount - 10} more results
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Backdrop when panel is open */}
-      {sidebarOpen && (
+      {(sidebarOpen || queryBuilderOpen) && (
         <div
           className="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => {
+            setSidebarOpen(false)
+            setQueryBuilderOpen(false)
+          }}
         />
       )}
 

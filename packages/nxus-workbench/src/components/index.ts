@@ -14,6 +14,10 @@ export type { NodeInspectorProps } from './node-inspector/NodeInspector.js'
 export { SupertagSidebar } from './supertag-sidebar/index.js'
 export type { SupertagSidebarProps } from './supertag-sidebar/SupertagSidebar.js'
 
+// Query Results View
+export { QueryResultsView } from './query-results/index.js'
+export type { QueryResultsViewProps } from './query-results/index.js'
+
 // Shared components
 export { NodeBadge, NodeLink, SupertagChip } from './shared/index.js'
 

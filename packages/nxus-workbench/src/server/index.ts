@@ -9,6 +9,9 @@ export {
   getNodeServerFn,
   getNodesBySupertagServerFn,
   updateNodeContentServerFn,
+  createNodeServerFn,
+  deleteNodeServerFn,
+  setNodePropertiesServerFn,
   getAllItemsFromNodesServerFn,
   getItemByIdFromNodesServerFn,
   getAllTagsFromNodesServerFn,
@@ -47,3 +50,14 @@ export {
   nodeToCommand,
   nodesToItems,
 } from './adapters.js'
+
+// Query server functions
+export {
+  evaluateQueryServerFn,
+  createQueryServerFn,
+  updateQueryServerFn,
+  deleteQueryServerFn,
+  getSavedQueriesServerFn,
+  executeSavedQueryServerFn,
+  getQuerySupertagsServerFn,
+} from './query.server.js'

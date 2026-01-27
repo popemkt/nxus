@@ -1,9 +1,9 @@
 import { cn } from '@nxus/ui'
-import { List, Graph } from '@phosphor-icons/react'
+import { List, Graph, Funnel } from '@phosphor-icons/react'
 import { SidebarIcon } from './SidebarIcon.js'
 
 /** Available view modes in the workbench */
-export type ViewMode = 'list' | 'graph'
+export type ViewMode = 'list' | 'graph' | 'query'
 
 export interface SidebarProps {
   /** Currently active view mode */
@@ -19,13 +19,14 @@ export interface SidebarProps {
  *
  * Features:
  * - Compact icon-only navigation
- * - View mode switching (list/graph)
+ * - View mode switching (list/graph/query)
  * - Active state indicators
  * - Hover tooltips
  *
  * Icons:
  * - List: NodeBrowser view (default)
  * - Graph: Graph visualization view
+ * - Funnel: Query Builder view
  */
 export function Sidebar({
   activeView,
@@ -52,6 +53,12 @@ export function Sidebar({
           tooltip="Graph View"
           isActive={activeView === 'graph'}
           onClick={() => onViewChange('graph')}
+        />
+        <SidebarIcon
+          icon={Funnel}
+          tooltip="Query Builder"
+          isActive={activeView === 'query'}
+          onClick={() => onViewChange('query')}
         />
       </nav>
 

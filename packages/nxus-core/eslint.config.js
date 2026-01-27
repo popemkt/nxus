@@ -23,4 +23,29 @@ export default [
       ],
     },
   },
+  // Prevent importing server-only packages in client code
+  // Files ending in .server.ts are allowed to import these
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    ignores: ['**/*.server.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@nxus/workbench/server'],
+              message:
+                'Do not import @nxus/workbench/server directly in client code. Use local wrappers in src/services/*/xyz.server.ts with dynamic imports. See .agent/rules/codebase-rules.md',
+            },
+            {
+              group: ['@nxus/db/server'],
+              message:
+                'Do not import @nxus/db/server directly in client code. Use local wrappers in src/services/*/xyz.server.ts with dynamic imports. See .agent/rules/codebase-rules.md',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]

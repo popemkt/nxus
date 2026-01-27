@@ -21,6 +21,9 @@ import {
   findNode,
   getNodesBySupertagWithInheritance,
   getProperty,
+  createNode,
+  deleteNode,
+  setProperty,
   type NodeProperty,
 } from '@nxus/db/server'
 import type { AssembledNode, Item, ItemCommand, TagRef } from '@nxus/db'
@@ -79,6 +82,118 @@ export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
     if (!updatedNode) {
       return { success: false as const, error: 'Node not found after update' }
     }
+    return { success: true as const, node: updatedNode }
+  })
+
+/**
+ * Create a new node
+ *
+ * Creates a node with optional supertag and owner.
+ * Returns the created node's assembled data.
+ */
+export const createNodeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      content: z.string(),
+      systemId: z.string().optional(),
+      supertagSystemId: z.string().optional(),
+      ownerId: z.string().optional(),
+      properties: z
+        .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+        .optional(),
+    })
+  )
+  .handler(async (ctx) => {
+    const { content, systemId, supertagSystemId, ownerId, properties } = ctx.data
+    const db = await initDatabaseWithBootstrap()
+
+    // Create the node
+    const nodeId = createNode(db, {
+      content,
+      systemId,
+      supertagSystemId,
+      ownerId,
+    })
+
+    // Set additional properties if provided
+    if (properties) {
+      for (const [fieldSystemId, value] of Object.entries(properties)) {
+        if (value !== null) {
+          setProperty(db, nodeId, fieldSystemId, value)
+        }
+      }
+    }
+
+    // Return the assembled node
+    const node = assembleNode(db, nodeId)
+    if (!node) {
+      return { success: false as const, error: 'Failed to assemble created node' }
+    }
+
+    return { success: true as const, node, nodeId }
+  })
+
+/**
+ * Delete a node (soft delete)
+ *
+ * Sets the deletedAt timestamp on the node.
+ */
+export const deleteNodeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ nodeId: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeId } = ctx.data
+    initDatabase()
+    const db = getDatabase()
+
+    // Verify the node exists
+    const existingNode = findNode(db, nodeId)
+    if (!existingNode) {
+      return { success: false as const, error: 'Node not found' }
+    }
+
+    // Soft delete the node
+    deleteNode(db, nodeId)
+
+    return { success: true as const }
+  })
+
+/**
+ * Update node properties
+ *
+ * Sets one or more properties on a node.
+ */
+export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      nodeId: z.string(),
+      properties: z.record(
+        z.string(),
+        z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.string())])
+      ),
+    })
+  )
+  .handler(async (ctx) => {
+    const { nodeId, properties } = ctx.data
+    initDatabase()
+    const db = getDatabase()
+
+    // Verify the node exists
+    const existingNode = findNode(db, nodeId)
+    if (!existingNode) {
+      return { success: false as const, error: 'Node not found' }
+    }
+
+    // Set each property
+    for (const [fieldSystemId, value] of Object.entries(properties)) {
+      setProperty(db, nodeId, fieldSystemId, value)
+    }
+
+    // Return the updated node
+    const updatedNode = assembleNode(db, nodeId)
+    if (!updatedNode) {
+      return { success: false as const, error: 'Failed to assemble updated node' }
+    }
+
     return { success: true as const, node: updatedNode }
   })
 

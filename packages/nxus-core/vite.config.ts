@@ -37,12 +37,22 @@ const config = defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['node-pty'],
+    exclude: [
+      'node-pty',
+      'better-sqlite3',
+      'drizzle-orm/better-sqlite3',
+      '@nxus/db',
+      '@nxus/workbench',
+    ],
   },
   build: {
     rollupOptions: {
-      external: ['node-pty'],
+      external: ['node-pty', 'better-sqlite3'],
     },
+  },
+  ssr: {
+    // These packages should only run on the server
+    noExternal: ['@nxus/db', '@nxus/workbench'],
   },
 })
 

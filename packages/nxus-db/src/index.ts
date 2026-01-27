@@ -11,12 +11,6 @@
 export * from './schemas/index.js'
 
 // Types (Zod schemas and TypeScript types)
+// This includes AssembledNode, PropertyValue, CreateNodeOptions, SavedQuery
+// which are safe for client use (no runtime imports)
 export * from './types/index.js'
-
-// Re-export key types from node.service that are needed for UI components
-// These are pure TypeScript types with no runtime dependencies on Node.js
-export type {
-  AssembledNode,
-  PropertyValue,
-  CreateNodeOptions,
-} from './services/node.service.js'

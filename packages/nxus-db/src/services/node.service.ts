@@ -12,37 +12,15 @@ import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
 
-// ============================================================================
-// Types
-// ============================================================================
+// Re-export types from the shared types file (for backward compatibility)
+export type {
+  AssembledNode,
+  PropertyValue,
+  CreateNodeOptions,
+} from '../types/node.js'
 
-export interface AssembledNode {
-  id: string
-  content: string | null
-  systemId: string | null
-  ownerId: string | null
-  createdAt: Date
-  updatedAt: Date
-  deletedAt: Date | null
-  properties: Record<string, PropertyValue[]>
-  supertags: { id: string; content: string; systemId: string | null }[]
-}
-
-export interface PropertyValue {
-  value: any
-  rawValue: string
-  fieldNodeId: string
-  fieldName: string
-  fieldSystemId: string | null
-  order: number
-}
-
-export interface CreateNodeOptions {
-  content: string
-  systemId?: string
-  ownerId?: string
-  supertagSystemId?: string // e.g., 'supertag:note', 'supertag:task'
-}
+// Import types for use in this file
+import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
 
 // ============================================================================
 // System Node Cache (runtime cache for field/supertag lookups)

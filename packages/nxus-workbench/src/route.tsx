@@ -3,13 +3,14 @@
  *
  * A Tana-inspired interface for exploring the node-based architecture.
  * This component composes NodeBrowser, NodeInspector, SupertagSidebar,
- * and GraphView to provide a full node exploration experience.
+ * GraphView, and QueryResultsView to provide a full node exploration experience.
  *
  * Features:
- * - Sidebar for view mode switching (list/graph)
+ * - Sidebar for view mode switching (list/graph/query)
  * - Supertag sidebar for filtering
  * - Node browser with search and grouping
  * - Graph visualization with 2D/3D renderers
+ * - Query builder with Tana-like filter UI
  * - Node inspector for deep visualization
  * - Keyboard navigation
  * - Bidirectional focus synchronization between views
@@ -22,6 +23,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { NodeBrowser } from './components/node-browser/index.js'
 import { NodeInspector } from './components/node-inspector/index.js'
 import { SupertagSidebar } from './components/supertag-sidebar/index.js'
+import { QueryResultsView } from './components/query-results/index.js'
 import { Sidebar, type ViewMode } from './components/layout/index.js'
 import { GraphView } from './features/graph/index.js'
 import { useGraphStore } from './features/graph/store/index.js'
@@ -42,15 +44,16 @@ export interface NodeWorkbenchRouteProps {
  * NodeWorkbenchRoute - Full-page node workbench layout
  *
  * Provides the complete layout with view switching:
- * - Far Left: Sidebar for view mode switching (list/graph)
+ * - Far Left: Sidebar for view mode switching (list/graph/query)
  * - Left: Supertag filter sidebar (visible in list view)
- * - Center: Node browser (list view) or GraphView (graph view)
+ * - Center: Node browser (list view), GraphView (graph view), or QueryResultsView (query view)
  * - Right: Node inspector
  *
  * Focus Synchronization:
  * - selectedNodeId is the single source of truth
  * - Selecting a node in NodeBrowser updates graph local focus
  * - Clicking a node in Graph updates NodeBrowser selection + NodeInspector
+ * - Selecting a node in Query results updates selection
  * - Toggling local graph ON uses the current selectedNodeId as focus
  */
 export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
@@ -232,7 +235,15 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
         </div>
       )}
 
-      {/* Right Panel - Node Inspector (visible in both views) */}
+      {/* Query View */}
+      {viewMode === 'query' && (
+        <QueryResultsView
+          selectedNodeId={selectedNodeId}
+          onSelectNode={handleNodeBrowserSelect}
+        />
+      )}
+
+      {/* Right Panel - Node Inspector (visible in all views) */}
       <div className="w-[480px] border-l border-border flex flex-col bg-card/30">
         {selectedNode ? (
           <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
@@ -244,7 +255,9 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
               <p className="text-xs text-muted-foreground/60 mt-1">
                 {viewMode === 'list'
                   ? 'Use ↑↓ to navigate, Enter to select'
-                  : 'Click a node in the graph to select'}
+                  : viewMode === 'graph'
+                    ? 'Click a node in the graph to select'
+                    : 'Add filters and select a result'}
               </p>
             </div>
           </div>
