@@ -34,7 +34,8 @@ See `spec.md` for full technical specification.
 
 ---
 
-### [ ] Step: Update Import in node-inspector.tsx
+### [x] Step: Update Import in node-inspector.tsx
+<!-- chat-id: 0779dba7-214b-4614-a663-f3c07a747b8d -->
 
 Update the node-inspector.tsx file to import `getBacklinksServerFn` from `@nxus/workbench/server` instead of the local duplicate.
 
