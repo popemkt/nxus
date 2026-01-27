@@ -52,7 +52,8 @@ import { getBacklinksServerFn } from '@nxus/workbench/server'
 
 ---
 
-### [ ] Step: Delete Duplicate Query Files
+### [x] Step: Delete Duplicate Query Files
+<!-- chat-id: 34871f64-4605-4bd6-b939-39ca1ac90402 -->
 
 Remove all duplicate query-related files from nxus-core:
 
@@ -61,6 +62,8 @@ Remove all duplicate query-related files from nxus-core:
 3. Delete: `src/hooks/use-query.ts`
 4. Delete: `src/stores/query.store.ts`
 5. Clean up empty `src/services/query/` directory if applicable
+
+**Completed**: All 20 files deleted successfully, including the empty `src/services/query/` directory.
 
 ---
 
