@@ -1,0 +1,28 @@
+{
+  "id": "supermemory",
+  "name": "Supermemory",
+  "description": "Memory engine and app that is extremely fast, scalable. The Memory API for the AI era.",
+  "type": "remote-repo",
+  "path": "https://github.com/supermemoryai/supermemory.git",
+  "homepage": "https://supermemory.ai",
+  "dependencies": [
+    "git"
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "ai-tools",
+    "createdAt": "2026-01-24T00:00:00.000Z",
+    "updatedAt": "2026-01-24T00:00:00.000Z",
+    "version": "1.0.0",
+    "author": "supermemoryai"
+  },
+  "installConfig": {
+    "script": "install.ps1",
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  },
+  "status": "not-installed"
+}
