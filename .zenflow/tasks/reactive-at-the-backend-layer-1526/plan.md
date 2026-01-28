@@ -372,36 +372,56 @@ Extend the schema to support computed field nodes.
 **Verification:**
 - [x] Run `pnpm --filter @nxus/db test` - all 179 tests pass (no regressions)
 
-### [ ] Step: Create computed field service
+### [x] Step: Create computed field service
+<!-- chat-id: f81f6926-5407-4e46-a0ee-bebdb0729fbb -->
 
 Implement the service that manages computed field definitions and values.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/computed-field.service.ts`
 
+**Files modified:**
+- `packages/nxus-db/src/reactive/index.ts` - added exports for computed field service
+
 **Implementation:**
-- [ ] Define `ComputedFieldService` interface
-- [ ] Implement `createComputedFieldService(querySubscriptionService)` factory
-- [ ] `create(db, { name, definition, ownerId? })` - create computed field node
-- [ ] `getValue(db, computedFieldId)` - get current value
-- [ ] `recompute(db, computedFieldId)` - force recompute
-- [ ] `getAll(db)` - list all computed fields with values
-- [ ] `delete(db, computedFieldId)` - remove computed field
+- [x] Define `ComputedFieldService` interface
+- [x] Implement `createComputedFieldService(querySubscriptionService)` factory
+- [x] `create(db, { name, definition, ownerId? })` - create computed field node
+- [x] `getValue(db, computedFieldId)` - get current value
+- [x] `recompute(db, computedFieldId)` - force recompute
+- [x] `getAll(db)` - list all computed fields with values
+- [x] `delete(db, computedFieldId)` - remove computed field
 
 **Aggregation implementation:**
-- [ ] `COUNT` - count matching nodes
-- [ ] `SUM` - sum numeric field values across matching nodes
-- [ ] `AVG` - average of numeric field values
-- [ ] `MIN` - minimum value
-- [ ] `MAX` - maximum value
+- [x] `COUNT` - count matching nodes
+- [x] `SUM` - sum numeric field values across matching nodes
+- [x] `AVG` - average of numeric field values
+- [x] `MIN` - minimum value
+- [x] `MAX` - maximum value
 
 **Reactivity:**
-- [ ] Subscribe to relevant query for each computed field
-- [ ] On query result change, recompute aggregation
-- [ ] Emit value change event for threshold automations
+- [x] Subscribe to relevant query for each computed field
+- [x] On query result change, recompute aggregation
+- [x] Emit value change event for threshold automations (via `onValueChange` callback)
+
+**Additional features implemented:**
+- [x] `onValueChange(computedFieldId, callback)` - subscribe to value changes
+- [x] `activeCount()` - get number of active computed fields
+- [x] `clear()` - clear all active computed fields (for testing)
+- [x] `initialize(db)` - load all computed fields from DB at startup
+- [x] `ComputedFieldValueChangeEvent` type for value change notifications
+- [x] Singleton `computedFieldService` exported for direct use
+
+**Key Design:**
+- Computed fields are stored as nodes with `supertag:computed_field`
+- Each computed field has a query subscription for reactivity
+- Values are cached in DB and updated on query result changes
+- Value change listeners enable threshold automation integration (Phase 2)
+- Gracefully handles null/missing numeric values in aggregations
 
 **Verification:**
-- Unit tests cover all aggregation types
+- [x] Run `pnpm --filter @nxus/db test` - all 179 tests pass (no regressions)
+- [x] TypeScript compilation passes (no errors in computed-field.service.ts)
 
 ### [ ] Step: Write computed field service tests
 

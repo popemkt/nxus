@@ -25,3 +25,12 @@ export {
   automationService,
   type AutomationService,
 } from './automation.service.js'
+
+// Computed field service
+export {
+  createComputedFieldService,
+  computedFieldService,
+  type ComputedFieldService,
+  type ComputedFieldValueChangeCallback,
+  type ComputedFieldValueChangeEvent,
+} from './computed-field.service.js'
