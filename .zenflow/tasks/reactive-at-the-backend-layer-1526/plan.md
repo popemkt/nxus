@@ -558,24 +558,55 @@ Add webhook/external API action support with reliable async execution.
 - [x] Run `pnpm --filter @nxus/db test` - all 231 tests pass (no regressions)
 - [x] TypeScript compilation passes - no errors in webhook-queue.ts or automation.service.ts
 
-### [ ] Step: Write webhook queue tests
+### [x] Step: Write webhook queue tests
+<!-- chat-id: 58b09bdf-837c-475a-91cf-fde912f8ca0e -->
 
 Create tests for the webhook execution queue.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/webhook-queue.test.ts`
 
-**Test cases:**
-- [ ] Webhook is enqueued and executed
-- [ ] Template variables are interpolated correctly
-- [ ] Failed webhook retries up to 3 times
-- [ ] Successful webhook is removed from queue
-- [ ] Multiple webhooks process in order
-- [ ] HTTP methods (GET, POST, PUT) work correctly
-- [ ] Custom headers are sent
+**Test cases (46 tests):**
+- [x] Webhook is enqueued and executed (4 tests)
+- [x] Template variables are interpolated correctly (12 tests)
+  - Simple template variables
+  - Multiple template variables
+  - Node properties when node is present
+  - Computed field values
+  - Missing values replaced with empty string
+  - Nested object paths
+  - Whitespace in template syntax
+  - Recursive object interpolation
+  - URL template variables
+  - Header value interpolation
+- [x] Failed webhook retries up to maxAttempts (6 tests)
+  - Retries failed webhook up to 3 times
+  - Marks job as failed after maxAttempts exceeded
+  - Retries on non-2xx HTTP status
+  - Schedules retry with exponential backoff
+  - Does not process jobs before nextRetryAt
+  - Recovers and completes after transient failure
+- [x] Successful webhook is removed from queue
+- [x] Multiple webhooks process in order (3 tests)
+  - Processes multiple webhooks in order of creation
+  - Handles mixed success/failure across multiple webhooks
+  - getPendingJobs returns only pending jobs
+- [x] HTTP methods (GET, POST, PUT) work correctly (5 tests)
+  - GET requests without body
+  - POST requests with JSON body
+  - PUT requests with JSON body
+  - Does not override explicit Content-Type header
+  - POST without body when none provided
+- [x] Custom headers are sent
+- [x] Auto processing (startProcessing/stopProcessing) (3 tests)
+- [x] Queue management (clear, getJob, job fields) (4 tests)
+- [x] Response handling (JSON, text, 4xx errors) (3 tests)
+- [x] Edge cases (empty body, complex nested body, null values, concurrent calls, counts) (6 tests)
+- [x] Custom configuration (custom maxAttempts)
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/webhook-queue.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/webhook-queue.test.ts` - 46 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 277 tests pass (no regressions)
 
 ### [ ] Step: Create server functions for reactive API
 
