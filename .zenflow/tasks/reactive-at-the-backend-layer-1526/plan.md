@@ -459,29 +459,41 @@ Create comprehensive tests for the computed field service.
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/computed-field.test.ts` - 41 tests pass, 4 skipped
 - [x] Run `pnpm --filter @nxus/db test` - all 220 tests pass (no regressions)
 
-### [ ] Step: Extend automation service with threshold triggers
+### [x] Step: Extend automation service with threshold triggers
+<!-- chat-id: b8f4ee11-d1c4-4880-a9d1-87a0a7251b88 -->
 
 Add threshold trigger support to the automation service.
 
-**Files to modify:**
+**Files modified:**
 - `packages/nxus-db/src/reactive/automation.service.ts`
 
 **Implementation:**
-- [ ] Add `ThresholdTrigger` type: `{ type: 'threshold', computedFieldId, condition, fireOnce }`
-- [ ] Subscribe to computed field value changes
-- [ ] Detect threshold crossing (value goes from not-meeting to meeting condition)
-- [ ] Track `thresholdCrossed` state for fireOnce behavior
-- [ ] Reset `thresholdCrossed` when value drops below threshold
+- [x] Add `ThresholdTrigger` type: `{ type: 'threshold', computedFieldId, condition, fireOnce }`
+- [x] Subscribe to computed field value changes via `ComputedFieldService.onValueChange()`
+- [x] Detect threshold crossing (value goes from not-meeting to meeting condition)
+- [x] Track `thresholdCrossed` state for fireOnce behavior (persisted in automation state)
+- [x] Reset `thresholdCrossed` when value drops below threshold
+- [x] Initialize threshold state from persisted state on load
+- [x] Handle initially-met thresholds with fireOnce (mark as crossed on startup)
 
 **Threshold conditions:**
-- [ ] `gt` - greater than
-- [ ] `gte` - greater than or equal
-- [ ] `lt` - less than
-- [ ] `lte` - less than or equal
-- [ ] `eq` - equal to
+- [x] `gt` - greater than
+- [x] `gte` - greater than or equal
+- [x] `lt` - less than
+- [x] `lte` - less than or equal
+- [x] `eq` - equal to
+
+**Key Design:**
+- `ActiveAutomation` extended with `computedFieldUnsubscribe`, `thresholdCrossed`, `previousValue`
+- `registerThresholdSubscription()` handles computed field listener setup
+- `handleComputedFieldValueChange()` implements crossing detection and fireOnce logic
+- `evaluateThresholdCondition()` handles all 5 operators
+- `executeThresholdAction()` executes actions without target node (logs warning for node-based actions)
+- State persistence via `updateAutomationState()` for thresholdCrossed tracking across restarts
 
 **Verification:**
-- Unit tests cover threshold detection
+- [x] Run `pnpm --filter @nxus/db test` - all 220 tests pass (no regressions)
+- [x] TypeScript compilation passes - no errors in automation.service.ts
 
 ### [ ] Step: Write threshold automation tests
 
