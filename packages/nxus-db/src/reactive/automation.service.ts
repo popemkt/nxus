@@ -218,6 +218,9 @@ export function createAutomationService(
       return
     }
 
+    // Track this node as triggered BEFORE executing (so nested calls can detect cycles)
+    context.triggeringNodeIds.add(targetNodeId)
+
     // Increment depth for nested executions
     currentExecutionDepth = context.depth + 1
 
@@ -257,14 +260,13 @@ export function createAutomationService(
     const trigger = definition.trigger as QueryMembershipTrigger
 
     // Build execution context
+    // Note: triggeringNodeIds starts empty and tracks nodes that have been acted upon
+    // during this execution chain. This allows the first action to execute while
+    // preventing infinite loops if the action causes the same node to re-enter the query.
     const context: ExecutionContext = {
       depth: currentExecutionDepth,
       sourceAutomationId: automationId,
-      triggeringNodeIds: new Set([
-        ...event.added.map((n) => n.id),
-        ...event.removed.map((n) => n.id),
-        ...event.changed.map((n) => n.id),
-      ]),
+      triggeringNodeIds: new Set<string>(),
     }
 
     // Determine which nodes to act on based on the trigger event type
@@ -593,10 +595,12 @@ export function createAutomationService(
       }
 
       // Execute action
+      // Note: triggeringNodeIds starts empty - it will track nodes as we act on them
+      // to prevent cycles in nested automations
       const execContext: ExecutionContext = {
         depth: 0,
         sourceAutomationId: automationId,
-        triggeringNodeIds: new Set([context.nodeId]),
+        triggeringNodeIds: new Set<string>(),
       }
 
       executeAction(

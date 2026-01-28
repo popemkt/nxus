@@ -245,53 +245,82 @@ Extend the schema to support automation nodes with their definitions and state.
 - [x] Run `pnpm --filter @nxus/db test` - all 128 tests pass (no regressions)
 - [x] TypeScript compilation passes - no errors in node-schema.ts or automation.service.ts
 
-### [ ] Step: Write automation service tests
+### [x] Step: Write automation service tests
+<!-- chat-id: 68781d11-ba6c-4413-af7b-37c429ec5d69 -->
 
 Create comprehensive tests for the automation service.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/automation.test.ts`
 
-**Test cases:**
-- [ ] Create automation, verify node created with correct supertag and properties
-- [ ] `onEnter` fires when node newly matches query
-- [ ] `onExit` fires when node stops matching query
-- [ ] `onChange` fires when matching node's properties change
-- [ ] `set_property` action sets correct property value
-- [ ] `add_supertag` action adds supertag to triggering node
-- [ ] `remove_supertag` action removes supertag from triggering node
-- [ ] Disabled automation doesn't fire
-- [ ] Cycle detection prevents infinite loops (automation triggers itself)
-- [ ] Multiple automations can fire on same event
-- [ ] Automation state persists across re-evaluation
+**Test cases (33 tests implemented):**
+- [x] Create automation, verify node created with correct supertag and properties (6 tests)
+- [x] `onEnter` fires when node newly matches query (3 tests: supertag added, created with supertag, property change)
+- [x] `onExit` fires when node stops matching query (3 tests: supertag removed, property change, node deleted)
+- [x] `onChange` fires when matching node's properties change (2 tests: content changes, property changes)
+- [x] `set_property` action sets correct property value (5 tests: string, number, boolean, null, $now marker)
+- [x] `add_supertag` action adds supertag to triggering node
+- [x] `remove_supertag` action removes supertag from triggering node
+- [x] Disabled automation doesn't fire (3 tests: initially disabled, disabled via setEnabled, re-enabled)
+- [x] Cycle detection prevents infinite loops (automation triggers itself)
+- [x] Multiple automations can fire on same event
+- [x] Multi-automation chains work within depth limit
+- [x] delete() removes automation and stops it from firing
+- [x] trigger() manual trigger executes action
+- [x] clear() removes all active automations
+- [x] Error handling: action errors don't crash service
+
+**Bug fixes included:**
+- Fixed cycle detection bug in `handleQueryResultChange()` - triggeringNodeIds was pre-populated with event nodes, preventing first action from executing
+- Fixed same bug in `trigger()` for manual triggers
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/automation.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/automation.test.ts` - 33 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 161 tests pass (no regressions)
 
-### [ ] Step: Integration test for Phase 1
+### [x] Step: Integration test for Phase 1
+<!-- chat-id: c9f48760-199a-4a88-bd9b-16fb93cd5b9f -->
 
 Create an integration test that validates the complete Phase 1 reactive system.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/integration.test.ts`
 
-**Integration scenario:**
-- [ ] Test: Auto-complete timestamp automation
-  1. Create automation: when task status → 'done', set completedAt to now
-  2. Create task node with status 'pending'
-  3. Change status to 'done'
-  4. Verify completedAt was set automatically
-  5. Change status back to 'pending'
-  6. Verify completedAt is cleared (or remains - depending on design)
+**Integration scenarios implemented (14 tests):**
 
-- [ ] Test: Multi-automation chain (within cycle limit)
-  1. Automation A: when priority → 'high', add supertag 'urgent'
-  2. Automation B: when has supertag 'urgent', set notified = true
-  3. Create node, set priority to 'high'
-  4. Verify both supertag and notified property are set
+1. Auto-complete timestamp automation:
+   - [x] Set completedAt when task status changes to done
+   - [x] Clear completedAt when task status changes from done (onExit)
+   - [x] Work with newly created tasks that are immediately done
+
+2. Multi-automation chain (within cycle limit):
+   - [x] Execute chain: priority→high adds urgent supertag, which sets notified=true
+   - [x] Handle three-step automation chain
+   - [x] Reverse chain on exit events
+
+3. Event bus integration:
+   - [x] Emit events for all mutation types
+   - [x] Provide before/after values in property events
+
+4. Query subscription with complex filters:
+   - [x] Work with OR filters in automation trigger
+   - [x] Work with AND filters in automation trigger
+
+5. Multiple automations on same event:
+   - [x] Execute all matching automations
+
+6. Disabled automations:
+   - [x] Not execute disabled automations in a chain
+
+7. Cycle detection:
+   - [x] Stop execution at max depth
+
+8. Real-world workflow: Task management:
+   - [x] Handle complete task lifecycle with automations
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/integration.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/integration.test.ts` - 14 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 175 tests pass (no regressions)
 
 ### [ ] Step: Export reactive module from package
 
