@@ -49,26 +49,34 @@ Create the foundation for the reactive system with type definitions and the muta
 - [x] Run `pnpm --filter @nxus/db test` - all 54 tests pass (no regressions)
 - [x] TypeScript type check - no errors in reactive module (pre-existing errors in node.service.ts unrelated)
 
-### [ ] Step: Write event bus unit tests
+### [x] Step: Write event bus unit tests
+<!-- chat-id: 8baf2f10-9f13-43dc-85e2-3d47e6bb2065 -->
 
 Create comprehensive tests for the event bus before integrating with mutation functions.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/event-bus.test.ts`
 
 **Test cases:**
-- [ ] `emit()` delivers events to all subscribed listeners
-- [ ] `subscribe()` returns working unsubscribe function
-- [ ] Filter by event types works correctly
-- [ ] Filter by fieldSystemIds works correctly
-- [ ] Filter by nodeIds works correctly
-- [ ] Multiple filters combine with AND logic
-- [ ] `clear()` removes all listeners
-- [ ] Async listeners are handled correctly
-- [ ] Errors in one listener don't affect others
+- [x] `emit()` delivers events to all subscribed listeners
+- [x] `subscribe()` returns working unsubscribe function
+- [x] Filter by event types works correctly
+- [x] Filter by fieldSystemIds works correctly
+- [x] Filter by nodeIds works correctly
+- [x] Multiple filters combine with AND logic
+- [x] `clear()` removes all listeners
+- [x] Async listeners are handled correctly
+- [x] Errors in one listener don't affect others
+
+**Additional tests implemented:**
+- [x] Filter by supertagSystemIds works correctly
+- [x] Edge cases (self-unsubscribing listeners, empty filters, etc.)
+- [x] Listener count tracking
+- [x] Multiple subscriptions of same listener
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/event-bus.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/event-bus.test.ts` - 35 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 89 tests pass (no regressions)
 
 ### [ ] Step: Wrap mutation functions with event emission
 
