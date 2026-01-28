@@ -101,7 +101,7 @@ export function ProcessInboxModal({
 
             // Get checkCommand if tool has one
             const checkCommand =
-              app.type === 'tool' && 'checkCommand' in app
+              app.types?.includes('tool') && 'checkCommand' in app
                 ? (app as any).checkCommand
                 : undefined
 

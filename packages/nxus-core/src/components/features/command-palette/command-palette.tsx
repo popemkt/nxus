@@ -457,7 +457,7 @@ export function CommandPalette() {
 
     // Get the app's checkCommand for self-installation checks
     const selfCheckCommand =
-      cmd.app.type === 'tool' ? (cmd.app as any).checkCommand : undefined
+      cmd.app.types?.includes('tool') ? (cmd.app as any).checkCommand : undefined
 
     return checkCommandAvailability(
       {

@@ -20,6 +20,9 @@ import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
+  getFirstTypeIcon,
+  getTypeBadges,
+  hasMultipleTypes,
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
 import { useState } from 'react'
@@ -93,8 +96,9 @@ function ThumbnailWithFallback({
 // Individual card component
 function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false)
-  const TypeIcon = APP_TYPE_ICONS[app.type]
-  const isTool = app.type === 'tool'
+  const TypeIcon = getFirstTypeIcon(app)
+  const typeBadges = getTypeBadges(app)
+  const isTool = app.types?.includes('tool') ?? false
   const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
 
   // Health check for tools - uses TanStack Query via domain hook
@@ -179,12 +183,16 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
               >
                 {app.status.replace('-', ' ')}
               </Badge>
-              <Badge
-                variant="secondary"
-                className={compact ? 'text-xs' : undefined}
-              >
-                {APP_TYPE_LABELS_SHORT[app.type]}
-              </Badge>
+              {/* Show all type badges */}
+              {typeBadges.map((badge) => (
+                <Badge
+                  key={badge.type}
+                  variant={badge.isFirst ? 'secondary' : 'outline'}
+                  className={compact ? 'text-xs' : undefined}
+                >
+                  {badge.label}
+                </Badge>
+              ))}
 
               {isTool && isCheckingHealth && (
                 <Badge
@@ -297,8 +305,17 @@ export function GalleryView({
     )
   }
 
-  const tools = items.filter((app) => app.type === 'tool')
-  const repos = items.filter((app) => app.type !== 'tool')
+  // Items appear in ALL applicable groups based on their types array
+  const tools = items.filter((app) => app.types?.includes('tool'))
+  const repos = items.filter((app) => app.types?.includes('remote-repo'))
+  const typescriptApps = items.filter((app) => app.types?.includes('typescript'))
+  const htmlApps = items.filter((app) => app.types?.includes('html'))
+
+  // For now, show Tools vs Applications (combining repos, typescript, html)
+  // Items with multiple types will appear in multiple sections
+  const applications = items.filter((app) =>
+    app.types?.some(t => t !== 'tool')
+  )
 
   return (
     <div className="space-y-8">
@@ -314,13 +331,13 @@ export function GalleryView({
           </h2>
           <div className={gridClass}>
             {tools.map((app) => (
-              <ItemCard key={app.id} app={app} compact={compact} />
+              <ItemCard key={`tool-${app.id}`} app={app} compact={compact} />
             ))}
           </div>
         </section>
       )}
 
-      {repos.length > 0 && (
+      {applications.length > 0 && (
         <section>
           <h2
             className={cn(
@@ -331,8 +348,8 @@ export function GalleryView({
             Applications
           </h2>
           <div className={gridClass}>
-            {repos.map((app) => (
-              <ItemCard key={app.id} app={app} compact={compact} />
+            {applications.map((app) => (
+              <ItemCard key={`app-${app.id}`} app={app} compact={compact} />
             ))}
           </div>
         </section>
