@@ -117,32 +117,42 @@ export function setProperty(db, nodeId, fieldSystemId, value, order = 0) {
 - [x] Run `pnpm --filter @nxus/db test` - all 89 tests pass (no regressions)
 - [x] Event emission does not affect function behavior or return values
 
-### [ ] Step: Create query subscription service
+### [x] Step: Create query subscription service
+<!-- chat-id: 4b0cd83f-a911-4bb5-88ab-807d9ee2b309 -->
 
 Implement the service that manages live query subscriptions and computes result diffs.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/query-subscription.service.ts`
 
 **Implementation:**
-- [ ] Define `QuerySubscriptionService` interface
-- [ ] Implement `createQuerySubscriptionService()` factory
-- [ ] `subscribe(db, definition, onResultChange)` - register subscription, evaluate initial results, return subscription object
-- [ ] `unsubscribe(subscriptionId)` - remove subscription
-- [ ] `getActiveSubscriptions()` - list all active subscriptions (debugging)
-- [ ] `refreshAll(db)` - force re-evaluate all subscriptions
-- [ ] Internal: On mutation event, re-evaluate all subscriptions (brute force Phase 1)
-- [ ] Internal: Compute diff (added/removed/changed) using Set comparison
-- [ ] Internal: Track `lastResults` as `Set<string>` of node IDs per subscription
-- [ ] Internal: Track `lastNodeStates` as `Map<string, AssembledNode>` for change detection
+- [x] Define `QuerySubscriptionService` interface
+- [x] Implement `createQuerySubscriptionService()` factory
+- [x] `subscribe(db, definition, onResultChange)` - register subscription, evaluate initial results, return subscription object
+- [x] `unsubscribe(subscriptionId)` - remove subscription
+- [x] `getActiveSubscriptions()` - list all active subscriptions (debugging)
+- [x] `refreshAll(db)` - force re-evaluate all subscriptions
+- [x] Internal: On mutation event, re-evaluate all subscriptions (brute force Phase 1)
+- [x] Internal: Compute diff (added/removed/changed) using Set comparison
+- [x] Internal: Track `lastResults` as `Set<string>` of node IDs per subscription
+- [x] Internal: Track `lastNodeStates` as `Map<string, AssembledNode>` for change detection
+
+**Additional features implemented:**
+- [x] `subscriptionCount()` - get number of active subscriptions
+- [x] `clear()` - clear all subscriptions (for testing)
+- [x] `SubscriptionHandle` with `getLastResults()` for synchronous access to current results
+- [x] Smart event bus subscription management (subscribes only when needed, unsubscribes when empty)
+- [x] Node change detection via content/properties/supertags signature comparison
 
 **Key Design:**
-- Service auto-subscribes to eventBus on creation
+- Service auto-subscribes to eventBus when first subscription added
 - Re-evaluation is synchronous for Phase 1
 - Debouncing deferred to Phase 3
+- Singleton `querySubscriptionService` exported for direct use
 
 **Verification:**
-- Unit tests cover all subscription scenarios
+- [x] Run `pnpm --filter @nxus/db test` - all 89 tests pass (no regressions)
+- [x] TypeScript compilation passes (no new errors in reactive module)
 
 ### [ ] Step: Write query subscription service tests
 
