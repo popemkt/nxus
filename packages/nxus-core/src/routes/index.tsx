@@ -295,7 +295,6 @@ function AppManager() {
           className="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm"
           onClick={() => {
             setSidebarOpen(false)
-            setQueryBuilderOpen(false)
           }}
         />
       )}

@@ -4,6 +4,9 @@
  * Parallel to apps.server.ts - provides node-based queries that can
  * return legacy types via adapters. Use these when you want to leverage
  * the new node system with supertag inheritance.
+ *
+ * IMPORTANT: All @nxus/db/server imports are done dynamically inside handlers
+ * to prevent Vite from bundling better-sqlite3 into the client bundle.
  */
 
 import { createServerFn } from '@tanstack/react-start'
@@ -27,7 +30,7 @@ import {
   type NodeProperty,
 } from '@nxus/db/server'
 import type { AssembledNode, Item, ItemCommand, TagRef } from '@nxus/db'
-import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
+import { nodeToCommand, nodeToItem, nodeToTag } from './adapters.js'
 
 // ============================================================================
 // Raw Node Queries (return AssembledNode)
@@ -39,6 +42,7 @@ import { nodeToCommand, nodeToItem, nodeToTag } from './adapters'
 export const getNodeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ identifier: z.string() }))
   .handler(async (ctx) => {
+    const { initDatabase, getDatabase, findNode } = await import('@nxus/db/server')
     const { identifier } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -56,6 +60,7 @@ export const getNodeServerFn = createServerFn({ method: 'GET' })
 export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ supertagSystemId: z.string() }))
   .handler(async (ctx) => {
+    const { initDatabase, getDatabase, getNodesBySupertagWithInheritance } = await import('@nxus/db/server')
     const { supertagSystemId } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -69,12 +74,11 @@ export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
 export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), content: z.string() }))
   .handler(async (ctx) => {
+    const { initDatabase, getDatabase, assembleNode, updateNodeContent: updateFn } = await import('@nxus/db/server')
     const { nodeId, content } = ctx.data
     initDatabase()
     const db = getDatabase()
 
-    // Import the function dynamically to avoid circular deps
-    const { updateNodeContent: updateFn } = await import('@nxus/db/server')
     updateFn(db, nodeId, content)
 
     // Return the updated node
@@ -173,6 +177,7 @@ export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
+    const { initDatabase, getDatabase, findNode, assembleNode, setProperty } = await import('@nxus/db/server')
     const { nodeId, properties } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -210,6 +215,13 @@ export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
 export const getAllItemsFromNodesServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
+  const {
+    initDatabaseWithBootstrap,
+    getNodesBySupertagWithInheritance,
+    getProperty,
+    SYSTEM_SUPERTAGS,
+  } = await import('@nxus/db/server')
+
   // Auto-bootstrap system nodes on first access (idempotent)
   const db = await initDatabaseWithBootstrap()
 
@@ -278,6 +290,19 @@ export const getAllItemsFromNodesServerFn = createServerFn({
 export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async (ctx) => {
+    const {
+      initDatabase,
+      getDatabase,
+      findNode,
+      assembleNode,
+      getNodesBySupertagWithInheritance,
+      getProperty,
+      nodes,
+      nodeProperties,
+      eq,
+      SYSTEM_SUPERTAGS,
+      SYSTEM_FIELDS,
+    } = await import('@nxus/db/server')
     const { id } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -299,7 +324,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
           .from(nodeProperties)
           .where(eq(nodeProperties.fieldNodeId, legacyIdField.id))
           .all()
-          .find((p: NodeProperty) => {
+          .find((p: { value: string | null }) => {
             try {
               return JSON.parse(p.value || '') === id
             } catch {
@@ -372,6 +397,14 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
 export const getAllTagsFromNodesServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
+  const {
+    initDatabase,
+    getDatabase,
+    getNodesBySupertagWithInheritance,
+    getProperty,
+    SYSTEM_SUPERTAGS,
+  } = await import('@nxus/db/server')
+
   initDatabase()
   const db = getDatabase()
 
