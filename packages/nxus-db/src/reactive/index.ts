@@ -34,3 +34,16 @@ export {
   type ComputedFieldValueChangeCallback,
   type ComputedFieldValueChangeEvent,
 } from './computed-field.service.js'
+
+// Webhook queue
+export {
+  createWebhookQueue,
+  webhookQueue,
+  interpolateTemplate,
+  interpolateObject,
+  type WebhookQueue,
+  type WebhookContext,
+  type WebhookJob,
+  type WebhookResult,
+  type WebhookQueueConfig,
+} from './webhook-queue.js'

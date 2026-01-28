@@ -6,7 +6,7 @@
  * - Query membership events (onEnter/onExit/onChange)
  * - Threshold crossing on computed fields
  *
- * Actions include setting properties, adding/removing supertags.
+ * Actions include setting properties, adding/removing supertags, and webhooks.
  *
  * Key features:
  * - Automations are stored as nodes with supertag:automation
@@ -14,6 +14,7 @@
  * - Actions execute on query membership changes or threshold crossings
  * - Cycle detection prevents infinite loops (max execution depth: 10)
  * - Threshold triggers support fireOnce with automatic reset when value drops below
+ * - Webhooks execute asynchronously via a job queue with retry support
  *
  * Supported triggers:
  * - query_membership: Node enters/exits/changes in query results
@@ -23,10 +24,10 @@
  * - set_property
  * - add_supertag
  * - remove_supertag
+ * - webhook (via async queue with retry)
  *
  * Future additions:
  * - create_node
- * - webhook (via async queue)
  */
 
 import type { AssembledNode } from '../types/node.js'
@@ -45,8 +46,14 @@ import {
   isSetPropertyAction,
   isAddSupertagAction,
   isRemoveSupertagAction,
+  isWebhookAction,
   isNowMarker,
 } from './types.js'
+import {
+  createWebhookQueue,
+  type WebhookQueue,
+  type WebhookContext,
+} from './webhook-queue.js'
 import {
   createQuerySubscriptionService,
   type QuerySubscriptionService,
@@ -189,6 +196,11 @@ export interface AutomationService {
    * @param db Database instance
    */
   initialize(db: Database): void
+
+  /**
+   * Get the webhook queue for inspection/testing
+   */
+  getWebhookQueue(): WebhookQueue
 }
 
 // ============================================================================
@@ -200,17 +212,20 @@ export interface AutomationService {
  *
  * @param querySubscriptionServiceInstance Optional query subscription service (defaults to creating new one)
  * @param computedFieldServiceInstance Optional computed field service (defaults to creating new one)
+ * @param webhookQueueInstance Optional webhook queue (defaults to creating new one)
  * @returns AutomationService instance
  */
 export function createAutomationService(
   querySubscriptionServiceInstance?: QuerySubscriptionService,
   computedFieldServiceInstance?: ComputedFieldService,
+  webhookQueueInstance?: WebhookQueue,
 ): AutomationService {
   const activeAutomations = new Map<string, ActiveAutomation>()
   const queryService =
     querySubscriptionServiceInstance || createQuerySubscriptionService()
   const computedFieldServiceRef =
     computedFieldServiceInstance || createComputedFieldService(queryService)
+  const webhookQueueRef = webhookQueueInstance || createWebhookQueue()
 
   // Current execution depth (for cycle detection)
   let currentExecutionDepth = 0
@@ -224,6 +239,7 @@ export function createAutomationService(
     targetNodeId: string,
     automationId: string,
     context: ExecutionContext,
+    automationName?: string,
   ): void {
     // Cycle detection
     if (context.depth >= MAX_EXECUTION_DEPTH) {
@@ -259,8 +275,28 @@ export function createAutomationService(
         addNodeSupertag(db, targetNodeId, action.supertagSystemId)
       } else if (isRemoveSupertagAction(action)) {
         removeNodeSupertag(db, targetNodeId, action.supertagSystemId)
+      } else if (isWebhookAction(action)) {
+        // Get the target node for context
+        const targetNode = assembleNode(db, targetNodeId)
+        const webhookContext: WebhookContext = {
+          node: targetNode,
+          computedField: null,
+          automation: {
+            id: automationId,
+            name: automationName || 'Unknown Automation',
+          },
+          timestamp: new Date().toISOString(),
+        }
+        webhookQueueRef.enqueue(automationId, action, webhookContext)
+        // Process the queue immediately (fire-and-forget)
+        webhookQueueRef.processQueue().catch((error) => {
+          console.error(
+            `[AutomationService] Error processing webhook queue:`,
+            error,
+          )
+        })
       }
-      // Phase 2 will add: create_node, webhook
+      // Future: create_node action
     } catch (error) {
       console.error(
         `[AutomationService] Error executing action for automation ${automationId} on node ${targetNodeId}:`,
@@ -309,7 +345,7 @@ export function createAutomationService(
 
     // Execute action on each target node
     for (const node of targetNodes) {
-      executeAction(db, definition.action, node.id, automationId, context)
+      executeAction(db, definition.action, node.id, automationId, context, definition.name)
 
       // Update last fired timestamp
       const now = new Date()
@@ -410,7 +446,15 @@ export function createAutomationService(
       // The action might use a fixed nodeId or create a node
       // For now, we'll execute without a target node (skipping node-based actions)
       // This is a limitation that can be addressed by adding targetNodeId to threshold trigger
-      executeThresholdAction(db, definition.action, automationId, context, currentValue)
+      executeThresholdAction(
+        db,
+        definition.action,
+        automationId,
+        context,
+        currentValue,
+        trigger.computedFieldId,
+        definition.name,
+      )
 
       // Update last fired timestamp
       try {
@@ -440,7 +484,9 @@ export function createAutomationService(
     action: AutomationAction,
     automationId: string,
     context: ExecutionContext,
-    _computedFieldValue: number | null,
+    computedFieldValue: number | null,
+    computedFieldId?: string,
+    automationName?: string,
   ): void {
     // Cycle detection
     if (context.depth >= MAX_EXECUTION_DEPTH) {
@@ -468,8 +514,32 @@ export function createAutomationService(
         console.warn(
           `[AutomationService] remove_supertag action requires a target node. Consider using a targetNodeId in your threshold trigger.`,
         )
+      } else if (isWebhookAction(action)) {
+        // Webhooks work great with threshold triggers!
+        const webhookContext: WebhookContext = {
+          node: null,
+          computedField: computedFieldId
+            ? {
+                id: computedFieldId,
+                value: computedFieldValue,
+              }
+            : null,
+          automation: {
+            id: automationId,
+            name: automationName || 'Unknown Automation',
+          },
+          timestamp: new Date().toISOString(),
+        }
+        webhookQueueRef.enqueue(automationId, action, webhookContext)
+        // Process the queue immediately (fire-and-forget)
+        webhookQueueRef.processQueue().catch((error) => {
+          console.error(
+            `[AutomationService] Error processing webhook queue:`,
+            error,
+          )
+        })
       }
-      // Future: webhook and create_node actions will work without a target node
+      // Future: create_node action will work without a target node
     } catch (error) {
       console.error(
         `[AutomationService] Error executing threshold action for automation ${automationId}:`,
@@ -872,6 +942,8 @@ export function createAutomationService(
           automationId,
           execContext,
           context.computedFieldValue ?? null,
+          loaded.definition.trigger.computedFieldId,
+          loaded.definition.name,
         )
       } else {
         // For query_membership triggers, require a nodeId
@@ -897,6 +969,7 @@ export function createAutomationService(
           context.nodeId,
           automationId,
           execContext,
+          loaded.definition.name,
         )
       }
 
@@ -945,6 +1018,10 @@ export function createAutomationService(
           registerSubscription(db, automation)
         }
       }
+    },
+
+    getWebhookQueue(): WebhookQueue {
+      return webhookQueueRef
     },
   }
 }

@@ -518,28 +518,45 @@ Create tests for threshold-based automations.
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/automation.test.ts` - 44 tests pass
 - [x] Run `pnpm --filter @nxus/db test` - all 231 tests pass (no regressions)
 
-### [ ] Step: Implement webhook action with async queue
+### [x] Step: Implement webhook action with async queue
+<!-- chat-id: 9fcdbcae-e1f6-4981-93a1-db2ddb4ba45e -->
 
 Add webhook/external API action support with reliable async execution.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/webhook-queue.ts`
 
-**Files to modify:**
-- `packages/nxus-db/src/reactive/automation.service.ts`
+**Files modified:**
+- `packages/nxus-db/src/reactive/automation.service.ts` - integrated webhook action execution
+- `packages/nxus-db/src/reactive/index.ts` - added webhook queue exports
 
 **Implementation:**
-- [ ] Define `WebhookAction` type with url, method, headers, body
-- [ ] Define `WebhookJob` type for queue items
-- [ ] Implement in-memory job queue with retry support
-- [ ] `enqueueWebhook(automationId, action, context)` - add job to queue
-- [ ] `processWebhookQueue()` - process pending jobs with fetch
-- [ ] Template interpolation for body: `{{ node.id }}`, `{{ node.content }}`, `{{ computedField.value }}`
-- [ ] Retry logic: 3 attempts with backoff
-- [ ] Error logging for failed webhooks
+- [x] Define `WebhookAction` type with url, method, headers, body (already in types.ts)
+- [x] Define `WebhookJob` type for queue items
+- [x] Define `WebhookContext` for template interpolation context
+- [x] Implement in-memory job queue with retry support
+- [x] `enqueue(automationId, action, context)` - add job to queue
+- [x] `processQueue()` - process pending jobs with fetch
+- [x] Template interpolation for body: `{{ node.id }}`, `{{ node.content }}`, `{{ computedField.value }}`, `{{ automation.id }}`, `{{ timestamp }}`
+- [x] Retry logic: 3 attempts with exponential backoff (configurable)
+- [x] Error logging for failed webhooks
+- [x] `getWebhookQueue()` method on AutomationService for testing access
+- [x] `setFetch()` method for mocking fetch in tests
+- [x] Automatic processing with `startProcessing()`/`stopProcessing()`
+- [x] Job cleanup for old completed/failed jobs
+
+**Webhook Queue Features:**
+- In-memory job queue with configurable max attempts (default: 3)
+- Exponential backoff with jitter for retries
+- Template interpolation for URL, headers, and body
+- Supports GET, POST, PUT methods
+- Automatic JSON serialization for request body
+- Handles both query membership and threshold trigger contexts
+- Job status tracking: pending, processing, completed, failed
 
 **Verification:**
-- Unit tests with mocked fetch
+- [x] Run `pnpm --filter @nxus/db test` - all 231 tests pass (no regressions)
+- [x] TypeScript compilation passes - no errors in webhook-queue.ts or automation.service.ts
 
 ### [ ] Step: Write webhook queue tests
 
