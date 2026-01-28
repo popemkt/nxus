@@ -2,25 +2,14 @@
  * search-nodes.server.ts - Universal node search
  *
  * Provides content-based search across all nodes in the system.
+ *
+ * IMPORTANT: All @nxus/db/server imports are done dynamically inside handlers
+ * to prevent Vite from bundling better-sqlite3 into the client bundle.
  */
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import {
-  and,
-  eq,
-  isNull,
-  like,
-  getDatabase,
-  initDatabase,
-  nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  assembleNode,
-  getNodesBySupertagWithInheritance,
-  type AssembledNode,
-  type Node,
-} from '@nxus/db/server'
+import type { AssembledNode } from '@nxus/db'
 
 // ============================================================================
 // Result Types
@@ -46,6 +35,16 @@ type ChildNodesResult = { success: true; children: AssembledNode[] }
 export const searchNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ query: z.string(), limit: z.number().optional() }))
   .handler(async (ctx): Promise<SearchNodesResult> => {
+    const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      assembleNode,
+      and,
+      like,
+      isNull,
+    } = await import('@nxus/db/server')
+
     const { query, limit = 50 } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -83,6 +82,16 @@ export const searchNodesServerFn = createServerFn({ method: 'GET' })
  */
 export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<SupertagsResult> => {
+    const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      nodeProperties,
+      assembleNode,
+      eq,
+      SYSTEM_FIELDS,
+    } = await import('@nxus/db/server')
+
     initDatabase()
     const db = getDatabase()
 
@@ -160,6 +169,15 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
   )
   .handler(async (ctx): Promise<AllNodesResult> => {
     const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      assembleNode,
+      isNull,
+      getNodesBySupertagWithInheritance,
+    } = await import('@nxus/db/server')
+
+    const {
       supertagSystemId,
       limit = 200,
       includeSystemNodes = true,
@@ -210,6 +228,14 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
 export const getBacklinksServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx): Promise<BacklinksResult> => {
+    const {
+      initDatabase,
+      getDatabase,
+      nodeProperties,
+      assembleNode,
+      like,
+    } = await import('@nxus/db/server')
+
     const { nodeId } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -262,6 +288,8 @@ export const getBacklinksServerFn = createServerFn({ method: 'GET' })
 export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx): Promise<OwnerChainResult> => {
+    const { initDatabase, getDatabase, nodes, eq } = await import('@nxus/db/server')
+
     const { nodeId } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -279,7 +307,7 @@ export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
       if (visited.has(currentId)) break
       visited.add(currentId)
 
-      const node: Node | undefined = db.select().from(nodes).where(eq(nodes.id, currentId)).get()
+      const node = db.select().from(nodes).where(eq(nodes.id, currentId)).get()
 
       if (!node) break
 
@@ -308,6 +336,16 @@ export const getChildNodesServerFn = createServerFn({ method: 'GET' })
     }),
   )
   .handler(async (ctx): Promise<ChildNodesResult> => {
+    const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      assembleNode,
+      eq,
+      and,
+      isNull,
+    } = await import('@nxus/db/server')
+
     const { parentId, supertagSystemId, limit = 50 } = ctx.data
     initDatabase()
     const db = getDatabase()

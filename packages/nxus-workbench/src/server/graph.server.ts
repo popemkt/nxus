@@ -5,24 +5,13 @@
  * - Lightweight graph structure for large graphs (500+ nodes)
  * - Recursive backlink queries with depth parameter
  * - Edge-only queries for incremental updates
+ *
+ * IMPORTANT: All @nxus/db/server imports are done dynamically inside handlers
+ * to prevent Vite from bundling better-sqlite3 into the client bundle.
  */
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import {
-  and,
-  eq,
-  isNull,
-  like,
-  getDatabase,
-  initDatabase,
-  nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  getNodesBySupertagWithInheritance,
-  type Node,
-  type AssembledNode,
-} from '@nxus/db/server'
 
 // Re-export types from the client-safe types file
 export type {
@@ -48,17 +37,6 @@ import type {
  * UUID pattern for identifying node references in property values.
  */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-/**
- * Fields that are explicit relationships (not generic references).
- */
-const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
-  SYSTEM_FIELDS.DEPENDENCIES,
-  SYSTEM_FIELDS.PARENT,
-  SYSTEM_FIELDS.TAGS,
-  SYSTEM_FIELDS.SUPERTAG,
-  SYSTEM_FIELDS.EXTENDS,
-])
 
 /**
  * Parse node references from a property value.
@@ -87,35 +65,6 @@ function parseNodeReferences(value: string | null): string[] {
   return []
 }
 
-/**
- * Get the primary supertag ID for a node.
- */
-function getPrimarySupertagId(
-  db: ReturnType<typeof getDatabase>,
-  nodeId: string,
-  supertagFieldId: string,
-): string | null {
-  const supertagProp = db
-    .select()
-    .from(nodeProperties)
-    .where(
-      and(
-        eq(nodeProperties.nodeId, nodeId),
-        eq(nodeProperties.fieldNodeId, supertagFieldId),
-      ),
-    )
-    .get()
-
-  if (!supertagProp) return null
-
-  try {
-    const value = JSON.parse(supertagProp.value || '')
-    return typeof value === 'string' ? value : null
-  } catch {
-    return null
-  }
-}
-
 // ============================================================================
 // Server Functions
 // ============================================================================
@@ -141,6 +90,18 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
   )
   .handler(async (ctx): Promise<GraphStructureResult> => {
     const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      nodeProperties,
+      eq,
+      and,
+      isNull,
+      SYSTEM_FIELDS,
+      getNodesBySupertagWithInheritance,
+    } = await import('@nxus/db/server')
+
+    const {
       supertagSystemId,
       limit = 1000,
       includeHierarchy = true,
@@ -148,6 +109,15 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
     } = ctx.data
     initDatabase()
     const db = getDatabase()
+
+    // Build EXPLICIT_RELATIONSHIP_FIELDS set dynamically
+    const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
+      SYSTEM_FIELDS.DEPENDENCIES,
+      SYSTEM_FIELDS.PARENT,
+      SYSTEM_FIELDS.TAGS,
+      SYSTEM_FIELDS.SUPERTAG,
+      SYSTEM_FIELDS.EXTENDS,
+    ])
 
     // Get field node IDs for lookups
     const supertagFieldNode = db
@@ -164,14 +134,50 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
 
     const supertagFieldId = supertagFieldNode?.id
 
+    // Helper to get primary supertag ID
+    function getPrimarySupertagId(nodeId: string): string | null {
+      if (!supertagFieldId) return null
+
+      const supertagProp = db
+        .select()
+        .from(nodeProperties)
+        .where(
+          and(
+            eq(nodeProperties.nodeId, nodeId),
+            eq(nodeProperties.fieldNodeId, supertagFieldId),
+          ),
+        )
+        .get()
+
+      if (!supertagProp) return null
+
+      try {
+        const value = JSON.parse(supertagProp.value || '')
+        return typeof value === 'string' ? value : null
+      } catch {
+        return null
+      }
+    }
+
     // Fetch nodes based on filter
-    let rawNodes: Node[]
+    type RawNode = {
+      id: string
+      content: string | null
+      systemId: string | null
+      ownerId: string | null
+      createdAt: Date
+      updatedAt: Date
+      deletedAt: Date | null
+      contentPlain: string | null
+    }
+
+    let rawNodes: RawNode[]
     if (supertagSystemId) {
-      const filteredNodes: AssembledNode[] = getNodesBySupertagWithInheritance(
+      const filteredNodes = getNodesBySupertagWithInheritance(
         db,
         supertagSystemId,
       )
-      rawNodes = filteredNodes.slice(0, limit).map((an: AssembledNode) => ({
+      rawNodes = filteredNodes.slice(0, limit).map((an) => ({
         id: an.id,
         content: an.content,
         systemId: an.systemId,
@@ -203,7 +209,7 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
       let supertagName: string | null = null
 
       if (supertagFieldId) {
-        supertagId = getPrimarySupertagId(db, node.id, supertagFieldId)
+        supertagId = getPrimarySupertagId(node.id)
         if (supertagId && !supertagNames[supertagId]) {
           // Fetch supertag name
           const stNode = db
@@ -324,6 +330,17 @@ export const getBacklinksWithDepthServerFn = createServerFn({ method: 'GET' })
     }),
   )
   .handler(async (ctx): Promise<RecursiveBacklinksResult> => {
+    const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      nodeProperties,
+      eq,
+      and,
+      like,
+      SYSTEM_FIELDS,
+    } = await import('@nxus/db/server')
+
     const { nodeId, depth = 1 } = ctx.data
     initDatabase()
     const db = getDatabase()
@@ -335,6 +352,31 @@ export const getBacklinksWithDepthServerFn = createServerFn({ method: 'GET' })
       .where(eq(nodes.systemId, SYSTEM_FIELDS.SUPERTAG))
       .get()
     const supertagFieldId = supertagFieldNode?.id
+
+    // Helper to get primary supertag ID
+    function getPrimarySupertagId(nId: string): string | null {
+      if (!supertagFieldId) return null
+
+      const supertagProp = db
+        .select()
+        .from(nodeProperties)
+        .where(
+          and(
+            eq(nodeProperties.nodeId, nId),
+            eq(nodeProperties.fieldNodeId, supertagFieldId),
+          ),
+        )
+        .get()
+
+      if (!supertagProp) return null
+
+      try {
+        const value = JSON.parse(supertagProp.value || '')
+        return typeof value === 'string' ? value : null
+      } catch {
+        return null
+      }
+    }
 
     const backlinks: RecursiveBacklinksResult['backlinks'] = []
     const visited = new Set<string>([nodeId]) // Don't include the target node
@@ -382,7 +424,7 @@ export const getBacklinksWithDepthServerFn = createServerFn({ method: 'GET' })
           // Get supertag
           let supertagId: string | null = null
           if (supertagFieldId) {
-            supertagId = getPrimarySupertagId(db, refNodeId, supertagFieldId)
+            supertagId = getPrimarySupertagId(refNodeId)
           }
 
           backlinks.push({
@@ -426,6 +468,15 @@ export const getEdgesBetweenNodesServerFn = createServerFn({ method: 'GET' })
     async (
       ctx,
     ): Promise<{ success: true; edges: LightweightGraphEdge[] }> => {
+      const {
+        initDatabase,
+        getDatabase,
+        nodes,
+        nodeProperties,
+        eq,
+        SYSTEM_FIELDS,
+      } = await import('@nxus/db/server')
+
       const { nodeIds, includeReferences = true } = ctx.data
       initDatabase()
       const db = getDatabase()
@@ -433,6 +484,15 @@ export const getEdgesBetweenNodesServerFn = createServerFn({ method: 'GET' })
       if (nodeIds.length === 0) {
         return { success: true, edges: [] }
       }
+
+      // Build EXPLICIT_RELATIONSHIP_FIELDS set dynamically
+      const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
+        SYSTEM_FIELDS.DEPENDENCIES,
+        SYSTEM_FIELDS.PARENT,
+        SYSTEM_FIELDS.TAGS,
+        SYSTEM_FIELDS.SUPERTAG,
+        SYSTEM_FIELDS.EXTENDS,
+      ])
 
       const nodeIdSet = new Set(nodeIds)
       const edges: LightweightGraphEdge[] = []

@@ -86,3 +86,48 @@ Note: SQLite error in browser is expected per task description (separate issue)
 - Dev server starts successfully ✅
 - No broken imports to deleted query files
 - Report written to `report.md`
+
+### [x] Step: Fix the bug
+<!-- chat-id: 18aae797-3b99-41c8-919a-da86aa628c58 -->
+
+I think we can focus on the bug now, at least make the index loadable. Not sure why we removed those and the index is still not fixed. Once you make the index loadable, and the error contained within /nodes only, you can stop
+
+**Completed**:
+
+The root cause was that `@nxus/workbench/src/server/*.server.ts` files were importing from `@nxus/db/server` at the **module level** (static imports). This caused Vite to bundle `better-sqlite3` into the client bundle, which fails because better-sqlite3 is a Node.js native module.
+
+**Fix Applied**:
+
+Changed all static imports from `@nxus/db/server` to dynamic imports inside handler functions:
+
+1. **nodes.server.ts** - Converted 6 server functions to use dynamic imports
+2. **graph.server.ts** - Converted 3 server functions to use dynamic imports
+3. **search-nodes.server.ts** - Converted 6 server functions to use dynamic imports
+4. **adapters.ts** - Copied `getProperty`/`getPropertyValues` helper functions locally to avoid importing from `@nxus/db/server`
+
+The pattern change:
+```typescript
+// BEFORE (causes bundling issue):
+import { initDatabase, getDatabase } from '@nxus/db/server'
+
+export const myServerFn = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    initDatabase()
+    const db = getDatabase()
+    // ...
+  })
+
+// AFTER (dynamic import inside handler):
+export const myServerFn = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const { initDatabase, getDatabase } = await import('@nxus/db/server')
+    initDatabase()
+    const db = getDatabase()
+    // ...
+  })
+```
+
+**Verification**:
+- Index page (`/`) loads correctly with no console errors ✅
+- `/nodes` page loads correctly with all supertags and 200 nodes displayed ✅
+- No `better-sqlite3` bundling errors in browser ✅

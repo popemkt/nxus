@@ -3,6 +3,10 @@
  *
  * These adapters allow the new node-based system to work with existing code
  * that expects Item, Tag, ItemCommand types.
+ *
+ * NOTE: This file must NOT import from @nxus/db/server to avoid bundling
+ * better-sqlite3 into the client bundle. The getProperty/getPropertyValues
+ * helpers are copied here as they are pure functions operating on AssembledNode.
  */
 
 import type {
@@ -15,7 +19,34 @@ import type {
   TagRef,
   AssembledNode,
 } from '@nxus/db'
-import { getProperty, getPropertyValues } from '@nxus/db/server'
+
+// ============================================================================
+// Property Helpers (copied from node.service.ts to avoid @nxus/db/server import)
+// ============================================================================
+
+/**
+ * Get single property value from assembled node
+ */
+function getProperty<T = unknown>(
+  node: AssembledNode,
+  fieldName: string,
+): T | undefined {
+  const props = node.properties[fieldName]
+  if (!props || props.length === 0) return undefined
+  return props[0].value as T
+}
+
+/**
+ * Get all property values from assembled node (for multi-value fields)
+ */
+function getPropertyValues<T = unknown>(
+  node: AssembledNode,
+  fieldName: string,
+): T[] {
+  const props = node.properties[fieldName]
+  if (!props) return []
+  return props.sort((a, b) => a.order - b.order).map((p) => p.value as T)
+}
 
 // ============================================================================
 // Node → Item Adapter
