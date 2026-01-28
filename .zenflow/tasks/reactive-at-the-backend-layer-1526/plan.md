@@ -648,30 +648,40 @@ Query Subscriptions:
 - [x] Server functions compile without TypeScript errors (only TS6305 build-related warnings)
 - [x] All @nxus/db tests still pass (277 tests)
 
-### [ ] Step: Subscription tracker integration test (acceptance test)
+### [x] Step: Subscription tracker integration test (acceptance test)
+<!-- chat-id: db23c20c-9b96-4b5d-84ac-017f0e9b64a1 -->
 
 Create the acceptance test from requirements document.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/subscription-tracker.test.ts`
 
-**Test scenario:**
-- [ ] Create computed field: `SUM(subscription.monthlyPrice)` for nodes with `supertag:subscription`
-- [ ] Create threshold automation: when total > 100, call webhook
-- [ ] Add subscriptions totaling $95
-- [ ] Verify computed field value is 95
-- [ ] Verify webhook NOT called
-- [ ] Add subscription pushing total to $105
-- [ ] Verify computed field value is 105
-- [ ] Verify webhook called exactly once
-- [ ] Add more subscriptions
-- [ ] Verify webhook NOT called again (fireOnce)
-- [ ] Remove subscriptions to drop below $100
-- [ ] Add subscription to cross threshold again
-- [ ] Verify webhook called second time (threshold reset)
+**Test cases implemented (7 tests):**
+- [x] Complete workflow: Track subscription total and trigger webhook when exceeding $100
+  - [x] Create computed field: `SUM(subscription.monthlyPrice)` for nodes with `supertag:subscription`
+  - [x] Create threshold automation: when total > 100, call webhook
+  - [x] Add subscriptions totaling $95, verify computed field value is ~$95
+  - [x] Verify webhook NOT called yet
+  - [x] Add subscription pushing total to ~$107, verify webhook called exactly once
+  - [x] Add more subscriptions, verify webhook NOT called again (fireOnce)
+  - [x] Remove subscriptions to drop below $100
+  - [x] Add subscription to cross threshold again, verify webhook called second time (threshold reset)
+- [x] Handle subscription removal via supertag removal (re-add triggers second webhook)
+- [x] Handle price changes on existing subscriptions (price increase/decrease triggers threshold)
+- [x] Correctly calculate COUNT aggregation for subscription tracking
+- [x] Correctly calculate AVG aggregation
+- [x] Support multiple threshold automations on same computed field ($50 and $100 thresholds)
+- [x] Work with fireOnce: false (fire on every crossing, not continuously while above)
+
+**Key implementation details:**
+- Uses mock fetch function to track webhook calls
+- Includes robust `processWebhooks()` helper that handles async webhook processing
+- Tests cover SUM, COUNT, and AVG aggregation types
+- Validates threshold reset behavior (webhook fires again after dropping below and crossing again)
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/subscription-tracker.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/subscription-tracker.test.ts` - 7 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 284 tests pass (no regressions)
 
 ---
 
