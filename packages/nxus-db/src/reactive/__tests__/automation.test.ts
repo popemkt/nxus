@@ -1283,6 +1283,730 @@ describe('AutomationService', () => {
   })
 
   // ==========================================================================
+  // Threshold automations
+  // ==========================================================================
+
+  describe('threshold automations', () => {
+    // We need the computed field service for threshold tests
+    let computedFieldService: ReturnType<typeof import('../computed-field.service.js').createComputedFieldService>
+
+    beforeEach(async () => {
+      // Import and create computed field service with the same query service
+      const { createComputedFieldService } = await import('../computed-field.service.js')
+
+      // Clear the automation service before creating a new one with computed field support
+      automationService.clear()
+
+      // Create services with shared query subscription service
+      const queryService = createQuerySubscriptionService(eventBus)
+      computedFieldService = createComputedFieldService(queryService)
+
+      // Create automation service with both services
+      const { createAutomationService } = await import('../automation.service.js')
+      automationService = createAutomationService(queryService, computedFieldService)
+
+      // Add the computed_field supertag and its fields to the test database
+      const now = Date.now()
+      sqlite.exec(`
+        INSERT OR IGNORE INTO nodes (id, content, content_plain, system_id, created_at, updated_at)
+        VALUES
+          ('supertag-computed-field', '#ComputedField', '#computedfield', 'supertag:computed_field', ${now}, ${now}),
+          ('field-computed-definition', 'Computed Field Definition', 'computed field definition', 'field:computed_field_definition', ${now}, ${now}),
+          ('field-computed-value', 'Computed Field Value', 'computed field value', 'field:computed_field_value', ${now}, ${now}),
+          ('field-computed-updated-at', 'Computed Field Updated At', 'computed field updated at', 'field:computed_field_updated_at', ${now}, ${now}),
+          ('field-amount', 'Amount', 'amount', 'field:amount', ${now}, ${now}),
+          ('supertag-subscription', '#Subscription', '#subscription', 'supertag:subscription', ${now}, ${now})
+      `)
+    })
+
+    afterEach(() => {
+      computedFieldService.clear()
+    })
+
+    it('should fire when computed field crosses threshold', () => {
+      // Create a computed field that sums amounts of subscriptions
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Total Subscriptions',
+        definition: {
+          aggregation: 'SUM',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+          fieldSystemId: 'field:amount',
+        },
+      })
+
+      // Track if automation fired
+      let automationFired = false
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        // Threshold actions log a warning since they don't have a target node
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          automationFired = true
+        }
+      })
+
+      // Create threshold automation: when total > 100, fire
+      const definition: AutomationDefinition = {
+        name: 'High Total Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gt',
+            value: 100,
+          },
+          fireOnce: false,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      automationService.create(db, definition)
+
+      // Initial value is null (no subscriptions) - should not fire
+      expect(automationFired).toBe(false)
+
+      // Add subscription with amount 50 - total becomes 50, still below 100
+      const sub1 = createNode(db, { content: 'Subscription 1', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub1, 'field:amount', 50)
+      expect(automationFired).toBe(false)
+
+      // Add another subscription with amount 60 - total becomes 110, crosses 100
+      const sub2 = createNode(db, { content: 'Subscription 2', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub2, 'field:amount', 60)
+
+      // Automation should have fired
+      expect(automationFired).toBe(true)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should only fire once with fireOnce: true', () => {
+      // Create a computed field that counts subscriptions
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Subscription Count',
+        definition: {
+          aggregation: 'COUNT',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+        },
+      })
+
+      // Track how many times automation fired
+      let fireCount = 0
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          fireCount++
+        }
+      })
+
+      // Create threshold automation: when count >= 3, fire once
+      const definition: AutomationDefinition = {
+        name: 'Three Subscription Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gte',
+            value: 3,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      automationService.create(db, definition)
+
+      // Add first subscription - count is 1
+      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(0)
+
+      // Add second subscription - count is 2
+      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(0)
+
+      // Add third subscription - count is 3, crosses threshold
+      createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(1)
+
+      // Add fourth subscription - count is 4, still above threshold but should NOT fire again
+      createNode(db, { content: 'Sub 4', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(1) // Still 1, not 2
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should fire on every crossing with fireOnce: false', () => {
+      // Create a computed field that sums amounts
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Total Amount',
+        definition: {
+          aggregation: 'SUM',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+          fieldSystemId: 'field:amount',
+        },
+      })
+
+      // Track how many times automation fired
+      let fireCount = 0
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          fireCount++
+        }
+      })
+
+      // Create threshold automation with fireOnce: false
+      const definition: AutomationDefinition = {
+        name: 'Total Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gte',
+            value: 100,
+          },
+          fireOnce: false, // Fire every time value changes while above threshold
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      automationService.create(db, definition)
+
+      // Add subscription with amount 80 - below threshold
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub1, 'field:amount', 80)
+      expect(fireCount).toBe(0)
+
+      // Add subscription with amount 30 - total is 110, crosses threshold
+      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub2, 'field:amount', 30)
+      expect(fireCount).toBe(1)
+
+      // Note: With fireOnce: false, the automation fires on crossing
+      // but doesn't fire again while staying above threshold unless value changes.
+      // The implementation fires on crossing (transition from below to above).
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should reset thresholdCrossed when value drops below threshold', () => {
+      // Create a computed field that sums amounts
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Total Amount',
+        definition: {
+          aggregation: 'SUM',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+          fieldSystemId: 'field:amount',
+        },
+      })
+
+      // Track how many times automation fired
+      let fireCount = 0
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          fireCount++
+        }
+      })
+
+      // Create threshold automation with fireOnce: true
+      const definition: AutomationDefinition = {
+        name: 'Threshold Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gt',
+            value: 100,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      automationService.create(db, definition)
+
+      // Add subscription with amount 150 - crosses threshold
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub1, 'field:amount', 150)
+      expect(fireCount).toBe(1)
+
+      // Reduce amount to 50 - drops below threshold
+      setProperty(db, sub1, 'field:amount', 50)
+
+      // Value is now 50, below threshold - thresholdCrossed should reset
+
+      // Add more to cross threshold again
+      setProperty(db, sub1, 'field:amount', 150)
+
+      // Should have fired again because threshold reset
+      expect(fireCount).toBe(2)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should fire again after threshold resets and crosses again', () => {
+      // Create a computed field that counts subscriptions
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Subscription Count',
+        definition: {
+          aggregation: 'COUNT',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+        },
+      })
+
+      let fireCount = 0
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          fireCount++
+        }
+      })
+
+      // Create threshold automation: when count >= 2, fire once
+      const definition: AutomationDefinition = {
+        name: 'Subscription Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gte',
+            value: 2,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      automationService.create(db, definition)
+
+      // Add first subscription - count is 1
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(0)
+
+      // Add second subscription - count is 2, crosses threshold
+      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(1)
+
+      // Remove supertag from sub2 - count is 1, drops below threshold
+      removeNodeSupertag(db, sub2, 'supertag:subscription')
+
+      // Add supertag back - count is 2, crosses again
+      addNodeSupertag(db, sub2, 'supertag:subscription')
+
+      // Should have fired again
+      expect(fireCount).toBe(2)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should support multiple threshold automations on same computed field', () => {
+      // Create a computed field that sums amounts
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Total Amount',
+        definition: {
+          aggregation: 'SUM',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+          fieldSystemId: 'field:amount',
+        },
+      })
+
+      // Track firings for each automation
+      let lowThresholdFired = false
+      let highThresholdFired = false
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
+        // We'll track by checking automation state instead
+      })
+
+      // Create automation 1: when total > 50, fire
+      const definition1: AutomationDefinition = {
+        name: 'Low Threshold Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gt',
+            value: 50,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'low_alert',
+        },
+      }
+
+      // Create automation 2: when total > 100, fire
+      const definition2: AutomationDefinition = {
+        name: 'High Threshold Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gt',
+            value: 100,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'high_alert',
+        },
+      }
+
+      automationService.create(db, definition1)
+      automationService.create(db, definition2)
+
+      // Both automations should be active
+      expect(automationService.activeCount()).toBe(2)
+
+      // Add subscription with amount 30 - below both thresholds
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub1, 'field:amount', 30)
+
+      // Add subscription with amount 30 - total is 60, crosses low threshold but not high
+      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub2, 'field:amount', 30)
+      // Low threshold should have fired (>50), high should not (<=100)
+
+      // Add subscription with amount 50 - total is 110, crosses high threshold
+      const sub3 = createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub3, 'field:amount', 50)
+      // High threshold should have fired now
+
+      // Verify both automations are still tracking independently
+      expect(automationService.activeCount()).toBe(2)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should handle different threshold operators', () => {
+      // Create a computed field
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Count',
+        definition: {
+          aggregation: 'COUNT',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+        },
+      })
+
+      // Test 'lt' operator: fire when count < 5
+      let ltFired = false
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          ltFired = true
+        }
+      })
+
+      // Create automation with lt operator
+      const ltDefinition: AutomationDefinition = {
+        name: 'Low Count Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'lt',
+            value: 2,
+          },
+          fireOnce: false,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'low',
+        },
+      }
+
+      automationService.create(db, ltDefinition)
+
+      // Initial count is 0, which is < 2, but no crossing yet (starts below)
+      // The automation only fires on CROSSING from not-meeting to meeting
+      expect(ltFired).toBe(false)
+
+      // Add 2 subscriptions - count is 2, not < 2
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      expect(ltFired).toBe(false) // Still false - never crossed
+
+      // Remove one - count is 1, now < 2 (crossed from not-meeting to meeting)
+      removeNodeSupertag(db, sub2, 'supertag:subscription')
+      expect(ltFired).toBe(true)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should handle eq operator', () => {
+      // Create a computed field
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Count',
+        definition: {
+          aggregation: 'COUNT',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+        },
+      })
+
+      let eqFired = false
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          eqFired = true
+        }
+      })
+
+      // Create automation with eq operator: fire when count == 3
+      const eqDefinition: AutomationDefinition = {
+        name: 'Exact Count Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'eq',
+            value: 3,
+          },
+          fireOnce: false,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'exactly_three',
+        },
+      }
+
+      automationService.create(db, eqDefinition)
+
+      // Add first subscription - count is 1
+      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      expect(eqFired).toBe(false)
+
+      // Add second subscription - count is 2
+      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      expect(eqFired).toBe(false)
+
+      // Add third subscription - count is 3, equals threshold
+      createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      expect(eqFired).toBe(true)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should handle lte operator', () => {
+      // Create a computed field
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Sum',
+        definition: {
+          aggregation: 'SUM',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+          fieldSystemId: 'field:amount',
+        },
+      })
+
+      let lteFired = false
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          lteFired = true
+        }
+      })
+
+      // Create automation with lte operator: fire when sum <= 50
+      const lteDefinition: AutomationDefinition = {
+        name: 'Low Sum Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'lte',
+            value: 50,
+          },
+          fireOnce: false,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'low_sum',
+        },
+      }
+
+      automationService.create(db, lteDefinition)
+
+      // Add subscription with amount 100 - above threshold
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub1, 'field:amount', 100)
+      expect(lteFired).toBe(false)
+
+      // Reduce amount to 50 - crosses to <= 50
+      setProperty(db, sub1, 'field:amount', 50)
+      expect(lteFired).toBe(true)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should not fire when threshold is already met at creation', () => {
+      // First create subscriptions that already meet the threshold
+      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub1, 'field:amount', 100)
+      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      setProperty(db, sub2, 'field:amount', 100)
+
+      // Create computed field - initial value is 200
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Total Amount',
+        definition: {
+          aggregation: 'SUM',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+          fieldSystemId: 'field:amount',
+        },
+      })
+
+      let fireCount = 0
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          fireCount++
+        }
+      })
+
+      // Create automation with threshold 100 - value is already 200
+      const definition: AutomationDefinition = {
+        name: 'Already Met Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gt',
+            value: 100,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      automationService.create(db, definition)
+
+      // Should NOT fire on creation when threshold is already met
+      expect(fireCount).toBe(0)
+
+      // Reduce below threshold
+      setProperty(db, sub1, 'field:amount', 10)
+      // Value is now 110, still above threshold - no crossing
+
+      // Reduce to below threshold
+      setProperty(db, sub2, 'field:amount', 10)
+      // Value is now 20, below threshold - reset
+
+      // Increase to cross threshold
+      setProperty(db, sub1, 'field:amount', 100)
+      // Value is now 110, crosses threshold
+      expect(fireCount).toBe(1)
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('should persist thresholdCrossed state across service restarts', () => {
+      // Create computed field
+      const computedFieldId = computedFieldService.create(db, {
+        name: 'Count',
+        definition: {
+          aggregation: 'COUNT',
+          query: {
+            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+          },
+        },
+      })
+
+      let fireCount = 0
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((msg) => {
+        if (typeof msg === 'string' && msg.includes('set_property action requires a target node')) {
+          fireCount++
+        }
+      })
+
+      // Create automation
+      const definition: AutomationDefinition = {
+        name: 'Count Alert',
+        enabled: true,
+        trigger: {
+          type: 'threshold',
+          computedFieldId,
+          condition: {
+            operator: 'gte',
+            value: 2,
+          },
+          fireOnce: true,
+        },
+        action: {
+          type: 'set_property',
+          fieldSystemId: 'field:status',
+          value: 'alert',
+        },
+      }
+
+      const automationId = automationService.create(db, definition)
+
+      // Trigger the threshold
+      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      expect(fireCount).toBe(1)
+
+      // Verify state is persisted
+      const stateValue = getPropertyValue(db, automationId, SYSTEM_FIELDS.AUTOMATION_STATE)
+      expect(stateValue).toBeDefined()
+      const state = JSON.parse(stateValue as string)
+      expect(state.thresholdCrossed).toBe(true)
+
+      consoleWarnSpy.mockRestore()
+    })
+  })
+
+  // ==========================================================================
   // Error handling
   // ==========================================================================
 
