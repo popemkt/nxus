@@ -18,3 +18,10 @@ export {
   type QueryResultChangeCallback,
   type SubscriptionHandle,
 } from './query-subscription.service.js'
+
+// Automation service
+export {
+  createAutomationService,
+  automationService,
+  type AutomationService,
+} from './automation.service.js'

@@ -188,32 +188,40 @@ Create comprehensive tests for the query subscription service.
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/query-subscription.test.ts` - 39 tests pass
 - [x] Run `pnpm --filter @nxus/db test` - all 128 tests pass (no regressions)
 
-### [ ] Step: Create basic automation service (internal actions only)
+### [x] Step: Create basic automation service (internal actions only)
+<!-- chat-id: df09a9f7-e6d2-4b30-af5f-c32c26357f0d -->
 
 Implement automation rules for query membership triggers with internal actions.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/automation.service.ts`
 
 **Implementation:**
-- [ ] Define `AutomationService` interface
-- [ ] Implement `createAutomationService(querySubscriptionService)` factory
-- [ ] `create(db, definition)` - create automation node with `supertag:automation`
-- [ ] `setEnabled(db, automationId, enabled)` - enable/disable automation
-- [ ] `getAll(db)` - list all automations with their state
-- [ ] `delete(db, automationId)` - remove automation
-- [ ] `trigger(db, automationId, context)` - manual trigger for testing
-- [ ] Internal: Register query subscription for each enabled automation
-- [ ] Internal: Execute actions on query membership events (onEnter/onExit/onChange)
-- [ ] Internal: Implement cycle detection with execution depth counter (max 10)
+- [x] Define `AutomationService` interface
+- [x] Implement `createAutomationService(querySubscriptionService)` factory
+- [x] `create(db, definition)` - create automation node with `supertag:automation`
+- [x] `setEnabled(db, automationId, enabled)` - enable/disable automation
+- [x] `getAll(db)` - list all automations with their state
+- [x] `delete(db, automationId)` - remove automation
+- [x] `trigger(db, automationId, context)` - manual trigger for testing
+- [x] Internal: Register query subscription for each enabled automation
+- [x] Internal: Execute actions on query membership events (onEnter/onExit/onChange)
+- [x] Internal: Implement cycle detection with execution depth counter (max 10)
 
 **Supported actions (Phase 1):**
-- [ ] `set_property` - set a property value on the triggering node
-- [ ] `add_supertag` - add a supertag to the triggering node
-- [ ] `remove_supertag` - remove a supertag from the triggering node
+- [x] `set_property` - set a property value on the triggering node (including `$now` marker for timestamps)
+- [x] `add_supertag` - add a supertag to the triggering node
+- [x] `remove_supertag` - remove a supertag from the triggering node
+
+**Additional features:**
+- [x] `initialize(db)` - load all enabled automations from DB at startup
+- [x] `activeCount()` - get number of active automations
+- [x] `clear()` - clear all active automations (for testing)
+- [x] Export from `reactive/index.ts`
 
 **Verification:**
-- Unit tests cover automation lifecycle and execution
+- [x] Run `pnpm --filter @nxus/db test` - all 128 tests pass (no regressions)
+- [x] TypeScript compilation passes - no errors in automation.service.ts
 
 ### [ ] Step: Add schema changes for automation nodes
 
