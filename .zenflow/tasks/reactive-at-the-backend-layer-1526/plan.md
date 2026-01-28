@@ -28,25 +28,26 @@ Created a detailed implementation plan with 4 phases and 22 concrete steps.
 
 # Phase 1: Event Bus + Reactive Core (Foundation)
 
-### [ ] Step: Create reactive module types and event bus
+### [x] Step: Create reactive module types and event bus
+<!-- chat-id: 21bb4e6e-c6cc-40a1-b3c0-668d7f22760d -->
 
 Create the foundation for the reactive system with type definitions and the mutation event bus.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/types.ts` - All reactive system types (MutationEvent, EventFilter, QuerySubscription, etc.)
 - `packages/nxus-db/src/reactive/event-bus.ts` - In-memory pub/sub event bus singleton
 - `packages/nxus-db/src/reactive/index.ts` - Public exports
 
 **Implementation:**
-- [ ] Define `MutationType` enum: `node:created`, `node:updated`, `node:deleted`, `property:set`, `property:added`, `property:removed`, `supertag:added`, `supertag:removed`
-- [ ] Define `MutationEvent` interface with `type`, `timestamp`, `nodeId`, `systemId`, `fieldSystemId`, `beforeValue`, `afterValue`, `supertagSystemId`
-- [ ] Define `MutationListener` type and `EventFilter` interface
-- [ ] Implement `createEventBus()` factory with `subscribe(listener, filter?)`, `emit(event)`, `listenerCount()`, `clear()`
-- [ ] Export singleton `eventBus` instance
+- [x] Define `MutationType` enum: `node:created`, `node:updated`, `node:deleted`, `property:set`, `property:added`, `property:removed`, `supertag:added`, `supertag:removed`
+- [x] Define `MutationEvent` interface with `type`, `timestamp`, `nodeId`, `systemId`, `fieldSystemId`, `beforeValue`, `afterValue`, `supertagSystemId`
+- [x] Define `MutationListener` type and `EventFilter` interface
+- [x] Implement `createEventBus()` factory with `subscribe(listener, filter?)`, `emit(event)`, `listenerCount()`, `clear()`
+- [x] Export singleton `eventBus` instance
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test` - ensure no regressions
-- Run `pnpm --filter @nxus/db lint` - ensure no lint errors
+- [x] Run `pnpm --filter @nxus/db test` - all 54 tests pass (no regressions)
+- [x] TypeScript type check - no errors in reactive module (pre-existing errors in node.service.ts unrelated)
 
 ### [ ] Step: Write event bus unit tests
 
