@@ -322,24 +322,32 @@ Create an integration test that validates the complete Phase 1 reactive system.
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/integration.test.ts` - 14 tests pass
 - [x] Run `pnpm --filter @nxus/db test` - all 175 tests pass (no regressions)
 
-### [ ] Step: Export reactive module from package
+### [x] Step: Export reactive module from package
+<!-- chat-id: 21d7508b-f299-40d5-8755-afcef05a5688 -->
 
 Wire up the reactive module for public consumption.
 
-**Files to modify:**
-- `packages/nxus-db/src/reactive/index.ts` - export all public APIs
-- `packages/nxus-db/src/services/index.ts` - re-export reactive module
-- `packages/nxus-db/src/index.ts` - include reactive in main exports
-- `packages/nxus-db/src/server.ts` - include reactive in server exports
+**Files modified:**
+- `packages/nxus-db/src/reactive/index.ts` - already exports all public APIs (no changes needed)
+- `packages/nxus-db/src/services/index.ts` - added re-export of reactive module
+- `packages/nxus-db/src/types/index.ts` - added re-export of reactive types for client use
+- `packages/nxus-db/src/server.ts` - already re-exports services/index.ts (no changes needed)
+
+**Files created:**
+- `packages/nxus-db/src/reactive/__tests__/exports.test.ts` - verification tests for exports
 
 **Exports:**
-- [ ] Types: `MutationEvent`, `MutationListener`, `EventFilter`, `QuerySubscription`, `QueryResultChangeEvent`, `AutomationDefinition`, `AutomationAction`, etc.
-- [ ] Factories: `createQuerySubscriptionService`, `createAutomationService`
-- [ ] Singleton: `eventBus`
+- [x] Types: `MutationEvent`, `MutationListener`, `EventFilter`, `QuerySubscription`, `QueryResultChangeEvent`, `AutomationDefinition`, `AutomationAction`, etc.
+- [x] Factories: `createEventBus`, `createQuerySubscriptionService`, `createAutomationService`
+- [x] Singletons: `eventBus`, `querySubscriptionService`, `automationService`
+- [x] Type guards: `isQueryMembershipTrigger`, `isThresholdTrigger`, `isSetPropertyAction`, etc.
+- [x] Zod schemas: `MutationTypeSchema`, `AutomationDefinitionSchema`, etc.
 
 **Verification:**
-- Can import from `@nxus/db` and `@nxus/db/server`
-- TypeScript compilation succeeds
+- [x] Can import from `@nxus/db` (types and Zod schemas for client use)
+- [x] Can import from `@nxus/db/server` (full reactive services)
+- [x] TypeScript compilation succeeds (pre-existing errors unrelated to reactive module)
+- [x] Run `pnpm --filter @nxus/db test` - all 179 tests pass (including 4 new export verification tests)
 
 ---
 
