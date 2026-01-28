@@ -11,6 +11,24 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import {
+  eq,
+  getDatabase,
+  initDatabase,
+  initDatabaseWithBootstrap,
+  nodeProperties,
+  nodes,
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
+  assembleNode,
+  findNode,
+  getNodesBySupertagWithInheritance,
+  getProperty,
+  createNode,
+  deleteNode,
+  setProperty,
+  type NodeProperty,
+} from '@nxus/db/server'
 import type { AssembledNode, Item, ItemCommand, TagRef } from '@nxus/db'
 import { nodeToCommand, nodeToItem, nodeToTag } from './adapters.js'
 
@@ -90,7 +108,6 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, assembleNode, createNode, setProperty } = await import('@nxus/db/server')
     const { content, systemId, supertagSystemId, ownerId, properties } = ctx.data
     const db = await initDatabaseWithBootstrap()
 
@@ -128,7 +145,6 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
 export const deleteNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode, deleteNode } = await import('@nxus/db/server')
     const { nodeId } = ctx.data
     initDatabase()
     const db = getDatabase()
