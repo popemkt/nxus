@@ -1,35 +1,32 @@
-import { Link } from '@tanstack/react-router'
-import { motion, LayoutGroup } from 'framer-motion'
+import { useCommandPaletteStore } from '@/stores/command-palette.store'
+import { useViewModeStore } from '@/stores/view-mode.store'
 import {
+  cn,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@nxus/ui'
+import {
+  CaretDownIcon,
+  CommandIcon,
+  GearIcon,
+  GraphIcon,
+  GridFourIcon,
   MagnifyingGlassIcon,
   SquaresFourIcon,
   TableIcon,
-  GraphIcon,
   TagIcon,
-  GearIcon,
   TrayArrowDownIcon,
-  CommandIcon,
-  GridFourIcon,
-  CaretDownIcon,
-  FunnelIcon,
 } from '@phosphor-icons/react'
-import { useViewModeStore } from '@/stores/view-mode.store'
-import { useCommandPaletteStore } from '@/stores/command-palette.store'
-import { cn } from '@nxus/ui'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-} from '@nxus/ui'
+import { Link } from '@tanstack/react-router'
+import { LayoutGroup, motion } from 'framer-motion'
 
 interface FloatingHudProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   sidebarOpen: boolean
   onSidebarToggle: () => void
-  queryBuilderOpen?: boolean
-  onQueryBuilderToggle?: () => void
   inboxCount?: number
 }
 
@@ -38,8 +35,6 @@ export function FloatingHud({
   onSearchChange,
   sidebarOpen,
   onSidebarToggle,
-  queryBuilderOpen = false,
-  onQueryBuilderToggle,
   inboxCount = 0,
 }: FloatingHudProps) {
   const viewMode = useViewModeStore((s) => s.viewMode)
@@ -111,20 +106,6 @@ export function FloatingHud({
             weight={sidebarOpen ? 'fill' : 'regular'}
           />
         </button>
-
-        {/* Advanced Filter / Query Builder Toggle */}
-        {onQueryBuilderToggle && (
-          <button
-            className={cn(btnBase, queryBuilderOpen ? btnActive : btnInactive)}
-            onClick={onQueryBuilderToggle}
-            title={queryBuilderOpen ? 'Hide query builder' : 'Advanced filters'}
-          >
-            <FunnelIcon
-              className="size-4"
-              weight={queryBuilderOpen ? 'fill' : 'regular'}
-            />
-          </button>
-        )}
 
         <div className="w-px h-5 bg-foreground/10 mx-1" />
 
