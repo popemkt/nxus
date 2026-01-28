@@ -98,6 +98,9 @@ export const SYSTEM_SUPERTAGS = {
 
   // Automation supertag - for reactive automation rules
   AUTOMATION: 'supertag:automation',
+
+  // Computed field supertag - for reactive computed/aggregated fields
+  COMPUTED_FIELD: 'supertag:computed_field',
 } as const
 
 export const SYSTEM_FIELDS = {
@@ -159,6 +162,11 @@ export const SYSTEM_FIELDS = {
   AUTOMATION_STATE: 'field:automation_state', // JSON state tracking
   AUTOMATION_LAST_FIRED: 'field:automation_last_fired', // Timestamp of last execution
   AUTOMATION_ENABLED: 'field:automation_enabled', // Boolean - whether automation is active
+
+  // Computed field-specific fields (for reactive computed/aggregated fields with supertag:computed_field)
+  COMPUTED_FIELD_DEFINITION: 'field:computed_field_definition', // JSON aggregation config (query + aggregation type)
+  COMPUTED_FIELD_VALUE: 'field:computed_field_value', // Current computed value (cached)
+  COMPUTED_FIELD_UPDATED_AT: 'field:computed_field_updated_at', // Timestamp of last recomputation
 } as const
 
 /**

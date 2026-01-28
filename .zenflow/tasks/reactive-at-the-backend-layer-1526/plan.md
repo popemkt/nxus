@@ -353,23 +353,24 @@ Wire up the reactive module for public consumption.
 
 # Phase 2: Computed Fields + Threshold Automations
 
-### [ ] Step: Add schema changes for computed field nodes
+### [x] Step: Add schema changes for computed field nodes
+<!-- chat-id: a6589b0e-b9b0-4ff4-8891-2fec464ada8a -->
 
 Extend the schema to support computed field nodes.
 
-**Files to modify:**
+**Files modified:**
 - `packages/nxus-db/src/schemas/node-schema.ts`
 
-**Add to SYSTEM_FIELDS:**
-- [ ] `COMPUTED_FIELD_DEFINITION: 'field:computed_field_definition'` - JSON aggregation config
-- [ ] `COMPUTED_FIELD_VALUE: 'field:computed_field_value'` - Current computed value
-- [ ] `COMPUTED_FIELD_UPDATED_AT: 'field:computed_field_updated_at'` - Last update timestamp
+**Added to SYSTEM_FIELDS:**
+- [x] `COMPUTED_FIELD_DEFINITION: 'field:computed_field_definition'` - JSON aggregation config (query + aggregation type)
+- [x] `COMPUTED_FIELD_VALUE: 'field:computed_field_value'` - Current computed value (cached)
+- [x] `COMPUTED_FIELD_UPDATED_AT: 'field:computed_field_updated_at'` - Timestamp of last recomputation
 
-**Add to SYSTEM_SUPERTAGS:**
-- [ ] `COMPUTED_FIELD: 'supertag:computed_field'` - Computed field definition nodes
+**Added to SYSTEM_SUPERTAGS:**
+- [x] `COMPUTED_FIELD: 'supertag:computed_field'` - Computed field definition nodes
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test` - existing tests still pass
+- [x] Run `pnpm --filter @nxus/db test` - all 179 tests pass (no regressions)
 
 ### [ ] Step: Create computed field service
 
