@@ -10,6 +10,7 @@
  */
 
 import type { MutationEvent, MutationListener, EventFilter, EventBus } from './types.js'
+import { reactiveMetrics } from './metrics.js'
 
 /**
  * Internal subscriber entry with listener and optional filter
@@ -74,6 +75,9 @@ export function createEventBus(): EventBus {
     },
 
     emit(event: MutationEvent): void {
+      // Track event in metrics
+      reactiveMetrics.incrementEventCount()
+
       for (const subscriber of Array.from(subscribers.values())) {
         // Check if event matches subscriber's filter
         if (subscriber.filter && !matchesFilter(event, subscriber.filter)) {

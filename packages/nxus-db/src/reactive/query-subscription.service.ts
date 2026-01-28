@@ -32,6 +32,7 @@ import {
   createDependencyTracker,
   type DependencyTracker,
 } from './dependency-tracker.js'
+import { reactiveMetrics } from './metrics.js'
 
 // ============================================================================
 // Types
@@ -229,6 +230,7 @@ export function createQuerySubscriptionService(
   function evaluateAndDiff(
     subscription: InternalSubscription,
   ): QueryResultChangeEvent | null {
+    const startTime = performance.now()
     const { db, queryDefinition, lastResults, lastAssembledNodes } = subscription
 
     // Evaluate the query
@@ -273,6 +275,10 @@ export function createQuerySubscriptionService(
     subscription.lastNodeStates = newNodesMap
     subscription.lastAssembledNodes = newNodesMap
     subscription.lastEvaluatedAt = result.evaluatedAt
+
+    // Record evaluation metrics
+    const durationMs = performance.now() - startTime
+    reactiveMetrics.recordEvaluation(durationMs)
 
     // Only return event if there are actual changes
     if (added.length === 0 && removed.length === 0 && changed.length === 0) {
@@ -341,6 +347,12 @@ export function createQuerySubscriptionService(
             subscriptionsToEvaluate.add(subscription.id)
           }
         }
+      }
+
+      // Track skipped evaluations (subscriptions not affected by these mutations)
+      const skippedCount = subscriptions.size - subscriptionsToEvaluate.size
+      for (let i = 0; i < skippedCount; i++) {
+        reactiveMetrics.incrementSkippedEvaluations()
       }
 
       // Evaluate all affected subscriptions (each subscription only once)
@@ -446,6 +458,9 @@ export function createQuerySubscriptionService(
       // Register dependencies for smart invalidation
       dependencyTracker.register(id, definition)
 
+      // Update active subscription metrics
+      reactiveMetrics.setActiveSubscriptions(subscriptions.size)
+
       // Ensure we're listening to the event bus
       ensureEventBusSubscription()
 
@@ -455,6 +470,7 @@ export function createQuerySubscriptionService(
         unsubscribe: () => {
           subscriptions.delete(id)
           dependencyTracker.unregister(id)
+          reactiveMetrics.setActiveSubscriptions(subscriptions.size)
           maybeUnsubscribeFromEventBus()
         },
         getLastResults: () => {
@@ -468,6 +484,7 @@ export function createQuerySubscriptionService(
     unsubscribe(subscriptionId: string): void {
       subscriptions.delete(subscriptionId)
       dependencyTracker.unregister(subscriptionId)
+      reactiveMetrics.setActiveSubscriptions(subscriptions.size)
       maybeUnsubscribeFromEventBus()
     },
 
@@ -513,6 +530,7 @@ export function createQuerySubscriptionService(
       pendingMutations = []
       subscriptions.clear()
       dependencyTracker.clear()
+      reactiveMetrics.setActiveSubscriptions(0)
       maybeUnsubscribeFromEventBus()
     },
 

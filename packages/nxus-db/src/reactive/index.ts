@@ -61,3 +61,11 @@ export {
   type DependencyMap,
   type AffectedSubscriptions,
 } from './dependency-tracker.js'
+
+// Performance metrics
+export {
+  createReactiveMetrics,
+  reactiveMetrics,
+  type ReactiveMetrics,
+  type ReactiveMetricsSnapshot,
+} from './metrics.js'

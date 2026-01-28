@@ -769,26 +769,47 @@ Add debouncing to batch rapid mutations into single re-evaluation.
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/query-subscription.test.ts` - 53 tests pass
 - [x] Run `pnpm --filter @nxus/db test` - all 351 tests pass (no regressions)
 
-### [ ] Step: Add performance metrics
+### [x] Step: Add performance metrics
+<!-- chat-id: 124347d6-647f-4214-89a4-409e9c52c6e2 -->
 
 Implement observable metrics for the reactive system.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/metrics.ts`
 
-**Metrics to track:**
-- [ ] `evaluationCount` - total query re-evaluations
-- [ ] `evaluationTimeMs` - cumulative evaluation time
-- [ ] `activeSubscriptions` - current subscription count
-- [ ] `eventCount` - total events emitted
-- [ ] `skippedEvaluations` - evaluations skipped due to smart invalidation
+**Files modified:**
+- `packages/nxus-db/src/reactive/event-bus.ts` - Added `incrementEventCount()` call on emit
+- `packages/nxus-db/src/reactive/query-subscription.service.ts` - Added evaluation timing, active subscription tracking, and skipped evaluation metrics
+- `packages/nxus-db/src/reactive/index.ts` - Added exports for metrics module
 
-**API:**
-- [ ] `getMetrics()` - return current metrics
-- [ ] `resetMetrics()` - reset counters (for testing)
+**Files created for tests:**
+- `packages/nxus-db/src/reactive/__tests__/metrics.test.ts` - 19 unit tests
+
+**Metrics implemented:**
+- [x] `eventCount` - total events emitted (incremented in event-bus on emit)
+- [x] `evaluationCount` - total query re-evaluations (incremented in evaluateAndDiff)
+- [x] `evaluationTimeMs` - cumulative evaluation time (recorded via performance.now() in evaluateAndDiff)
+- [x] `activeSubscriptions` - current subscription count (updated on subscribe/unsubscribe/clear)
+- [x] `skippedEvaluations` - evaluations skipped due to smart invalidation (counted in processBatchedMutations)
+- [x] `lastResetAt` - timestamp of last reset
+
+**API implemented:**
+- [x] `getMetrics()` - return current metrics snapshot
+- [x] `resetMetrics()` - reset counters (does not reset activeSubscriptions gauge)
+- [x] `incrementEventCount()` - internal, called by event bus
+- [x] `recordEvaluation(durationMs)` - internal, called by subscription service
+- [x] `setActiveSubscriptions(count)` - internal, called by subscription service
+- [x] `incrementSkippedEvaluations()` - internal, called by subscription service
+
+**Exports:**
+- [x] `createReactiveMetrics` - factory function
+- [x] `reactiveMetrics` - singleton instance
+- [x] `ReactiveMetrics` - interface type
+- [x] `ReactiveMetricsSnapshot` - snapshot type
 
 **Verification:**
-- Metrics update correctly during operation
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/metrics.test.ts` - 19 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 370 tests pass (no regressions)
 
 ### [ ] Step: Performance benchmarks
 
