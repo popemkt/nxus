@@ -78,23 +78,24 @@ Create comprehensive tests for the event bus before integrating with mutation fu
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/event-bus.test.ts` - 35 tests pass
 - [x] Run `pnpm --filter @nxus/db test` - all 89 tests pass (no regressions)
 
-### [ ] Step: Wrap mutation functions with event emission
+### [x] Step: Wrap mutation functions with event emission
+<!-- chat-id: af39987f-80f3-4564-b369-dfe0fe5928b4 -->
 
 Modify `node.service.ts` to emit events through the event bus for all mutations.
 
-**Files to modify:**
+**Files modified:**
 - `packages/nxus-db/src/services/node.service.ts`
 
-**Functions to wrap (11 total):**
-- [ ] `createNode()` → emit `node:created` with afterValue containing node data
-- [ ] `updateNodeContent()` → emit `node:updated` with beforeValue/afterValue for content
-- [ ] `deleteNode()` → emit `node:deleted`
-- [ ] `setProperty()` → emit `property:set` with fieldSystemId, beforeValue, afterValue
-- [ ] `addPropertyValue()` → emit `property:added` with fieldSystemId, afterValue
-- [ ] `clearProperty()` → emit `property:removed` with fieldSystemId, beforeValue
-- [ ] `setNodeSupertags()` → emit `supertag:added` and `supertag:removed` for changes
-- [ ] `addNodeSupertag()` → emit `supertag:added` with supertagSystemId
-- [ ] `removeNodeSupertag()` → emit `supertag:removed` with supertagSystemId
+**Functions wrapped (9 total):**
+- [x] `createNode()` → emit `node:created` with afterValue containing node data
+- [x] `updateNodeContent()` → emit `node:updated` with beforeValue/afterValue for content
+- [x] `deleteNode()` → emit `node:deleted`
+- [x] `setProperty()` → emit `property:set` with fieldSystemId, beforeValue, afterValue
+- [x] `addPropertyValue()` → emit `property:added` with fieldSystemId, afterValue
+- [x] `clearProperty()` → emit `property:removed` with fieldSystemId, beforeValue
+- [x] `setNodeSupertags()` → emit `supertag:added` and `supertag:removed` for changes
+- [x] `addNodeSupertag()` → emit `supertag:added` with supertagSystemId
+- [x] `removeNodeSupertag()` → emit `supertag:removed` with supertagSystemId
 
 **Pattern:**
 ```typescript
@@ -113,8 +114,8 @@ export function setProperty(db, nodeId, fieldSystemId, value, order = 0) {
 ```
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test` - all existing tests must pass
-- Event emission should not affect function behavior or return values
+- [x] Run `pnpm --filter @nxus/db test` - all 89 tests pass (no regressions)
+- [x] Event emission does not affect function behavior or return values
 
 ### [ ] Step: Create query subscription service
 
