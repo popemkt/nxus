@@ -154,27 +154,39 @@ Implement the service that manages live query subscriptions and computes result 
 - [x] Run `pnpm --filter @nxus/db test` - all 89 tests pass (no regressions)
 - [x] TypeScript compilation passes (no new errors in reactive module)
 
-### [ ] Step: Write query subscription service tests
+### [x] Step: Write query subscription service tests
+<!-- chat-id: 23a60b51-0835-4965-bc2f-ba560db60035 -->
 
 Create comprehensive tests for the query subscription service.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/query-subscription.test.ts`
 
-**Test cases using in-memory SQLite:**
-- [ ] Subscribe to query, receive initial results
-- [ ] Detect node added to query results (node created matching filter)
-- [ ] Detect node removed from results (property change makes it not match)
-- [ ] Detect node changed (still matches but different property value)
-- [ ] Multiple subscriptions to same query receive same events
-- [ ] Unsubscribe stops receiving events
-- [ ] Rapid mutations trigger multiple callbacks (no batching in Phase 1)
-- [ ] Query with supertag filter works correctly
-- [ ] Query with property filter works correctly
-- [ ] Query with logical AND/OR filters works correctly
+**Test cases implemented (39 total tests):**
+- [x] Subscribe to query, receive initial results
+- [x] Detect node added to query results (node created matching filter)
+- [x] Detect node added when supertag added makes node match filter
+- [x] Detect node added when property change makes node match filter
+- [x] Detect node removed from results (node deleted)
+- [x] Detect node removed when supertag removed makes node not match
+- [x] Detect node removed when property change makes node not match
+- [x] Detect node changed (still matches but content/properties changed)
+- [x] Multiple subscriptions to same query receive same events
+- [x] Handle different queries independently
+- [x] Unsubscribe stops receiving events (via handle and service)
+- [x] Rapid mutations trigger multiple callbacks (no batching in Phase 1)
+- [x] Query with supertag filter works correctly (including inheritance)
+- [x] Query with property filter works correctly (eq, gt operators)
+- [x] Query with logical AND/OR filters works correctly
+- [x] refreshAll() force re-evaluates all subscriptions
+- [x] clear() removes all subscriptions
+- [x] Error handling - callback errors don't affect other subscriptions
+- [x] Event bus subscription management (subscribes when needed, unsubscribes when empty)
+- [x] totalCount included in change events
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/query-subscription.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/query-subscription.test.ts` - 39 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 128 tests pass (no regressions)
 
 ### [ ] Step: Create basic automation service (internal actions only)
 
