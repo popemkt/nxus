@@ -119,43 +119,64 @@ nodeProperties: nodeId, fieldNodeId, value (JSON), order
 
 ## Architectural Options Analysis
 
-Based on research, here are the main approaches considered:
+Based on 2025-2026 research, here are the main approaches considered:
 
-### Option A: Incremental View Maintenance (SQLite-native)
+### Option A: Convex (Recommended for consideration)
 
-**Approach**: Build a change-tracking layer on top of SQLite. Track which queries depend on which attributes, re-evaluate only affected queries on mutation.
-
-**Pros**:
-- Keeps existing SQLite stack
-- No new dependencies
-- Full control over implementation
-- Works well with Drizzle ORM
-
-**Cons**:
-- Must build dependency tracking from scratch
-- Complex query → attribute mapping needed
-- Performance optimization is manual work
-
-**References**: [pg_ivm](https://github.com/sraoss/pg_ivm), [DBSP paper](https://arxiv.org/abs/2203.16684)
-
-### Option B: Triplit
-
-**Approach**: Replace storage layer with Triplit, which has built-in reactive queries and server-side support.
+**Approach**: Use [Convex](https://www.convex.dev/) as a reactive backend. Convex is an open-source reactive database where queries are TypeScript code that automatically re-run when dependencies change.
 
 **Pros**:
-- Reactive queries built-in
-- TypeScript-first
-- Handles sync if needed later
-- Active development
+- **Native reactivity**: Queries automatically re-run and push updates when data changes
+- **TypeScript-first**: Write pure TypeScript, no SQL - logic lives in the database
+- **Built-in automations**: Scheduler and cron jobs for durable function execution
+- **ACID-compliant**: Serializable isolation, optimistic concurrency control
+- **Self-hostable**: Can run on Neon, Fly.io, SQLite, Postgres, etc.
+- **Efficient fan-out**: Only affected clients get updates
 
 **Cons**:
-- Major storage migration
-- Less control over query semantics
+- Requires migration from SQLite/Drizzle
+- Different mental model (functions in DB vs external queries)
+- Relatively newer ecosystem
+
+**Reference**: [Convex](https://www.convex.dev/), [How Convex Works](https://stack.convex.dev/how-convex-works)
+
+### Option B: TanStack DB + d2ts (Differential Dataflow)
+
+**Approach**: Use [TanStack DB](https://tanstack.com/db/latest/docs) with its TypeScript differential dataflow engine (d2ts) for incremental query updates.
+
+**Pros**:
+- **Sub-millisecond updates**: Differential dataflow recomputes only changed parts
+- **TanStack ecosystem**: Integrates with existing TanStack Start/Query stack
+- **TypeScript-native**: d2ts is a TS implementation of differential dataflow
+- **ElectricSQL compatible**: Can sync from Postgres via Electric
+- **Proven performance**: 0.7ms to update one row in 100k-item collection
+
+**Cons**:
+- Currently client-focused (beta targeting 1.0 in late 2025)
+- Requires ElectricSQL or similar for server sync
+- Server-side automation support unclear
+
+**References**: [TanStack DB](https://tanstack.com/db/latest/docs), [d2ts differential dataflow](https://tanstack.com/blog/tanstack-db-0.5-query-driven-sync)
+
+### Option C: Triplit
+
+**Approach**: Replace storage layer with [Triplit](https://www.triplit.dev/), which has built-in reactive queries and server-side support.
+
+**Pros**:
+- **Reactive by default**: Queries automatically update in real-time
+- **TypeScript-first**: Schema in TypeScript, full type safety
+- **Server + Client**: Runs on both, syncs via WebSocket
+- **EAV-based internally**: Uses timestamped Triple Store (similar to current model)
+- **Y Combinator backed**: Active development
+
+**Cons**:
+- Storage migration required
 - Different query language
+- Sync-focused (may be overkill for server-only reactivity)
 
 **Reference**: [Triplit](https://www.triplit.dev/)
 
-### Option C: Datascript/Datalog Layer
+### Option D: Datascript/Datalog Layer
 
 **Approach**: Use Datascript (in-memory Datalog) as the query/reactive layer, with SQLite as persistence.
 
@@ -173,7 +194,7 @@ Based on research, here are the main approaches considered:
 
 **References**: [Datascript](https://github.com/tonsky/datascript), [Riffle Systems](https://riffle.systems/essays/prelude/)
 
-### Option D: SurrealDB (existing)
+### Option E: SurrealDB (existing)
 
 **Approach**: Enable and complete the existing SurrealDB integration with its live query feature.
 
@@ -189,7 +210,7 @@ Based on research, here are the main approaches considered:
 - Migration complexity
 - Different mental model from EAV
 
-### Option E: Custom Event Bus + SQLite
+### Option F: Custom Event Bus + SQLite (Incremental)
 
 **Approach**: Keep SQLite, add mutation event bus with query subscription system.
 
@@ -197,24 +218,30 @@ Based on research, here are the main approaches considered:
 - Minimal changes to existing code
 - Brute-force initially, optimize later
 - Clear separation of concerns
+- Can adopt d2ts for incremental updates later
 
 **Cons**:
-- Still need query-to-data dependency mapping
-- May hit performance limits at 300k nodes
+- Must build dependency tracking from scratch
+- May hit performance limits at 300k nodes without differential dataflow
+
+**References**: [pg_ivm](https://github.com/sraoss/pg_ivm), [DBSP paper](https://arxiv.org/abs/2203.16684)
 
 ## Recommended Approach
 
-**Hybrid: Option E (Event Bus) with path to Option C (Datascript)**
+**Option A (Convex) or Option F (Event Bus + SQLite) with d2ts upgrade path**
 
-### Rationale
+### Decision Factors
 
-1. **Start simple**: Event bus + SQLite gets automations working quickly
-2. **Measure first**: Identify actual bottlenecks at scale before over-engineering
-3. **Clear upgrade path**: If brute-force hits limits, Datascript can be added as query layer
-4. **Keeps existing investment**: No immediate migration needed
-5. **Single-user advantage**: 300k nodes ~150MB in memory is feasible
+| Factor | Convex | Event Bus + SQLite |
+|--------|--------|-------------------|
+| Time to working prototype | Faster (reactivity built-in) | Slower (build from scratch) |
+| Migration effort | High (new storage layer) | Low (keep existing) |
+| Long-term DX | Excellent (TypeScript functions) | Good (familiar stack) |
+| Performance at 300k nodes | Proven | Needs optimization |
+| Self-hosting | Supported | Already works |
+| Automation support | Native (scheduler, cron) | Must build |
 
-### Implementation Phases
+### If choosing Event Bus + SQLite:
 
 **Phase 1: Event Bus + Brute Force**
 - Mutation event emitter (create/update/delete)
@@ -227,10 +254,10 @@ Based on research, here are the main approaches considered:
 - Only re-evaluate queries that could be affected by a change
 - Result diffing (added/removed nodes)
 
-**Phase 3: Optimization (if needed)**
-- Consider Datascript as in-memory query layer
-- Incremental result maintenance
-- Query result caching with smart invalidation
+**Phase 3: Differential Dataflow (if needed)**
+- Adopt d2ts (TanStack DB's differential dataflow engine) for incremental updates
+- Sub-millisecond query updates even at scale
+- Same technique used by Materialize, proven at production scale
 
 ## API Design (Draft)
 
@@ -299,11 +326,19 @@ export const subscribeToQueryServerFn = createServerFn()
 
 ## References
 
+### Reactive Database Solutions (2025-2026)
+- [Convex - Reactive Backend](https://www.convex.dev/) - Open-source reactive database with TypeScript functions
+- [TanStack DB](https://tanstack.com/db/latest/docs) - Reactive client store with differential dataflow
+- [TanStack DB 0.5 - Query-Driven Sync](https://tanstack.com/blog/tanstack-db-0.5-query-driven-sync) - d2ts differential dataflow engine
+- [ElectricSQL + TanStack DB](https://electric-sql.com/blog/2025/07/29/local-first-sync-with-tanstack-db) - Local-first sync stack
+- [Triplit - Full-stack Reactive Database](https://www.triplit.dev/) - Syncing database with EAV triple store
+
+### Foundational Technology
 - [Materialize - Incremental View Maintenance](https://materialize.com/blog/ivm-database-replica/)
-- [DBSP: Automatic Incremental View Maintenance](https://arxiv.org/abs/2203.16684)
+- [DBSP: Automatic Incremental View Maintenance](https://arxiv.org/abs/2203.16684) - Theoretical foundation
 - [Riffle Systems - Reactive Relational Database](https://riffle.systems/essays/prelude/)
-- [Triplit - Full-stack Reactive Database](https://www.triplit.dev/)
 - [Datascript - Datalog for JS](https://github.com/tonsky/datascript)
-- [ElectricSQL - PGLite](https://github.com/electric-sql/pglite)
-- [Datomic Architecture](https://www.infoq.com/articles/Architecture-Datomic/)
-- Internal: `docs/archived/reactive-architecture-discussion.md`
+- [pg_ivm - PostgreSQL IVM Extension](https://github.com/sraoss/pg_ivm)
+
+### Internal Documentation
+- `docs/archived/reactive-architecture-discussion.md` - Previous architecture exploration
