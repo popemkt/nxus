@@ -727,22 +727,47 @@ Implement query-to-field dependency mapping for selective invalidation.
 - [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/dependency-tracker.test.ts` - 53 tests pass
 - [x] Run `pnpm --filter @nxus/db test` - all 337 tests pass (no regressions)
 
-### [ ] Step: Implement batched re-evaluation
+### [x] Step: Implement batched re-evaluation
+<!-- chat-id: 16b294d7-452d-4880-b9c0-15275f0b0042 -->
 
 Add debouncing to batch rapid mutations into single re-evaluation.
 
-**Files to modify:**
+**Files modified:**
 - `packages/nxus-db/src/reactive/query-subscription.service.ts`
+- `packages/nxus-db/src/reactive/__tests__/query-subscription.test.ts`
 
 **Implementation:**
-- [ ] Collect mutations during debounce window (configurable, default 10ms)
-- [ ] After window, evaluate each affected subscription once
-- [ ] Merge added/removed from all batched mutations
-- [ ] Expose `setDebounceMs(ms)` for testing (0 = immediate)
+- [x] Collect mutations during debounce window (configurable, default 0ms for backward compatibility)
+- [x] After window, evaluate each affected subscription once
+- [x] Merge added/removed from all batched mutations
+- [x] Expose `setDebounceMs(ms)` for testing (0 = immediate)
+- [x] Expose `getDebounceMs()` to read current setting
+- [x] Expose `flushPendingMutations()` for testing (process pending immediately)
+- [x] Cancel pending timer on `clear()`
+
+**API additions to QuerySubscriptionService:**
+- `setDebounceMs(ms: number)` - Set debounce window (0 = immediate, >0 = batched)
+- `getDebounceMs(): number` - Get current debounce setting
+- `flushPendingMutations()` - Process pending mutations immediately
+
+**Test cases added (14 new tests):**
+- [x] Default to 0 (immediate processing)
+- [x] Allow setting debounce window
+- [x] Process mutations immediately when debounce is 0
+- [x] Batch rapid mutations into single callback when debounce > 0
+- [x] Merge added nodes from multiple mutations in batch
+- [x] Handle mixed add and remove in same batch
+- [x] Handle changes within batch (only final state reported)
+- [x] Reset debounce timer on new mutation
+- [x] flushPendingMutations() processes immediately
+- [x] Cancel pending debounce timer after flush
+- [x] No-op when no pending mutations
+- [x] Each subscription evaluated once per batch
+- [x] clear() discards pending mutations
 
 **Verification:**
-- Test that rapid mutations result in single callback
-- Test that debounce can be disabled for tests
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/query-subscription.test.ts` - 53 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 351 tests pass (no regressions)
 
 ### [ ] Step: Add performance metrics
 

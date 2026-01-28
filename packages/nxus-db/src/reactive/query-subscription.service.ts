@@ -126,6 +126,27 @@ export interface QuerySubscriptionService {
    * Get the dependency tracker (for testing/debugging)
    */
   getDependencyTracker(): DependencyTracker
+
+  /**
+   * Set the debounce window for batching mutations
+   * When debounceMs > 0, mutations are collected during the window and
+   * subscriptions are evaluated once after the window expires.
+   * When debounceMs = 0, mutations are processed immediately (no batching).
+   *
+   * @param ms - Debounce window in milliseconds (default: 10)
+   */
+  setDebounceMs(ms: number): void
+
+  /**
+   * Get the current debounce window setting
+   */
+  getDebounceMs(): number
+
+  /**
+   * Flush any pending batched mutations immediately
+   * Useful for testing to avoid waiting for debounce timeout
+   */
+  flushPendingMutations(): void
 }
 
 // ============================================================================
@@ -161,6 +182,13 @@ export function createQuerySubscriptionService(
   // Dependency tracker for smart invalidation
   const dependencyTracker = createDependencyTracker()
   let smartInvalidationEnabled = true
+
+  // Batching state
+  // Default 0ms = immediate processing (no batching) for backward compatibility
+  // Use setDebounceMs(ms) to enable batching, e.g., setDebounceMs(10) for 10ms window
+  let debounceMs = 0
+  let pendingMutations: MutationEvent[] = []
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   /**
    * Compute a hash/signature for an AssembledNode to detect changes
@@ -280,7 +308,65 @@ export function createQuerySubscriptionService(
   }
 
   /**
-   * Handle a mutation event by re-evaluating affected subscriptions
+   * Process batched mutations by collecting affected subscriptions and evaluating each once
+   *
+   * This is the core batching logic that:
+   * 1. Collects all affected subscription IDs from all pending mutations
+   * 2. Evaluates each affected subscription exactly once
+   * 3. Clears the pending mutations
+   */
+  function processBatchedMutations(): void {
+    if (pendingMutations.length === 0) return
+
+    const mutationsToProcess = pendingMutations
+    pendingMutations = []
+    debounceTimer = null
+
+    if (smartInvalidationEnabled) {
+      // Smart invalidation: collect all affected subscriptions from all mutations
+      const subscriptionsToEvaluate = new Set<string>()
+
+      for (const event of mutationsToProcess) {
+        // 1. Check for query membership changes (node could enter/exit results)
+        const { affectedIds } = dependencyTracker.getAffectedSubscriptions(event)
+        for (const id of affectedIds) {
+          subscriptionsToEvaluate.add(id)
+        }
+
+        // 2. Check if the mutated node is already in any subscription's results
+        // This is needed to detect "changed" events (node still matches but changed)
+        const mutatedNodeId = event.nodeId
+        for (const subscription of subscriptions.values()) {
+          if (subscription.lastResults.has(mutatedNodeId)) {
+            subscriptionsToEvaluate.add(subscription.id)
+          }
+        }
+      }
+
+      // Evaluate all affected subscriptions (each subscription only once)
+      for (const id of subscriptionsToEvaluate) {
+        const subscription = subscriptions.get(id)
+        if (subscription) {
+          evaluateSubscription(subscription)
+        }
+      }
+    } else {
+      // Brute force: re-evaluate all subscriptions once
+      for (const subscription of subscriptions.values()) {
+        evaluateSubscription(subscription)
+      }
+    }
+  }
+
+  /**
+   * Handle a mutation event by batching and re-evaluating affected subscriptions
+   *
+   * When debounceMs > 0:
+   * - Mutations are collected in pendingMutations array
+   * - After debounce window, all affected subscriptions are evaluated once
+   *
+   * When debounceMs = 0:
+   * - Mutations are processed immediately (no batching)
    *
    * Smart invalidation strategy:
    * 1. Check if mutation could affect query membership (add/remove nodes)
@@ -291,37 +377,22 @@ export function createQuerySubscriptionService(
    * Brute force fallback: Re-evaluate all subscriptions on any mutation.
    */
   function handleMutationEvent(event: MutationEvent): void {
-    if (smartInvalidationEnabled) {
-      // Smart invalidation: only re-evaluate affected subscriptions
-      const subscriptionsToEvaluate = new Set<string>()
-
-      // 1. Check for query membership changes (node could enter/exit results)
-      const { affectedIds } = dependencyTracker.getAffectedSubscriptions(event)
-      for (const id of affectedIds) {
-        subscriptionsToEvaluate.add(id)
-      }
-
-      // 2. Check if the mutated node is already in any subscription's results
-      // This is needed to detect "changed" events (node still matches but changed)
-      const mutatedNodeId = event.nodeId
-      for (const subscription of subscriptions.values()) {
-        if (subscription.lastResults.has(mutatedNodeId)) {
-          subscriptionsToEvaluate.add(subscription.id)
-        }
-      }
-
-      // Evaluate all affected subscriptions
-      for (const id of subscriptionsToEvaluate) {
-        const subscription = subscriptions.get(id)
-        if (subscription) {
-          evaluateSubscription(subscription)
-        }
-      }
+    if (debounceMs === 0) {
+      // No batching - process immediately
+      pendingMutations = [event]
+      processBatchedMutations()
     } else {
-      // Brute force: re-evaluate all subscriptions
-      for (const subscription of subscriptions.values()) {
-        evaluateSubscription(subscription)
+      // Batching enabled - collect mutation and schedule processing
+      pendingMutations.push(event)
+
+      // Reset the timer on each new mutation
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
       }
+
+      debounceTimer = setTimeout(() => {
+        processBatchedMutations()
+      }, debounceMs)
     }
   }
 
@@ -434,6 +505,12 @@ export function createQuerySubscriptionService(
     },
 
     clear(): void {
+      // Cancel any pending debounce timer
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+      }
+      pendingMutations = []
       subscriptions.clear()
       dependencyTracker.clear()
       maybeUnsubscribeFromEventBus()
@@ -449,6 +526,21 @@ export function createQuerySubscriptionService(
 
     getDependencyTracker(): DependencyTracker {
       return dependencyTracker
+    },
+
+    setDebounceMs(ms: number): void {
+      debounceMs = ms
+    },
+
+    getDebounceMs(): number {
+      return debounceMs
+    },
+
+    flushPendingMutations(): void {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
+      }
+      processBatchedMutations()
     },
   }
 }

@@ -1032,4 +1032,329 @@ describe('QuerySubscriptionService', () => {
       expect(event.totalCount).toBe(3)
     })
   })
+
+  // ==========================================================================
+  // Batched Re-evaluation (Phase 3)
+  // ==========================================================================
+
+  describe('batched re-evaluation', () => {
+    afterEach(() => {
+      // Reset debounce to default (0) after each test
+      service.setDebounceMs(0)
+    })
+
+    describe('setDebounceMs() / getDebounceMs()', () => {
+      it('should default to 0 (immediate processing)', () => {
+        expect(service.getDebounceMs()).toBe(0)
+      })
+
+      it('should allow setting debounce window', () => {
+        service.setDebounceMs(50)
+        expect(service.getDebounceMs()).toBe(50)
+      })
+
+      it('should allow disabling batching by setting to 0', () => {
+        service.setDebounceMs(100)
+        expect(service.getDebounceMs()).toBe(100)
+
+        service.setDebounceMs(0)
+        expect(service.getDebounceMs()).toBe(0)
+      })
+    })
+
+    describe('immediate processing (debounce = 0)', () => {
+      it('should process mutations immediately when debounce is 0', () => {
+        service.setDebounceMs(0)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        // Each mutation should trigger immediately
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        expect(callback).toHaveBeenCalledTimes(1)
+
+        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        expect(callback).toHaveBeenCalledTimes(2)
+
+        createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+        expect(callback).toHaveBeenCalledTimes(3)
+      })
+    })
+
+    describe('batched processing (debounce > 0)', () => {
+      it('should batch rapid mutations into single callback', async () => {
+        service.setDebounceMs(50)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        // Rapid mutations - should be batched
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+
+        // Callback should not be called yet (mutations are pending)
+        expect(callback).toHaveBeenCalledTimes(0)
+
+        // Wait for debounce window to expire
+        await new Promise((resolve) => setTimeout(resolve, 60))
+
+        // Now callback should be called once with all 3 nodes added
+        expect(callback).toHaveBeenCalledTimes(1)
+        const event = callback.mock.calls[0][0] as QueryResultChangeEvent
+        expect(event.added.length).toBe(3)
+      })
+
+      it('should merge added nodes from multiple mutations in batch', async () => {
+        service.setDebounceMs(50)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        const handle = service.subscribe(db, query, callback)
+
+        // Create 3 tasks rapidly
+        const id1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        const id2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        const id3 = createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+
+        // Wait for batch to process
+        await new Promise((resolve) => setTimeout(resolve, 60))
+
+        expect(callback).toHaveBeenCalledTimes(1)
+        const event = callback.mock.calls[0][0] as QueryResultChangeEvent
+        expect(event.added.map((n) => n.id).sort()).toEqual([id1, id2, id3].sort())
+
+        // Final state should have all 3
+        const results = handle.getLastResults()
+        expect(results.length).toBe(3)
+      })
+
+      it('should handle mixed add and remove in same batch', async () => {
+        // Create initial task
+        const existingTaskId = createNode(db, {
+          content: 'Existing Task',
+          supertagSystemId: 'supertag:task',
+        })
+
+        service.setDebounceMs(50)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        const handle = service.subscribe(db, query, callback)
+
+        expect(handle.getLastResults().length).toBe(1)
+
+        // Rapid mutations: add one, delete existing, add another
+        const newId1 = createNode(db, { content: 'New Task 1', supertagSystemId: 'supertag:task' })
+        deleteNode(db, existingTaskId)
+        const newId2 = createNode(db, { content: 'New Task 2', supertagSystemId: 'supertag:task' })
+
+        // Wait for batch to process
+        await new Promise((resolve) => setTimeout(resolve, 60))
+
+        expect(callback).toHaveBeenCalledTimes(1)
+        const event = callback.mock.calls[0][0] as QueryResultChangeEvent
+        expect(event.added.map((n) => n.id).sort()).toEqual([newId1, newId2].sort())
+        expect(event.removed.map((n) => n.id)).toEqual([existingTaskId])
+
+        // Final state should have 2 new tasks
+        const results = handle.getLastResults()
+        expect(results.length).toBe(2)
+      })
+
+      it('should handle changes within batch', async () => {
+        // Create initial task
+        const taskId = createNode(db, {
+          content: 'Original content',
+          supertagSystemId: 'supertag:task',
+        })
+
+        service.setDebounceMs(50)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        // Rapid changes to the same node
+        updateNodeContent(db, taskId, 'First update')
+        updateNodeContent(db, taskId, 'Second update')
+        updateNodeContent(db, taskId, 'Final update')
+
+        // Wait for batch to process
+        await new Promise((resolve) => setTimeout(resolve, 60))
+
+        // Should only see the final state as "changed"
+        expect(callback).toHaveBeenCalledTimes(1)
+        const event = callback.mock.calls[0][0] as QueryResultChangeEvent
+        expect(event.changed.length).toBe(1)
+        expect(event.changed[0].content).toBe('Final update')
+      })
+
+      it('should reset debounce timer on new mutation', async () => {
+        service.setDebounceMs(50)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        // First mutation
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+
+        // Wait 30ms (less than debounce window)
+        await new Promise((resolve) => setTimeout(resolve, 30))
+        expect(callback).toHaveBeenCalledTimes(0)
+
+        // Second mutation should reset the timer
+        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+
+        // Wait another 30ms (still within reset window)
+        await new Promise((resolve) => setTimeout(resolve, 30))
+        expect(callback).toHaveBeenCalledTimes(0)
+
+        // Wait for the full debounce window to expire
+        await new Promise((resolve) => setTimeout(resolve, 30))
+        expect(callback).toHaveBeenCalledTimes(1)
+        const event = callback.mock.calls[0][0] as QueryResultChangeEvent
+        expect(event.added.length).toBe(2)
+      })
+    })
+
+    describe('flushPendingMutations()', () => {
+      it('should process pending mutations immediately', () => {
+        service.setDebounceMs(1000) // Long debounce
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        // Create nodes (will be batched)
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        expect(callback).toHaveBeenCalledTimes(0)
+
+        // Flush immediately
+        service.flushPendingMutations()
+
+        expect(callback).toHaveBeenCalledTimes(1)
+        const event = callback.mock.calls[0][0] as QueryResultChangeEvent
+        expect(event.added.length).toBe(2)
+      })
+
+      it('should cancel pending debounce timer after flush', async () => {
+        service.setDebounceMs(50)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        service.flushPendingMutations()
+        expect(callback).toHaveBeenCalledTimes(1)
+
+        // Wait for original debounce window - should not trigger again
+        await new Promise((resolve) => setTimeout(resolve, 60))
+        expect(callback).toHaveBeenCalledTimes(1)
+      })
+
+      it('should be no-op when no pending mutations', () => {
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        // No mutations made
+        service.flushPendingMutations()
+        expect(callback).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('batching with multiple subscriptions', () => {
+      it('should evaluate each subscription once per batch', async () => {
+        service.setDebounceMs(50)
+
+        const taskQuery: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+        const projectQuery: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:project' }],
+        }
+
+        const taskCallback = vi.fn()
+        const projectCallback = vi.fn()
+        service.subscribe(db, taskQuery, taskCallback)
+        service.subscribe(db, projectQuery, projectCallback)
+
+        // Create multiple tasks rapidly
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Project 1', supertagSystemId: 'supertag:project' })
+
+        // Wait for batch
+        await new Promise((resolve) => setTimeout(resolve, 60))
+
+        // Each subscription should be called once
+        expect(taskCallback).toHaveBeenCalledTimes(1)
+        expect(projectCallback).toHaveBeenCalledTimes(1)
+
+        const taskEvent = taskCallback.mock.calls[0][0] as QueryResultChangeEvent
+        const projectEvent = projectCallback.mock.calls[0][0] as QueryResultChangeEvent
+
+        expect(taskEvent.added.length).toBe(2)
+        expect(projectEvent.added.length).toBe(1)
+      })
+    })
+
+    describe('clear() with pending batches', () => {
+      it('should discard pending mutations on clear', async () => {
+        service.setDebounceMs(100)
+
+        const query: QueryDefinition = {
+          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        }
+
+        const callback = vi.fn()
+        service.subscribe(db, query, callback)
+
+        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        expect(callback).toHaveBeenCalledTimes(0)
+
+        // Clear should discard pending mutations
+        service.clear()
+
+        // Wait for what would have been the debounce window
+        await new Promise((resolve) => setTimeout(resolve, 120))
+
+        // Callback should never be called
+        expect(callback).toHaveBeenCalledTimes(0)
+      })
+    })
+  })
 })
