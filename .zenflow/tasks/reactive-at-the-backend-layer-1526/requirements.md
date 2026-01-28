@@ -264,31 +264,32 @@ Based on 2025-2026 research, here are the main approaches considered:
 
 **References**: [pg_ivm](https://github.com/sraoss/pg_ivm), [DBSP paper](https://arxiv.org/abs/2203.16684)
 
-## Tiered Automation Strategy
+## Design Decision: Fully Reactive
 
-Not everything needs instant reactivity. Different use cases have different latency requirements:
+All automations use instant reactivity. The flow:
 
-| Type | Example | Latency Need | Recommended Solution |
-|------|---------|--------------|---------------------|
-| **State transitions** | "When status → done, set completedAt" | Instant (<100ms) | Event-driven reactive |
-| **Derived/computed data** | "Calculate monthly total expense" | On-mutation | Reactive computed field |
-| **Threshold alerts** | "Notify when total > $100" | Minutes OK | Cron job OR reactive |
-| **External integrations** | "Sync to external API" | Minutes OK | Cron job + queue |
-| **Chained automations** | "When X, do Y, which triggers Z" | Instant | Event-driven reactive |
+```
+Mutation → Event Bus → Re-evaluate Computed Fields → Check Thresholds → Fire Automation → (async) Execute External Actions
+```
 
-### Design Decision: Hybrid Approach
+| Type | Example | Solution |
+|------|---------|----------|
+| **State transitions** | "When status → done, set completedAt" | Instant reactive |
+| **Derived/computed data** | "Calculate monthly total expense" | Instant reactive |
+| **Threshold alerts** | "Notify when total > $100" | Instant reactive (detection) + async queue (execution) |
+| **Chained automations** | "When X, do Y, which triggers Z" | Instant reactive |
 
-1. **Reactive core** for state transitions and computed fields (instant)
-2. **Cron-based checking** for threshold alerts (simpler, sufficient latency)
-3. **Async job queue** for external API calls (reliability, retry logic)
+**Why no cron?**
+- We're building the event bus + computed field infrastructure anyway
+- Threshold checking becomes free once computed fields update reactively
+- Cron adds complexity (two systems) and is wasteful (re-checks everything)
+- User expectation: instant feedback when crossing a threshold
 
-This mirrors how production systems work:
-- Google Sheets: `onEdit()` is reactive, but scheduled triggers exist for batch operations
-- Notion: Automations are near-instant for internal actions, but external integrations have latency
+**External actions (webhooks) are still async** for reliability/retry, but the *detection* is instant.
 
 ## Recommended Approach
 
-**Option F (Event Bus + SQLite) with computed fields and cron-based thresholds**
+**Option F (Event Bus + SQLite) with fully reactive computed fields and automations**
 
 ### Decision Factors
 
@@ -303,22 +304,22 @@ This mirrors how production systems work:
 
 ### Implementation Phases
 
-**Phase 1: Foundation - Event Bus + Computed Fields**
+**Phase 1: Event Bus + Reactive Core**
 - Mutation event emitter (create/update/delete/property-change)
-- Computed field definitions (SUM, COUNT, AVG, MIN, MAX)
-- Computed fields re-evaluate on relevant mutations
-- Basic automation system for state transitions (onEnter/onExit)
+- Query subscription registry with result diffing (added/removed/changed)
+- Basic automation system for state transitions (onEnter/onExit/onChange)
 
-**Phase 2: Threshold Automations + External Actions**
-- Cron-based threshold checking on computed fields
+**Phase 2: Computed Fields + Threshold Automations**
+- Computed field definitions (SUM, COUNT, AVG, MIN, MAX)
+- Computed fields re-evaluate instantly on relevant mutations
+- Threshold trigger type with state tracking (fires once per crossing)
 - Webhook/external API action type
-- Automation state tracking (prevent duplicate triggers)
-- Job queue for reliable external calls with retry
+- Async job queue for reliable external calls with retry
 
 **Phase 3: Smart Invalidation (optimization)**
 - Map queries/computed fields to their data dependencies
 - Only re-evaluate affected computations on change
-- Result diffing (added/removed nodes)
+- Batch multiple rapid mutations into single re-evaluation
 
 **Phase 4: Differential Dataflow (if needed at scale)**
 - Adopt d2ts for incremental updates
@@ -390,7 +391,7 @@ const markCompleted = automationService.create({
   }
 });
 
-// Automation 2: Threshold alert (cron-checked, external webhook)
+// Automation 2: Threshold alert (instant detection, async webhook execution)
 const budgetAlert = automationService.create({
   name: 'Budget exceeded alert',
   trigger: {
