@@ -12,6 +12,25 @@ The current query system is **pull-based**: each query is evaluated from scratch
 2. **No automations**: Cannot trigger actions when data matches a query
 3. **Future API consumers** would need to poll for changes
 4. **Inefficient**: Re-evaluating entire queries when only small data changes occur
+5. **No computed fields**: Cannot define aggregations (SUM, COUNT) that update automatically
+
+## Motivating Use Case
+
+**Subscription Tracker Mini-App Example:**
+
+A user builds a subscription tracking app within Nxus. They want:
+1. Each subscription has a `monthlyPrice` property
+2. A **computed field** shows `totalMonthlyExpense = SUM(all subscriptions' monthlyPrice)`
+3. An **automation** fires when `totalMonthlyExpense > $100`:
+   - Calls an external API to send a push notification to their phone
+   - Only fires once when threshold is crossed (not repeatedly)
+
+This mirrors how **Google Sheets-backed apps** work:
+- Spreadsheet formulas provide reactive aggregations
+- `onEdit()` triggers in Apps Script fire on data changes
+- Conditional logic triggers external actions (emails, webhooks)
+
+The key insight: **Google Sheets IS a reactive database** at small scale. We need similar capabilities at the backend layer.
 
 ## Goals
 
@@ -44,25 +63,44 @@ The current query system is **pull-based**: each query is evaluated from scratch
 - **FR2.2**: Only affected queries are re-evaluated (not all active queries)
 - **FR2.3**: Changes tracked: node creation, deletion, property changes, supertag assignment
 
-### FR3: Automation System
+### FR3: Computed Fields / Aggregations
 
-- **FR3.1**: Define automation rules that trigger on query membership changes
-- **FR3.2**: Automation triggers:
+- **FR3.1**: Define computed fields that aggregate data from related nodes
+- **FR3.2**: Supported aggregations:
+  - `SUM`: Sum numeric property across nodes
+  - `COUNT`: Count matching nodes
+  - `AVG`: Average of numeric property
+  - `MIN`/`MAX`: Minimum/maximum values
+- **FR3.3**: Computed fields can be:
+  - Attached to a parent node (e.g., "total expense" on a category)
+  - Standalone (global aggregation)
+- **FR3.4**: Computed fields update when underlying data changes
+
+### FR4: Automation System
+
+- **FR4.1**: Define automation rules that trigger on:
+  - Query membership changes (node enters/exits result set)
+  - Threshold conditions on computed fields (e.g., `totalExpense > 100`)
+- **FR4.2**: Automation triggers:
   - `onEnter`: Node newly matches a query
   - `onExit`: Node no longer matches a query
   - `onChange`: Node still matches but properties changed
-- **FR3.3**: Automation actions:
+  - `onThresholdCrossed`: Computed field crosses a threshold (fires once per crossing)
+- **FR4.3**: Automation actions:
   - Set property value
   - Add/remove supertag
   - Create related node
+  - **Call external webhook/API** (for push notifications, etc.)
   - (Extensible for future actions)
-- **FR3.4**: Automations execute server-side, not dependent on UI
+- **FR4.4**: Automations execute server-side, not dependent on UI
+- **FR4.5**: Automations track state to prevent duplicate firing (e.g., "already notified for this threshold")
 
-### FR4: Query Persistence
+### FR5: Query Persistence
 
-- **FR4.1**: Live queries can persist across server restarts
-- **FR4.2**: Saved queries (existing feature) can be upgraded to live queries
-- **FR4.3**: Automation rules persist with their associated queries
+- **FR5.1**: Live queries can persist across server restarts
+- **FR5.2**: Saved queries (existing feature) can be upgraded to live queries
+- **FR5.3**: Automation rules persist with their associated queries
+- **FR5.4**: Automation state (e.g., "threshold already triggered") persists
 
 ## Non-Functional Requirements
 
@@ -226,9 +264,31 @@ Based on 2025-2026 research, here are the main approaches considered:
 
 **References**: [pg_ivm](https://github.com/sraoss/pg_ivm), [DBSP paper](https://arxiv.org/abs/2203.16684)
 
+## Tiered Automation Strategy
+
+Not everything needs instant reactivity. Different use cases have different latency requirements:
+
+| Type | Example | Latency Need | Recommended Solution |
+|------|---------|--------------|---------------------|
+| **State transitions** | "When status → done, set completedAt" | Instant (<100ms) | Event-driven reactive |
+| **Derived/computed data** | "Calculate monthly total expense" | On-mutation | Reactive computed field |
+| **Threshold alerts** | "Notify when total > $100" | Minutes OK | Cron job OR reactive |
+| **External integrations** | "Sync to external API" | Minutes OK | Cron job + queue |
+| **Chained automations** | "When X, do Y, which triggers Z" | Instant | Event-driven reactive |
+
+### Design Decision: Hybrid Approach
+
+1. **Reactive core** for state transitions and computed fields (instant)
+2. **Cron-based checking** for threshold alerts (simpler, sufficient latency)
+3. **Async job queue** for external API calls (reliability, retry logic)
+
+This mirrors how production systems work:
+- Google Sheets: `onEdit()` is reactive, but scheduled triggers exist for batch operations
+- Notion: Automations are near-instant for internal actions, but external integrations have latency
+
 ## Recommended Approach
 
-**Option A (Convex) or Option F (Event Bus + SQLite) with d2ts upgrade path**
+**Option F (Event Bus + SQLite) with computed fields and cron-based thresholds**
 
 ### Decision Factors
 
@@ -241,25 +301,54 @@ Based on 2025-2026 research, here are the main approaches considered:
 | Self-hosting | Supported | Already works |
 | Automation support | Native (scheduler, cron) | Must build |
 
-### If choosing Event Bus + SQLite:
+### Implementation Phases
 
-**Phase 1: Event Bus + Brute Force**
-- Mutation event emitter (create/update/delete)
-- Query subscription registry
-- Re-evaluate affected queries on change (brute force: all queries initially)
-- Basic automation system
+**Phase 1: Foundation - Event Bus + Computed Fields**
+- Mutation event emitter (create/update/delete/property-change)
+- Computed field definitions (SUM, COUNT, AVG, MIN, MAX)
+- Computed fields re-evaluate on relevant mutations
+- Basic automation system for state transitions (onEnter/onExit)
 
-**Phase 2: Smart Invalidation**
-- Map queries to their data dependencies (which attributes they touch)
-- Only re-evaluate queries that could be affected by a change
+**Phase 2: Threshold Automations + External Actions**
+- Cron-based threshold checking on computed fields
+- Webhook/external API action type
+- Automation state tracking (prevent duplicate triggers)
+- Job queue for reliable external calls with retry
+
+**Phase 3: Smart Invalidation (optimization)**
+- Map queries/computed fields to their data dependencies
+- Only re-evaluate affected computations on change
 - Result diffing (added/removed nodes)
 
-**Phase 3: Differential Dataflow (if needed)**
-- Adopt d2ts (TanStack DB's differential dataflow engine) for incremental updates
-- Sub-millisecond query updates even at scale
+**Phase 4: Differential Dataflow (if needed at scale)**
+- Adopt d2ts for incremental updates
+- Sub-millisecond query updates even at 300k+ nodes
 - Same technique used by Materialize, proven at production scale
 
 ## API Design (Draft)
+
+### Defining a Computed Field
+
+```typescript
+// Define a computed field on a parent node (e.g., subscription category)
+const totalExpense = computedFieldService.create({
+  name: 'Total Monthly Expense',
+  parentNodeId: 'category:subscriptions', // or null for global
+  aggregation: {
+    type: 'SUM',
+    query: {
+      filters: [
+        { type: 'supertag', supertagId: 'supertag:subscription' }
+      ]
+    },
+    field: 'field:monthly_price'
+  }
+});
+
+// Computed field value updates automatically when subscriptions change
+const value = await computedFieldService.getValue(totalExpense.id);
+// => 127.50
+```
 
 ### Subscribing to a Query
 
@@ -278,20 +367,46 @@ const subscription = queryService.subscribe({
 subscription.unsubscribe();
 ```
 
-### Defining an Automation
+### Defining Automations
 
 ```typescript
-const automation = automationService.create({
+// Automation 1: State transition (instant, reactive)
+const markCompleted = automationService.create({
   name: 'Mark completed items',
-  query: {
-    filters: [
-      { type: 'supertag', supertagId: 'supertag:task' },
-      { type: 'property', fieldId: 'field:status', operator: 'eq', value: 'done' }
-    ]
+  trigger: {
+    type: 'query_membership',
+    query: {
+      filters: [
+        { type: 'supertag', supertagId: 'supertag:task' },
+        { type: 'property', fieldId: 'field:status', operator: 'eq', value: 'done' }
+      ]
+    },
+    event: 'onEnter'
   },
-  triggers: {
-    onEnter: async (node) => {
-      await nodeService.setProperty(node.id, 'field:completed_at', Date.now());
+  action: {
+    type: 'set_property',
+    fieldId: 'field:completed_at',
+    value: { $now: true } // special value for current timestamp
+  }
+});
+
+// Automation 2: Threshold alert (cron-checked, external webhook)
+const budgetAlert = automationService.create({
+  name: 'Budget exceeded alert',
+  trigger: {
+    type: 'threshold',
+    computedFieldId: totalExpense.id,
+    condition: { operator: 'gt', value: 100 },
+    fireOnce: true // only fire once per threshold crossing
+  },
+  action: {
+    type: 'webhook',
+    url: 'https://api.pushover.net/1/messages.json',
+    method: 'POST',
+    body: {
+      token: '{{ env.PUSHOVER_TOKEN }}',
+      user: '{{ env.PUSHOVER_USER }}',
+      message: 'Monthly subscriptions exceeded $100! Current: ${{ computedField.value }}'
     }
   }
 });
@@ -306,6 +421,13 @@ export const subscribeToQueryServerFn = createServerFn()
   .handler(async ({ queryId }) => {
     // Returns subscription ID, actual events via WebSocket/SSE
   });
+
+// Get computed field value
+export const getComputedFieldServerFn = createServerFn()
+  .input(z.object({ computedFieldId: z.string() }))
+  .handler(async ({ computedFieldId }) => {
+    return computedFieldService.getValue(computedFieldId);
+  });
 ```
 
 ## Open Questions for Technical Spec
@@ -318,11 +440,27 @@ export const subscribeToQueryServerFn = createServerFn()
 
 ## Success Criteria
 
-1. Can create a live query that updates when matching data changes
-2. Can define an automation that sets a property when a node enters a query
-3. System handles 300k nodes without degradation
-4. Automations work without UI being open
-5. Architecture supports adding API endpoints for external consumers
+1. Can define a computed field (e.g., SUM of subscription prices) that updates on data change
+2. Can create a live query that updates when matching data changes
+3. Can define an automation that sets a property when a node enters a query (instant)
+4. Can define a threshold automation that calls a webhook when computed field crosses threshold
+5. System handles 300k nodes without degradation
+6. Automations work without UI being open
+7. Architecture supports adding API endpoints for external consumers
+
+### Subscription Tracker Acceptance Test
+
+Given: A "Subscriptions" mini-app with:
+- Nodes with `supertag:subscription` and `field:monthly_price`
+- A computed field `totalMonthlyExpense = SUM(monthly_price)`
+- An automation: "When totalMonthlyExpense > 100, POST to webhook"
+
+When: User adds subscriptions totaling $95, then adds a $10 subscription
+
+Then:
+- Computed field updates to $105
+- Webhook is called exactly once with the notification
+- Adding more subscriptions doesn't re-fire the alert (until it drops below and crosses again)
 
 ## References
 
