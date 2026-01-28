@@ -687,27 +687,45 @@ Create the acceptance test from requirements document.
 
 # Phase 3: Smart Invalidation (Optimization)
 
-### [ ] Step: Create dependency tracker
+### [x] Step: Create dependency tracker
+<!-- chat-id: 61289b1a-c32f-46ab-a799-2519db7ecb44 -->
 
 Implement query-to-field dependency mapping for selective invalidation.
 
-**Files to create:**
-- `packages/nxus-db/src/reactive/dependency-tracker.ts`
+**Files created:**
+- `packages/nxus-db/src/reactive/dependency-tracker.ts` - Dependency extraction and tracking
+- `packages/nxus-db/src/reactive/__tests__/dependency-tracker.test.ts` - 53 unit tests
+
+**Files modified:**
+- `packages/nxus-db/src/reactive/query-subscription.service.ts` - Integrated smart invalidation
+- `packages/nxus-db/src/reactive/index.ts` - Added dependency tracker exports
 
 **Implementation:**
-- [ ] Analyze `QueryDefinition` to extract field dependencies
-- [ ] Map subscriptionId → Set of fieldSystemIds that affect it
-- [ ] On mutation, check if any active subscription depends on changed field
-- [ ] Only re-evaluate affected subscriptions
+- [x] Analyze `QueryDefinition` to extract field dependencies
+- [x] Map subscriptionId → Set of fieldSystemIds that affect it (forward index)
+- [x] Map dependency → Set of subscriptionIds (reverse index for O(1) lookup)
+- [x] On mutation, check if any active subscription depends on changed field
+- [x] Only re-evaluate affected subscriptions
+- [x] Also re-evaluate subscriptions whose result set contains the mutated node (for "changed" events)
 
 **Dependency extraction rules:**
-- Supertag filter → depends on `field:supertag`
+- Supertag filter → depends on `supertag:{systemId}`, `field:supertag`, and optionally `ANY_SUPERTAG` marker
 - Property filter → depends on specified fieldSystemId
-- Content filter → depends on content (special case)
-- Logical filters → union of child dependencies
+- Content filter → depends on `CONTENT` marker
+- Relation filter → depends on `OWNER` marker or specific fieldSystemId
+- Temporal filter → depends on `CREATED_AT` or `UPDATED_AT` markers
+- HasField filter → depends on specified fieldSystemId
+- Logical filters (and/or/not) → union of child dependencies
+- All queries implicitly depend on `NODE_MEMBERSHIP` marker (node creation/deletion)
+- Sort field also adds dependency
+
+**Smart invalidation strategy:**
+1. Check if mutation could affect query membership (node could enter/exit results) using dependency tracker
+2. Also check if mutation affects a node that's already in any subscription's result set (detect changes to existing results)
 
 **Verification:**
-- Unit tests for dependency extraction
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/dependency-tracker.test.ts` - 53 tests pass
+- [x] Run `pnpm --filter @nxus/db test` - all 337 tests pass (no regressions)
 
 ### [ ] Step: Implement batched re-evaluation
 

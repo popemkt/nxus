@@ -47,3 +47,17 @@ export {
   type WebhookResult,
   type WebhookQueueConfig,
 } from './webhook-queue.js'
+
+// Dependency tracker for smart invalidation
+export {
+  createDependencyTracker,
+  dependencyTracker,
+  extractFilterDependencies,
+  extractQueryDependencies,
+  getMutationAffectedDependencies,
+  DEPENDENCY_MARKERS,
+  type DependencyTracker,
+  type DependencySet,
+  type DependencyMap,
+  type AffectedSubscriptions,
+} from './dependency-tracker.js'

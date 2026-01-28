@@ -6,12 +6,16 @@
  *
  * - Registers query subscriptions with callbacks
  * - Auto-subscribes to the event bus for mutation events
- * - Re-evaluates queries when relevant mutations occur (brute force in Phase 1)
+ * - Re-evaluates queries when relevant mutations occur
  * - Computes diffs (added/removed/changed nodes) between evaluations
  * - Delivers change events to subscription callbacks
  *
- * Phase 1 uses brute-force re-evaluation (all subscriptions on any mutation).
- * Phase 3 will add smart invalidation based on dependency tracking.
+ * Phase 1: Brute-force re-evaluation (all subscriptions on any mutation)
+ * Phase 3: Smart invalidation using dependency tracking (current implementation)
+ *
+ * Smart invalidation analyzes each query's filters to determine which fields/
+ * supertags it depends on, then only re-evaluates subscriptions affected by
+ * each mutation event.
  */
 
 import type { QueryDefinition } from '../types/query.js'
@@ -24,6 +28,10 @@ import type {
 } from './types.js'
 import { eventBus as defaultEventBus } from './event-bus.js'
 import { evaluateQuery } from '../services/query-evaluator.service.js'
+import {
+  createDependencyTracker,
+  type DependencyTracker,
+} from './dependency-tracker.js'
 
 // ============================================================================
 // Types
@@ -100,6 +108,24 @@ export interface QuerySubscriptionService {
    * Clear all subscriptions (for testing)
    */
   clear(): void
+
+  /**
+   * Enable or disable smart invalidation (for testing/comparison)
+   * When disabled, falls back to brute-force re-evaluation
+   *
+   * @param enabled - Whether to use smart invalidation
+   */
+  setSmartInvalidation(enabled: boolean): void
+
+  /**
+   * Check if smart invalidation is enabled
+   */
+  isSmartInvalidationEnabled(): boolean
+
+  /**
+   * Get the dependency tracker (for testing/debugging)
+   */
+  getDependencyTracker(): DependencyTracker
 }
 
 // ============================================================================
@@ -131,6 +157,10 @@ export function createQuerySubscriptionService(
   const subscriptions = new Map<string, InternalSubscription>()
   let nextId = 0
   let eventBusUnsubscribe: (() => void) | null = null
+
+  // Dependency tracker for smart invalidation
+  const dependencyTracker = createDependencyTracker()
+  let smartInvalidationEnabled = true
 
   /**
    * Compute a hash/signature for an AssembledNode to detect changes
@@ -232,22 +262,65 @@ export function createQuerySubscriptionService(
   }
 
   /**
-   * Handle a mutation event by re-evaluating all subscriptions
-   * Phase 1: Brute force - re-evaluate all subscriptions on any mutation
+   * Evaluate a single subscription and deliver the change event if any
    */
-  function handleMutationEvent(_event: MutationEvent): void {
-    for (const subscription of subscriptions.values()) {
-      const changeEvent = evaluateAndDiff(subscription)
-      if (changeEvent) {
-        // Deliver the change event to the callback
-        try {
-          subscription.callback(changeEvent)
-        } catch (error) {
-          console.error(
-            `[QuerySubscriptionService] Callback error for subscription ${subscription.id}:`,
-            error,
-          )
+  function evaluateSubscription(subscription: InternalSubscription): void {
+    const changeEvent = evaluateAndDiff(subscription)
+    if (changeEvent) {
+      // Deliver the change event to the callback
+      try {
+        subscription.callback(changeEvent)
+      } catch (error) {
+        console.error(
+          `[QuerySubscriptionService] Callback error for subscription ${subscription.id}:`,
+          error,
+        )
+      }
+    }
+  }
+
+  /**
+   * Handle a mutation event by re-evaluating affected subscriptions
+   *
+   * Smart invalidation strategy:
+   * 1. Check if mutation could affect query membership (add/remove nodes)
+   *    using the dependency tracker
+   * 2. Also check if mutation affects a node that's already in any
+   *    subscription's result set (detect changes to existing results)
+   *
+   * Brute force fallback: Re-evaluate all subscriptions on any mutation.
+   */
+  function handleMutationEvent(event: MutationEvent): void {
+    if (smartInvalidationEnabled) {
+      // Smart invalidation: only re-evaluate affected subscriptions
+      const subscriptionsToEvaluate = new Set<string>()
+
+      // 1. Check for query membership changes (node could enter/exit results)
+      const { affectedIds } = dependencyTracker.getAffectedSubscriptions(event)
+      for (const id of affectedIds) {
+        subscriptionsToEvaluate.add(id)
+      }
+
+      // 2. Check if the mutated node is already in any subscription's results
+      // This is needed to detect "changed" events (node still matches but changed)
+      const mutatedNodeId = event.nodeId
+      for (const subscription of subscriptions.values()) {
+        if (subscription.lastResults.has(mutatedNodeId)) {
+          subscriptionsToEvaluate.add(subscription.id)
         }
+      }
+
+      // Evaluate all affected subscriptions
+      for (const id of subscriptionsToEvaluate) {
+        const subscription = subscriptions.get(id)
+        if (subscription) {
+          evaluateSubscription(subscription)
+        }
+      }
+    } else {
+      // Brute force: re-evaluate all subscriptions
+      for (const subscription of subscriptions.values()) {
+        evaluateSubscription(subscription)
       }
     }
   }
@@ -299,6 +372,9 @@ export function createQuerySubscriptionService(
 
       subscriptions.set(id, subscription)
 
+      // Register dependencies for smart invalidation
+      dependencyTracker.register(id, definition)
+
       // Ensure we're listening to the event bus
       ensureEventBusSubscription()
 
@@ -307,6 +383,7 @@ export function createQuerySubscriptionService(
         id,
         unsubscribe: () => {
           subscriptions.delete(id)
+          dependencyTracker.unregister(id)
           maybeUnsubscribeFromEventBus()
         },
         getLastResults: () => {
@@ -319,6 +396,7 @@ export function createQuerySubscriptionService(
 
     unsubscribe(subscriptionId: string): void {
       subscriptions.delete(subscriptionId)
+      dependencyTracker.unregister(subscriptionId)
       maybeUnsubscribeFromEventBus()
     },
 
@@ -357,7 +435,20 @@ export function createQuerySubscriptionService(
 
     clear(): void {
       subscriptions.clear()
+      dependencyTracker.clear()
       maybeUnsubscribeFromEventBus()
+    },
+
+    setSmartInvalidation(enabled: boolean): void {
+      smartInvalidationEnabled = enabled
+    },
+
+    isSmartInvalidationEnabled(): boolean {
+      return smartInvalidationEnabled
+    },
+
+    getDependencyTracker(): DependencyTracker {
+      return dependencyTracker
     },
   }
 }
