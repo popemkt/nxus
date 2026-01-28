@@ -95,6 +95,9 @@ export const SYSTEM_SUPERTAGS = {
 
   // Query supertag - for saved queries (Tana-like reactive queries)
   QUERY: 'supertag:query',
+
+  // Automation supertag - for reactive automation rules
+  AUTOMATION: 'supertag:automation',
 } as const
 
 export const SYSTEM_FIELDS = {
@@ -150,6 +153,12 @@ export const SYSTEM_FIELDS = {
   QUERY_LIMIT: 'field:query_limit', // Max results
   QUERY_RESULT_CACHE: 'field:query_result_cache', // Cached node IDs (optional)
   QUERY_EVALUATED_AT: 'field:query_evaluated_at', // Last evaluation timestamp
+
+  // Automation-specific fields (for reactive automations with supertag:automation)
+  AUTOMATION_DEFINITION: 'field:automation_definition', // JSON automation config
+  AUTOMATION_STATE: 'field:automation_state', // JSON state tracking
+  AUTOMATION_LAST_FIRED: 'field:automation_last_fired', // Timestamp of last execution
+  AUTOMATION_ENABLED: 'field:automation_enabled', // Boolean - whether automation is active
 } as const
 
 /**

@@ -223,25 +223,27 @@ Implement automation rules for query membership triggers with internal actions.
 - [x] Run `pnpm --filter @nxus/db test` - all 128 tests pass (no regressions)
 - [x] TypeScript compilation passes - no errors in automation.service.ts
 
-### [ ] Step: Add schema changes for automation nodes
+### [x] Step: Add schema changes for automation nodes
+<!-- chat-id: 5083e878-b27a-49fa-942f-bfc5a2b27445 -->
 
 Extend the schema to support automation nodes with their definitions and state.
 
-**Files to modify:**
+**Files modified:**
 - `packages/nxus-db/src/schemas/node-schema.ts`
+- `packages/nxus-db/src/reactive/automation.service.ts` - updated to use schema constants
 
 **Add to SYSTEM_FIELDS:**
-- [ ] `AUTOMATION_DEFINITION: 'field:automation_definition'` - JSON automation config
-- [ ] `AUTOMATION_STATE: 'field:automation_state'` - JSON state tracking
-- [ ] `AUTOMATION_LAST_FIRED: 'field:automation_last_fired'` - Timestamp
-- [ ] `AUTOMATION_ENABLED: 'field:automation_enabled'` - Boolean
+- [x] `AUTOMATION_DEFINITION: 'field:automation_definition'` - JSON automation config
+- [x] `AUTOMATION_STATE: 'field:automation_state'` - JSON state tracking
+- [x] `AUTOMATION_LAST_FIRED: 'field:automation_last_fired'` - Timestamp
+- [x] `AUTOMATION_ENABLED: 'field:automation_enabled'` - Boolean
 
 **Add to SYSTEM_SUPERTAGS:**
-- [ ] `AUTOMATION: 'supertag:automation'` - Automation rule nodes
+- [x] `AUTOMATION: 'supertag:automation'` - Automation rule nodes
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test` - existing tests still pass
-- Bootstrap creates new system nodes correctly
+- [x] Run `pnpm --filter @nxus/db test` - all 128 tests pass (no regressions)
+- [x] TypeScript compilation passes - no errors in node-schema.ts or automation.service.ts
 
 ### [ ] Step: Write automation service tests
 

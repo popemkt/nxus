@@ -51,7 +51,7 @@ import {
   getSystemNode,
   deleteNode,
 } from '../services/node.service.js'
-import { SYSTEM_FIELDS } from '../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../schemas/node-schema.js'
 import type { getDatabase } from '../client/master-client.js'
 
 // ============================================================================
@@ -64,17 +64,16 @@ import type { getDatabase } from '../client/master-client.js'
 const MAX_EXECUTION_DEPTH = 10
 
 /**
- * System field IDs for automation properties (to be added to node-schema.ts)
- * For now, define them locally
+ * Local aliases for automation-related schema constants for convenience
  */
 const AUTOMATION_FIELDS = {
-  DEFINITION: 'field:automation_definition',
-  STATE: 'field:automation_state',
-  LAST_FIRED: 'field:automation_last_fired',
-  ENABLED: 'field:automation_enabled',
+  DEFINITION: SYSTEM_FIELDS.AUTOMATION_DEFINITION,
+  STATE: SYSTEM_FIELDS.AUTOMATION_STATE,
+  LAST_FIRED: SYSTEM_FIELDS.AUTOMATION_LAST_FIRED,
+  ENABLED: SYSTEM_FIELDS.AUTOMATION_ENABLED,
 } as const
 
-const AUTOMATION_SUPERTAG = 'supertag:automation'
+const AUTOMATION_SUPERTAG = SYSTEM_SUPERTAGS.AUTOMATION
 
 // ============================================================================
 // Types
