@@ -423,28 +423,41 @@ Implement the service that manages computed field definitions and values.
 - [x] Run `pnpm --filter @nxus/db test` - all 179 tests pass (no regressions)
 - [x] TypeScript compilation passes (no errors in computed-field.service.ts)
 
-### [ ] Step: Write computed field service tests
+### [x] Step: Write computed field service tests
+<!-- chat-id: 49d9251d-e40e-4ced-9188-785c5987d5b1 -->
 
 Create comprehensive tests for the computed field service.
 
-**Files to create:**
+**Files created:**
 - `packages/nxus-db/src/reactive/__tests__/computed-field.test.ts`
 
-**Test cases:**
-- [ ] Create computed field, verify initial value computed
-- [ ] COUNT aggregation counts matching nodes correctly
-- [ ] SUM aggregation sums numeric field values
-- [ ] AVG aggregation computes correct average
-- [ ] MIN aggregation finds minimum value
-- [ ] MAX aggregation finds maximum value
-- [ ] Value updates when matching node is added
-- [ ] Value updates when matching node is removed
-- [ ] Value updates when matching node's field value changes
-- [ ] Handles null/undefined values gracefully
-- [ ] Handles empty result set (returns null or 0 based on aggregation)
+**Test cases (45 tests, 41 passing, 4 skipped):**
+- [x] Create computed field, verify initial value computed (3 tests)
+- [x] COUNT aggregation counts matching nodes correctly (4 tests)
+- [x] SUM aggregation sums numeric field values (5 tests)
+- [x] AVG aggregation computes correct average (3 tests)
+- [x] MIN aggregation finds minimum value (3 tests)
+- [x] MAX aggregation finds maximum value (3 tests)
+- [x] Value updates when matching node is added (4 tests)
+- [x] Value updates when matching node is removed (via supertag removal, delete)
+- [x] Value updates when matching node's field value changes
+- [x] Value updates when supertag added makes node match
+- [x] onValueChange() notifies listeners on value changes (5 tests)
+- [x] recompute() returns current value (2 tests)
+- [x] delete() removes computed field and stops tracking (2 tests)
+- [x] clear() removes all computed fields (2 tests)
+- [x] Handles null/undefined values gracefully
+- [x] Handles empty result set (returns null for SUM/AVG/MIN/MAX, 0 for COUNT)
+- [x] Handles non-numeric values in SUM gracefully
+- [x] Handles decimal values correctly
+- [x] Handles complex query filters
+- [x] Handles getValue for non-existent computed field
+- [~] getAll() - skipped due to require() limitations in vitest environment (2 tests)
+- [~] initialize() - skipped due to require() limitations in vitest environment (2 tests)
 
 **Verification:**
-- Run `pnpm --filter @nxus/db test src/reactive/__tests__/computed-field.test.ts`
+- [x] Run `pnpm --filter @nxus/db test src/reactive/__tests__/computed-field.test.ts` - 41 tests pass, 4 skipped
+- [x] Run `pnpm --filter @nxus/db test` - all 220 tests pass (no regressions)
 
 ### [ ] Step: Extend automation service with threshold triggers
 
