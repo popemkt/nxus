@@ -18,6 +18,9 @@
 import { eq, isNull } from 'drizzle-orm'
 import { getDatabase } from '../client/master-client.js'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
+
+// UUID regex pattern (supports both v4 and v7 UUIDs)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 import type {
   ContentFilter,
   FilterOp,
@@ -215,8 +218,11 @@ function getNodeIdsByDirectSupertag(
       if (value === targetSupertag.id) {
         nodeIds.push(prop.nodeId)
       }
-    } catch {
-      // Skip malformed values
+    } catch (error) {
+      // Log warning for malformed supertag property values (potential data corruption)
+      console.warn(
+        `[QueryEvaluator] Malformed supertag property value for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
+      )
     }
   }
 
@@ -596,17 +602,20 @@ function evaluateLinksToRelation(
     try {
       const value = JSON.parse(prop.value || '')
 
-      // Check if value is a node reference
+      // Check if value is a node reference (UUID)
       const isMatch = targetNodeId
         ? value === targetNodeId ||
           (Array.isArray(value) && value.includes(targetNodeId))
-        : typeof value === 'string' && value.length === 36 // UUID-like
+        : typeof value === 'string' && UUID_REGEX.test(value)
 
       if (isMatch) {
         result.add(prop.nodeId)
       }
-    } catch {
-      // Skip malformed values
+    } catch (error) {
+      // Log warning for malformed property values in relation queries
+      console.warn(
+        `[QueryEvaluator] Malformed property value in linksTo query for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
+      )
     }
   }
 
@@ -655,8 +664,11 @@ function evaluateLinkedFromRelation(
           }
         }
       }
-    } catch {
-      // Skip malformed values
+    } catch (error) {
+      // Log warning for malformed property values in backlink queries
+      console.warn(
+        `[QueryEvaluator] Malformed property value in linkedFrom query for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
+      )
     }
   }
 

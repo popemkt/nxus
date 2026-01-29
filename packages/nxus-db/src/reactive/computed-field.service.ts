@@ -575,8 +575,16 @@ export function createComputedFieldService(
         return active.lastValue
       }
 
-      // Fall back to cached value in DB
+      // Fall back to cached value in DB (may be stale if service was restarted)
+      // This is intentional - allows reading values without activating subscriptions
+      // Use recompute() to ensure fresh value and activate the subscription
       const loaded = loadComputedFieldFromNode(db, computedFieldId)
+      if (loaded) {
+        console.debug(
+          `[ComputedFieldService] getValue() returning cached DB value for ${computedFieldId}. ` +
+            `Call recompute() or initialize() to activate live updates.`,
+        )
+      }
       return loaded?.value ?? null
     },
 

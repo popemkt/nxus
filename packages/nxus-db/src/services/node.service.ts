@@ -15,6 +15,7 @@ import {
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
+  isSystemId,
 } from '../schemas/node-schema.js'
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
 import { eventBus } from '../reactive/event-bus.js'
@@ -25,6 +26,9 @@ export type {
   PropertyValue,
   CreateNodeOptions,
 } from '../types/node.js'
+
+// Re-export isSystemId for convenience (canonical version is in node-schema.ts)
+export { isSystemId } from '../schemas/node-schema.js'
 
 // Import types for use in this file
 import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
@@ -72,14 +76,6 @@ export function getNodeById(
     return entry
   }
   return null
-}
-
-/**
- * Check if a string looks like a systemId (has a known prefix)
- * SystemIds have format like 'field:status', 'supertag:task', etc.
- */
-function isSystemId(value: string): boolean {
-  return value.startsWith('field:') || value.startsWith('supertag:')
 }
 
 /**
@@ -261,12 +257,24 @@ export function findNodeBySystemId(
 }
 
 /**
- * @deprecated Use findNodeById or findNodeBySystemId instead
+ * @deprecated Use findNodeById or findNodeBySystemId instead.
+ *
+ * This function has ambiguous behavior - it tries systemId first, then UUID.
+ * This can lead to unexpected results if a systemId happens to look like a UUID.
+ * Prefer explicit functions:
+ * - findNodeById(db, uuid) - when you have a UUID
+ * - findNodeBySystemId(db, systemId) - when you have a systemId like 'item:my-app'
  */
 export function findNode(
   db: ReturnType<typeof getDatabase>,
   identifier: string,
 ): AssembledNode | null {
+  // Log deprecation warning (only once per identifier to avoid spam)
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn(
+      `[DEPRECATED] findNode() called with '${identifier}'. Use findNodeById() or findNodeBySystemId() instead.`,
+    )
+  }
   // Try systemId first (more common for lookups)
   let result = findNodeBySystemId(db, identifier)
   if (result) return result

@@ -260,14 +260,22 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 }
 
 /**
- * Save the master database to disk
- * Note: better-sqlite3 persists automatically, so this is now a no-op
- * Kept for backwards compatibility
+ * @deprecated This function is a no-op. better-sqlite3 persists automatically.
+ * This function will be removed in a future version.
  */
 export function saveMasterDatabase() {
-  // better-sqlite3 writes changes immediately to disk
-  // This function is kept for backwards compatibility only
+  // Log deprecation warning (only once per session to avoid spam)
+  if (!saveMasterDatabaseWarned) {
+    saveMasterDatabaseWarned = true
+    console.warn(
+      '[DEPRECATED] saveMasterDatabase() is a no-op. better-sqlite3 persists automatically. ' +
+        'This function will be removed in a future version.',
+    )
+  }
 }
+
+// Track if deprecation warning has been shown
+let saveMasterDatabaseWarned = false
 
 /**
  * Get the master database instance (must call initDatabase first)
@@ -363,14 +371,22 @@ export function initEphemeralDatabase(): BetterSQLite3Database<
 }
 
 /**
- * Save the ephemeral database to disk
- * Note: better-sqlite3 persists automatically, so this is now a no-op
- * Kept for backwards compatibility
+ * @deprecated This function is a no-op. better-sqlite3 persists automatically.
+ * This function will be removed in a future version.
  */
 export function saveEphemeralDatabase() {
-  // better-sqlite3 writes changes immediately to disk
-  // This function is kept for backwards compatibility only
+  // Log deprecation warning (only once per session to avoid spam)
+  if (!saveEphemeralDatabaseWarned) {
+    saveEphemeralDatabaseWarned = true
+    console.warn(
+      '[DEPRECATED] saveEphemeralDatabase() is a no-op. better-sqlite3 persists automatically. ' +
+        'This function will be removed in a future version.',
+    )
+  }
 }
+
+// Track if deprecation warning has been shown
+let saveEphemeralDatabaseWarned = false
 
 /**
  * Get the ephemeral database instance (must call initEphemeralDatabase first)
@@ -402,6 +418,12 @@ export function initAllDatabases() {
 export const MASTER_DB_PATH = masterDbPath
 export const EPHEMERAL_DB_PATH = ephemeralDbPath
 
-// Legacy alias for backwards compatibility
+/**
+ * @deprecated Use MASTER_DB_PATH instead
+ */
 export const DB_PATH = masterDbPath
+
+/**
+ * @deprecated Use saveMasterDatabase instead (which is also deprecated as it's a no-op)
+ */
 export const saveDatabase = saveMasterDatabase

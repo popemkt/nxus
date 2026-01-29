@@ -170,6 +170,34 @@ export const SYSTEM_FIELDS = {
 } as const
 
 /**
+ * Valid prefixes for systemId values.
+ * Used to distinguish systemIds from UUIDs in functions that accept either.
+ *
+ * SystemIds follow the pattern: "{prefix}:{name}"
+ * - field:status
+ * - supertag:task
+ * - item:my-app
+ *
+ * Add new prefixes here when introducing new systemId types.
+ */
+export const VALID_SYSTEM_ID_PREFIXES = ['field:', 'supertag:', 'item:'] as const
+
+/**
+ * Type for systemId prefixes
+ */
+export type SystemIdPrefix = (typeof VALID_SYSTEM_ID_PREFIXES)[number]
+
+/**
+ * Check if a string is a systemId (has a known prefix).
+ *
+ * This is the canonical way to distinguish between systemIds and UUIDs.
+ * Use this function instead of manual prefix checks.
+ */
+export function isSystemId(value: string): boolean {
+  return VALID_SYSTEM_ID_PREFIXES.some((prefix) => value.startsWith(prefix))
+}
+
+/**
  * Field types for the field:field_type property
  */
 export type FieldType =
