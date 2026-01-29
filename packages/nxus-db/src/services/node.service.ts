@@ -82,6 +82,10 @@ export function getFieldOrSupertagNode(
   db: ReturnType<typeof getDatabase>,
   idOrSystemId: string,
 ): { id: string; content: string } | null {
+  // Handle undefined/null gracefully
+  if (!idOrSystemId) {
+    return null
+  }
   // Try by id first (UUID format check - contains hyphens and is 36 chars)
   if (idOrSystemId.length === 36 && idOrSystemId.includes('-')) {
     const byId = getNodeById(db, idOrSystemId)
