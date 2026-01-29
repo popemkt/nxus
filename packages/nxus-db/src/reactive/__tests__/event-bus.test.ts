@@ -446,7 +446,7 @@ describe('EventBus', () => {
   describe('async listeners', () => {
     it('handles async listeners without blocking emit', async () => {
       let asyncResolved = false
-      const asyncListener: MutationListener = async (event) => {
+      const asyncListener: MutationListener = async (_event) => {
         await new Promise((resolve) => setTimeout(resolve, 10))
         asyncResolved = true
       }

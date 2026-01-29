@@ -751,7 +751,7 @@ export function evaluateLogicalFilter(
  * Sort assembled nodes by a field
  */
 function sortNodes(
-  db: Database,
+  _db: Database,
   nodes: AssembledNode[],
   sort: QuerySort,
 ): AssembledNode[] {

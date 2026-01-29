@@ -132,7 +132,8 @@ export const recomputeComputedFieldServerFn = createServerFn({ method: 'POST' })
  */
 export const getAllComputedFieldsServerFn = createServerFn({
   method: 'GET',
-}).handler(async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}).handler(async (): Promise<any> => {
   const { initDatabaseWithBootstrap, computedFieldService } = await import(
     '@nxus/db/server'
   )
@@ -200,7 +201,8 @@ export const createAutomationServerFn = createServerFn({ method: 'POST' })
  * Get all automations with their definitions and states
  */
 export const getAutomationsServerFn = createServerFn({ method: 'GET' }).handler(
-  async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (): Promise<any> => {
     const { initDatabaseWithBootstrap, automationService } = await import(
       '@nxus/db/server'
     )

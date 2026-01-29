@@ -56,7 +56,7 @@ export function QueryResultsView({
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
 
   // Evaluate query with debounce
-  const hasFilters = currentQuery.filters.length > 0
+  const hasFilters = (currentQuery.filters?.length ?? 0) > 0
   const { nodes, totalCount, isLoading, isError, error } = useQueryEvaluation(
     currentQuery,
     {
@@ -263,8 +263,8 @@ export function QueryResultsView({
         </span>
         {hasFilters && (
           <span className="text-primary">
-            {currentQuery.filters.length} filter
-            {currentQuery.filters.length !== 1 ? 's' : ''}
+            {currentQuery.filters?.length ?? 0} filter
+            {(currentQuery.filters?.length ?? 0) !== 1 ? 's' : ''}
           </span>
         )}
         <span className="ml-auto text-muted-foreground/60">

@@ -75,7 +75,7 @@ export const createQueryServerFn = createServerFn({ method: 'POST' })
 
     const queryId = createNode(db, {
       content: name,
-      supertagSystemId: SYSTEM_SUPERTAGS.QUERY,
+      supertagId: SYSTEM_SUPERTAGS.QUERY,
       ownerId,
     })
 
@@ -232,7 +232,8 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
       cacheResults: z.boolean().optional(),
     })
   )
-  .handler(async (ctx) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .handler(async (ctx): Promise<any> => {
     const {
       initDatabaseWithBootstrap,
       findNodeById,

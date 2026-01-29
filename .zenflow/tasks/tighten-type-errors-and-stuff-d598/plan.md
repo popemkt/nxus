@@ -125,17 +125,54 @@ If schema fixes don't resolve all test errors, fix test fixtures.
 
 ---
 
-### [ ] Step: Add MIT License and Tighten TypeScript Config
+### [x] Step: Add MIT License and Tighten TypeScript Config
+<!-- chat-id: a8ee1f93-8ca1-463d-ad85-e1f02953dbe7 -->
 Add license file and configure TypeScript to prevent future errors.
 
+**Completed**: Added MIT LICENSE and tightened TypeScript config with `noUnusedParameters`. Fixed all resulting type errors across packages.
+
 **Tasks**:
-- [ ] Create `LICENSE` file with MIT license text
-- [ ] Add `noUnusedLocals` and `noUnusedParameters` to `tsconfig.base.json`
-- [ ] Verify all packages still build
+- [x] Create `LICENSE` file with MIT license text
+- [x] Add `noUnusedLocals` and `noUnusedParameters` to `tsconfig.base.json` (noUnusedLocals was already present)
+- [x] Verify all packages still build
+
+**Changes made**:
+- Created `LICENSE` file with MIT license (Copyright 2025 Hoang Nguyen)
+- Added `noUnusedParameters: true` to `tsconfig.base.json`
+- Fixed unused parameter errors in `@nxus/db`:
+  - `src/reactive/__tests__/event-bus.test.ts`: Prefixed unused `event` param with underscore
+  - `src/reactive/automation.service.ts`: Prefixed unused `db` param with underscore
+  - `src/reactive/webhook-queue.ts`: Prefixed unused `match` param with underscore
+  - `src/services/query-evaluator.service.ts`: Prefixed unused `db` param with underscore
+- Fixed workbench errors exposed by stricter config:
+  - Fixed optional `filters` access throughout query components with nullish coalescing
+  - Fixed `Set<string>` type annotations for `EXPLICIT_RELATIONSHIP_FIELDS`
+  - Removed unused imports from `nodes.server.ts`
+  - Fixed `supertagSystemId` → `supertagId` property name (CreateNodeOptions interface)
+  - Added `Promise<any>` return type to server functions with complex recursive types
 
 **Files**:
 - `LICENSE` (new)
 - `tsconfig.base.json`
+- `packages/nxus-db/src/reactive/__tests__/event-bus.test.ts`
+- `packages/nxus-db/src/reactive/automation.service.ts`
+- `packages/nxus-db/src/reactive/webhook-queue.ts`
+- `packages/nxus-db/src/services/query-evaluator.service.ts`
+- `packages/nxus-workbench/src/components/query-results/QueryResultsView.tsx`
+- `packages/nxus-workbench/src/features/query-builder/query-builder.tsx`
+- `packages/nxus-workbench/src/features/query-builder/query-builder-with-saved.tsx`
+- `packages/nxus-workbench/src/features/query-builder/query-linter.tsx`
+- `packages/nxus-workbench/src/features/query-builder/saved-queries-panel.tsx`
+- `packages/nxus-workbench/src/features/graph/renderers/graph-2d/Graph2D.tsx`
+- `packages/nxus-workbench/src/features/graph/renderers/graph-3d/node-renderer.ts`
+- `packages/nxus-workbench/src/features/graph/provider/extractors/backlink-extractor.ts`
+- `packages/nxus-workbench/src/features/graph/provider/extractors/reference-extractor.ts`
+- `packages/nxus-workbench/src/hooks/use-query.ts`
+- `packages/nxus-workbench/src/server/graph.server.ts`
+- `packages/nxus-workbench/src/server/nodes.server.ts`
+- `packages/nxus-workbench/src/server/query.server.ts`
+- `packages/nxus-workbench/src/server/reactive.server.ts`
+- `packages/nxus-workbench/src/stores/query.store.ts`
 
 **Verification**: `pnpm nx run-many --target=typecheck --all` passes with 0 errors.
 

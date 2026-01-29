@@ -198,8 +198,8 @@ export function computeNodeVisuals(
  * ```
  */
 export function createNodeObject(
-  node: Graph3DNode,
-  options: NodeRenderOptions,
+  _node: Graph3DNode,
+  _options: NodeRenderOptions,
 ): Object3D | undefined {
   // For now, return undefined to use default sphere rendering
   // Custom Three.js objects can be expensive and may not be needed
@@ -245,7 +245,7 @@ export function createNodeObject(
  * This function creates a permanent label sprite if always-visible labels are needed.
  */
 export function createNodeLabel(
-  node: Graph3DNode,
+  _node: Graph3DNode,
   _options: { fontSize?: number; color?: string } = {},
 ): Object3D | undefined {
   // For now, return undefined to use default hover labels

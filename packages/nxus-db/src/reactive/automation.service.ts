@@ -480,7 +480,7 @@ export function createAutomationService(
    * Execute action for threshold trigger (no target node required)
    */
   function executeThresholdAction(
-    db: Database,
+    _db: Database,
     action: AutomationAction,
     automationId: string,
     context: ExecutionContext,
