@@ -996,3 +996,40 @@ Completed migration from `systemId` to `id` throughout the reactive module.
 - [x] d2ts integration research completed (deferred - Phase 3 optimizations sufficient)
 - [x] No regression in correctness
 - [x] All tests pass
+
+---
+
+### [ ] Step: Fix OR-style patterns and magic detection in codebase
+<!-- chat-id: pending -->
+
+Audit identified 8 problematic patterns that use magic detection, OR-style lookups, and ambiguous parameters. These should be refactored for clarity and robustness.
+
+**Issues to fix:**
+
+1. **UUID length heuristic** (`query-evaluator.service.ts:603`)
+   - Uses `value.length === 36` to detect UUIDs - fragile magic number
+   - Fix: Use proper UUID regex validation
+
+2. **Deprecated findNode() function** (`node.service.ts:264-275`)
+   - Try-then-fallback pattern with ambiguous `identifier` parameter
+   - Fix: Remove if unused, or make explicit with type parameter
+
+3. **Silent JSON.parse catch blocks** (`query-evaluator.service.ts:213, 596, 646`)
+   - Swallows errors without logging - hides data corruption
+   - Fix: Add warning logs for malformed values
+
+4. **Centralize systemId prefix detection** (`node.service.ts:78-83`)
+   - Magic prefix list hardcoded in `isSystemId()` function
+   - Fix: Define `VALID_SYSTEM_ID_PREFIXES` constant and use consistently
+
+5. **Backwards compatibility empty functions** (`master-client.ts:265, 368, 405`)
+   - `saveMasterDatabase()`, `saveEphemeralDatabase()` are no-ops
+   - Fix: Add deprecation warnings or remove
+
+6. **Computed field cache fallback** (`computed-field.service.ts:571-581`)
+   - Silent fallback between active values and DB cache
+   - Fix: Consider returning source information or logging
+
+**Verification:**
+- [ ] All tests pass after refactoring
+- [ ] No silent failures or magic detection remaining
