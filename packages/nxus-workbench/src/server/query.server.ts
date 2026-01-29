@@ -75,7 +75,7 @@ export const createQueryServerFn = createServerFn({ method: 'POST' })
 
     const queryId = createNode(db, {
       content: name,
-      supertagSystemId: SYSTEM_SUPERTAGS.QUERY,
+      supertagId: SYSTEM_SUPERTAGS.QUERY,
       ownerId,
     })
 
