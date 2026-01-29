@@ -21,7 +21,7 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   assembleNode,
-  findNode,
+  findNodeById,
   getNodesBySupertagWithInheritance,
   getProperty,
   createNode,
@@ -42,11 +42,14 @@ import { nodeToCommand, nodeToItem, nodeToTag } from './adapters.js'
 export const getNodeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ identifier: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode } = await import('@nxus/db/server')
+    const { initDatabase, getDatabase, isSystemId, findNodeById, findNodeBySystemId } = await import('@nxus/db/server')
     const { identifier } = ctx.data
     initDatabase()
     const db = getDatabase()
-    const node = findNode(db, identifier)
+    // Use explicit lookup based on identifier type
+    const node = isSystemId(identifier)
+      ? findNodeBySystemId(db, identifier)
+      : findNodeById(db, identifier)
 
     if (!node) {
       return { success: false as const, error: 'Node not found' }
@@ -150,7 +153,7 @@ export const deleteNodeServerFn = createServerFn({ method: 'POST' })
     const db = getDatabase()
 
     // Verify the node exists
-    const existingNode = findNode(db, nodeId)
+    const existingNode = findNodeById(db, nodeId)
     if (!existingNode) {
       return { success: false as const, error: 'Node not found' }
     }
@@ -177,13 +180,13 @@ export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode, assembleNode, setProperty } = await import('@nxus/db/server')
+    const { initDatabase, getDatabase, findNodeById, assembleNode, setProperty } = await import('@nxus/db/server')
     const { nodeId, properties } = ctx.data
     initDatabase()
     const db = getDatabase()
 
     // Verify the node exists
-    const existingNode = findNode(db, nodeId)
+    const existingNode = findNodeById(db, nodeId)
     if (!existingNode) {
       return { success: false as const, error: 'Node not found' }
     }
@@ -293,7 +296,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
     const {
       initDatabase,
       getDatabase,
-      findNode,
+      findNodeBySystemId,
       assembleNode,
       getNodesBySupertagWithInheritance,
       getProperty,
@@ -308,7 +311,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
     const db = getDatabase()
 
     // Try to find by systemId first (item:xxx)
-    let node = findNode(db, `item:${id}`)
+    let node = findNodeBySystemId(db, `item:${id}`)
 
     // If not found, search by legacyId property
     if (!node) {
