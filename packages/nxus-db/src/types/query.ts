@@ -50,7 +50,7 @@ const BaseFilterSchema = z.object({
 export const SupertagFilterSchema = BaseFilterSchema.extend({
   type: z.literal('supertag'),
   supertagId: z.string(), // UUID of the supertag node (or systemId for system supertags)
-  includeInherited: z.boolean().optional().default(true), // Include child supertags via field:extends
+  includeInherited: z.boolean().optional(), // Include child supertags via field:extends (defaults to true at runtime)
 })
 export type SupertagFilter = z.infer<typeof SupertagFilterSchema>
 
@@ -207,9 +207,9 @@ export type QuerySort = z.infer<typeof QuerySortSchema>
  * All filters in the top-level array are combined with AND by default.
  */
 export const QueryDefinitionSchema = z.object({
-  filters: z.array(QueryFilterSchema).optional().default([]),
+  filters: z.array(QueryFilterSchema).optional(), // Defaults to [] at runtime
   sort: QuerySortSchema.optional(),
-  limit: z.number().optional().default(500),
+  limit: z.number().optional(), // Defaults to 500 at runtime
 })
 export type QueryDefinition = z.infer<typeof QueryDefinitionSchema>
 
@@ -373,7 +373,7 @@ export function createContentSearchQuery(query: string): QueryDefinition {
 export function combineQueriesWithAnd(
   queries: QueryDefinition[],
 ): QueryDefinition {
-  const allFilters = queries.flatMap((q) => q.filters)
+  const allFilters = queries.flatMap((q) => q.filters ?? [])
   return {
     filters: allFilters,
     sort: queries.find((q) => q.sort)?.sort,
@@ -390,7 +390,7 @@ export function addFilterToQuery(
 ): QueryDefinition {
   return {
     ...query,
-    filters: [...query.filters, filter],
+    filters: [...(query.filters ?? []), filter],
   }
 }
 
@@ -403,6 +403,6 @@ export function removeFilterFromQuery(
 ): QueryDefinition {
   return {
     ...query,
-    filters: query.filters.filter((f) => f.id !== filterId),
+    filters: (query.filters ?? []).filter((f) => f.id !== filterId),
   }
 }

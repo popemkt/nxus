@@ -81,7 +81,7 @@ export function evaluateQuery(
   let candidateIds = getAllNonDeletedNodeIds(db)
 
   // 2. Apply each filter (top-level filters are AND'd together)
-  for (const filter of definition.filters) {
+  for (const filter of definition.filters ?? []) {
     candidateIds = evaluateFilter(db, filter, candidateIds)
     // Short-circuit if no candidates remain
     if (candidateIds.size === 0) {

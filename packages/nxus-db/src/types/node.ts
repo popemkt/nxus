@@ -43,15 +43,5 @@ export interface CreateNodeOptions {
   supertagId?: string // Supertag id (UUID) or systemId (e.g., 'supertag:note', 'supertag:task')
 }
 
-/**
- * A saved query with its definition and metadata
- */
-export interface SavedQuery {
-  id: string
-  content: string
-  definition: import('./query.js').QueryDefinition
-  resultCache?: string[]
-  evaluatedAt?: Date
-  createdAt: Date
-  updatedAt: Date
-}
+// SavedQuery is exported from query.ts - re-export here for backwards compatibility
+export type { SavedQuery } from './query.js'

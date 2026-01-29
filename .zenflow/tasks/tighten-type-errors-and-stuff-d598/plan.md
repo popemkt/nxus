@@ -35,19 +35,26 @@ See `spec.md` for detailed technical specification.
 
 ---
 
-### [ ] Step: Fix Zod Schema Type Inference
+### [x] Step: Fix Zod Schema Type Inference
+<!-- chat-id: 1c7b2b36-7610-432e-b34c-14f698ced04d -->
 Fix the core schema issues that cascade into 400+ type errors.
 
+**Completed**: Reduced errors from 506 to 39.
+
 **Tasks**:
-- [ ] Fix `SupertagFilterSchema.includeInherited` to be truly optional in TypeScript
-- [ ] Remove duplicate `SavedQuery` interface from `node.ts` (keep in `query.ts`)
-- [ ] Run typecheck to verify reduction in errors
+- [x] Fix `SupertagFilterSchema.includeInherited` to be truly optional in TypeScript
+- [x] Remove duplicate `SavedQuery` interface from `node.ts` (keep in `query.ts`)
+- [x] Fix `QueryDefinitionSchema.filters` and `limit` to be truly optional
+- [x] Update helper functions and services to handle optional fields
+- [x] Run typecheck to verify reduction in errors
 
-**Files**:
-- `packages/nxus-db/src/types/query.ts`
-- `packages/nxus-db/src/types/node.ts`
+**Changes made**:
+- `packages/nxus-db/src/types/query.ts`: Changed `.optional().default()` to just `.optional()` for `includeInherited`, `filters`, and `limit` - this makes the TypeScript types truly optional while runtime defaults can be applied elsewhere
+- `packages/nxus-db/src/types/node.ts`: Replaced duplicate `SavedQuery` interface with re-export from `query.ts`
+- `packages/nxus-db/src/services/query-evaluator.service.ts`: Added nullish coalescing for `definition.filters`
+- `packages/nxus-db/src/reactive/dependency-tracker.ts`: Added nullish coalescing for `definition.filters` and removed unused type guard imports
 
-**Verification**: `pnpm nx run @nxus/db:typecheck` should show significant error reduction.
+**Verification**: `pnpm nx run @nxus/db:typecheck` shows 39 errors (down from 506) - remaining errors are unused variables in tests and `isPrimary` column issue (next step).
 
 ---
 
