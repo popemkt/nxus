@@ -38,19 +38,20 @@ import type { AutomationDefinition, QueryResultChangeEvent } from '../types.js'
 // ============================================================================
 
 /**
- * Helper to get a property value from a node by nodeId and fieldSystemId.
+ * Helper to get a property value from a node by nodeId and fieldId.
  */
 function getPropertyValue(
   db: BetterSQLite3Database<typeof schema>,
   nodeId: string,
-  fieldSystemId: string,
+  fieldId: string,
 ): unknown {
   const node = assembleNode(db, nodeId)
   if (!node) return null
 
   for (const [, propValues] of Object.entries(node.properties)) {
     for (const pv of propValues) {
-      if (pv.fieldSystemId === fieldSystemId) {
+      // Match by systemId (e.g., 'field:status') or fieldNodeId (UUID)
+      if (pv.fieldSystemId === fieldId || pv.fieldNodeId === fieldId) {
         return pv.value
       }
     }
@@ -64,11 +65,11 @@ function getPropertyValue(
 function hasSupertag(
   db: BetterSQLite3Database<typeof schema>,
   nodeId: string,
-  supertagSystemId: string,
+  supertagId: string,
 ): boolean {
   const node = assembleNode(db, nodeId)
   if (!node) return false
-  return node.supertags.some((st) => st.systemId === supertagSystemId)
+  return node.supertags.some((st) => st.systemId === supertagId)
 }
 
 // ============================================================================
@@ -225,15 +226,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: { $now: true },
         },
       }
@@ -241,7 +242,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, definition)
 
       // Create a task with status 'pending'
-      const taskId = createNode(db, { content: 'My Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'My Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'pending')
 
       // Verify completedAt is not set yet
@@ -268,15 +269,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: { $now: true },
         },
       }
@@ -289,15 +290,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onExit',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: null,
         },
       }
@@ -306,7 +307,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, clearCompletedAt)
 
       // Create task and set to done
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'done')
 
       // Verify completedAt is set
@@ -327,15 +328,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: { $now: true },
         },
       }
@@ -343,7 +344,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, definition)
 
       // Create task and immediately set status to done
-      const taskId = createNode(db, { content: 'Quick Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Quick Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'done')
 
       // Verify completedAt was set
@@ -366,15 +367,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -385,13 +386,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:urgent' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:urgent' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
@@ -400,7 +401,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, automationB)
 
       // Create task with low priority
-      const taskId = createNode(db, { content: 'Important Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Important Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'low')
 
       // Verify initial state
@@ -424,15 +425,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:flagged',
+          supertagId: 'supertag:flagged',
         },
       }
 
@@ -443,13 +444,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:flagged' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:flagged' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -460,13 +461,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:urgent' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:urgent' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
@@ -476,7 +477,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, automationC)
 
       // Create task
-      const taskId = createNode(db, { content: 'Chain Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Chain Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'pending')
 
       // Verify initial state
@@ -502,15 +503,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -521,13 +522,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:urgent' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:urgent' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
@@ -540,15 +541,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onExit',
         },
         action: {
           type: 'remove_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -559,13 +560,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:urgent' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:urgent' }],
           },
           event: 'onExit',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: false,
         },
       }
@@ -576,7 +577,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, clearNotified)
 
       // Create high priority task - triggers chain
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'high')
 
       // Verify chain fired
@@ -678,12 +679,12 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
+              { type: 'supertag', supertagId: 'supertag:task' },
               {
                 type: 'or',
                 filters: [
-                  { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
-                  { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+                  { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
+                  { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
                 ],
               },
             ],
@@ -692,7 +693,7 @@ describe('Phase 1 Integration Tests', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
@@ -700,17 +701,17 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, definition)
 
       // Test 1: High priority triggers
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       setProperty(db, task1, 'field:priority', 'high')
       expect(getPropertyValue(db, task1, 'field:notified')).toBe(true)
 
       // Test 2: Done status triggers
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       setProperty(db, task2, 'field:status', 'done')
       expect(getPropertyValue(db, task2, 'field:notified')).toBe(true)
 
       // Test 3: Neither condition - doesn't trigger
-      const task3 = createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+      const task3 = createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
       setProperty(db, task3, 'field:priority', 'low')
       setProperty(db, task3, 'field:status', 'pending')
       expect(getPropertyValue(db, task3, 'field:notified')).toBeNull()
@@ -725,12 +726,12 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
+              { type: 'supertag', supertagId: 'supertag:task' },
               {
                 type: 'and',
                 filters: [
-                  { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
-                  { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+                  { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
+                  { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
                 ],
               },
             ],
@@ -739,14 +740,14 @@ describe('Phase 1 Integration Tests', () => {
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
       automationService.create(db, definition)
 
       // Create task with high priority (not done yet)
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'high')
       setProperty(db, taskId, 'field:status', 'pending')
 
@@ -774,13 +775,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -792,13 +793,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:priority',
+          fieldId: 'field:priority',
           value: 'normal',
         },
       }
@@ -810,13 +811,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:due_date',
+          fieldId: 'field:due_date',
           value: '2025-12-31',
         },
       }
@@ -826,7 +827,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, auto3)
 
       // Create a task
-      const taskId = createNode(db, { content: 'New Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'New Task', supertagId: 'supertag:task' })
 
       // All three automations should have fired
       expect(getPropertyValue(db, taskId, 'field:status')).toBe('active')
@@ -849,15 +850,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -868,13 +869,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:urgent' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:urgent' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
@@ -883,7 +884,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, autoB)
 
       // Create high priority task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'high')
 
       // Automation A should fire
@@ -908,13 +909,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onChange',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: { $now: true }, // Always unique value
         },
       }
@@ -922,7 +923,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, definition)
 
       // Create task
-      const taskId = createNode(db, { content: 'Cyclic Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Cyclic Task', supertagId: 'supertag:task' })
 
       // Update content - would trigger infinite loop without cycle detection
       // This should NOT hang or crash
@@ -948,13 +949,13 @@ describe('Phase 1 Integration Tests', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'pending',
         },
       }
@@ -967,15 +968,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -987,15 +988,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: { $now: true },
         },
       }
@@ -1008,15 +1009,15 @@ describe('Phase 1 Integration Tests', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'remove_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -1026,7 +1027,7 @@ describe('Phase 1 Integration Tests', () => {
       automationService.create(db, removeUrgentAuto)
 
       // Step 1: Create a new task
-      const taskId = createNode(db, { content: 'Important work', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Important work', supertagId: 'supertag:task' })
 
       // Should have default status
       expect(getPropertyValue(db, taskId, 'field:status')).toBe('pending')

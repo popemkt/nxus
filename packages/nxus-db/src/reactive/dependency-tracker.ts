@@ -9,8 +9,8 @@
  * re-evaluate when a mutation affects those specific dependencies.
  *
  * Dependency types:
- * - FIELD: Property filters depend on specific fieldSystemIds
- * - SUPERTAG: Supertag filters depend on specific supertagSystemIds
+ * - FIELD: Property filters depend on specific fieldIds (UUIDs)
+ * - SUPERTAG: Supertag filters depend on specific supertagIds (UUIDs)
  * - CONTENT: Content filters depend on node content changes
  * - NODE_MEMBERSHIP: All queries implicitly depend on node creation/deletion
  * - RELATION: Relation filters depend on ownerId or specific link fields
@@ -59,8 +59,8 @@ export const DEPENDENCY_MARKERS = {
 } as const
 
 /**
- * Set of field system IDs that a subscription depends on
- * Includes both actual fieldSystemIds and special markers from DEPENDENCY_MARKERS
+ * Set of field/supertag IDs that a subscription depends on
+ * Includes both actual UUIDs and special markers from DEPENDENCY_MARKERS
  */
 export type DependencySet = Set<string>
 
@@ -135,7 +135,7 @@ export interface DependencyTracker {
  * Recursively processes logical filters (and/or/not)
  *
  * @param filter - Query filter to analyze
- * @returns Set of dependencies (fieldSystemIds and special markers)
+ * @returns Set of dependencies (fieldIds, supertagIds, and special markers)
  */
 export function extractFilterDependencies(filter: QueryFilter): DependencySet {
   const deps = new Set<string>()
@@ -144,12 +144,8 @@ export function extractFilterDependencies(filter: QueryFilter): DependencySet {
     case 'supertag': {
       // Supertag filters depend on specific supertag changes
       const supertagFilter = filter as SupertagFilter
-      // We use the supertagSystemId directly as dependency
-      deps.add(`supertag:${supertagFilter.supertagSystemId}`)
-      // Also depend on field:supertag (the actual field where supertags are stored)
-      // This is needed because createNode uses setProperty which emits property:set,
-      // not supertag:added
-      deps.add('field:supertag')
+      // We use the supertagId (UUID) directly as dependency with supertag: prefix
+      deps.add(`supertag:${supertagFilter.supertagId}`)
       // Also add the general supertag marker for any supertag changes
       // (since inheritance might mean other supertags matter too)
       if (supertagFilter.includeInherited !== false) {
@@ -161,7 +157,7 @@ export function extractFilterDependencies(filter: QueryFilter): DependencySet {
     case 'property': {
       // Property filters depend on specific field changes
       const propFilter = filter as PropertyFilter
-      deps.add(propFilter.fieldSystemId)
+      deps.add(propFilter.fieldId)
       break
     }
 
@@ -180,14 +176,14 @@ export function extractFilterDependencies(filter: QueryFilter): DependencySet {
       ) {
         deps.add(DEPENDENCY_MARKERS.OWNER)
       }
-      if (relFilter.fieldSystemId) {
-        deps.add(relFilter.fieldSystemId)
+      if (relFilter.fieldId) {
+        deps.add(relFilter.fieldId)
       }
       // For linksTo/linkedFrom without specific field, any property change matters
       if (
         (relFilter.relationType === 'linksTo' ||
           relFilter.relationType === 'linkedFrom') &&
-        !relFilter.fieldSystemId
+        !relFilter.fieldId
       ) {
         // This is a broad dependency - any property could be a link
         // For now, we'll need to re-evaluate on any property change
@@ -211,7 +207,7 @@ export function extractFilterDependencies(filter: QueryFilter): DependencySet {
     case 'hasField': {
       // HasField filters depend on specific field presence
       const hasFilter = filter as HasFieldFilter
-      deps.add(hasFilter.fieldSystemId)
+      deps.add(hasFilter.fieldId)
       break
     }
 
@@ -267,7 +263,7 @@ export function extractQueryDependencies(definition: QueryDefinition): Dependenc
     } else if (sortField === 'updatedAt') {
       deps.add(DEPENDENCY_MARKERS.UPDATED_AT)
     } else {
-      // Assume it's a fieldSystemId
+      // Assume it's a fieldId (UUID)
       deps.add(sortField)
     }
   }
@@ -315,6 +311,10 @@ export function getMutationAffectedDependencies(event: MutationEvent): Set<strin
     case 'property:added':
     case 'property:removed':
       // Property change affects the specific field
+      // Add both UUID and systemId (if present) for dependency matching
+      if (event.fieldId) {
+        affected.add(event.fieldId)
+      }
       if (event.fieldSystemId) {
         affected.add(event.fieldSystemId)
       }
@@ -324,8 +324,8 @@ export function getMutationAffectedDependencies(event: MutationEvent): Set<strin
     case 'supertag:added':
     case 'supertag:removed':
       // Supertag change affects supertag queries
-      if (event.supertagSystemId) {
-        affected.add(`supertag:${event.supertagSystemId}`)
+      if (event.supertagId) {
+        affected.add(`supertag:${event.supertagId}`)
       }
       affected.add(DEPENDENCY_MARKERS.ANY_SUPERTAG)
       affected.add(DEPENDENCY_MARKERS.UPDATED_AT)

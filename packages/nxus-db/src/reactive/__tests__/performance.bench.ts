@@ -167,7 +167,7 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
         // Simple supertag filter
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length] },
           ],
         }
         break
@@ -176,8 +176,8 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
         // Supertag + property filter
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
-            { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length] },
+            { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
           ],
         }
         break
@@ -186,7 +186,7 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
         // Property filter only (different field)
         queryDefinition = {
           filters: [
-            { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: priorities[i % priorities.length] },
+            { type: 'property', fieldId: 'field:priority', op: 'eq', value: priorities[i % priorities.length] },
           ],
         }
         break
@@ -198,8 +198,8 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
             {
               type: 'or',
               filters: [
-                { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
-                { type: 'property', fieldSystemId: 'field:active', op: 'eq', value: true },
+                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'property', fieldId: 'field:active', op: 'eq', value: true },
               ],
             },
           ],
@@ -214,8 +214,8 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
             {
               type: 'and',
               filters: [
-                { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
-                { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
+                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
               ],
             },
           ],
@@ -249,7 +249,7 @@ function createBenchContext(nodeCount: number, subscriptionCount: number): Bench
   for (let i = 0; i < nodeCount; i++) {
     const nodeId = createNode(db, {
       content: `Node ${i}`,
-      supertagSystemId: supertags[i % supertags.length],
+      supertagId: supertags[i % supertags.length],
     })
     nodeIds.push(nodeId)
     // Set some properties to make queries more realistic

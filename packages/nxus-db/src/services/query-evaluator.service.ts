@@ -33,6 +33,7 @@ import type {
 } from '../types/query.js'
 import {
   assembleNode,
+  getFieldOrSupertagNode,
   getNodeIdsBySupertagWithInheritance,
   getSystemNode,
   type AssembledNode,
@@ -166,15 +167,15 @@ export function evaluateSupertagFilter(
   filter: SupertagFilter,
   candidateIds: Set<string>,
 ): Set<string> {
-  const { supertagSystemId, includeInherited = true } = filter
+  const { supertagId, includeInherited = true } = filter
 
   // Get all node IDs with this supertag (optionally with inheritance)
   let matchingIds: string[]
   if (includeInherited) {
-    matchingIds = getNodeIdsBySupertagWithInheritance(db, supertagSystemId)
+    matchingIds = getNodeIdsBySupertagWithInheritance(db, supertagId)
   } else {
     // Direct match only - no inheritance
-    matchingIds = getNodeIdsByDirectSupertag(db, supertagSystemId)
+    matchingIds = getNodeIdsByDirectSupertag(db, supertagId)
   }
 
   // Intersect with candidates
@@ -193,9 +194,9 @@ export function evaluateSupertagFilter(
  */
 function getNodeIdsByDirectSupertag(
   db: Database,
-  supertagSystemId: string,
+  supertagId: string,
 ): string[] {
-  const targetSupertag = getSystemNode(db, supertagSystemId)
+  const targetSupertag = getFieldOrSupertagNode(db, supertagId)
   if (!targetSupertag) return []
 
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
@@ -237,9 +238,9 @@ export function evaluatePropertyFilter(
   filter: PropertyFilter,
   candidateIds: Set<string>,
 ): Set<string> {
-  const { fieldSystemId, op, value } = filter
+  const { fieldId, op, value } = filter
 
-  const field = getSystemNode(db, fieldSystemId)
+  const field = getFieldOrSupertagNode(db, fieldId)
   if (!field) {
     // Unknown field - return empty set
     return new Set()
@@ -407,9 +408,9 @@ export function evaluateHasFieldFilter(
   filter: HasFieldFilter,
   candidateIds: Set<string>,
 ): Set<string> {
-  const { fieldSystemId, negate = false } = filter
+  const { fieldId, negate = false } = filter
 
-  const field = getSystemNode(db, fieldSystemId)
+  const field = getFieldOrSupertagNode(db, fieldId)
   if (!field) {
     // Unknown field - if negated, all match; otherwise none match
     return negate ? candidateIds : new Set()
@@ -520,7 +521,7 @@ export function evaluateRelationFilter(
   filter: RelationFilter,
   candidateIds: Set<string>,
 ): Set<string> {
-  const { relationType, targetNodeId, fieldSystemId } = filter
+  const { relationType, targetNodeId, fieldId } = filter
 
   switch (relationType) {
     case 'childOf':
@@ -528,10 +529,10 @@ export function evaluateRelationFilter(
       return evaluateChildOfRelation(db, candidateIds, targetNodeId)
 
     case 'linksTo':
-      return evaluateLinksToRelation(db, candidateIds, targetNodeId, fieldSystemId)
+      return evaluateLinksToRelation(db, candidateIds, targetNodeId, fieldId)
 
     case 'linkedFrom':
-      return evaluateLinkedFromRelation(db, candidateIds, targetNodeId, fieldSystemId)
+      return evaluateLinkedFromRelation(db, candidateIds, targetNodeId, fieldId)
 
     default:
       return candidateIds
@@ -575,14 +576,14 @@ function evaluateLinksToRelation(
   db: Database,
   candidateIds: Set<string>,
   targetNodeId?: string,
-  fieldSystemId?: string,
+  fieldId?: string,
 ): Set<string> {
   const result = new Set<string>()
 
   // Build query based on optional field filter
   let propsQuery = db.select().from(nodeProperties)
-  if (fieldSystemId) {
-    const field = getSystemNode(db, fieldSystemId)
+  if (fieldId) {
+    const field = getFieldOrSupertagNode(db, fieldId)
     if (!field) return result
     propsQuery = propsQuery.where(eq(nodeProperties.fieldNodeId, field.id)) as typeof propsQuery
   }
@@ -619,7 +620,7 @@ function evaluateLinkedFromRelation(
   db: Database,
   candidateIds: Set<string>,
   targetNodeId?: string,
-  fieldSystemId?: string,
+  fieldId?: string,
 ): Set<string> {
   const result = new Set<string>()
 
@@ -630,8 +631,8 @@ function evaluateLinkedFromRelation(
 
   // Find all properties that reference candidate nodes
   let propsQuery = db.select().from(nodeProperties)
-  if (fieldSystemId) {
-    const field = getSystemNode(db, fieldSystemId)
+  if (fieldId) {
+    const field = getFieldOrSupertagNode(db, fieldId)
     if (!field) return result
     propsQuery = propsQuery.where(eq(nodeProperties.fieldNodeId, field.id)) as typeof propsQuery
   }

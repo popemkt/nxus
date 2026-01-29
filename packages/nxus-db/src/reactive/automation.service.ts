@@ -270,11 +270,11 @@ export function createAutomationService(
         if (isNowMarker(value)) {
           value = new Date().toISOString()
         }
-        setProperty(db, targetNodeId, action.fieldSystemId, value)
+        setProperty(db, targetNodeId, action.fieldId, value)
       } else if (isAddSupertagAction(action)) {
-        addNodeSupertag(db, targetNodeId, action.supertagSystemId)
+        addNodeSupertag(db, targetNodeId, action.supertagId)
       } else if (isRemoveSupertagAction(action)) {
-        removeNodeSupertag(db, targetNodeId, action.supertagSystemId)
+        removeNodeSupertag(db, targetNodeId, action.supertagId)
       } else if (isWebhookAction(action)) {
         // Get the target node for context
         const targetNode = assembleNode(db, targetNodeId)
@@ -760,7 +760,7 @@ export function createAutomationService(
       // Create automation node
       const automationId = createNode(db, {
         content: definition.name,
-        supertagSystemId: AUTOMATION_SUPERTAG,
+        supertagId: AUTOMATION_SUPERTAG,
       })
 
       // Set definition property

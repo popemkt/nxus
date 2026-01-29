@@ -178,14 +178,18 @@ function computeCount(nodes: AssembledNode[]): number {
 
 /**
  * Extract numeric value from a node's property
+ *
+ * @param node The assembled node to extract from
+ * @param fieldId The field identifier - can be either a UUID (fieldNodeId) or a systemId (fieldSystemId)
  */
-function extractNumericValue(node: AssembledNode, fieldSystemId: string): number | null {
+function extractNumericValue(node: AssembledNode, fieldId: string): number | null {
   const properties = node.properties
 
-  // Find the property by fieldSystemId
+  // Find the property by fieldId (matching either fieldNodeId or fieldSystemId)
   for (const propValues of Object.values(properties)) {
     for (const prop of propValues) {
-      if (prop.fieldSystemId === fieldSystemId) {
+      // Match by fieldNodeId (UUID) or fieldSystemId (system identifier like 'field:monthly_price')
+      if (prop.fieldNodeId === fieldId || prop.fieldSystemId === fieldId) {
         // Parse the value
         const val = prop.value
         if (typeof val === 'number') return val
@@ -203,9 +207,9 @@ function extractNumericValue(node: AssembledNode, fieldSystemId: string): number
 /**
  * Compute the SUM aggregation
  */
-function computeSum(nodes: AssembledNode[], fieldSystemId?: string): number | null {
-  if (!fieldSystemId) {
-    console.warn('[ComputedFieldService] SUM aggregation requires fieldSystemId')
+function computeSum(nodes: AssembledNode[], fieldId?: string): number | null {
+  if (!fieldId) {
+    console.warn('[ComputedFieldService] SUM aggregation requires fieldId')
     return null
   }
 
@@ -213,7 +217,7 @@ function computeSum(nodes: AssembledNode[], fieldSystemId?: string): number | nu
   let hasValue = false
 
   for (const node of nodes) {
-    const value = extractNumericValue(node, fieldSystemId)
+    const value = extractNumericValue(node, fieldId)
     if (value !== null) {
       sum += value
       hasValue = true
@@ -226,16 +230,16 @@ function computeSum(nodes: AssembledNode[], fieldSystemId?: string): number | nu
 /**
  * Compute the AVG aggregation
  */
-function computeAvg(nodes: AssembledNode[], fieldSystemId?: string): number | null {
-  if (!fieldSystemId) {
-    console.warn('[ComputedFieldService] AVG aggregation requires fieldSystemId')
+function computeAvg(nodes: AssembledNode[], fieldId?: string): number | null {
+  if (!fieldId) {
+    console.warn('[ComputedFieldService] AVG aggregation requires fieldId')
     return null
   }
 
   const values: number[] = []
 
   for (const node of nodes) {
-    const value = extractNumericValue(node, fieldSystemId)
+    const value = extractNumericValue(node, fieldId)
     if (value !== null) {
       values.push(value)
     }
@@ -248,16 +252,16 @@ function computeAvg(nodes: AssembledNode[], fieldSystemId?: string): number | nu
 /**
  * Compute the MIN aggregation
  */
-function computeMin(nodes: AssembledNode[], fieldSystemId?: string): number | null {
-  if (!fieldSystemId) {
-    console.warn('[ComputedFieldService] MIN aggregation requires fieldSystemId')
+function computeMin(nodes: AssembledNode[], fieldId?: string): number | null {
+  if (!fieldId) {
+    console.warn('[ComputedFieldService] MIN aggregation requires fieldId')
     return null
   }
 
   let min: number | null = null
 
   for (const node of nodes) {
-    const value = extractNumericValue(node, fieldSystemId)
+    const value = extractNumericValue(node, fieldId)
     if (value !== null) {
       if (min === null || value < min) {
         min = value
@@ -271,16 +275,16 @@ function computeMin(nodes: AssembledNode[], fieldSystemId?: string): number | nu
 /**
  * Compute the MAX aggregation
  */
-function computeMax(nodes: AssembledNode[], fieldSystemId?: string): number | null {
-  if (!fieldSystemId) {
-    console.warn('[ComputedFieldService] MAX aggregation requires fieldSystemId')
+function computeMax(nodes: AssembledNode[], fieldId?: string): number | null {
+  if (!fieldId) {
+    console.warn('[ComputedFieldService] MAX aggregation requires fieldId')
     return null
   }
 
   let max: number | null = null
 
   for (const node of nodes) {
-    const value = extractNumericValue(node, fieldSystemId)
+    const value = extractNumericValue(node, fieldId)
     if (value !== null) {
       if (max === null || value > max) {
         max = value
@@ -297,19 +301,19 @@ function computeMax(nodes: AssembledNode[], fieldSystemId?: string): number | nu
 function computeAggregation(
   aggregationType: AggregationType,
   nodes: AssembledNode[],
-  fieldSystemId?: string,
+  fieldId?: string,
 ): number | null {
   switch (aggregationType) {
     case 'COUNT':
       return computeCount(nodes)
     case 'SUM':
-      return computeSum(nodes, fieldSystemId)
+      return computeSum(nodes, fieldId)
     case 'AVG':
-      return computeAvg(nodes, fieldSystemId)
+      return computeAvg(nodes, fieldId)
     case 'MIN':
-      return computeMin(nodes, fieldSystemId)
+      return computeMin(nodes, fieldId)
     case 'MAX':
-      return computeMax(nodes, fieldSystemId)
+      return computeMax(nodes, fieldId)
     default:
       console.warn(`[ComputedFieldService] Unknown aggregation type: ${aggregationType}`)
       return null
@@ -397,7 +401,7 @@ export function createComputedFieldService(
     const newValue = computeAggregation(
       computedField.definition.aggregation,
       currentNodes,
-      computedField.definition.fieldSystemId,
+      computedField.definition.fieldId,
     )
 
     const previousValue = computedField.lastValue
@@ -439,7 +443,7 @@ export function createComputedFieldService(
     const initialValue = computeAggregation(
       definition.aggregation,
       currentNodes,
-      definition.fieldSystemId,
+      definition.fieldId,
     )
 
     computedField.lastValue = initialValue
@@ -539,7 +543,7 @@ export function createComputedFieldService(
       // Create computed field node
       const computedFieldId = createNode(db, {
         content: name,
-        supertagSystemId: COMPUTED_FIELD_SUPERTAG,
+        supertagId: COMPUTED_FIELD_SUPERTAG,
         ownerId,
       })
 
@@ -613,7 +617,7 @@ export function createComputedFieldService(
       const newValue = computeAggregation(
         active.definition.aggregation,
         currentNodes,
-        active.definition.fieldSystemId,
+        active.definition.fieldId,
       )
 
       const previousValue = active.lastValue

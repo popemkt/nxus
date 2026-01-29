@@ -929,6 +929,45 @@ Once done git push.
   - Performance optimization (debouncing, smart invalidation, metrics)
 - [x] All tests pass
 
+
+### [x] Step: Fix stuff
+<!-- chat-id: 00757667-df4b-44b6-ac02-7b16e23198e2 -->
+
+Completed migration from `systemId` to `id` throughout the reactive module.
+
+**Changes made:**
+
+1. **Types (`packages/nxus-db/src/types/node.ts`):**
+   - Changed `supertagSystemId` to `supertagId` in `CreateNodeOptions`
+   - `supertagId` now accepts either UUID or systemId (resolved via `getFieldOrSupertagNode`)
+
+2. **MutationEvent (`packages/nxus-db/src/reactive/types.ts`):**
+   - Added `fieldSystemId` field for dependency matching
+   - Added `supertagSystemId` field for clarity
+   - Events now include both UUID (`fieldId`) and systemId (`fieldSystemId`)
+
+3. **Node Service (`packages/nxus-db/src/services/node.service.ts`):**
+   - `createNode` uses `supertagId` and emits `supertag:added` event
+   - `setProperty`, `addPropertyValue`, `clearProperty` include `fieldSystemId` in events
+
+4. **Dependency Tracker (`packages/nxus-db/src/reactive/dependency-tracker.ts`):**
+   - Updated to check both `fieldId` (UUID) and `fieldSystemId` when matching events
+   - Removed `'field:supertag'` dependency since `createNode` now emits proper `supertag:added` events
+
+5. **Computed Field Service (`packages/nxus-db/src/reactive/computed-field.service.ts`):**
+   - Changed `definition.fieldSystemId` → `definition.fieldId`
+   - Uses `supertagId` instead of `supertagSystemId`
+
+6. **Automation Service (`packages/nxus-db/src/reactive/automation.service.ts`):**
+   - Uses `supertagId` instead of `supertagSystemId` in createNode call
+
+7. **Test Fixes:**
+   - Fixed `PropertyValue.fieldId` → `fieldSystemId` or `fieldNodeId` in test helpers
+   - Updated all test files to use `supertagId` instead of `supertagSystemId`
+   - Updated dependency tracker test expectations
+
+**Verification:**
+- [x] All 374 tests pass (4 skipped)
 ## Phase 1 Completion Criteria
 
 - [x] Event bus emits events for all mutations

@@ -42,22 +42,25 @@ import type { AutomationDefinition } from '../types.js'
 // ============================================================================
 
 /**
- * Helper to get a property value from a node by nodeId and fieldSystemId.
- * This looks up the property by searching for a property with the matching fieldSystemId,
- * since assembleNode uses fieldName (content) as the key, not fieldSystemId.
+ * Helper to get a property value from a node by nodeId and fieldId.
+ * This looks up the property by searching for a property with the matching fieldId,
+ * since assembleNode uses fieldName (content) as the key, not fieldId.
+ *
+ * @param fieldId Can be either the field's node UUID (fieldNodeId) or systemId (fieldSystemId)
  */
 function getPropertyValue(
   db: BetterSQLite3Database<typeof schema>,
   nodeId: string,
-  fieldSystemId: string,
+  fieldId: string,
 ): unknown {
   const node = assembleNode(db, nodeId)
   if (!node) return null
 
-  // Search through all properties to find one with matching fieldSystemId
+  // Search through all properties to find one with matching fieldId
+  // Match by either fieldNodeId (UUID) or fieldSystemId (system identifier)
   for (const [, propValues] of Object.entries(node.properties)) {
     for (const pv of propValues) {
-      if (pv.fieldSystemId === fieldSystemId) {
+      if (pv.fieldNodeId === fieldId || pv.fieldSystemId === fieldId) {
         return pv.value
       }
     }
@@ -214,13 +217,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -242,13 +245,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -274,7 +277,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -296,7 +299,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -321,7 +324,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -344,7 +347,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -368,13 +371,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
@@ -402,13 +405,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:priority',
+          fieldId: 'field:priority',
           value: 'normal',
         },
       }
@@ -416,7 +419,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a task - should trigger automation
-      const taskId = createNode(db, { content: 'New Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'New Task', supertagId: 'supertag:task' })
 
       // Verify priority was set
       expect(getPropertyValue(db, taskId, 'field:priority')).toBe('normal')
@@ -431,15 +434,15 @@ describe('AutomationService', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: { $now: true },
         },
       }
@@ -447,7 +450,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create task with pending status
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'pending')
 
       // Verify completed_at is not set
@@ -478,13 +481,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onExit',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'archived',
         },
       }
@@ -492,7 +495,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'active')
 
       // Remove task supertag - should trigger automation
@@ -511,15 +514,15 @@ describe('AutomationService', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
             ],
           },
           event: 'onExit',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: null,
         },
       }
@@ -527,7 +530,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a done task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'done')
       setProperty(db, taskId, 'field:completed_at', '2025-01-01T00:00:00Z')
 
@@ -547,13 +550,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onExit',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'deleted',
         },
       }
@@ -561,7 +564,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Set an initial status
       setProperty(db, taskId, 'field:status', 'active')
@@ -581,7 +584,7 @@ describe('AutomationService', () => {
   describe('onChange trigger', () => {
     it('should fire when matching node content changes', () => {
       // Create a task first (before creating automation to avoid it affecting initial setup)
-      const taskId = createNode(db, { content: 'Original', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Original', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:notified', true)
 
       // Verify notified is set to true
@@ -594,13 +597,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onChange',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: false,
         },
       }
@@ -622,13 +625,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onChange',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: 'priority_changed',
         },
       }
@@ -636,7 +639,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'low')
 
       // Change priority - should trigger onChange
@@ -659,20 +662,20 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'active',
         },
       }
 
       automationService.create(db, definition)
 
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       expect(getPropertyValue(db, taskId, 'field:status')).toBe('active')
     })
@@ -684,20 +687,20 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:priority',
+          fieldId: 'field:priority',
           value: 5,
         },
       }
 
       automationService.create(db, definition)
 
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       expect(getPropertyValue(db, taskId, 'field:priority')).toBe(5)
     })
@@ -709,20 +712,20 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
 
       automationService.create(db, definition)
 
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       expect(getPropertyValue(db, taskId, 'field:notified')).toBe(true)
     })
@@ -734,19 +737,19 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: null,
         },
       }
 
       // Create task first and set a property
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'active')
 
       // Remove the supertag so we can add it again to trigger the automation
@@ -768,13 +771,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:completed_at',
+          fieldId: 'field:completed_at',
           value: { $now: true },
         },
       }
@@ -782,7 +785,7 @@ describe('AutomationService', () => {
       const beforeTime = new Date().toISOString()
       automationService.create(db, definition)
 
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       const afterTime = new Date().toISOString()
 
       const completedAt = getPropertyValue(db, taskId, 'field:completed_at') as string
@@ -806,22 +809,22 @@ describe('AutomationService', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
       automationService.create(db, definition)
 
       // Create a task with low priority
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'low')
 
       // Verify no urgent supertag
@@ -851,22 +854,22 @@ describe('AutomationService', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'low' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'low' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'remove_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
       automationService.create(db, definition)
 
       // Create a high priority task with urgent supertag
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       addNodeSupertag(db, taskId, 'supertag:urgent')
       setProperty(db, taskId, 'field:priority', 'high')
 
@@ -895,13 +898,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'auto-set',
         },
       }
@@ -909,7 +912,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Verify automation did NOT fire
       expect(getPropertyValue(db, taskId, 'field:status')).toBeNull()
@@ -922,13 +925,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'auto-set',
         },
       }
@@ -936,14 +939,14 @@ describe('AutomationService', () => {
       const automationId = automationService.create(db, definition)
 
       // First task - automation fires
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, task1, 'field:status')).toBe('auto-set')
 
       // Disable the automation
       automationService.setEnabled(db, automationId, false)
 
       // Second task - automation should NOT fire
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, task2, 'field:status')).toBeNull()
     })
 
@@ -954,13 +957,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'auto-set',
         },
       }
@@ -968,14 +971,14 @@ describe('AutomationService', () => {
       const automationId = automationService.create(db, definition)
 
       // First task - automation doesn't fire
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, task1, 'field:status')).toBeNull()
 
       // Enable the automation
       automationService.setEnabled(db, automationId, true)
 
       // Second task - automation should fire
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, task2, 'field:status')).toBe('auto-set')
     })
   })
@@ -994,13 +997,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onChange',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: { $now: true }, // Always a new value
         },
       }
@@ -1008,7 +1011,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create a task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Update content - would cause infinite loop without cycle detection
       // The test passes if this doesn't hang or throw
@@ -1028,15 +1031,15 @@ describe('AutomationService', () => {
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagSystemId: 'supertag:task' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'supertag', supertagId: 'supertag:task' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
           event: 'onEnter',
         },
         action: {
           type: 'add_supertag',
-          supertagSystemId: 'supertag:urgent',
+          supertagId: 'supertag:urgent',
         },
       }
 
@@ -1047,13 +1050,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:urgent' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:urgent' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:notified',
+          fieldId: 'field:notified',
           value: true,
         },
       }
@@ -1062,7 +1065,7 @@ describe('AutomationService', () => {
       automationService.create(db, automationB)
 
       // Create task and set high priority
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'high')
 
       // Both automations should have fired
@@ -1085,13 +1088,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'pending',
         },
       }
@@ -1103,13 +1106,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:priority',
+          fieldId: 'field:priority',
           value: 'normal',
         },
       }
@@ -1118,7 +1121,7 @@ describe('AutomationService', () => {
       automationService.create(db, automation2)
 
       // Create a task
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Both automations should have fired
       expect(getPropertyValue(db, taskId, 'field:status')).toBe('pending')
@@ -1138,13 +1141,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'automated',
         },
       }
@@ -1152,14 +1155,14 @@ describe('AutomationService', () => {
       const automationId = automationService.create(db, definition)
 
       // First task - automation fires
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, task1, 'field:status')).toBe('automated')
 
       // Delete automation
       automationService.delete(db, automationId)
 
       // Second task - automation should NOT fire
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, task2, 'field:status')).toBeNull()
     })
 
@@ -1172,7 +1175,7 @@ describe('AutomationService', () => {
           queryDefinition: { filters: [] },
           event: 'onEnter',
         },
-        action: { type: 'set_property', fieldSystemId: 'field:status', value: 'x' },
+        action: { type: 'set_property', fieldId: 'field:status', value: 'x' },
       }
 
       const automationId = automationService.create(db, definition)
@@ -1199,7 +1202,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'manually-triggered',
         },
       }
@@ -1231,7 +1234,7 @@ describe('AutomationService', () => {
           queryDefinition: { filters: [] },
           event: 'onEnter',
         },
-        action: { type: 'set_property', fieldSystemId: 'field:status', value: 'a' },
+        action: { type: 'set_property', fieldId: 'field:status', value: 'a' },
       }
 
       const definition2: AutomationDefinition = {
@@ -1242,7 +1245,7 @@ describe('AutomationService', () => {
           queryDefinition: { filters: [] },
           event: 'onEnter',
         },
-        action: { type: 'set_property', fieldSystemId: 'field:status', value: 'b' },
+        action: { type: 'set_property', fieldId: 'field:status', value: 'b' },
       }
 
       automationService.create(db, definition1)
@@ -1262,13 +1265,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'automated',
         },
       }
@@ -1277,7 +1280,7 @@ describe('AutomationService', () => {
       automationService.clear()
 
       // Create task - automation should NOT fire
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       expect(getPropertyValue(db, taskId, 'field:status')).toBeNull()
     })
   })
@@ -1330,9 +1333,9 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'SUM',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -1360,7 +1363,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1371,12 +1374,12 @@ describe('AutomationService', () => {
       expect(automationFired).toBe(false)
 
       // Add subscription with amount 50 - total becomes 50, still below 100
-      const sub1 = createNode(db, { content: 'Subscription 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Subscription 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:amount', 50)
       expect(automationFired).toBe(false)
 
       // Add another subscription with amount 60 - total becomes 110, crosses 100
-      const sub2 = createNode(db, { content: 'Subscription 2', supertagSystemId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Subscription 2', supertagId: 'supertag:subscription' })
       setProperty(db, sub2, 'field:amount', 60)
 
       // Automation should have fired
@@ -1392,7 +1395,7 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'COUNT',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
         },
       })
@@ -1420,7 +1423,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1428,19 +1431,19 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Add first subscription - count is 1
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(0)
 
       // Add second subscription - count is 2
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(0)
 
       // Add third subscription - count is 3, crosses threshold
-      createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(1)
 
       // Add fourth subscription - count is 4, still above threshold but should NOT fire again
-      createNode(db, { content: 'Sub 4', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 4', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(1) // Still 1, not 2
 
       consoleWarnSpy.mockRestore()
@@ -1453,9 +1456,9 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'SUM',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -1482,7 +1485,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1490,12 +1493,12 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Add subscription with amount 80 - below threshold
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:amount', 80)
       expect(fireCount).toBe(0)
 
       // Add subscription with amount 30 - total is 110, crosses threshold
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       setProperty(db, sub2, 'field:amount', 30)
       expect(fireCount).toBe(1)
 
@@ -1513,9 +1516,9 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'SUM',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -1542,7 +1545,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1550,7 +1553,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Add subscription with amount 150 - crosses threshold
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:amount', 150)
       expect(fireCount).toBe(1)
 
@@ -1575,7 +1578,7 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'COUNT',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
         },
       })
@@ -1602,7 +1605,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1610,11 +1613,11 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Add first subscription - count is 1
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(0)
 
       // Add second subscription - count is 2, crosses threshold
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(1)
 
       // Remove supertag from sub2 - count is 1, drops below threshold
@@ -1636,9 +1639,9 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'SUM',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -1664,7 +1667,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'low_alert',
         },
       }
@@ -1684,7 +1687,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'high_alert',
         },
       }
@@ -1696,16 +1699,16 @@ describe('AutomationService', () => {
       expect(automationService.activeCount()).toBe(2)
 
       // Add subscription with amount 30 - below both thresholds
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:amount', 30)
 
       // Add subscription with amount 30 - total is 60, crosses low threshold but not high
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       setProperty(db, sub2, 'field:amount', 30)
       // Low threshold should have fired (>50), high should not (<=100)
 
       // Add subscription with amount 50 - total is 110, crosses high threshold
-      const sub3 = createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      const sub3 = createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
       setProperty(db, sub3, 'field:amount', 50)
       // High threshold should have fired now
 
@@ -1722,7 +1725,7 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'COUNT',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
         },
       })
@@ -1750,7 +1753,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'low',
         },
       }
@@ -1762,8 +1765,8 @@ describe('AutomationService', () => {
       expect(ltFired).toBe(false)
 
       // Add 2 subscriptions - count is 2, not < 2
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(ltFired).toBe(false) // Still false - never crossed
 
       // Remove one - count is 1, now < 2 (crossed from not-meeting to meeting)
@@ -1780,7 +1783,7 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'COUNT',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
         },
       })
@@ -1807,7 +1810,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'exactly_three',
         },
       }
@@ -1815,15 +1818,15 @@ describe('AutomationService', () => {
       automationService.create(db, eqDefinition)
 
       // Add first subscription - count is 1
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(eqFired).toBe(false)
 
       // Add second subscription - count is 2
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(eqFired).toBe(false)
 
       // Add third subscription - count is 3, equals threshold
-      createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
       expect(eqFired).toBe(true)
 
       consoleWarnSpy.mockRestore()
@@ -1836,9 +1839,9 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'SUM',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -1864,7 +1867,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'low_sum',
         },
       }
@@ -1872,7 +1875,7 @@ describe('AutomationService', () => {
       automationService.create(db, lteDefinition)
 
       // Add subscription with amount 100 - above threshold
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:amount', 100)
       expect(lteFired).toBe(false)
 
@@ -1885,9 +1888,9 @@ describe('AutomationService', () => {
 
     it('should not fire when threshold is already met at creation', () => {
       // First create subscriptions that already meet the threshold
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:amount', 100)
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       setProperty(db, sub2, 'field:amount', 100)
 
       // Create computed field - initial value is 200
@@ -1896,9 +1899,9 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'SUM',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -1924,7 +1927,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1957,7 +1960,7 @@ describe('AutomationService', () => {
         definition: {
           aggregation: 'COUNT',
           query: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
           },
         },
       })
@@ -1984,7 +1987,7 @@ describe('AutomationService', () => {
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'alert',
         },
       }
@@ -1992,8 +1995,8 @@ describe('AutomationService', () => {
       const automationId = automationService.create(db, definition)
 
       // Trigger the threshold
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(1)
 
       // Verify state is persisted
@@ -2023,13 +2026,13 @@ describe('AutomationService', () => {
         trigger: {
           type: 'query_membership',
           queryDefinition: {
-            filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+            filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
           },
           event: 'onEnter',
         },
         action: {
           type: 'set_property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           value: 'test',
         },
       }
@@ -2037,7 +2040,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Create task - should not throw
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Verify the action executed (no error in this case)
       expect(getPropertyValue(db, taskId, 'field:status')).toBe('test')

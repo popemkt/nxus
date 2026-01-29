@@ -173,7 +173,7 @@ describe('QuerySubscriptionService', () => {
   describe('subscribe() - initial results', () => {
     it('should return subscription handle with id', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const handle = service.subscribe(db, query, vi.fn())
@@ -186,12 +186,12 @@ describe('QuerySubscriptionService', () => {
 
     it('should evaluate query and provide initial results via getLastResults()', () => {
       // Create some tasks
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-      createNode(db, { content: 'Project 1', supertagSystemId: 'supertag:project' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+      createNode(db, { content: 'Project 1', supertagId: 'supertag:project' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -208,7 +208,7 @@ describe('QuerySubscriptionService', () => {
 
     it('should handle empty initial results', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -232,10 +232,10 @@ describe('QuerySubscriptionService', () => {
 
     it('should track active subscriptions', () => {
       const query1: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
       const query2: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:project' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
       }
 
       service.subscribe(db, query1, vi.fn())
@@ -255,14 +255,14 @@ describe('QuerySubscriptionService', () => {
   describe('detect node added to query results', () => {
     it('should detect when node created matches filter', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
       service.subscribe(db, query, callback)
 
       // Create a new task - should trigger callback
-      const newTaskId = createNode(db, { content: 'New Task', supertagSystemId: 'supertag:task' })
+      const newTaskId = createNode(db, { content: 'New Task', supertagId: 'supertag:task' })
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as QueryResultChangeEvent
@@ -277,7 +277,7 @@ describe('QuerySubscriptionService', () => {
       const nodeId = createNode(db, { content: 'Plain Node' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -298,14 +298,14 @@ describe('QuerySubscriptionService', () => {
 
     it('should detect when property change makes node match filter', () => {
       // Create task with status 'pending'
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'pending')
 
       // Query for tasks with status 'done'
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
-          { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
       }
 
@@ -326,14 +326,14 @@ describe('QuerySubscriptionService', () => {
 
     it('should not trigger for nodes not matching filter', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
       service.subscribe(db, query, callback)
 
       // Create a project (not a task)
-      createNode(db, { content: 'Project', supertagSystemId: 'supertag:project' })
+      createNode(db, { content: 'Project', supertagId: 'supertag:project' })
 
       expect(callback).not.toHaveBeenCalled()
     })
@@ -345,10 +345,10 @@ describe('QuerySubscriptionService', () => {
 
   describe('detect node removed from query results', () => {
     it('should detect when node deleted', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -368,10 +368,10 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should detect when supertag removed makes node not match filter', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -388,14 +388,14 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should detect when property change makes node not match filter', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'done')
 
       // Query for done tasks
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
-          { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
       }
 
@@ -421,10 +421,10 @@ describe('QuerySubscriptionService', () => {
 
   describe('detect node changed (still matches but different)', () => {
     it('should detect when matching node content changes', () => {
-      const taskId = createNode(db, { content: 'Original content', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Original content', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -443,11 +443,11 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should detect when matching node property changes (not in filter)', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:priority', 'low')
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -463,10 +463,10 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should detect when supertag added to already-matching node', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -489,7 +489,7 @@ describe('QuerySubscriptionService', () => {
   describe('multiple subscriptions', () => {
     it('should deliver same events to multiple subscriptions of same query', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback1 = vi.fn()
@@ -497,7 +497,7 @@ describe('QuerySubscriptionService', () => {
       service.subscribe(db, query, callback1)
       service.subscribe(db, query, callback2)
 
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       expect(callback1).toHaveBeenCalledTimes(1)
       expect(callback2).toHaveBeenCalledTimes(1)
@@ -511,10 +511,10 @@ describe('QuerySubscriptionService', () => {
 
     it('should handle different queries independently', () => {
       const taskQuery: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
       const projectQuery: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:project' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
       }
 
       const taskCallback = vi.fn()
@@ -523,13 +523,13 @@ describe('QuerySubscriptionService', () => {
       service.subscribe(db, projectQuery, projectCallback)
 
       // Create a task
-      createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       expect(taskCallback).toHaveBeenCalledTimes(1)
       expect(projectCallback).not.toHaveBeenCalled()
 
       // Create a project
-      createNode(db, { content: 'Project', supertagSystemId: 'supertag:project' })
+      createNode(db, { content: 'Project', supertagId: 'supertag:project' })
 
       expect(taskCallback).toHaveBeenCalledTimes(1) // Still 1
       expect(projectCallback).toHaveBeenCalledTimes(1)
@@ -543,41 +543,41 @@ describe('QuerySubscriptionService', () => {
   describe('unsubscribe()', () => {
     it('should stop receiving events after unsubscribe via handle', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
       const handle = service.subscribe(db, query, callback)
 
       // First mutation - should receive
-      createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       expect(callback).toHaveBeenCalledTimes(1)
 
       // Unsubscribe
       handle.unsubscribe()
 
       // Second mutation - should NOT receive
-      createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       expect(callback).toHaveBeenCalledTimes(1) // Still 1
     })
 
     it('should stop receiving events after unsubscribe via service', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
       const handle = service.subscribe(db, query, callback)
 
       // First mutation - should receive
-      createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       expect(callback).toHaveBeenCalledTimes(1)
 
       // Unsubscribe via service
       service.unsubscribe(handle.id)
 
       // Second mutation - should NOT receive
-      createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       expect(callback).toHaveBeenCalledTimes(1) // Still 1
     })
 
@@ -596,10 +596,10 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should return empty array from getLastResults after unsubscribe', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const handle = service.subscribe(db, query, vi.fn())
@@ -617,16 +617,16 @@ describe('QuerySubscriptionService', () => {
   describe('rapid mutations (no batching in Phase 1)', () => {
     it('should trigger multiple callbacks for rapid mutations', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
       service.subscribe(db, query, callback)
 
       // Rapid mutations
-      createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-      createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+      createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
 
       // In Phase 1, each mutation triggers a separate callback
       expect(callback).toHaveBeenCalledTimes(3)
@@ -634,15 +634,15 @@ describe('QuerySubscriptionService', () => {
 
     it('should provide accurate results for each rapid mutation', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
       const handle = service.subscribe(db, query, callback)
 
-      const id1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      const id2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-      const id3 = createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+      const id1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      const id2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+      const id3 = createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
 
       expect(callback).toHaveBeenCalledTimes(3)
 
@@ -662,11 +662,11 @@ describe('QuerySubscriptionService', () => {
   describe('query with supertag filter', () => {
     it('should work with supertag inheritance', () => {
       // Task extends Item, so querying for Item should include Tasks
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Query for Item (parent of Task)
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: true }],
+        filters: [{ type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: true }],
       }
 
       const callback = vi.fn()
@@ -678,11 +678,11 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should not include inherited supertags when includeInherited=false', () => {
-      createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Query for Item without inheritance
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false }],
+        filters: [{ type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false }],
       }
 
       const callback = vi.fn()
@@ -700,15 +700,15 @@ describe('QuerySubscriptionService', () => {
 
   describe('query with property filter', () => {
     it('should filter by property value with eq operator', () => {
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       setProperty(db, task1, 'field:status', 'done')
       setProperty(db, task2, 'field:status', 'pending')
 
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
-          { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
       }
 
@@ -721,15 +721,15 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should filter by numeric property value', () => {
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       setProperty(db, task1, 'field:count', 10)
       setProperty(db, task2, 'field:count', 5)
 
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
-          { type: 'property', fieldSystemId: 'field:count', op: 'gt', value: 7 },
+          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'property', fieldId: 'field:count', op: 'gt', value: 7 },
         ],
       }
 
@@ -748,8 +748,8 @@ describe('QuerySubscriptionService', () => {
 
   describe('query with logical AND/OR filters', () => {
     it('should handle AND filter correctly', () => {
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       setProperty(db, task1, 'field:status', 'done')
       setProperty(db, task1, 'field:priority', 'high')
       setProperty(db, task2, 'field:status', 'done')
@@ -758,12 +758,12 @@ describe('QuerySubscriptionService', () => {
       // Query: done AND high priority
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task' },
           {
             type: 'and',
             filters: [
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
         ],
@@ -778,9 +778,9 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should handle OR filter correctly', () => {
-      const task1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      const task2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-      const task3 = createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+      const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+      const task3 = createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
       setProperty(db, task1, 'field:status', 'done')
       setProperty(db, task2, 'field:priority', 'high')
       setProperty(db, task3, 'field:status', 'pending')
@@ -789,12 +789,12 @@ describe('QuerySubscriptionService', () => {
       // Query: done OR high priority
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task' },
           {
             type: 'or',
             filters: [
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
         ],
@@ -811,19 +811,19 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should detect changes with OR filter', () => {
-      const taskId = createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
       setProperty(db, taskId, 'field:status', 'pending')
       setProperty(db, taskId, 'field:priority', 'low')
 
       // Query: done OR high priority
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task' },
           {
             type: 'or',
             filters: [
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
+              { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
             ],
           },
         ],
@@ -852,7 +852,7 @@ describe('QuerySubscriptionService', () => {
   describe('refreshAll()', () => {
     it('should force re-evaluate all subscriptions', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -884,7 +884,7 @@ describe('QuerySubscriptionService', () => {
 
     it('should not trigger callback if no changes', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -917,7 +917,7 @@ describe('QuerySubscriptionService', () => {
 
     it('should stop all event delivery after clear', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -926,7 +926,7 @@ describe('QuerySubscriptionService', () => {
       service.clear()
 
       // Create a task - should NOT trigger callback
-      createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       expect(callback).not.toHaveBeenCalled()
     })
@@ -941,7 +941,7 @@ describe('QuerySubscriptionService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const failingCallback: QueryResultChangeCallback = () => {
@@ -953,7 +953,7 @@ describe('QuerySubscriptionService', () => {
       service.subscribe(db, query, successCallback)
 
       // Create a task - should trigger both callbacks
-      createNode(db, { content: 'Task', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       // Success callback should still be called
       expect(successCallback).toHaveBeenCalledTimes(1)
@@ -1013,11 +1013,11 @@ describe('QuerySubscriptionService', () => {
 
   describe('totalCount in events', () => {
     it('should include totalCount in change events', () => {
-      createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-      createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+      createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
       const callback = vi.fn()
@@ -1026,7 +1026,7 @@ describe('QuerySubscriptionService', () => {
       expect(handle.getLastResults().length).toBe(2)
 
       // Add a third task
-      createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+      createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
 
       const event = callback.mock.calls[0][0] as QueryResultChangeEvent
       expect(event.totalCount).toBe(3)
@@ -1067,20 +1067,20 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(0)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         service.subscribe(db, query, callback)
 
         // Each mutation should trigger immediately
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
         expect(callback).toHaveBeenCalledTimes(1)
 
-        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
         expect(callback).toHaveBeenCalledTimes(2)
 
-        createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
         expect(callback).toHaveBeenCalledTimes(3)
       })
     })
@@ -1090,16 +1090,16 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         service.subscribe(db, query, callback)
 
         // Rapid mutations - should be batched
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-        createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+        createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
 
         // Callback should not be called yet (mutations are pending)
         expect(callback).toHaveBeenCalledTimes(0)
@@ -1117,16 +1117,16 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         const handle = service.subscribe(db, query, callback)
 
         // Create 3 tasks rapidly
-        const id1 = createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-        const id2 = createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-        const id3 = createNode(db, { content: 'Task 3', supertagSystemId: 'supertag:task' })
+        const id1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+        const id2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+        const id3 = createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
 
         // Wait for batch to process
         await new Promise((resolve) => setTimeout(resolve, 60))
@@ -1144,13 +1144,13 @@ describe('QuerySubscriptionService', () => {
         // Create initial task
         const existingTaskId = createNode(db, {
           content: 'Existing Task',
-          supertagSystemId: 'supertag:task',
+          supertagId: 'supertag:task',
         })
 
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
@@ -1159,9 +1159,9 @@ describe('QuerySubscriptionService', () => {
         expect(handle.getLastResults().length).toBe(1)
 
         // Rapid mutations: add one, delete existing, add another
-        const newId1 = createNode(db, { content: 'New Task 1', supertagSystemId: 'supertag:task' })
+        const newId1 = createNode(db, { content: 'New Task 1', supertagId: 'supertag:task' })
         deleteNode(db, existingTaskId)
-        const newId2 = createNode(db, { content: 'New Task 2', supertagSystemId: 'supertag:task' })
+        const newId2 = createNode(db, { content: 'New Task 2', supertagId: 'supertag:task' })
 
         // Wait for batch to process
         await new Promise((resolve) => setTimeout(resolve, 60))
@@ -1180,13 +1180,13 @@ describe('QuerySubscriptionService', () => {
         // Create initial task
         const taskId = createNode(db, {
           content: 'Original content',
-          supertagSystemId: 'supertag:task',
+          supertagId: 'supertag:task',
         })
 
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
@@ -1211,21 +1211,21 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         service.subscribe(db, query, callback)
 
         // First mutation
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
 
         // Wait 30ms (less than debounce window)
         await new Promise((resolve) => setTimeout(resolve, 30))
         expect(callback).toHaveBeenCalledTimes(0)
 
         // Second mutation should reset the timer
-        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
 
         // Wait another 30ms (still within reset window)
         await new Promise((resolve) => setTimeout(resolve, 30))
@@ -1244,15 +1244,15 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(1000) // Long debounce
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         service.subscribe(db, query, callback)
 
         // Create nodes (will be batched)
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
         expect(callback).toHaveBeenCalledTimes(0)
 
         // Flush immediately
@@ -1267,13 +1267,13 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         service.subscribe(db, query, callback)
 
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
         service.flushPendingMutations()
         expect(callback).toHaveBeenCalledTimes(1)
 
@@ -1284,7 +1284,7 @@ describe('QuerySubscriptionService', () => {
 
       it('should be no-op when no pending mutations', () => {
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
@@ -1301,10 +1301,10 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const taskQuery: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
         const projectQuery: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:project' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
         }
 
         const taskCallback = vi.fn()
@@ -1313,9 +1313,9 @@ describe('QuerySubscriptionService', () => {
         service.subscribe(db, projectQuery, projectCallback)
 
         // Create multiple tasks rapidly
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
-        createNode(db, { content: 'Task 2', supertagSystemId: 'supertag:task' })
-        createNode(db, { content: 'Project 1', supertagSystemId: 'supertag:project' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
+        createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
+        createNode(db, { content: 'Project 1', supertagId: 'supertag:project' })
 
         // Wait for batch
         await new Promise((resolve) => setTimeout(resolve, 60))
@@ -1337,13 +1337,13 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(100)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
         }
 
         const callback = vi.fn()
         service.subscribe(db, query, callback)
 
-        createNode(db, { content: 'Task 1', supertagSystemId: 'supertag:task' })
+        createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
         expect(callback).toHaveBeenCalledTimes(0)
 
         // Clear should discard pending mutations

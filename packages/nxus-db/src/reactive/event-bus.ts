@@ -46,16 +46,16 @@ export function createEventBus(): EventBus {
       }
     }
 
-    // Check field system ID filter (for property events)
-    if (filter.fieldSystemIds && filter.fieldSystemIds.length > 0) {
-      if (!event.fieldSystemId || !filter.fieldSystemIds.includes(event.fieldSystemId)) {
+    // Check field ID filter (for property events)
+    if (filter.fieldIds && filter.fieldIds.length > 0) {
+      if (!event.fieldId || !filter.fieldIds.includes(event.fieldId)) {
         return false
       }
     }
 
-    // Check supertag system ID filter (for supertag events)
-    if (filter.supertagSystemIds && filter.supertagSystemIds.length > 0) {
-      if (!event.supertagSystemId || !filter.supertagSystemIds.includes(event.supertagSystemId)) {
+    // Check supertag ID filter (for supertag events)
+    if (filter.supertagIds && filter.supertagIds.length > 0) {
+      if (!event.supertagId || !filter.supertagIds.includes(event.supertagId)) {
         return false
       }
     }

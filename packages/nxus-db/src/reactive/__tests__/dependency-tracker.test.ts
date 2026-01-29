@@ -38,7 +38,7 @@ describe('extractFilterDependencies', () => {
     it('should extract supertag dependency', () => {
       const filter: QueryFilter = {
         type: 'supertag',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
         includeInherited: true,
       }
 
@@ -50,21 +50,22 @@ describe('extractFilterDependencies', () => {
     it('should also depend on field:supertag', () => {
       const filter: QueryFilter = {
         type: 'supertag',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
         includeInherited: true,
       }
 
       const deps = extractFilterDependencies(filter)
 
-      // Supertag filters depend on field:supertag because createNode
-      // sets supertags via setProperty which emits property:set
-      expect(deps.has('field:supertag')).toBe(true)
+      // Supertag filters no longer depend on field:supertag since
+      // createNode now emits supertag:added events directly.
+      // Instead, they depend on supertag:{id} and ANY_SUPERTAG marker.
+      expect(deps.has(`supertag:${filter.supertagId}`)).toBe(true)
     })
 
     it('should include ANY_SUPERTAG marker for inherited queries', () => {
       const filter: QueryFilter = {
         type: 'supertag',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
         includeInherited: true,
       }
 
@@ -76,7 +77,7 @@ describe('extractFilterDependencies', () => {
     it('should not include ANY_SUPERTAG when includeInherited is false', () => {
       const filter: QueryFilter = {
         type: 'supertag',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
         includeInherited: false,
       }
 
@@ -87,10 +88,10 @@ describe('extractFilterDependencies', () => {
   })
 
   describe('property filter', () => {
-    it('should extract fieldSystemId dependency', () => {
+    it('should extract fieldId dependency', () => {
       const filter: QueryFilter = {
         type: 'property',
-        fieldSystemId: 'field:status',
+        fieldId: 'field:status',
         op: 'eq',
         value: 'done',
       }
@@ -103,7 +104,7 @@ describe('extractFilterDependencies', () => {
     it('should work with different operators', () => {
       const filter: QueryFilter = {
         type: 'property',
-        fieldSystemId: 'field:priority',
+        fieldId: 'field:priority',
         op: 'gt',
         value: 5,
       }
@@ -153,11 +154,11 @@ describe('extractFilterDependencies', () => {
       expect(deps.has(DEPENDENCY_MARKERS.OWNER)).toBe(true)
     })
 
-    it('should extract fieldSystemId for linksTo with specific field', () => {
+    it('should extract fieldId for linksTo with specific field', () => {
       const filter: QueryFilter = {
         type: 'relation',
         relationType: 'linksTo',
-        fieldSystemId: 'field:assignee',
+        fieldId: 'field:assignee',
         targetNodeId: 'user-node-id',
       }
 
@@ -208,10 +209,10 @@ describe('extractFilterDependencies', () => {
   })
 
   describe('hasField filter', () => {
-    it('should extract fieldSystemId dependency', () => {
+    it('should extract fieldId dependency', () => {
       const filter: QueryFilter = {
         type: 'hasField',
-        fieldSystemId: 'field:description',
+        fieldId: 'field:description',
         negate: false,
       }
 
@@ -223,7 +224,7 @@ describe('extractFilterDependencies', () => {
     it('should work with negated filter', () => {
       const filter: QueryFilter = {
         type: 'hasField',
-        fieldSystemId: 'field:archived',
+        fieldId: 'field:archived',
         negate: true,
       }
 
@@ -238,8 +239,8 @@ describe('extractFilterDependencies', () => {
       const filter: QueryFilter = {
         type: 'and',
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task', includeInherited: true },
-          { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
+          { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
       }
 
@@ -253,8 +254,8 @@ describe('extractFilterDependencies', () => {
       const filter: QueryFilter = {
         type: 'or',
         filters: [
-          { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'high' },
-          { type: 'property', fieldSystemId: 'field:urgent', op: 'eq', value: true },
+          { type: 'property', fieldId: 'field:priority', op: 'eq', value: 'high' },
+          { type: 'property', fieldId: 'field:urgent', op: 'eq', value: true },
         ],
       }
 
@@ -268,7 +269,7 @@ describe('extractFilterDependencies', () => {
       const filter: QueryFilter = {
         type: 'not',
         filters: [
-          { type: 'property', fieldSystemId: 'field:archived', op: 'eq', value: true },
+          { type: 'property', fieldId: 'field:archived', op: 'eq', value: true },
         ],
       }
 
@@ -281,12 +282,12 @@ describe('extractFilterDependencies', () => {
       const filter: QueryFilter = {
         type: 'and',
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:project', includeInherited: true },
+          { type: 'supertag', supertagId: 'supertag:project', includeInherited: true },
           {
             type: 'or',
             filters: [
-              { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'active' },
-              { type: 'property', fieldSystemId: 'field:priority', op: 'gt', value: 5 },
+              { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
+              { type: 'property', fieldId: 'field:priority', op: 'gt', value: 5 },
             ],
           },
         ],
@@ -319,8 +320,8 @@ describe('extractQueryDependencies', () => {
   it('should combine dependencies from all filters', () => {
     const query: QueryDefinition = {
       filters: [
-        { type: 'supertag', supertagSystemId: 'supertag:task', includeInherited: true },
-        { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'pending' },
+        { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
+        { type: 'property', fieldId: 'field:status', op: 'eq', value: 'pending' },
         { type: 'content', query: 'urgent', caseSensitive: false },
       ],
     }
@@ -335,7 +336,7 @@ describe('extractQueryDependencies', () => {
 
   it('should include sort field as dependency', () => {
     const query: QueryDefinition = {
-      filters: [{ type: 'supertag', supertagSystemId: 'supertag:task', includeInherited: true }],
+      filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
       sort: { field: 'field:dueDate', direction: 'asc' },
     }
 
@@ -450,12 +451,12 @@ describe('getMutationAffectedDependencies', () => {
   })
 
   describe('property events', () => {
-    it('should include fieldSystemId for property:set', () => {
+    it('should include fieldId for property:set', () => {
       const event: MutationEvent = {
         type: 'property:set',
         timestamp: new Date(),
         nodeId: 'node-id',
-        fieldSystemId: 'field:status',
+        fieldId: 'field:status',
         afterValue: 'done',
       }
 
@@ -464,12 +465,12 @@ describe('getMutationAffectedDependencies', () => {
       expect(affected.has('field:status')).toBe(true)
     })
 
-    it('should include fieldSystemId for property:added', () => {
+    it('should include fieldId for property:added', () => {
       const event: MutationEvent = {
         type: 'property:added',
         timestamp: new Date(),
         nodeId: 'node-id',
-        fieldSystemId: 'field:tags',
+        fieldId: 'field:tags',
         afterValue: 'important',
       }
 
@@ -478,12 +479,12 @@ describe('getMutationAffectedDependencies', () => {
       expect(affected.has('field:tags')).toBe(true)
     })
 
-    it('should include fieldSystemId for property:removed', () => {
+    it('should include fieldId for property:removed', () => {
       const event: MutationEvent = {
         type: 'property:removed',
         timestamp: new Date(),
         nodeId: 'node-id',
-        fieldSystemId: 'field:assignee',
+        fieldId: 'field:assignee',
         beforeValue: 'user-123',
       }
 
@@ -497,7 +498,7 @@ describe('getMutationAffectedDependencies', () => {
         type: 'property:set',
         timestamp: new Date(),
         nodeId: 'node-id',
-        fieldSystemId: 'field:status',
+        fieldId: 'field:status',
       }
 
       const affected = getMutationAffectedDependencies(event)
@@ -512,7 +513,7 @@ describe('getMutationAffectedDependencies', () => {
         type: 'supertag:added',
         timestamp: new Date(),
         nodeId: 'node-id',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
       }
 
       const affected = getMutationAffectedDependencies(event)
@@ -525,7 +526,7 @@ describe('getMutationAffectedDependencies', () => {
         type: 'supertag:removed',
         timestamp: new Date(),
         nodeId: 'node-id',
-        supertagSystemId: 'supertag:project',
+        supertagId: 'supertag:project',
       }
 
       const affected = getMutationAffectedDependencies(event)
@@ -538,7 +539,7 @@ describe('getMutationAffectedDependencies', () => {
         type: 'supertag:added',
         timestamp: new Date(),
         nodeId: 'node-id',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
       }
 
       const affected = getMutationAffectedDependencies(event)
@@ -551,7 +552,7 @@ describe('getMutationAffectedDependencies', () => {
         type: 'supertag:added',
         timestamp: new Date(),
         nodeId: 'node-id',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
       }
 
       const affected = getMutationAffectedDependencies(event)
@@ -570,7 +571,7 @@ describe('DependencyTracker', () => {
     it('should register a subscription and track its dependencies', () => {
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:task', includeInherited: true },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
         ],
       }
 
@@ -583,10 +584,10 @@ describe('DependencyTracker', () => {
 
     it('should update dependencies when re-registering', () => {
       const query1: QueryDefinition = {
-        filters: [{ type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'a' }],
+        filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'a' }],
       }
       const query2: QueryDefinition = {
-        filters: [{ type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: 'b' }],
+        filters: [{ type: 'property', fieldId: 'field:priority', op: 'eq', value: 'b' }],
       }
 
       tracker.register('sub-1', query1)
@@ -612,7 +613,7 @@ describe('DependencyTracker', () => {
   describe('unregister()', () => {
     it('should remove subscription from tracking', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'a' }],
+        filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'a' }],
       }
 
       tracker.register('sub-1', query)
@@ -631,10 +632,10 @@ describe('DependencyTracker', () => {
     beforeEach(() => {
       // Register several subscriptions with different dependencies
       tracker.register('task-query', {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:task', includeInherited: true }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
       })
       tracker.register('status-query', {
-        filters: [{ type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'done' }],
+        filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' }],
       })
       tracker.register('content-query', {
         filters: [{ type: 'content', query: 'urgent', caseSensitive: false }],
@@ -674,7 +675,7 @@ describe('DependencyTracker', () => {
         type: 'property:set',
         timestamp: new Date(),
         nodeId: 'some-node',
-        fieldSystemId: 'field:status',
+        fieldId: 'field:status',
         afterValue: 'pending',
       }
 
@@ -708,7 +709,7 @@ describe('DependencyTracker', () => {
         type: 'supertag:added',
         timestamp: new Date(),
         nodeId: 'some-node',
-        supertagSystemId: 'supertag:task',
+        supertagId: 'supertag:task',
       }
 
       const result = tracker.getAffectedSubscriptions(event)
@@ -722,7 +723,7 @@ describe('DependencyTracker', () => {
         type: 'property:set',
         timestamp: new Date(),
         nodeId: 'some-node',
-        fieldSystemId: 'field:unrelated',
+        fieldId: 'field:unrelated',
         afterValue: 'value',
       }
 
@@ -732,20 +733,22 @@ describe('DependencyTracker', () => {
       expect(result.affectedIds.size).toBe(0)
     })
 
-    it('should return task-query for field:supertag property change', () => {
-      // When a supertag is set via setProperty (as createNode does),
-      // the task-query should be affected because it depends on field:supertag
+    it('should NOT return task-query for field:supertag property change (use supertag:added event instead)', () => {
+      // Supertag filters now depend on supertag:added/removed events, not property:set on field:supertag
+      // The createNode function emits supertag:added after setting the property
       const event: MutationEvent = {
         type: 'property:set',
         timestamp: new Date(),
         nodeId: 'some-node',
-        fieldSystemId: 'field:supertag',
+        fieldId: 'field:supertag',
         afterValue: 'supertag-node-id',
       }
 
       const result = tracker.getAffectedSubscriptions(event)
 
-      expect(result.affectedIds.has('task-query')).toBe(true)
+      // Supertag queries are not affected by generic property:set on field:supertag
+      // They are affected by supertag:added/supertag:removed events
+      expect(result.affectedIds.has('task-query')).toBe(false)
     })
   })
 
@@ -777,21 +780,21 @@ describe('DependencyTracker', () => {
 
     it('should clear reverse index as well', () => {
       tracker.register('sub-1', {
-        filters: [{ type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'a' }],
+        filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'a' }],
       })
 
       tracker.clear()
 
       // Register new subscription and verify it's tracked properly
       tracker.register('sub-2', {
-        filters: [{ type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'b' }],
+        filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'b' }],
       })
 
       const event: MutationEvent = {
         type: 'property:set',
         timestamp: new Date(),
         nodeId: 'node',
-        fieldSystemId: 'field:status',
+        fieldId: 'field:status',
       }
 
       const result = tracker.getAffectedSubscriptions(event)

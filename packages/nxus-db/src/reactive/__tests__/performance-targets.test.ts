@@ -157,7 +157,7 @@ function createManyNodesQuick(count: number): string[] {
 
   for (let i = 0; i < count; i++) {
     const nodeId = `node-${i}-${Math.random().toString(36).substring(7)}`
-    const supertagSystemId = supertags[i % supertags.length]
+    const supertagId = supertags[i % supertags.length]
 
     // Direct SQL insert for speed (bypasses event emission)
     sqlite.exec(`
@@ -168,7 +168,7 @@ function createManyNodesQuick(count: number): string[] {
     // Add supertag property
     sqlite.exec(`
       INSERT INTO node_properties (node_id, field_node_id, value, "order", created_at, updated_at)
-      VALUES ('${nodeId}', 'field-supertag', '"${supertagSystemId}"', 0, ${now}, ${now})
+      VALUES ('${nodeId}', 'field-supertag', '"${supertagId}"', 0, ${now}, ${now})
     `)
 
     // Set some properties
@@ -207,7 +207,7 @@ function createDiverseSubscriptions(count: number): void {
       case 0:
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length] },
           ],
         }
         break
@@ -215,8 +215,8 @@ function createDiverseSubscriptions(count: number): void {
       case 1:
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
-            { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length] },
+            { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
           ],
         }
         break
@@ -224,7 +224,7 @@ function createDiverseSubscriptions(count: number): void {
       case 2:
         queryDefinition = {
           filters: [
-            { type: 'property', fieldSystemId: 'field:priority', op: 'eq', value: priorities[i % priorities.length] },
+            { type: 'property', fieldId: 'field:priority', op: 'eq', value: priorities[i % priorities.length] },
           ],
         }
         break
@@ -235,8 +235,8 @@ function createDiverseSubscriptions(count: number): void {
             {
               type: 'or',
               filters: [
-                { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
-                { type: 'property', fieldSystemId: 'field:active', op: 'eq', value: true },
+                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'property', fieldId: 'field:active', op: 'eq', value: true },
               ],
             },
           ],
@@ -250,8 +250,8 @@ function createDiverseSubscriptions(count: number): void {
             {
               type: 'and',
               filters: [
-                { type: 'supertag', supertagSystemId: supertags[i % supertags.length] },
-                { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
+                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
               ],
             },
           ],

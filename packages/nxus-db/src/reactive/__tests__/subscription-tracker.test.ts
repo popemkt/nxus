@@ -176,7 +176,7 @@ function seedSystemNodes() {
 function createSubscription(name: string, monthlyPrice: number): string {
   const nodeId = createNode(db, {
     content: name,
-    supertagSystemId: 'supertag:subscription',
+    supertagId: 'supertag:subscription',
   })
   setProperty(db, nodeId, 'field:monthly_price', monthlyPrice)
   setProperty(db, nodeId, 'field:subscription_name', name)
@@ -244,10 +244,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
-        fieldSystemId: 'field:monthly_price',
+        fieldId: 'field:monthly_price',
       }
 
       const computedFieldId = computedFieldService.create(db, {
@@ -376,10 +376,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
-        fieldSystemId: 'field:monthly_price',
+        fieldId: 'field:monthly_price',
       }
 
       const computedFieldId = computedFieldService.create(db, {
@@ -440,10 +440,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
-        fieldSystemId: 'field:monthly_price',
+        fieldId: 'field:monthly_price',
       }
 
       const computedFieldId = computedFieldService.create(db, {
@@ -513,7 +513,7 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'COUNT',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
       }
@@ -573,10 +573,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'AVG',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
-        fieldSystemId: 'field:monthly_price',
+        fieldId: 'field:monthly_price',
       }
 
       const computedFieldId = computedFieldService.create(db, {
@@ -631,10 +631,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
-        fieldSystemId: 'field:monthly_price',
+        fieldId: 'field:monthly_price',
       }
 
       const computedFieldId = computedFieldService.create(db, {
@@ -705,10 +705,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagSystemId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription' },
           ],
         },
-        fieldSystemId: 'field:monthly_price',
+        fieldId: 'field:monthly_price',
       }
 
       const computedFieldId = computedFieldService.create(db, {

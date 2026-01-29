@@ -40,15 +40,16 @@ export interface MutationEvent {
   type: MutationType
   timestamp: Date
   nodeId: string
-  systemId?: string | null // Node's systemId (for quick filtering)
 
   // Property-specific fields
-  fieldSystemId?: string // e.g., 'field:status'
+  fieldId?: string // UUID of the field node
+  fieldSystemId?: string // SystemId of the field node (for dependency matching)
   beforeValue?: unknown // Previous value (for change detection)
   afterValue?: unknown // New value
 
   // Supertag-specific fields
-  supertagSystemId?: string // e.g., 'supertag:subscription'
+  supertagId?: string // UUID of the supertag node
+  supertagSystemId?: string // SystemId of the supertag node
 }
 
 /**
@@ -62,8 +63,8 @@ export type MutationListener = (event: MutationEvent) => void | Promise<void>
 export interface EventFilter {
   types?: MutationType[] // Filter by event type
   nodeIds?: string[] // Filter by specific node(s)
-  fieldSystemIds?: string[] // Filter by field changes
-  supertagSystemIds?: string[] // Filter by supertag changes
+  fieldIds?: string[] // Filter by field changes (UUIDs)
+  supertagIds?: string[] // Filter by supertag changes (UUIDs)
 }
 
 // ============================================================================
@@ -118,7 +119,7 @@ export const ComputedFieldDefinitionSchema = z.object({
       limit: z.number().optional(),
     }),
   ) as z.ZodType<QueryDefinition>, // Which nodes to aggregate
-  fieldSystemId: z.string().optional(), // Which field to aggregate (for SUM, AVG, etc.)
+  fieldId: z.string().optional(), // UUID of the field to aggregate (for SUM, AVG, etc.)
   parentNodeId: z.string().optional(), // Optional parent (null = global)
 })
 export type ComputedFieldDefinition = z.infer<typeof ComputedFieldDefinitionSchema>
@@ -225,7 +226,7 @@ export type NowMarker = z.infer<typeof NowMarkerSchema>
  */
 export const SetPropertyActionSchema = z.object({
   type: z.literal('set_property'),
-  fieldSystemId: z.string(),
+  fieldId: z.string(), // UUID of the field node
   value: z.union([z.unknown(), NowMarkerSchema]), // Value or { $now: true } for timestamp
 })
 export type SetPropertyAction = z.infer<typeof SetPropertyActionSchema>
@@ -235,7 +236,7 @@ export type SetPropertyAction = z.infer<typeof SetPropertyActionSchema>
  */
 export const AddSupertagActionSchema = z.object({
   type: z.literal('add_supertag'),
-  supertagSystemId: z.string(),
+  supertagId: z.string(), // UUID of the supertag node
 })
 export type AddSupertagAction = z.infer<typeof AddSupertagActionSchema>
 
@@ -244,7 +245,7 @@ export type AddSupertagAction = z.infer<typeof AddSupertagActionSchema>
  */
 export const RemoveSupertagActionSchema = z.object({
   type: z.literal('remove_supertag'),
-  supertagSystemId: z.string(),
+  supertagId: z.string(), // UUID of the supertag node
 })
 export type RemoveSupertagAction = z.infer<typeof RemoveSupertagActionSchema>
 
@@ -254,7 +255,7 @@ export type RemoveSupertagAction = z.infer<typeof RemoveSupertagActionSchema>
 export const CreateNodeActionSchema = z.object({
   type: z.literal('create_node'),
   content: z.string(),
-  supertagSystemId: z.string().optional(),
+  supertagId: z.string().optional(), // UUID of the supertag node
   ownerId: z.string().optional(),
 })
 export type CreateNodeAction = z.infer<typeof CreateNodeActionSchema>

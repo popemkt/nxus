@@ -171,7 +171,7 @@ describe('node.service', () => {
     it('should create a node with supertag', () => {
       const nodeId = createNode(db, {
         content: 'My Item',
-        supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+        supertagId: SYSTEM_SUPERTAGS.ITEM,
       })
 
       const node = findNodeById(db, nodeId)
@@ -258,7 +258,7 @@ describe('node.service', () => {
     it('should assemble node with all properties', () => {
       const nodeId = createNode(db, {
         content: 'Full Node',
-        supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+        supertagId: SYSTEM_SUPERTAGS.ITEM,
       })
       setProperty(db, nodeId, 'field:path', '/test/path')
       setProperty(db, nodeId, 'field:description', 'A test description')
@@ -276,11 +276,11 @@ describe('node.service', () => {
     it('should get nodes with direct supertag', () => {
       createNode(db, {
         content: 'Item 1',
-        supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+        supertagId: SYSTEM_SUPERTAGS.ITEM,
       })
       createNode(db, {
         content: 'Item 2',
-        supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+        supertagId: SYSTEM_SUPERTAGS.ITEM,
       })
 
       const items = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.ITEM)
@@ -291,13 +291,13 @@ describe('node.service', () => {
       // Create an item with #Item supertag
       createNode(db, {
         content: 'Direct Item',
-        supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+        supertagId: SYSTEM_SUPERTAGS.ITEM,
       })
 
       // Create a tool with #Tool supertag (which extends #Item)
       createNode(db, {
         content: 'Tool (inherits Item)',
-        supertagSystemId: 'supertag:tool',
+        supertagId: 'supertag:tool',
       })
 
       // Query for #Item should include both

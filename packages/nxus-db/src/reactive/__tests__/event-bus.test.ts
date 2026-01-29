@@ -181,36 +181,36 @@ describe('EventBus', () => {
     })
   })
 
-  describe('filter by fieldSystemIds', () => {
-    it('only delivers events with matching fieldSystemId', () => {
+  describe('filter by fieldIds', () => {
+    it('only delivers events with matching fieldId', () => {
       const listener = vi.fn()
 
-      eventBus.subscribe(listener, { fieldSystemIds: ['field:status'] })
+      eventBus.subscribe(listener, { fieldIds: ['field:status'] })
 
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:status' }))
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:priority' }))
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:status' }))
-      eventBus.emit(createEvent({ type: 'node:created' })) // No fieldSystemId
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:status' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:priority' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:status' }))
+      eventBus.emit(createEvent({ type: 'node:created' })) // No fieldId
 
       expect(listener).toHaveBeenCalledTimes(2)
     })
 
-    it('handles multiple fieldSystemIds in the filter', () => {
+    it('handles multiple fieldIds in the filter', () => {
       const listener = vi.fn()
 
-      eventBus.subscribe(listener, { fieldSystemIds: ['field:status', 'field:priority'] })
+      eventBus.subscribe(listener, { fieldIds: ['field:status', 'field:priority'] })
 
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:status' }))
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:priority' }))
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:other' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:status' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:priority' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:other' }))
 
       expect(listener).toHaveBeenCalledTimes(2)
     })
 
-    it('events without fieldSystemId do not match fieldSystemIds filter', () => {
+    it('events without fieldId do not match fieldIds filter', () => {
       const listener = vi.fn()
 
-      eventBus.subscribe(listener, { fieldSystemIds: ['field:status'] })
+      eventBus.subscribe(listener, { fieldIds: ['field:status'] })
 
       eventBus.emit(createEvent({ type: 'node:created' }))
       eventBus.emit(createEvent({ type: 'node:updated' }))
@@ -245,32 +245,32 @@ describe('EventBus', () => {
     })
   })
 
-  describe('filter by supertagSystemIds', () => {
-    it('only delivers events with matching supertagSystemId', () => {
+  describe('filter by supertagIds', () => {
+    it('only delivers events with matching supertagId', () => {
       const listener = vi.fn()
 
-      eventBus.subscribe(listener, { supertagSystemIds: ['supertag:task'] })
+      eventBus.subscribe(listener, { supertagIds: ['supertag:task'] })
 
       eventBus.emit(
-        createEvent({ type: 'supertag:added', supertagSystemId: 'supertag:task' }),
+        createEvent({ type: 'supertag:added', supertagId: 'supertag:task' }),
       )
       eventBus.emit(
-        createEvent({ type: 'supertag:added', supertagSystemId: 'supertag:project' }),
+        createEvent({ type: 'supertag:added', supertagId: 'supertag:project' }),
       )
       eventBus.emit(
-        createEvent({ type: 'supertag:removed', supertagSystemId: 'supertag:task' }),
+        createEvent({ type: 'supertag:removed', supertagId: 'supertag:task' }),
       )
 
       expect(listener).toHaveBeenCalledTimes(2)
     })
 
-    it('events without supertagSystemId do not match supertagSystemIds filter', () => {
+    it('events without supertagId do not match supertagIds filter', () => {
       const listener = vi.fn()
 
-      eventBus.subscribe(listener, { supertagSystemIds: ['supertag:task'] })
+      eventBus.subscribe(listener, { supertagIds: ['supertag:task'] })
 
       eventBus.emit(createEvent({ type: 'node:created' }))
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:status' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:status' }))
 
       expect(listener).toHaveBeenCalledTimes(0)
     })
@@ -297,33 +297,33 @@ describe('EventBus', () => {
       expect(listener).toHaveBeenCalledTimes(1)
     })
 
-    it('combines types and fieldSystemIds filters with AND', () => {
+    it('combines types and fieldIds filters with AND', () => {
       const listener = vi.fn()
 
       eventBus.subscribe(listener, {
         types: ['property:set'],
-        fieldSystemIds: ['field:status'],
+        fieldIds: ['field:status'],
       })
 
       // Matches both
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:status' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:status' }))
 
       // Matches type but not field
-      eventBus.emit(createEvent({ type: 'property:set', fieldSystemId: 'field:other' }))
+      eventBus.emit(createEvent({ type: 'property:set', fieldId: 'field:other' }))
 
       // Matches field but not type
-      eventBus.emit(createEvent({ type: 'property:added', fieldSystemId: 'field:status' }))
+      eventBus.emit(createEvent({ type: 'property:added', fieldId: 'field:status' }))
 
       expect(listener).toHaveBeenCalledTimes(1)
     })
 
-    it('combines all three filters: types, nodeIds, and fieldSystemIds', () => {
+    it('combines all three filters: types, nodeIds, and fieldIds', () => {
       const listener = vi.fn()
 
       eventBus.subscribe(listener, {
         types: ['property:set'],
         nodeIds: ['node-1'],
-        fieldSystemIds: ['field:status'],
+        fieldIds: ['field:status'],
       })
 
       // Matches all three
@@ -331,7 +331,7 @@ describe('EventBus', () => {
         createEvent({
           type: 'property:set',
           nodeId: 'node-1',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
         }),
       )
 
@@ -340,7 +340,7 @@ describe('EventBus', () => {
         createEvent({
           type: 'property:added',
           nodeId: 'node-1',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
         }),
       )
 
@@ -349,25 +349,25 @@ describe('EventBus', () => {
         createEvent({
           type: 'property:set',
           nodeId: 'node-2',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
         }),
       )
 
-      // Missing fieldSystemId
+      // Missing fieldId
       eventBus.emit(
-        createEvent({ type: 'property:set', nodeId: 'node-1', fieldSystemId: 'field:other' }),
+        createEvent({ type: 'property:set', nodeId: 'node-1', fieldId: 'field:other' }),
       )
 
       expect(listener).toHaveBeenCalledTimes(1)
     })
 
-    it('combines supertagSystemIds with other filters', () => {
+    it('combines supertagIds with other filters', () => {
       const listener = vi.fn()
 
       eventBus.subscribe(listener, {
         types: ['supertag:added'],
         nodeIds: ['node-1'],
-        supertagSystemIds: ['supertag:task'],
+        supertagIds: ['supertag:task'],
       })
 
       // Matches all
@@ -375,7 +375,7 @@ describe('EventBus', () => {
         createEvent({
           type: 'supertag:added',
           nodeId: 'node-1',
-          supertagSystemId: 'supertag:task',
+          supertagId: 'supertag:task',
         }),
       )
 
@@ -384,7 +384,7 @@ describe('EventBus', () => {
         createEvent({
           type: 'supertag:added',
           nodeId: 'node-1',
-          supertagSystemId: 'supertag:project',
+          supertagId: 'supertag:project',
         }),
       )
 
@@ -393,7 +393,7 @@ describe('EventBus', () => {
         createEvent({
           type: 'supertag:added',
           nodeId: 'node-2',
-          supertagSystemId: 'supertag:task',
+          supertagId: 'supertag:task',
         }),
       )
 

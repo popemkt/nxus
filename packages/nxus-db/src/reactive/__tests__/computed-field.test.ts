@@ -178,7 +178,7 @@ describe('ComputedFieldService', () => {
   describe('create()', () => {
     it('should create computed field node and return its ID', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -195,11 +195,11 @@ describe('ComputedFieldService', () => {
 
     it('should compute initial value on creation', () => {
       // Create some subscriptions first
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -218,7 +218,7 @@ describe('ComputedFieldService', () => {
       expect(service.activeCount()).toBe(0)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       service.create(db, {
@@ -241,12 +241,12 @@ describe('ComputedFieldService', () => {
 
   describe('COUNT aggregation', () => {
     it('should count matching nodes correctly', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
-      createNode(db, { content: 'Order 1', supertagSystemId: 'supertag:order' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -259,7 +259,7 @@ describe('ComputedFieldService', () => {
 
     it('should return 0 for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -272,7 +272,7 @@ describe('ComputedFieldService', () => {
 
     it('should update when matching node is added', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -283,16 +283,16 @@ describe('ComputedFieldService', () => {
       expect(service.getValue(db, id)).toBe(0)
 
       // Add a subscription
-      createNode(db, { content: 'New Sub', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'New Sub', supertagId: 'supertag:subscription' })
 
       expect(service.getValue(db, id)).toBe(1)
     })
 
     it('should update when matching node is removed', () => {
-      const subId = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -315,16 +315,16 @@ describe('ComputedFieldService', () => {
 
   describe('SUM aggregation', () => {
     it('should sum numeric field values correctly', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
-      const sub3 = createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      const sub3 = createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:price', 10)
       setProperty(db, sub2, 'field:price', 25)
       setProperty(db, sub3, 'field:price', 15)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -332,7 +332,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -341,7 +341,7 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -349,7 +349,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -357,14 +357,14 @@ describe('ComputedFieldService', () => {
     })
 
     it('should handle nodes without the field (skip them)', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:price', 30)
       // sub2 has no price
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -372,7 +372,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -380,12 +380,12 @@ describe('ComputedFieldService', () => {
     })
 
     it('should handle string numeric values', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:price', '42.5')
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -393,7 +393,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -401,11 +401,11 @@ describe('ComputedFieldService', () => {
     })
 
     it('should update when matching node field value changes', () => {
-      const subId = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, subId, 'field:price', 20)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -413,7 +413,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -432,16 +432,16 @@ describe('ComputedFieldService', () => {
 
   describe('AVG aggregation', () => {
     it('should compute average correctly', () => {
-      const p1 = createNode(db, { content: 'Product 1', supertagSystemId: 'supertag:product' })
-      const p2 = createNode(db, { content: 'Product 2', supertagSystemId: 'supertag:product' })
-      const p3 = createNode(db, { content: 'Product 3', supertagSystemId: 'supertag:product' })
+      const p1 = createNode(db, { content: 'Product 1', supertagId: 'supertag:product' })
+      const p2 = createNode(db, { content: 'Product 2', supertagId: 'supertag:product' })
+      const p3 = createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
 
       setProperty(db, p1, 'field:rating', 3)
       setProperty(db, p2, 'field:rating', 4)
       setProperty(db, p3, 'field:rating', 5)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:product' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
       }
 
       const id = service.create(db, {
@@ -449,7 +449,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'AVG',
           query,
-          fieldSystemId: 'field:rating',
+          fieldId: 'field:rating',
         },
       })
 
@@ -458,7 +458,7 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:product' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
       }
 
       const id = service.create(db, {
@@ -466,7 +466,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'AVG',
           query,
-          fieldSystemId: 'field:rating',
+          fieldId: 'field:rating',
         },
       })
 
@@ -474,16 +474,16 @@ describe('ComputedFieldService', () => {
     })
 
     it('should only average nodes with the field', () => {
-      const p1 = createNode(db, { content: 'Product 1', supertagSystemId: 'supertag:product' })
-      const p2 = createNode(db, { content: 'Product 2', supertagSystemId: 'supertag:product' })
-      const p3 = createNode(db, { content: 'Product 3', supertagSystemId: 'supertag:product' })
+      const p1 = createNode(db, { content: 'Product 1', supertagId: 'supertag:product' })
+      const p2 = createNode(db, { content: 'Product 2', supertagId: 'supertag:product' })
+      const p3 = createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
 
       setProperty(db, p1, 'field:rating', 2)
       setProperty(db, p2, 'field:rating', 4)
       // p3 has no rating
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:product' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
       }
 
       const id = service.create(db, {
@@ -491,7 +491,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'AVG',
           query,
-          fieldSystemId: 'field:rating',
+          fieldId: 'field:rating',
         },
       })
 
@@ -505,16 +505,16 @@ describe('ComputedFieldService', () => {
 
   describe('MIN aggregation', () => {
     it('should find minimum value correctly', () => {
-      const o1 = createNode(db, { content: 'Order 1', supertagSystemId: 'supertag:order' })
-      const o2 = createNode(db, { content: 'Order 2', supertagSystemId: 'supertag:order' })
-      const o3 = createNode(db, { content: 'Order 3', supertagSystemId: 'supertag:order' })
+      const o1 = createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
+      const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
+      const o3 = createNode(db, { content: 'Order 3', supertagId: 'supertag:order' })
 
       setProperty(db, o1, 'field:amount', 100)
       setProperty(db, o2, 'field:amount', 50)
       setProperty(db, o3, 'field:amount', 75)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
       }
 
       const id = service.create(db, {
@@ -522,7 +522,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'MIN',
           query,
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -531,7 +531,7 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
       }
 
       const id = service.create(db, {
@@ -539,7 +539,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'MIN',
           query,
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -547,11 +547,11 @@ describe('ComputedFieldService', () => {
     })
 
     it('should update when smaller value is added', () => {
-      const o1 = createNode(db, { content: 'Order 1', supertagSystemId: 'supertag:order' })
+      const o1 = createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
       setProperty(db, o1, 'field:amount', 100)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
       }
 
       const id = service.create(db, {
@@ -559,14 +559,14 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'MIN',
           query,
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
       expect(service.getValue(db, id)).toBe(100)
 
       // Add smaller order
-      const o2 = createNode(db, { content: 'Order 2', supertagSystemId: 'supertag:order' })
+      const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
       setProperty(db, o2, 'field:amount', 25)
 
       expect(service.getValue(db, id)).toBe(25)
@@ -579,16 +579,16 @@ describe('ComputedFieldService', () => {
 
   describe('MAX aggregation', () => {
     it('should find maximum value correctly', () => {
-      const o1 = createNode(db, { content: 'Order 1', supertagSystemId: 'supertag:order' })
-      const o2 = createNode(db, { content: 'Order 2', supertagSystemId: 'supertag:order' })
-      const o3 = createNode(db, { content: 'Order 3', supertagSystemId: 'supertag:order' })
+      const o1 = createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
+      const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
+      const o3 = createNode(db, { content: 'Order 3', supertagId: 'supertag:order' })
 
       setProperty(db, o1, 'field:amount', 100)
       setProperty(db, o2, 'field:amount', 250)
       setProperty(db, o3, 'field:amount', 75)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
       }
 
       const id = service.create(db, {
@@ -596,7 +596,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'MAX',
           query,
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -605,7 +605,7 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
       }
 
       const id = service.create(db, {
@@ -613,7 +613,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'MAX',
           query,
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
@@ -621,11 +621,11 @@ describe('ComputedFieldService', () => {
     })
 
     it('should update when larger value is added', () => {
-      const o1 = createNode(db, { content: 'Order 1', supertagSystemId: 'supertag:order' })
+      const o1 = createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
       setProperty(db, o1, 'field:amount', 100)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
       }
 
       const id = service.create(db, {
@@ -633,14 +633,14 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'MAX',
           query,
-          fieldSystemId: 'field:amount',
+          fieldId: 'field:amount',
         },
       })
 
       expect(service.getValue(db, id)).toBe(100)
 
       // Add larger order
-      const o2 = createNode(db, { content: 'Order 2', supertagSystemId: 'supertag:order' })
+      const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
       setProperty(db, o2, 'field:amount', 500)
 
       expect(service.getValue(db, id)).toBe(500)
@@ -654,7 +654,7 @@ describe('ComputedFieldService', () => {
   describe('value updates on data changes', () => {
     it('should update when node added to query results', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -665,20 +665,20 @@ describe('ComputedFieldService', () => {
       expect(service.getValue(db, id)).toBe(0)
 
       // Add subscription
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(service.getValue(db, id)).toBe(1)
 
       // Add another
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(service.getValue(db, id)).toBe(2)
     })
 
     it('should update when node removed from query results', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -698,11 +698,11 @@ describe('ComputedFieldService', () => {
     })
 
     it('should update when node property changes (affects aggregation)', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, sub1, 'field:price', 20)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -710,7 +710,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -727,7 +727,7 @@ describe('ComputedFieldService', () => {
       setProperty(db, nodeId, 'field:price', 15)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -735,7 +735,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -754,7 +754,7 @@ describe('ComputedFieldService', () => {
   describe('onValueChange()', () => {
     it('should notify listener when value changes', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -766,7 +766,7 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, callback)
 
       // Add a subscription - triggers value change
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as ComputedFieldValueChangeEvent
@@ -778,7 +778,7 @@ describe('ComputedFieldService', () => {
 
     it('should not notify listener when value stays the same', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -790,14 +790,14 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, callback)
 
       // Create a non-matching node - doesn't affect count
-      createNode(db, { content: 'Order 1', supertagSystemId: 'supertag:order' })
+      createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
 
       expect(callback).not.toHaveBeenCalled()
     })
 
     it('should return unsubscribe function', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -809,20 +809,20 @@ describe('ComputedFieldService', () => {
       const unsubscribe = service.onValueChange(id, callback)
 
       // First change - should notify
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(callback).toHaveBeenCalledTimes(1)
 
       // Unsubscribe
       unsubscribe()
 
       // Second change - should NOT notify
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(callback).toHaveBeenCalledTimes(1) // Still 1
     })
 
     it('should support multiple listeners for same computed field', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -835,7 +835,7 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, callback1)
       service.onValueChange(id, callback2)
 
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       expect(callback1).toHaveBeenCalledTimes(1)
       expect(callback2).toHaveBeenCalledTimes(1)
@@ -845,7 +845,7 @@ describe('ComputedFieldService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -861,7 +861,7 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, failingCallback)
       service.onValueChange(id, successCallback)
 
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       // Success callback should still be called
       expect(successCallback).toHaveBeenCalledTimes(1)
@@ -877,11 +877,11 @@ describe('ComputedFieldService', () => {
 
   describe('recompute()', () => {
     it('should return current computed value', () => {
-      const subId = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, subId, 'field:price', 100)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -889,7 +889,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -907,11 +907,11 @@ describe('ComputedFieldService', () => {
     })
 
     it('should trigger value change listener when value actually changes', () => {
-      const subId = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       setProperty(db, subId, 'field:price', 50)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -919,7 +919,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -945,7 +945,7 @@ describe('ComputedFieldService', () => {
   describe.skip('getAll()', () => {
     it('should return all computed fields with values', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id1 = service.create(db, {
@@ -955,7 +955,7 @@ describe('ComputedFieldService', () => {
 
       const id2 = service.create(db, {
         name: 'Sum',
-        definition: { aggregation: 'SUM', query, fieldSystemId: 'field:price' },
+        definition: { aggregation: 'SUM', query, fieldId: 'field:price' },
       })
 
       const all = service.getAll(db)
@@ -982,7 +982,7 @@ describe('ComputedFieldService', () => {
   describe('delete()', () => {
     it('should remove computed field and stop tracking', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -1001,7 +1001,7 @@ describe('ComputedFieldService', () => {
 
     it('should stop value change notifications after delete', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -1013,14 +1013,14 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, callback)
 
       // First change - should notify
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(callback).toHaveBeenCalledTimes(1)
 
       // Delete
       service.delete(db, id)
 
       // Second change - should NOT notify
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(callback).toHaveBeenCalledTimes(1) // Still 1
     })
   })
@@ -1032,7 +1032,7 @@ describe('ComputedFieldService', () => {
   describe('clear()', () => {
     it('should remove all computed fields', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       service.create(db, { name: 'CF1', definition: { aggregation: 'COUNT', query } })
@@ -1047,7 +1047,7 @@ describe('ComputedFieldService', () => {
 
     it('should stop all value change notifications', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -1061,7 +1061,7 @@ describe('ComputedFieldService', () => {
       service.clear()
 
       // Change should NOT notify
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(callback).not.toHaveBeenCalled()
     })
   })
@@ -1075,7 +1075,7 @@ describe('ComputedFieldService', () => {
   describe.skip('initialize()', () => {
     it('should load computed fields from database on initialize', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       // Create a computed field
@@ -1085,8 +1085,8 @@ describe('ComputedFieldService', () => {
       })
 
       // Add some subscriptions
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       expect(service.getValue(db, id)).toBe(2)
 
@@ -1102,7 +1102,7 @@ describe('ComputedFieldService', () => {
 
     it('should track changes after initialize', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -1118,7 +1118,7 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, callback)
 
       // Add subscription - should trigger callback
-      createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
@@ -1130,14 +1130,14 @@ describe('ComputedFieldService', () => {
 
   describe('edge cases', () => {
     it('should handle non-numeric values in SUM gracefully', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:price', 'not-a-number')
       setProperty(db, sub2, 'field:price', 30)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -1145,7 +1145,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -1154,22 +1154,22 @@ describe('ComputedFieldService', () => {
     })
 
     it('should return null for SUM/AVG/MIN/MAX when all nodes lack the field', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       // Neither has the price field
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const sumId = service.create(db, {
         name: 'Sum',
-        definition: { aggregation: 'SUM', query, fieldSystemId: 'field:price' },
+        definition: { aggregation: 'SUM', query, fieldId: 'field:price' },
       })
 
       const avgId = service.create(db, {
         name: 'Avg',
-        definition: { aggregation: 'AVG', query, fieldSystemId: 'field:price' },
+        definition: { aggregation: 'AVG', query, fieldId: 'field:price' },
       })
 
       expect(service.getValue(db, sumId)).toBe(null)
@@ -1177,9 +1177,9 @@ describe('ComputedFieldService', () => {
     })
 
     it('should handle computed field with complex query filters', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
-      const sub3 = createNode(db, { content: 'Sub 3', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      const sub3 = createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:status', 'active')
       setProperty(db, sub1, 'field:price', 10)
@@ -1191,8 +1191,8 @@ describe('ComputedFieldService', () => {
       // Query for active subscriptions only
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:subscription' },
-          { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'active' },
+          { type: 'supertag', supertagId: 'supertag:subscription' },
+          { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
         ],
       }
 
@@ -1201,7 +1201,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
@@ -1214,14 +1214,14 @@ describe('ComputedFieldService', () => {
     })
 
     it('should handle decimal values correctly', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagSystemId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagSystemId: 'supertag:subscription' })
+      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:price', 10.5)
       setProperty(db, sub2, 'field:price', 20.75)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
       }
 
       const id = service.create(db, {
@@ -1229,7 +1229,7 @@ describe('ComputedFieldService', () => {
         definition: {
           aggregation: 'SUM',
           query,
-          fieldSystemId: 'field:price',
+          fieldId: 'field:price',
         },
       })
 
