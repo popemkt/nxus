@@ -82,18 +82,29 @@ Fix the `isPrimary` column issue and related service code.
 
 ---
 
-### [ ] Step: Clean Up Unused Imports
+### [x] Step: Clean Up Unused Imports
+<!-- chat-id: 9fd8182e-ef22-4bee-8c03-ce42b59a0bb8 -->
 Remove unused imports and variables flagged by TypeScript.
 
+**Completed**: Cleaned all unused imports and variables.
+
 **Tasks**:
-- [ ] Clean `dependency-tracker.ts` unused type guards
-- [ ] Clean test files with unused variables (prefix with `_` if intentional)
+- [x] Clean `dependency-tracker.ts` unused type guards
+- [x] Clean test files with unused variables
 
-**Files**:
-- `packages/nxus-db/src/reactive/dependency-tracker.ts`
-- Various test files in `packages/nxus-db/src/reactive/__tests__/`
+**Changes made**:
+- `packages/nxus-db/src/reactive/dependency-tracker.ts`: Removed unused `ContentFilter` import
+- `packages/nxus-db/src/reactive/__tests__/automation.test.ts`: Removed unused `getProperty`, `QueryDefinition` imports, and unused variables (`sub1`, `lowThresholdFired`, `highThresholdFired`)
+- `packages/nxus-db/src/reactive/__tests__/event-bus.test.ts`: Removed unused `MutationType` import
+- `packages/nxus-db/src/reactive/__tests__/integration.test.ts`: Removed unused `vi`, `QueryDefinition`, `MutationEvent` imports, fixed type narrowing issue in `capturedEvent` test
+- `packages/nxus-db/src/reactive/__tests__/computed-field.test.ts`: Removed unused variables (`sub1`, `sub2`, `p3`)
+- `packages/nxus-db/src/reactive/__tests__/performance-targets.test.ts`: Removed unused `createNode` import
+- `packages/nxus-db/src/reactive/__tests__/performance.bench.ts`: Fixed `EventBus` import (moved to `types.js`)
+- `packages/nxus-db/src/reactive/__tests__/query-subscription.test.ts`: Removed unused `createEventBus` import and `taskId` variable
+- `packages/nxus-db/src/reactive/__tests__/subscription-tracker.test.ts`: Removed unused variables (`netflix`, `spotify`, `youtube`, `github`, `slack`, `sub2`)
+- `packages/nxus-db/src/reactive/__tests__/webhook-queue.test.ts`: Fixed Mock type signature, removed invalid `contentPlain` property from test node
 
-**Verification**: No TS6133/TS6196 errors remaining.
+**Verification**: `pnpm nx run @nxus/db:typecheck` passes with 0 errors.
 
 ---
 

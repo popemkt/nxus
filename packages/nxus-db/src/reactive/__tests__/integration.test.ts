@@ -14,7 +14,7 @@
 
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
 import {
@@ -27,11 +27,10 @@ import {
   setProperty,
   updateNodeContent,
 } from '../../services/node.service.js'
-import type { QueryDefinition } from '../../types/query.js'
 import { eventBus } from '../event-bus.js'
 import { createQuerySubscriptionService } from '../query-subscription.service.js'
 import { createAutomationService, type AutomationService } from '../automation.service.js'
-import type { AutomationDefinition, QueryResultChangeEvent } from '../types.js'
+import type { AutomationDefinition } from '../types.js'
 
 // ============================================================================
 // Test Helpers
@@ -636,7 +635,7 @@ describe('Phase 1 Integration Tests', () => {
     })
 
     it('should provide before/after values in property events', () => {
-      let capturedEvent: { beforeValue: unknown; afterValue: unknown } | null = null
+      let capturedEvent: { beforeValue?: unknown; afterValue?: unknown } | null = null
 
       const unsubscribe = eventBus.subscribe((event) => {
         if (event.type === 'property:set') {
@@ -652,13 +651,14 @@ describe('Phase 1 Integration Tests', () => {
 
         // First set - no before value (undefined when property doesn't exist yet)
         setProperty(db, nodeId, 'field:status', 'pending')
-        expect(capturedEvent?.beforeValue).toBeUndefined()
-        expect(capturedEvent?.afterValue).toBe('pending')
+        expect(capturedEvent).not.toBeNull()
+        expect(capturedEvent!.beforeValue).toBeUndefined()
+        expect(capturedEvent!.afterValue).toBe('pending')
 
         // Second set - has before value
         setProperty(db, nodeId, 'field:status', 'done')
-        expect(capturedEvent?.beforeValue).toBe('pending')
-        expect(capturedEvent?.afterValue).toBe('done')
+        expect(capturedEvent!.beforeValue).toBe('pending')
+        expect(capturedEvent!.afterValue).toBe('done')
       } finally {
         unsubscribe()
       }

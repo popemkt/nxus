@@ -22,7 +22,6 @@ import type {
   QueryFilter,
   SupertagFilter,
   PropertyFilter,
-  ContentFilter,
   RelationFilter,
   TemporalFilter,
   HasFieldFilter,

@@ -20,7 +20,6 @@ import * as schema from '../../schemas/item-schema.js'
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
 import {
   clearSystemNodeCache,
-  createNode,
   setProperty,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'

@@ -26,7 +26,7 @@ import {
   updateNodeContent,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'
-import { createEventBus, eventBus } from '../event-bus.js'
+import { eventBus } from '../event-bus.js'
 import {
   createQuerySubscriptionService,
   type QueryResultChangeCallback,
@@ -596,7 +596,7 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should return empty array from getLastResults after unsubscribe', () => {
-      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
+      createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
         filters: [{ type: 'supertag', supertagId: 'supertag:task' }],

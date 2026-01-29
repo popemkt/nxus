@@ -4,7 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEventBus } from '../event-bus.js'
-import type { EventBus, MutationEvent, MutationListener, MutationType } from '../types.js'
+import type { EventBus, MutationEvent, MutationListener } from '../types.js'
 
 describe('EventBus', () => {
   let eventBus: EventBus
