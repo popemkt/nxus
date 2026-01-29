@@ -18,47 +18,89 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
+<!-- chat-id: 9a58eab9-da70-47e4-a3d6-8b6aded74cdc -->
 
-Assess the task's difficulty, as underestimating it leads to poor outcomes.
-- easy: Straightforward implementation, trivial bug fix or feature
-- medium: Moderate complexity, some edge cases or caveats to consider
-- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
+**Difficulty Assessment**: Medium
 
-Create a technical specification for the task that is appropriate for the complexity level:
-- Review the existing codebase architecture and identify reusable components.
-- Define the implementation approach based on established patterns in the project.
-- Identify all source code files that will be created or modified.
-- Define any necessary data model, API, or interface changes.
-- Describe verification steps using the project's test and lint commands.
+Three main issues identified:
+1. Deprecated `findNode()` calls emitting console warnings (7 locations across 2 files)
+2. Inconsistent field naming: UI uses `fieldSystemId` but type schema uses `fieldId` (5 files)
+3. Query workbench UX needs verification for saved query management
 
-Save the output to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach
-- Source code structure changes
-- Data model / API / interface changes
-- Verification approach
-
-If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
-- Break down the work into concrete tasks (incrementable, testable milestones)
-- Each task should reference relevant contracts and include verification steps
-- Replace the Implementation step below with the planned tasks
-
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
-
-Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
+Full specification saved to `{@artifacts_path}/spec.md`.
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Fix deprecated findNode() calls in server functions
 
-Implement the task according to the technical specification and general engineering best practices.
+Replace all deprecated `findNode()` calls with explicit `findNodeById()` or `findNodeBySystemId()`:
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase.
-3. Add and run relevant tests and linters.
-4. Perform basic manual verification if applicable.
-5. After completion, write a report to `{@artifacts_path}/report.md` describing:
+**Files to modify:**
+- `packages/nxus-workbench/src/server/query.server.ts` (3 locations: lines 113, 160, 238)
+- `packages/nxus-workbench/src/server/nodes.server.ts` (4 locations: lines 49, 153, 186, 311)
+
+**Implementation:**
+- [ ] Replace `findNode(db, queryId)` with `findNodeById(db, queryId)` for query operations
+- [ ] For `getNodeServerFn`, use `isSystemId()` to route: systemId → `findNodeBySystemId()`, UUID → `findNodeById()`
+- [ ] Import `isSystemId` from `@nxus/db/server` where needed
+
+**Verification:**
+- Run tests: `pnpm -F @nxus/db test`
+- Build: `pnpm -F @nxus/workbench build`
+- Manual check: Confirm no deprecation warnings in console
+
+---
+
+### [ ] Step: Fix fieldSystemId → fieldId inconsistency in query builder UI
+
+Update UI components to use `fieldId` matching the type schema:
+
+**Files to modify:**
+- `packages/nxus-workbench/src/features/query-builder/filters/property-filter.tsx`
+- `packages/nxus-workbench/src/features/query-builder/filters/hasfield-filter.tsx`
+- `packages/nxus-workbench/src/features/query-builder/query-builder.tsx` (createDefaultFilter)
+- `packages/nxus-workbench/src/features/query-builder/query-linter.tsx` (formatHasFieldFilter)
+- `packages/nxus-workbench/src/features/query-builder/filters/logical-filter.tsx`
+
+**Implementation:**
+- [ ] Replace all `filter.fieldSystemId` with `filter.fieldId`
+- [ ] Replace all `fieldSystemId` state variables with `fieldId`
+- [ ] Update `onUpdate({ fieldSystemId: ... })` to `onUpdate({ fieldId: ... })`
+- [ ] Fix `createDefaultFilter` for hasField type to use `fieldId`
+
+**Verification:**
+- Lint: `pnpm -F @nxus/workbench lint`
+- TypeScript: `pnpm -F @nxus/workbench typecheck` (or build)
+- Manual: Test property filters and hasField filters in query builder
+
+---
+
+### [ ] Step: Verify and test query workbench UX
+
+Ensure the saved queries functionality is accessible and working:
+
+**Verification checklist:**
+- [ ] `QueryBuilderWithSaved` is used where appropriate (provides saved queries access)
+- [ ] "Saved Queries" button is visible and clickable
+- [ ] Saved queries list loads correctly
+- [ ] Click on saved query loads it into builder
+- [ ] Edit mode allows updating saved queries
+- [ ] Delete functionality works with confirmation
+- [ ] Create new query flow works end-to-end
+
+**If issues found:**
+- Document in report.md
+- Fix integration issues as needed
+
+---
+
+### [ ] Step: Final verification and report
+
+1. Run full test suite: `pnpm test`
+2. Run linters: `pnpm lint`
+3. Build all packages: `pnpm build`
+4. Write report to `{@artifacts_path}/report.md` describing:
    - What was implemented
    - How the solution was tested
-   - The biggest issues or challenges encountered
+   - Any issues encountered
