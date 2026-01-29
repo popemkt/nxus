@@ -18,47 +18,112 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
+<!-- chat-id: 3f72cd9c-5883-4ca9-9592-da9dcedda2c9 -->
 
-Assess the task's difficulty, as underestimating it leads to poor outcomes.
-- easy: Straightforward implementation, trivial bug fix or feature
-- medium: Moderate complexity, some edge cases or caveats to consider
-- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
+**Completed**: Created `spec.md` with full error analysis.
 
-Create a technical specification for the task that is appropriate for the complexity level:
-- Review the existing codebase architecture and identify reusable components.
-- Define the implementation approach based on established patterns in the project.
-- Identify all source code files that will be created or modified.
-- Define any necessary data model, API, or interface changes.
-- Describe verification steps using the project's test and lint commands.
+**Summary**:
+- **Difficulty**: Medium (506 errors, but repetitive patterns)
+- **Root causes identified**:
+  1. Zod schema type inference issues (SupertagFilter missing `includeInherited`)
+  2. Duplicate `SavedQuery` export
+  3. Missing `isPrimary` column in itemTypes schema
+  4. Unused imports
 
-Save the output to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach
-- Source code structure changes
-- Data model / API / interface changes
-- Verification approach
-
-If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
-- Break down the work into concrete tasks (incrementable, testable milestones)
-- Each task should reference relevant contracts and include verification steps
-- Replace the Implementation step below with the planned tasks
-
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
-
-Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
+See `spec.md` for detailed technical specification.
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Fix Zod Schema Type Inference
+Fix the core schema issues that cascade into 400+ type errors.
 
-Implement the task according to the technical specification and general engineering best practices.
+**Tasks**:
+- [ ] Fix `SupertagFilterSchema.includeInherited` to be truly optional in TypeScript
+- [ ] Remove duplicate `SavedQuery` interface from `node.ts` (keep in `query.ts`)
+- [ ] Run typecheck to verify reduction in errors
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase.
-3. Add and run relevant tests and linters.
-4. Perform basic manual verification if applicable.
-5. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+**Files**:
+- `packages/nxus-db/src/types/query.ts`
+- `packages/nxus-db/src/types/node.ts`
+
+**Verification**: `pnpm nx run @nxus/db:typecheck` should show significant error reduction.
+
+---
+
+### [ ] Step: Fix Database Schema and Service Errors
+Fix the `isPrimary` column issue and related service code.
+
+**Tasks**:
+- [ ] Add `isPrimary` column to `itemTypes` schema (or remove if not needed)
+- [ ] Fix `node.service.ts` references to `isPrimary`
+- [ ] Remove unused `and` import from `node.service.ts`
+
+**Files**:
+- `packages/nxus-db/src/schemas/item-schema.ts`
+- `packages/nxus-db/src/services/node.service.ts`
+
+**Verification**: `pnpm nx run @nxus/db:typecheck` should pass for these files.
+
+---
+
+### [ ] Step: Clean Up Unused Imports
+Remove unused imports and variables flagged by TypeScript.
+
+**Tasks**:
+- [ ] Clean `dependency-tracker.ts` unused type guards
+- [ ] Clean test files with unused variables (prefix with `_` if intentional)
+
+**Files**:
+- `packages/nxus-db/src/reactive/dependency-tracker.ts`
+- Various test files in `packages/nxus-db/src/reactive/__tests__/`
+
+**Verification**: No TS6133/TS6196 errors remaining.
+
+---
+
+### [ ] Step: Fix Remaining Test Type Errors
+If schema fixes don't resolve all test errors, fix test fixtures.
+
+**Tasks**:
+- [ ] Add missing `includeInherited` to SupertagFilter test fixtures (if still needed)
+- [ ] Add missing `limit` to QueryDefinition test fixtures (if still needed)
+
+**Files**:
+- `packages/nxus-db/src/reactive/__tests__/*.test.ts`
+
+**Verification**: Full typecheck passes with 0 errors.
+
+---
+
+### [ ] Step: Add MIT License and Tighten TypeScript Config
+Add license file and configure TypeScript to prevent future errors.
+
+**Tasks**:
+- [ ] Create `LICENSE` file with MIT license text
+- [ ] Add `noUnusedLocals` and `noUnusedParameters` to `tsconfig.base.json`
+- [ ] Verify all packages still build
+
+**Files**:
+- `LICENSE` (new)
+- `tsconfig.base.json`
+
+**Verification**: `pnpm nx run-many --target=typecheck --all` passes with 0 errors.
+
+---
+
+### [ ] Step: Final Verification and Report
+Run full verification and document completion.
+
+**Tasks**:
+- [ ] Run full typecheck across all packages
+- [ ] Run build for all packages
+- [ ] Run tests to ensure no regressions
+- [ ] Write completion report to `report.md`
+
+**Verification**:
+```bash
+pnpm nx run-many --target=typecheck --all  # 0 errors
+pnpm nx run-many --target=build --all      # Success
+pnpm nx run-many --target=test --all       # All pass
+```
