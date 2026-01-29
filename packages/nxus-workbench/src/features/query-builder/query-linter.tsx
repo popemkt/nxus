@@ -208,7 +208,7 @@ function formatTemporalFilter(filter: TemporalFilter): string {
  * Format hasField filter
  */
 function formatHasFieldFilter(filter: HasFieldFilter): string {
-  const fieldName = formatSystemId(filter.fieldSystemId || '?')
+  const fieldName = formatSystemId(filter.fieldId || '?')
   return filter.negate ? `missing ${fieldName}` : `having ${fieldName}`
 }
 

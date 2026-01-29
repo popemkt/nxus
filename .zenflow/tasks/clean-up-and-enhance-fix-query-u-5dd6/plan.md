@@ -53,11 +53,12 @@ Replace all deprecated `findNode()` calls with explicit `findNodeById()` or `fin
 
 ---
 
-### [ ] Step: Fix fieldSystemId → fieldId inconsistency in query builder UI
+### [x] Step: Fix fieldSystemId → fieldId inconsistency in query builder UI
+<!-- chat-id: f1ab5163-6227-4523-a1a6-c4f2b46dc1fc -->
 
 Update UI components to use `fieldId` matching the type schema:
 
-**Files to modify:**
+**Files modified:**
 - `packages/nxus-workbench/src/features/query-builder/filters/property-filter.tsx`
 - `packages/nxus-workbench/src/features/query-builder/filters/hasfield-filter.tsx`
 - `packages/nxus-workbench/src/features/query-builder/query-builder.tsx` (createDefaultFilter)
@@ -65,15 +66,14 @@ Update UI components to use `fieldId` matching the type schema:
 - `packages/nxus-workbench/src/features/query-builder/filters/logical-filter.tsx`
 
 **Implementation:**
-- [ ] Replace all `filter.fieldSystemId` with `filter.fieldId`
-- [ ] Replace all `fieldSystemId` state variables with `fieldId`
-- [ ] Update `onUpdate({ fieldSystemId: ... })` to `onUpdate({ fieldId: ... })`
-- [ ] Fix `createDefaultFilter` for hasField type to use `fieldId`
+- [x] Replace all `filter.fieldSystemId` with `filter.fieldId`
+- [x] Replace all `fieldSystemId` state variables with `fieldId`
+- [x] Update `onUpdate({ fieldSystemId: ... })` to `onUpdate({ fieldId: ... })`
+- [x] Fix `createDefaultFilter` for hasField type to use `fieldId`
 
 **Verification:**
-- Lint: `pnpm -F @nxus/workbench lint`
-- TypeScript: `pnpm -F @nxus/workbench typecheck` (or build)
-- Manual: Test property filters and hasField filters in query builder
+- Tests: `pnpm -F @nxus/workbench test` ✅ (150 passed)
+- Grep confirms no remaining `fieldSystemId` references in query-builder folder
 
 ---
 
