@@ -58,19 +58,27 @@ Fix the core schema issues that cascade into 400+ type errors.
 
 ---
 
-### [ ] Step: Fix Database Schema and Service Errors
+### [x] Step: Fix Database Schema and Service Errors
+<!-- chat-id: bbe2137e-596c-4757-924c-03cbf6b0d88b -->
 Fix the `isPrimary` column issue and related service code.
 
+**Completed**: Removed `isPrimary` references from `node.service.ts`.
+
 **Tasks**:
-- [ ] Add `isPrimary` column to `itemTypes` schema (or remove if not needed)
-- [ ] Fix `node.service.ts` references to `isPrimary`
-- [ ] Remove unused `and` import from `node.service.ts`
+- [x] Add `isPrimary` column to `itemTypes` schema (or remove if not needed) - Removed usage, `order=0` indicates primary
+- [x] Fix `node.service.ts` references to `isPrimary` - Removed `isPrimary` from insert values
+- [x] Remove unused `and` import from `node.service.ts` - Removed
+
+**Changes made**:
+- `packages/nxus-db/src/services/node.service.ts`:
+  - Removed unused `and` import from drizzle-orm
+  - Removed `isPrimary: i === 0` from `syncNodeSupertagsToItemTypes` insert values
+  - Simplified sorting in `syncItemTypesToNodeSupertags` to just use `order` (since `order=0` is primary)
 
 **Files**:
-- `packages/nxus-db/src/schemas/item-schema.ts`
 - `packages/nxus-db/src/services/node.service.ts`
 
-**Verification**: `pnpm nx run @nxus/db:typecheck` should pass for these files.
+**Verification**: `pnpm nx run @nxus/db:typecheck` shows no errors for `node.service.ts`.
 
 ---
 
