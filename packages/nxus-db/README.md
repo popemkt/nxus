@@ -183,6 +183,166 @@ See `examples/mini-app-example.ts` for a complete example of how to use this pac
 npx tsx examples/mini-app-example.ts
 ```
 
+## Reactive Query System
+
+The reactive module provides live query subscriptions, computed fields (aggregations), and automations that execute when data changes.
+
+### Event Bus
+
+All mutations emit events through a central event bus:
+
+```typescript
+import { eventBus, type MutationEvent } from '@nxus/db/server'
+
+// Subscribe to all mutation events
+const unsubscribe = eventBus.subscribe((event: MutationEvent) => {
+  console.log(`${event.type} on node ${event.nodeId}`)
+})
+
+// Subscribe with filters
+eventBus.subscribe(
+  (event) => console.log('Property changed:', event.fieldSystemId),
+  { types: ['property:set'], fieldSystemIds: ['field:status'] }
+)
+
+// Don't forget to unsubscribe
+unsubscribe()
+```
+
+### Query Subscriptions
+
+Subscribe to live queries and receive notifications when results change:
+
+```typescript
+import { querySubscriptionService } from '@nxus/db/server'
+
+const handle = querySubscriptionService.subscribe(
+  db,
+  {
+    filters: [{ type: 'supertag', supertagSystemId: 'supertag:task' }],
+    limit: 100,
+  },
+  (event) => {
+    console.log('Added:', event.added.length)
+    console.log('Removed:', event.removed.length)
+    console.log('Changed:', event.changed.length)
+  }
+)
+
+// Get current results synchronously
+const currentResults = handle.getLastResults()
+
+// Unsubscribe when done
+handle.unsubscribe()
+```
+
+### Computed Fields
+
+Create aggregations that update automatically when underlying data changes:
+
+```typescript
+import { computedFieldService } from '@nxus/db/server'
+
+// Create a computed field that sums subscription prices
+const fieldId = computedFieldService.create(db, {
+  name: 'Total Monthly Expense',
+  definition: {
+    aggregation: 'SUM', // or COUNT, AVG, MIN, MAX
+    query: {
+      filters: [{ type: 'supertag', supertagSystemId: 'supertag:subscription' }],
+    },
+    fieldSystemId: 'field:monthly_price',
+  },
+})
+
+// Get current value
+const total = computedFieldService.getValue(db, fieldId)
+
+// Subscribe to value changes
+computedFieldService.onValueChange(fieldId, (event) => {
+  console.log(`Total changed: ${event.previousValue} → ${event.newValue}`)
+})
+```
+
+### Automations
+
+Create rules that execute actions when conditions are met:
+
+```typescript
+import { automationService } from '@nxus/db/server'
+
+// Query membership automation: set completedAt when task becomes done
+const automationId = automationService.create(db, {
+  name: 'Auto-set completion timestamp',
+  trigger: {
+    type: 'query_membership',
+    queryDefinition: {
+      filters: [
+        { type: 'supertag', supertagSystemId: 'supertag:task' },
+        { type: 'property', fieldSystemId: 'field:status', operator: 'eq', value: 'done' },
+      ],
+    },
+    event: 'onEnter', // or 'onExit', 'onChange'
+  },
+  action: {
+    type: 'set_property',
+    fieldSystemId: 'field:completed_at',
+    value: { $now: true }, // Special marker for current timestamp
+  },
+  enabled: true,
+})
+
+// Threshold automation: webhook when computed field crosses threshold
+automationService.create(db, {
+  name: 'Budget Alert',
+  trigger: {
+    type: 'threshold',
+    computedFieldId: totalExpenseFieldId,
+    condition: { operator: 'gt', value: 100 },
+    fireOnce: true, // Only fire once per crossing
+  },
+  action: {
+    type: 'webhook',
+    url: 'https://api.example.com/alert',
+    method: 'POST',
+    body: { message: 'Budget exceeded: {{ computedField.value }}' },
+  },
+  enabled: true,
+})
+```
+
+### Performance Optimization
+
+The reactive system includes smart invalidation and batching for efficiency:
+
+```typescript
+import { querySubscriptionService, reactiveMetrics } from '@nxus/db/server'
+
+// Enable debouncing for rapid mutations (default: 0ms = immediate)
+querySubscriptionService.setDebounceMs(50) // Batch mutations within 50ms
+
+// View performance metrics
+const metrics = reactiveMetrics.getMetrics()
+console.log(`Events: ${metrics.eventCount}`)
+console.log(`Evaluations: ${metrics.evaluationCount}`)
+console.log(`Skipped (smart invalidation): ${metrics.skippedEvaluations}`)
+console.log(`Active subscriptions: ${metrics.activeSubscriptions}`)
+```
+
+### Reactive Types
+
+Import types for client-side use:
+
+```typescript
+import type {
+  MutationEvent,
+  QueryResultChangeEvent,
+  ComputedFieldDefinition,
+  AutomationDefinition,
+  AutomationAction,
+} from '@nxus/db'
+```
+
 ## Testing
 
 ```bash

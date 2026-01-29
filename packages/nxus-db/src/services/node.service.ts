@@ -17,6 +17,7 @@ import {
   SYSTEM_SUPERTAGS,
 } from '../schemas/node-schema.js'
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
+import { eventBus } from '../reactive/event-bus.js'
 
 // Re-export types from the shared types file (for backward compatibility)
 export type {
@@ -411,6 +412,20 @@ export function createNode(
     })
     .run()
 
+  // Emit node:created event
+  eventBus.emit({
+    type: 'node:created',
+    timestamp: now,
+    nodeId,
+    systemId: options.systemId,
+    afterValue: {
+      id: nodeId,
+      content: options.content,
+      systemId: options.systemId,
+      ownerId: options.ownerId,
+    },
+  })
+
   // Assign supertag if provided
   if (options.supertagSystemId) {
     const supertag = getSystemNode(db, options.supertagSystemId)
@@ -431,14 +446,29 @@ export function updateNodeContent(
   nodeId: string,
   content: string,
 ): void {
+  // Get current content for beforeValue
+  const currentNode = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+  const beforeContent = currentNode?.content ?? null
+
+  const now = new Date()
   db.update(nodes)
     .set({
       content,
       contentPlain: content.toLowerCase(),
-      updatedAt: new Date(),
+      updatedAt: now,
     })
     .where(eq(nodes.id, nodeId))
     .run()
+
+  // Emit node:updated event
+  eventBus.emit({
+    type: 'node:updated',
+    timestamp: now,
+    nodeId,
+    systemId: currentNode?.systemId,
+    beforeValue: beforeContent,
+    afterValue: content,
+  })
 }
 
 /**
@@ -448,10 +478,22 @@ export function deleteNode(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
 ): void {
+  // Get node systemId for event
+  const currentNode = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+
+  const now = new Date()
   db.update(nodes)
-    .set({ deletedAt: new Date() })
+    .set({ deletedAt: now })
     .where(eq(nodes.id, nodeId))
     .run()
+
+  // Emit node:deleted event
+  eventBus.emit({
+    type: 'node:deleted',
+    timestamp: now,
+    nodeId,
+    systemId: currentNode?.systemId,
+  })
 }
 
 /**
@@ -470,7 +512,7 @@ export function setProperty(
   const jsonValue = JSON.stringify(value)
   const now = new Date()
 
-  // Check if property exists
+  // Check if property exists and get beforeValue
   const existing = db
     .select()
     .from(nodeProperties)
@@ -478,7 +520,13 @@ export function setProperty(
     .all()
     .find((p) => p.fieldNodeId === field.id && p.order === order)
 
+  let beforeValue: unknown = undefined
   if (existing) {
+    try {
+      beforeValue = JSON.parse(existing.value || 'null')
+    } catch {
+      beforeValue = existing.value
+    }
     db.update(nodeProperties)
       .set({ value: jsonValue, updatedAt: now })
       .where(eq(nodeProperties.id, existing.id))
@@ -495,6 +543,16 @@ export function setProperty(
       })
       .run()
   }
+
+  // Emit property:set event
+  eventBus.emit({
+    type: 'property:set',
+    timestamp: now,
+    nodeId,
+    fieldSystemId,
+    beforeValue,
+    afterValue: value,
+  })
 }
 
 /**
@@ -519,16 +577,26 @@ export function addPropertyValue(
 
   const maxOrder = existing.reduce((max, p) => Math.max(max, p.order || 0), -1)
 
+  const now = new Date()
   db.insert(nodeProperties)
     .values({
       nodeId,
       fieldNodeId: field.id,
       value: JSON.stringify(value),
       order: maxOrder + 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     })
     .run()
+
+  // Emit property:added event
+  eventBus.emit({
+    type: 'property:added',
+    timestamp: now,
+    nodeId,
+    fieldSystemId,
+    afterValue: value,
+  })
 }
 
 /**
@@ -549,8 +617,30 @@ export function clearProperty(
     .all()
     .filter((p) => p.fieldNodeId === field.id)
 
+  // Collect beforeValues for event emission
+  const beforeValues: unknown[] = []
+  for (const prop of props) {
+    try {
+      beforeValues.push(JSON.parse(prop.value || 'null'))
+    } catch {
+      beforeValues.push(prop.value)
+    }
+  }
+
+  const now = new Date()
   for (const prop of props) {
     db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
+  }
+
+  // Emit property:removed event for each removed value
+  for (const beforeValue of beforeValues) {
+    eventBus.emit({
+      type: 'property:removed',
+      timestamp: now,
+      nodeId,
+      fieldSystemId,
+      beforeValue,
+    })
   }
 }
 
@@ -765,6 +855,15 @@ export function setNodeSupertags(
   const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
   if (!node) throw new Error(`Node not found: ${nodeId}`)
 
+  // Get current supertags before clearing (for event emission)
+  const currentSupertags = getNodeSupertagSystemIds(db, nodeId)
+
+  // Determine added and removed supertags
+  const currentSet = new Set(currentSupertags)
+  const newSet = new Set(supertagSystemIds)
+  const removedSupertags = currentSupertags.filter((st) => !newSet.has(st))
+  const addedSupertags = supertagSystemIds.filter((st) => !currentSet.has(st))
+
   // Clear existing supertags
   clearProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG)
 
@@ -778,7 +877,30 @@ export function setNodeSupertags(
   }
 
   // Update node timestamp
-  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+  const now = new Date()
+  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+
+  // Emit supertag:removed events
+  for (const supertagSystemId of removedSupertags) {
+    eventBus.emit({
+      type: 'supertag:removed',
+      timestamp: now,
+      nodeId,
+      systemId: node.systemId,
+      supertagSystemId,
+    })
+  }
+
+  // Emit supertag:added events
+  for (const supertagSystemId of addedSupertags) {
+    eventBus.emit({
+      type: 'supertag:added',
+      timestamp: now,
+      nodeId,
+      systemId: node.systemId,
+      supertagSystemId,
+    })
+  }
 }
 
 /**
@@ -802,10 +924,23 @@ export function addNodeSupertag(
   const supertagNode = getSystemNode(db, supertagSystemId)
   if (!supertagNode) throw new Error(`Supertag not found: ${supertagSystemId}`)
 
+  // Get node systemId for event
+  const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+
   addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
 
   // Update node timestamp
-  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+  const now = new Date()
+  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+
+  // Emit supertag:added event
+  eventBus.emit({
+    type: 'supertag:added',
+    timestamp: now,
+    nodeId,
+    systemId: node?.systemId,
+    supertagSystemId,
+  })
 
   return true
 }
@@ -825,6 +960,9 @@ export function removeNodeSupertag(
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   const supertagNode = getSystemNode(db, supertagSystemId)
   if (!supertagField || !supertagNode) return false
+
+  // Get node systemId for event
+  const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
 
   // Find and delete the specific supertag property
   const props = db
@@ -848,7 +986,17 @@ export function removeNodeSupertag(
   }
 
   // Update node timestamp
-  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+  const now = new Date()
+  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+
+  // Emit supertag:removed event
+  eventBus.emit({
+    type: 'supertag:removed',
+    timestamp: now,
+    nodeId,
+    systemId: node?.systemId,
+    supertagSystemId,
+  })
 
   return true
 }
