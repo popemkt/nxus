@@ -262,14 +262,14 @@ function createDefaultFilter(
       return {
         id,
         type: 'supertag' as const,
-        supertagSystemId: '',
+        supertagId: '',
         includeInherited: true,
       }
     case 'property':
       return {
         id,
         type: 'property' as const,
-        fieldSystemId: '',
+        fieldId: '',
         op: 'eq' as const,
         value: '',
       }

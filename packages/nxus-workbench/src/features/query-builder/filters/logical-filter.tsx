@@ -297,14 +297,14 @@ function createDefaultNestedFilter(filterType: SimpleFilterType): QueryFilter {
       return {
         id,
         type: 'supertag',
-        supertagSystemId: '',
+        supertagId: '',
         includeInherited: true,
       }
     case 'property':
       return {
         id,
         type: 'property',
-        fieldSystemId: '',
+        fieldId: '',
         op: 'eq',
         value: '',
       }
@@ -334,7 +334,7 @@ function createDefaultNestedFilter(filterType: SimpleFilterType): QueryFilter {
       return {
         id,
         type: 'hasField',
-        fieldSystemId: '',
+        fieldId: '',
         negate: false,
       }
     default:
@@ -354,16 +354,16 @@ function getFilterDisplayInfo(filter: QueryFilter): {
     case 'supertag':
       return {
         icon: Hash,
-        label: filter.supertagSystemId
-          ? `#${formatSystemId(filter.supertagSystemId)}`
+        label: filter.supertagId
+          ? `#${formatSystemId(filter.supertagId)}`
           : 'Supertag...',
         color: '#8b5cf6',
       }
     case 'property':
       return {
         icon: TextT,
-        label: filter.fieldSystemId
-          ? formatSystemId(filter.fieldSystemId)
+        label: filter.fieldId
+          ? formatSystemId(filter.fieldId)
           : 'Property...',
         color: '#3b82f6',
       }

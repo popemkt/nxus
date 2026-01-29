@@ -134,7 +134,7 @@ function formatFilter(filter: QueryFilter): string {
  * Format supertag filter
  */
 function formatSupertagFilter(filter: SupertagFilter): string {
-  const supertagName = formatSystemId(filter.supertagSystemId || '?')
+  const supertagName = formatSystemId(filter.supertagId || '?')
   const inherited = filter.includeInherited ? '+' : ''
   return `with #${supertagName}${inherited}`
 }
@@ -143,7 +143,7 @@ function formatSupertagFilter(filter: SupertagFilter): string {
  * Format property filter
  */
 function formatPropertyFilter(filter: PropertyFilter): string {
-  const fieldName = formatSystemId(filter.fieldSystemId || '?')
+  const fieldName = formatSystemId(filter.fieldId || '?')
   const op = formatOperator(filter.op)
   const value = formatValue(filter.value)
 
