@@ -75,24 +75,38 @@ export function getNodeById(
 }
 
 /**
- * Get a field or supertag node by id (UUID) or systemId (for system fields)
- * Tries id lookup first, then falls back to systemId for backwards compatibility
+ * Check if a string looks like a systemId (has a known prefix)
+ * SystemIds have format like 'field:status', 'supertag:task', etc.
+ */
+function isSystemId(value: string): boolean {
+  return value.startsWith('field:') || value.startsWith('supertag:')
+}
+
+/**
+ * Resolve a field or supertag reference to its node.
+ *
+ * Accepts either:
+ * - A systemId (e.g., 'field:status', 'supertag:task') - looked up by systemId
+ * - A UUID (e.g., '019c0a49-abc...') - looked up by id
+ *
+ * Uses systemId prefix detection for unambiguous routing.
  */
 export function getFieldOrSupertagNode(
   db: ReturnType<typeof getDatabase>,
   idOrSystemId: string,
 ): { id: string; content: string } | null {
-  // Handle undefined/null gracefully
+  // Handle undefined/null/empty gracefully
   if (!idOrSystemId) {
     return null
   }
-  // Try by id first (UUID format check - contains hyphens and is 36 chars)
-  if (idOrSystemId.length === 36 && idOrSystemId.includes('-')) {
-    const byId = getNodeById(db, idOrSystemId)
-    if (byId) return byId
+
+  // Route based on prefix - systemIds always have 'field:' or 'supertag:' prefix
+  if (isSystemId(idOrSystemId)) {
+    return getSystemNode(db, idOrSystemId)
   }
-  // Fall back to systemId lookup (for system fields like 'field:supertag')
-  return getSystemNode(db, idOrSystemId)
+
+  // Otherwise treat as UUID
+  return getNodeById(db, idOrSystemId)
 }
 
 /**
@@ -588,10 +602,8 @@ export function setProperty(
       .run()
   }
 
-  // Determine if the input was a systemId (non-UUID format)
-  // If it was, include it in the event for dependency matching
-  const isSystemId = !(fieldId.length === 36 && fieldId.includes('-'))
-  const fieldSystemId = isSystemId ? fieldId : undefined
+  // Include systemId in event if the input was a systemId (for dependency matching)
+  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
 
   // Emit property:set event with field UUID and optional systemId
   eventBus.emit({
@@ -641,9 +653,8 @@ export function addPropertyValue(
     })
     .run()
 
-  // Determine if the input was a systemId (non-UUID format)
-  const isSystemId = !(fieldId.length === 36 && fieldId.includes('-'))
-  const fieldSystemId = isSystemId ? fieldId : undefined
+  // Include systemId in event if the input was a systemId (for dependency matching)
+  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
 
   // Emit property:added event with field UUID and optional systemId
   eventBus.emit({
@@ -691,9 +702,8 @@ export function clearProperty(
     db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
   }
 
-  // Determine if the input was a systemId (non-UUID format)
-  const isSystemId = !(fieldId.length === 36 && fieldId.includes('-'))
-  const fieldSystemId = isSystemId ? fieldId : undefined
+  // Include systemId in event if the input was a systemId (for dependency matching)
+  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
 
   // Emit property:removed event for each removed value with field UUID and optional systemId
   for (const beforeValue of beforeValues) {
