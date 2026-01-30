@@ -71,7 +71,7 @@ export function QueryBuilder({
   showSort = true,
   showLinter = true,
 }: QueryBuilderProps) {
-  const hasFilters = value.filters.length > 0
+  const hasFilters = (value.filters?.length ?? 0) > 0
 
   // Handle adding a new filter
   const handleAddFilter = (
@@ -80,7 +80,7 @@ export function QueryBuilder({
     const newFilter = createDefaultFilter(filterType)
     onChange({
       ...value,
-      filters: [...value.filters, newFilter],
+      filters: [...(value.filters ?? []), newFilter],
     })
   }
 
@@ -88,7 +88,7 @@ export function QueryBuilder({
   const handleUpdateFilter = (filterId: string, updates: Record<string, unknown>) => {
     onChange({
       ...value,
-      filters: value.filters.map((f) =>
+      filters: (value.filters ?? []).map((f) =>
         f.id === filterId ? { ...f, ...updates } : f,
       ),
     })
@@ -98,7 +98,7 @@ export function QueryBuilder({
   const handleRemoveFilter = (filterId: string) => {
     onChange({
       ...value,
-      filters: value.filters.filter((f) => f.id !== filterId),
+      filters: (value.filters ?? []).filter((f) => f.id !== filterId),
     })
   }
 
@@ -148,7 +148,7 @@ export function QueryBuilder({
       <div className="flex flex-wrap items-center gap-2">
         {hasFilters && (
           <FilterList
-            filters={value.filters}
+            filters={value.filters ?? []}
             onUpdateFilter={handleUpdateFilter}
             onRemoveFilter={handleRemoveFilter}
             compact={compact}

@@ -154,7 +154,7 @@ export function useQueryEvaluation(
         evaluatedAt: new Date(result.evaluatedAt),
       }
     },
-    enabled: enabled && debouncedDefinition.filters.length > 0,
+    enabled: enabled && (debouncedDefinition.filters?.length ?? 0) > 0,
     staleTime,
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   })
@@ -273,7 +273,21 @@ export function useSavedQuery(
       }
       const result = await executeSavedQueryServerFn({
         data: { queryId, cacheResults },
-      })
+      }) as {
+        success: true
+        query: {
+          id: string
+          content: string
+          definition: QueryDefinition
+          resultCache?: string[]
+          evaluatedAt?: Date
+          createdAt: Date
+          updatedAt: Date
+        }
+        nodes: AssembledNode[]
+        totalCount: number
+        evaluatedAt: Date
+      }
       if (!result.success) {
         throw new Error('Failed to execute saved query')
       }

@@ -26,12 +26,10 @@ import {
   clearSystemNodeCache,
   createNode,
   deleteNode,
-  getProperty,
   removeNodeSupertag,
   setProperty,
   updateNodeContent,
 } from '../../services/node.service.js'
-import type { QueryDefinition } from '../../types/query.js'
 import { eventBus } from '../event-bus.js'
 import { createQuerySubscriptionService } from '../query-subscription.service.js'
 import { createAutomationService, type AutomationService } from '../automation.service.js'
@@ -1613,7 +1611,7 @@ describe('AutomationService', () => {
       automationService.create(db, definition)
 
       // Add first subscription - count is 1
-      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       expect(fireCount).toBe(0)
 
       // Add second subscription - count is 2, crosses threshold
@@ -1646,8 +1644,6 @@ describe('AutomationService', () => {
       })
 
       // Track firings for each automation
-      let lowThresholdFired = false
-      let highThresholdFired = false
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
         // We'll track by checking automation state instead
       })
@@ -1765,7 +1761,7 @@ describe('AutomationService', () => {
       expect(ltFired).toBe(false)
 
       // Add 2 subscriptions - count is 2, not < 2
-      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       expect(ltFired).toBe(false) // Still false - never crossed
 

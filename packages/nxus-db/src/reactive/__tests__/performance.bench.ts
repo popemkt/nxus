@@ -21,7 +21,8 @@ import {
   setProperty,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'
-import { createEventBus, type EventBus } from '../event-bus.js'
+import { createEventBus } from '../event-bus.js'
+import type { EventBus } from '../types.js'
 import {
   createQuerySubscriptionService,
   type QuerySubscriptionService,

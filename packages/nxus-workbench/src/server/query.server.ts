@@ -232,7 +232,8 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
       cacheResults: z.boolean().optional(),
     })
   )
-  .handler(async (ctx) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .handler(async (ctx): Promise<any> => {
     const {
       initDatabaseWithBootstrap,
       findNodeById,

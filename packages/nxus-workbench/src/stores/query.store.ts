@@ -96,7 +96,7 @@ export const useQueryStore = create<QueryUIState>((set, get) => ({
     set({
       currentQuery: {
         ...currentQuery,
-        filters: [...currentQuery.filters, filterWithId] as QueryFilter[],
+        filters: [...(currentQuery.filters ?? []), filterWithId] as QueryFilter[],
       },
       editingFilterId: id, // Start editing the new filter
     })
@@ -108,7 +108,7 @@ export const useQueryStore = create<QueryUIState>((set, get) => ({
     set({
       currentQuery: {
         ...currentQuery,
-        filters: currentQuery.filters.map((f) =>
+        filters: (currentQuery.filters ?? []).map((f) =>
           f.id === filterId ? ({ ...f, ...updates } as QueryFilter) : f
         ),
       },
@@ -122,7 +122,7 @@ export const useQueryStore = create<QueryUIState>((set, get) => ({
     set({
       currentQuery: {
         ...currentQuery,
-        filters: currentQuery.filters.filter((f) => f.id !== filterId),
+        filters: (currentQuery.filters ?? []).filter((f) => f.id !== filterId),
       },
       // Clear editing state if removing the filter being edited
       editingFilterId: editingFilterId === filterId ? null : editingFilterId,
@@ -166,6 +166,6 @@ export const useQueryStore = create<QueryUIState>((set, get) => ({
 
   // Helpers
   getFilterById: (id: string) => {
-    return get().currentQuery.filters.find((f) => f.id === id)
+    return (get().currentQuery.filters ?? []).find((f) => f.id === id)
   },
 }))

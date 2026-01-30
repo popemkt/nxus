@@ -321,7 +321,7 @@ function SavedQueryItem({
 /**
  * Get a human-readable label for a filter
  */
-function getFilterLabel(filter: QueryDefinition['filters'][number]): string {
+function getFilterLabel(filter: NonNullable<QueryDefinition['filters']>[number]): string {
   switch (filter.type) {
     case 'supertag':
       return `#${filter.supertagId?.replace('supertag:', '') || '?'}`

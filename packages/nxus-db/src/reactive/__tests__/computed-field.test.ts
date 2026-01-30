@@ -241,8 +241,8 @@ describe('ComputedFieldService', () => {
 
   describe('COUNT aggregation', () => {
     it('should count matching nodes correctly', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
 
       const query: QueryDefinition = {
@@ -358,10 +358,10 @@ describe('ComputedFieldService', () => {
 
     it('should handle nodes without the field (skip them)', () => {
       const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       setProperty(db, sub1, 'field:price', 30)
-      // sub2 has no price
+      // sub2 (second node) has no price
 
       const query: QueryDefinition = {
         filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
@@ -476,11 +476,11 @@ describe('ComputedFieldService', () => {
     it('should only average nodes with the field', () => {
       const p1 = createNode(db, { content: 'Product 1', supertagId: 'supertag:product' })
       const p2 = createNode(db, { content: 'Product 2', supertagId: 'supertag:product' })
-      const p3 = createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
+      createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
 
       setProperty(db, p1, 'field:rating', 2)
       setProperty(db, p2, 'field:rating', 4)
-      // p3 has no rating
+      // p3 (third node) has no rating
 
       const query: QueryDefinition = {
         filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
@@ -1154,8 +1154,8 @@ describe('ComputedFieldService', () => {
     })
 
     it('should return null for SUM/AVG/MIN/MAX when all nodes lack the field', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       // Neither has the price field
 
       const query: QueryDefinition = {

@@ -33,7 +33,7 @@ import type { WebhookAction } from '../types.js'
  */
 function createMockFetch(
   defaultResponse: Partial<Response> = {},
-): Mock<Parameters<typeof fetch>, Promise<Response>> {
+): Mock<(url: string | URL | Request, init?: RequestInit) => Promise<Response>> {
   return vi.fn().mockImplementation(async () => {
     return {
       ok: true,
@@ -70,7 +70,6 @@ function createTestNode(overrides: Partial<AssembledNode> = {}): AssembledNode {
   return {
     id: 'node-456',
     content: 'Test Node Content',
-    contentPlain: 'test node content',
     systemId: 'node:test',
     ownerId: null,
     createdAt: new Date('2024-01-15T09:00:00.000Z'),

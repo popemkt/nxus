@@ -111,7 +111,7 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
     const db = getDatabase()
 
     // Build EXPLICIT_RELATIONSHIP_FIELDS set dynamically
-    const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
+    const EXPLICIT_RELATIONSHIP_FIELDS: Set<string> = new Set([
       SYSTEM_FIELDS.DEPENDENCIES,
       SYSTEM_FIELDS.PARENT,
       SYSTEM_FIELDS.TAGS,
@@ -486,7 +486,7 @@ export const getEdgesBetweenNodesServerFn = createServerFn({ method: 'GET' })
       }
 
       // Build EXPLICIT_RELATIONSHIP_FIELDS set dynamically
-      const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
+      const EXPLICIT_RELATIONSHIP_FIELDS: Set<string> = new Set([
         SYSTEM_FIELDS.DEPENDENCIES,
         SYSTEM_FIELDS.PARENT,
         SYSTEM_FIELDS.TAGS,

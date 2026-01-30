@@ -13,7 +13,7 @@ import { SYSTEM_FIELDS } from '@nxus/db'
 import type { EdgeExtractionContext, GraphEdge } from '../types.js'
 
 /** Fields handled by dedicated extractors (excluded from generic reference extraction) */
-const DEDICATED_EXTRACTORS_FIELDS = new Set([
+const DEDICATED_EXTRACTORS_FIELDS: Set<string> = new Set([
   // Handled by dependency-extractor
   SYSTEM_FIELDS.DEPENDENCIES,
   // Handled by hierarchy-extractor
@@ -27,7 +27,7 @@ const DEDICATED_EXTRACTORS_FIELDS = new Set([
 ])
 
 /** Fields that are known to contain node references */
-const KNOWN_REFERENCE_FIELDS = new Set([
+const KNOWN_REFERENCE_FIELDS: Set<string> = new Set([
   SYSTEM_FIELDS.COMMANDS,
   SYSTEM_FIELDS.REQUIRES,
   SYSTEM_FIELDS.TARGET,

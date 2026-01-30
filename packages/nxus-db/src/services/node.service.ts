@@ -7,7 +7,7 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
 import {
@@ -1301,13 +1301,12 @@ export function syncNodeSupertagsToItemTypes(
   db.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
 
   // Insert new itemTypes entries
-  // First type is primary by default
+  // First type (order=0) is primary by default
   for (let i = 0; i < types.length; i++) {
     db.insert(itemTypes)
       .values({
         itemId,
         type: types[i],
-        isPrimary: i === 0,
         order: i,
       })
       .run()
@@ -1342,12 +1341,8 @@ export function syncItemTypesToNodeSupertags(
 
   if (typeEntries.length === 0) return false
 
-  // Sort by order, primary first
-  typeEntries.sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1
-    if (!a.isPrimary && b.isPrimary) return 1
-    return (a.order ?? 0) - (b.order ?? 0)
-  })
+  // Sort by order (order=0 is primary)
+  typeEntries.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
   // Convert to supertag systemIds
   const types = typeEntries.map((e) => e.type)

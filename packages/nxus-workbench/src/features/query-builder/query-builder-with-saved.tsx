@@ -79,7 +79,7 @@ export function QueryBuilderWithSaved({
   const { createQuery, isCreating } = useCreateQuery()
   const { updateQuery, isUpdating } = useUpdateQuery()
 
-  const hasFilters = value.filters.length > 0
+  const hasFilters = (value.filters?.length ?? 0) > 0
   const isSaving = isCreating || isUpdating
   const isUpdateMode = !!loadedQueryId
 

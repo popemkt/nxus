@@ -12,22 +12,14 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
-  eq,
   getDatabase,
   initDatabase,
   initDatabaseWithBootstrap,
-  nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  SYSTEM_SUPERTAGS,
   assembleNode,
   findNodeById,
-  getNodesBySupertagWithInheritance,
-  getProperty,
   createNode,
   deleteNode,
   setProperty,
-  type NodeProperty,
 } from '@nxus/db/server'
 import type { AssembledNode, Item, ItemCommand, TagRef } from '@nxus/db'
 import { nodeToCommand, nodeToItem, nodeToTag } from './adapters.js'
@@ -118,7 +110,7 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     const nodeId = createNode(db, {
       content,
       systemId,
-      supertagSystemId,
+      supertagId: supertagSystemId,
       ownerId,
     })
 

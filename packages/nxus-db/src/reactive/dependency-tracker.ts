@@ -22,18 +22,10 @@ import type {
   QueryFilter,
   SupertagFilter,
   PropertyFilter,
-  ContentFilter,
   RelationFilter,
   TemporalFilter,
   HasFieldFilter,
   LogicalFilter,
-  isSupertagFilter,
-  isPropertyFilter,
-  isContentFilter,
-  isRelationFilter,
-  isTemporalFilter,
-  isHasFieldFilter,
-  isLogicalFilter,
 } from '../types/query.js'
 
 // ============================================================================
@@ -246,7 +238,7 @@ export function extractQueryDependencies(definition: QueryDefinition): Dependenc
   deps.add(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)
 
   // Extract dependencies from each filter
-  for (const filter of definition.filters) {
+  for (const filter of definition.filters ?? []) {
     const filterDeps = extractFilterDependencies(filter)
     for (const dep of filterDeps) {
       deps.add(dep)

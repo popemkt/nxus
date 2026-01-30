@@ -226,7 +226,7 @@ function Graph2DInner({
 
   // Handle node click
   const handleNodeClick: NodeMouseHandler = useCallback(
-    (event, node) => {
+    (_event, node) => {
       const graphNode = nodeMap.get(node.id)
       if (graphNode && onNodeClick) {
         onNodeClick(node.id, graphNode)
@@ -237,7 +237,7 @@ function Graph2DInner({
 
   // Handle node double-click (navigation or focus)
   const handleNodeDoubleClick: NodeMouseHandler = useCallback(
-    (event, node) => {
+    (_event, node) => {
       const graphNode = nodeMap.get(node.id)
       if (graphNode) {
         // If local graph is enabled, double-click changes focus
@@ -254,7 +254,7 @@ function Graph2DInner({
   )
 
   // Handle node hover - update node data directly without triggering full re-render
-  const handleNodeMouseEnter: NodeMouseHandler = useCallback((event, node) => {
+  const handleNodeMouseEnter: NodeMouseHandler = useCallback((_event, node) => {
     setHoveredNodeId(node.id)
     // Update just the hovered node's data without changing positions
     setNodes((nds) =>

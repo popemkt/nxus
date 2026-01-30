@@ -40,7 +40,7 @@ export interface QueryLinterProps {
 // ============================================================================
 
 export function QueryLinter({ query, className, compact = false }: QueryLinterProps) {
-  const hasFilters = query.filters.length > 0
+  const hasFilters = (query.filters?.length ?? 0) > 0
   const hasSort = !!query.sort
 
   // Generate query description
@@ -90,12 +90,13 @@ export function QueryLinter({ query, className, compact = false }: QueryLinterPr
  * Generate human-readable text for a query definition
  */
 function generateQueryText(query: QueryDefinition): string {
-  if (query.filters.length === 0) {
+  const filters = query.filters ?? []
+  if (filters.length === 0) {
     return 'All nodes'
   }
 
   // Top-level filters are implicitly ANDed
-  const filterTexts = query.filters.map((filter) => formatFilter(filter))
+  const filterTexts = filters.map((filter) => formatFilter(filter))
 
   if (filterTexts.length === 1) {
     return `Nodes ${filterTexts[0]}`

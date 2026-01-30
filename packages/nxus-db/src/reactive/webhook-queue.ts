@@ -146,7 +146,7 @@ export interface WebhookQueue {
  * Supports: {{ node.id }}, {{ node.content }}, {{ computedField.value }}, etc.
  */
 export function interpolateTemplate(template: string, context: WebhookContext): string {
-  return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (match, path: string) => {
+  return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_match, path: string) => {
     const value = getNestedValue(context, path.trim())
     if (value === undefined || value === null) {
       return '' // Replace with empty string if not found
