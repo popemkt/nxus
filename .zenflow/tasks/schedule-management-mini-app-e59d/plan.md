@@ -25,17 +25,18 @@ Implementation plan created (this document).
 
 ## Implementation Steps
 
-### [ ] Step: Package Setup and System Fields
+### [x] Step: Package Setup and System Fields
+<!-- chat-id: c8e63604-b442-46e2-8558-57f08a710682 -->
 
 Set up the `@nxus/calendar` package infrastructure and add calendar-related system fields to nxus-db.
 
 **Tasks:**
-- [ ] Create `packages/nxus-calendar/` directory structure
-- [ ] Create `package.json` with dependencies (react-big-calendar, date-fns, rrule, googleapis)
-- [ ] Create `tsconfig.json` extending root config
-- [ ] Create `src/index.ts` (client exports - types only)
-- [ ] Create `src/server.ts` (server exports)
-- [ ] Add calendar system fields to `packages/nxus-db/src/schemas/node-schema.ts`:
+- [x] Create `packages/nxus-calendar/` directory structure
+- [x] Create `package.json` with dependencies (react-big-calendar, date-fns, rrule, googleapis)
+- [x] Create `tsconfig.json` extending root config
+- [x] Create `src/index.ts` (client exports - types only)
+- [x] Create `src/server.ts` (server exports)
+- [x] Add calendar system fields to `packages/nxus-db/src/schemas/node-schema.ts`:
   - `START_DATE: 'field:start_date'`
   - `END_DATE: 'field:end_date'`
   - `ALL_DAY: 'field:all_day'`
@@ -43,15 +44,17 @@ Set up the `@nxus/calendar` package infrastructure and add calendar-related syst
   - `GCAL_EVENT_ID: 'field:gcal_event_id'`
   - `GCAL_SYNCED_AT: 'field:gcal_synced_at'`
   - `REMINDER: 'field:reminder'`
-- [ ] Add system supertags if not present: `TASK`, `EVENT`
-- [ ] Update `pnpm-workspace.yaml` to include calendar package
-- [ ] Update `packages/nxus-core/package.json` to depend on `@nxus/calendar`
-- [ ] Run `pnpm install` to link packages
+- [x] Add system supertags if not present: `TASK`, `EVENT`
+- [x] Update `pnpm-workspace.yaml` to include calendar package (already uses `packages/*` glob)
+- [x] Update `packages/nxus-core/package.json` to depend on `@nxus/calendar`
+- [x] Run `pnpm install` to link packages
 
 **Verification:**
 ```bash
 pnpm install && pnpm build
 ```
+
+**Completed:** Package structure created, system fields and supertags added, build successful.
 
 ### [ ] Step: Type Definitions and Utilities
 
