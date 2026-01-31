@@ -32,6 +32,7 @@ import {
   type ServerResponse,
 } from '../types/calendar-event.js'
 import { buildCalendarQuery } from '../lib/query-builder.js'
+import { getNextInstance } from '../lib/rrule-utils.js'
 
 // ============================================================================
 // Helper Functions
@@ -334,6 +335,10 @@ export const deleteCalendarEventServerFn = createServerFn({ method: 'POST' })
 
 /**
  * Toggle task completion status
+ *
+ * For recurring tasks:
+ * - When marking complete: Mark current instance as done and create next instance
+ * - When marking incomplete: Simply revert the status
  */
 export const completeTaskServerFn = createServerFn({ method: 'POST' })
   .validator(CompleteTaskInputSchema)
@@ -358,9 +363,63 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
         return { success: false, error: 'Node is not a task' }
       }
 
+      // Check if this is a recurring task
+      const rrule = getProperty<string>(node, 'rrule')
+      const isRecurring = !!rrule
+
       // Update the status
       const newStatus = completed ? 'done' : 'pending'
       setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, newStatus)
+
+      // For recurring tasks being marked as complete, create the next instance
+      if (completed && isRecurring && rrule) {
+        const currentStartStr = getProperty<string>(node, 'start_date')
+        const currentEndStr = getProperty<string>(node, 'end_date')
+        const allDay = getProperty<boolean>(node, 'all_day') ?? false
+        const reminder = getProperty<number>(node, 'reminder')
+        const description = getProperty<string>(node, 'description')
+
+        const currentStart = currentStartStr ? new Date(currentStartStr) : new Date()
+        const currentEnd = currentEndStr ? new Date(currentEndStr) : new Date(currentStart.getTime() + 60 * 60 * 1000)
+
+        // Calculate duration of the task
+        const duration = currentEnd.getTime() - currentStart.getTime()
+
+        // Get the next occurrence based on the current start date
+        const nextOccurrence = getNextInstance(rrule, currentStart)
+
+        if (nextOccurrence) {
+          // Create a new task node for the next occurrence
+          const nextTaskId = createNode(db, {
+            content: node.content,
+            supertagId: SYSTEM_SUPERTAGS.TASK,
+            ownerId: node.ownerId,
+          })
+
+          // Set the dates for the next occurrence
+          setProperty(db, nextTaskId, SYSTEM_FIELDS.START_DATE, nextOccurrence.toISOString())
+          setProperty(db, nextTaskId, SYSTEM_FIELDS.END_DATE, new Date(nextOccurrence.getTime() + duration).toISOString())
+          setProperty(db, nextTaskId, SYSTEM_FIELDS.ALL_DAY, allDay)
+          setProperty(db, nextTaskId, SYSTEM_FIELDS.RRULE, rrule)
+          setProperty(db, nextTaskId, SYSTEM_FIELDS.STATUS, 'pending')
+
+          // Copy optional fields
+          if (reminder !== undefined && reminder !== null) {
+            setProperty(db, nextTaskId, SYSTEM_FIELDS.REMINDER, reminder)
+          }
+          if (description) {
+            setProperty(db, nextTaskId, SYSTEM_FIELDS.DESCRIPTION, description)
+          }
+
+          console.log('[completeTaskServerFn] Created next recurring task instance:', nextTaskId, 'at', nextOccurrence.toISOString())
+        } else {
+          console.log('[completeTaskServerFn] No more occurrences for recurring task')
+        }
+
+        // Remove the rrule from the completed task so it doesn't expand again
+        // The recurrence pattern is now carried by the new instance
+        setProperty(db, nodeId, SYSTEM_FIELDS.RRULE, '')
+      }
 
       saveDatabase()
 

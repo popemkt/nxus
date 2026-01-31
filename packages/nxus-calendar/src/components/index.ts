@@ -47,3 +47,9 @@ export {
   EventModal,
   type EventModalProps,
 } from './event-modal.js'
+
+// Recurrence Selector
+export {
+  RecurrenceSelector,
+  type RecurrenceSelectorProps,
+} from './recurrence-selector.js'

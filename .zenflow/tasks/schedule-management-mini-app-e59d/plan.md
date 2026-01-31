@@ -407,24 +407,25 @@ pnpm typecheck && pnpm lint
   - Included `isUpdating` in the `isFetching` state for loading indicator
 - TypeScript verification passed. Dev server starts without errors.
 
-### [ ] Step: Recurring Events Support
+### [x] Step: Recurring Events Support
+<!-- chat-id: 06b6e74a-1a02-4ed5-a218-6df83be4611b -->
 
 Implement recurrence pattern handling for events.
 
 **Tasks:**
-- [ ] Update event creation modal:
+- [x] Update event creation modal:
   - Add recurrence pattern selector
   - Options: None, Daily, Weekly, Monthly, Custom
   - Custom opens RRULE editor (weekdays, interval, until/count)
   - Store as RRULE string in field:rrule
-- [ ] Update use-calendar-events hook:
+- [x] Update use-calendar-events hook:
   - Expand recurring events within visible date range
   - Use rrule-utils expandRecurrence function
   - Add recurrence icon to expanded instances
-- [ ] Update event-block component:
+- [x] Update event-block component:
   - Show recurrence icon if event has rrule
   - Tooltip shows human-readable recurrence
-- [ ] Update completeTaskServerFn for recurring tasks:
+- [x] Update completeTaskServerFn for recurring tasks:
   - Mark current instance complete
   - Create next instance using getNextInstance
   - New instance starts from completion date
@@ -435,6 +436,28 @@ pnpm typecheck && pnpm lint
 # Manual: Create recurring event, verify instances appear
 # Manual: Complete recurring task, verify next instance created
 ```
+
+**Completed:** Recurring Events Support implemented:
+- Created `packages/nxus-calendar/src/components/recurrence-selector.tsx`:
+  - RecurrenceSelector component with preset dropdown (None, Daily, Weekdays, Weekly, Biweekly, Monthly, Yearly)
+  - Custom recurrence editor with interval, frequency, weekday selection (for weekly), and end condition (never, after N occurrences, on date)
+  - Uses existing rrule-utils functions (buildRRule, parseToPattern, formatPatternHumanReadable)
+- Updated `create-event-modal.tsx`:
+  - Added RecurrenceSelector component to the form
+  - Passes rrule to createCalendarEventServerFn
+  - Computes startDateForRecurrence for the selector
+- Updated `event-modal.tsx`:
+  - Added RecurrenceSelector to edit mode
+  - View mode shows human-readable recurrence description using formatRRuleHumanReadable
+  - Passes rrule to updateCalendarEventServerFn
+- Updated `completeTaskServerFn` in `calendar.server.ts`:
+  - Detects if task is recurring (has rrule field)
+  - When completing a recurring task: creates next instance with same properties and rrule, advances start date to next occurrence, clears rrule from completed instance
+  - Uses getNextInstance from rrule-utils
+- Note: use-calendar-events hook already had recurrence expansion implemented
+- Note: event-block component already showed recurring icon
+
+TypeScript verification passed. Build successful.
 
 ### [ ] Step: Google Calendar Sync Server Functions
 

@@ -5,10 +5,10 @@
  * - Form fields: title, type (task/event), start/end date/time, all-day toggle
  * - Pre-fills date/time from clicked slot
  * - Submits via createCalendarEventServerFn
- * - Optional: description, reminder
+ * - Optional: description, reminder, recurrence
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { format, addHours, startOfDay } from 'date-fns'
 import {
@@ -36,6 +36,7 @@ import type {
   CreateCalendarEventInput,
 } from '../types/calendar-event.js'
 import { useCreateEvent } from '../hooks/use-event-mutations.js'
+import { RecurrenceSelector } from './recurrence-selector.js'
 
 // ============================================================================
 // Types
@@ -68,6 +69,7 @@ interface FormData {
   allDay: boolean
   description: string
   reminder: string // 'none' | '5' | '10' | '15' | '30' | '60' | '1440' (minutes)
+  rrule: string | undefined // RFC 5545 recurrence rule
 }
 
 // ============================================================================
@@ -134,6 +136,7 @@ function getDefaultFormData(slotInfo?: SlotSelectInfo | null): FormData {
     allDay: isAllDaySelection,
     description: '',
     reminder: 'none',
+    rrule: undefined,
   }
 }
 
@@ -215,6 +218,15 @@ export function CreateEventModal({
     []
   )
 
+  // Compute the start date as a Date object for the recurrence selector
+  const startDateForRecurrence = useMemo(() => {
+    if (!formData.startDate) return new Date()
+    if (formData.allDay) {
+      return new Date(formData.startDate + 'T00:00:00')
+    }
+    return combineDateAndTime(formData.startDate, formData.startTime || '00:00')
+  }, [formData.startDate, formData.startTime, formData.allDay])
+
 
   // Validate form
   const validate = useCallback((): boolean => {
@@ -291,6 +303,7 @@ export function CreateEventModal({
           formData.reminder !== 'none'
             ? parseInt(formData.reminder, 10)
             : undefined,
+        rrule: formData.rrule || undefined,
       }
 
       await createEvent(input)
@@ -487,6 +500,14 @@ export function CreateEventModal({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Recurrence */}
+            <RecurrenceSelector
+              value={formData.rrule}
+              onChange={(rrule) => updateField('rrule', rrule)}
+              startDate={startDateForRecurrence}
+              disabled={isCreating}
+            />
 
             {/* Error Message */}
             {error && (

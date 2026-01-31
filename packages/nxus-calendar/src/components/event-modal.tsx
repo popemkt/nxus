@@ -9,7 +9,7 @@
  * - For tasks: show completion checkbox
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { format, addHours, startOfDay } from 'date-fns'
 import {
@@ -44,6 +44,8 @@ import type {
   UpdateCalendarEventInput,
 } from '../types/calendar-event.js'
 import { useUpdateEvent, useDeleteEvent, useCompleteTask } from '../hooks/use-event-mutations.js'
+import { RecurrenceSelector } from './recurrence-selector.js'
+import { formatRRuleHumanReadable } from '../lib/rrule-utils.js'
 
 // ============================================================================
 // Types
@@ -80,6 +82,7 @@ interface FormData {
   allDay: boolean
   description: string
   reminder: string
+  rrule: string | undefined
 }
 
 // ============================================================================
@@ -128,6 +131,7 @@ function eventToFormData(event: CalendarEvent): FormData {
     allDay: event.allDay,
     description: event.description ?? '',
     reminder: event.reminderMinutes?.toString() ?? 'none',
+    rrule: event.rrule,
   }
 }
 
@@ -215,6 +219,7 @@ export function EventModal({
       allDay: false,
       description: '',
       reminder: 'none',
+      rrule: undefined,
     }
   )
   const [error, setError] = useState<string | null>(null)
@@ -273,6 +278,15 @@ export function EventModal({
     },
     []
   )
+
+  // Compute the start date as a Date object for the recurrence selector
+  const startDateForRecurrence = useMemo(() => {
+    if (!formData.startDate) return new Date()
+    if (formData.allDay) {
+      return new Date(formData.startDate + 'T00:00:00')
+    }
+    return combineDateAndTime(formData.startDate, formData.startTime || '00:00')
+  }, [formData.startDate, formData.startTime, formData.allDay])
 
   // Switch to edit mode
   const handleEditClick = useCallback(() => {
@@ -367,6 +381,7 @@ export function EventModal({
           formData.reminder !== 'none'
             ? parseInt(formData.reminder, 10)
             : undefined,
+        rrule: formData.rrule || undefined,
       }
 
       await updateEvent(input)
@@ -499,7 +514,7 @@ export function EventModal({
               {event.rrule && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <ArrowsClockwiseIcon className="size-4" />
-                  <span>Recurring event</span>
+                  <span>{formatRRuleHumanReadable(event.rrule)}</span>
                 </div>
               )}
 
@@ -685,6 +700,14 @@ export function EventModal({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Recurrence */}
+              <RecurrenceSelector
+                value={formData.rrule}
+                onChange={(rrule) => updateField('rrule', rrule)}
+                startDate={startDateForRecurrence}
+                disabled={isLoading}
+              />
 
               {/* Error Message */}
               {error && (
