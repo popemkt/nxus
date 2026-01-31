@@ -517,25 +517,26 @@ npx tsc --noEmit -p packages/nxus-calendar/tsconfig.json
 
 TypeScript verification passed.
 
-### [ ] Step: Google Sync UI Components
+### [x] Step: Google Sync UI Components
+<!-- chat-id: b7a16c3c-16bb-45ff-8721-74ab52321c48 -->
 
 Add UI components for Google Calendar sync.
 
 **Tasks:**
-- [ ] Create `src/hooks/use-google-sync.ts`:
+- [x] Create `src/hooks/use-google-sync.ts`:
   - State: isConnected, isSyncing, lastSyncAt, error
   - Actions: connect, disconnect, sync
   - Use TanStack Query for status polling
-- [ ] Create `src/components/sync-status-badge.tsx`:
+- [x] Create `src/components/sync-status-badge.tsx`:
   - Show sync status on individual events
   - Icons: synced, pending, error
   - Tooltip with last sync time
-- [ ] Update calendar-toolbar.tsx:
+- [x] Update calendar-toolbar.tsx:
   - "Connect Google Calendar" button if not connected
   - "Sync" button if connected
   - Show loading state during sync
   - Show sync error toast on failure
-- [ ] Add Google OAuth callback route:
+- [x] Add Google OAuth callback route:
   - Handle redirect from Google
   - Exchange code and store tokens
   - Redirect back to calendar
@@ -546,6 +547,36 @@ pnpm typecheck && pnpm lint
 # Manual: Connect Google account, verify OAuth flow
 # Manual: Sync events, verify they appear in Google Calendar
 ```
+
+**Completed:** Google Sync UI Components implemented:
+- Created `packages/nxus-calendar/src/hooks/use-google-sync.ts`:
+  - `useGoogleSyncStatus` - TanStack Query hook for monitoring sync status with optional polling
+  - `useGoogleSync` - Mutation hook for syncing events to Google Calendar
+  - `useGoogleConnect` - Hook for OAuth flow (getAuthUrl, completeAuth, disconnect)
+  - `useGoogleCalendars` - Hook for listing and selecting target calendars
+  - `useGoogleCalendarSync` - Combined convenience hook with all sync functionality
+  - Query keys export for cache management
+- Created `packages/nxus-calendar/src/components/sync-status-badge.tsx`:
+  - `SyncStatusBadge` - Shows sync status for individual events (synced, pending, syncing, error, not_synced)
+  - `SyncIndicator` - Minimal Google icon indicator for synced events
+  - `ConnectionStatus` - Display component showing connection state and email
+  - `SyncButton` - Button component for triggering sync with status indicators
+- Updated `packages/nxus-calendar/src/components/calendar-toolbar.tsx`:
+  - Added `GoogleSyncToolbarButton` internal component with state-based rendering
+  - Added new props: pendingCount, connectedEmail, syncError, onConnectClick
+  - Shows different button states: not connected, syncing, connected with pending count, error
+  - Added GoogleIcon, CloudOffIcon, AlertCircleIcon SVG components
+- Created `packages/nxus-core/src/routes/calendar.oauth-callback.tsx`:
+  - TanStack Router route at `/calendar/oauth-callback`
+  - Handles OAuth code exchange from Google redirect
+  - Shows processing, success, and error states
+  - Auto-redirects to calendar on success
+- Updated `packages/nxus-core/src/routes/calendar.tsx`:
+  - Integrated `useGoogleCalendarSync` hook
+  - Passes Google sync props to CalendarRoute
+- Updated exports in hooks/index.ts and components/index.ts
+
+TypeScript verification passed for nxus-calendar package.
 
 ### [ ] Step: Calendar Settings UI
 

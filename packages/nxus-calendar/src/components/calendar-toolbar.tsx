@@ -5,14 +5,14 @@
  * - View switcher (Day | Week | Month | Agenda)
  * - Date navigation (< Today >)
  * - Period label display
- * - Google sync button (placeholder for future implementation)
+ * - Google sync button with status indicators
  */
 
 import { useCallback } from 'react'
 import type { ToolbarProps, View } from 'react-big-calendar'
 import { Button } from '@nxus/ui'
 import { cn } from '@nxus/ui'
-import type { BigCalendarEvent, CalendarView } from '../types/calendar-event.js'
+import type { BigCalendarEvent } from '../types/calendar-event.js'
 
 // ============================================================================
 // Types
@@ -25,8 +25,20 @@ export interface CalendarToolbarProps extends ToolbarProps<BigCalendarEvent, obj
   /** Whether sync is in progress */
   isSyncing?: boolean
 
+  /** Number of events pending sync */
+  pendingCount?: number
+
+  /** Connected Google email */
+  connectedEmail?: string
+
+  /** Sync error message */
+  syncError?: string
+
   /** Called when sync button is clicked */
   onSyncClick?: () => void
+
+  /** Called when connect button is clicked (for non-connected state) */
+  onConnectClick?: () => void
 
   /** Called when settings button is clicked */
   onSettingsClick?: () => void
@@ -102,6 +114,53 @@ function SyncIcon({ className }: { className?: string }) {
   )
 }
 
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
+  )
+}
+
+function CloudOffIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m2 2 20 20" />
+      <path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193" />
+      <path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07" />
+    </svg>
+  )
+}
+
+function AlertCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  )
+}
+
 function SettingsIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -139,6 +198,106 @@ function CalendarIcon({ className }: { className?: string }) {
 }
 
 // ============================================================================
+// Google Sync Toolbar Button
+// ============================================================================
+
+interface GoogleSyncToolbarButtonProps {
+  isConnected: boolean
+  isSyncing: boolean
+  pendingCount: number
+  connectedEmail?: string
+  error?: string
+  onSyncClick?: () => void
+  onConnectClick?: () => void
+}
+
+/**
+ * Google sync button with status indicators for the toolbar
+ */
+function GoogleSyncToolbarButton({
+  isConnected,
+  isSyncing,
+  pendingCount,
+  connectedEmail,
+  error,
+  onSyncClick,
+  onConnectClick,
+}: GoogleSyncToolbarButtonProps) {
+  // Error state
+  if (error) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onSyncClick}
+        className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+        title={error}
+      >
+        <AlertCircleIcon className="size-3.5" />
+        <span className="hidden sm:inline">Error</span>
+      </Button>
+    )
+  }
+
+  // Not connected state
+  if (!isConnected) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onConnectClick ?? onSyncClick}
+        className="gap-1.5"
+        title="Connect to Google Calendar"
+      >
+        <CloudOffIcon className="size-3.5" />
+        <span className="hidden sm:inline">Connect</span>
+      </Button>
+    )
+  }
+
+  // Syncing state
+  if (isSyncing) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className="gap-1.5 cursor-wait"
+        title="Syncing with Google Calendar..."
+      >
+        <SyncIcon className="size-3.5 animate-spin" />
+        <span className="hidden sm:inline">Syncing...</span>
+      </Button>
+    )
+  }
+
+  // Connected state
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onSyncClick}
+      className="gap-1.5"
+      title={
+        pendingCount > 0
+          ? `Sync ${pendingCount} pending events to Google Calendar`
+          : connectedEmail
+            ? `Connected as ${connectedEmail}`
+            : 'Sync with Google Calendar'
+      }
+    >
+      <GoogleIcon className="size-3.5" />
+      <span className="hidden sm:inline">Sync</span>
+      {pendingCount > 0 && (
+        <span className="ml-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+          {pendingCount}
+        </span>
+      )}
+    </Button>
+  )
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -172,7 +331,11 @@ export function CalendarToolbar({
   onView,
   isGoogleConnected,
   isSyncing,
+  pendingCount = 0,
+  connectedEmail,
+  syncError,
   onSyncClick,
+  onConnectClick,
   onSettingsClick,
   className,
 }: CalendarToolbarProps) {
@@ -284,27 +447,17 @@ export function CalendarToolbar({
           </select>
         </div>
 
-        {/* Sync button */}
-        {onSyncClick && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSyncClick}
-            disabled={isSyncing}
-            className={cn('gap-1.5', isSyncing && 'cursor-wait')}
-            title={
-              isGoogleConnected
-                ? 'Sync with Google Calendar'
-                : 'Connect Google Calendar'
-            }
-          >
-            <SyncIcon
-              className={cn('size-3.5', isSyncing && 'animate-spin')}
-            />
-            <span className="hidden sm:inline">
-              {isGoogleConnected ? 'Sync' : 'Connect'}
-            </span>
-          </Button>
+        {/* Google Sync button */}
+        {(onSyncClick || onConnectClick) && (
+          <GoogleSyncToolbarButton
+            isConnected={isGoogleConnected ?? false}
+            isSyncing={isSyncing ?? false}
+            pendingCount={pendingCount}
+            connectedEmail={connectedEmail}
+            error={syncError}
+            onSyncClick={onSyncClick}
+            onConnectClick={onConnectClick}
+          />
         )}
 
         {/* Settings button */}

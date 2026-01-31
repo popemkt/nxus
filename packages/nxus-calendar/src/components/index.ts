@@ -53,3 +53,15 @@ export {
   RecurrenceSelector,
   type RecurrenceSelectorProps,
 } from './recurrence-selector.js'
+
+// Sync Status Components
+export {
+  SyncStatusBadge,
+  SyncIndicator,
+  ConnectionStatus,
+  SyncButton,
+  type SyncStatusBadgeProps,
+  type SyncIndicatorProps,
+  type ConnectionStatusProps,
+  type SyncButtonProps,
+} from './sync-status-badge.js'

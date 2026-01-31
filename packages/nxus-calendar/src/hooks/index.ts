@@ -42,3 +42,21 @@ export {
   type UseCompleteTaskResult,
   type MutationCallbacks,
 } from './use-event-mutations.js'
+
+// Google Sync
+export {
+  useGoogleSyncStatus,
+  useGoogleSync,
+  useGoogleConnect,
+  useGoogleCalendars,
+  useGoogleCalendarSync,
+  googleSyncKeys,
+  type UseGoogleSyncStatusOptions,
+  type UseGoogleSyncStatusResult,
+  type UseGoogleSyncOptions,
+  type UseGoogleSyncResult,
+  type UseGoogleConnectResult,
+  type UseGoogleCalendarsResult,
+  type UseGoogleCalendarSyncOptions,
+  type UseGoogleCalendarSyncResult,
+} from './use-google-sync.js'
