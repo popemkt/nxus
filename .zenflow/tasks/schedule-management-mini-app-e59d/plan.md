@@ -91,30 +91,33 @@ pnpm typecheck
 
 **Completed:** All type definitions and utility functions created. TypeScript verification passed.
 
-### [ ] Step: Server Functions for Event CRUD
+### [x] Step: Server Functions for Event CRUD
+<!-- chat-id: ed3bb33a-7594-4265-b54b-89035a999e34 -->
 
 Implement server functions for calendar event operations using the existing query evaluator.
 
 **Tasks:**
-- [ ] Create `src/server/calendar.server.ts`:
+- [x] Create `src/server/calendar.server.ts`:
   - `getCalendarEventsServerFn` - fetch events for date range using query evaluator
   - `createCalendarEventServerFn` - create new event/task node
   - `updateCalendarEventServerFn` - update event properties
   - `deleteCalendarEventServerFn` - delete event node
   - `completeTaskServerFn` - toggle task completion status
-- [ ] Create `src/server/index.ts` exporting all server functions
-- [ ] Update `src/server.ts` to re-export from server/index.ts
+  - `getCalendarEventServerFn` - fetch single event by ID
+- [x] Create `src/server/index.ts` exporting all server functions
+- [x] Update `src/server.ts` to re-export from server/index.ts
 
 **Key patterns to follow:**
 - Use `createServerFn` from `@tanstack/react-start`
-- Use Zod for input validation
-- Dynamic import of `@nxus/db/server` to avoid bundling issues
+- Use Zod for input validation (via `.validator()`)
 - Return `{ success: boolean, data?, error? }` pattern
 
 **Verification:**
 ```bash
-pnpm typecheck && pnpm lint
+pnpm typecheck && pnpm build
 ```
+
+**Completed:** All server functions created and verified with successful build.
 
 ### [ ] Step: Zustand Store and React Hooks
 
