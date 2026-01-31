@@ -8,10 +8,10 @@
  */
 
 // Types (TypeScript types and Zod schemas)
-// export * from './types/index.js'
+export * from './types/index.js'
 
 // Utilities (pure functions - no React deps)
-// export * from './lib/index.js'
+export * from './lib/index.js'
 
 // React components (for client-side use)
 // export * from './components/index.js'
@@ -22,5 +22,5 @@
 // Zustand stores
 // export * from './stores/index.js'
 
-// Placeholder export to prevent "no exports" error
+// Package version
 export const CALENDAR_VERSION = '0.0.1'

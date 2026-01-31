@@ -56,37 +56,40 @@ pnpm install && pnpm build
 
 **Completed:** Package structure created, system fields and supertags added, build successful.
 
-### [ ] Step: Type Definitions and Utilities
+### [x] Step: Type Definitions and Utilities
+<!-- chat-id: 41a3e350-957f-45fb-963e-dcaaaef1bcef -->
 
 Create TypeScript types, Zod schemas, and date utility functions for calendar operations.
 
 **Tasks:**
-- [ ] Create `src/types/calendar-event.ts`:
+- [x] Create `src/types/calendar-event.ts`:
   - `CalendarEvent` interface (id, title, start, end, allDay, isTask, isCompleted, rrule, etc.)
   - `BigCalendarEvent` interface (wrapper for react-big-calendar)
   - Zod schemas for input validation
-- [ ] Create `src/types/google-sync.ts`:
+- [x] Create `src/types/google-sync.ts`:
   - `GoogleSyncStatus` type
   - `GoogleAuthState` type
   - Zod schemas for sync operations
-- [ ] Create `src/types/index.ts` exporting all types
-- [ ] Create `src/lib/date-utils.ts`:
+- [x] Create `src/types/index.ts` exporting all types
+- [x] Create `src/lib/date-utils.ts`:
   - `toUTC()`, `fromUTC()` - timezone conversion
   - `getDateRange(view, date)` - calculate visible date range for view
   - `formatTimeRange()` - display time ranges
-- [ ] Create `src/lib/rrule-utils.ts`:
+- [x] Create `src/lib/rrule-utils.ts`:
   - `parseRRule()` - parse RRULE string
   - `expandRecurrence(rrule, range)` - expand instances within range
   - `formatRRuleHumanReadable()` - display recurrence pattern
   - `getNextInstance(rrule, fromDate)` - calculate next occurrence
-- [ ] Create `src/lib/query-builder.ts`:
+- [x] Create `src/lib/query-builder.ts`:
   - `buildCalendarQuery(dateRange, options)` - build query for events in range
-- [ ] Create `src/lib/index.ts` exporting all utilities
+- [x] Create `src/lib/index.ts` exporting all utilities
 
 **Verification:**
 ```bash
 pnpm typecheck
 ```
+
+**Completed:** All type definitions and utility functions created. TypeScript verification passed.
 
 ### [ ] Step: Server Functions for Event CRUD
 
