@@ -26,6 +26,7 @@ import {
   CalendarEmptyState,
   CalendarSkeleton,
   CreateEventModal,
+  EventModal,
 } from './components/index.js'
 
 // Hooks
@@ -58,7 +59,7 @@ export interface CalendarRouteProps {
   /** Callback when create event is requested (if provided, external modal handling) */
   onCreateEvent?: (slotInfo: SlotSelectInfo) => void
 
-  /** Callback when an event is selected */
+  /** Callback when an event is selected (if provided, external modal handling) */
   onSelectEvent?: (event: CalendarEvent) => void
 
   /** Callback when settings is clicked */
@@ -75,6 +76,9 @@ export interface CalendarRouteProps {
 
   /** Whether to use the built-in create event modal (default: true if onCreateEvent not provided) */
   useBuiltInModal?: boolean
+
+  /** Whether to use the built-in event detail modal (default: true if onSelectEvent not provided) */
+  useBuiltInEventModal?: boolean
 }
 
 // ============================================================================
@@ -117,6 +121,7 @@ export function CalendarRoute({
   isGoogleConnected = false,
   isSyncing = false,
   useBuiltInModal,
+  useBuiltInEventModal,
 }: CalendarRouteProps) {
   // State for selected slot (when user clicks to create event)
   const [selectedSlot, setSelectedSlot] = useState<SlotSelectInfo | null>(null)
@@ -124,8 +129,17 @@ export function CalendarRoute({
   // State for the built-in create event modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
+  // State for selected event (when user clicks an event)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+
+  // State for the built-in event modal
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+
   // Determine if we should use the built-in modal
   const shouldUseBuiltInModal = useBuiltInModal ?? !onCreateEvent
+
+  // Determine if we should use the built-in event modal
+  const shouldUseBuiltInEventModal = useBuiltInEventModal ?? !onSelectEvent
 
   // Navigation state
   const {
@@ -176,9 +190,17 @@ export function CalendarRoute({
   // Handle event selection
   const handleSelectEvent = useCallback(
     (event: CalendarEvent) => {
-      onSelectEvent?.(event)
+      setSelectedEvent(event)
+
+      if (shouldUseBuiltInEventModal) {
+        // Use the built-in event modal
+        setIsEventModalOpen(true)
+      } else {
+        // Call the external handler
+        onSelectEvent?.(event)
+      }
     },
-    [onSelectEvent]
+    [onSelectEvent, shouldUseBuiltInEventModal]
   )
 
   // Handle task completion toggle
@@ -364,6 +386,27 @@ export function CalendarRoute({
           onSuccess={() => {
             // Modal will close automatically, just clear the selected slot
             setSelectedSlot(null)
+          }}
+        />
+      )}
+
+      {/* Built-in Event Detail Modal */}
+      {shouldUseBuiltInEventModal && (
+        <EventModal
+          open={isEventModalOpen}
+          onOpenChange={(open) => {
+            setIsEventModalOpen(open)
+            if (!open) {
+              setSelectedEvent(null)
+            }
+          }}
+          event={selectedEvent}
+          onUpdateSuccess={() => {
+            // Refetch will happen automatically via query invalidation
+          }}
+          onDeleteSuccess={() => {
+            // Modal will close automatically, clear the selected event
+            setSelectedEvent(null)
           }}
         />
       )}

@@ -321,21 +321,22 @@ pnpm typecheck && pnpm lint
 
 TypeScript verification passed. Dev server starts without errors.
 
-### [ ] Step: Event Detail Modal
+### [x] Step: Event Detail Modal
+<!-- chat-id: c1260725-2bf3-44ab-8f62-ce9da64c56e7 -->
 
 Implement the modal for viewing and editing existing events.
 
 **Tasks:**
-- [ ] Create `src/components/event-modal.tsx`:
+- [x] Create `src/components/event-modal.tsx`:
   - View mode: display all event details
   - Edit mode: form to modify event properties
   - Delete button with confirmation
   - Show sync status if synced to Google
   - For tasks: show completion checkbox
-- [ ] Add event click handler in calendar-container
+- [x] Add event click handler in calendar-container
   - onSelectEvent callback
   - Open event modal with event data
-- [ ] Integrate mutations for update/delete
+- [x] Integrate mutations for update/delete
 
 **Verification:**
 ```bash
@@ -344,6 +345,23 @@ pnpm typecheck && pnpm lint
 # Manual: Edit event, verify changes persist
 # Manual: Delete event, verify removal
 ```
+
+**Completed:** Event Detail Modal implemented:
+- Created `packages/nxus-calendar/src/components/event-modal.tsx` with:
+  - View mode: displays event title, date/time range, description, reminder, recurring indicator, Google sync status
+  - For tasks: interactive completion checkbox in view mode
+  - Edit mode: full form to modify title, dates, times, all-day toggle, description, reminder
+  - Delete button with confirmation overlay dialog
+  - Loading states for all mutations (update, delete, complete)
+  - Error display and validation
+- Updated `route.tsx`:
+  - Added `useBuiltInEventModal` prop (defaults to true if no external handler)
+  - State management for selected event and modal visibility
+  - Event click opens modal automatically
+  - Modal closes and clears state on delete success
+- Updated `components/index.ts` to export EventModal and EventModalProps
+
+TypeScript verification passed. Dev server starts without errors.
 
 ### [ ] Step: Drag and Drop Rescheduling
 

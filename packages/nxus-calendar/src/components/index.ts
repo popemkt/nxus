@@ -41,3 +41,9 @@ export {
   CreateEventModal,
   type CreateEventModalProps,
 } from './create-event-modal.js'
+
+// Event Modal (view/edit/delete)
+export {
+  EventModal,
+  type EventModalProps,
+} from './event-modal.js'
