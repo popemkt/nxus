@@ -324,9 +324,9 @@ function SavedQueryItem({
 function getFilterLabel(filter: QueryDefinition['filters'][number]): string {
   switch (filter.type) {
     case 'supertag':
-      return `#${filter.supertagSystemId?.replace('supertag:', '') || '?'}`
+      return `#${filter.supertagId?.replace('supertag:', '') || '?'}`
     case 'property':
-      return `${filter.fieldSystemId?.replace('field:', '') || '?'} ${filter.op} ${filter.value || '?'}`
+      return `${filter.fieldId?.replace('field:', '') || '?'} ${filter.op} ${filter.value || '?'}`
     case 'content':
       return `"${filter.query?.slice(0, 20) || '?'}${(filter.query?.length ?? 0) > 20 ? '...' : ''}"`
     case 'temporal':
@@ -334,7 +334,7 @@ function getFilterLabel(filter: QueryDefinition['filters'][number]): string {
     case 'relation':
       return filter.relationType || 'relation'
     case 'hasField':
-      return `${filter.negate ? '!' : ''}has:${filter.fieldSystemId?.replace('field:', '') || '?'}`
+      return `${filter.negate ? '!' : ''}has:${filter.fieldId?.replace('field:', '') || '?'}`
     case 'and':
       return `AND (${filter.filters?.length ?? 0})`
     case 'or':

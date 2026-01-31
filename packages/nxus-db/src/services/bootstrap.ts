@@ -7,30 +7,30 @@
  * This should be called BEFORE any app-specific seeding.
  */
 
-import { eq } from 'drizzle-orm'
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { uuidv7 } from 'uuidv7'
-import type * as schema from '../schemas/item-schema.js'
+import { eq } from 'drizzle-orm';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { uuidv7 } from 'uuidv7';
+import type * as schema from '../schemas/item-schema.js';
 import {
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-} from '../schemas/node-schema.js'
+} from '../schemas/node-schema.js';
 
-type DatabaseInstance = BetterSQLite3Database<typeof schema>
+type DatabaseInstance = BetterSQLite3Database<typeof schema>;
 
 // UUID cache for system nodes (systemId -> UUID)
-const systemNodeIds = new Map<string, string>()
+const systemNodeIds = new Map<string, string>();
 
 /**
  * Get or create UUID for a system node
  */
 function getSystemNodeId(systemId: string): string {
   if (!systemNodeIds.has(systemId)) {
-    systemNodeIds.set(systemId, uuidv7())
+    systemNodeIds.set(systemId, uuidv7());
   }
-  return systemNodeIds.get(systemId)!
+  return systemNodeIds.get(systemId)!;
 }
 
 /**
@@ -46,15 +46,15 @@ function upsertSystemNode(
     .select()
     .from(nodes)
     .where(eq(nodes.systemId, systemId))
-    .get()
+    .get();
 
   if (existing) {
-    systemNodeIds.set(systemId, existing.id)
-    if (verbose) console.log(`  ✓ Found existing: ${content}`)
-    return existing.id
+    systemNodeIds.set(systemId, existing.id);
+    if (verbose) console.log(`  ✓ Found existing: ${content}`);
+    return existing.id;
   }
 
-  const id = getSystemNodeId(systemId)
+  const id = getSystemNodeId(systemId);
   db.insert(nodes)
     .values({
       id,
@@ -64,9 +64,9 @@ function upsertSystemNode(
       createdAt: new Date(),
       updatedAt: new Date(),
     })
-    .run()
-  if (verbose) console.log(`  + Created: ${content}`)
-  return id
+    .run();
+  if (verbose) console.log(`  + Created: ${content}`);
+  return id;
 }
 
 /**
@@ -84,7 +84,7 @@ function setProperty(
     .from(nodeProperties)
     .where(eq(nodeProperties.nodeId, nodeId))
     .all()
-    .find((p) => p.fieldNodeId === fieldNodeId && p.value === value)
+    .find((p) => p.fieldNodeId === fieldNodeId && p.value === value);
 
   if (!existing) {
     db.insert(nodeProperties)
@@ -96,7 +96,7 @@ function setProperty(
         createdAt: new Date(),
         updatedAt: new Date(),
       })
-      .run()
+      .run();
   }
 }
 
@@ -110,22 +110,28 @@ function assignSupertag(
   supertagFieldId: string,
   order: number = 0,
 ): void {
-  setProperty(db, nodeId, supertagFieldId, JSON.stringify(supertagNodeId), order)
+  setProperty(
+    db,
+    nodeId,
+    supertagFieldId,
+    JSON.stringify(supertagNodeId),
+    order,
+  );
 }
 
 export interface BootstrapOptions {
   /** Whether to print progress to console */
-  verbose?: boolean
+  verbose?: boolean;
   /** Skip initialization if db is already initialized (deprecated - use db parameter instead) */
-  skipInit?: boolean
+  skipInit?: boolean;
   /** Database instance to use (if not provided, will call initDatabase) */
-  db?: DatabaseInstance
+  db?: DatabaseInstance;
 }
 
 export interface BootstrapResult {
-  nodeCount: number
-  propertyCount: number
-  alreadyBootstrapped: boolean
+  nodeCount: number;
+  propertyCount: number;
+  alreadyBootstrapped: boolean;
 }
 
 /**
@@ -137,8 +143,8 @@ export function isBootstrapped(db: DatabaseInstance): boolean {
     .select()
     .from(nodes)
     .where(eq(nodes.systemId, SYSTEM_FIELDS.SUPERTAG))
-    .get()
-  return !!supertagField
+    .get();
+  return !!supertagField;
 }
 
 /**
@@ -159,24 +165,23 @@ export function bootstrapSystemNodesSync(
   db: DatabaseInstance,
   options: Omit<BootstrapOptions, 'db' | 'skipInit'> = {},
 ): BootstrapResult {
-  const { verbose = false } = options
+  const { verbose = false } = options;
 
   // Check if already bootstrapped
-  if (isBootstrapped(db)) {
+  const alreadyBootstrapped = isBootstrapped(db);
+  if (alreadyBootstrapped) {
     if (verbose) {
-      console.log('System already bootstrapped, skipping...')
+      console.log('System already bootstrapped, ensuring all fields exist...');
     }
-    const nodeCount = db.select().from(nodes).all().length
-    const propertyCount = db.select().from(nodeProperties).all().length
-    return { nodeCount, propertyCount, alreadyBootstrapped: true }
+    // Continue to ensure all fields exist (incremental updates)
   }
 
   if (verbose) {
-    console.log('\n' + '='.repeat(50))
-    console.log('  Bootstrap Nodes: Creating System Schema')
-    console.log('  (Simplified 2-table model)')
-    console.log('='.repeat(50) + '\n')
-    console.log('[1/5] Creating core system fields...')
+    console.log('\n' + '='.repeat(50));
+    console.log('  Bootstrap Nodes: Creating System Schema');
+    console.log('  (Simplified 2-table model)');
+    console.log('='.repeat(50) + '\n');
+    console.log('[1/5] Creating core system fields...');
   }
 
   // ============================================================================
@@ -187,71 +192,71 @@ export function bootstrapSystemNodesSync(
     SYSTEM_FIELDS.SUPERTAG,
     'supertag',
     verbose,
-  )
+  );
   const extendsFieldId = upsertSystemNode(
     db,
     SYSTEM_FIELDS.EXTENDS,
     'extends',
     verbose,
-  )
+  );
   const fieldTypeFieldId = upsertSystemNode(
     db,
     SYSTEM_FIELDS.FIELD_TYPE,
     'fieldType',
     verbose,
-  )
+  );
 
   // ============================================================================
   // Step 2: Create meta-supertags
   // ============================================================================
-  if (verbose) console.log('\n[2/5] Creating meta-supertags...')
+  if (verbose) console.log('\n[2/5] Creating meta-supertags...');
 
   const supertagId = upsertSystemNode(
     db,
     SYSTEM_SUPERTAGS.SUPERTAG,
     '#Supertag',
     verbose,
-  )
+  );
   const fieldId = upsertSystemNode(
     db,
     SYSTEM_SUPERTAGS.FIELD,
     '#Field',
     verbose,
-  )
+  );
   const systemId = upsertSystemNode(
     db,
     SYSTEM_SUPERTAGS.SYSTEM,
     '#System',
     verbose,
-  )
+  );
 
   // Self-referential: #Supertag has supertag #Supertag
-  assignSupertag(db, supertagId, supertagId, supertagFieldId)
-  assignSupertag(db, fieldId, supertagId, supertagFieldId)
-  assignSupertag(db, systemId, supertagId, supertagFieldId)
+  assignSupertag(db, supertagId, supertagId, supertagFieldId);
+  assignSupertag(db, fieldId, supertagId, supertagFieldId);
+  assignSupertag(db, systemId, supertagId, supertagFieldId);
 
   // Mark all as system
-  assignSupertag(db, supertagId, systemId, supertagFieldId, 1)
-  assignSupertag(db, fieldId, systemId, supertagFieldId, 1)
-  assignSupertag(db, systemId, systemId, supertagFieldId, 1)
+  assignSupertag(db, supertagId, systemId, supertagFieldId, 1);
+  assignSupertag(db, fieldId, systemId, supertagFieldId, 1);
+  assignSupertag(db, systemId, systemId, supertagFieldId, 1);
 
   // The core fields are #Field #System
-  assignSupertag(db, supertagFieldId, fieldId, supertagFieldId)
-  assignSupertag(db, supertagFieldId, systemId, supertagFieldId, 1)
-  assignSupertag(db, extendsFieldId, fieldId, supertagFieldId)
-  assignSupertag(db, extendsFieldId, systemId, supertagFieldId, 1)
-  assignSupertag(db, fieldTypeFieldId, fieldId, supertagFieldId)
-  assignSupertag(db, fieldTypeFieldId, systemId, supertagFieldId, 1)
+  assignSupertag(db, supertagFieldId, fieldId, supertagFieldId);
+  assignSupertag(db, supertagFieldId, systemId, supertagFieldId, 1);
+  assignSupertag(db, extendsFieldId, fieldId, supertagFieldId);
+  assignSupertag(db, extendsFieldId, systemId, supertagFieldId, 1);
+  assignSupertag(db, fieldTypeFieldId, fieldId, supertagFieldId);
+  assignSupertag(db, fieldTypeFieldId, systemId, supertagFieldId, 1);
 
   // Set field types
-  setProperty(db, supertagFieldId, fieldTypeFieldId, JSON.stringify('nodes'))
-  setProperty(db, extendsFieldId, fieldTypeFieldId, JSON.stringify('node'))
-  setProperty(db, fieldTypeFieldId, fieldTypeFieldId, JSON.stringify('select'))
+  setProperty(db, supertagFieldId, fieldTypeFieldId, JSON.stringify('nodes'));
+  setProperty(db, extendsFieldId, fieldTypeFieldId, JSON.stringify('node'));
+  setProperty(db, fieldTypeFieldId, fieldTypeFieldId, JSON.stringify('select'));
 
   // ============================================================================
   // Step 3: Create entity supertags
   // ============================================================================
-  if (verbose) console.log('\n[3/5] Creating entity supertags...')
+  if (verbose) console.log('\n[3/5] Creating entity supertags...');
 
   const entitySupertags = [
     { systemId: SYSTEM_SUPERTAGS.ITEM, content: '#Item', extends: null },
@@ -274,16 +279,16 @@ export function bootstrapSystemNodesSync(
     },
     { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox', extends: null },
     { systemId: SYSTEM_SUPERTAGS.QUERY, content: '#Query', extends: null },
-  ]
+  ];
 
   for (const st of entitySupertags) {
-    const id = upsertSystemNode(db, st.systemId, st.content, verbose)
-    assignSupertag(db, id, supertagId, supertagFieldId)
-    assignSupertag(db, id, systemId, supertagFieldId, 1)
+    const id = upsertSystemNode(db, st.systemId, st.content, verbose);
+    assignSupertag(db, id, supertagId, supertagFieldId);
+    assignSupertag(db, id, systemId, supertagFieldId, 1);
     if (st.extends) {
-      const parentId = systemNodeIds.get(st.extends)
+      const parentId = systemNodeIds.get(st.extends);
       if (parentId) {
-        setProperty(db, id, extendsFieldId, JSON.stringify(parentId))
+        setProperty(db, id, extendsFieldId, JSON.stringify(parentId));
       }
     }
   }
@@ -291,7 +296,7 @@ export function bootstrapSystemNodesSync(
   // ============================================================================
   // Step 4: Create common field definitions
   // ============================================================================
-  if (verbose) console.log('\n[4/5] Creating common fields...')
+  if (verbose) console.log('\n[4/5] Creating common fields...');
 
   const commonFields = [
     { systemId: SYSTEM_FIELDS.TYPE, content: 'type', fieldType: 'select' },
@@ -384,35 +389,55 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.NOTES, content: 'notes', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.TITLE, content: 'title', fieldType: 'text' },
     // Query-specific (for saved queries with supertag:query)
-    { systemId: SYSTEM_FIELDS.QUERY_DEFINITION, content: 'queryDefinition', fieldType: 'json' },
-    { systemId: SYSTEM_FIELDS.QUERY_SORT, content: 'querySort', fieldType: 'json' },
-    { systemId: SYSTEM_FIELDS.QUERY_LIMIT, content: 'queryLimit', fieldType: 'number' },
-    { systemId: SYSTEM_FIELDS.QUERY_RESULT_CACHE, content: 'queryResultCache', fieldType: 'json' },
-    { systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT, content: 'queryEvaluatedAt', fieldType: 'text' },
-  ]
+    {
+      systemId: SYSTEM_FIELDS.QUERY_DEFINITION,
+      content: 'queryDefinition',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.QUERY_SORT,
+      content: 'querySort',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.QUERY_LIMIT,
+      content: 'queryLimit',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.QUERY_RESULT_CACHE,
+      content: 'queryResultCache',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT,
+      content: 'queryEvaluatedAt',
+      fieldType: 'text',
+    },
+  ];
 
   for (const field of commonFields) {
-    const id = upsertSystemNode(db, field.systemId, field.content, verbose)
-    assignSupertag(db, id, fieldId, supertagFieldId)
-    assignSupertag(db, id, systemId, supertagFieldId, 1)
-    setProperty(db, id, fieldTypeFieldId, JSON.stringify(field.fieldType))
+    const id = upsertSystemNode(db, field.systemId, field.content, verbose);
+    assignSupertag(db, id, fieldId, supertagFieldId);
+    assignSupertag(db, id, systemId, supertagFieldId, 1);
+    setProperty(db, id, fieldTypeFieldId, JSON.stringify(field.fieldType));
   }
 
   // ============================================================================
   // Summary
   // ============================================================================
-  const nodeCount = db.select().from(nodes).all().length
-  const propertyCount = db.select().from(nodeProperties).all().length
+  const nodeCount = db.select().from(nodes).all().length;
+  const propertyCount = db.select().from(nodeProperties).all().length;
 
   if (verbose) {
-    console.log('\n' + '='.repeat(50))
-    console.log('Bootstrap complete!')
-    console.log(`   Nodes: ${nodeCount}`)
-    console.log(`   Properties: ${propertyCount}`)
-    console.log('='.repeat(50) + '\n')
+    console.log('\n' + '='.repeat(50));
+    console.log('Bootstrap complete!');
+    console.log(`   Nodes: ${nodeCount}`);
+    console.log(`   Properties: ${propertyCount}`);
+    console.log('='.repeat(50) + '\n');
   }
 
-  return { nodeCount, propertyCount, alreadyBootstrapped: false }
+  return { nodeCount, propertyCount, alreadyBootstrapped: false };
 }
 
 /**
@@ -424,20 +449,22 @@ export function bootstrapSystemNodesSync(
 export async function bootstrapSystemNodes(
   options: BootstrapOptions = {},
 ): Promise<BootstrapResult> {
-  const { verbose = false, skipInit = false, db: providedDb } = options
+  const { verbose = false, skipInit = false, db: providedDb } = options;
 
   // Get or initialize database
-  let db: DatabaseInstance
+  let db: DatabaseInstance;
   if (providedDb) {
-    db = providedDb
+    db = providedDb;
   } else {
     // Lazy import to avoid circular dependency
-    const { initDatabase, getDatabase } = await import('../client/master-client.js')
+    const { initDatabase, getDatabase } = await import(
+      '../client/master-client.js'
+    );
     if (!skipInit) {
-      initDatabase()
+      initDatabase();
     }
-    db = getDatabase()
+    db = getDatabase();
   }
 
-  return bootstrapSystemNodesSync(db, { verbose })
+  return bootstrapSystemNodesSync(db, { verbose });
 }

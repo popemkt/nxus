@@ -42,7 +42,7 @@ export function SupertagFilterEditor({
   onUpdate,
   onClose,
 }: SupertagFilterEditorProps) {
-  const [localValue, setLocalValue] = useState(filter.supertagSystemId || '')
+  const [localValue, setLocalValue] = useState(filter.supertagId || '')
   const [includeInherited, setIncludeInherited] = useState(
     filter.includeInherited ?? true,
   )
@@ -57,7 +57,7 @@ export function SupertagFilterEditor({
 
   // Update local state when filter changes
   useEffect(() => {
-    setLocalValue(filter.supertagSystemId || '')
+    setLocalValue(filter.supertagId || '')
     setIncludeInherited(filter.includeInherited ?? true)
   }, [filter])
 
@@ -65,7 +65,7 @@ export function SupertagFilterEditor({
   const handleSave = () => {
     if (localValue) {
       onUpdate({
-        supertagSystemId: localValue,
+        supertagId: localValue,
         includeInherited,
       })
     }
@@ -78,7 +78,7 @@ export function SupertagFilterEditor({
     setLocalValue(value)
     // Auto-save on selection for better UX
     onUpdate({
-      supertagSystemId: value,
+      supertagId: value,
       includeInherited,
     })
   }

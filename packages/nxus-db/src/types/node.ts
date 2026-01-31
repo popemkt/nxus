@@ -40,7 +40,7 @@ export interface CreateNodeOptions {
   content: string
   systemId?: string
   ownerId?: string
-  supertagSystemId?: string // e.g., 'supertag:note', 'supertag:task'
+  supertagId?: string // Supertag id (UUID) or systemId (e.g., 'supertag:note', 'supertag:task')
 }
 
 /**

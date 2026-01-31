@@ -161,9 +161,9 @@ describe('query-evaluator.service', () => {
 
   describe('evaluateSupertagFilter', () => {
     it('should filter nodes by direct supertag', () => {
-      const item1 = createNode(db, { content: 'Item 1', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const item2 = createNode(db, { content: 'Item 2', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const cmd = createNode(db, { content: 'Command 1', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND })
+      const item1 = createNode(db, { content: 'Item 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const item2 = createNode(db, { content: 'Item 2', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const cmd = createNode(db, { content: 'Command 1', supertagId: SYSTEM_SUPERTAGS.COMMAND })
 
       const candidates = new Set([item1, item2, cmd])
 
@@ -171,7 +171,7 @@ describe('query-evaluator.service', () => {
         db,
         {
           type: 'supertag',
-          supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+          supertagId: SYSTEM_SUPERTAGS.ITEM,
           includeInherited: false,
         },
         candidates,
@@ -184,9 +184,9 @@ describe('query-evaluator.service', () => {
     })
 
     it('should include inherited supertags when includeInherited=true', () => {
-      const item = createNode(db, { content: 'Item', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const tool = createNode(db, { content: 'Tool', supertagSystemId: 'supertag:tool' })
-      const cmd = createNode(db, { content: 'Command', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND })
+      const item = createNode(db, { content: 'Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const tool = createNode(db, { content: 'Tool', supertagId: 'supertag:tool' })
+      const cmd = createNode(db, { content: 'Command', supertagId: SYSTEM_SUPERTAGS.COMMAND })
 
       const candidates = new Set([item, tool, cmd])
 
@@ -194,7 +194,7 @@ describe('query-evaluator.service', () => {
         db,
         {
           type: 'supertag',
-          supertagSystemId: SYSTEM_SUPERTAGS.ITEM,
+          supertagId: SYSTEM_SUPERTAGS.ITEM,
           includeInherited: true,
         },
         candidates,
@@ -207,14 +207,14 @@ describe('query-evaluator.service', () => {
     })
 
     it('should return empty set for non-existent supertag', () => {
-      const item = createNode(db, { content: 'Item', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      const item = createNode(db, { content: 'Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const candidates = new Set([item])
 
       const result = evaluateSupertagFilter(
         db,
         {
           type: 'supertag',
-          supertagSystemId: 'supertag:non-existent',
+          supertagId: 'supertag:non-existent',
           includeInherited: true,
         },
         candidates,
@@ -241,7 +241,7 @@ describe('query-evaluator.service', () => {
         db,
         {
           type: 'property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           op: 'eq',
           value: 'active',
         },
@@ -264,7 +264,7 @@ describe('query-evaluator.service', () => {
         db,
         {
           type: 'property',
-          fieldSystemId: 'field:status',
+          fieldId: 'field:status',
           op: 'neq',
           value: 'active',
         },
@@ -288,7 +288,7 @@ describe('query-evaluator.service', () => {
       // Greater than
       let result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:priority', op: 'gt', value: 5 },
+        { type: 'property', fieldId: 'field:priority', op: 'gt', value: 5 },
         candidates,
       )
       expect(result.size).toBe(1)
@@ -297,7 +297,7 @@ describe('query-evaluator.service', () => {
       // Greater than or equal
       result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:priority', op: 'gte', value: 5 },
+        { type: 'property', fieldId: 'field:priority', op: 'gte', value: 5 },
         candidates,
       )
       expect(result.size).toBe(2)
@@ -307,7 +307,7 @@ describe('query-evaluator.service', () => {
       // Less than
       result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:priority', op: 'lt', value: 5 },
+        { type: 'property', fieldId: 'field:priority', op: 'lt', value: 5 },
         candidates,
       )
       expect(result.size).toBe(1)
@@ -316,7 +316,7 @@ describe('query-evaluator.service', () => {
       // Less than or equal
       result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:priority', op: 'lte', value: 5 },
+        { type: 'property', fieldId: 'field:priority', op: 'lte', value: 5 },
         candidates,
       )
       expect(result.size).toBe(2)
@@ -337,7 +337,7 @@ describe('query-evaluator.service', () => {
       // Contains
       let result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:category', op: 'contains', value: 'development' },
+        { type: 'property', fieldId: 'field:category', op: 'contains', value: 'development' },
         candidates,
       )
       expect(result.size).toBe(2)
@@ -347,7 +347,7 @@ describe('query-evaluator.service', () => {
       // Starts with
       result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:category', op: 'startsWith', value: 'web' },
+        { type: 'property', fieldId: 'field:category', op: 'startsWith', value: 'web' },
         candidates,
       )
       expect(result.size).toBe(2)
@@ -357,7 +357,7 @@ describe('query-evaluator.service', () => {
       // Ends with
       result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:category', op: 'endsWith', value: 'design' },
+        { type: 'property', fieldId: 'field:category', op: 'endsWith', value: 'design' },
         candidates,
       )
       expect(result.size).toBe(1)
@@ -374,7 +374,7 @@ describe('query-evaluator.service', () => {
 
       const result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:status', op: 'isEmpty' },
+        { type: 'property', fieldId: 'field:status', op: 'isEmpty' },
         candidates,
       )
 
@@ -392,7 +392,7 @@ describe('query-evaluator.service', () => {
 
       const result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:status', op: 'isNotEmpty' },
+        { type: 'property', fieldId: 'field:status', op: 'isNotEmpty' },
         candidates,
       )
 
@@ -406,7 +406,7 @@ describe('query-evaluator.service', () => {
 
       const result = evaluatePropertyFilter(
         db,
-        { type: 'property', fieldSystemId: 'field:non-existent', op: 'eq', value: 'test' },
+        { type: 'property', fieldId: 'field:non-existent', op: 'eq', value: 'test' },
         candidates,
       )
 
@@ -483,7 +483,7 @@ describe('query-evaluator.service', () => {
 
       const result = evaluateHasFieldFilter(
         db,
-        { type: 'hasField', fieldSystemId: 'field:status', negate: false },
+        { type: 'hasField', fieldId: 'field:status', negate: false },
         candidates,
       )
 
@@ -500,7 +500,7 @@ describe('query-evaluator.service', () => {
 
       const result = evaluateHasFieldFilter(
         db,
-        { type: 'hasField', fieldSystemId: 'field:status', negate: true },
+        { type: 'hasField', fieldId: 'field:status', negate: true },
         candidates,
       )
 
@@ -662,9 +662,9 @@ describe('query-evaluator.service', () => {
 
   describe('evaluateLogicalFilter', () => {
     it('should combine filters with AND', () => {
-      const node1 = createNode(db, { content: 'Node 1', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const node2 = createNode(db, { content: 'Node 2', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const node3 = createNode(db, { content: 'Node 3', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND })
+      const node1 = createNode(db, { content: 'Node 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const node2 = createNode(db, { content: 'Node 2', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const node3 = createNode(db, { content: 'Node 3', supertagId: SYSTEM_SUPERTAGS.COMMAND })
       setProperty(db, node1, 'field:status', 'active')
       setProperty(db, node2, 'field:status', 'inactive')
 
@@ -675,8 +675,8 @@ describe('query-evaluator.service', () => {
         {
           type: 'and',
           filters: [
-            { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
-            { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'active' },
+            { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+            { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
           ],
         },
         candidates,
@@ -687,9 +687,9 @@ describe('query-evaluator.service', () => {
     })
 
     it('should combine filters with OR', () => {
-      const node1 = createNode(db, { content: 'Node 1', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const node2 = createNode(db, { content: 'Node 2', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND })
-      const node3 = createNode(db, { content: 'Node 3', supertagSystemId: SYSTEM_SUPERTAGS.TAG })
+      const node1 = createNode(db, { content: 'Node 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const node2 = createNode(db, { content: 'Node 2', supertagId: SYSTEM_SUPERTAGS.COMMAND })
+      const node3 = createNode(db, { content: 'Node 3', supertagId: SYSTEM_SUPERTAGS.TAG })
 
       const candidates = new Set([node1, node2, node3])
 
@@ -698,8 +698,8 @@ describe('query-evaluator.service', () => {
         {
           type: 'or',
           filters: [
-            { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
-            { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND, includeInherited: false },
+            { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+            { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.COMMAND, includeInherited: false },
           ],
         },
         candidates,
@@ -712,8 +712,8 @@ describe('query-evaluator.service', () => {
     })
 
     it('should negate filters with NOT', () => {
-      const node1 = createNode(db, { content: 'Node 1', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const node2 = createNode(db, { content: 'Node 2', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND })
+      const node1 = createNode(db, { content: 'Node 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const node2 = createNode(db, { content: 'Node 2', supertagId: SYSTEM_SUPERTAGS.COMMAND })
 
       const candidates = new Set([node1, node2])
 
@@ -722,7 +722,7 @@ describe('query-evaluator.service', () => {
         {
           type: 'not',
           filters: [
-            { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+            { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
           ],
         },
         candidates,
@@ -733,9 +733,9 @@ describe('query-evaluator.service', () => {
     })
 
     it('should handle nested logical filters', () => {
-      const node1 = createNode(db, { content: 'Node 1', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const node2 = createNode(db, { content: 'Node 2', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const node3 = createNode(db, { content: 'Node 3', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND })
+      const node1 = createNode(db, { content: 'Node 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const node2 = createNode(db, { content: 'Node 2', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const node3 = createNode(db, { content: 'Node 3', supertagId: SYSTEM_SUPERTAGS.COMMAND })
       setProperty(db, node1, 'field:status', 'active')
       setProperty(db, node2, 'field:status', 'inactive')
       setProperty(db, node3, 'field:status', 'active')
@@ -751,11 +751,11 @@ describe('query-evaluator.service', () => {
             {
               type: 'and',
               filters: [
-                { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
-                { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'active' },
+                { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+                { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
               ],
             },
-            { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND, includeInherited: false },
+            { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.COMMAND, includeInherited: false },
           ],
         },
         candidates,
@@ -773,16 +773,16 @@ describe('query-evaluator.service', () => {
 
   describe('evaluateQuery', () => {
     it('should evaluate a complete query with multiple filters', () => {
-      const item1 = createNode(db, { content: 'Active Tool', supertagSystemId: 'supertag:tool' })
-      const item2 = createNode(db, { content: 'Inactive Tool', supertagSystemId: 'supertag:tool' })
-      createNode(db, { content: 'Command', supertagSystemId: SYSTEM_SUPERTAGS.COMMAND }) // Should be excluded
+      const item1 = createNode(db, { content: 'Active Tool', supertagId: 'supertag:tool' })
+      const item2 = createNode(db, { content: 'Inactive Tool', supertagId: 'supertag:tool' })
+      createNode(db, { content: 'Command', supertagId: SYSTEM_SUPERTAGS.COMMAND }) // Should be excluded
       setProperty(db, item1, 'field:status', 'active')
       setProperty(db, item2, 'field:status', 'inactive')
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: true },
-          { type: 'property', fieldSystemId: 'field:status', op: 'eq', value: 'active' },
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: true },
+          { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
         ],
         limit: 500,
       })
@@ -794,12 +794,12 @@ describe('query-evaluator.service', () => {
 
     it('should respect limit', () => {
       for (let i = 0; i < 10; i++) {
-        createNode(db, { content: `Item ${i}`, supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+        createNode(db, { content: `Item ${i}`, supertagId: SYSTEM_SUPERTAGS.ITEM })
       }
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
         ],
         limit: 5,
       })
@@ -809,13 +809,13 @@ describe('query-evaluator.service', () => {
     })
 
     it('should sort by content ascending', () => {
-      createNode(db, { content: 'Charlie', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      createNode(db, { content: 'Alpha', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      createNode(db, { content: 'Bravo', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Charlie', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Alpha', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Bravo', supertagId: SYSTEM_SUPERTAGS.ITEM })
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
         ],
         sort: { field: 'content', direction: 'asc' },
         limit: 500,
@@ -825,13 +825,13 @@ describe('query-evaluator.service', () => {
     })
 
     it('should sort by content descending', () => {
-      createNode(db, { content: 'Charlie', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      createNode(db, { content: 'Alpha', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      createNode(db, { content: 'Bravo', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Charlie', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Alpha', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Bravo', supertagId: SYSTEM_SUPERTAGS.ITEM })
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
         ],
         sort: { field: 'content', direction: 'desc' },
         limit: 500,
@@ -841,16 +841,16 @@ describe('query-evaluator.service', () => {
     })
 
     it('should sort by property field', () => {
-      const n1 = createNode(db, { content: 'Low Priority', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const n2 = createNode(db, { content: 'High Priority', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const n3 = createNode(db, { content: 'Medium Priority', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      const n1 = createNode(db, { content: 'Low Priority', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const n2 = createNode(db, { content: 'High Priority', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const n3 = createNode(db, { content: 'Medium Priority', supertagId: SYSTEM_SUPERTAGS.ITEM })
       setProperty(db, n1, 'field:priority', 1)
       setProperty(db, n2, 'field:priority', 10)
       setProperty(db, n3, 'field:priority', 5)
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
         ],
         sort: { field: 'field:priority', direction: 'desc' },
         limit: 500,
@@ -864,11 +864,11 @@ describe('query-evaluator.service', () => {
     })
 
     it('should return empty result for no matching filters', () => {
-      createNode(db, { content: 'Item', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: 'supertag:non-existent', includeInherited: false },
+          { type: 'supertag', supertagId: 'supertag:non-existent', includeInherited: false },
         ],
         limit: 500,
       })
@@ -878,8 +878,8 @@ describe('query-evaluator.service', () => {
     })
 
     it('should exclude deleted nodes', () => {
-      const item1 = createNode(db, { content: 'Active Item', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
-      const item2 = createNode(db, { content: 'Deleted Item', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      const item1 = createNode(db, { content: 'Active Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const item2 = createNode(db, { content: 'Deleted Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
 
       // Soft delete item2
       sqlite.exec(`
@@ -888,7 +888,7 @@ describe('query-evaluator.service', () => {
 
       const result = evaluateQuery(db, {
         filters: [
-          { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
         ],
         limit: 500,
       })
@@ -904,13 +904,13 @@ describe('query-evaluator.service', () => {
 
   describe('evaluateFilter', () => {
     it('should dispatch to correct filter function', () => {
-      const node = createNode(db, { content: 'Test Node', supertagSystemId: SYSTEM_SUPERTAGS.ITEM })
+      const node = createNode(db, { content: 'Test Node', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const candidates = new Set([node])
 
       // Test that dispatcher routes correctly
       const supertagResult = evaluateFilter(
         db,
-        { type: 'supertag', supertagSystemId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+        { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
         candidates,
       )
       expect(supertagResult.has(node)).toBe(true)

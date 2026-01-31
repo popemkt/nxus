@@ -49,19 +49,19 @@ const BaseFilterSchema = z.object({
  */
 export const SupertagFilterSchema = BaseFilterSchema.extend({
   type: z.literal('supertag'),
-  supertagSystemId: z.string(), // e.g., 'supertag:item', 'supertag:tool'
-  includeInherited: z.boolean().default(true), // Include child supertags via field:extends
+  supertagId: z.string(), // UUID of the supertag node (or systemId for system supertags)
+  includeInherited: z.boolean().optional().default(true), // Include child supertags via field:extends
 })
 export type SupertagFilter = z.infer<typeof SupertagFilterSchema>
 
 /**
  * Property filter - matches nodes by field value comparison
  *
- * Example: Find nodes where field:status = "installed"
+ * Example: Find nodes where status = "installed"
  */
 export const PropertyFilterSchema = BaseFilterSchema.extend({
   type: z.literal('property'),
-  fieldSystemId: z.string(), // e.g., 'field:status', 'field:type'
+  fieldId: z.string(), // UUID of the field node (or systemId for system fields)
   op: FilterOpSchema,
   value: z.unknown().optional(), // Value to compare (not needed for isEmpty/isNotEmpty)
 })
@@ -93,7 +93,7 @@ export const RelationFilterSchema = BaseFilterSchema.extend({
     'linkedFrom', // Target has a property value referencing this node (backlinks)
   ]),
   targetNodeId: z.string().optional(), // Specific node ID, or omit for "has any relation"
-  fieldSystemId: z.string().optional(), // For linksTo/linkedFrom: which field to check
+  fieldId: z.string().optional(), // For linksTo/linkedFrom: which field to check (UUID or systemId)
 })
 export type RelationFilter = z.infer<typeof RelationFilterSchema>
 
@@ -118,11 +118,11 @@ export type TemporalFilter = z.infer<typeof TemporalFilterSchema>
 /**
  * Has field filter - checks if a node has a specific field defined
  *
- * Example: Find nodes that have field:description set
+ * Example: Find nodes that have a description field set
  */
 export const HasFieldFilterSchema = BaseFilterSchema.extend({
   type: z.literal('hasField'),
-  fieldSystemId: z.string(),
+  fieldId: z.string(), // UUID of the field node (or systemId for system fields)
   negate: z.boolean().default(false), // true = "does NOT have field"
 })
 export type HasFieldFilter = z.infer<typeof HasFieldFilterSchema>
@@ -207,9 +207,9 @@ export type QuerySort = z.infer<typeof QuerySortSchema>
  * All filters in the top-level array are combined with AND by default.
  */
 export const QueryDefinitionSchema = z.object({
-  filters: z.array(QueryFilterSchema).default([]),
+  filters: z.array(QueryFilterSchema).optional().default([]),
   sort: QuerySortSchema.optional(),
-  limit: z.number().default(500),
+  limit: z.number().optional().default(500),
 })
 export type QueryDefinition = z.infer<typeof QueryDefinitionSchema>
 
@@ -336,14 +336,14 @@ export function createEmptyQueryDefinition(): QueryDefinition {
  * Create a simple supertag filter query
  */
 export function createSupertagQuery(
-  supertagSystemId: string,
+  supertagId: string,
   includeInherited = true,
 ): QueryDefinition {
   return {
     filters: [
       {
         type: 'supertag',
-        supertagSystemId,
+        supertagId,
         includeInherited,
       },
     ],
