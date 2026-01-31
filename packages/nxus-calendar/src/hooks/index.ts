@@ -60,3 +60,21 @@ export {
   type UseGoogleCalendarSyncOptions,
   type UseGoogleCalendarSyncResult,
 } from './use-google-sync.js'
+
+// Touch Gestures
+export {
+  useTouchGestures,
+  isTouchDevice,
+  useIsTouchDevice,
+  type TouchGestureOptions,
+  type TouchGestureResult,
+} from './use-touch-gestures.js'
+
+// Keyboard Shortcuts
+export {
+  useKeyboardShortcuts,
+  CALENDAR_SHORTCUTS,
+  formatShortcut,
+  type KeyboardShortcutOptions,
+  type ShortcutInfo,
+} from './use-keyboard-shortcuts.js'

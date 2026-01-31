@@ -71,3 +71,11 @@ export {
   CalendarSettings,
   type CalendarSettingsProps,
 } from './calendar-settings.js'
+
+// Error Boundary
+export {
+  CalendarErrorBoundary,
+  CalendarErrorFallback,
+  type CalendarErrorBoundaryProps,
+  type CalendarErrorFallbackProps,
+} from './calendar-error-boundary.js'

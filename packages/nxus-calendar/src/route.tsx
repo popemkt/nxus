@@ -28,6 +28,7 @@ import {
   CreateEventModal,
   EventModal,
   CalendarSettings,
+  CalendarErrorBoundary,
 } from './components/index.js'
 
 // Hooks
@@ -36,6 +37,8 @@ import {
   useCalendarEvents,
   useCompleteTask,
   useUpdateEvent,
+  useTouchGestures,
+  useKeyboardShortcuts,
 } from './hooks/index.js'
 
 // Types
@@ -283,6 +286,45 @@ export function CalendarRoute({
     handleSelectSlot(slotInfo)
   }, [handleSelectSlot])
 
+  // Determine if event creation is enabled (either built-in or external)
+  // This needs to be defined before hooks that use it
+  const canCreateEvent = shouldUseBuiltInModal || !!onCreateEvent
+
+  // Touch gesture support for mobile navigation
+  useTouchGestures({
+    onSwipeLeft: nextPeriod,
+    onSwipeRight: prevPeriod,
+    onLongPress: () => {
+      // Create event at current time when long pressing
+      if (canCreateEvent) {
+        handleCreateFromEmptyState()
+      }
+    },
+    enabled: true,
+  })
+
+  // Keyboard shortcuts for navigation and actions
+  useKeyboardShortcuts({
+    onNewEvent: canCreateEvent ? handleCreateFromEmptyState : undefined,
+    onGoToToday: goToToday,
+    onViewChange: setView,
+    onPrevPeriod: prevPeriod,
+    onNextPeriod: nextPeriod,
+    onEscape: () => {
+      // Close any open modal
+      if (isCreateModalOpen) {
+        setIsCreateModalOpen(false)
+      } else if (isEventModalOpen) {
+        setIsEventModalOpen(false)
+      } else if (isSettingsOpen) {
+        setIsSettingsOpen(false)
+      } else if (selectedEvent) {
+        setSelectedEvent(null)
+      }
+    },
+    enabled: true,
+  })
+
   // Show skeleton during initial load
   if (isLoading) {
     return (
@@ -364,9 +406,6 @@ export function CalendarRoute({
   // Check if we have any events
   const hasEvents = events.length > 0
 
-  // Determine if event creation is enabled (either built-in or external)
-  const canCreateEvent = shouldUseBuiltInModal || !!onCreateEvent
-
   return (
     <div className={cn('min-h-screen bg-background', className)}>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -401,37 +440,39 @@ export function CalendarRoute({
           )}
         </div>
 
-        {/* Calendar content */}
-        {hasEvents || !canCreateEvent ? (
-          <CalendarContainer
-            events={bigCalendarEvents}
-            currentDate={currentDate}
-            currentView={currentView}
-            onViewChange={setView}
-            onNavigate={goToDate}
-            onSelectSlot={canCreateEvent ? handleSelectSlot : undefined}
-            onSelectEvent={handleSelectEvent}
-            onTaskToggle={handleTaskToggle}
-            onEventDrop={handleEventDrop}
-            onEventResize={handleEventResize}
-            draggable
-            resizable
-            isLoading={false}
-            isFetching={isFetching || isCompleting || isUpdating}
-            isGoogleConnected={isGoogleConnected}
-            isSyncing={isSyncing}
-            onSyncClick={onSyncClick}
-            onSettingsClick={handleSettingsClick}
-            selectable={canCreateEvent}
-            minHeight={600}
-          />
-        ) : (
-          <CalendarEmptyState
-            title="No events yet"
-            description="Create your first event or task to get started with your schedule."
-            onCreateEvent={handleCreateFromEmptyState}
-          />
-        )}
+        {/* Calendar content wrapped in error boundary */}
+        <CalendarErrorBoundary onRetry={() => refetch()}>
+          {hasEvents || !canCreateEvent ? (
+            <CalendarContainer
+              events={bigCalendarEvents}
+              currentDate={currentDate}
+              currentView={currentView}
+              onViewChange={setView}
+              onNavigate={goToDate}
+              onSelectSlot={canCreateEvent ? handleSelectSlot : undefined}
+              onSelectEvent={handleSelectEvent}
+              onTaskToggle={handleTaskToggle}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              draggable
+              resizable
+              isLoading={false}
+              isFetching={isFetching || isCompleting || isUpdating}
+              isGoogleConnected={isGoogleConnected}
+              isSyncing={isSyncing}
+              onSyncClick={onSyncClick}
+              onSettingsClick={handleSettingsClick}
+              selectable={canCreateEvent}
+              minHeight={600}
+            />
+          ) : (
+            <CalendarEmptyState
+              title="No events yet"
+              description="Create your first event or task to get started with your schedule."
+              onCreateEvent={handleCreateFromEmptyState}
+            />
+          )}
+        </CalendarErrorBoundary>
       </div>
 
       {/* Built-in Create Event Modal */}

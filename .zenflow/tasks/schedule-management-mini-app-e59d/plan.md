@@ -630,26 +630,27 @@ pnpm typecheck && pnpm lint
 
 TypeScript verification passed. Dev server starts without errors.
 
-### [ ] Step: Mobile Responsiveness and Polish
+### [x] Step: Mobile Responsiveness and Polish
+<!-- chat-id: 922772da-37f8-4a6c-8280-78359837f47d -->
 
 Optimize the calendar for mobile devices and add final polish.
 
 **Tasks:**
-- [ ] Update calendar.css for responsive breakpoints:
+- [x] Update calendar.css for responsive breakpoints:
   - Mobile: default to day view, larger touch targets
   - Tablet: compressed week view
   - Desktop: full grid
-- [ ] Add touch gesture support:
+- [x] Add touch gesture support:
   - Swipe left/right for day navigation
   - Long press to create event
-- [ ] Add keyboard shortcuts:
+- [x] Add keyboard shortcuts:
   - `n` - new event
   - `t` - go to today
   - `d/w/m` - switch views
   - Arrow keys for navigation
-- [ ] Add loading skeletons for event fetching
-- [ ] Add empty state component when no events
-- [ ] Error boundary for graceful error handling
+- [x] Add loading skeletons for event fetching
+- [x] Add empty state component when no events
+- [x] Error boundary for graceful error handling
 
 **Verification:**
 ```bash
@@ -657,6 +658,42 @@ pnpm typecheck && pnpm lint && pnpm build
 # Manual: Test on mobile viewport
 # Manual: Test keyboard shortcuts
 ```
+
+**Completed:** Mobile Responsiveness and Polish implemented:
+- Updated `packages/nxus-calendar/src/styles/calendar.css`:
+  - Enhanced mobile breakpoint (640px) with larger touch targets (min 44px/2.75rem for buttons)
+  - Added touch scrolling with `-webkit-overflow-scrolling: touch` and `touch-action: pan-x pan-y`
+  - Larger date cell touch targets, event touch targets, and task checkboxes
+  - Added extra-small breakpoint (375px) for very small mobile devices
+  - Improved overlay popup sizing for mobile (`max-width: calc(100vw - 2rem)`)
+  - Added `overscroll-behavior: contain` to prevent pull-to-refresh interference
+- Created `packages/nxus-calendar/src/hooks/use-touch-gestures.ts`:
+  - `useTouchGestures` hook with swipe detection (configurable threshold and velocity)
+  - `onSwipeLeft` callback for next period navigation
+  - `onSwipeRight` callback for previous period navigation
+  - `onLongPress` callback for creating events (configurable duration)
+  - Touch device detection utilities (`isTouchDevice`, `useIsTouchDevice`)
+- Created `packages/nxus-calendar/src/hooks/use-keyboard-shortcuts.ts`:
+  - `useKeyboardShortcuts` hook for global keyboard navigation
+  - `n` - create new event
+  - `t` - go to today
+  - `d/w/m/a` - switch views (day/week/month/agenda)
+  - Arrow keys for period navigation
+  - `Escape` for closing modals
+  - `CALENDAR_SHORTCUTS` constant and `formatShortcut` utility for help display
+- Created `packages/nxus-calendar/src/components/calendar-error-boundary.tsx`:
+  - `CalendarErrorBoundary` class component for catching JavaScript errors
+  - User-friendly error UI with "Try Again" button
+  - Error details visible in development mode
+  - `CalendarErrorFallback` functional component variant
+- Verified existing `CalendarSkeleton` and `CalendarEmptyState` components in route.tsx
+- Updated `route.tsx`:
+  - Integrated `useTouchGestures` for mobile swipe navigation
+  - Integrated `useKeyboardShortcuts` for keyboard navigation
+  - Wrapped calendar content in `CalendarErrorBoundary`
+- Updated exports in `hooks/index.ts` and `components/index.ts`
+
+TypeScript verification passed for nxus-calendar package.
 
 ### [ ] Step: Final Integration Testing
 

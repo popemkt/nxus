@@ -787,6 +787,9 @@
   .nxus-calendar {
     min-height: 400px;
     font-size: 0.8125rem;
+    /* Enable touch scrolling */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
   }
 
   .nxus-calendar .rbc-toolbar {
@@ -799,9 +802,11 @@
   }
 
   .nxus-calendar .rbc-btn-group button {
-    height: 2rem;
-    padding: 0 0.5rem;
-    font-size: 0.6875rem;
+    /* Larger touch targets for buttons - minimum 44px */
+    height: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0 0.75rem;
+    font-size: 0.75rem;
   }
 
   .nxus-calendar .rbc-header {
@@ -824,18 +829,24 @@
   }
 
   .nxus-calendar .rbc-date-cell > a {
-    min-width: 1.25rem;
-    height: 1.25rem;
-    font-size: 0.625rem;
+    /* Larger touch target for date cells */
+    min-width: 2rem;
+    height: 2rem;
+    font-size: 0.6875rem;
   }
 
   .nxus-calendar .rbc-event {
-    font-size: 0.625rem;
-    padding: 0.0625rem 0.25rem;
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.375rem;
+    /* Minimum touch target height for events */
+    min-height: 2.75rem;
   }
 
   .nxus-calendar .rbc-show-more {
-    font-size: 0.5rem;
+    font-size: 0.625rem;
+    /* Larger touch area for "show more" */
+    padding: 0.25rem 0.5rem;
+    min-height: 2rem;
   }
 
   .nxus-calendar .rbc-label {
@@ -848,29 +859,79 @@
   }
 
   .nxus-calendar .rbc-timeslot-group {
-    min-height: 2rem;
+    /* Taller time slots for easier touch selection */
+    min-height: 3rem;
   }
 
   .nxus-calendar .rbc-month-row {
     min-height: 4rem;
   }
 
-  /* Increase touch targets */
-  .nxus-calendar .rbc-event {
-    min-height: 1.5rem;
-  }
-
+  /* Larger touch targets for task checkboxes */
   .nxus-calendar .rbc-event .task-checkbox {
-    width: 1rem;
-    height: 1rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    /* Add touch padding */
+    margin: -0.25rem;
+    padding: 0.25rem;
+    box-sizing: content-box;
   }
 
   /* Agenda view adjustments */
   .nxus-calendar .rbc-agenda-date-cell,
   .nxus-calendar .rbc-agenda-time-cell,
   .nxus-calendar .rbc-agenda-event-cell {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.75rem;
+    font-size: 0.8125rem;
+    /* Minimum touch height for agenda rows */
+    min-height: 3rem;
+  }
+
+  /* Better scrolling for time view */
+  .nxus-calendar .rbc-time-content {
+    scroll-behavior: smooth;
+    /* Prevent pull-to-refresh interference */
+    overscroll-behavior: contain;
+  }
+
+  /* Larger navigation buttons */
+  .nxus-calendar .calendar-toolbar-nav-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  /* Overlay popup adjustments for mobile */
+  .nxus-calendar .rbc-overlay {
+    max-width: calc(100vw - 2rem);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+/* Extra small mobile breakpoint */
+@media (max-width: 375px) {
+  .nxus-calendar {
+    min-height: 350px;
+  }
+
+  .nxus-calendar .rbc-toolbar-label {
+    font-size: 0.8125rem;
+  }
+
+  .nxus-calendar .rbc-header {
+    font-size: 0.5rem;
+    padding: 0.125rem;
+  }
+
+  .nxus-calendar .rbc-date-cell > a {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.625rem;
+  }
+
+  .nxus-calendar .rbc-event {
+    font-size: 0.625rem;
+    min-height: 2.5rem;
   }
 }
 
