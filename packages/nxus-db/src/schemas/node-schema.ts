@@ -180,6 +180,13 @@ export const SYSTEM_FIELDS = {
   GCAL_EVENT_ID: 'field:gcal_event_id', // Google Calendar event ID
   GCAL_SYNCED_AT: 'field:gcal_synced_at', // Last sync timestamp
   REMINDER: 'field:reminder', // Reminder offset in minutes
+
+  // Google Calendar OAuth fields (stored on settings node)
+  GCAL_ACCESS_TOKEN: 'field:gcal_access_token', // OAuth access token (encrypted)
+  GCAL_REFRESH_TOKEN: 'field:gcal_refresh_token', // OAuth refresh token (encrypted)
+  GCAL_TOKEN_EXPIRY: 'field:gcal_token_expiry', // Token expiration timestamp
+  GCAL_USER_EMAIL: 'field:gcal_user_email', // Connected Google account email
+  GCAL_CALENDAR_ID: 'field:gcal_calendar_id', // Target calendar ID for sync
 } as const
 
 /**

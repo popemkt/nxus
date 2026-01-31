@@ -96,3 +96,37 @@ export {
   addFilterToCalendarQuery,
   combineQueriesWithOr,
 } from './query-builder.js'
+
+// Google Calendar utilities (server-side only)
+export {
+  // Constants
+  GOOGLE_CALENDAR_SCOPES,
+  GOOGLE_REDIRECT_URI,
+  // OAuth client
+  createOAuth2Client,
+  createAuthenticatedClient,
+  generateAuthUrl,
+  exchangeCodeForTokens,
+  refreshTokens,
+  isTokenExpired,
+  ensureValidTokens,
+  // Calendar API client
+  createCalendarClient,
+  // Calendar list
+  listCalendars,
+  getPrimaryCalendarId,
+  // Event conversion
+  toGoogleCalendarEvent,
+  fromGoogleCalendarEvent,
+  // Event CRUD
+  createGoogleEvent,
+  updateGoogleEvent,
+  deleteGoogleEvent,
+  getGoogleEvent,
+  // Batch operations
+  syncEventsToGoogle,
+  // Error handling
+  isAuthError,
+  isRateLimitError,
+  getGoogleErrorMessage,
+} from './google-calendar.js'
