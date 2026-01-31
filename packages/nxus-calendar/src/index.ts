@@ -14,7 +14,7 @@ export * from './types/index.js'
 export * from './lib/index.js'
 
 // React components (for client-side use)
-// export * from './components/index.js'
+export * from './components/index.js'
 
 // React hooks
 export * from './hooks/index.js'

@@ -189,38 +189,49 @@ Visual inspection after component implementation
 - Accessibility: focus-visible, reduced-motion, print styles
 - Dark mode inherits from Nxus theme CSS variables automatically
 
-### [ ] Step: Core Calendar Components
+### [x] Step: Core Calendar Components
+<!-- chat-id: 60f1c715-b73e-431e-a0c4-53fbc65c12f0 -->
 
 Build the main calendar container and view components using react-big-calendar.
 
 **Tasks:**
-- [ ] Create `src/components/calendar-container.tsx`:
+- [x] Create `src/components/calendar-container.tsx`:
   - Wrapper component integrating react-big-calendar
   - Configure date-fns localizer
   - Pass events, views, navigation handlers
   - Import calendar.css
-- [ ] Create `src/components/calendar-toolbar.tsx`:
+- [x] Create `src/components/calendar-toolbar.tsx`:
   - View switcher (Day | Week | Month buttons)
   - Date navigation (< Today >)
   - Date picker for jumping to specific date
   - Sync to Google button (placeholder)
-- [ ] Create `src/components/event-block.tsx`:
+- [x] Create `src/components/event-block.tsx`:
   - Custom event component for react-big-calendar
   - Render checkbox for tasks
   - Show reminder icon if set
   - Display time range
   - Handle click for event details
-- [ ] Create `src/components/task-checkbox.tsx`:
+- [x] Create `src/components/task-checkbox.tsx`:
   - Inline checkbox component
   - Handle click without propagation
   - Call completeTask mutation
   - Show loading state during update
-- [ ] Create `src/components/index.ts`
+- [x] Create `src/components/index.ts`
 
 **Verification:**
 ```bash
 pnpm typecheck && pnpm lint && pnpm build
 ```
+
+**Completed:** Created all core calendar components:
+- `calendar-container.tsx`: Main calendar wrapper integrating react-big-calendar with date-fns localizer, custom components, slot selection, event handlers, loading states, and empty/skeleton states
+- `calendar-toolbar.tsx`: Custom toolbar with view switcher (Day/Week/Month/Agenda), navigation controls, period label, Google sync button placeholder, settings button, and mobile-responsive dropdown
+- `event-block.tsx`: Custom event component with task checkbox, reminder/recurring/sync indicators, completion styling, and agenda view variant
+- `task-checkbox.tsx`: Inline checkbox with click propagation handling, loading state, and keyboard accessibility
+- `index.ts`: Exports all components and types
+- Updated `src/index.ts` to export components
+
+TypeScript verification and build passed successfully.
 
 ### [ ] Step: Route Integration
 

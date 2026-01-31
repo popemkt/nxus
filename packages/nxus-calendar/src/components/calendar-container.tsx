@@ -1,0 +1,564 @@
+/**
+ * calendar-container.tsx - Main calendar container component
+ *
+ * Integrates react-big-calendar with the Nxus design system.
+ * Provides:
+ * - Multiple view support (day, week, month, agenda)
+ * - Custom event rendering with task checkboxes
+ * - Date navigation
+ * - Slot selection for event creation
+ */
+
+import { useCallback, useMemo } from 'react'
+import {
+  Calendar as BigCalendar,
+  dateFnsLocalizer,
+  type View,
+  type Views,
+  type SlotInfo,
+} from 'react-big-calendar'
+import {
+  format,
+  parse,
+  startOfWeek as dateFnsStartOfWeek,
+  getDay,
+} from 'date-fns'
+import { enUS } from 'date-fns/locale'
+import { cn } from '@nxus/ui'
+import type {
+  BigCalendarEvent,
+  CalendarEvent,
+  CalendarView,
+  SlotSelectInfo,
+  WeekStart,
+} from '../types/calendar-event.js'
+import { useCalendarSettingsStore } from '../stores/calendar-settings.store.js'
+import { CalendarToolbar, type CalendarToolbarProps } from './calendar-toolbar.js'
+import { EventBlock, AgendaEvent } from './event-block.js'
+
+// Import calendar CSS
+import '../styles/calendar.css'
+
+// ============================================================================
+// Localizer Setup
+// ============================================================================
+
+const locales = {
+  'en-US': enUS,
+}
+
+/**
+ * Create a date-fns localizer for react-big-calendar
+ */
+function createLocalizer(weekStartsOn: WeekStart) {
+  return dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek: (date: Date) =>
+      dateFnsStartOfWeek(date, { weekStartsOn, locale: enUS }),
+    getDay,
+    locales,
+  })
+}
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface CalendarContainerProps {
+  /** Events to display on the calendar */
+  events: BigCalendarEvent[]
+
+  /** Current date being viewed */
+  currentDate: Date
+
+  /** Current view mode */
+  currentView: CalendarView
+
+  /** Called when the view changes */
+  onViewChange: (view: CalendarView) => void
+
+  /** Called when the date changes via navigation */
+  onNavigate: (date: Date) => void
+
+  /** Called when a time slot is selected (for creating events) */
+  onSelectSlot?: (slotInfo: SlotSelectInfo) => void
+
+  /** Called when an event is clicked */
+  onSelectEvent?: (event: CalendarEvent) => void
+
+  /** Called when a task checkbox is toggled */
+  onTaskToggle?: (event: CalendarEvent, completed: boolean) => Promise<void> | void
+
+  /** Whether the calendar is in a loading state */
+  isLoading?: boolean
+
+  /** Whether events are being fetched */
+  isFetching?: boolean
+
+  /** Google sync props (passed to toolbar) */
+  isGoogleConnected?: boolean
+  isSyncing?: boolean
+  onSyncClick?: () => void
+
+  /** Called when settings button is clicked */
+  onSettingsClick?: () => void
+
+  /** Custom class name */
+  className?: string
+
+  /** Minimum calendar height */
+  minHeight?: number | string
+
+  /** Whether to show the toolbar */
+  showToolbar?: boolean
+
+  /** Custom toolbar props */
+  toolbarProps?: Partial<CalendarToolbarProps>
+
+  /** Whether selection is enabled (default: true) */
+  selectable?: boolean
+
+  /** Step size in minutes for time slots (default: 15) */
+  step?: number
+
+  /** Number of time slots per section (default: 4 for 1-hour sections with 15-min steps) */
+  timeslots?: number
+}
+
+// ============================================================================
+// View Mapping
+// ============================================================================
+
+// Map CalendarView to react-big-calendar View type
+const viewMap: Record<CalendarView, View> = {
+  day: 'day',
+  week: 'week',
+  month: 'month',
+  agenda: 'agenda',
+}
+
+// Reverse mapping
+const reverseViewMap: Record<View, CalendarView> = {
+  day: 'day',
+  week: 'week',
+  month: 'month',
+  agenda: 'agenda',
+  work_week: 'week', // Map work_week to week
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+/**
+ * Main calendar container that wraps react-big-calendar.
+ *
+ * This component integrates all calendar functionality:
+ * - Renders events using custom EventBlock component
+ * - Handles navigation and view switching
+ * - Supports slot selection for event creation
+ * - Integrates with calendar settings store
+ *
+ * @example
+ * ```tsx
+ * const { currentDate, currentView, dateRange, goToDate, setView } = useCalendarNavigation()
+ * const { events, bigCalendarEvents, isLoading } = useCalendarEvents({ dateRange })
+ *
+ * <CalendarContainer
+ *   events={bigCalendarEvents}
+ *   currentDate={currentDate}
+ *   currentView={currentView}
+ *   onViewChange={setView}
+ *   onNavigate={goToDate}
+ *   onSelectSlot={(slot) => setCreateEventSlot(slot)}
+ *   onSelectEvent={(event) => setSelectedEvent(event)}
+ *   onTaskToggle={(event, completed) => completeTask({ nodeId: event.nodeId, completed })}
+ *   isLoading={isLoading}
+ * />
+ * ```
+ */
+export function CalendarContainer({
+  events,
+  currentDate,
+  currentView,
+  onViewChange,
+  onNavigate,
+  onSelectSlot,
+  onSelectEvent,
+  onTaskToggle,
+  isLoading,
+  isFetching,
+  isGoogleConnected,
+  isSyncing,
+  onSyncClick,
+  onSettingsClick,
+  className,
+  minHeight = 600,
+  showToolbar = true,
+  toolbarProps,
+  selectable = true,
+  step = 15,
+  timeslots = 4,
+}: CalendarContainerProps) {
+  // Get settings from store
+  const weekStartsOn = useCalendarSettingsStore(
+    (state) => state.display.weekStartsOn
+  )
+  const timeFormat = useCalendarSettingsStore(
+    (state) => state.display.timeFormat
+  )
+  const workingHoursStart = useCalendarSettingsStore(
+    (state) => state.display.workingHoursStart
+  )
+  const workingHoursEnd = useCalendarSettingsStore(
+    (state) => state.display.workingHoursEnd
+  )
+
+  // Create localizer with current week start setting
+  const localizer = useMemo(
+    () => createLocalizer(weekStartsOn),
+    [weekStartsOn]
+  )
+
+  // Available views
+  const views: Views = useMemo(
+    () => ({
+      day: true,
+      week: true,
+      month: true,
+      agenda: true,
+    }),
+    []
+  )
+
+  // Time format for display
+  const formats = useMemo(
+    () => ({
+      timeGutterFormat: (date: Date) =>
+        format(date, timeFormat === '12h' ? 'h a' : 'HH:mm'),
+      eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
+        const formatStr = timeFormat === '12h' ? 'h:mm a' : 'HH:mm'
+        return `${format(start, formatStr)} - ${format(end, formatStr)}`
+      },
+      selectRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
+        const formatStr = timeFormat === '12h' ? 'h:mm a' : 'HH:mm'
+        return `${format(start, formatStr)} - ${format(end, formatStr)}`
+      },
+      dayFormat: (date: Date) => format(date, 'EEE d'),
+      dayHeaderFormat: (date: Date) => format(date, 'EEEE, MMMM d'),
+      dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) =>
+        `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`,
+      monthHeaderFormat: (date: Date) => format(date, 'MMMM yyyy'),
+      agendaDateFormat: (date: Date) => format(date, 'EEE, MMM d'),
+      agendaTimeFormat: (date: Date) =>
+        format(date, timeFormat === '12h' ? 'h:mm a' : 'HH:mm'),
+      agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
+        const formatStr = timeFormat === '12h' ? 'h:mm a' : 'HH:mm'
+        return `${format(start, formatStr)} - ${format(end, formatStr)}`
+      },
+    }),
+    [timeFormat]
+  )
+
+  // Scroll to working hours start time
+  const scrollToTime = useMemo(() => {
+    const today = new Date()
+    today.setHours(workingHoursStart, 0, 0, 0)
+    return today
+  }, [workingHoursStart])
+
+  // Handle view change
+  const handleViewChange = useCallback(
+    (view: View) => {
+      onViewChange(reverseViewMap[view] || 'week')
+    },
+    [onViewChange]
+  )
+
+  // Handle slot selection
+  const handleSelectSlot = useCallback(
+    (slotInfo: SlotInfo) => {
+      if (onSelectSlot) {
+        const info: SlotSelectInfo = {
+          start: slotInfo.start,
+          end: slotInfo.end,
+          slots: slotInfo.slots,
+          action: slotInfo.action as 'select' | 'click' | 'doubleClick',
+        }
+        onSelectSlot(info)
+      }
+    },
+    [onSelectSlot]
+  )
+
+  // Handle event selection
+  const handleSelectEvent = useCallback(
+    (event: BigCalendarEvent) => {
+      if (onSelectEvent) {
+        onSelectEvent(event.resource)
+      }
+    },
+    [onSelectEvent]
+  )
+
+  // Custom components
+  const components = useMemo(
+    () => ({
+      toolbar: showToolbar
+        ? (props: CalendarToolbarProps) => (
+            <CalendarToolbar
+              {...props}
+              isGoogleConnected={isGoogleConnected}
+              isSyncing={isSyncing}
+              onSyncClick={onSyncClick}
+              onSettingsClick={onSettingsClick}
+              {...toolbarProps}
+            />
+          )
+        : () => null,
+      event: (props: { event: BigCalendarEvent; title: string }) => (
+        <EventBlock
+          {...props}
+          onTaskToggle={onTaskToggle}
+          onEventClick={onSelectEvent}
+        />
+      ),
+      agenda: {
+        event: (props: { event: BigCalendarEvent }) => (
+          <AgendaEvent
+            {...props}
+            onTaskToggle={onTaskToggle}
+            onEventClick={onSelectEvent}
+          />
+        ),
+      },
+    }),
+    [
+      showToolbar,
+      isGoogleConnected,
+      isSyncing,
+      onSyncClick,
+      onSettingsClick,
+      onTaskToggle,
+      onSelectEvent,
+      toolbarProps,
+    ]
+  )
+
+  // Event prop getter for styling
+  const eventPropGetter = useCallback((event: BigCalendarEvent) => {
+    const calEvent = event.resource
+    return {
+      'data-event-type': calEvent.isTask ? 'task' : 'event',
+      'data-completed': calEvent.isCompleted ? 'true' : undefined,
+      'data-recurring': calEvent.rrule ? 'true' : undefined,
+      'data-has-reminder': calEvent.hasReminder ? 'true' : undefined,
+      'data-synced': calEvent.gcalEventId ? 'true' : undefined,
+    }
+  }, [])
+
+  // Day prop getter for styling
+  const dayPropGetter = useCallback((date: Date) => {
+    const today = new Date()
+    const isToday =
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate()
+
+    return {
+      className: isToday ? 'rbc-today' : undefined,
+    }
+  }, [])
+
+  return (
+    <div
+      className={cn('nxus-calendar relative', className)}
+      style={{ minHeight }}
+    >
+      {/* Loading overlay */}
+      {(isLoading || isFetching) && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50">
+          <div className="flex items-center gap-2 rounded-md bg-card px-4 py-2 shadow-lg">
+            <svg
+              className="size-4 animate-spin text-primary"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar */}
+      <BigCalendar<BigCalendarEvent>
+        localizer={localizer}
+        events={events}
+        date={currentDate}
+        view={viewMap[currentView]}
+        views={views}
+        onNavigate={onNavigate}
+        onView={handleViewChange}
+        onSelectSlot={handleSelectSlot}
+        onSelectEvent={handleSelectEvent}
+        selectable={selectable}
+        step={step}
+        timeslots={timeslots}
+        scrollToTime={scrollToTime}
+        formats={formats}
+        components={components}
+        eventPropGetter={eventPropGetter}
+        dayPropGetter={dayPropGetter}
+        popup
+        showMultiDayTimes
+        messages={{
+          today: 'Today',
+          previous: 'Back',
+          next: 'Next',
+          month: 'Month',
+          week: 'Week',
+          day: 'Day',
+          agenda: 'Agenda',
+          date: 'Date',
+          time: 'Time',
+          event: 'Event',
+          noEventsInRange: 'No events in this range.',
+          showMore: (total) => `+${total} more`,
+        }}
+      />
+    </div>
+  )
+}
+
+// ============================================================================
+// Empty State Component
+// ============================================================================
+
+export interface CalendarEmptyStateProps {
+  /** Title text */
+  title?: string
+
+  /** Description text */
+  description?: string
+
+  /** Action button click handler */
+  onCreateEvent?: () => void
+
+  /** Custom class name */
+  className?: string
+}
+
+/**
+ * Empty state component shown when there are no events.
+ */
+export function CalendarEmptyState({
+  title = 'No events',
+  description = 'Create your first event to get started.',
+  onCreateEvent,
+  className,
+}: CalendarEmptyStateProps) {
+  return (
+    <div className={cn('calendar-empty', className)}>
+      <svg
+        className="calendar-empty-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <path d="M16 2v4" />
+        <path d="M8 2v4" />
+        <path d="M3 10h18" />
+        <path d="M8 14h.01" />
+        <path d="M12 14h.01" />
+        <path d="M16 14h.01" />
+        <path d="M8 18h.01" />
+        <path d="M12 18h.01" />
+        <path d="M16 18h.01" />
+      </svg>
+      <h3 className="calendar-empty-title">{title}</h3>
+      <p className="calendar-empty-description">{description}</p>
+      {onCreateEvent && (
+        <button
+          onClick={onCreateEvent}
+          className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <svg
+            className="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          Create Event
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// Loading Skeleton Component
+// ============================================================================
+
+export interface CalendarSkeletonProps {
+  /** Custom class name */
+  className?: string
+}
+
+/**
+ * Loading skeleton for the calendar.
+ */
+export function CalendarSkeleton({ className }: CalendarSkeletonProps) {
+  return (
+    <div className={cn('calendar-skeleton', className)}>
+      {/* Header skeleton */}
+      <div className="calendar-skeleton-header">
+        <div className="calendar-skeleton-cell" style={{ width: '4rem' }} />
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="calendar-skeleton-cell" />
+        ))}
+      </div>
+
+      {/* Grid skeleton */}
+      {Array.from({ length: 8 }).map((_, rowIndex) => (
+        <div key={rowIndex} className="calendar-skeleton-row">
+          <div
+            className="calendar-skeleton-cell"
+            style={{ width: '4rem', height: '3rem' }}
+          />
+          {Array.from({ length: 7 }).map((_, colIndex) => (
+            <div key={colIndex} className="flex-1">
+              {rowIndex % 3 === 0 && colIndex % 2 === 0 && (
+                <div className="calendar-skeleton-event" />
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
