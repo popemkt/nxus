@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NodesRouteImport } from './routes/nodes'
 import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppsAppIdRouteImport } from './routes/apps.$appId'
 
@@ -30,6 +31,11 @@ const InboxRoute = InboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const AppsAppIdRoute = AppsAppIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/inbox': typeof InboxRoute
   '/nodes': typeof NodesRoute
   '/settings': typeof SettingsRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/inbox': typeof InboxRoute
   '/nodes': typeof NodesRoute
   '/settings': typeof SettingsRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/inbox': typeof InboxRoute
   '/nodes': typeof NodesRoute
   '/settings': typeof SettingsRoute
@@ -65,14 +74,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inbox' | '/nodes' | '/settings' | '/apps/$appId'
+  fullPaths:
+    | '/'
+    | '/calendar'
+    | '/inbox'
+    | '/nodes'
+    | '/settings'
+    | '/apps/$appId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inbox' | '/nodes' | '/settings' | '/apps/$appId'
-  id: '__root__' | '/' | '/inbox' | '/nodes' | '/settings' | '/apps/$appId'
+  to: '/' | '/calendar' | '/inbox' | '/nodes' | '/settings' | '/apps/$appId'
+  id:
+    | '__root__'
+    | '/'
+    | '/calendar'
+    | '/inbox'
+    | '/nodes'
+    | '/settings'
+    | '/apps/$appId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalendarRoute: typeof CalendarRoute
   InboxRoute: typeof InboxRoute
   NodesRoute: typeof NodesRoute
   SettingsRoute: typeof SettingsRoute
@@ -102,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalendarRoute: CalendarRoute,
   InboxRoute: InboxRoute,
   NodesRoute: NodesRoute,
   SettingsRoute: SettingsRoute,

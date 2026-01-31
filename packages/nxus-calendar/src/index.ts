@@ -22,5 +22,8 @@ export * from './hooks/index.js'
 // Zustand stores
 export * from './stores/index.js'
 
+// Route component
+export { CalendarRoute, type CalendarRouteProps } from './route.js'
+
 // Package version
 export const CALENDAR_VERSION = '0.0.1'

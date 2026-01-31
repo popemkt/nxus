@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@nxus/ui'
 import {
+  CalendarIcon,
   CaretDownIcon,
   CommandIcon,
   GearIcon,
@@ -194,6 +195,15 @@ export function FloatingHud({
         </button>
 
         <div className="w-px h-5 bg-foreground/10 mx-1" />
+
+        {/* Calendar */}
+        <Link
+          to="/calendar"
+          className={cn(btnBase, btnInactive)}
+          title="Calendar"
+        >
+          <CalendarIcon className="size-4" />
+        </Link>
 
         {/* Inbox */}
         <Link
