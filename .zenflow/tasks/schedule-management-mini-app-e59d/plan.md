@@ -363,24 +363,25 @@ pnpm typecheck && pnpm lint
 
 TypeScript verification passed. Dev server starts without errors.
 
-### [ ] Step: Drag and Drop Rescheduling
+### [x] Step: Drag and Drop Rescheduling
+<!-- chat-id: bdb7d01a-d604-49eb-b4e3-638f455460aa -->
 
 Enable drag-and-drop to reschedule and resize events.
 
 **Tasks:**
-- [ ] Enable drag-and-drop in calendar-container:
+- [x] Enable drag-and-drop in calendar-container:
   - Import `withDragAndDrop` HOC from react-big-calendar/lib/addons/dragAndDrop
   - Import drag-and-drop CSS
   - Configure draggableAccessor, resizableAccessor
-- [ ] Add `onEventDrop` handler:
+- [x] Add `onEventDrop` handler:
   - Calculate new start/end from drop info
   - Call updateCalendarEventServerFn
   - Optimistic update in UI
-- [ ] Add `onEventResize` handler:
+- [x] Add `onEventResize` handler:
   - Calculate new duration from resize info
   - Call updateCalendarEventServerFn
   - Optimistic update in UI
-- [ ] Disable drag for completed tasks (optional)
+- [x] Disable drag for completed tasks (optional)
 
 **Verification:**
 ```bash
@@ -388,6 +389,23 @@ pnpm typecheck && pnpm lint
 # Manual: Drag event to new time, verify update
 # Manual: Resize event, verify duration change
 ```
+
+**Completed:** Drag and drop rescheduling implemented:
+- Updated `calendar-container.tsx`:
+  - Imported `withDragAndDrop` HOC and `EventInteractionArgs` type
+  - Imported drag-and-drop CSS from `react-big-calendar/lib/addons/dragAndDrop/styles.css`
+  - Created `DragAndDropCalendar` component using `withDragAndDrop` HOC
+  - Added `onEventDrop` and `onEventResize` props to CalendarContainerProps
+  - Added `draggable` and `resizable` boolean props (default: true)
+  - Implemented `handleEventDrop` and `handleEventResize` callbacks
+  - Implemented `draggableAccessor` and `resizableAccessor` to disable drag/resize for completed tasks
+  - Updated `eventPropGetter` to use CSS class names instead of data attributes
+- Updated `route.tsx`:
+  - Added `useUpdateEvent` hook import
+  - Added `handleEventDrop` and `handleEventResize` handlers that call `updateEvent` mutation
+  - Passed handlers to CalendarContainer with `draggable` and `resizable` props
+  - Included `isUpdating` in the `isFetching` state for loading indicator
+- TypeScript verification passed. Dev server starts without errors.
 
 ### [ ] Step: Recurring Events Support
 

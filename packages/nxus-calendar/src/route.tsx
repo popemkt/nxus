@@ -34,12 +34,15 @@ import {
   useCalendarNavigation,
   useCalendarEvents,
   useCompleteTask,
+  useUpdateEvent,
 } from './hooks/index.js'
 
 // Types
 import type {
   CalendarEvent,
   SlotSelectInfo,
+  EventDropInfo,
+  EventResizeInfo,
 } from './types/calendar-event.js'
 
 // ============================================================================
@@ -171,6 +174,9 @@ export function CalendarRoute({
   // Task completion mutation
   const { completeTask, isCompleting } = useCompleteTask()
 
+  // Event update mutation (for drag and drop rescheduling)
+  const { updateEvent, isUpdating } = useUpdateEvent()
+
   // Handle slot selection (for creating events)
   const handleSelectSlot = useCallback(
     (slotInfo: SlotSelectInfo) => {
@@ -212,6 +218,33 @@ export function CalendarRoute({
       })
     },
     [completeTask]
+  )
+
+  // Handle event drop (drag and drop rescheduling)
+  const handleEventDrop = useCallback(
+    async (info: EventDropInfo) => {
+      const calEvent = info.event.resource
+      await updateEvent({
+        nodeId: calEvent.nodeId,
+        startDate: info.start.toISOString(),
+        endDate: info.end.toISOString(),
+        allDay: info.isAllDay,
+      })
+    },
+    [updateEvent]
+  )
+
+  // Handle event resize
+  const handleEventResize = useCallback(
+    async (info: EventResizeInfo) => {
+      const calEvent = info.event.resource
+      await updateEvent({
+        nodeId: calEvent.nodeId,
+        startDate: info.start.toISOString(),
+        endDate: info.end.toISOString(),
+      })
+    },
+    [updateEvent]
   )
 
   // Handle create event from empty state
@@ -359,8 +392,12 @@ export function CalendarRoute({
             onSelectSlot={canCreateEvent ? handleSelectSlot : undefined}
             onSelectEvent={handleSelectEvent}
             onTaskToggle={handleTaskToggle}
+            onEventDrop={handleEventDrop}
+            onEventResize={handleEventResize}
+            draggable
+            resizable
             isLoading={false}
-            isFetching={isFetching || isCompleting}
+            isFetching={isFetching || isCompleting || isUpdating}
             isGoogleConnected={isGoogleConnected}
             isSyncing={isSyncing}
             onSyncClick={onSyncClick}

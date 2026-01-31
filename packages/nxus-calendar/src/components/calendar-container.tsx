@@ -9,14 +9,17 @@
  * - Slot selection for event creation
  */
 
+import type { CSSProperties } from 'react'
 import { useCallback, useMemo } from 'react'
 import {
   Calendar as BigCalendar,
   dateFnsLocalizer,
   type View,
-  type Views,
   type SlotInfo,
 } from 'react-big-calendar'
+import withDragAndDrop, {
+  type EventInteractionArgs,
+} from 'react-big-calendar/lib/addons/dragAndDrop'
 import {
   format,
   parse,
@@ -30,6 +33,8 @@ import type {
   CalendarEvent,
   CalendarView,
   SlotSelectInfo,
+  EventDropInfo,
+  EventResizeInfo,
   WeekStart,
 } from '../types/calendar-event.js'
 import { useCalendarSettingsStore } from '../stores/calendar-settings.store.js'
@@ -38,6 +43,12 @@ import { EventBlock, AgendaEvent } from './event-block.js'
 
 // Import calendar CSS
 import '../styles/calendar.css'
+
+// Import drag-and-drop CSS
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
+
+// Create the drag-and-drop enhanced calendar
+const DragAndDropCalendar = withDragAndDrop<BigCalendarEvent>(BigCalendar)
 
 // ============================================================================
 // Localizer Setup
@@ -89,6 +100,18 @@ export interface CalendarContainerProps {
 
   /** Called when a task checkbox is toggled */
   onTaskToggle?: (event: CalendarEvent, completed: boolean) => Promise<void> | void
+
+  /** Called when an event is dropped to a new time (drag and drop) */
+  onEventDrop?: (info: EventDropInfo) => Promise<void> | void
+
+  /** Called when an event is resized */
+  onEventResize?: (info: EventResizeInfo) => Promise<void> | void
+
+  /** Whether drag and drop is enabled (default: true) */
+  draggable?: boolean
+
+  /** Whether event resizing is enabled (default: true) */
+  resizable?: boolean
 
   /** Whether the calendar is in a loading state */
   isLoading?: boolean
@@ -187,6 +210,10 @@ export function CalendarContainer({
   onSelectSlot,
   onSelectEvent,
   onTaskToggle,
+  onEventDrop,
+  onEventResize,
+  draggable = true,
+  resizable = true,
   isLoading,
   isFetching,
   isGoogleConnected,
@@ -211,9 +238,6 @@ export function CalendarContainer({
   const workingHoursStart = useCalendarSettingsStore(
     (state) => state.display.workingHoursStart
   )
-  const workingHoursEnd = useCalendarSettingsStore(
-    (state) => state.display.workingHoursEnd
-  )
 
   // Create localizer with current week start setting
   const localizer = useMemo(
@@ -222,7 +246,7 @@ export function CalendarContainer({
   )
 
   // Available views
-  const views: Views = useMemo(
+  const views = useMemo(
     () => ({
       day: true,
       week: true,
@@ -302,6 +326,65 @@ export function CalendarContainer({
     [onSelectEvent]
   )
 
+  // Handle event drop (drag and drop rescheduling)
+  const handleEventDrop = useCallback(
+    (args: EventInteractionArgs<BigCalendarEvent>) => {
+      if (onEventDrop) {
+        const info: EventDropInfo = {
+          event: args.event,
+          start: args.start as Date,
+          end: args.end as Date,
+          isAllDay: args.isAllDay ?? args.event.allDay ?? false,
+        }
+        onEventDrop(info)
+      }
+    },
+    [onEventDrop]
+  )
+
+  // Handle event resize
+  const handleEventResize = useCallback(
+    (args: EventInteractionArgs<BigCalendarEvent>) => {
+      if (onEventResize) {
+        const info: EventResizeInfo = {
+          event: args.event,
+          start: args.start as Date,
+          end: args.end as Date,
+        }
+        onEventResize(info)
+      }
+    },
+    [onEventResize]
+  )
+
+  // Determine if an event is draggable (completed tasks are not draggable)
+  const draggableAccessor = useCallback(
+    (event: BigCalendarEvent) => {
+      if (!draggable) return false
+      // Don't allow dragging completed tasks
+      const calEvent = event.resource
+      if (calEvent.isTask && calEvent.isCompleted) {
+        return false
+      }
+      return true
+    },
+    [draggable]
+  )
+
+  // Determine if an event is resizable (completed tasks are not resizable)
+  const resizableAccessor = useCallback(
+    (event: BigCalendarEvent) => {
+      if (!resizable) return false
+      // Don't allow resizing completed tasks
+      const calEvent = event.resource
+      if (calEvent.isTask && calEvent.isCompleted) {
+        return false
+      }
+      return true
+    },
+    [resizable]
+  )
+
   // Custom components
   const components = useMemo(
     () => ({
@@ -347,16 +430,42 @@ export function CalendarContainer({
   )
 
   // Event prop getter for styling
-  const eventPropGetter = useCallback((event: BigCalendarEvent) => {
-    const calEvent = event.resource
-    return {
-      'data-event-type': calEvent.isTask ? 'task' : 'event',
-      'data-completed': calEvent.isCompleted ? 'true' : undefined,
-      'data-recurring': calEvent.rrule ? 'true' : undefined,
-      'data-has-reminder': calEvent.hasReminder ? 'true' : undefined,
-      'data-synced': calEvent.gcalEventId ? 'true' : undefined,
-    }
-  }, [])
+  const eventPropGetter = useCallback(
+    (event: BigCalendarEvent): { className?: string; style?: CSSProperties } => {
+      const calEvent = event.resource
+      const classNames: string[] = []
+
+      // Add class based on event type
+      if (calEvent.isTask) {
+        classNames.push('calendar-event-task')
+        if (calEvent.isCompleted) {
+          classNames.push('calendar-event-completed')
+        }
+      } else {
+        classNames.push('calendar-event-event')
+      }
+
+      // Add class for recurring events
+      if (calEvent.rrule) {
+        classNames.push('calendar-event-recurring')
+      }
+
+      // Add class for events with reminders
+      if (calEvent.hasReminder) {
+        classNames.push('calendar-event-has-reminder')
+      }
+
+      // Add class for synced events
+      if (calEvent.gcalEventId) {
+        classNames.push('calendar-event-synced')
+      }
+
+      return {
+        className: classNames.join(' '),
+      }
+    },
+    []
+  )
 
   // Day prop getter for styling
   const dayPropGetter = useCallback((date: Date) => {
@@ -405,8 +514,8 @@ export function CalendarContainer({
         </div>
       )}
 
-      {/* Calendar */}
-      <BigCalendar<BigCalendarEvent>
+      {/* Calendar with drag and drop */}
+      <DragAndDropCalendar
         localizer={localizer}
         events={events}
         date={currentDate}
@@ -416,6 +525,11 @@ export function CalendarContainer({
         onView={handleViewChange}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
+        onEventDrop={handleEventDrop}
+        onEventResize={handleEventResize}
+        draggableAccessor={draggableAccessor}
+        resizableAccessor={resizableAccessor}
+        resizable={resizable}
         selectable={selectable}
         step={step}
         timeslots={timeslots}
