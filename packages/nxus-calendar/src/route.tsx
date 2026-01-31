@@ -8,6 +8,7 @@
  * - Full calendar view with day/week/month/agenda modes
  * - Event fetching with TanStack Query
  * - Task completion toggling
+ * - Event creation modal
  * - Empty state handling
  * - Loading skeleton
  * - Settings initialization
@@ -24,6 +25,7 @@ import {
   CalendarContainer,
   CalendarEmptyState,
   CalendarSkeleton,
+  CreateEventModal,
 } from './components/index.js'
 
 // Hooks
@@ -53,7 +55,7 @@ export interface CalendarRouteProps {
   /** Custom back button URL */
   backUrl?: string
 
-  /** Callback when create event is requested */
+  /** Callback when create event is requested (if provided, external modal handling) */
   onCreateEvent?: (slotInfo: SlotSelectInfo) => void
 
   /** Callback when an event is selected */
@@ -70,6 +72,9 @@ export interface CalendarRouteProps {
 
   /** Whether a sync is in progress */
   isSyncing?: boolean
+
+  /** Whether to use the built-in create event modal (default: true if onCreateEvent not provided) */
+  useBuiltInModal?: boolean
 }
 
 // ============================================================================
@@ -111,9 +116,16 @@ export function CalendarRoute({
   onSyncClick,
   isGoogleConnected = false,
   isSyncing = false,
+  useBuiltInModal,
 }: CalendarRouteProps) {
   // State for selected slot (when user clicks to create event)
   const [selectedSlot, setSelectedSlot] = useState<SlotSelectInfo | null>(null)
+
+  // State for the built-in create event modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
+  // Determine if we should use the built-in modal
+  const shouldUseBuiltInModal = useBuiltInModal ?? !onCreateEvent
 
   // Navigation state
   const {
@@ -149,9 +161,16 @@ export function CalendarRoute({
   const handleSelectSlot = useCallback(
     (slotInfo: SlotSelectInfo) => {
       setSelectedSlot(slotInfo)
-      onCreateEvent?.(slotInfo)
+
+      if (shouldUseBuiltInModal) {
+        // Use the built-in modal
+        setIsCreateModalOpen(true)
+      } else {
+        // Call the external handler
+        onCreateEvent?.(slotInfo)
+      }
     },
-    [onCreateEvent]
+    [onCreateEvent, shouldUseBuiltInModal]
   )
 
   // Handle event selection
@@ -270,6 +289,9 @@ export function CalendarRoute({
   // Check if we have any events
   const hasEvents = events.length > 0
 
+  // Determine if event creation is enabled (either built-in or external)
+  const canCreateEvent = shouldUseBuiltInModal || !!onCreateEvent
+
   return (
     <div className={cn('min-h-screen bg-background', className)}>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -296,7 +318,7 @@ export function CalendarRoute({
           </div>
 
           {/* Create button */}
-          {onCreateEvent && (
+          {canCreateEvent && (
             <Button onClick={handleCreateFromEmptyState}>
               <PlusIcon data-icon="inline-start" />
               New Event
@@ -305,14 +327,14 @@ export function CalendarRoute({
         </div>
 
         {/* Calendar content */}
-        {hasEvents || !onCreateEvent ? (
+        {hasEvents || !canCreateEvent ? (
           <CalendarContainer
             events={bigCalendarEvents}
             currentDate={currentDate}
             currentView={currentView}
             onViewChange={setView}
             onNavigate={goToDate}
-            onSelectSlot={onCreateEvent ? handleSelectSlot : undefined}
+            onSelectSlot={canCreateEvent ? handleSelectSlot : undefined}
             onSelectEvent={handleSelectEvent}
             onTaskToggle={handleTaskToggle}
             isLoading={false}
@@ -321,7 +343,7 @@ export function CalendarRoute({
             isSyncing={isSyncing}
             onSyncClick={onSyncClick}
             onSettingsClick={onSettingsClick}
-            selectable={!!onCreateEvent}
+            selectable={canCreateEvent}
             minHeight={600}
           />
         ) : (
@@ -332,6 +354,19 @@ export function CalendarRoute({
           />
         )}
       </div>
+
+      {/* Built-in Create Event Modal */}
+      {shouldUseBuiltInModal && (
+        <CreateEventModal
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          slotInfo={selectedSlot}
+          onSuccess={() => {
+            // Modal will close automatically, just clear the selected slot
+            setSelectedSlot(null)
+          }}
+        />
+      )}
     </div>
   )
 }

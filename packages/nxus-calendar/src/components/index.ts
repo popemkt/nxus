@@ -35,3 +35,9 @@ export {
   TaskCheckbox,
   type TaskCheckboxProps,
 } from './task-checkbox.js'
+
+// Create Event Modal
+export {
+  CreateEventModal,
+  type CreateEventModalProps,
+} from './create-event-modal.js'
