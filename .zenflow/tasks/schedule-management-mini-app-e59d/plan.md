@@ -119,32 +119,35 @@ pnpm typecheck && pnpm build
 
 **Completed:** All server functions created and verified with successful build.
 
-### [ ] Step: Zustand Store and React Hooks
+### [x] Step: Zustand Store and React Hooks
+<!-- chat-id: 107b36d0-9d43-4a0e-b40e-3d9530662b07 -->
 
 Create the calendar settings store and React hooks for data fetching.
 
 **Tasks:**
-- [ ] Create `src/stores/calendar-settings.store.ts`:
+- [x] Create `src/stores/calendar-settings.store.ts`:
   - State: defaultView, weekStartsOn, timeFormat, taskSupertags, eventSupertags, statusField, doneStatuses, showCompletedTasks, completedTaskStyle, googleCalendarId, syncEnabled
   - Actions: setView, setTimeFormat, setTaskConfig, setGoogleConfig
   - Persist with zustand/persist middleware
-- [ ] Create `src/stores/index.ts`
-- [ ] Create `src/hooks/use-calendar-events.ts`:
+- [x] Create `src/stores/index.ts`
+- [x] Create `src/hooks/use-calendar-events.ts`:
   - Use TanStack Query to fetch events via server function
   - Accept dateRange parameter
   - Handle recurrence expansion client-side
-- [ ] Create `src/hooks/use-calendar-navigation.ts`:
+- [x] Create `src/hooks/use-calendar-navigation.ts`:
   - State: currentDate, currentView
   - Actions: goToDate, goToToday, nextPeriod, prevPeriod, setView
-- [ ] Create `src/hooks/use-event-mutations.ts`:
+- [x] Create `src/hooks/use-event-mutations.ts`:
   - Mutations for create, update, delete, complete
   - Optimistic updates with query invalidation
-- [ ] Create `src/hooks/index.ts`
+- [x] Create `src/hooks/index.ts`
 
 **Verification:**
 ```bash
 pnpm typecheck && pnpm lint
 ```
+
+**Completed:** Created Zustand store (calendar-settings.store.ts) with persist middleware and React hooks (use-calendar-events, use-calendar-navigation, use-event-mutations). All files export through index.ts. TypeScript verification passed.
 
 ### [ ] Step: Calendar CSS Theme
 

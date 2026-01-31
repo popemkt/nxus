@@ -17,10 +17,10 @@ export * from './lib/index.js'
 // export * from './components/index.js'
 
 // React hooks
-// export * from './hooks/index.js'
+export * from './hooks/index.js'
 
 // Zustand stores
-// export * from './stores/index.js'
+export * from './stores/index.js'
 
 // Package version
 export const CALENDAR_VERSION = '0.0.1'
