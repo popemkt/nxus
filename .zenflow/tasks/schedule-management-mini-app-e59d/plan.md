@@ -1,57 +1,476 @@
-# Full SDD workflow
+# Schedule Management Mini App - Implementation Plan
 
 ## Configuration
-- **Artifacts Path**: {@artifacts_path} → `.zenflow/tasks/{task_id}`
+- **Artifacts Path**: `.zenflow/tasks/schedule-management-mini-app-e59d`
+- **Requirements**: `requirements.md`
+- **Technical Spec**: `spec.md`
 
 ---
 
-## Workflow Steps
+## Completed Workflow Steps
 
 ### [x] Step: Requirements
 <!-- chat-id: 833bd3fa-23f8-4305-8eb5-7840d580d1f5 -->
-
-Create a Product Requirements Document (PRD) based on the feature description.
-
-1. Review existing codebase to understand current architecture and patterns
-2. Analyze the feature definition and identify unclear aspects
-3. Ask the user for clarifications on aspects that significantly impact scope or user experience
-4. Make reasonable decisions for minor details based on context and conventions
-5. If user can't clarify, make a decision, state the assumption, and continue
-
-Save the PRD to `{@artifacts_path}/requirements.md`.
+PRD saved to `requirements.md`.
 
 ### [x] Step: Technical Specification
 <!-- chat-id: 862d7109-0a38-43eb-9070-3ff4a022ffd5 -->
+Technical specification saved to `spec.md`.
 
-Create a technical specification based on the PRD in `{@artifacts_path}/requirements.md`.
+### [x] Step: Planning
+<!-- chat-id: 78ff9a44-2960-45b1-be15-3ed595736c2b -->
+Implementation plan created (this document).
 
-1. Review existing codebase architecture and identify reusable components
-2. Define the implementation approach
+---
 
-Save to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach referencing existing code patterns
-- Source code structure changes
-- Data model / API / interface changes
-- Delivery phases (incremental, testable milestones)
-- Verification approach using project lint/test commands
+## Implementation Steps
 
-### [ ] Step: Planning
+### [ ] Step: Package Setup and System Fields
 
-Create a detailed implementation plan based on `{@artifacts_path}/spec.md`.
+Set up the `@nxus/calendar` package infrastructure and add calendar-related system fields to nxus-db.
 
-1. Break down the work into concrete tasks
-2. Each task should reference relevant contracts and include verification steps
-3. Replace the Implementation step below with the planned tasks
+**Tasks:**
+- [ ] Create `packages/nxus-calendar/` directory structure
+- [ ] Create `package.json` with dependencies (react-big-calendar, date-fns, rrule, googleapis)
+- [ ] Create `tsconfig.json` extending root config
+- [ ] Create `src/index.ts` (client exports - types only)
+- [ ] Create `src/server.ts` (server exports)
+- [ ] Add calendar system fields to `packages/nxus-db/src/schemas/node-schema.ts`:
+  - `START_DATE: 'field:start_date'`
+  - `END_DATE: 'field:end_date'`
+  - `ALL_DAY: 'field:all_day'`
+  - `RRULE: 'field:rrule'`
+  - `GCAL_EVENT_ID: 'field:gcal_event_id'`
+  - `GCAL_SYNCED_AT: 'field:gcal_synced_at'`
+  - `REMINDER: 'field:reminder'`
+- [ ] Add system supertags if not present: `TASK`, `EVENT`
+- [ ] Update `pnpm-workspace.yaml` to include calendar package
+- [ ] Update `packages/nxus-core/package.json` to depend on `@nxus/calendar`
+- [ ] Run `pnpm install` to link packages
 
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function) or too broad (entire feature).
+**Verification:**
+```bash
+pnpm install && pnpm build
+```
 
-If the feature is trivial and doesn't warrant full specification, update this workflow to remove unnecessary steps and explain the reasoning to the user.
+### [ ] Step: Type Definitions and Utilities
 
-Save to `{@artifacts_path}/plan.md`.
+Create TypeScript types, Zod schemas, and date utility functions for calendar operations.
 
-### [ ] Step: Implementation
+**Tasks:**
+- [ ] Create `src/types/calendar-event.ts`:
+  - `CalendarEvent` interface (id, title, start, end, allDay, isTask, isCompleted, rrule, etc.)
+  - `BigCalendarEvent` interface (wrapper for react-big-calendar)
+  - Zod schemas for input validation
+- [ ] Create `src/types/google-sync.ts`:
+  - `GoogleSyncStatus` type
+  - `GoogleAuthState` type
+  - Zod schemas for sync operations
+- [ ] Create `src/types/index.ts` exporting all types
+- [ ] Create `src/lib/date-utils.ts`:
+  - `toUTC()`, `fromUTC()` - timezone conversion
+  - `getDateRange(view, date)` - calculate visible date range for view
+  - `formatTimeRange()` - display time ranges
+- [ ] Create `src/lib/rrule-utils.ts`:
+  - `parseRRule()` - parse RRULE string
+  - `expandRecurrence(rrule, range)` - expand instances within range
+  - `formatRRuleHumanReadable()` - display recurrence pattern
+  - `getNextInstance(rrule, fromDate)` - calculate next occurrence
+- [ ] Create `src/lib/query-builder.ts`:
+  - `buildCalendarQuery(dateRange, options)` - build query for events in range
+- [ ] Create `src/lib/index.ts` exporting all utilities
 
-This step should be replaced with detailed implementation tasks from the Planning step.
+**Verification:**
+```bash
+pnpm typecheck
+```
 
-If Planning didn't replace this step, execute the tasks in `{@artifacts_path}/plan.md`, updating checkboxes as you go. Run planned tests/lint and record results in plan.md.
+### [ ] Step: Server Functions for Event CRUD
+
+Implement server functions for calendar event operations using the existing query evaluator.
+
+**Tasks:**
+- [ ] Create `src/server/calendar.server.ts`:
+  - `getCalendarEventsServerFn` - fetch events for date range using query evaluator
+  - `createCalendarEventServerFn` - create new event/task node
+  - `updateCalendarEventServerFn` - update event properties
+  - `deleteCalendarEventServerFn` - delete event node
+  - `completeTaskServerFn` - toggle task completion status
+- [ ] Create `src/server/index.ts` exporting all server functions
+- [ ] Update `src/server.ts` to re-export from server/index.ts
+
+**Key patterns to follow:**
+- Use `createServerFn` from `@tanstack/react-start`
+- Use Zod for input validation
+- Dynamic import of `@nxus/db/server` to avoid bundling issues
+- Return `{ success: boolean, data?, error? }` pattern
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+```
+
+### [ ] Step: Zustand Store and React Hooks
+
+Create the calendar settings store and React hooks for data fetching.
+
+**Tasks:**
+- [ ] Create `src/stores/calendar-settings.store.ts`:
+  - State: defaultView, weekStartsOn, timeFormat, taskSupertags, eventSupertags, statusField, doneStatuses, showCompletedTasks, completedTaskStyle, googleCalendarId, syncEnabled
+  - Actions: setView, setTimeFormat, setTaskConfig, setGoogleConfig
+  - Persist with zustand/persist middleware
+- [ ] Create `src/stores/index.ts`
+- [ ] Create `src/hooks/use-calendar-events.ts`:
+  - Use TanStack Query to fetch events via server function
+  - Accept dateRange parameter
+  - Handle recurrence expansion client-side
+- [ ] Create `src/hooks/use-calendar-navigation.ts`:
+  - State: currentDate, currentView
+  - Actions: goToDate, goToToday, nextPeriod, prevPeriod, setView
+- [ ] Create `src/hooks/use-event-mutations.ts`:
+  - Mutations for create, update, delete, complete
+  - Optimistic updates with query invalidation
+- [ ] Create `src/hooks/index.ts`
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+```
+
+### [ ] Step: Calendar CSS Theme
+
+Create shadcn-styled CSS for react-big-calendar that matches the Nxus design system.
+
+**Tasks:**
+- [ ] Create `src/styles/calendar.css`:
+  - Base react-big-calendar overrides
+  - Map to Tailwind CSS variables (--background, --foreground, --primary, etc.)
+  - Day/Week/Month view specific styles
+  - Event block styles (task vs event distinction)
+  - Time grid styling
+  - All-day section styling
+  - Toolbar styling
+  - Dark mode support via CSS variables
+- [ ] Scope all styles under `.nxus-calendar` class to prevent conflicts
+- [ ] Style completed tasks (muted, strikethrough options)
+- [ ] Add responsive breakpoints for mobile
+
+**Reference:** shadcn-ui-big-calendar patterns from spec
+
+**Verification:**
+Visual inspection after component implementation
+
+### [ ] Step: Core Calendar Components
+
+Build the main calendar container and view components using react-big-calendar.
+
+**Tasks:**
+- [ ] Create `src/components/calendar-container.tsx`:
+  - Wrapper component integrating react-big-calendar
+  - Configure date-fns localizer
+  - Pass events, views, navigation handlers
+  - Import calendar.css
+- [ ] Create `src/components/calendar-toolbar.tsx`:
+  - View switcher (Day | Week | Month buttons)
+  - Date navigation (< Today >)
+  - Date picker for jumping to specific date
+  - Sync to Google button (placeholder)
+- [ ] Create `src/components/event-block.tsx`:
+  - Custom event component for react-big-calendar
+  - Render checkbox for tasks
+  - Show reminder icon if set
+  - Display time range
+  - Handle click for event details
+- [ ] Create `src/components/task-checkbox.tsx`:
+  - Inline checkbox component
+  - Handle click without propagation
+  - Call completeTask mutation
+  - Show loading state during update
+- [ ] Create `src/components/index.ts`
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint && pnpm build
+```
+
+### [ ] Step: Route Integration
+
+Add the calendar route to nxus-core and create the main route component.
+
+**Tasks:**
+- [ ] Create `src/route.tsx` in nxus-calendar:
+  - Main CalendarRoute component
+  - Compose calendar container, toolbar, hooks
+  - Initialize calendar settings store
+  - Handle empty state (no events)
+- [ ] Create `packages/nxus-core/src/routes/calendar.tsx`:
+  - TanStack Router file-based route
+  - Import and render CalendarRoute from @nxus/calendar
+- [ ] Add calendar link to navigation (in `__root.tsx` or sidebar)
+- [ ] Update exports in `src/index.ts`
+
+**Verification:**
+```bash
+pnpm build
+# Manual: Navigate to /calendar, verify page loads
+```
+
+### [ ] Step: Event Creation Modal
+
+Implement the modal for creating new events and tasks.
+
+**Tasks:**
+- [ ] Create `src/components/create-event-modal.tsx`:
+  - Modal using @nxus/ui AlertDialog or custom dialog
+  - Form fields: title, type (task/event), start date/time, end date/time, all-day toggle
+  - Optional: description, reminder, recurrence pattern
+  - Pre-fill date/time from clicked slot
+  - Submit calls createCalendarEventServerFn
+  - Close on success, show error on failure
+- [ ] Add drag-to-create handler in calendar-container
+  - onSelectSlot callback from react-big-calendar
+  - Open modal with pre-filled time range
+- [ ] Add click-to-create handler
+  - onSelectSlot for single click
+  - Open modal with clicked time
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+# Manual: Click on empty slot, verify modal opens with correct time
+# Manual: Create event, verify it appears on calendar
+```
+
+### [ ] Step: Event Detail Modal
+
+Implement the modal for viewing and editing existing events.
+
+**Tasks:**
+- [ ] Create `src/components/event-modal.tsx`:
+  - View mode: display all event details
+  - Edit mode: form to modify event properties
+  - Delete button with confirmation
+  - Show sync status if synced to Google
+  - For tasks: show completion checkbox
+- [ ] Add event click handler in calendar-container
+  - onSelectEvent callback
+  - Open event modal with event data
+- [ ] Integrate mutations for update/delete
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+# Manual: Click event, verify modal shows details
+# Manual: Edit event, verify changes persist
+# Manual: Delete event, verify removal
+```
+
+### [ ] Step: Drag and Drop Rescheduling
+
+Enable drag-and-drop to reschedule and resize events.
+
+**Tasks:**
+- [ ] Enable drag-and-drop in calendar-container:
+  - Import `withDragAndDrop` HOC from react-big-calendar/lib/addons/dragAndDrop
+  - Import drag-and-drop CSS
+  - Configure draggableAccessor, resizableAccessor
+- [ ] Add `onEventDrop` handler:
+  - Calculate new start/end from drop info
+  - Call updateCalendarEventServerFn
+  - Optimistic update in UI
+- [ ] Add `onEventResize` handler:
+  - Calculate new duration from resize info
+  - Call updateCalendarEventServerFn
+  - Optimistic update in UI
+- [ ] Disable drag for completed tasks (optional)
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+# Manual: Drag event to new time, verify update
+# Manual: Resize event, verify duration change
+```
+
+### [ ] Step: Recurring Events Support
+
+Implement recurrence pattern handling for events.
+
+**Tasks:**
+- [ ] Update event creation modal:
+  - Add recurrence pattern selector
+  - Options: None, Daily, Weekly, Monthly, Custom
+  - Custom opens RRULE editor (weekdays, interval, until/count)
+  - Store as RRULE string in field:rrule
+- [ ] Update use-calendar-events hook:
+  - Expand recurring events within visible date range
+  - Use rrule-utils expandRecurrence function
+  - Add recurrence icon to expanded instances
+- [ ] Update event-block component:
+  - Show recurrence icon if event has rrule
+  - Tooltip shows human-readable recurrence
+- [ ] Update completeTaskServerFn for recurring tasks:
+  - Mark current instance complete
+  - Create next instance using getNextInstance
+  - New instance starts from completion date
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+# Manual: Create recurring event, verify instances appear
+# Manual: Complete recurring task, verify next instance created
+```
+
+### [ ] Step: Google Calendar Sync Server Functions
+
+Implement server-side Google Calendar integration.
+
+**Tasks:**
+- [ ] Create `src/server/google-sync.server.ts`:
+  - `getGoogleAuthUrlServerFn` - generate OAuth URL
+  - `handleGoogleCallbackServerFn` - exchange code for tokens, store securely
+  - `syncToGoogleCalendarServerFn` - push events to Google Calendar
+  - `getGoogleSyncStatusServerFn` - check connection status
+- [ ] Create `src/lib/google-calendar.ts`:
+  - Initialize Google Calendar API client
+  - `createGoogleEvent(event)` - create event in Google Calendar
+  - `updateGoogleEvent(event)` - update existing Google event
+  - `deleteGoogleEvent(eventId)` - remove from Google Calendar
+- [ ] Token storage:
+  - Store encrypted in node properties or separate config
+  - Handle token refresh automatically
+- [ ] Update exports
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+```
+
+### [ ] Step: Google Sync UI Components
+
+Add UI components for Google Calendar sync.
+
+**Tasks:**
+- [ ] Create `src/hooks/use-google-sync.ts`:
+  - State: isConnected, isSyncing, lastSyncAt, error
+  - Actions: connect, disconnect, sync
+  - Use TanStack Query for status polling
+- [ ] Create `src/components/sync-status-badge.tsx`:
+  - Show sync status on individual events
+  - Icons: synced, pending, error
+  - Tooltip with last sync time
+- [ ] Update calendar-toolbar.tsx:
+  - "Connect Google Calendar" button if not connected
+  - "Sync" button if connected
+  - Show loading state during sync
+  - Show sync error toast on failure
+- [ ] Add Google OAuth callback route:
+  - Handle redirect from Google
+  - Exchange code and store tokens
+  - Redirect back to calendar
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+# Manual: Connect Google account, verify OAuth flow
+# Manual: Sync events, verify they appear in Google Calendar
+```
+
+### [ ] Step: Calendar Settings UI
+
+Build the settings interface for calendar preferences.
+
+**Tasks:**
+- [ ] Create `src/components/calendar-settings.tsx`:
+  - Default view selector (Day/Week/Month)
+  - Week starts on (Sunday/Monday/Saturday)
+  - Time format (12h/24h)
+  - Working hours (start/end)
+  - Task supertag configuration
+  - Status field configuration
+  - "Done" status values configuration
+  - Completed task display (show/hide, strikethrough/muted)
+- [ ] Add settings button to toolbar or as route
+- [ ] Persist settings via calendar-settings.store
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint
+# Manual: Change settings, verify they persist and affect calendar
+```
+
+### [ ] Step: Mobile Responsiveness and Polish
+
+Optimize the calendar for mobile devices and add final polish.
+
+**Tasks:**
+- [ ] Update calendar.css for responsive breakpoints:
+  - Mobile: default to day view, larger touch targets
+  - Tablet: compressed week view
+  - Desktop: full grid
+- [ ] Add touch gesture support:
+  - Swipe left/right for day navigation
+  - Long press to create event
+- [ ] Add keyboard shortcuts:
+  - `n` - new event
+  - `t` - go to today
+  - `d/w/m` - switch views
+  - Arrow keys for navigation
+- [ ] Add loading skeletons for event fetching
+- [ ] Add empty state component when no events
+- [ ] Error boundary for graceful error handling
+
+**Verification:**
+```bash
+pnpm typecheck && pnpm lint && pnpm build
+# Manual: Test on mobile viewport
+# Manual: Test keyboard shortcuts
+```
+
+### [ ] Step: Final Integration Testing
+
+Comprehensive testing of all calendar features.
+
+**Tasks:**
+- [ ] Verify all views work (day, week, month)
+- [ ] Verify event CRUD operations
+- [ ] Verify task completion workflow
+- [ ] Verify recurring events
+- [ ] Verify Google Calendar sync (if credentials available)
+- [ ] Verify settings persistence
+- [ ] Verify dark/light mode
+- [ ] Verify mobile responsiveness
+- [ ] Document any known issues or limitations
+
+**Verification:**
+```bash
+pnpm lint && pnpm build
+# Full manual testing checklist from spec.md section 6.3
+```
+
+---
+
+## Verification Commands
+
+```bash
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
+
+# Build all packages
+pnpm build
+
+# Start development server
+pnpm dev
+```
+
+---
+
+## Notes
+
+- Each step should be completable in a single session
+- Run verification commands after each step before proceeding
+- The Google Calendar sync steps can be deferred if OAuth setup is complex
+- Refer to `spec.md` for detailed API contracts and type definitions
+- Follow existing codebase patterns from nxus-core, nxus-db, nxus-ui
