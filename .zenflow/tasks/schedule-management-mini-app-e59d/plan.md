@@ -578,12 +578,13 @@ pnpm typecheck && pnpm lint
 
 TypeScript verification passed for nxus-calendar package.
 
-### [ ] Step: Calendar Settings UI
+### [x] Step: Calendar Settings UI
+<!-- chat-id: 218e4b4a-4a57-49f9-aad6-9c6165956592 -->
 
 Build the settings interface for calendar preferences.
 
 **Tasks:**
-- [ ] Create `src/components/calendar-settings.tsx`:
+- [x] Create `src/components/calendar-settings.tsx`:
   - Default view selector (Day/Week/Month)
   - Week starts on (Sunday/Monday/Saturday)
   - Time format (12h/24h)
@@ -592,14 +593,42 @@ Build the settings interface for calendar preferences.
   - Status field configuration
   - "Done" status values configuration
   - Completed task display (show/hide, strikethrough/muted)
-- [ ] Add settings button to toolbar or as route
-- [ ] Persist settings via calendar-settings.store
+- [x] Add settings button to toolbar or as route
+- [x] Persist settings via calendar-settings.store
 
 **Verification:**
 ```bash
 pnpm typecheck && pnpm lint
 # Manual: Change settings, verify they persist and affect calendar
 ```
+
+**Completed:** Calendar Settings UI implemented:
+- Created `packages/nxus-calendar/src/components/calendar-settings.tsx` with:
+  - Dialog modal using @base-ui/react Dialog primitive
+  - **Display Settings Section:**
+    - Default view selector (Day/Week/Month/Agenda)
+    - Week starts on selector (Sunday/Monday/Saturday)
+    - Time format selector (12-hour/24-hour)
+    - Working hours range selectors (start/end time)
+  - **Task Display Section:**
+    - Show completed tasks checkbox
+    - Completed task style selector (Muted/Strikethrough/Hidden)
+  - **Task Status Section:**
+    - Status field input for custom field ID
+    - Done status values tag list with add/remove functionality
+  - **Supertags Section:**
+    - Task supertags list (additional supertags to treat as tasks)
+    - Event supertags list (additional supertags to treat as events)
+  - Reset to defaults button with confirmation
+  - All settings persist via `useCalendarSettingsStore` (Zustand with persist middleware)
+- Updated `route.tsx`:
+  - Added `useBuiltInSettings` prop (defaults to true if no external handler)
+  - State management for settings modal visibility
+  - Settings click handler opens modal automatically
+  - Integrated CalendarSettings modal component
+- Updated `components/index.ts` to export CalendarSettings and CalendarSettingsProps
+
+TypeScript verification passed. Dev server starts without errors.
 
 ### [ ] Step: Mobile Responsiveness and Polish
 

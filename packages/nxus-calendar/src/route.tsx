@@ -27,6 +27,7 @@ import {
   CalendarSkeleton,
   CreateEventModal,
   EventModal,
+  CalendarSettings,
 } from './components/index.js'
 
 // Hooks
@@ -65,8 +66,11 @@ export interface CalendarRouteProps {
   /** Callback when an event is selected (if provided, external modal handling) */
   onSelectEvent?: (event: CalendarEvent) => void
 
-  /** Callback when settings is clicked */
+  /** Callback when settings is clicked (if provided, external settings handling) */
   onSettingsClick?: () => void
+
+  /** Whether to use the built-in settings modal (default: true if onSettingsClick not provided) */
+  useBuiltInSettings?: boolean
 
   /** Callback when Google sync is clicked */
   onSyncClick?: () => void
@@ -125,6 +129,7 @@ export function CalendarRoute({
   isSyncing = false,
   useBuiltInModal,
   useBuiltInEventModal,
+  useBuiltInSettings,
 }: CalendarRouteProps) {
   // State for selected slot (when user clicks to create event)
   const [selectedSlot, setSelectedSlot] = useState<SlotSelectInfo | null>(null)
@@ -138,11 +143,17 @@ export function CalendarRoute({
   // State for the built-in event modal
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
 
+  // State for the built-in settings modal
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
   // Determine if we should use the built-in modal
   const shouldUseBuiltInModal = useBuiltInModal ?? !onCreateEvent
 
   // Determine if we should use the built-in event modal
   const shouldUseBuiltInEventModal = useBuiltInEventModal ?? !onSelectEvent
+
+  // Determine if we should use the built-in settings modal
+  const shouldUseBuiltInSettings = useBuiltInSettings ?? !onSettingsClick
 
   // Navigation state
   const {
@@ -246,6 +257,15 @@ export function CalendarRoute({
     },
     [updateEvent]
   )
+
+  // Handle settings click
+  const handleSettingsClick = useCallback(() => {
+    if (shouldUseBuiltInSettings) {
+      setIsSettingsOpen(true)
+    } else {
+      onSettingsClick?.()
+    }
+  }, [shouldUseBuiltInSettings, onSettingsClick])
 
   // Handle create event from empty state
   const handleCreateFromEmptyState = useCallback(() => {
@@ -401,7 +421,7 @@ export function CalendarRoute({
             isGoogleConnected={isGoogleConnected}
             isSyncing={isSyncing}
             onSyncClick={onSyncClick}
-            onSettingsClick={onSettingsClick}
+            onSettingsClick={handleSettingsClick}
             selectable={canCreateEvent}
             minHeight={600}
           />
@@ -445,6 +465,14 @@ export function CalendarRoute({
             // Modal will close automatically, clear the selected event
             setSelectedEvent(null)
           }}
+        />
+      )}
+
+      {/* Built-in Settings Modal */}
+      {shouldUseBuiltInSettings && (
+        <CalendarSettings
+          open={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
         />
       )}
     </div>

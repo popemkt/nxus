@@ -65,3 +65,9 @@ export {
   type ConnectionStatusProps,
   type SyncButtonProps,
 } from './sync-status-badge.js'
+
+// Calendar Settings
+export {
+  CalendarSettings,
+  type CalendarSettingsProps,
+} from './calendar-settings.js'
