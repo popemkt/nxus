@@ -390,8 +390,8 @@ function getFilterDisplayInfo(filter: QueryFilter): {
     case 'hasField':
       return {
         icon: CheckSquare,
-        label: filter.fieldSystemId
-          ? `${filter.negate ? '!' : ''}${formatSystemId(filter.fieldSystemId)}`
+        label: filter.fieldId
+          ? `${filter.negate ? '!' : ''}${formatSystemId(filter.fieldId)}`
           : 'Has field...',
         color: '#06b6d4',
       }

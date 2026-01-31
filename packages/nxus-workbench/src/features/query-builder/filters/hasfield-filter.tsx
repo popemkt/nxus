@@ -62,20 +62,20 @@ export function HasFieldFilterEditor({
   onUpdate,
   onClose,
 }: HasFieldFilterEditorProps) {
-  const [fieldSystemId, setFieldSystemId] = useState(filter.fieldSystemId || '')
+  const [fieldId, setFieldId] = useState(filter.fieldId || '')
   const [negate, setNegate] = useState(filter.negate ?? false)
 
   // Update local state when filter changes
   useEffect(() => {
-    setFieldSystemId(filter.fieldSystemId || '')
+    setFieldId(filter.fieldId || '')
     setNegate(filter.negate ?? false)
   }, [filter])
 
   // Handle field change
   const handleFieldChange = (value: string | null) => {
     if (!value) return
-    setFieldSystemId(value)
-    onUpdate({ fieldSystemId: value })
+    setFieldId(value)
+    onUpdate({ fieldId: value })
   }
 
   // Handle negate toggle
@@ -86,9 +86,9 @@ export function HasFieldFilterEditor({
 
   // Handle save
   const handleSave = () => {
-    if (fieldSystemId) {
+    if (fieldId) {
       onUpdate({
-        fieldSystemId,
+        fieldId,
         negate,
       })
     }
@@ -96,7 +96,7 @@ export function HasFieldFilterEditor({
   }
 
   // Get selected field label
-  const selectedFieldLabel = COMMON_FIELDS.find((f) => f.systemId === fieldSystemId)?.label
+  const selectedFieldLabel = COMMON_FIELDS.find((f) => f.systemId === fieldId)?.label
 
   return (
     <div className="flex flex-col gap-3">
@@ -109,7 +109,7 @@ export function HasFieldFilterEditor({
       {/* Field selector */}
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs text-muted-foreground">Field</Label>
-        <Select value={fieldSystemId || undefined} onValueChange={handleFieldChange}>
+        <Select value={fieldId || undefined} onValueChange={handleFieldChange}>
           <SelectTrigger className="w-full">
             <SelectValue>
               {selectedFieldLabel || (
@@ -158,7 +158,7 @@ export function HasFieldFilterEditor({
           variant="default"
           size="sm"
           onClick={handleSave}
-          disabled={!fieldSystemId}
+          disabled={!fieldId}
         >
           <Check weight="bold" data-icon="inline-start" />
           Done

@@ -75,7 +75,7 @@ export const createQueryServerFn = createServerFn({ method: 'POST' })
 
     const queryId = createNode(db, {
       content: name,
-      supertagSystemId: SYSTEM_SUPERTAGS.QUERY,
+      supertagId: SYSTEM_SUPERTAGS.QUERY,
       ownerId,
     })
 
@@ -110,7 +110,7 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
     const {
       initDatabase,
       getDatabase,
-      findNode,
+      findNodeById,
       updateNodeContent,
       setProperty,
       SYSTEM_FIELDS,
@@ -120,7 +120,7 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
     initDatabase()
     const db = getDatabase()
 
-    const existingNode = findNode(db, queryId)
+    const existingNode = findNodeById(db, queryId)
     if (!existingNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
@@ -157,7 +157,7 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
 export const deleteQueryServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ queryId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode, deleteNode } = await import(
+    const { initDatabase, getDatabase, findNodeById, deleteNode } = await import(
       '@nxus/db/server'
     )
     const { queryId } = ctx.data
@@ -165,7 +165,7 @@ export const deleteQueryServerFn = createServerFn({ method: 'POST' })
     initDatabase()
     const db = getDatabase()
 
-    const existingNode = findNode(db, queryId)
+    const existingNode = findNodeById(db, queryId)
     if (!existingNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
@@ -235,7 +235,7 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const {
       initDatabaseWithBootstrap,
-      findNode,
+      findNodeById,
       evaluateQuery,
       getProperty,
       setProperty,
@@ -245,7 +245,7 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
 
     const db = await initDatabaseWithBootstrap()
 
-    const queryNode = findNode(db, queryId)
+    const queryNode = findNodeById(db, queryId)
     if (!queryNode) {
       throw new Error(`Query not found: ${queryId}`)
     }

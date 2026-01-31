@@ -299,7 +299,7 @@ function createDefaultFilter(
       return {
         id,
         type: 'hasField' as const,
-        fieldSystemId: '',
+        fieldId: '',
         negate: false,
       }
     case 'and':
