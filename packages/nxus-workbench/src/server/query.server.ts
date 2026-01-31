@@ -197,12 +197,14 @@ export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler
     )
 
     const queries = queryNodes.map((node) => {
-      const definition = getProperty(node, 'query_definition') ?? {
+      // Field names must match the 'content' property in bootstrap.ts
+      // (e.g., 'queryDefinition' not 'query_definition')
+      const definition = getProperty(node, 'queryDefinition') ?? {
         filters: [],
         limit: 500,
       }
-      const resultCache = getProperty<string[]>(node, 'query_result_cache')
-      const evaluatedAtStr = getProperty<string>(node, 'query_evaluated_at')
+      const resultCache = getProperty<string[]>(node, 'queryResultCache')
+      const evaluatedAtStr = getProperty<string>(node, 'queryEvaluatedAt')
 
       return {
         id: node.id,
@@ -251,15 +253,16 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
     }
 
     // Get query definition - ensure it has required fields for evaluateQuery
+    // Field names must match the 'content' property in bootstrap.ts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const storedDefinition = getProperty(queryNode, 'query_definition') as any
+    const storedDefinition = getProperty(queryNode, 'queryDefinition') as any
     const definition = {
       filters: Array.isArray(storedDefinition?.filters) ? storedDefinition.filters : [],
       limit: typeof storedDefinition?.limit === 'number' ? storedDefinition.limit : 500,
       sort: storedDefinition?.sort,
     } as Parameters<typeof evaluateQuery>[1]
-    const resultCache = getProperty<string[]>(queryNode, 'query_result_cache')
-    const evaluatedAtStr = getProperty<string>(queryNode, 'query_evaluated_at')
+    const resultCache = getProperty<string[]>(queryNode, 'queryResultCache')
+    const evaluatedAtStr = getProperty<string>(queryNode, 'queryEvaluatedAt')
 
     const query = {
       id: queryNode.id,

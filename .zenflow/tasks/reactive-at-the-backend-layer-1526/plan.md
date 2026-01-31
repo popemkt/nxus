@@ -1040,3 +1040,27 @@ Audit identified 8 problematic patterns that use magic detection, OR-style looku
 **Verification:**
 - [x] All 374 tests pass after refactoring (4 skipped)
 - [x] No silent failures or magic detection remaining
+
+### [x] Step: Bug fixing at the query ui
+<!-- chat-id: 66695d12-d64a-474c-9ac4-f10c1829dd61 -->
+
+it seems like the ui is quite a bit buggy. The queries can be created and saved, i can view its data in the node browser tab just fine (and its saved), but in saved query, the list always say for example for "Query 1" always filter 0. And when I click edit to load up that saved  query to edit, it's just blank (just as it says).
+
+See if it's good and fix the query experience.
+
+**Root Cause:**
+The `getProperty()` function in the server code was using wrong field names. Properties are keyed by the field's `content` (display name), not by a snake_case version of the systemId suffix.
+
+**Fix Applied:**
+In `packages/nxus-workbench/src/server/query.server.ts`:
+- Changed `getProperty(node, 'query_definition')` → `getProperty(node, 'queryDefinition')`
+- Changed `getProperty(node, 'query_result_cache')` → `getProperty(node, 'queryResultCache')`
+- Changed `getProperty(node, 'query_evaluated_at')` → `getProperty(node, 'queryEvaluatedAt')`
+
+The field names must match the `content` property set in `bootstrap.ts` (e.g., `'queryDefinition'`), not a snake_case version like `'query_definition'`.
+
+**Verification:**
+- [x] All 374 tests pass (no regressions)
+- [x] Saved queries list now shows correct filter count (e.g., "1 filter" instead of "filter 0")
+- [x] Clicking "Edit" on a saved query now loads the query correctly with its filters visible
+- [x] Query execution returns correct results
