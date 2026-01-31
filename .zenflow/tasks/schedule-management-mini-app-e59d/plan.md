@@ -149,12 +149,13 @@ pnpm typecheck && pnpm lint
 
 **Completed:** Created Zustand store (calendar-settings.store.ts) with persist middleware and React hooks (use-calendar-events, use-calendar-navigation, use-event-mutations). All files export through index.ts. TypeScript verification passed.
 
-### [ ] Step: Calendar CSS Theme
+### [x] Step: Calendar CSS Theme
+<!-- chat-id: f40be5fe-6848-44e5-94ab-aef05d95440b -->
 
 Create shadcn-styled CSS for react-big-calendar that matches the Nxus design system.
 
 **Tasks:**
-- [ ] Create `src/styles/calendar.css`:
+- [x] Create `src/styles/calendar.css`:
   - Base react-big-calendar overrides
   - Map to Tailwind CSS variables (--background, --foreground, --primary, etc.)
   - Day/Week/Month view specific styles
@@ -163,14 +164,30 @@ Create shadcn-styled CSS for react-big-calendar that matches the Nxus design sys
   - All-day section styling
   - Toolbar styling
   - Dark mode support via CSS variables
-- [ ] Scope all styles under `.nxus-calendar` class to prevent conflicts
-- [ ] Style completed tasks (muted, strikethrough options)
-- [ ] Add responsive breakpoints for mobile
+- [x] Scope all styles under `.nxus-calendar` class to prevent conflicts
+- [x] Style completed tasks (muted, strikethrough options)
+- [x] Add responsive breakpoints for mobile
+- [x] Update nxus-core styles.css to include calendar package as @source
 
 **Reference:** shadcn-ui-big-calendar patterns from spec
 
 **Verification:**
 Visual inspection after component implementation
+
+**Completed:** Created comprehensive calendar.css with:
+- Full react-big-calendar override scoped under `.nxus-calendar` class
+- All views styled (Day, Week, Month, Agenda)
+- Event blocks with task vs event distinction using data attributes
+- Completed task styles (muted + strikethrough options)
+- Recurring event and reminder indicators
+- Google sync status indicator
+- Current time indicator
+- Drag-and-drop styles
+- Selection/slot highlighting
+- Responsive breakpoints (tablet: 1024px, mobile: 640px)
+- Loading/empty/skeleton states
+- Accessibility: focus-visible, reduced-motion, print styles
+- Dark mode inherits from Nxus theme CSS variables automatically
 
 ### [ ] Step: Core Calendar Components
 
