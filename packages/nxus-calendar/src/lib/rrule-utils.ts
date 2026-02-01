@@ -5,8 +5,10 @@
  * Uses the rrule library for standards-compliant recurrence handling.
  */
 
-import pkg from 'rrule'
-const { RRule, RRuleSet, rrulestr } = pkg
+// Use default import for CommonJS interop with Vite SSR
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import rrulePkg from 'rrule'
+const { RRule, RRuleSet, rrulestr } = rrulePkg as typeof import('rrule')
 import type { DateRange } from '../types/calendar-event.js'
 
 // ============================================================================

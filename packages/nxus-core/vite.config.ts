@@ -52,7 +52,7 @@ const config = defineConfig({
   },
   ssr: {
     // These packages should only run on the server
-    noExternal: ['@nxus/db', '@nxus/workbench'],
+    noExternal: ['@nxus/db', '@nxus/workbench', '@nxus/calendar'],
   },
 })
 

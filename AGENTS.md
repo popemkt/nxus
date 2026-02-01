@@ -259,6 +259,38 @@ When working on Nxus, AI assistants should:
     - **Integration**: The boundary file should import the logic file dynamically: `const logic = await import('./logic')`.
     - **Result**: This allows the Client to import the Boundary File (for types/validation) without dragging in Node.js modules.
 
+13. **Library Package Server Functions**: Server functions in library packages (`@nxus/*`) require extra care:
+    - **Node.js-Only Libraries**: Libraries like `googleapis` that access Node.js APIs at module load time MUST use dynamic imports:
+      ```typescript
+      // BAD - causes "Cannot read property 'isTTY'" error in browser
+      import { google } from 'googleapis'
+
+      // GOOD - only loads when function is called (on server)
+      async function getGoogleApis() {
+        const { google } = await import('googleapis')
+        return google
+      }
+      ```
+    - **Entry Point Separation**: Keep Node.js-dependent exports out of the main client entry point. Use separate entry points like `@nxus/package/server`.
+    - **TanStack Start API**: Use `.inputValidator()` NOT `.validator()` for server function validation schemas.
+    - **Consider App-Level Server Functions**: For complex cases, consider keeping server function definitions in the app (`nxus-core`) rather than library packages. Libraries can export the business logic functions, and apps define the server function wrappers.
+
+14. **CommonJS/ESM Interop**: When using packages that have ESM/CJS interop issues with Vite SSR:
+    - **rrule, react-big-calendar**: Use default import then destructure:
+      ```typescript
+      // BAD - Vite SSR error: "Named export 'X' not found"
+      import { RRule, rrulestr } from 'rrule'
+
+      // GOOD - Works with Vite SSR
+      import rrulePkg from 'rrule'
+      const { RRule, rrulestr } = rrulePkg as typeof import('rrule')
+      ```
+    - For drag-and-drop addons, handle both ESM and CJS patterns:
+      ```typescript
+      import dndAddon from 'react-big-calendar/lib/addons/dragAndDrop'
+      const withDragAndDrop = (dndAddon as any).default ?? dndAddon
+      ```
+
 ## Questions to Ask Before Implementing
 
 1. Is this type-safe?
