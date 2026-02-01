@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CalendarRoute, useGoogleCalendarSync } from '@nxus/calendar'
+import { CalendarRoute } from '@nxus/calendar'
+// Import Google sync hook from server entry to avoid bundling googleapis on client
+import { useGoogleCalendarSync } from '@nxus/calendar/server'
 
 export const Route = createFileRoute('/calendar')({
   component: CalendarPage,

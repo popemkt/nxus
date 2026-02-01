@@ -11,15 +11,13 @@
 
 import type { CSSProperties } from 'react'
 import { useCallback, useMemo } from 'react'
-import {
-  Calendar as BigCalendar,
-  dateFnsLocalizer,
-  type View,
-  type SlotInfo,
-} from 'react-big-calendar'
-import withDragAndDrop, {
-  type EventInteractionArgs,
-} from 'react-big-calendar/lib/addons/dragAndDrop'
+import ReactBigCalendar from 'react-big-calendar'
+const { Calendar: BigCalendar, dateFnsLocalizer } = ReactBigCalendar
+import type { View, SlotInfo } from 'react-big-calendar'
+import dndAddon from 'react-big-calendar/lib/addons/dragAndDrop'
+// Handle both ESM default export and CommonJS module.exports
+const withDragAndDrop = (dndAddon as any).default ?? dndAddon
+import type { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
 import {
   format,
   parse,

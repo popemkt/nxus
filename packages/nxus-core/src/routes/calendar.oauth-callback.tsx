@@ -8,7 +8,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Button } from '@nxus/ui'
-import { useGoogleConnect } from '@nxus/calendar'
+// Import Google sync hook from server entry to avoid bundling googleapis on client
+import { useGoogleConnect } from '@nxus/calendar/server'
 import {
   ArrowLeftIcon,
   CheckCircle,

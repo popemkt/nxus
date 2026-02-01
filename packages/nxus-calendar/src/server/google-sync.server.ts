@@ -270,7 +270,7 @@ export const getGoogleAuthUrlServerFn = createServerFn({ method: 'GET' }).handle
         }
       }
 
-      const url = generateAuthUrl()
+      const url = await generateAuthUrl()
       console.log('[getGoogleAuthUrlServerFn] Generated auth URL')
 
       return { success: true, url }
@@ -290,7 +290,7 @@ export const getGoogleAuthUrlServerFn = createServerFn({ method: 'GET' }).handle
  * Exchanges the authorization code for tokens and stores them.
  */
 export const handleGoogleCallbackServerFn = createServerFn({ method: 'POST' })
-  .validator(GoogleCallbackInputSchema)
+  .inputValidator(GoogleCallbackInputSchema)
   .handler(async ({ data }): Promise<HandleGoogleCallbackResponse> => {
     try {
       console.log('[handleGoogleCallbackServerFn] Processing callback')
@@ -373,7 +373,7 @@ export const getGoogleSyncStatusServerFn = createServerFn({ method: 'GET' }).han
  * Pushes events to Google Calendar, creating new events or updating existing ones.
  */
 export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
-  .validator(SyncToGoogleInputSchema)
+  .inputValidator(SyncToGoogleInputSchema)
   .handler(async ({ data }): Promise<SyncToGoogleResponse> => {
     try {
       console.log('[syncToGoogleCalendarServerFn] Starting sync:', data)
@@ -586,7 +586,7 @@ export const getGoogleCalendarsServerFn = createServerFn({ method: 'GET' }).hand
  * Stores the calendar ID to sync events to.
  */
 export const setGoogleCalendarIdServerFn = createServerFn({ method: 'POST' })
-  .validator(z.object({ calendarId: z.string() }))
+  .inputValidator(z.object({ calendarId: z.string() }))
   .handler(async ({ data }): Promise<ServerResponse<void>> => {
     try {
       console.log('[setGoogleCalendarIdServerFn] Setting calendar:', data.calendarId)

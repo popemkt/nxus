@@ -43,23 +43,10 @@ export {
   type MutationCallbacks,
 } from './use-event-mutations.js'
 
-// Google Sync
-export {
-  useGoogleSyncStatus,
-  useGoogleSync,
-  useGoogleConnect,
-  useGoogleCalendars,
-  useGoogleCalendarSync,
-  googleSyncKeys,
-  type UseGoogleSyncStatusOptions,
-  type UseGoogleSyncStatusResult,
-  type UseGoogleSyncOptions,
-  type UseGoogleSyncResult,
-  type UseGoogleConnectResult,
-  type UseGoogleCalendarsResult,
-  type UseGoogleCalendarSyncOptions,
-  type UseGoogleCalendarSyncResult,
-} from './use-google-sync.js'
+// Google Sync hooks are NOT exported from the client bundle
+// because they import server functions that depend on Node.js-only libraries (googleapis).
+// Import them directly from '@nxus/calendar/server' or the individual hook file
+// if you need Google sync functionality.
 
 // Touch Gestures
 export {

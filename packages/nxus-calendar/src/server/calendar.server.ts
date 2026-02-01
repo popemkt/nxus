@@ -104,7 +104,7 @@ function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
  * that have a start_date within the specified range.
  */
 export const getCalendarEventsServerFn = createServerFn({ method: 'POST' })
-  .validator(GetCalendarEventsInputSchema)
+  .inputValidator(GetCalendarEventsInputSchema)
   .handler(async ({ data }): Promise<GetCalendarEventsResponse> => {
     try {
       console.log('[getCalendarEventsServerFn] Input:', data)
@@ -155,7 +155,7 @@ export const getCalendarEventsServerFn = createServerFn({ method: 'POST' })
  * Create a new calendar event or task
  */
 export const createCalendarEventServerFn = createServerFn({ method: 'POST' })
-  .validator(CreateCalendarEventInputSchema)
+  .inputValidator(CreateCalendarEventInputSchema)
   .handler(async ({ data }): Promise<CalendarEventMutationResponse> => {
     try {
       console.log('[createCalendarEventServerFn] Input:', data)
@@ -235,7 +235,7 @@ export const createCalendarEventServerFn = createServerFn({ method: 'POST' })
  * Update an existing calendar event
  */
 export const updateCalendarEventServerFn = createServerFn({ method: 'POST' })
-  .validator(UpdateCalendarEventInputSchema)
+  .inputValidator(UpdateCalendarEventInputSchema)
   .handler(async ({ data }): Promise<CalendarEventMutationResponse> => {
     try {
       console.log('[updateCalendarEventServerFn] Input:', data)
@@ -307,7 +307,7 @@ export const updateCalendarEventServerFn = createServerFn({ method: 'POST' })
  * Delete a calendar event (soft delete)
  */
 export const deleteCalendarEventServerFn = createServerFn({ method: 'POST' })
-  .validator(DeleteCalendarEventInputSchema)
+  .inputValidator(DeleteCalendarEventInputSchema)
   .handler(async ({ data }): Promise<ServerResponse<void>> => {
     try {
       console.log('[deleteCalendarEventServerFn] Input:', data)
@@ -341,7 +341,7 @@ export const deleteCalendarEventServerFn = createServerFn({ method: 'POST' })
  * - When marking incomplete: Simply revert the status
  */
 export const completeTaskServerFn = createServerFn({ method: 'POST' })
-  .validator(CompleteTaskInputSchema)
+  .inputValidator(CompleteTaskInputSchema)
   .handler(async ({ data }): Promise<CalendarEventMutationResponse> => {
     try {
       console.log('[completeTaskServerFn] Input:', data)
@@ -442,7 +442,7 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
  * Get a single calendar event by node ID
  */
 export const getCalendarEventServerFn = createServerFn({ method: 'POST' })
-  .validator(DeleteCalendarEventInputSchema) // Same schema - just needs nodeId
+  .inputValidator(DeleteCalendarEventInputSchema) // Same schema - just needs nodeId
   .handler(async ({ data }): Promise<CalendarEventMutationResponse> => {
     try {
       console.log('[getCalendarEventServerFn] Input:', data)

@@ -5,7 +5,8 @@
  * Uses the rrule library for standards-compliant recurrence handling.
  */
 
-import { RRule, RRuleSet, rrulestr } from 'rrule'
+import pkg from 'rrule'
+const { RRule, RRuleSet, rrulestr } = pkg
 import type { DateRange } from '../types/calendar-event.js'
 
 // ============================================================================

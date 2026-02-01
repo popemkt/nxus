@@ -3,12 +3,56 @@
  *
  * Provides functions for interacting with the Google Calendar API.
  * Handles OAuth token management, event CRUD operations, and error handling.
+ *
+ * IMPORTANT: This module uses dynamic imports for 'googleapis' to prevent
+ * bundling Node.js-only code into the client bundle. The googleapis library
+ * accesses Node.js-specific APIs (like process.stdout) at module load time,
+ * which causes errors in the browser.
  */
 
-import { google, type calendar_v3 } from 'googleapis'
+import type { calendar_v3 } from 'googleapis'
 
-// OAuth2Client type from googleapis
-type OAuth2Client = InstanceType<typeof google.auth.OAuth2>
+// OAuth2Client type - we can't use typeof google.auth.OAuth2 with dynamic imports
+// so we define the interface we need
+type OAuth2Client = {
+  setCredentials(credentials: {
+    access_token?: string | null
+    refresh_token?: string | null
+    expiry_date?: number | null
+    scope?: string | null
+  }): void
+  generateAuthUrl(options: {
+    access_type?: string
+    prompt?: string
+    scope?: string[]
+    state?: string
+  }): string
+  getToken(code: string): Promise<{
+    tokens: {
+      access_token?: string | null
+      refresh_token?: string | null
+      expiry_date?: number | null
+      scope?: string | null
+    }
+  }>
+  refreshAccessToken(): Promise<{
+    credentials: {
+      access_token?: string | null
+      refresh_token?: string | null
+      expiry_date?: number | null
+      scope?: string | null
+    }
+  }>
+}
+
+/**
+ * Lazily load the googleapis module
+ * This ensures the module is only loaded when actually needed (on the server)
+ */
+async function getGoogleApis() {
+  const { google } = await import('googleapis')
+  return google
+}
 import type {
   GoogleTokens,
   GoogleCalendarEvent,
@@ -47,7 +91,8 @@ export const GOOGLE_REDIRECT_URI = '/api/google/callback'
  * - GOOGLE_CLIENT_SECRET
  * - GOOGLE_REDIRECT_URL (optional, defaults to GOOGLE_REDIRECT_URI)
  */
-export function createOAuth2Client(): OAuth2Client {
+export async function createOAuth2Client(): Promise<OAuth2Client> {
+  const google = await getGoogleApis()
   const clientId = process.env.GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
   const redirectUrl = process.env.GOOGLE_REDIRECT_URL || GOOGLE_REDIRECT_URI
@@ -58,14 +103,14 @@ export function createOAuth2Client(): OAuth2Client {
     )
   }
 
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUrl)
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUrl) as unknown as OAuth2Client
 }
 
 /**
  * Creates an OAuth2 client with existing tokens
  */
-export function createAuthenticatedClient(tokens: GoogleTokens): OAuth2Client {
-  const client = createOAuth2Client()
+export async function createAuthenticatedClient(tokens: GoogleTokens): Promise<OAuth2Client> {
+  const client = await createOAuth2Client()
   client.setCredentials({
     access_token: tokens.accessToken,
     refresh_token: tokens.refreshToken,
@@ -78,8 +123,8 @@ export function createAuthenticatedClient(tokens: GoogleTokens): OAuth2Client {
 /**
  * Generate OAuth authorization URL for user consent
  */
-export function generateAuthUrl(state?: string): string {
-  const client = createOAuth2Client()
+export async function generateAuthUrl(state?: string): Promise<string> {
+  const client = await createOAuth2Client()
 
   return client.generateAuthUrl({
     access_type: 'offline', // Get refresh token
@@ -95,7 +140,8 @@ export function generateAuthUrl(state?: string): string {
 export async function exchangeCodeForTokens(
   code: string
 ): Promise<{ tokens: GoogleTokens; email: string }> {
-  const client = createOAuth2Client()
+  const google = await getGoogleApis()
+  const client = await createOAuth2Client()
   const { tokens } = await client.getToken(code)
 
   if (!tokens.access_token || !tokens.refresh_token) {
@@ -104,7 +150,7 @@ export async function exchangeCodeForTokens(
 
   // Get user email
   client.setCredentials(tokens)
-  const oauth2 = google.oauth2({ version: 'v2', auth: client })
+  const oauth2 = google.oauth2({ version: 'v2', auth: client as any })
   const userInfo = await oauth2.userinfo.get()
 
   const googleTokens: GoogleTokens = {
@@ -126,7 +172,7 @@ export async function exchangeCodeForTokens(
 export async function refreshTokens(
   tokens: GoogleTokens
 ): Promise<GoogleTokens> {
-  const client = createAuthenticatedClient(tokens)
+  const client = await createAuthenticatedClient(tokens)
   const { credentials } = await client.refreshAccessToken()
 
   return {
@@ -166,11 +212,12 @@ export async function ensureValidTokens(
 /**
  * Create a Google Calendar API client instance
  */
-export function createCalendarClient(
+export async function createCalendarClient(
   tokens: GoogleTokens
-): calendar_v3.Calendar {
-  const auth = createAuthenticatedClient(tokens)
-  return google.calendar({ version: 'v3', auth })
+): Promise<calendar_v3.Calendar> {
+  const google = await getGoogleApis()
+  const auth = await createAuthenticatedClient(tokens)
+  return google.calendar({ version: 'v3', auth: auth as any })
 }
 
 // ============================================================================
@@ -183,7 +230,7 @@ export function createCalendarClient(
 export async function listCalendars(
   tokens: GoogleTokens
 ): Promise<GoogleCalendarInfo[]> {
-  const calendar = createCalendarClient(tokens)
+  const calendar = await createCalendarClient(tokens)
   const response = await calendar.calendarList.list({
     minAccessRole: 'writer', // Only calendars we can write to
   })
@@ -311,7 +358,7 @@ export async function createGoogleEvent(
   calendarId: string = 'primary'
 ): Promise<EventSyncResult> {
   try {
-    const calendar = createCalendarClient(tokens)
+    const calendar = await createCalendarClient(tokens)
     const googleEvent = toGoogleCalendarEvent(event)
 
     const response = await calendar.events.insert({
@@ -345,7 +392,7 @@ export async function updateGoogleEvent(
   calendarId: string = 'primary'
 ): Promise<EventSyncResult> {
   try {
-    const calendar = createCalendarClient(tokens)
+    const calendar = await createCalendarClient(tokens)
     const googleEvent = toGoogleCalendarEvent(event)
 
     await calendar.events.update({
@@ -388,7 +435,7 @@ export async function deleteGoogleEvent(
   calendarId: string = 'primary'
 ): Promise<EventSyncResult> {
   try {
-    const calendar = createCalendarClient(tokens)
+    const calendar = await createCalendarClient(tokens)
 
     await calendar.events.delete({
       calendarId,
@@ -434,7 +481,7 @@ export async function getGoogleEvent(
   calendarId: string = 'primary'
 ): Promise<GoogleCalendarEvent | null> {
   try {
-    const calendar = createCalendarClient(tokens)
+    const calendar = await createCalendarClient(tokens)
 
     const response = await calendar.events.get({
       calendarId,

@@ -12,6 +12,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
+// Import directly from the google-sync server file to avoid
+// bundling googleapis (Node.js-only) into the client bundle.
+// These hooks should only be imported from the server entry point.
 import {
   getGoogleAuthUrlServerFn,
   handleGoogleCallbackServerFn,
@@ -20,7 +23,7 @@ import {
   disconnectGoogleCalendarServerFn,
   getGoogleCalendarsServerFn,
   setGoogleCalendarIdServerFn,
-} from '../server/index.js'
+} from '../server/google-sync.server.js'
 import type {
   SyncStatusInfo,
   SyncResult,
