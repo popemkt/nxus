@@ -44,6 +44,16 @@ const config = defineConfig({
       '@nxus/db',
       '@nxus/workbench',
     ],
+    // Force rrule to use its ESM entry point which has proper named exports
+    esbuildOptions: {
+      mainFields: ['module', 'main'],
+    },
+  },
+  resolve: {
+    // Ensure rrule resolves to ESM module
+    alias: {
+      rrule: 'rrule/dist/esm/index.js',
+    },
   },
   build: {
     rollupOptions: {

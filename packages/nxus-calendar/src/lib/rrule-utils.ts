@@ -5,10 +5,8 @@
  * Uses the rrule library for standards-compliant recurrence handling.
  */
 
-// Use default import for CommonJS interop with Vite SSR
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import rrulePkg from 'rrule'
-const { RRule, RRuleSet, rrulestr } = rrulePkg as typeof import('rrule')
+// Named imports work when Vite is configured to resolve rrule to its ESM entry
+import { RRule, RRuleSet, rrulestr } from 'rrule'
 import type { DateRange } from '../types/calendar-event.js'
 
 // ============================================================================

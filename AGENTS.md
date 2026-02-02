@@ -275,17 +275,29 @@ When working on Nxus, AI assistants should:
     - **TanStack Start API**: Use `.inputValidator()` NOT `.validator()` for server function validation schemas.
     - **Consider App-Level Server Functions**: For complex cases, consider keeping server function definitions in the app (`nxus-core`) rather than library packages. Libraries can export the business logic functions, and apps define the server function wrappers.
 
-14. **CommonJS/ESM Interop**: When using packages that have ESM/CJS interop issues with Vite SSR:
-    - **rrule, react-big-calendar**: Use default import then destructure:
+14. **CommonJS/ESM Interop**: When using packages that have ESM/CJS interop issues with Vite:
+    - **Best Solution - Vite Config Alias**: Force the package to resolve to its ESM entry point:
       ```typescript
-      // BAD - Vite SSR error: "Named export 'X' not found"
-      import { RRule, rrulestr } from 'rrule'
-
-      // GOOD - Works with Vite SSR
-      import rrulePkg from 'rrule'
-      const { RRule, rrulestr } = rrulePkg as typeof import('rrule')
+      // vite.config.ts
+      export default defineConfig({
+        resolve: {
+          alias: {
+            // Force rrule to use ESM entry which has proper named exports
+            rrule: 'rrule/dist/esm/index.js',
+          },
+        },
+      })
       ```
-    - For drag-and-drop addons, handle both ESM and CJS patterns:
+      This allows normal named imports: `import { RRule, rrulestr } from 'rrule'`
+
+    - **Fallback - Defensive Imports**: If alias isn't possible, handle both patterns:
+      ```typescript
+      import * as rruleModule from 'rrule'
+      const rrulePkg = (rruleModule as any).default ?? rruleModule
+      const RRule = rrulePkg.RRule ?? (rruleModule as any).RRule
+      ```
+
+    - **react-big-calendar drag-and-drop**: Handle both ESM and CJS patterns:
       ```typescript
       import dndAddon from 'react-big-calendar/lib/addons/dragAndDrop'
       const withDragAndDrop = (dndAddon as any).default ?? dndAddon
