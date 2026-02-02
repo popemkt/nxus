@@ -275,33 +275,46 @@ When working on Nxus, AI assistants should:
     - **TanStack Start API**: Use `.inputValidator()` NOT `.validator()` for server function validation schemas.
     - **Consider App-Level Server Functions**: For complex cases, consider keeping server function definitions in the app (`nxus-core`) rather than library packages. Libraries can export the business logic functions, and apps define the server function wrappers.
 
-14. **CommonJS/ESM Interop**: When using packages that have ESM/CJS interop issues with Vite:
-    - **Best Solution - Vite Config Alias**: Force the package to resolve to its ESM entry point:
-      ```typescript
-      // vite.config.ts
-      export default defineConfig({
-        resolve: {
-          alias: {
-            // Force rrule to use ESM entry which has proper named exports
-            rrule: 'rrule/dist/esm/index.js',
-          },
+14. **CommonJS/ESM Interop in Vite + TanStack Start**: When using CommonJS packages in SSR environments, Vite handles modules differently between SSR and client. This causes "does not provide an export named 'default'" or "Named export 'X' not found" errors.
+
+    **Step 1: Check the package.json of the problematic package:**
+    ```bash
+    cat node_modules/<package>/package.json | grep -E '"main"|"module"|"exports"'
+    ```
+    Look for `"module"` field - this is the ESM entry point.
+
+    **Step 2: Add a Vite alias to force ESM resolution:**
+    ```typescript
+    // vite.config.ts
+    export default defineConfig({
+      resolve: {
+        alias: {
+          // Force packages to use their ESM entry points
+          // Check package.json "module" field for the correct path
+          rrule: 'rrule/dist/esm/index.js',
+          'react-big-calendar': 'react-big-calendar/dist/react-big-calendar.esm.js',
         },
-      })
-      ```
-      This allows normal named imports: `import { RRule, rrulestr } from 'rrule'`
+      },
+    })
+    ```
 
-    - **Fallback - Defensive Imports**: If alias isn't possible, handle both patterns:
-      ```typescript
-      import * as rruleModule from 'rrule'
-      const rrulePkg = (rruleModule as any).default ?? rruleModule
-      const RRule = rrulePkg.RRule ?? (rruleModule as any).RRule
-      ```
+    **Step 3: Use named imports (NOT default imports):**
+    ```typescript
+    // CORRECT - use named imports that match ESM exports
+    import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
+    import { RRule, rrulestr } from 'rrule'
 
-    - **react-big-calendar drag-and-drop**: Handle both ESM and CJS patterns:
-      ```typescript
-      import dndAddon from 'react-big-calendar/lib/addons/dragAndDrop'
-      const withDragAndDrop = (dndAddon as any).default ?? dndAddon
-      ```
+    // WRONG - default imports often don't exist in ESM
+    import ReactBigCalendar from 'react-big-calendar'  // ❌
+    ```
+
+    **Step 4: For sub-modules without ESM (like addons), use fallback pattern:**
+    ```typescript
+    import withDragAndDropImport from 'react-big-calendar/lib/addons/dragAndDrop'
+    const withDragAndDrop = (withDragAndDropImport as any).default ?? withDragAndDropImport
+    ```
+
+    **Why this works:** Vite uses different module resolution strategies for SSR vs client bundling. By forcing both to use the ESM entry point via aliases, you get consistent named exports everywhere.
 
 ## Questions to Ask Before Implementing
 

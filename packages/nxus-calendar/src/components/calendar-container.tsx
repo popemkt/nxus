@@ -11,12 +11,27 @@
 
 import type { CSSProperties } from 'react'
 import { useCallback, useMemo } from 'react'
-import ReactBigCalendar from 'react-big-calendar'
-const { Calendar: BigCalendar, dateFnsLocalizer } = ReactBigCalendar
+/**
+ * react-big-calendar module structure:
+ * - CommonJS (lib/index.js): Exports named exports via Object.defineProperty
+ * - ESM (dist/react-big-calendar.esm.js): Exports named exports only (Calendar, dateFnsLocalizer, etc.)
+ *
+ * The package.json has:
+ * - "main": "lib/index.js" (CommonJS)
+ * - "module": "dist/react-big-calendar.esm.js" (ESM)
+ *
+ * Vite will use the ESM version during both SSR and client bundling, so we use named imports.
+ */
+import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar'
 import type { View, SlotInfo } from 'react-big-calendar'
-import dndAddon from 'react-big-calendar/lib/addons/dragAndDrop'
-// Handle both ESM default export and CommonJS module.exports
-const withDragAndDrop = (dndAddon as any).default ?? dndAddon
+/**
+ * The drag-and-drop addon follows the same pattern:
+ * - CommonJS: Has a default export via exports.default
+ * - We import it and handle both patterns for maximum compatibility
+ */
+import withDragAndDropImport from 'react-big-calendar/lib/addons/dragAndDrop'
+// Vite may handle this as a namespace import in some cases, so we check for .default
+const withDragAndDrop = (withDragAndDropImport as any).default ?? withDragAndDropImport
 import type { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
 import {
   format,

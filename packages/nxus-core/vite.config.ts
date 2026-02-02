@@ -50,9 +50,13 @@ const config = defineConfig({
     },
   },
   resolve: {
-    // Ensure rrule resolves to ESM module
+    // Ensure CommonJS modules resolve to their ESM entry points for proper interop
     alias: {
+      // rrule: Force ESM module with proper named exports (RRule, RRuleSet, rrulestr)
       rrule: 'rrule/dist/esm/index.js',
+      // react-big-calendar: Force ESM module with proper named exports (Calendar, dateFnsLocalizer, etc.)
+      // This ensures both SSR and client builds use the same module format
+      'react-big-calendar': 'react-big-calendar/dist/react-big-calendar.esm.js',
     },
   },
   build: {
