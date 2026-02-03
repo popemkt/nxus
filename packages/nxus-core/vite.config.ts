@@ -54,6 +54,12 @@ const config = defineConfig({
     alias: {
       // rrule: Force ESM module with proper named exports (RRule, RRuleSet, rrulestr)
       rrule: 'rrule/dist/esm/index.js',
+      // react-big-calendar drag-and-drop addon: Must resolve BEFORE the main alias
+      // The addon is only available in lib/ (CommonJS), not in the ESM bundle
+      'react-big-calendar/lib/addons/dragAndDrop/styles.css':
+        'react-big-calendar/lib/addons/dragAndDrop/styles.css',
+      'react-big-calendar/lib/addons/dragAndDrop':
+        'react-big-calendar/lib/addons/dragAndDrop/index.js',
       // react-big-calendar: Force ESM module with proper named exports (Calendar, dateFnsLocalizer, etc.)
       // This ensures both SSR and client builds use the same module format
       'react-big-calendar': 'react-big-calendar/dist/react-big-calendar.esm.js',

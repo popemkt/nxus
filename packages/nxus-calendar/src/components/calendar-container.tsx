@@ -7,10 +7,11 @@
  * - Custom event rendering with task checkboxes
  * - Date navigation
  * - Slot selection for event creation
+ * - Drag-and-drop event rescheduling (client-side only)
  */
 
-import type { CSSProperties } from 'react'
-import { useCallback, useMemo } from 'react'
+import type { CSSProperties, ComponentType } from 'react'
+import { useCallback, useMemo, useState, useEffect } from 'react'
 /**
  * react-big-calendar module structure:
  * - CommonJS (lib/index.js): Exports named exports via Object.defineProperty
@@ -23,16 +24,13 @@ import { useCallback, useMemo } from 'react'
  * Vite will use the ESM version during both SSR and client bundling, so we use named imports.
  */
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar'
-import type { View, SlotInfo } from 'react-big-calendar'
+import type { View, SlotInfo, CalendarProps } from 'react-big-calendar'
 /**
- * The drag-and-drop addon follows the same pattern:
- * - CommonJS: Has a default export via exports.default
- * - We import it and handle both patterns for maximum compatibility
+ * Type-only import for the drag-and-drop addon.
+ * The actual module is loaded dynamically on the client to avoid SSR issues
+ * (the addon is CommonJS-only and uses `require` which doesn't work in Vite's ESM SSR).
  */
-import withDragAndDropImport from 'react-big-calendar/lib/addons/dragAndDrop'
-// Vite may handle this as a namespace import in some cases, so we check for .default
-const withDragAndDrop = (withDragAndDropImport as any).default ?? withDragAndDropImport
-import type { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
+import type { EventInteractionArgs, withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop'
 import {
   format,
   parse,
@@ -57,11 +55,10 @@ import { EventBlock, AgendaEvent } from './event-block.js'
 // Import calendar CSS
 import '../styles/calendar.css'
 
-// Import drag-and-drop CSS
-import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
-
-// Create the drag-and-drop enhanced calendar
-const DragAndDropCalendar = withDragAndDrop<BigCalendarEvent>(BigCalendar)
+// Type for the enhanced calendar component with drag-and-drop
+type DragAndDropCalendarProps = CalendarProps<BigCalendarEvent, object> &
+  withDragAndDropProps<BigCalendarEvent, object>
+type DragAndDropCalendarComponent = ComponentType<DragAndDropCalendarProps>
 
 // ============================================================================
 // Localizer Setup
@@ -251,6 +248,38 @@ export function CalendarContainer({
   const workingHoursStart = useCalendarSettingsStore(
     (state) => state.display.workingHoursStart
   )
+
+  // State for dynamically loaded drag-and-drop calendar component
+  // The drag-and-drop addon is CommonJS-only and must be loaded on the client
+  const [DragAndDropCalendar, setDragAndDropCalendar] =
+    useState<DragAndDropCalendarComponent | null>(null)
+
+  // Dynamically load the drag-and-drop addon on the client
+  useEffect(() => {
+    // Only load if drag or resize is enabled
+    if (!draggable && !resizable) return
+
+    let mounted = true
+
+    import('react-big-calendar/lib/addons/dragAndDrop')
+      .then((module) => {
+        if (!mounted) return
+        // Handle both default export and module.default patterns
+        const withDragAndDrop = (module as any).default ?? module
+        // Also import the CSS
+        import('react-big-calendar/lib/addons/dragAndDrop/styles.css')
+        // Create the enhanced calendar component
+        const EnhancedCalendar = withDragAndDrop(BigCalendar)
+        setDragAndDropCalendar(() => EnhancedCalendar)
+      })
+      .catch((err) => {
+        console.warn('Failed to load drag-and-drop addon:', err)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [draggable, resizable])
 
   // Create localizer with current week start setting
   const localizer = useMemo(
@@ -527,47 +556,85 @@ export function CalendarContainer({
         </div>
       )}
 
-      {/* Calendar with drag and drop */}
-      <DragAndDropCalendar
-        localizer={localizer}
-        events={events}
-        date={currentDate}
-        view={viewMap[currentView]}
-        views={views}
-        onNavigate={onNavigate}
-        onView={handleViewChange}
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
-        onEventDrop={handleEventDrop}
-        onEventResize={handleEventResize}
-        draggableAccessor={draggableAccessor}
-        resizableAccessor={resizableAccessor}
-        resizable={resizable}
-        selectable={selectable}
-        step={step}
-        timeslots={timeslots}
-        scrollToTime={scrollToTime}
-        formats={formats}
-        components={components}
-        eventPropGetter={eventPropGetter}
-        dayPropGetter={dayPropGetter}
-        popup
-        showMultiDayTimes
-        messages={{
-          today: 'Today',
-          previous: 'Back',
-          next: 'Next',
-          month: 'Month',
-          week: 'Week',
-          day: 'Day',
-          agenda: 'Agenda',
-          date: 'Date',
-          time: 'Time',
-          event: 'Event',
-          noEventsInRange: 'No events in this range.',
-          showMore: (total) => `+${total} more`,
-        }}
-      />
+      {/* Calendar - use drag-and-drop version if loaded, otherwise basic calendar */}
+      {DragAndDropCalendar ? (
+        <DragAndDropCalendar
+          localizer={localizer}
+          events={events}
+          date={currentDate}
+          view={viewMap[currentView]}
+          views={views}
+          onNavigate={onNavigate}
+          onView={handleViewChange}
+          onSelectSlot={handleSelectSlot}
+          onSelectEvent={handleSelectEvent}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
+          draggableAccessor={draggableAccessor}
+          resizableAccessor={resizableAccessor}
+          resizable={resizable}
+          selectable={selectable}
+          step={step}
+          timeslots={timeslots}
+          scrollToTime={scrollToTime}
+          formats={formats}
+          components={components}
+          eventPropGetter={eventPropGetter}
+          dayPropGetter={dayPropGetter}
+          popup
+          showMultiDayTimes
+          messages={{
+            today: 'Today',
+            previous: 'Back',
+            next: 'Next',
+            month: 'Month',
+            week: 'Week',
+            day: 'Day',
+            agenda: 'Agenda',
+            date: 'Date',
+            time: 'Time',
+            event: 'Event',
+            noEventsInRange: 'No events in this range.',
+            showMore: (total: number) => `+${total} more`,
+          }}
+        />
+      ) : (
+        <BigCalendar
+          localizer={localizer}
+          events={events}
+          date={currentDate}
+          view={viewMap[currentView]}
+          views={views}
+          onNavigate={onNavigate}
+          onView={handleViewChange}
+          onSelectSlot={handleSelectSlot}
+          onSelectEvent={handleSelectEvent}
+          selectable={selectable}
+          step={step}
+          timeslots={timeslots}
+          scrollToTime={scrollToTime}
+          formats={formats}
+          components={components}
+          eventPropGetter={eventPropGetter}
+          dayPropGetter={dayPropGetter}
+          popup
+          showMultiDayTimes
+          messages={{
+            today: 'Today',
+            previous: 'Back',
+            next: 'Next',
+            month: 'Month',
+            week: 'Week',
+            day: 'Day',
+            agenda: 'Agenda',
+            date: 'Date',
+            time: 'Time',
+            event: 'Event',
+            noEventsInRange: 'No events in this range.',
+            showMore: (total: number) => `+${total} more`,
+          }}
+        />
+      )}
     </div>
   )
 }

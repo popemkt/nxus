@@ -795,6 +795,53 @@ npx tsc --noEmit -p packages/nxus-calendar/tsconfig.json
 
 ---
 
+
+### [x] Step: Fix bug
+<!-- chat-id: 7acef638-7360-4860-9e7a-56823c4a5147 -->
+
+The last task create some bugs, i got this when going to /calendar
+
+[plugin:vite:import-analysis] Failed to resolve import "react-big-calendar/lib/addons/dragAndDrop" from "../nxus-calendar/src/components/calendar-container.tsx". Does the file exist?
+/home/popemkt/.zenflow/worktrees/schedule-management-mini-app-e59d/packages/nxus-calendar/src/components/calendar-container.tsx:32:34
+3  |  import { useCallback, useMemo } from "react";
+4  |  import { Calendar as BigCalendar, dateFnsLocalizer } from "react-big-calendar";
+5  |  import withDragAndDropImport from "react-big-calendar/lib/addons/dragAndDrop";
+   |                                     ^
+6  |  const withDragAndDrop = withDragAndDropImport.default ?? withDragAndDropImport;
+7  |  import {
+
+You have playwright, try to completely test it and go back to me
+
+**Completed:** Fixed the drag-and-drop import error.
+
+**Root Cause:**
+The drag-and-drop addon (`react-big-calendar/lib/addons/dragAndDrop`) is only available in CommonJS format, but Vite runs SSR in ESM mode. The CommonJS module uses `require()` which throws `ReferenceError: require is not defined` in Vite's ESM context.
+
+**Solution:**
+1. Updated `packages/nxus-core/vite.config.ts` to add explicit aliases for the drag-and-drop addon:
+   ```typescript
+   'react-big-calendar/lib/addons/dragAndDrop/styles.css':
+     'react-big-calendar/lib/addons/dragAndDrop/styles.css',
+   'react-big-calendar/lib/addons/dragAndDrop':
+     'react-big-calendar/lib/addons/dragAndDrop/index.js',
+   ```
+
+2. Updated `packages/nxus-calendar/src/components/calendar-container.tsx` to:
+   - Use type-only imports for the drag-and-drop types
+   - Dynamically load the drag-and-drop addon on the client using `useEffect` and dynamic `import()`
+   - Conditionally render either the basic `BigCalendar` (during SSR/initial render) or the enhanced `DragAndDropCalendar` (after client-side load)
+   - This ensures SSR works without errors while still providing drag-and-drop functionality on the client
+
+**Verification:**
+- Dev server starts without errors
+- Calendar page loads successfully at `/calendar`
+- Empty state displays correctly with "No events yet" message
+- "New Event" modal opens and displays all form fields correctly
+- No console errors
+
+**Files Changed:**
+- `packages/nxus-core/vite.config.ts` - Added aliases for drag-and-drop addon
+- `packages/nxus-calendar/src/components/calendar-container.tsx` - Implemented dynamic loading of drag-and-drop addon
 ## Verification Commands
 
 ```bash
