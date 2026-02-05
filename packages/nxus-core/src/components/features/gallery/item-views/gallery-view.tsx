@@ -25,7 +25,7 @@ import {
   hasMultipleTypes,
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { cn } from '@nxus/ui'
 import type { GalleryMode } from '@/stores/view-mode.store'
 import { TagEditorModal } from '../modals/tag-editor-modal'
@@ -37,7 +37,8 @@ interface GalleryViewProps {
 }
 
 // Thumbnail component with fallback paths
-function ThumbnailWithFallback({
+// Memoized to prevent unnecessary re-renders during list updates
+const ThumbnailWithFallback = memo(function ThumbnailWithFallback({
   appId,
   appName,
   compact,
@@ -91,10 +92,17 @@ function ThumbnailWithFallback({
       />
     </div>
   )
-}
+})
 
 // Individual card component
-function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
+// Memoized to prevent unnecessary re-renders when parent list updates but item data hasn't changed
+const ItemCard = memo(function ItemCard({
+  app,
+  compact,
+}: {
+  app: Item
+  compact: boolean
+}) {
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false)
   const TypeIcon = getFirstTypeIcon(app)
   const typeBadges = getTypeBadges(app)
@@ -278,7 +286,7 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
       />
     </>
   )
-}
+})
 
 export function GalleryView({
   items,
