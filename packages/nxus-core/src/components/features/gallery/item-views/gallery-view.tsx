@@ -109,7 +109,7 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
     <>
       <div className="group relative">
         {/* Quick action buttons - visible on hover */}
-        <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button
             type="button"
             onClick={(e) => {
@@ -119,6 +119,7 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
             }}
             className="p-1.5 rounded-md bg-background/80 backdrop-blur-sm border shadow-sm hover:bg-accent transition-colors"
             title="Edit Tags"
+            aria-label="Edit tags"
           >
             <Tag className="h-4 w-4" />
           </button>
@@ -262,6 +263,7 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
                 variant="ghost"
                 size={compact ? 'sm' : 'default'}
                 className="w-full text-muted-foreground hover:text-foreground"
+                aria-label="View details"
               >
                 <ArrowRightIcon className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
                 {!compact && 'View Details'}
