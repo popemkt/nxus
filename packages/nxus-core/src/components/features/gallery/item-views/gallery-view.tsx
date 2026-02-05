@@ -1,21 +1,26 @@
 import { Link } from '@tanstack/react-router'
-import type { Item } from '@nxus/db'
 import {
+  Badge,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
+  buttonVariants,
+  cn,
 } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import { Button } from '@nxus/ui'
 import {
   ArrowRightIcon,
   CheckCircle,
   Tag,
   XCircle,
 } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { TagEditorModal } from '../modals/tag-editor-modal'
+import type { GalleryMode } from '@/stores/view-mode.store'
+import type { Item } from '@nxus/db'
+import { useToolHealth } from '@/hooks/use-tool-health'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_SHORT,
@@ -24,14 +29,9 @@ import {
   getTypeBadges,
   hasMultipleTypes,
 } from '@/lib/app-constants'
-import { useToolHealth } from '@/hooks/use-tool-health'
-import { useState } from 'react'
-import { cn } from '@nxus/ui'
-import type { GalleryMode } from '@/stores/view-mode.store'
-import { TagEditorModal } from '../modals/tag-editor-modal'
 
 interface GalleryViewProps {
-  items: Item[]
+  items: Array<Item>
   mode: GalleryMode
   groupByType?: boolean
 }
@@ -119,6 +119,7 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
             }}
             className="p-1.5 rounded-md bg-background/80 backdrop-blur-sm border shadow-sm hover:bg-accent transition-colors"
             title="Edit Tags"
+            aria-label="Edit Tags"
           >
             <Tag className="h-4 w-4" />
           </button>
@@ -256,16 +257,17 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
             <Link
               to="/apps/$appId"
               params={{ appId: app.id }}
-              className="w-full"
+              className={cn(
+                buttonVariants({
+                  variant: 'ghost',
+                  size: compact ? 'sm' : 'default',
+                }),
+                'w-full text-muted-foreground hover:text-foreground',
+              )}
+              aria-label="View Details"
             >
-              <Button
-                variant="ghost"
-                size={compact ? 'sm' : 'default'}
-                className="w-full text-muted-foreground hover:text-foreground"
-              >
-                <ArrowRightIcon className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
-                {!compact && 'View Details'}
-              </Button>
+              <ArrowRightIcon className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
+              {!compact && 'View Details'}
             </Link>
           </CardFooter>
         </Card>
