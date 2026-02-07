@@ -1,11 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
-import { eq } from '@nxus/db/server'
-import {
+import { aliases,
+  eq,
   getEphemeralDatabase,
   initEphemeralDatabase,
-  saveEphemeralDatabase,
-  aliases,
-} from '@nxus/db/server'
+  saveEphemeralDatabase } from '@nxus/db/server'
 
 /**
  * Get all aliases as a map of alias → commandId
@@ -99,9 +97,9 @@ export const aliasUtils = {
   getCommandsForAlias(
     query: string,
     allAliases: Record<string, string>,
-  ): { commandId: string; exact: boolean }[] {
+  ): Array<{ commandId: string; exact: boolean }> {
     const lowerQuery = query.toLowerCase()
-    const matches: { commandId: string; exact: boolean }[] = []
+    const matches: Array<{ commandId: string; exact: boolean }> = []
 
     for (const [alias, commandId] of Object.entries(allAliases)) {
       const lowerAlias = alias.toLowerCase()

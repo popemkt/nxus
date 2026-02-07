@@ -6,9 +6,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import type {PathValues} from '@/services/paths/paths.server';
 import {
-  getPathsServerFn,
-  type PathValues,
+  
+  getPathsServerFn
 } from '@/services/paths/paths.server'
 
 /**

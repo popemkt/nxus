@@ -30,7 +30,6 @@ import {
   TranslateIcon,
   UserIcon,
 } from '@phosphor-icons/react'
-import { Example, ExampleWrapper } from '@/components/_examples/example'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,11 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import {
+  AlertDialogTrigger, Badge , Button ,
   Card,
   CardAction,
   CardContent,
@@ -53,16 +48,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@nxus/ui'
-import {
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from '@nxus/ui'
-import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -77,19 +68,15 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@nxus/ui'
-import { Field, FieldGroup, FieldLabel } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import {
+  DropdownMenuTrigger, Field, FieldGroup, FieldLabel , Input ,
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue, Textarea 
 } from '@nxus/ui'
-import { Textarea } from '@nxus/ui'
+import { Example, ExampleWrapper } from '@/components/_examples/example'
 
 export function ComponentExample() {
   return (

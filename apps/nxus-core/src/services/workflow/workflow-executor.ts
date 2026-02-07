@@ -5,23 +5,24 @@
  * Handles command, notify, and end step types.
  */
 
-import { appRegistryService } from '@/services/apps/registry.service'
 import {
-  getCommandString,
-  type Item,
-  type ItemCommand,
-  type WorkflowCommand,
-  type CommandStep,
-  type NotifyStep,
-  type StepResult,
-  type WorkflowContext,
-  type WorkflowStep,
+  
+  
+  
+  
+  
+  
+  
+  
+  getCommandString
 } from '@nxus/db'
 import {
   createWorkflowContext,
   evaluateExpression,
   setStepResult,
 } from './workflow-context'
+import type {CommandStep, Item, ItemCommand, NotifyStep, StepResult, WorkflowCommand, WorkflowContext, WorkflowStep} from '@nxus/db';
+import { appRegistryService } from '@/services/apps/registry.service'
 
 // ============================================================================
 // Types
@@ -29,7 +30,7 @@ import {
 
 export interface WorkflowExecutionResult {
   success: boolean
-  stepsExecuted: string[]
+  stepsExecuted: Array<string>
   error?: string
   finalStatus?: 'success' | 'failure'
 }
@@ -210,7 +211,7 @@ export async function executeWorkflow(
   }
 
   const context = createWorkflowContext(params)
-  const stepsExecuted: string[] = []
+  const stepsExecuted: Array<string> = []
 
   // Build step lookup map
   const stepMap = new Map<string, WorkflowStep>()

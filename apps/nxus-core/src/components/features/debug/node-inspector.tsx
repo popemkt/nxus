@@ -11,12 +11,10 @@
  */
 
 import { cn } from '@nxus/ui'
-import type { AssembledNode } from '@nxus/db'
-import { getBacklinksServerFn } from '@/services/query/query.server'
 import {
   ArrowBendUpLeft,
-  ArrowsLeftRight,
   ArrowSquareOut,
+  ArrowsLeftRight,
   CaretDown,
   CaretRight,
   Clock,
@@ -27,6 +25,8 @@ import {
 } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { AssembledNode } from '@nxus/db'
+import { getBacklinksServerFn } from '@/services/query/query.server'
 
 interface NodeInspectorProps {
   node: AssembledNode
@@ -266,7 +266,7 @@ export function NodeInspector({ node, onNavigate }: NodeInspectorProps) {
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-16">Owner:</span>
                 <button
-                  onClick={() => onNavigate(node.ownerId!)}
+                  onClick={() => onNavigate(node.ownerId)}
                   className="text-primary hover:underline font-mono"
                 >
                   {node.ownerId.slice(0, 8)}...

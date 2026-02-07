@@ -4,18 +4,19 @@
  * Usage: npx tsx scripts/compare-legacy-vs-nodes.ts
  */
 
-import { isNull } from '@nxus/db/server'
-import {
+import { SYSTEM_SUPERTAGS,
   getDatabase,
-  initDatabase,
-  SYSTEM_SUPERTAGS,
-  itemCommands,
-  items,
-  tags,
   getNodesBySupertagWithInheritance,
   getProperty,
-} from '@nxus/db/server'
-import { nodeToCommand, nodeToItem } from '../src/services/apps/node-items.server'
+  initDatabase,
+  isNull,
+  itemCommands,
+  items,
+  tags } from '@nxus/db/server'
+import {
+  nodeToCommand,
+  nodeToItem,
+} from '../src/services/apps/node-items.server'
 
 function compareItems() {
   const db = getDatabase()

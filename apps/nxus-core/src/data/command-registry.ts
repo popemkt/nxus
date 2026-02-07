@@ -1,4 +1,5 @@
-import { COMMAND_IDS, COMMAND_CATEGORIES, type Command } from '@nxus/db'
+import { COMMAND_CATEGORIES, COMMAND_IDS  } from '@nxus/db'
+import type {Command} from '@nxus/db';
 import { DEPENDENCY_IDS } from '@/types/dependency'
 
 /**
@@ -8,7 +9,7 @@ import { DEPENDENCY_IDS } from '@/types/dependency'
  * 1. Add the ID to COMMAND_IDS in types/command.ts
  * 2. Add the configuration here
  */
-export const commandRegistry: Command[] = [
+export const commandRegistry: Array<Command> = [
   {
     id: COMMAND_IDS.GENERATE_THUMBNAIL,
     name: 'Generate Thumbnail',
@@ -29,7 +30,7 @@ export function getCommand(id: string): Command | undefined {
 /**
  * Search commands by query (name, description, category)
  */
-export function searchCommands(query: string): Command[] {
+export function searchCommands(query: string): Array<Command> {
   const lowerQuery = query.toLowerCase()
   return commandRegistry.filter(
     (c) =>
@@ -42,6 +43,6 @@ export function searchCommands(query: string): Command[] {
 /**
  * Get commands by category
  */
-export function getCommandsByCategory(category: string): Command[] {
+export function getCommandsByCategory(category: string): Array<Command> {
   return commandRegistry.filter((c) => c.category === category)
 }

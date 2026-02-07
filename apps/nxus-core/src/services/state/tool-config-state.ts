@@ -116,7 +116,7 @@ export const useToolConfig = (toolId: string) => {
  */
 export const useToolConfigured = (
   toolId: string,
-  requiredFields: string[],
+  requiredFields: Array<string>,
 ): boolean => {
   const { config } = useToolConfig(toolId)
 
@@ -144,7 +144,7 @@ export const toolConfigService = {
   getConfigs: (toolId: string): ToolConfigValue => {
     return useToolConfigStore.getState().configs[toolId] || {}
   },
-  isConfigured: (toolId: string, requiredFields: string[]): boolean => {
+  isConfigured: (toolId: string, requiredFields: Array<string>): boolean => {
     const config = useToolConfigStore.getState().configs[toolId] || {}
     if (requiredFields.length === 0) return true
     return requiredFields.every((field) => {

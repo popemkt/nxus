@@ -21,14 +21,14 @@
  * ```
  */
 
+import type { LogEntry } from '@/services/shell/command.schema'
+import type { ItemType } from '@nxus/db'
 import { queryClient } from '@/lib/query-client'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { streamCommandServerFn } from '@/services/shell/command-stream.server'
-import type { LogEntry } from '@/services/shell/command.schema'
 import { executeCommandServerFn } from '@/services/shell/command.server'
 import { createPtySessionServerFn } from '@/services/shell/pty.server'
 import { toolHealthKeys } from '@/services/tool-health/types'
-import type { ItemType } from '@nxus/db'
 
 /**
  * Parse a command string into command and args, respecting quotes
@@ -39,8 +39,8 @@ import type { ItemType } from '@nxus/db'
  * parseCommand('npm install --save')   // => ['npm', 'install', '--save']
  * parseCommand("echo 'it\\'s great'")  // => ['echo', "it's great"]
  */
-function parseCommand(command: string): [string, string[]] {
-  const args: string[] = []
+function parseCommand(command: string): [string, Array<string>] {
+  const args: Array<string> = []
   let currentArg = ''
   let inSingleQuote = false
   let inDoubleQuote = false
@@ -148,7 +148,7 @@ export type PostExecutionCallback = (
 ) => void | Promise<void>
 
 // Registry of post-execution callbacks
-const postExecutionCallbacks: PostExecutionCallback[] = []
+const postExecutionCallbacks: Array<PostExecutionCallback> = []
 
 /**
  * Centralized command executor service
@@ -532,7 +532,7 @@ export const commandExecutor = {
     terminalStore?: TerminalStore
     tabName?: string
     cwd?: string
-    onNeedsParams?: (params: unknown[]) => void
+    onNeedsParams?: (params: Array<unknown>) => void
   }): Promise<CommandExecutionResult & { needsParams?: boolean }> {
     const {
       appId,

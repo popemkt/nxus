@@ -8,19 +8,17 @@
  * Also exports tags and inbox to seed folder.
  */
 
-import { eq, isNull } from '@nxus/db/server'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
-import {
-  getDatabase,
-  initDatabase,
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { eq, getDatabase,
   inbox,
+  initDatabase,
+  isNull,
   itemCommands,
-  items,
   itemTags,
-  tags,
-} from '@nxus/db/server'
+  items,
+  tags } from '@nxus/db/server'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -73,7 +71,7 @@ async function exportData() {
     .all()
 
   // Group commands by app
-  const commandsByApp = new Map<string, (typeof allCommands)[0][]>()
+  const commandsByApp = new Map<string, Array<(typeof allCommands)[0]>>()
   for (const cmd of allCommands) {
     const appCommands = commandsByApp.get(cmd.appId) ?? []
     appCommands.push(cmd)
@@ -124,7 +122,7 @@ async function exportData() {
     if (app.thumbnail) manifest.thumbnail = app.thumbnail
 
     // Add platform for tools
-    const platform = parseJsonField<string[]>(app.platform)
+    const platform = parseJsonField<Array<string>>(app.platform)
     if (platform) manifest.platform = platform
 
     // Add check command for tools
@@ -161,11 +159,11 @@ async function exportData() {
     if (docs) manifest.docs = docs
 
     // Add dependencies
-    const dependencies = parseJsonField<string[]>(app.dependencies)
+    const dependencies = parseJsonField<Array<string>>(app.dependencies)
     if (dependencies) manifest.dependencies = dependencies
 
     // Add metadata
-    const metadata = (parseJsonField(app.metadata) as any) || {}
+    const metadata = (parseJsonField(app.metadata)) || {}
     // Inject tags from junction table into metadata for export
     manifest.metadata = {
       ...metadata,

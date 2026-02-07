@@ -1,28 +1,25 @@
 import { Panel } from '@xyflow/react'
-import { Button } from '@nxus/ui'
-import {
-  LockIcon,
-  LockOpenIcon,
-  TreeStructureIcon,
-  GraphIcon,
-  ArrowsOutCardinalIcon,
-  CirclesFourIcon,
-  CardsIcon,
-  FunnelIcon,
-  FunnelSimpleIcon,
-  CommandIcon,
-  GearSixIcon,
-  TagIcon,
-} from '@phosphor-icons/react'
-import type { GraphOptions, GraphNodeStyle } from '@/stores/view-mode.store'
-import { cn } from '@nxus/ui'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
+import { Button, DropdownMenu ,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-} from '@nxus/ui'
+  DropdownMenuTrigger,
+  cn } from '@nxus/ui'
+import {
+  ArrowsOutCardinalIcon,
+  CardsIcon,
+  CirclesFourIcon,
+  CommandIcon,
+  FunnelIcon,
+  FunnelSimpleIcon,
+  GearSixIcon,
+  GraphIcon,
+  LockIcon,
+  LockOpenIcon,
+  TagIcon,
+  TreeStructureIcon,
+} from '@phosphor-icons/react'
+import type { GraphNodeStyle, GraphOptions } from '@/stores/view-mode.store'
 
 interface GraphControlsProps {
   options: GraphOptions

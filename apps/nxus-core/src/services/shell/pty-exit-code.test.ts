@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createPtySession } from './pty-session-manager.server'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as pty from 'node-pty'
+import { createPtySession } from './pty-session-manager.server'
 
 // Mock node-pty
 vi.mock('node-pty', () => {

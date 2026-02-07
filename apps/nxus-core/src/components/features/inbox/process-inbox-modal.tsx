@@ -6,31 +6,29 @@
  */
 
 import * as React from 'react'
-import { Robot, Play, Warning } from '@phosphor-icons/react'
+import { Play, Robot, Warning } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
+  AlertDialogTitle, Badge , Button , cn 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
+import { useQuery } from '@tanstack/react-query'
+import type { Item } from '@nxus/db'
+import type {InboxItem} from '@/services/inbox/inbox.server';
 import { getAppsByConfiguredTagServerFn } from '@/services/tag-config.server'
 import { getAllAppsServerFn } from '@/services/apps/apps.server'
 import {
-  updateInboxItemServerFn,
-  type InboxItem,
+  
+  updateInboxItemServerFn
 } from '@/services/inbox/inbox.server'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { useTerminalStore } from '@/stores/terminal.store'
-import { useQuery } from '@tanstack/react-query'
-import { cn } from '@nxus/ui'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
-import type { Item } from '@nxus/db'
 import { usePath } from '@/hooks/use-paths'
 
 export interface ProcessInboxModalProps {
@@ -80,7 +78,7 @@ export function ProcessInboxModal({
       }
 
       if (!tagValues.success || !tagValues.data || !appsResult.success) {
-        return { providers: [] as AIProvider[] }
+        return { providers: [] as Array<AIProvider> }
       }
 
       const appsMap = new Map<string, Item>(
@@ -90,9 +88,10 @@ export function ProcessInboxModal({
       // Check health for each provider in parallel
       const providerChecks = await Promise.all(
         tagValues.data.map(
-          async (
-            tv: { appId: string; values: Record<string, unknown> },
-          ): Promise<AIProvider | null> => {
+          async (tv: {
+            appId: string
+            values: Record<string, unknown>
+          }): Promise<AIProvider | null> => {
             const app = appsMap.get(tv.appId)
             if (!app) return null
 

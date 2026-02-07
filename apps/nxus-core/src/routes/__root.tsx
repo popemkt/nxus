@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import appCss from '../styles.css?url'
 import { useSystemInfo } from '@/hooks/use-system-info'
 import { useThemeStore } from '@/stores/theme.store'
 import { themeOptions } from '@/config/theme-options'
@@ -12,7 +13,8 @@ import { ConfigureModal } from '@/components/features/app-detail/modals/configur
 import { InboxModal } from '@/components/features/inbox/inbox-modal'
 import { GlobalCommandParamsModal } from '@/components/features/command-params/global-command-params-modal'
 
-import appCss from '../styles.css?url'
+
+import { queryClient } from '@/lib/query-client'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -74,8 +76,6 @@ function ThemeProvider() {
 
   return null
 }
-
-import { queryClient } from '@/lib/query-client'
 
 /**
  * Manages scrollbar visibility by adding/removing data-scrolling attribute

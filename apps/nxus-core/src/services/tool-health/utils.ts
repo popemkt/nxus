@@ -4,8 +4,9 @@
  * Functions for accessing tool health from non-React contexts
  */
 
+import {  toolHealthKeys } from './types'
+import type {ToolHealthResult} from './types';
 import type { QueryClient } from '@tanstack/react-query'
-import { toolHealthKeys, type ToolHealthResult } from './types'
 
 /**
  * Get tool health from TanStack Query cache (synchronous)

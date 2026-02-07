@@ -1,11 +1,9 @@
 import { XIcon } from '@phosphor-icons/react'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
+import { Button, Field , FieldLabel, Input  } from '@nxus/ui'
+import type { ToolItem } from '@nxus/db'
 import { useConfigureModalStore } from '@/stores/configure-modal.store'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { ToolItem } from '@nxus/db'
 
 const EMPTY_CONFIG = {}
 

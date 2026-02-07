@@ -50,7 +50,7 @@ export function getSystemTag(name: string): SystemTag | undefined {
 /**
  * Get all system tags as an array
  */
-export function getAllSystemTags(): SystemTag[] {
+export function getAllSystemTags(): Array<SystemTag> {
   return Object.values(SYSTEM_TAGS)
 }
 

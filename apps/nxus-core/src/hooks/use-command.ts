@@ -27,19 +27,20 @@
  * ```
  */
 
+import { useQueries } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
+import type { CommandRequirements, ItemCommand, ItemType } from '@nxus/db'
+import type {ToolHealthResult} from '@/services/tool-health/types';
 import { queryClient } from '@/lib/query-client'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import {
-  toolHealthKeys,
-  type ToolHealthResult,
+  
+  toolHealthKeys
 } from '@/services/tool-health/types'
 import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { useTerminalStore } from '@/stores/terminal.store'
-import type { CommandRequirements, ItemCommand, ItemType } from '@nxus/db'
-import { useQueries } from '@tanstack/react-query'
-import { useCallback, useMemo } from 'react'
 
 /**
  * Get the actual checkCommand for a tool ID by looking it up in the registry.
@@ -191,7 +192,7 @@ export function useCommand(
 
   // Build list of checkCommands we need to query
   const checkCommands = useMemo(() => {
-    const commands: string[] = []
+    const commands: Array<string> = []
     if (command.requires?.tools) {
       for (const toolId of command.requires.tools) {
         // Look up actual checkCommand from registry

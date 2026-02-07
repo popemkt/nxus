@@ -1,13 +1,4 @@
-import { Button } from '@nxus/ui'
-import { Card, CardContent, CardHeader, CardTitle } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import {
-  appStateService,
-  isDevReferencePath,
-  useAppInstallations,
-  useDevInfo,
-  type InstalledAppRecord,
-} from '@/services/state/app-state'
+import { Button, Card, CardContent, CardHeader, CardTitle , Input  } from '@nxus/ui'
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -21,6 +12,14 @@ import {
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import * as React from 'react'
+import type {InstalledAppRecord} from '@/services/state/app-state';
+import {
+  
+  appStateService,
+  isDevReferencePath,
+  useAppInstallations,
+  useDevInfo
+} from '@/services/state/app-state'
 
 interface InstanceSelectorProps {
   appId: string
@@ -261,7 +260,7 @@ function ExpandedView({
   onChooseExisting,
   isAdding,
 }: {
-  instances: InstalledAppRecord[]
+  instances: Array<InstalledAppRecord>
   selectedId: string | null
   onSelect: (instance: InstalledAppRecord) => void
   onCollapse: () => void

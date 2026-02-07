@@ -1,36 +1,33 @@
 import * as React from 'react'
 import {
-  FolderIcon,
-  TrashIcon,
-  PlusIcon,
   DownloadIcon,
+  FolderIcon,
+  PlusIcon,
+  TrashIcon,
   WarningIcon,
 } from '@phosphor-icons/react'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@nxus/ui'
-import { Button } from '@nxus/ui'
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
+  AlertDialogDescription, AlertDialogFooter ,
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle, Checkbox 
 } from '@nxus/ui'
-import { Checkbox } from '@nxus/ui'
+import type {InstalledAppRecord} from '@/services/state/app-state';
 import {
-  useAppInstallations,
+  
   appStateService,
-  type InstalledAppRecord,
+  useAppInstallations
 } from '@/services/state/app-state'
 import { uninstallAppServerFn } from '@/services/apps/uninstall.server'
 

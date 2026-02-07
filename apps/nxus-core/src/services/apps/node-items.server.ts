@@ -13,12 +13,12 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import type {
   AssembledNode,
+  DocEntry,
   Item,
   ItemCommand,
   ItemMetadata,
-  TagRef,
-  DocEntry,
   ScriptCommand,
+  TagRef,
 } from '@nxus/db'
 
 // ============================================================================
@@ -37,7 +37,7 @@ function getProperty<T = unknown>(
 function getPropertyValues<T = unknown>(
   node: AssembledNode,
   fieldName: string,
-): T[] {
+): Array<T> {
   const props = node.properties[fieldName]
   if (!props) return []
   return props.sort((a, b) => a.order - b.order).map((p) => p.value as T)
@@ -50,12 +50,12 @@ function getPropertyValues<T = unknown>(
 export function nodeToItem(
   node: AssembledNode,
   options?: {
-    resolveTagRefs?: (tagNodeIds: string[]) => TagRef[]
-    resolveCommands?: (itemNodeId: string) => ItemCommand[]
-    resolveDependencies?: (depNodeIds: string[]) => string[]
+    resolveTagRefs?: (tagNodeIds: Array<string>) => Array<TagRef>
+    resolveCommands?: (itemNodeId: string) => Array<ItemCommand>
+    resolveDependencies?: (depNodeIds: Array<string>) => Array<string>
   },
 ): Item {
-  const types: Item['type'][] = []
+  const types: Array<Item['type']> = []
   for (const st of node.supertags) {
     if (st.systemId === 'supertag:tool') types.push('tool')
     else if (st.systemId === 'supertag:repo') types.push('remote-repo')
@@ -91,8 +91,8 @@ export function nodeToItem(
     path: getProperty<string>(node, 'path') || '',
     homepage: getProperty<string>(node, 'homepage'),
     thumbnail: undefined,
-    platform: getProperty<string[]>(node, 'platform'),
-    docs: getProperty<DocEntry[]>(node, 'docs'),
+    platform: getProperty<Array<string>>(node, 'platform'),
+    docs: getProperty<Array<DocEntry>>(node, 'docs'),
     dependencies,
     metadata,
     installConfig: undefined,
@@ -189,7 +189,7 @@ export const getAllItemsFromNodesServerFn = createServerFn({
     db,
     SYSTEM_SUPERTAGS.COMMAND,
   )
-  const commandsByItemId = new Map<string, ItemCommand[]>()
+  const commandsByItemId = new Map<string, Array<ItemCommand>>()
 
   for (const cmdNode of commandNodes) {
     const parentId = cmdNode.ownerId
@@ -200,7 +200,7 @@ export const getAllItemsFromNodesServerFn = createServerFn({
     }
   }
 
-  const items: Item[] = itemNodes.map((node: AssembledNode) =>
+  const items: Array<Item> = itemNodes.map((node: AssembledNode) =>
     nodeToItem(node, {
       resolveTagRefs: (tagNodeIds) =>
         tagNodeIds

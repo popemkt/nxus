@@ -7,19 +7,18 @@
  * Now uses integer tag IDs with optional slug display.
  */
 
-import { Gear, Info, Asterisk } from '@phosphor-icons/react'
+import { Asterisk, Gear, Info } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
+  AlertDialogTitle, Badge 
 } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import { getTagConfigServerFn } from '@/services/tag-config.server'
 import { useQuery } from '@tanstack/react-query'
+import { getTagConfigServerFn } from '@/services/tag-config.server'
 
 export interface TagSchemaModalProps {
   /** Integer tag ID */
@@ -37,7 +36,7 @@ interface SchemaField {
   required?: boolean
   placeholder?: string
   default?: unknown
-  options?: string[]
+  options?: Array<string>
 }
 
 export function TagSchemaModal({
@@ -56,7 +55,7 @@ export function TagSchemaModal({
   const config = configResult as
     | {
         success: boolean
-        data?: { schema: { fields: SchemaField[] }; description?: string }
+        data?: { schema: { fields: Array<SchemaField> }; description?: string }
       }
     | undefined
 

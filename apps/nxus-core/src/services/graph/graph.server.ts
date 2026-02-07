@@ -7,8 +7,8 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import type { Item, ItemCommand, ItemMetadata, TagRef } from '@nxus/db'
 import {
+  
   addRelation,
   componentsRec,
   createNode,
@@ -16,9 +16,10 @@ import {
   getNodesBySupertag,
   removeRelation,
   searchNodes,
-  updateNode,
-  type GraphNode,
+  updateNode
 } from './graph.service'
+import type {GraphNode} from './graph.service';
+import type { Item, ItemCommand, ItemMetadata, TagRef } from '@nxus/db'
 
 // ============================================================================
 // Serializable types for server functions
@@ -56,12 +57,14 @@ function serializeGraphNode(node: GraphNode): SerializableGraphNode {
  * Convert a graph node to an Item
  * Now supports multi-type items via the types array
  */
-function graphNodeToItem(node: GraphNode, tags: TagRef[] = []): Item {
+function graphNodeToItem(node: GraphNode, tags: Array<TagRef> = []): Item {
   const props = node.props || {}
   // Support both single type and types array from graph
-  const storedTypes = props.types as string[] | undefined
+  const storedTypes = props.types as Array<string> | undefined
   const singleType = (props.type as string) || 'html'
-  const types = (storedTypes && storedTypes.length > 0 ? storedTypes : [singleType]) as Item['type'][]
+  const types = (
+    storedTypes && storedTypes.length > 0 ? storedTypes : [singleType]
+  ) as Array<Item['type']>
   const itemType = types[0] // First type for type-specific fields
 
   const metadata: ItemMetadata = {
@@ -85,11 +88,11 @@ function graphNodeToItem(node: GraphNode, tags: TagRef[] = []): Item {
     homepage: props.homepage as string | undefined,
     thumbnail: props.thumbnail as string | undefined,
     docs: props.docs as Item['docs'],
-    dependencies: props.dependencies as string[] | undefined,
+    dependencies: props.dependencies as Array<string> | undefined,
     metadata,
     installConfig: props.installConfig as Item['installConfig'],
     status: 'not-installed' as const,
-    commands: (props.commands as ItemCommand[]) || [],
+    commands: (props.commands as Array<ItemCommand>) || [],
   }
 
   // Add type-specific fields based on ALL types in the array
@@ -97,7 +100,8 @@ function graphNodeToItem(node: GraphNode, tags: TagRef[] = []): Item {
 
   if (types.includes('tool')) {
     result.checkCommand = (props.checkCommand as string) || ''
-    result.platform = (props.platform as ('windows' | 'linux' | 'macos')[]) || []
+    result.platform =
+      (props.platform as Array<'windows' | 'linux' | 'macos'>) || []
     result.installInstructions = props.installInstructions as string | undefined
     result.configSchema = props.configSchema as
       | {
@@ -185,7 +189,7 @@ export const getAllItemsFromGraphServerFn = createServerFn({
     const itemNodes = await getNodesBySupertag('supertag:item')
 
     // Convert to Item format
-    const items: Item[] = []
+    const items: Array<Item> = []
 
     for (const node of itemNodes) {
       // Get tags for this item
@@ -520,9 +524,9 @@ export const searchNodesServerFn = createServerFn({ method: 'GET' })
 /**
  * Get tags for an item node
  */
-async function getItemTags(node: GraphNode): Promise<TagRef[]> {
+async function getItemTags(node: GraphNode): Promise<Array<TagRef>> {
   // This would query the tagged_with relations
   // For now, return from props if stored there
-  const tagRefs = (node.props?.tag_refs as TagRef[]) || []
+  const tagRefs = (node.props?.tag_refs as Array<TagRef>) || []
   return tagRefs
 }

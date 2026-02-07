@@ -1,6 +1,6 @@
-import { useDevInfo } from '@/services/state/app-state'
 import { Badge } from '@nxus/ui'
 import { CodeIcon } from '@phosphor-icons/react'
+import { useDevInfo } from '@/services/state/app-state'
 
 export function DevModeBadge() {
   const devInfo = useDevInfo()

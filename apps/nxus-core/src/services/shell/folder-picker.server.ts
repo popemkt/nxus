@@ -1,7 +1,7 @@
+import { exec } from 'node:child_process'
+import os from 'node:os'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { exec } from 'child_process'
-import os from 'os'
 import { getPlatformCommands } from '@/lib/platform-commands'
 
 const FolderPickerSchema = z.object({

@@ -1,13 +1,15 @@
-import { getOsInfoServerFn, type OsInfo } from '@/services/shell/os-info.server'
+import type {OsInfo} from '@/services/shell/os-info.server';
+import type {DevInfo} from '@/services/shell/dev-info.server';
+import {  getOsInfoServerFn } from '@/services/shell/os-info.server'
 import {
-  getDevInfoServerFn,
-  type DevInfo,
+  
+  getDevInfoServerFn
 } from '@/services/shell/dev-info.server'
 import {
   appStateService,
-  useOsInfo,
   useDevInfo,
   useHasHydrated,
+  useOsInfo,
 } from '@/services/state/app-state'
 import { useCachedQuery } from '@/lib/cached-query'
 

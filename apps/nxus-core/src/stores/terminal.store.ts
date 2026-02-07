@@ -4,7 +4,7 @@ import type { LogEntry } from '@/services/shell/command.schema'
 export interface TerminalTab {
   id: string
   label: string
-  logs: LogEntry[]
+  logs: Array<LogEntry>
   status: 'running' | 'success' | 'error' | 'idle'
   createdAt: number
   /** Tab mode: readonly for execute commands, interactive for terminal commands */
@@ -14,7 +14,7 @@ export interface TerminalTab {
 }
 
 interface TerminalState {
-  tabs: TerminalTab[]
+  tabs: Array<TerminalTab>
   activeTabId: string | null
   isOpen: boolean
   isMinimized: boolean

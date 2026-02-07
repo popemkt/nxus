@@ -1,20 +1,20 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState  } from 'react'
 import {
-  TerminalWindowIcon,
-  XIcon,
-  MinusIcon,
   CaretUpIcon,
-  CopyIcon,
+  CheckCircleIcon,
   CheckIcon,
   CircleNotchIcon,
-  CheckCircleIcon,
-  XCircleIcon,
+  CopyIcon,
   DotsSixVerticalIcon,
+  MinusIcon,
+  TerminalWindowIcon,
+  XCircleIcon,
+  XIcon,
 } from '@phosphor-icons/react'
 import { Button } from '@nxus/ui'
-import { useTerminalStore, type TerminalTab } from '@/stores/terminal.store'
-import { useState } from 'react'
 import { InteractiveTerminal } from './interactive-terminal'
+import type {TerminalTab} from '@/stores/terminal.store';
+import {  useTerminalStore } from '@/stores/terminal.store'
 import { closePtySessionServerFn } from '@/services/shell/pty.server'
 
 function getLogColor(type: string) {

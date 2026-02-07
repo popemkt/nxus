@@ -1,12 +1,4 @@
-import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
-import { WorkflowPreviewModal } from '@/components/features/app-detail/modals/workflow-preview-modal'
 import { Button } from '@nxus/ui'
-import { useCommandExecution } from '@/hooks/use-command-execution'
-import { useToolHealth } from '@/hooks/use-tool-health'
-import { handleCommandMode } from '@/lib/command-utils'
-import { useToolConfigured } from '@/services/state/tool-config-state'
-import { configureModalService } from '@/stores/configure-modal.store'
-import type { Item, ItemCommand, ToolItem } from '@nxus/db'
 import { getCommandString } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
@@ -16,6 +8,14 @@ import {
   WarningIcon,
 } from '@phosphor-icons/react'
 import * as React from 'react'
+import type { Item, ItemCommand, ToolItem } from '@nxus/db'
+import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
+import { WorkflowPreviewModal } from '@/components/features/app-detail/modals/workflow-preview-modal'
+import { useCommandExecution } from '@/hooks/use-command-execution'
+import { useToolHealth } from '@/hooks/use-tool-health'
+import { handleCommandMode } from '@/lib/command-utils'
+import { useToolConfigured } from '@/services/state/tool-config-state'
+import { configureModalService } from '@/stores/configure-modal.store'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -220,7 +220,7 @@ export function CommandButton({
         {showWorkflowPreviewButton && (
           <WorkflowPreviewModal
             commandName={command.name}
-            workflow={command.workflow!}
+            workflow={command.workflow}
             open={workflowPreviewOpen}
             onOpenChange={setWorkflowPreviewOpen}
           />
@@ -286,7 +286,7 @@ export function CommandButton({
       {showWorkflowPreviewButton && (
         <WorkflowPreviewModal
           commandName={command.name}
-          workflow={command.workflow!}
+          workflow={command.workflow}
           open={workflowPreviewOpen}
           onOpenChange={setWorkflowPreviewOpen}
         />

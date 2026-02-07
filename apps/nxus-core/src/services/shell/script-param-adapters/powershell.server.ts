@@ -1,13 +1,13 @@
-import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
+import { z } from 'zod'
+import { createServerFn } from '@tanstack/react-start'
 import type {
-  ScriptParam,
   ParseScriptParamsResult,
+  ScriptParam,
   ScriptParamType,
 } from './types'
 
@@ -43,7 +43,7 @@ $params | ConvertTo-Json -Depth 3
 function mapPowerShellType(
   typeName: string,
   paramName: string,
-  validateSet: string[] | null,
+  validateSet: Array<string> | null,
 ): ScriptParamType {
   // If has ValidateSet, it's a select
   if (validateSet && validateSet.length > 0) {
@@ -121,14 +121,14 @@ export const parsePowerShellParamsServerFn = createServerFn({ method: 'GET' })
       // Ensure it's always an array
       const paramsArray = Array.isArray(rawParams) ? rawParams : [rawParams]
 
-      const params: ScriptParam[] = paramsArray.map(
+      const params: Array<ScriptParam> = paramsArray.map(
         (p: {
           Name: string
           Type: string
           IsMandatory: boolean
           HasDefault: boolean
           DefaultValue: unknown
-          ValidateSet: string[] | null
+          ValidateSet: Array<string> | null
           HelpMessage: string | null
         }) => ({
           name: p.Name,

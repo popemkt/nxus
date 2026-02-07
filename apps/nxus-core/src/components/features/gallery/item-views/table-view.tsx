@@ -1,24 +1,24 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  flexRender,
+  
   createColumnHelper,
-  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable
 } from '@tanstack/react-table'
-import type { Item } from '@nxus/db'
-import { Badge } from '@nxus/ui'
-import { Button } from '@nxus/ui'
+import { Badge, Button , cn  } from '@nxus/ui'
 import {
-  ArrowUp,
   ArrowDown,
   ArrowRight,
+  ArrowUp,
   CheckCircle,
   XCircle,
 } from '@phosphor-icons/react'
+import type {SortingState} from '@tanstack/react-table';
+import type { Item } from '@nxus/db'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_SHORT,
@@ -26,10 +26,9 @@ import {
   getTypeBadges,
 } from '@/lib/app-constants'
 import { useToolHealth } from '@/hooks/use-tool-health'
-import { cn } from '@nxus/ui'
 
 interface TableViewProps {
-  items: Item[]
+  items: Array<Item>
 }
 
 const columnHelper = createColumnHelper<Item>()

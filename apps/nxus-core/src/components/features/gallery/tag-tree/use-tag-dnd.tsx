@@ -1,19 +1,20 @@
-import { useState, useCallback, createContext, useContext } from 'react'
+import { createContext, useCallback, useContext, useState } from 'react'
 import {
   DndContext,
-  closestCenter,
+  
+  
+  
   PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
+  closestCenter,
   useDraggable,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragMoveEvent,
+  useDroppable,
+  useSensor,
+  useSensors
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { useTagDataStore } from '@/stores/tag-data.store'
 import { cn } from '@nxus/ui'
+import type {DragEndEvent, DragMoveEvent, DragStartEvent} from '@dnd-kit/core';
+import { useTagDataStore } from '@/stores/tag-data.store'
 
 interface UseTagDndOptions {
   onMoveTag?: (id: string, parentId: string | null, order: number) => void
@@ -259,7 +260,7 @@ export function DraggableTagItem({ id, children }: DraggableTagItemProps) {
 
 interface TagDndContextProps {
   children: React.ReactNode
-  items: string[]
+  items: Array<string>
   onMoveTag?: (id: string, parentId: string | null, order: number) => void
   onExpandParent?: (parentId: string) => void
 }

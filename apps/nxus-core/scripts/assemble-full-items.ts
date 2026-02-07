@@ -8,22 +8,25 @@
  *   npx tsx scripts/assemble-full-items.ts  # Shows first 3
  */
 
-import { eq } from '@nxus/db/server'
-import {
-  getDatabase,
-  initDatabase,
-  SYSTEM_SUPERTAGS,
-  itemCommands,
-  items,
-  itemTags,
-  tags,
+import { SYSTEM_SUPERTAGS,
+  
+  eq,
+  
   findNode,
+  getDatabase,
   getNodesBySupertagWithInheritance,
   getProperty,
-  type Item,
-  type TagRef,
-} from '@nxus/db/server'
-import { nodeToCommand, nodeToItem } from '../src/services/apps/node-items.server'
+  initDatabase,
+  itemCommands,
+  itemTags,
+  items,
+  tags
+ } from '@nxus/db/server'
+import {
+  nodeToCommand,
+  nodeToItem,
+} from '../src/services/apps/node-items.server'
+import type {Item, TagRef} from '@nxus/db/server';
 
 function getFullLegacyItem(
   db: ReturnType<typeof getDatabase>,
@@ -76,10 +79,10 @@ function getFullLegacyItem(
       description: c.description ?? undefined,
       icon: c.icon,
       category: c.category,
-      target: c.target as any,
-      mode: c.mode as any,
+      target: c.target,
+      mode: c.mode,
       command: c.command,
-      scriptSource: c.scriptSource as any,
+      scriptSource: c.scriptSource,
       cwd: c.cwd ?? undefined,
       platforms: c.platforms ?? undefined,
       requires: c.requires ?? undefined,
@@ -93,7 +96,7 @@ function getFullNodeItem(
   legacyId: string,
 ): Item | null {
   // Find the node by systemId or legacyId
-  let node = findNode(db, `item:${legacyId}`)
+  const node = findNode(db, `item:${legacyId}`)
   if (!node) return null
 
   // Get all tags for lookup
@@ -114,7 +117,7 @@ function getFullNodeItem(
     .map(nodeToCommand)
 
   return nodeToItem(node, {
-    resolveTagRefs: (tagNodeIds: string[]) =>
+    resolveTagRefs: (tagNodeIds: Array<string>) =>
       tagNodeIds
         .map((id: string) => tagLookup.get(id))
         .filter((t: TagRef | undefined): t is TagRef => !!t),

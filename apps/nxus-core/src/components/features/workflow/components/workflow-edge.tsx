@@ -2,11 +2,12 @@ import { memo } from 'react'
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getBezierPath,
-  type EdgeProps,
+  
+  getBezierPath
 } from '@xyflow/react'
-import type { WorkflowEdgeData } from '../types'
 import { EDGE_TYPE_STYLES } from '../types'
+import type {EdgeProps} from '@xyflow/react';
+import type { WorkflowEdgeData } from '../types'
 
 interface WorkflowEdgeProps extends EdgeProps {
   data?: WorkflowEdgeData

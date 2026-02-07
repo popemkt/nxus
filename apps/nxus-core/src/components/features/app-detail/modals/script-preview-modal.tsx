@@ -1,15 +1,14 @@
 import * as React from 'react'
-import { CodeIcon, CopyIcon, CheckIcon } from '@phosphor-icons/react'
+import { CheckIcon, CodeIcon, CopyIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
+  AlertDialogTitle, Button 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
 import { readScriptFileServerFn } from '@/services/shell/read-script.server'
 
 interface ScriptPreviewModalProps {

@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
-import type { LogEntry } from '../services/shell/command.schema'
+import { useCallback, useState } from 'react'
 import { streamCommandServerFn } from '../services/shell/command-stream.server'
+import type { LogEntry } from '../services/shell/command.schema'
 
 export interface UseCommandExecutionOptions {
   onComplete?: () => void
@@ -8,7 +8,7 @@ export interface UseCommandExecutionOptions {
 }
 
 export function useCommandExecution(options?: UseCommandExecutionOptions) {
-  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [logs, setLogs] = useState<Array<LogEntry>>([])
   const [isRunning, setIsRunning] = useState(false)
 
   const addLog = useCallback((log: LogEntry) => {
@@ -22,7 +22,7 @@ export function useCommandExecution(options?: UseCommandExecutionOptions) {
   const executeCommand = useCallback(
     async (
       command: string,
-      args: string[] = [],
+      args: Array<string> = [],
       execOptions?: { cwd?: string; env?: Record<string, string> },
     ) => {
       setIsRunning(true)

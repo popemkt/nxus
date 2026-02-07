@@ -9,34 +9,29 @@ import * as React from 'react'
 import { GearIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
-} from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
-import { Checkbox } from '@nxus/ui'
-import {
+  AlertDialogTitle, Button , Checkbox , Field, FieldLabel , Input ,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@nxus/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type {TagConfigField} from '@/services/tag-config.server';
 import {
-  type TagConfigField,
-  getTagConfigServerFn,
+  
   getAppTagValuesServerFn,
-  setAppTagValuesServerFn,
+  getTagConfigServerFn,
+  setAppTagValuesServerFn
 } from '@/services/tag-config.server'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface TagConfigSchema {
-  fields: TagConfigField[]
+  fields: Array<TagConfigField>
 }
 
 export interface TagConfigModalProps {

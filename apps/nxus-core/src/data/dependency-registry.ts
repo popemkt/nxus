@@ -1,4 +1,5 @@
-import { DEPENDENCY_IDS, type Dependency } from '@/types/dependency'
+import type {Dependency} from '@/types/dependency';
+import { DEPENDENCY_IDS  } from '@/types/dependency'
 
 /**
  * Dependency registry - all known dependencies with their check configurations
@@ -7,7 +8,7 @@ import { DEPENDENCY_IDS, type Dependency } from '@/types/dependency'
  * 1. Add the ID to DEPENDENCY_IDS in types/dependency.ts
  * 2. Add the configuration here
  */
-export const dependencyRegistry: Dependency[] = [
+export const dependencyRegistry: Array<Dependency> = [
   {
     id: DEPENDENCY_IDS.GEMINI_CLI,
     name: 'Gemini CLI',
@@ -69,7 +70,7 @@ export function getDependency(id: string): Dependency | undefined {
 /**
  * Get multiple dependencies by IDs
  */
-export function getDependencies(ids: string[]): Dependency[] {
+export function getDependencies(ids: Array<string>): Array<Dependency> {
   return ids
     .map((id) => getDependency(id))
     .filter((d): d is Dependency => d !== undefined)

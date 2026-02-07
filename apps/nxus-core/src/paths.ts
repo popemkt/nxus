@@ -54,7 +54,7 @@ export const PATHS = {
    * @param appId - The app ID (e.g., 'github-cli', 'opencode')
    * @param parts - Additional path segments to join
    */
-  app: (appId: string, ...parts: string[]) =>
+  app: (appId: string, ...parts: Array<string>) =>
     path.resolve(PATHS.appsData, appId, ...parts),
 
   /**
@@ -62,14 +62,14 @@ export const PATHS = {
    * @param instanceId - The instance ID
    * @param parts - Additional path segments to join
    */
-  repo: (instanceId: string, ...parts: string[]) =>
+  repo: (instanceId: string, ...parts: Array<string>) =>
     path.resolve(PATHS.reposRoot, instanceId, ...parts),
 
   /**
    * Get the path to the shared scripts directory
    * @param parts - Additional path segments to join
    */
-  sharedScripts: (...parts: string[]) =>
+  sharedScripts: (...parts: Array<string>) =>
     path.resolve(PATHS.appsData, '_scripts', ...parts),
 } as const
 

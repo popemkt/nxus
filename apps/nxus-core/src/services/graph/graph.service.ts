@@ -5,13 +5,13 @@
  * Includes Tana-style recursive traversal operators.
  */
 
-import type { Surreal, RecordId } from 'surrealdb'
 import {
+  eventBus,
   getGraphDatabase,
   initGraphDatabase,
   toRecordId,
-  eventBus,
 } from '@nxus/db/server'
+import type { RecordId, Surreal } from 'surrealdb'
 
 // ============================================================================
 // Types
@@ -34,7 +34,7 @@ export interface GraphSupertag {
   system_id?: string
   color?: string
   icon?: string
-  field_schema?: FieldDefinition[]
+  field_schema?: Array<FieldDefinition>
   created_at: Date
 }
 
@@ -89,7 +89,7 @@ export async function createNode(data: {
 
   // Build SET clauses dynamically — SurrealDB v2 SCHEMAFULL rejects NULL
   // for option<T> fields; we must omit the field entirely instead of passing null.
-  const setClauses: string[] = []
+  const setClauses: Array<string> = []
   const params: Record<string, unknown> = {}
 
   if (data.content !== undefined) {
@@ -108,7 +108,7 @@ export async function createNode(data: {
 
   setClauses.push('created_at = time::now()', 'updated_at = time::now()')
 
-  const [node] = await db.query<[GraphNode[]]>(
+  const [node] = await db.query<[Array<GraphNode>]>(
     `CREATE node SET ${setClauses.join(', ')}`,
     params,
   )
@@ -149,7 +149,7 @@ export async function getNode(
 ): Promise<GraphNode | null> {
   const db = await getDb()
   const recordId = typeof id === 'string' ? toRecordId(id) : id
-  const [result] = await db.query<[GraphNode[]]>(`SELECT * FROM $id`, {
+  const [result] = await db.query<[Array<GraphNode>]>(`SELECT * FROM $id`, {
     id: recordId,
   })
   return result[0] || null
@@ -162,7 +162,7 @@ export async function getNodeBySystemId(
   systemId: string,
 ): Promise<GraphNode | null> {
   const db = await getDb()
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `SELECT * FROM node WHERE system_id = $systemId AND deleted_at IS NONE`,
     { systemId },
   )
@@ -184,12 +184,12 @@ export async function updateNode(
   const recordId = typeof id === 'string' ? toRecordId(id) : id
 
   // Fetch current state for beforeValue
-  const [before] = await db.query<[GraphNode[]]>(`SELECT * FROM $id`, {
+  const [before] = await db.query<[Array<GraphNode>]>(`SELECT * FROM $id`, {
     id: recordId,
   })
   const beforeNode = before[0] || null
 
-  const updates: string[] = ['updated_at = time::now()']
+  const updates: Array<string> = ['updated_at = time::now()']
   const params: Record<string, unknown> = { id: recordId }
 
   if (data.content !== undefined) {
@@ -203,7 +203,7 @@ export async function updateNode(
     params.props = data.props
   }
 
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `UPDATE $id SET ${updates.join(', ')} RETURN AFTER`,
     params,
   )
@@ -279,9 +279,9 @@ export async function purgeNode(id: string | RecordId): Promise<boolean> {
 /**
  * Get all supertags
  */
-export async function getAllSupertags(): Promise<GraphSupertag[]> {
+export async function getAllSupertags(): Promise<Array<GraphSupertag>> {
   const db = await getDb()
-  const [result] = await db.query<[GraphSupertag[]]>(`SELECT * FROM supertag`)
+  const [result] = await db.query<[Array<GraphSupertag>]>(`SELECT * FROM supertag`)
   return result
 }
 
@@ -292,7 +292,7 @@ export async function getSupertagBySystemId(
   systemId: string,
 ): Promise<GraphSupertag | null> {
   const db = await getDb()
-  const [result] = await db.query<[GraphSupertag[]]>(
+  const [result] = await db.query<[Array<GraphSupertag>]>(
     `SELECT * FROM supertag WHERE system_id = $systemId`,
     { systemId },
   )
@@ -304,11 +304,11 @@ export async function getSupertagBySystemId(
  */
 export async function getNodesBySupertag(
   supertagId: string,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   // Use a subquery to find nodes with the given supertag relation.
   // The graph traversal CONTAINS approach is unreliable with string record IDs.
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `SELECT * FROM node WHERE id IN (
       SELECT VALUE in FROM has_supertag WHERE out = $supertagId
     ) AND deleted_at IS NONE`,
@@ -333,7 +333,7 @@ export async function addRelation(
   const db = await getDb()
 
   // Build SET clauses dynamically to avoid passing NULL for option<T> fields
-  const setClauses: string[] = []
+  const setClauses: Array<string> = []
   const params: Record<string, unknown> = {
     from: typeof fromId === 'string' ? toRecordId(fromId) : fromId,
     to: typeof toId === 'string' ? toRecordId(toId) : toId,
@@ -351,7 +351,7 @@ export async function addRelation(
 
   setClauses.push('created_at = time::now()')
 
-  const [result] = await db.query<[GraphRelation[]]>(
+  const [result] = await db.query<[Array<GraphRelation>]>(
     `RELATE $from->${type}->$to SET ${setClauses.join(', ')}`,
     params,
   )
@@ -412,10 +412,10 @@ export async function removeRelation(
 export async function getOutgoingRelations(
   nodeId: string | RecordId,
   type: RelationType,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   // Use a subquery approach for reliability with parameterized record IDs
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `SELECT * FROM node WHERE id IN (
       SELECT VALUE out FROM ${type} WHERE in = $nodeId
     ) AND deleted_at IS NONE`,
@@ -430,11 +430,11 @@ export async function getOutgoingRelations(
 export async function getIncomingRelations(
   nodeId: string | RecordId,
   type: RelationType,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   // Use a subquery to find source nodes — SurrealDB v2 doesn't support
   // $param in reverse graph traversal paths (node<-rel<-$param).
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `SELECT * FROM node WHERE id IN (
       SELECT VALUE in FROM ${type} WHERE out = $nodeId
     ) AND deleted_at IS NONE`,
@@ -455,12 +455,12 @@ export async function getIncomingRelations(
 export async function componentsRec(
   nodeId: string | RecordId,
   maxDepth = 10,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
   // SurrealDB v2 recursive traversal with +collect to gather all intermediate nodes
-  const result = await db.query<[null, GraphNode[]]>(
+  const result = await db.query<[null, Array<GraphNode>]>(
     `
     LET $ids = $nodeId.{..${maxDepth}+collect}(<-part_of<-node);
     SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
@@ -487,17 +487,19 @@ export async function componentsRec(
 export async function componentsRecExplicit(
   nodeId: string | RecordId,
   maxDepth = 10,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
   // Build iterative LET expansion up to maxDepth
-  const lets: string[] = []
-  const depthVars: string[] = []
+  const lets: Array<string> = []
+  const depthVars: Array<string> = []
   const clampedDepth = Math.min(maxDepth, 10)
   for (let i = 1; i <= clampedDepth; i++) {
     const prev = i === 1 ? '$nodeId' : `$d${i - 1}`
-    lets.push(`LET $d${i} = (SELECT VALUE in FROM part_of WHERE out IN ${prev === '$nodeId' ? '[$nodeId]' : prev});`)
+    lets.push(
+      `LET $d${i} = (SELECT VALUE in FROM part_of WHERE out IN ${prev === '$nodeId' ? '[$nodeId]' : prev});`,
+    )
     depthVars.push(`$d${i}`)
   }
 
@@ -507,9 +509,9 @@ export async function componentsRecExplicit(
     SELECT * FROM node WHERE id IN $all AND deleted_at IS NONE;
   `
 
-  const results = await db.query<unknown[]>(query, { nodeId: recordId })
+  const results = await db.query<Array<unknown>>(query, { nodeId: recordId })
   // The SELECT result is the last element
-  return (results[results.length - 1] as GraphNode[]) ?? []
+  return (results[results.length - 1] as Array<GraphNode>) ?? []
 }
 
 /**
@@ -520,11 +522,11 @@ export async function componentsRecExplicit(
 export async function dependenciesRec(
   nodeId: string | RecordId,
   maxDepth = 10,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const result = await db.query<[null, GraphNode[]]>(
+  const result = await db.query<[null, Array<GraphNode>]>(
     `
     LET $ids = $nodeId.{..${maxDepth}+collect}(->dependency_of->node);
     SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
@@ -543,11 +545,11 @@ export async function dependenciesRec(
 export async function dependentsRec(
   nodeId: string | RecordId,
   maxDepth = 10,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const result = await db.query<[null, GraphNode[]]>(
+  const result = await db.query<[null, Array<GraphNode>]>(
     `
     LET $ids = $nodeId.{..${maxDepth}+collect}(<-dependency_of<-node);
     SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
@@ -563,12 +565,12 @@ export async function dependentsRec(
  */
 export async function backlinks(
   nodeId: string | RecordId,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
   // Use subquery approach — reliable with parameterized record IDs
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `
     SELECT * FROM node WHERE id IN (
       SELECT VALUE in FROM references WHERE out = $nodeId
@@ -586,11 +588,11 @@ export async function backlinks(
 export async function ancestorsRec(
   nodeId: string | RecordId,
   maxDepth = 10,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const result = await db.query<[null, GraphNode[]]>(
+  const result = await db.query<[null, Array<GraphNode>]>(
     `
     LET $ids = $nodeId.{..${maxDepth}+collect}(->part_of->node);
     SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
@@ -608,10 +610,10 @@ export async function ancestorsRec(
 /**
  * Find nodes by content search
  */
-export async function searchNodes(query: string): Promise<GraphNode[]> {
+export async function searchNodes(query: string): Promise<Array<GraphNode>> {
   const db = await getDb()
 
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `
     SELECT * FROM node 
     WHERE content_plain CONTAINS $query
@@ -630,10 +632,10 @@ export async function searchNodes(query: string): Promise<GraphNode[]> {
 export async function getNodesByProperty(
   key: string,
   value: unknown,
-): Promise<GraphNode[]> {
+): Promise<Array<GraphNode>> {
   const db = await getDb()
 
-  const [result] = await db.query<[GraphNode[]]>(
+  const [result] = await db.query<[Array<GraphNode>]>(
     `
     SELECT * FROM node 
     WHERE props[$key] = $value
@@ -762,7 +764,7 @@ export function subscribeToNode(
  */
 export function subscribeToComponents(
   nodeId: string | RecordId,
-  callback: (nodes: GraphNode[]) => void,
+  callback: (nodes: Array<GraphNode>) => void,
 ): () => void {
   let active = true
   let lastHash = ''

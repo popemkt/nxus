@@ -16,12 +16,12 @@ import type { Item, ItemRegistry, ItemStatus, ItemType, Result } from '@nxus/db'
  */
 export class AppRegistryService {
   private registry: ItemRegistry | null = null
-  private apps: Item[] = []
+  private apps: Array<Item> = []
 
   /**
    * Set apps from SQLite (called after server function returns)
    */
-  setApps(apps: Item[]): void {
+  setApps(apps: Array<Item>): void {
     this.apps = apps
     this.registry = {
       version: '1.0.0',
@@ -206,7 +206,7 @@ export class AppRegistryService {
     }
 
     const repos = appsResult.data.filter((app) =>
-      app.types?.some(t => t !== 'tool')
+      app.types?.some((t) => t !== 'tool'),
     )
     return { success: true, data: repos }
   }
@@ -225,7 +225,7 @@ export class AppRegistryService {
       return { success: true, data: [] }
     }
 
-    const deps: Item[] = []
+    const deps: Array<Item> = []
     for (const depId of item.dependencies) {
       const depResult = this.getAppById(depId)
       if (depResult.success) {
@@ -256,7 +256,7 @@ export class AppRegistryService {
       return depsResult
     }
 
-    const allDeps: Item[] = [...depsResult.data]
+    const allDeps: Array<Item> = [...depsResult.data]
 
     for (const dep of depsResult.data) {
       const nestedResult = this.getDependencyTree(dep.id, visited)

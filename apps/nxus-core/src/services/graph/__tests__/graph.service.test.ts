@@ -7,34 +7,34 @@
  * - Relation operations (add, remove, getOutgoing, getIncoming) for all 6 types
  */
 
-import type { Surreal } from 'surrealdb'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   setupTestGraphDatabase,
   teardownTestGraphDatabase,
 } from '@nxus/db/test-utils'
 import {
-  createNode,
-  getNode,
-  getNodeBySystemId,
-  updateNode,
-  deleteNode,
-  purgeNode,
-  getAllSupertags,
-  getSupertagBySystemId,
-  getNodesBySupertag,
   addRelation,
-  removeRelation,
-  getOutgoingRelations,
-  getIncomingRelations,
+  ancestorsRec,
+  backlinks,
   componentsRec,
+  createNode,
+  deleteNode,
   dependenciesRec,
   dependentsRec,
-  backlinks,
-  ancestorsRec,
-  searchNodes,
+  getAllSupertags,
+  getIncomingRelations,
+  getNode,
+  getNodeBySystemId,
   getNodesByProperty,
+  getNodesBySupertag,
+  getOutgoingRelations,
+  getSupertagBySystemId,
+  purgeNode,
+  removeRelation,
+  searchNodes,
+  updateNode,
 } from '../graph.service.js'
+import type { Surreal } from 'surrealdb'
 
 let db: Surreal
 
@@ -1027,9 +1027,15 @@ describe('Search and Property Queries', () => {
 
   describe('getNodesByProperty', () => {
     it('should find nodes by a specific property value', async () => {
-      await createNode({ content: 'High Priority', props: { priority: 'high' } })
+      await createNode({
+        content: 'High Priority',
+        props: { priority: 'high' },
+      })
       await createNode({ content: 'Low Priority', props: { priority: 'low' } })
-      await createNode({ content: 'Medium Priority', props: { priority: 'medium' } })
+      await createNode({
+        content: 'Medium Priority',
+        props: { priority: 'medium' },
+      })
 
       const results = await getNodesByProperty('priority', 'high')
 

@@ -1,11 +1,9 @@
-import { useCommandPaletteStore } from '@/stores/command-palette.store'
-import { useViewModeStore } from '@/stores/view-mode.store'
 import {
-  cn,
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  cn,
 } from '@nxus/ui'
 import {
   CaretDownIcon,
@@ -21,6 +19,8 @@ import {
 } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { LayoutGroup, motion } from 'framer-motion'
+import { useViewModeStore } from '@/stores/view-mode.store'
+import { useCommandPaletteStore } from '@/stores/command-palette.store'
 
 interface FloatingHudProps {
   searchQuery: string

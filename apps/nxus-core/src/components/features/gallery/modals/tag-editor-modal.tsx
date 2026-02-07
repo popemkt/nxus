@@ -9,29 +9,26 @@
  */
 
 import * as React from 'react'
-import { Tag, Plus, MagnifyingGlass } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Tag } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
+  AlertDialogTitle, Button , Input , cn 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Item, TagRef } from '@nxus/db'
 import { ConfigurableTag } from '@/components/shared/configurable-tag'
 import { TagConfigModal } from '@/components/shared/tag-config-modal'
 import { updateAppTagsServerFn } from '@/services/apps/apps-mutations.server'
 import {
-  getAllConfigurableTagsServerFn,
   getAllAppTagValuesServerFn,
+  getAllConfigurableTagsServerFn,
 } from '@/services/tag-config.server'
 import { useTagDataStore } from '@/stores/tag-data.store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { cn } from '@nxus/ui'
-import type { Item, TagRef } from '@nxus/db'
 
 export interface TagEditorModalProps {
   app: Item
@@ -49,7 +46,7 @@ export function TagEditorModal({
   const queryClient = useQueryClient()
 
   // Local state - now using TagRef[] instead of string[] slugs
-  const [selectedTags, setSelectedTags] = React.useState<TagRef[]>([])
+  const [selectedTags, setSelectedTags] = React.useState<Array<TagRef>>([])
   const [inputValue, setInputValue] = React.useState('')
   const [showSuggestions, setShowSuggestions] = React.useState(false)
   const [selectedIndex, setSelectedIndex] = React.useState(0)
@@ -76,7 +73,7 @@ export function TagEditorModal({
 
   // Save mutation - now sends TagRef[]
   const saveMutation = useMutation({
-    mutationFn: (newTags: TagRef[]) =>
+    mutationFn: (newTags: Array<TagRef>) =>
       updateAppTagsServerFn({ data: { appId: app.id, tags: newTags } }),
     onSuccess: (result) => {
       if (result.success) {

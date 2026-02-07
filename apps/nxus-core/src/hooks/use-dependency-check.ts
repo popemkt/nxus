@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
-  DependencyId,
-  DependencyCheckResult,
   Dependency,
+  DependencyCheckResult,
+  DependencyId,
 } from '@/types/dependency'
-import { getDependency, getDependencies } from '@/data/dependency-registry'
+import { getDependencies, getDependency } from '@/data/dependency-registry'
 import { checkMultipleDependenciesServerFn } from '@/services/commands/dependency.server'
 
 export interface UseDependencyCheckResult {
@@ -15,7 +15,7 @@ export interface UseDependencyCheckResult {
   /** Whether all dependencies are installed */
   allMet: boolean
   /** List of unmet dependencies with their details */
-  unmetDependencies: Dependency[]
+  unmetDependencies: Array<Dependency>
   /** Re-run the dependency checks */
   recheck: () => void
   /** Error if check failed */
@@ -32,7 +32,7 @@ export interface UseDependencyCheckResult {
  * const { isLoading, allMet, unmetDependencies } = useDependencyCheck([DEPENDENCY_IDS.GEMINI_CLI])
  */
 export function useDependencyCheck(
-  dependencyIds: DependencyId[],
+  dependencyIds: Array<DependencyId>,
 ): UseDependencyCheckResult {
   const [isLoading, setIsLoading] = useState(true)
   const [results, setResults] = useState<

@@ -4,28 +4,28 @@
  * Supports gradual migration to node-based architecture via feature toggle.
  */
 
-import { isNodeArchitecture } from '@/config/feature-flags'
 import {
-  getDatabase,
-  initDatabase,
-  saveDatabase,
-  nodeProperties,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  inbox,
-  type InboxEntry,
   assembleNode,
   createNode,
   deleteNode,
+  desc,
+  
+  eq,
   getNodesBySupertagWithInheritance,
   getProperty,
   getSystemNode,
-  setProperty,
-  updateNodeContent,
+  inbox,
+  initDatabase,
+  nodeProperties,
+  saveDatabase, setProperty, updateNodeContent 
 } from '@nxus/db/server'
 import { createServerFn } from '@tanstack/react-start'
-import { desc, eq } from '@nxus/db/server'
 import { z } from 'zod'
+import type {InboxEntry,
+  getDatabase} from '@nxus/db/server';
+import { isNodeArchitecture } from '@/config/feature-flags'
 
 // ============================================================================
 // Node Helpers

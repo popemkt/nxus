@@ -1,17 +1,3 @@
-import { checkCommandAvailability } from '@/hooks/use-command'
-import { commandExecutor } from '@/services/command-palette/executor'
-import {
-  commandRegistry,
-  type PaletteCommand,
-} from '@/services/command-palette/registry'
-import {
-  useCommandPaletteStore,
-  type ActionPanelCommand,
-} from '@/stores/command-palette.store'
-import { configureModalService } from '@/stores/configure-modal.store'
-import { matchesKeybinding, useSettingsStore } from '@/stores/settings.store'
-import { useTerminalStore } from '@/stores/terminal.store'
-import type { GenericCommand } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
   ArrowLeftIcon,
@@ -28,6 +14,22 @@ import {
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { getCommandString } from '@nxus/db'
+import type { GenericCommand, ItemType  } from '@nxus/db'
+import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
+import { checkCommandAvailability } from '@/hooks/use-command'
+import { commandExecutor } from '@/services/command-palette/executor'
+import {
+  type PaletteCommand,
+  commandRegistry,
+} from '@/services/command-palette/registry'
+import {
+  type ActionPanelCommand,
+  useCommandPaletteStore,
+} from '@/stores/command-palette.store'
+import { configureModalService } from '@/stores/configure-modal.store'
+import { matchesKeybinding, useSettingsStore } from '@/stores/settings.store'
+import { useTerminalStore } from '@/stores/terminal.store'
 
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import {
@@ -35,9 +37,6 @@ import {
   getAliasesServerFn,
 } from '@/services/command-palette/alias.server'
 import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
-import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import type { ItemType } from '@nxus/db'
-import { getCommandString } from '@nxus/db'
 
 function DynamicIcon({
   name,
@@ -193,7 +192,7 @@ export function CommandPalette() {
 
   // Script params modal state
   const [scriptParamsModalOpen, setScriptParamsModalOpen] = useState(false)
-  const [scriptParams, setScriptParams] = useState<ScriptParam[]>([])
+  const [scriptParams, setScriptParams] = useState<Array<ScriptParam>>([])
   const [pendingScriptExecution, setPendingScriptExecution] = useState<{
     appId: string
     appType: ItemType
@@ -456,8 +455,9 @@ export function CommandPalette() {
     // This is the key change - commands only check their own requirements
 
     // Get the app's checkCommand for self-installation checks
-    const selfCheckCommand =
-      cmd.app.types?.includes('tool') ? (cmd.app as any).checkCommand : undefined
+    const selfCheckCommand = cmd.app.types?.includes('tool')
+      ? (cmd.app as any).checkCommand
+      : undefined
 
     return checkCommandAvailability(
       {
@@ -510,7 +510,7 @@ export function CommandPalette() {
           terminalStore: { createTab, createInteractiveTab, addLog, setStatus },
           onNeedsParams: (params) => {
             // Script has parameters - open modal to collect them
-            setScriptParams(params as ScriptParam[])
+            setScriptParams(params as Array<ScriptParam>)
             setPendingScriptExecution({
               appId: action.appId,
               appType: cmd.app.type,

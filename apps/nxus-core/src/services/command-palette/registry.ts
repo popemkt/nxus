@@ -1,14 +1,13 @@
+import type {
+  GenericBoundCommand,
+  GenericCommand,
+  Item,
+  ItemBoundCommand, ItemCommand, UnifiedCommand 
+} from '@nxus/db'
 import { SYSTEM_TAGS } from '@/lib/system-tags'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { openPathServerFn } from '@/services/shell/open-path.server'
-import type {
-  GenericBoundCommand,
-  GenericCommand,
-  ItemBoundCommand,
-  UnifiedCommand,
-} from '@nxus/db'
-import type { Item, ItemCommand } from '@nxus/db'
 
 /**
  * Command extended with app context for palette display
@@ -29,7 +28,7 @@ export type { GenericCommand } from '@nxus/db'
 /**
  * Generic commands available globally
  */
-export const genericCommands: GenericCommand[] = [
+export const genericCommands: Array<GenericCommand> = [
   {
     id: 'go-to-settings',
     name: 'Settings',
@@ -343,11 +342,11 @@ class CommandRegistry {
   /**
    * Get all app-bound commands with app context
    */
-  getAllAppCommands(): PaletteCommand[] {
+  getAllAppCommands(): Array<PaletteCommand> {
     const appsResult = appRegistryService.getAllApps()
     if (!appsResult.success) return []
 
-    const commands: PaletteCommand[] = []
+    const commands: Array<PaletteCommand> = []
 
     for (const app of appsResult.data) {
       if (!app.commands) continue
@@ -367,15 +366,15 @@ class CommandRegistry {
   /**
    * Get all generic commands
    */
-  getGenericCommands(): GenericCommand[] {
+  getGenericCommands(): Array<GenericCommand> {
     return genericCommands
   }
 
   /**
    * Get all commands as unified type
    */
-  getAllUnified(): UnifiedCommand[] {
-    const itemCommands: ItemBoundCommand[] = this.getAllAppCommands().map(
+  getAllUnified(): Array<UnifiedCommand> {
+    const itemCommands: Array<ItemBoundCommand> = this.getAllAppCommands().map(
       (pc) => ({
         source: 'item' as const,
         id: pc.id,
@@ -384,7 +383,7 @@ class CommandRegistry {
       }),
     )
 
-    const genericCmds: GenericBoundCommand[] = genericCommands.map((gc) => ({
+    const genericCmds: Array<GenericBoundCommand> = genericCommands.map((gc) => ({
       source: 'generic' as const,
       id: gc.id,
       command: gc,
@@ -400,8 +399,8 @@ class CommandRegistry {
     query: string,
     aliases?: Record<string, string>,
   ): {
-    appCommands: PaletteCommand[]
-    genericCommands: GenericCommand[]
+    appCommands: Array<PaletteCommand>
+    genericCommands: Array<GenericCommand>
     aliasMatch?: { commandId: string; exact: boolean }
   } {
     const lowerQuery = query.toLowerCase().trim()
@@ -447,7 +446,7 @@ class CommandRegistry {
     )
 
     // Sort: alias-matched commands first
-    const sortByAlias = <T extends { id?: string }>(commands: T[]): T[] => {
+    const sortByAlias = <T extends { id?: string }>(commands: Array<T>): Array<T> => {
       if (aliasMatchedIds.size === 0) return commands
 
       return [...commands].sort((a, b) => {
@@ -488,7 +487,7 @@ class CommandRegistry {
   /**
    * Get apps for target selection, optionally filtered by command
    */
-  getAppsForTargetSelection(command?: GenericCommand): Item[] {
+  getAppsForTargetSelection(command?: GenericCommand): Array<Item> {
     const result = appRegistryService.getAllApps()
     if (!result.success) return []
 

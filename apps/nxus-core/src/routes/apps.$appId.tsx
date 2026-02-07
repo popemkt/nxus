@@ -1,22 +1,29 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   ArrowLeftIcon,
+  ArrowsClockwiseIcon,
+  BookOpenIcon,
+  CalendarIcon,
+  CheckCircleIcon,
   FolderOpenIcon,
   GithubLogoIcon,
-  CalendarIcon,
+  GlobeIcon,
+  ImageIcon,
+  PencilSimpleIcon,
+  PlayIcon,
   TagIcon,
   UserIcon,
-  GlobeIcon,
-  PlayIcon,
-  ImageIcon,
   WarningIcon,
-  CheckCircleIcon,
   XCircleIcon,
-  ArrowsClockwiseIcon,
-  PencilSimpleIcon,
-  BookOpenIcon,
 } from '@phosphor-icons/react'
+import { Badge, Button ,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle, Skeleton, Tabs, TabsContent, TabsList , TabsTrigger  } from '@nxus/ui'
+import type {InstalledAppRecord} from '@/services/state/app-state';
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { DependencyList } from '@/components/features/app-detail/dependency-list'
@@ -25,29 +32,19 @@ import {
   useToolHealthInvalidation,
 } from '@/hooks/use-tool-health'
 import { useTerminalStore } from '@/stores/terminal.store'
-import { Button } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@nxus/ui'
 import { InstanceSelector } from '@/components/features/app-detail/instance/instance-selector'
 import { InstanceActionsPanel } from '@/components/features/app-detail/actions/instance-actions-panel'
 import { AppActionsPanel } from '@/components/features/app-detail/actions/app-actions-panel'
 import { DocViewer } from '@/components/features/app-detail/doc-viewer'
 import { InstallModal } from '@/components/features/app-detail/modals/install-modal'
 import { AppDetailTags } from '@/components/features/app-detail/app-detail-tags'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@nxus/ui'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 import {
-  useAppCheck,
+  
   appStateService,
-  type InstalledAppRecord,
+  useAppCheck
 } from '@/services/state/app-state'
 import { installModalService } from '@/stores/install-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
@@ -60,7 +57,6 @@ import {
   hasMultipleTypes,
 } from '@/lib/app-constants'
 import { openApp } from '@/lib/app-actions'
-import { Skeleton } from '@nxus/ui'
 import { useDelayedLoading } from '@/hooks/use-delayed-loading'
 
 /**
@@ -273,7 +269,7 @@ function OverviewContent({
   setSelectedInstance: (instance: InstalledAppRecord | null) => void
   handleOpen: () => void
   setGitStatusRefreshKey: (fn: (k: number) => number) => void
-  onExecuteCommand: (command: string, args: string[]) => Promise<void>
+  onExecuteCommand: (command: string, args: Array<string>) => Promise<void>
   onRefreshHealth: () => void
 }) {
   // State for git validation error message
@@ -538,7 +534,7 @@ function AppDetailPage() {
   // Execute command in terminal panel using centralized executor
   const executeInstanceCommand = async (
     command: string,
-    args: string[],
+    args: Array<string>,
     options?: { cwd?: string },
   ) => {
     const fullCommand = `${command} ${args.join(' ')}`.trim()

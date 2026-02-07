@@ -1,13 +1,10 @@
-import { Button } from '@nxus/ui'
-import { SquaresFour, Table, Graph, GridFour } from '@phosphor-icons/react'
-import { useViewModeStore } from '@/stores/view-mode.store'
-import { cn } from '@nxus/ui'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
+import { Button, DropdownMenu ,
   DropdownMenuCheckboxItem,
+  DropdownMenuContent,
   DropdownMenuTrigger,
-} from '@nxus/ui'
+  cn } from '@nxus/ui'
+import { Graph, GridFour, SquaresFour, Table } from '@phosphor-icons/react'
+import { useViewModeStore } from '@/stores/view-mode.store'
 
 export function ViewModeSwitcher() {
   const viewMode = useViewModeStore((s) => s.viewMode)

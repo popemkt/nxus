@@ -41,12 +41,13 @@
  * 3. **Test with cleared localStorage** to ensure fetch works when cache is empty
  */
 
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
+import {  useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import type {UseQueryOptions} from '@tanstack/react-query';
 
 export interface CachedQueryOptions<TData> {
   /** React Query key */
-  queryKey: readonly unknown[]
+  queryKey: ReadonlyArray<unknown>
   /** Function to fetch data from server */
   queryFn: () => Promise<TData>
   /** Hook to get cached value from Zustand (call the hook, don't pass it) */

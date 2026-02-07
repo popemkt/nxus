@@ -6,22 +6,22 @@
  * Uses upsert strategy: insert if new, update if existing, never delete.
  */
 
-import { eq } from '@nxus/db/server'
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { dirname, join, resolve } from 'path'
-import { fileURLToPath } from 'url'
-import {
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { ItemSchema,
+  eq,
+  
   getDatabase,
-  initDatabase,
-  saveMasterDatabase,
   inbox,
+  initDatabase,
   itemCommands,
-  items,
   itemTags,
-  tags,
-  ItemSchema,
-  type TagRef,
-} from '@nxus/db/server'
+  items,
+  saveMasterDatabase,
+  tags
+ } from '@nxus/db/server'
+import type {TagRef} from '@nxus/db/server';
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -96,7 +96,7 @@ export async function seedTables() {
 
     // Prepare app record
     // Extract tags from manifest metadata for junction table
-    const manifestTags: TagRef[] = validatedManifest.metadata?.tags ?? []
+    const manifestTags: Array<TagRef> = validatedManifest.metadata?.tags ?? []
 
     // Note: JSON fields (platform, docs, etc.) auto-stringify via schema's json() column
     // Tags are now stored in junction table, NOT in metadata JSON
@@ -223,7 +223,7 @@ export async function seedTables() {
 
   // Seed tags
   console.log('[3/4] Seeding tags...')
-  const tagsData = loadJsonFile<{ tags: Record<string, unknown>[] }>(
+  const tagsData = loadJsonFile<{ tags: Array<Record<string, unknown>> }>(
     resolve(dataDir, 'tags.json'),
   )
   let tagsCount = 0
@@ -258,7 +258,7 @@ export async function seedTables() {
 
   // Seed inbox
   console.log('[4/4] Seeding inbox items...')
-  const inboxData = loadJsonFile<{ items: Record<string, unknown>[] }>(
+  const inboxData = loadJsonFile<{ items: Array<Record<string, unknown>> }>(
     resolve(dataDir, 'inbox.json'),
   )
   let inboxCount = 0

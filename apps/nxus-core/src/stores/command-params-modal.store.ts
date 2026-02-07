@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CommandRequirement, CommandParam } from '@nxus/db'
+import type { CommandParam, CommandRequirement } from '@nxus/db'
 
 interface RequirementResult {
   appId: string
@@ -10,8 +10,8 @@ interface CommandParamsModalState {
   isOpen: boolean
   title: string
   description?: string
-  requirements: CommandRequirement[]
-  params: CommandParam[]
+  requirements: Array<CommandRequirement>
+  params: Array<CommandParam>
   onComplete:
     | ((result: {
         requirements: Record<string, RequirementResult>
@@ -24,8 +24,8 @@ interface CommandParamsModalActions {
   open: (config: {
     title: string
     description?: string
-    requirements?: CommandRequirement[]
-    params?: CommandParam[]
+    requirements?: Array<CommandRequirement>
+    params?: Array<CommandParam>
     onComplete: (result: {
       requirements: Record<string, RequirementResult>
       params: Record<string, string | number | boolean>

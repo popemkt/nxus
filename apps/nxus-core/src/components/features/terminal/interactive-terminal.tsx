@@ -6,13 +6,13 @@
  * doesn't support true streaming for async generators.
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTerminalStore } from '@/stores/terminal.store'
 import {
-  pollPtyOutputServerFn,
-  writePtySessionServerFn,
-  resizePtySessionServerFn,
   closePtySessionServerFn,
+  pollPtyOutputServerFn,
+  resizePtySessionServerFn,
+  writePtySessionServerFn,
 } from '@/services/shell/pty.server'
 
 // Polling interval in milliseconds

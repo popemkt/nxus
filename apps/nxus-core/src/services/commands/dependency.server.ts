@@ -1,9 +1,9 @@
+import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { createServerFn } from '@tanstack/react-start'
-import { spawn } from 'child_process'
 import { z } from 'zod'
-import { existsSync } from 'fs'
-import { getPlatformCommands } from '@/lib/platform-commands'
 import type { DependencyCheckResult, DependencyId } from '@/types/dependency'
+import { getPlatformCommands } from '@/lib/platform-commands'
 
 const CheckDependencyInputSchema = z.object({
   dependencyId: z.string(),
@@ -128,7 +128,7 @@ export const checkMultipleDependenciesServerFn = createServerFn({
   method: 'POST',
 })
   .inputValidator(CheckMultipleDependenciesInputSchema)
-  .handler(async (ctx): Promise<DependencyCheckResult[]> => {
+  .handler(async (ctx): Promise<Array<DependencyCheckResult>> => {
     console.log(
       '[checkMultipleDependenciesServerFn] Checking:',
       ctx.data.checks.length,

@@ -4,10 +4,10 @@
  * Exposes db:seed, db:export, db:migrate commands to the UI.
  */
 
-import { createServerFn } from '@tanstack/react-start'
 import { spawn } from 'node:child_process'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createServerFn } from '@tanstack/react-start'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

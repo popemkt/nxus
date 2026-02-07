@@ -5,30 +5,31 @@
  * Supports gradual migration to node-based architecture via feature toggle.
  */
 
-import { NODE_BASED_ARCHITECTURE_ENABLED } from '@/config/feature-flags'
 import {
-  getDatabase,
-  initDatabase,
-  saveDatabase,
-  nodeProperties,
-  nodes,
+  
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  items,
+  addPropertyValue,
+  and,
+  clearProperty,
+  eq,
+  findNodeBySystemId,
+  getDatabase,
+  getSystemNode,
+  initDatabase,
   itemTags,
   itemTypes,
-  type ItemMetadata,
-  addPropertyValue,
-  clearProperty,
-  findNodeBySystemId,
-  getSystemNode,
-  setProperty,
-  and,
-  eq,
+  items,
+  nodeProperties,
+  nodes,
+  saveDatabase,
+  setProperty
 } from '@nxus/db/server'
-import type { ItemType } from '@nxus/db'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import type {ItemMetadata} from '@nxus/db/server';
+import type { ItemType } from '@nxus/db'
+import { NODE_BASED_ARCHITECTURE_ENABLED } from '@/config/feature-flags'
 
 // ============================================================================
 // Node-based write helpers
@@ -75,7 +76,7 @@ function findTagNodeByName(
 function updateItemNodeTags(
   db: ReturnType<typeof getDatabase>,
   itemSystemId: string,
-  tagNames: string[],
+  tagNames: Array<string>,
 ): boolean {
   const itemNode = findNodeBySystemId(db, itemSystemId)
   if (!itemNode) return false
@@ -260,9 +261,7 @@ export const setItemTypesServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       itemId: z.string(),
-      types: z
-        .array(ItemTypeSchema)
-        .min(1, 'At least one type is required'),
+      types: z.array(ItemTypeSchema).min(1, 'At least one type is required'),
     }),
   )
   .handler(async (ctx) => {
@@ -304,7 +303,12 @@ export const setItemTypesServerFn = createServerFn({ method: 'POST' })
     console.log('[setItemTypesServerFn] Success:', itemId)
     return {
       success: true as const,
-      data: { types: types.map((type, index) => ({ type, order: index })) as TypeEntry[] },
+      data: {
+        types: types.map((type, index) => ({
+          type,
+          order: index,
+        })) as Array<TypeEntry>,
+      },
     }
   })
 
@@ -363,9 +367,7 @@ export const addItemTypeServerFn = createServerFn({ method: 'POST' })
           .run()
       }
       // Insert new type at order 0
-      db.insert(itemTypes)
-        .values({ itemId, type, order: 0 })
-        .run()
+      db.insert(itemTypes).values({ itemId, type, order: 0 }).run()
       // Update items.type for backward compatibility
       db.update(items)
         .set({ type, updatedAt: new Date() })

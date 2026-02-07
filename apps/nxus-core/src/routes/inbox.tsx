@@ -1,22 +1,21 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import {
-  TrayIcon,
-  PlusIcon,
-  CheckIcon,
-  TrashIcon,
   ArrowLeftIcon,
+  CheckIcon,
   PencilSimpleIcon,
+  PlusIcon,
   RobotIcon,
+  TrashIcon,
+  TrayIcon,
 } from '@phosphor-icons/react'
-import { Button } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import { Card, CardContent } from '@nxus/ui'
+import { Badge, Button , Card, CardContent  } from '@nxus/ui'
+import type {InboxItem} from '@/services/inbox/inbox.server';
 import {
-  getInboxItemsServerFn,
-  updateInboxItemServerFn,
+  
   deleteInboxItemServerFn,
-  type InboxItem,
+  getInboxItemsServerFn,
+  updateInboxItemServerFn
 } from '@/services/inbox/inbox.server'
 import { useInboxModalStore } from '@/stores/inbox-modal.store'
 import { InboxEditModal } from '@/components/features/inbox/inbox-edit-modal'
@@ -32,7 +31,7 @@ export const Route = createFileRoute('/inbox')({
 
 function InboxPage() {
   const items = Route.useLoaderData()
-  const [localItems, setLocalItems] = useState<InboxItem[]>(items)
+  const [localItems, setLocalItems] = useState<Array<InboxItem>>(items)
   const { isOpen } = useInboxModalStore()
 
   // Modal state

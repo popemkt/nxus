@@ -5,10 +5,15 @@
  */
 
 import Database from 'better-sqlite3'
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import {  drizzle } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '@nxus/db'
-import { SYSTEM_SUPERTAGS, SYSTEM_FIELDS, ITEM_TYPE_TO_SUPERTAG } from '@nxus/db/server'
+import {
+  ITEM_TYPE_TO_SUPERTAG,
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
+} from '@nxus/db/server'
+import type {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import type { ItemType } from '@nxus/db'
 
 // In-memory database for testing
@@ -60,7 +65,9 @@ function setupTestDatabase(): BetterSQLite3Database<typeof schema> {
     )
   `)
 
-  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_nodes_system_id ON nodes(system_id)`)
+  sqlite.exec(
+    `CREATE INDEX IF NOT EXISTS idx_nodes_system_id ON nodes(system_id)`,
+  )
 
   // Create node_properties table
   sqlite.exec(`
@@ -75,8 +82,12 @@ function setupTestDatabase(): BetterSQLite3Database<typeof schema> {
     )
   `)
 
-  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_node_properties_node ON node_properties(node_id)`)
-  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_node_properties_field ON node_properties(field_node_id)`)
+  sqlite.exec(
+    `CREATE INDEX IF NOT EXISTS idx_node_properties_node ON node_properties(node_id)`,
+  )
+  sqlite.exec(
+    `CREATE INDEX IF NOT EXISTS idx_node_properties_field ON node_properties(field_node_id)`,
+  )
 
   return db
 }
@@ -86,10 +97,18 @@ function seedSystemNodes() {
 
   // Create system field nodes
   const systemFields = [
-    { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'Supertag' },
+    {
+      id: 'field-supertag',
+      systemId: SYSTEM_FIELDS.SUPERTAG,
+      content: 'Supertag',
+    },
     { id: 'field-type', systemId: SYSTEM_FIELDS.TYPE, content: 'Type' },
     { id: 'field-path', systemId: SYSTEM_FIELDS.PATH, content: 'Path' },
-    { id: 'field-description', systemId: SYSTEM_FIELDS.DESCRIPTION, content: 'Description' },
+    {
+      id: 'field-description',
+      systemId: SYSTEM_FIELDS.DESCRIPTION,
+      content: 'Description',
+    },
   ]
 
   for (const field of systemFields) {
@@ -144,7 +163,7 @@ describe('seed-nodes', () => {
     it('should assign single supertag for single-type item', () => {
       const now = Date.now()
       const nodeId = 'test-single-type-node'
-      const itemTypes: ItemType[] = ['tool']
+      const itemTypes: Array<ItemType> = ['tool']
 
       // Create item node
       sqlite.exec(`
@@ -165,12 +184,14 @@ describe('seed-nodes', () => {
 
       // Verify supertag assignment
       const rows = sqlite
-        .prepare(`
+        .prepare(
+          `
           SELECT np.value, np."order"
           FROM node_properties np
           WHERE np.node_id = ? AND np.field_node_id = ?
           ORDER BY np."order"
-        `)
+        `,
+        )
         .all(nodeId, fieldNodeId) as Array<{ value: string; order: number }>
 
       expect(rows).toHaveLength(1)
@@ -183,7 +204,7 @@ describe('seed-nodes', () => {
     it('should assign multiple supertags for multi-type item', () => {
       const now = Date.now()
       const nodeId = 'test-multi-type-node'
-      const itemTypes: ItemType[] = ['tool', 'remote-repo']
+      const itemTypes: Array<ItemType> = ['tool', 'remote-repo']
 
       // Create item node
       sqlite.exec(`
@@ -204,12 +225,14 @@ describe('seed-nodes', () => {
 
       // Verify both supertags assigned
       const rows = sqlite
-        .prepare(`
+        .prepare(
+          `
           SELECT np.value, np."order"
           FROM node_properties np
           WHERE np.node_id = ? AND np.field_node_id = ?
           ORDER BY np."order"
-        `)
+        `,
+        )
         .all(nodeId, fieldNodeId) as Array<{ value: string; order: number }>
 
       expect(rows).toHaveLength(2)
@@ -226,7 +249,7 @@ describe('seed-nodes', () => {
     it('should preserve order from types array', () => {
       const now = Date.now()
       const nodeId = 'test-order-node'
-      const itemTypes: ItemType[] = ['remote-repo', 'tool'] // Repo first
+      const itemTypes: Array<ItemType> = ['remote-repo', 'tool'] // Repo first
 
       sqlite.exec(`
         INSERT INTO nodes (id, content, content_plain, system_id, created_at, updated_at)
@@ -244,12 +267,14 @@ describe('seed-nodes', () => {
       }
 
       const rows = sqlite
-        .prepare(`
+        .prepare(
+          `
           SELECT np.value, np."order"
           FROM node_properties np
           WHERE np.node_id = ? AND np.field_node_id = ?
           ORDER BY np."order"
-        `)
+        `,
+        )
         .all(nodeId, fieldNodeId) as Array<{ value: string; order: number }>
 
       expect(rows).toHaveLength(2)
@@ -267,10 +292,10 @@ describe('seed-nodes', () => {
       }
 
       // Simulate normalization logic from seed-nodes
-      const rawTypes = rawManifest.types as ItemType[] | undefined
+      const rawTypes = rawManifest.types as Array<ItemType> | undefined
       const rawType = rawManifest.type as ItemType | undefined
 
-      let types: ItemType[]
+      let types: Array<ItemType>
       if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
         types = rawTypes
       } else if (rawType) {
@@ -286,13 +311,13 @@ describe('seed-nodes', () => {
       const rawManifest = {
         id: 'test-app',
         type: 'html' as ItemType, // Should be ignored
-        types: ['tool', 'remote-repo'] as ItemType[],
+        types: ['tool', 'remote-repo'] as Array<ItemType>,
       }
 
-      const rawTypes = rawManifest.types as ItemType[] | undefined
+      const rawTypes = rawManifest.types as Array<ItemType> | undefined
       const rawType = rawManifest.type as ItemType | undefined
 
-      let types: ItemType[]
+      let types: Array<ItemType>
       if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
         types = rawTypes
       } else if (rawType) {
@@ -307,7 +332,7 @@ describe('seed-nodes', () => {
     it('should determine primaryType from explicit field or first type', () => {
       // Case 1: Explicit primaryType
       const manifest1 = {
-        types: ['tool', 'remote-repo'] as ItemType[],
+        types: ['tool', 'remote-repo'] as Array<ItemType>,
         primaryType: 'remote-repo' as ItemType,
       }
       const types1 = manifest1.types
@@ -319,10 +344,12 @@ describe('seed-nodes', () => {
 
       // Case 2: No explicit primaryType, use first
       const manifest2 = {
-        types: ['tool', 'remote-repo'] as ItemType[],
+        types: ['tool', 'remote-repo'] as Array<ItemType>,
       }
       const types2 = manifest2.types
-      const rawPrimaryType2 = (manifest2 as any).primaryType as ItemType | undefined
+      const rawPrimaryType2 = (manifest2 as any).primaryType as
+        | ItemType
+        | undefined
       const primaryType2 =
         rawPrimaryType2 && types2.includes(rawPrimaryType2)
           ? rawPrimaryType2
@@ -331,7 +358,7 @@ describe('seed-nodes', () => {
 
       // Case 3: Invalid primaryType, fallback to first
       const manifest3 = {
-        types: ['tool', 'remote-repo'] as ItemType[],
+        types: ['tool', 'remote-repo'] as Array<ItemType>,
         primaryType: 'html' as ItemType, // Not in types
       }
       const types3 = manifest3.types
@@ -360,18 +387,35 @@ describe('seed-nodes', () => {
       const repoSupertagId = getSystemNodeId(SYSTEM_SUPERTAGS.REPO)
 
       // Assign supertags
-      addProperty('node-tool-only', fieldNodeId, JSON.stringify(toolSupertagId), 0)
-      addProperty('node-multi-type', fieldNodeId, JSON.stringify(toolSupertagId), 0)
-      addProperty('node-multi-type', fieldNodeId, JSON.stringify(repoSupertagId), 1)
+      addProperty(
+        'node-tool-only',
+        fieldNodeId,
+        JSON.stringify(toolSupertagId),
+        0,
+      )
+      addProperty(
+        'node-multi-type',
+        fieldNodeId,
+        JSON.stringify(toolSupertagId),
+        0,
+      )
+      addProperty(
+        'node-multi-type',
+        fieldNodeId,
+        JSON.stringify(repoSupertagId),
+        1,
+      )
 
       // Query for tools (should return both)
       const toolNodes = sqlite
-        .prepare(`
+        .prepare(
+          `
           SELECT DISTINCT n.id, n.content
           FROM nodes n
           JOIN node_properties np ON n.id = np.node_id
           WHERE np.field_node_id = ? AND np.value = ?
-        `)
+        `,
+        )
         .all(fieldNodeId, JSON.stringify(toolSupertagId)) as Array<{
         id: string
         content: string
@@ -383,12 +427,14 @@ describe('seed-nodes', () => {
 
       // Query for repos (should return only multi-type)
       const repoNodes = sqlite
-        .prepare(`
+        .prepare(
+          `
           SELECT DISTINCT n.id, n.content
           FROM nodes n
           JOIN node_properties np ON n.id = np.node_id
           WHERE np.field_node_id = ? AND np.value = ?
-        `)
+        `,
+        )
         .all(fieldNodeId, JSON.stringify(repoSupertagId)) as Array<{
         id: string
         content: string

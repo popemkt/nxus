@@ -8,12 +8,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
+  closePtySession,
   createPtySession,
   getPtySession,
-  writePtySession,
-  resizePtySession,
-  closePtySession,
   getPtySessionBuffer,
+  resizePtySession,
+  writePtySession,
 } from './pty-session-manager.server'
 
 // ============================================================================
@@ -104,7 +104,7 @@ export const pollPtyOutputServerFn = createServerFn({ method: 'POST' })
     async (
       ctx,
     ): Promise<{
-      chunks: PtyOutputChunk[]
+      chunks: Array<PtyOutputChunk>
       cursor: number
       isAlive: boolean
     }> => {
@@ -137,7 +137,7 @@ export const pollPtyOutputServerFn = createServerFn({ method: 'POST' })
       const newData = buffer.slice(relativeCursor)
       const newCursor = offset + buffer.length
 
-      const chunks: PtyOutputChunk[] = []
+      const chunks: Array<PtyOutputChunk> = []
 
       if (newData.length > 0) {
         chunks.push({ type: 'data', data: newData })

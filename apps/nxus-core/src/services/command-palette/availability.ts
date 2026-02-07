@@ -14,11 +14,11 @@
  * ```
  */
 
+import type { ItemType } from '@nxus/db'
+import type { InstalledAppRecord } from '@/services/state/app-state'
 import { queryClient } from '@/lib/query-client'
 import { getToolHealthFromCache } from '@/services/tool-health/utils'
 import { appRegistryService } from '@/services/apps/registry.service'
-import type { ItemType } from '@nxus/db'
-import type { InstalledAppRecord } from '@/services/state/app-state'
 
 /**
  * Result of an availability check
@@ -29,7 +29,7 @@ export interface CommandAvailability {
   /** Human-readable reason if command cannot be executed */
   reason?: string
   /** List of missing dependencies by name */
-  missingDependencies?: string[]
+  missingDependencies?: Array<string>
   /** Whether we're still checking availability */
   isChecking?: boolean
 }
@@ -113,7 +113,7 @@ function checkDependencies(appId: string): CommandAvailability {
     return { canExecute: true }
   }
 
-  const missingDeps: string[] = []
+  const missingDeps: Array<string> = []
 
   for (const dep of depsResult.data) {
     // Only check tool dependencies

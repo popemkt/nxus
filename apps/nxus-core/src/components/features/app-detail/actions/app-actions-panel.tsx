@@ -1,29 +1,13 @@
-import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
-import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
-import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
-import { WorkflowPreviewModal } from '@/components/features/app-detail/modals/workflow-preview-modal'
-import { Button } from '@nxus/ui'
-import {
+import { Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@nxus/ui'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@nxus/ui'
-import { useToolHealth } from '@/hooks/use-tool-health'
-import { handleCommandMode } from '@/lib/command-utils'
-import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
-import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.server'
-import { getScriptFullPathServerFn } from '@/services/shell/read-script.server'
-import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import { useToolConfigured } from '@/services/state/tool-config-state'
-import type { Item, ItemCommand, ToolItem } from '@nxus/db'
+  DropdownMenuTrigger } from '@nxus/ui'
 import { getCommandString } from '@nxus/db'
 import * as PhosphorIcons from '@phosphor-icons/react'
 import {
@@ -36,6 +20,18 @@ import {
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import * as React from 'react'
+import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
+import type { Item, ItemCommand, ToolItem } from '@nxus/db'
+import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
+import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
+import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
+import { WorkflowPreviewModal } from '@/components/features/app-detail/modals/workflow-preview-modal'
+import { useToolHealth } from '@/hooks/use-tool-health'
+import { handleCommandMode } from '@/lib/command-utils'
+import { openTerminalWithCommandServerFn } from '@/services/shell/open-terminal-with-command.server'
+import { parseScriptParamsServerFn } from '@/services/shell/parse-script-params.server'
+import { getScriptFullPathServerFn } from '@/services/shell/read-script.server'
+import { useToolConfigured } from '@/services/state/tool-config-state'
 
 /**
  * Dynamic icon component that renders Phosphor icons by name
@@ -90,7 +86,7 @@ export function AppActionsPanel({
 
   // Script params modal state
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
-  const [scriptParams, setScriptParams] = React.useState<ScriptParam[]>([])
+  const [scriptParams, setScriptParams] = React.useState<Array<ScriptParam>>([])
   const [pendingScriptCommand, setPendingScriptCommand] = React.useState<
     (ItemCommand & { mode: 'script' }) | null
   >(null)

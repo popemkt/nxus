@@ -1,9 +1,8 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import { Badge } from '@nxus/ui'
-import { STATUS_VARIANTS } from '@/lib/app-constants'
+import { Badge, cn  } from '@nxus/ui'
 import type { ItemNodeData } from '../hooks/use-graph-nodes'
-import { cn } from '@nxus/ui'
+import { STATUS_VARIANTS } from '@/lib/app-constants'
 
 interface ItemNodeProps {
   data: ItemNodeData

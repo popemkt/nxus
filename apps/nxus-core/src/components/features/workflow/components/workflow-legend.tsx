@@ -1,16 +1,16 @@
 import { Panel } from '@xyflow/react'
 import {
-  TerminalIcon,
-  GitBranchIcon,
-  RowsIcon,
-  ClockIcon,
   BellIcon,
   ChatCircleIcon,
   CheckCircleIcon,
+  ClockIcon,
+  GitBranchIcon,
+  RowsIcon,
+  TerminalIcon,
 } from '@phosphor-icons/react'
-import type { Icon } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import { STEP_TYPE_COLORS, EDGE_TYPE_STYLES } from '../types'
+import { EDGE_TYPE_STYLES, STEP_TYPE_COLORS } from '../types'
+import type { Icon } from '@phosphor-icons/react'
 import type { WorkflowNodeData } from '../types'
 
 /**
@@ -22,7 +22,7 @@ interface LegendEntry {
   Icon: Icon
 }
 
-const STEP_TYPE_LEGEND: LegendEntry[] = [
+const STEP_TYPE_LEGEND: Array<LegendEntry> = [
   { type: 'command', label: 'Command', Icon: TerminalIcon },
   { type: 'condition', label: 'Condition', Icon: GitBranchIcon },
   { type: 'parallel', label: 'Parallel', Icon: RowsIcon },
@@ -37,7 +37,7 @@ interface EdgeLegendEntry {
   label: string
 }
 
-const EDGE_TYPE_LEGEND: EdgeLegendEntry[] = [
+const EDGE_TYPE_LEGEND: Array<EdgeLegendEntry> = [
   { type: 'success', label: 'Success' },
   { type: 'failure', label: 'Failure' },
   { type: 'next', label: 'Next' },

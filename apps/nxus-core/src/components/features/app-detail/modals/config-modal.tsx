@@ -1,19 +1,16 @@
 import * as React from 'react'
-import { GearIcon, CheckIcon } from '@phosphor-icons/react'
+import { CheckIcon, GearIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
+  AlertDialogTitle, Button , Field , FieldLabel, Input 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
-import { toolConfigService } from '@/services/state/tool-config-state'
 import type { ConfigField, ToolItem } from '@nxus/db'
+import { toolConfigService } from '@/services/state/tool-config-state'
 
 interface ConfigModalProps {
   app: ToolItem

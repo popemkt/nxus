@@ -2,9 +2,10 @@ import {
   CodeIcon,
   FileIcon,
   FolderOpenIcon,
-  WrenchIcon,
-  type Icon,
+  
+  WrenchIcon
 } from '@phosphor-icons/react'
+import type {Icon} from '@phosphor-icons/react';
 import type { Item, ItemType } from '@nxus/db'
 
 /**
@@ -55,10 +56,10 @@ export const STATUS_VARIANTS = {
  * Used in graph view and other visualizations.
  */
 export const APP_TYPE_COLORS = {
-  tool: '#22c55e',        // green
+  tool: '#22c55e', // green
   'remote-repo': '#a855f7', // purple
-  typescript: '#3b82f6',   // blue
-  html: '#f97316',         // orange
+  typescript: '#3b82f6', // blue
+  html: '#f97316', // orange
 } as const
 
 // Type exports for consumers
@@ -126,7 +127,7 @@ export function getFirstTypeLabel(item: Pick<Item, 'types'>): string {
  * Gets all type labels for an item with multiple types.
  * Returns labels in the order they appear in the types array.
  */
-export function getAllTypeLabels(item: Pick<Item, 'types'>): string[] {
+export function getAllTypeLabels(item: Pick<Item, 'types'>): Array<string> {
   if (!item.types || item.types.length === 0) {
     return ['Unknown']
   }
@@ -138,7 +139,7 @@ export function getAllTypeLabels(item: Pick<Item, 'types'>): string[] {
  * Used for displaying multiple type badges side by side.
  * The first type badge is marked with `isFirst: true`.
  */
-export function getTypeBadges(item: Pick<Item, 'types'>): TypeBadgeConfig[] {
+export function getTypeBadges(item: Pick<Item, 'types'>): Array<TypeBadgeConfig> {
   if (!item.types || item.types.length === 0) {
     return []
   }
@@ -155,7 +156,7 @@ export function getTypeBadges(item: Pick<Item, 'types'>): TypeBadgeConfig[] {
  * Gets all icons for an item with multiple types.
  * Returns icons in the order they appear in the types array.
  */
-export function getAllTypeIcons(item: Pick<Item, 'types'>): Icon[] {
+export function getAllTypeIcons(item: Pick<Item, 'types'>): Array<Icon> {
   if (!item.types || item.types.length === 0) {
     return [FileIcon]
   }

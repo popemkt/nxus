@@ -1,10 +1,10 @@
-import { useOsInfo, useDevInfo } from '@/services/state/app-state'
 import {
-  WindowsLogoIcon,
   AppleLogoIcon,
-  LinuxLogoIcon,
   DesktopIcon,
+  LinuxLogoIcon,
+  WindowsLogoIcon,
 } from '@phosphor-icons/react'
+import { useDevInfo, useOsInfo } from '@/services/state/app-state'
 
 interface SystemTrayProps {
   className?: string

@@ -5,10 +5,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { Item } from '@nxus/db'
+import type {ToolHealthData, ToolHealthResult} from '@/services/tool-health/types';
 import {
-  toolHealthKeys,
-  type ToolHealthResult,
-  type ToolHealthData,
+  
+  
+  toolHealthKeys
 } from '@/services/tool-health/types'
 import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 
@@ -76,7 +77,7 @@ export function useToolHealthInvalidation() {
 /**
  * Pre-fetch health status for multiple tools
  */
-export function useBatchToolHealth(apps: Item[], enabled = true) {
+export function useBatchToolHealth(apps: Array<Item>, enabled = true) {
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -87,7 +88,9 @@ export function useBatchToolHealth(apps: Item[], enabled = true) {
     apps
       .filter(
         (app) =>
-          app.types?.includes('tool') && 'checkCommand' in app && app.checkCommand,
+          app.types?.includes('tool') &&
+          'checkCommand' in app &&
+          app.checkCommand,
       )
       .forEach((app) => {
         const cmd = (app as any).checkCommand!

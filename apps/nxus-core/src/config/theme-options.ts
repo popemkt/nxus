@@ -1,25 +1,25 @@
-import type { Icon } from '@phosphor-icons/react'
 import {
-  SparkleIcon,
-  GhostIcon,
-  SnowflakeIcon,
-  TerminalIcon,
   CatIcon,
-  GithubLogoIcon,
   CircleDashedIcon,
-  LightningIcon,
+  CubeIcon,
+  DiscIcon,
   FireIcon,
   FlowerIcon,
-  TreeIcon,
-  WavesIcon,
-  SunIcon,
+  GameControllerIcon,
+  GhostIcon,
+  GithubLogoIcon,
+  LightningIcon,
   PaletteIcon,
   PencilLineIcon,
-  GameControllerIcon,
-  DiscIcon,
   RadioactiveIcon,
-  CubeIcon,
+  SnowflakeIcon,
+  SparkleIcon,
+  SunIcon,
+  TerminalIcon,
+  TreeIcon,
+  WavesIcon,
 } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import type { ThemePalette } from '@/stores/theme.store'
 
 export interface ThemeOption {
@@ -29,7 +29,7 @@ export interface ThemeOption {
   color: string // Primary color for preview
 }
 
-export const themeOptions: ThemeOption[] = [
+export const themeOptions: Array<ThemeOption> = [
   // Core themes
   {
     value: 'default',

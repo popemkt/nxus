@@ -1,12 +1,10 @@
-import { eq } from '@nxus/db/server'
-import {
-  initDatabase,
+import { eq,
   getDatabase,
-  saveDatabase,
-  items,
-  tags,
+  initDatabase,
   itemTags,
-} from '@nxus/db/server'
+  items,
+  saveDatabase,
+  tags } from '@nxus/db/server'
 
 /**
  * Sync app_tags junction table from app metadata

@@ -11,12 +11,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
+  and,
+  eq,
   initDatabase,
-  saveDatabase,
-  tagSchemas,
-  itemTagConfigs,
+  itemTagConfigs, saveDatabase, tagSchemas 
 } from '@nxus/db/server'
-import { eq, and } from '@nxus/db/server'
 
 // ============================================================================
 // Schema definitions for tag config fields
@@ -42,14 +41,14 @@ export interface TagConfigField {
   required?: boolean
   default?: string | number | boolean
   placeholder?: string
-  options?: string[] // For select type
+  options?: Array<string> // For select type
 }
 
 /**
  * Complete schema definition for a configurable tag
  */
 export interface TagConfigSchema {
-  fields: TagConfigField[]
+  fields: Array<TagConfigField>
 }
 
 // ============================================================================
@@ -382,8 +381,8 @@ export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
 function validateValuesAgainstSchema(
   values: Record<string, any>,
   schema: TagConfigSchema,
-): { valid: boolean; errors?: string[]; data?: Record<string, any> } {
-  const errors: string[] = []
+): { valid: boolean; errors?: Array<string>; data?: Record<string, any> } {
+  const errors: Array<string> = []
   const validatedData: Record<string, any> = {}
 
   for (const field of schema.fields) {

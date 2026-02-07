@@ -1,9 +1,9 @@
+import fs from 'node:fs/promises'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import fs from 'node:fs/promises'
+import { ScriptSourceSchema } from '@nxus/db'
 import { resolveScriptServerFn } from './script-resolver.server'
 import type { ResolveScriptInput } from './script-resolver.server'
-import { ScriptSourceSchema } from '@nxus/db'
 
 const ReadScriptSchema = z.object({
   appId: z.string(),

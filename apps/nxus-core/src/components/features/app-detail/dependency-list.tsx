@@ -1,12 +1,12 @@
-import type { Item } from '@nxus/db'
 import { Link } from '@tanstack/react-router'
-import { useAppCheck } from '@/services/state/app-state'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
-import { useToolHealth } from '@/hooks/use-tool-health'
 import { LoadingSpinner } from '@nxus/ui'
+import type { Item } from '@nxus/db'
+import { useAppCheck } from '@/services/state/app-state'
+import { useToolHealth } from '@/hooks/use-tool-health'
 
 interface DependencyListProps {
-  dependencies: Item[]
+  dependencies: Array<Item>
   onInstall?: (app: Item) => void
 }
 

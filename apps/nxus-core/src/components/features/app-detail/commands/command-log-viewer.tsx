@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  ArrowsInIcon,
+  ArrowsOutIcon,
+  CheckIcon,
+  CopyIcon,
   TerminalWindowIcon,
   XIcon,
-  ArrowsOutIcon,
-  ArrowsInIcon,
-  CopyIcon,
-  CheckIcon,
 } from '@phosphor-icons/react'
-import { Card, CardContent, CardHeader, CardTitle } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
+import { Badge, Button, Card, CardContent, CardHeader , CardTitle  } from '@nxus/ui'
 
 export interface LogEntry {
   timestamp: number
@@ -19,7 +17,7 @@ export interface LogEntry {
 
 interface CommandLogViewerProps {
   title: string
-  logs: LogEntry[]
+  logs: Array<LogEntry>
   isRunning: boolean
   onClose?: () => void
   className?: string

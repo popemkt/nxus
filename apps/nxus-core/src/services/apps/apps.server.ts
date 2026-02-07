@@ -6,28 +6,26 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, isNull } from '@nxus/db/server'
+import { and, eq, getDatabase,
+  initDatabase,
+  isNull,
+  itemCommands,
+  itemTags,
+  itemTypes,
+  items,
+  tags } from '@nxus/db/server'
 import { z } from 'zod'
 import {
   isGraphArchitecture,
   isNodeArchitecture,
 } from '../../config/feature-flags'
-import {
-  getDatabase,
-  initDatabase,
-  itemCommands,
-  items,
-  itemTags,
-  itemTypes,
-  tags,
-} from '@nxus/db/server'
 import type {
   DocEntry,
   Item,
   ItemCommand,
+  ItemMetadata,
   ItemType,
   ScriptCommand,
-  ItemMetadata,
   TagRef,
 } from '@nxus/db'
 
@@ -52,12 +50,12 @@ interface ItemTypeEntry {
  */
 function parseAppRecord(
   record: typeof items.$inferSelect,
-  tagsFromJunction: TagRef[] = [],
-  typesFromJunction: ItemTypeEntry[] = [],
+  tagsFromJunction: Array<TagRef> = [],
+  typesFromJunction: Array<ItemTypeEntry> = [],
 ): Item {
   // Ensure metadata has proper defaults - this is the type-safe boundary
   // Tags now come from junction table, not from stored JSON
-  const rawMetadata = record.metadata as Partial<ItemMetadata> | undefined
+  const rawMetadata = record.metadata
   const metadata: ItemMetadata = {
     tags: tagsFromJunction, // From junction table, NOT from metadata JSON
     category: rawMetadata?.category ?? 'uncategorized',
@@ -69,13 +67,13 @@ function parseAppRecord(
   }
 
   // Robust helper to ensure we always have an array for array-typed fields
-  const ensureArray = <T>(val: any): T[] | undefined =>
-    Array.isArray(val) ? (val as T[]) : undefined
+  const ensureArray = <T>(val: any): Array<T> | undefined =>
+    Array.isArray(val) ? (val as Array<T>) : undefined
 
   // Build types array from junction table or fall back to single type from record
   // Sort by order, then extract type values. types[0] is the display type.
   const sortedTypes = [...typesFromJunction].sort((a, b) => a.order - b.order)
-  const types: ItemType[] =
+  const types: Array<ItemType> =
     sortedTypes.length > 0
       ? sortedTypes.map((t) => t.type)
       : [record.type as ItemType]
@@ -174,7 +172,7 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
       .from(itemCommands)
       .where(isNull(itemCommands.deletedAt))
       .all()
-    const commandsByApp = new Map<string, ItemCommand[]>()
+    const commandsByApp = new Map<string, Array<ItemCommand>>()
 
     for (const cmd of commandRecords) {
       const appCommands = commandsByApp.get(cmd.appId) ?? []
@@ -205,7 +203,7 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
     const appTypeRecords = db.select().from(itemTypes).all()
 
     // Group types by itemId
-    const typesByApp = new Map<string, ItemTypeEntry[]>()
+    const typesByApp = new Map<string, Array<ItemTypeEntry>>()
     for (const r of appTypeRecords) {
       const arr = typesByApp.get(r.itemId) ?? []
       arr.push({
@@ -294,7 +292,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
       .where(eq(itemTypes.itemId, id))
       .all()
 
-    const typeRefs: ItemTypeEntry[] = appTypeRecords.map((r) => ({
+    const typeRefs: Array<ItemTypeEntry> = appTypeRecords.map((r) => ({
       type: r.type as ItemType,
       order: r.order ?? 0,
     }))
@@ -317,7 +315,7 @@ export const getCategoriesServerFn = createServerFn({ method: 'GET' }).handler(
 
     const categories = new Set<string>()
     for (const record of appRecords) {
-      const metadata = record.metadata as ItemMetadata | undefined
+      const metadata = record.metadata
       if (metadata?.category) {
         categories.add(metadata.category)
       }
@@ -339,7 +337,7 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
 
     const allTags = new Set<string>()
     for (const record of appRecords) {
-      const metadata = record.metadata as ItemMetadata | undefined
+      const metadata = record.metadata
       if (metadata?.tags) {
         for (const tag of metadata.tags) {
           allTags.add(tag.name)

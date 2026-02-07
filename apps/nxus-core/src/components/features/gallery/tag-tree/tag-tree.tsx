@@ -1,28 +1,29 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import {
-  CaretRight,
   CaretDown,
-  Tag,
-  Plus,
-  X,
-  MagnifyingGlass,
-  TreeStructure,
+  CaretRight,
   Gear,
+  MagnifyingGlass,
+  Plus,
+  Tag,
+  TreeStructure,
+  X,
 } from '@phosphor-icons/react'
-import {
-  useTagDataStore,
-  type TagTreeNode,
-  buildTagTree,
-} from '@/stores/tag-data.store'
-import { useTagUIStore } from '@/stores/tag-ui.store'
 import { cn } from '@nxus/ui'
+import { useQuery } from '@tanstack/react-query'
 import {
-  TagDndContext,
   SortableTagItem,
+  TagDndContext,
   useTagDndDropIndicator,
 } from './use-tag-dnd'
-import { useQuery } from '@tanstack/react-query'
+import type {TagTreeNode} from '@/stores/tag-data.store';
+import {
+  
+  buildTagTree,
+  useTagDataStore
+} from '@/stores/tag-data.store'
+import { useTagUIStore } from '@/stores/tag-ui.store'
 import { getAllConfigurableTagsServerFn } from '@/services/tag-config.server'
 import { TagSchemaModal } from '@/components/shared/tag-schema-modal'
 

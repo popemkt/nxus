@@ -12,13 +12,13 @@ export interface WorkflowNodeData extends Record<string, unknown> {
   commandRef?: string // For 'command' type
   expression?: string // For 'condition' type
   branches?: Record<string, string> // For 'condition' type
-  parallelSteps?: string[] // For 'parallel' type
+  parallelSteps?: Array<string> // For 'parallel' type
   duration?: number // For 'delay' type
   message?: string // For 'notify' and 'prompt' types
   level?: 'info' | 'success' | 'warning' | 'error' // For 'notify' type
   status?: 'success' | 'failure' // For 'end' type
   variable?: string // For 'prompt' type
-  options?: string[] // For 'prompt' type
+  options?: Array<string> // For 'prompt' type
 }
 
 /**

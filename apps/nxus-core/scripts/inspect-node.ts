@@ -10,13 +10,11 @@
  *   npx tsx scripts/inspect-node.ts abc123-uuid
  */
 
-import { eq, or } from '@nxus/db/server'
-import {
-  getDatabase,
+import { eq, getDatabase,
   initDatabase,
   nodeProperties,
   nodes,
-} from '@nxus/db/server'
+  or } from '@nxus/db/server'
 
 interface AssembledNode {
   id: string
@@ -27,15 +25,15 @@ interface AssembledNode {
   updatedAt: Date
   properties: Record<
     string,
-    { value: unknown; fieldName: string; order: number }[]
+    Array<{ value: unknown; fieldName: string; order: number }>
   >
-  supertags: string[]
-  rawProperties: {
+  supertags: Array<string>
+  rawProperties: Array<{
     fieldNodeId: string
     fieldName: string
     value: string
     order: number
-  }[]
+  }>
 }
 
 async function inspectNode(identifier: string) {

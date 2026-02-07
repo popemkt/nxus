@@ -5,21 +5,17 @@
  * with the new streaming log viewer.
  */
 
-import { useState, useEffect } from 'react'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
-import {
-  Card,
-  CardContent,
+import { useEffect, useState } from 'react'
+import { Button, Card , CardContent, CardDescription ,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from '@nxus/ui'
+  Field,
+  FieldLabel,
+  Input } from '@nxus/ui'
+import type { Item } from '@nxus/db'
 import { CommandLogViewer } from '@/components/features/app-detail/commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { appStateService } from '@/services/state/app-state'
-import type { Item } from '@nxus/db'
 import { usePath } from '@/hooks/use-paths'
 
 interface StreamingInstallationProps {
@@ -132,7 +128,7 @@ export function StreamingInstallation({
 interface StreamingScriptRunnerProps {
   scriptName: string
   scriptPath: string
-  scriptArgs?: string[]
+  scriptArgs?: Array<string>
   workingDir?: string
 }
 

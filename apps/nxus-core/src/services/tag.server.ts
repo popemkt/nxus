@@ -4,28 +4,28 @@
  * Supports gradual migration to node-based architecture via feature toggle.
  */
 
-import { NODE_BASED_ARCHITECTURE_ENABLED } from '@/config/feature-flags'
 import {
-  getDatabase,
-  initDatabase,
-  saveDatabase,
-  nodeProperties,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  tags,
   clearProperty,
   createNode,
   deleteNode,
+  eq,
   findNodeBySystemId,
   getNodesBySupertagWithInheritance,
   getProperty,
   getSystemNode,
+  initDatabase,
+  nodeProperties,
+  saveDatabase,
   setProperty,
-  updateNodeContent,
+  tags, updateNodeContent 
 } from '@nxus/db/server'
 import { createServerFn } from '@tanstack/react-start'
-import { eq } from '@nxus/db/server'
 import { z } from 'zod'
+import type {
+  getDatabase} from '@nxus/db/server';
+import { NODE_BASED_ARCHITECTURE_ENABLED } from '@/config/feature-flags'
 
 // Input schemas
 const CreateTagInputSchema = z.object({

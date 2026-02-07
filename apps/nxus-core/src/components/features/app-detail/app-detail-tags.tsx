@@ -6,19 +6,19 @@
  */
 
 import * as React from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { TagRef } from '@nxus/db'
 import { ConfigurableTag } from '@/components/shared/configurable-tag'
 import { TagConfigModal } from '@/components/shared/tag-config-modal'
 import {
-  getAllConfigurableTagsServerFn,
   getAllAppTagValuesServerFn,
+  getAllConfigurableTagsServerFn,
 } from '@/services/tag-config.server'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { TagRef } from '@nxus/db'
 
 interface AppDetailTagsProps {
   appId: string
   appName: string
-  tags: TagRef[] // Now receives {id, name}[] directly
+  tags: Array<TagRef> // Now receives {id, name}[] directly
 }
 
 export function AppDetailTags({ appId, appName, tags }: AppDetailTagsProps) {

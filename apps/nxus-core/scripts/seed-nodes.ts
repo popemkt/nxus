@@ -5,22 +5,22 @@
  * bypassing the legacy items/commands tables.
  */
 
-import { eq } from '@nxus/db/server'
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { dirname, join, resolve } from 'path'
-import { fileURLToPath } from 'url'
-import { uuidv7 } from 'uuidv7'
-import {
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { ITEM_TYPE_TO_SUPERTAG,
+  ItemSchema,
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
+  eq,
+  
   getDatabase,
   initDatabase,
   nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  SYSTEM_SUPERTAGS,
-  ItemSchema,
-  ITEM_TYPE_TO_SUPERTAG,
-  type TagRef,
-} from '@nxus/db/server'
+  nodes
+ } from '@nxus/db/server'
+import { uuidv7 } from 'uuidv7'
+import type {TagRef} from '@nxus/db/server';
 import type { ItemType } from '@nxus/db'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -261,11 +261,11 @@ export async function seedNodes() {
     if (!rawManifest) continue
 
     // Normalize type fields (old single-type to new multi-type format)
-    const rawTypes = rawManifest.types as ItemType[] | undefined
+    const rawTypes = rawManifest.types as Array<ItemType> | undefined
     const rawType = rawManifest.type as ItemType | undefined
     const rawPrimaryType = rawManifest.primaryType as ItemType | undefined
 
-    let types: ItemType[]
+    let types: Array<ItemType>
     if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
       types = rawTypes
     } else if (rawType) {
@@ -275,9 +275,10 @@ export async function seedNodes() {
       continue
     }
 
-    const primaryType = (rawPrimaryType && types.includes(rawPrimaryType))
-      ? rawPrimaryType
-      : types[0]
+    const primaryType =
+      rawPrimaryType && types.includes(rawPrimaryType)
+        ? rawPrimaryType
+        : types[0]
 
     // Merge normalized types into manifest for validation
     const manifest = {
@@ -326,9 +327,10 @@ export async function seedNodes() {
 
     // Assign supertag(s) - support multi-type
     // Get all types from the item (types array or fallback to single type)
-    const itemTypes: ItemType[] = item.types && item.types.length > 0
-      ? item.types
-      : [item.primaryType || item.type]
+    const itemTypes: Array<ItemType> =
+      item.types && item.types.length > 0
+        ? item.types
+        : [item.primaryType || item.type]
 
     // Add supertag for each type
     for (let i = 0; i < itemTypes.length; i++) {
@@ -341,12 +343,17 @@ export async function seedNodes() {
     }
 
     // If no specific supertags, fall back to generic item supertag
-    if (itemTypes.every(t => !ITEM_TYPE_TO_SUPERTAG[t])) {
+    if (itemTypes.every((t) => !ITEM_TYPE_TO_SUPERTAG[t])) {
       addProperty(db, nodeId, F.supertag, JSON.stringify(ST.item))
     }
 
     // Properties - use primaryType for backward compat
-    addProperty(db, nodeId, F.type, JSON.stringify(item.primaryType || item.type))
+    addProperty(
+      db,
+      nodeId,
+      F.type,
+      JSON.stringify(item.primaryType || item.type),
+    )
     addProperty(db, nodeId, F.path, JSON.stringify(item.path))
     if (item.description)
       addProperty(db, nodeId, F.description, JSON.stringify(item.description))
@@ -384,7 +391,7 @@ export async function seedNodes() {
     addProperty(db, nodeId, F.legacyId, JSON.stringify(item.id))
 
     // Tags
-    const manifestTags: TagRef[] = item.metadata?.tags ?? []
+    const manifestTags: Array<TagRef> = item.metadata?.tags ?? []
     for (let i = 0; i < manifestTags.length; i++) {
       const tagNodeId = getOrCreateTagNode(db, manifestTags[i].name, F, ST)
       addProperty(db, nodeId, F.tags, JSON.stringify(tagNodeId), i)

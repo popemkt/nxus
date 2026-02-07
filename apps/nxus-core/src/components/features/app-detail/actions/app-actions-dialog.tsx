@@ -7,7 +7,6 @@ import {
   GithubLogoIcon,
   XCircleIcon,
 } from '@phosphor-icons/react'
-import type { Item } from '@nxus/db'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,13 +16,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialogTrigger, Button , Field , FieldLabel, Input 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
+import type { Item } from '@nxus/db'
 import { installAppServerFn } from '@/services/apps/install.server'
-import { useAppCheck, appStateService } from '@/services/state/app-state'
+import { appStateService, useAppCheck } from '@/services/state/app-state'
 import { useInstallPath } from '@/hooks/use-install-path'
 
 interface AppActionsDialogProps {

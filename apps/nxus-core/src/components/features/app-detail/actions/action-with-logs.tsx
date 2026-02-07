@@ -1,15 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { PlayIcon, TerminalWindowIcon } from '@phosphor-icons/react'
-import { Button } from '@nxus/ui'
-import {
+import { Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
+  CardTitle, Field , FieldLabel, Input  } from '@nxus/ui'
 import { CommandLogViewer } from '../commands/command-log-viewer'
 import { useCommandExecution } from '@/hooks/use-command-execution'
 import { usePath } from '@/hooks/use-paths'
@@ -20,7 +16,7 @@ interface ActionWithLogsProps {
   buttonLabel: string
   buttonIcon?: React.ReactNode
   command: string
-  args?: string[]
+  args?: Array<string>
   cwd?: string
   onComplete?: () => void
   onError?: (error: Error) => void
@@ -182,7 +178,7 @@ export function InstallActionWithLogs({
 interface ScriptActionWithLogsProps {
   scriptName: string
   scriptPath: string
-  scriptArgs?: string[]
+  scriptArgs?: Array<string>
   cwd?: string
   onComplete?: () => void
   onError?: (error: Error) => void

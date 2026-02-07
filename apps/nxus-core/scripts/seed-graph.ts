@@ -7,14 +7,11 @@
  * Usage: ARCHITECTURE_TYPE=graph pnpm db:seed
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { dirname, join, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { StringRecordId } from 'surrealdb'
-import {
-  createEmbeddedFileGraphDatabase,
-  ItemSchema,
-} from '@nxus/db/server'
+import { ItemSchema, createEmbeddedFileGraphDatabase } from '@nxus/db/server'
 import type { ItemType } from '@nxus/db'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -97,7 +94,10 @@ export async function seedGraph() {
       // Assign #Tag supertag
       await db.query(
         `RELATE $from->has_supertag->$to SET order = 0, created_at = time::now()`,
-        { from: new StringRecordId(nodeId), to: new StringRecordId('supertag:tag') },
+        {
+          from: new StringRecordId(nodeId),
+          to: new StringRecordId('supertag:tag'),
+        },
       )
 
       legacyTagIdToNodeId.set(tag.id, nodeId)
@@ -113,7 +113,10 @@ export async function seedGraph() {
         if (nodeId && parentNodeId) {
           await db.query(
             `RELATE $from->part_of->$to SET order = 0, created_at = time::now()`,
-            { from: new StringRecordId(nodeId), to: new StringRecordId(parentNodeId) },
+            {
+              from: new StringRecordId(nodeId),
+              to: new StringRecordId(parentNodeId),
+            },
           )
         }
       }
@@ -144,11 +147,11 @@ export async function seedGraph() {
     if (!rawManifest) continue
 
     // Normalize type fields
-    const rawTypes = rawManifest.types as ItemType[] | undefined
+    const rawTypes = rawManifest.types as Array<ItemType> | undefined
     const rawType = rawManifest.type as ItemType | undefined
     const rawPrimaryType = rawManifest.primaryType as ItemType | undefined
 
-    let types: ItemType[]
+    let types: Array<ItemType>
     if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
       types = rawTypes
     } else if (rawType) {
@@ -159,7 +162,9 @@ export async function seedGraph() {
     }
 
     const primaryType =
-      rawPrimaryType && types.includes(rawPrimaryType) ? rawPrimaryType : types[0]
+      rawPrimaryType && types.includes(rawPrimaryType)
+        ? rawPrimaryType
+        : types[0]
 
     const manifest = {
       ...rawManifest,
@@ -249,7 +254,10 @@ export async function seedGraph() {
     // Assign #Item supertag
     await db.query(
       `RELATE $from->has_supertag->$to SET order = 0, created_at = time::now()`,
-      { from: new StringRecordId(nodeId), to: new StringRecordId('supertag:item') },
+      {
+        from: new StringRecordId(nodeId),
+        to: new StringRecordId('supertag:item'),
+      },
     )
 
     // Create tagged_with relations for tags
@@ -258,7 +266,10 @@ export async function seedGraph() {
       if (tagNodeId) {
         await db.query(
           `RELATE $from->tagged_with->$to SET created_at = time::now()`,
-          { from: new StringRecordId(nodeId), to: new StringRecordId(tagNodeId) },
+          {
+            from: new StringRecordId(nodeId),
+            to: new StringRecordId(tagNodeId),
+          },
         )
       }
     }
@@ -304,13 +315,20 @@ export async function seedGraph() {
       // Assign #Command supertag
       await db.query(
         `RELATE $from->has_supertag->$to SET order = 0, created_at = time::now()`,
-        { from: new StringRecordId(cmdNodeId), to: new StringRecordId('supertag:command') },
+        {
+          from: new StringRecordId(cmdNodeId),
+          to: new StringRecordId('supertag:command'),
+        },
       )
 
       // Command is part_of item
       await db.query(
         `RELATE $from->part_of->$to SET order = $order, created_at = time::now()`,
-        { from: new StringRecordId(cmdNodeId), to: new StringRecordId(nodeId), order: i },
+        {
+          from: new StringRecordId(cmdNodeId),
+          to: new StringRecordId(nodeId),
+          order: i,
+        },
       )
 
       commandsCount++
@@ -332,16 +350,21 @@ export async function seedGraph() {
     if (!rawManifest) continue
 
     // Normalize for validation
-    const rawTypes = rawManifest.types as ItemType[] | undefined
+    const rawTypes = rawManifest.types as Array<ItemType> | undefined
     const rawType = rawManifest.type as ItemType | undefined
-    let types: ItemType[]
+    let types: Array<ItemType>
     if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
       types = rawTypes
     } else if (rawType) {
       types = [rawType]
     } else continue
 
-    const manifest = { ...rawManifest, types, primaryType: types[0], type: types[0] }
+    const manifest = {
+      ...rawManifest,
+      types,
+      primaryType: types[0],
+      type: types[0],
+    }
     const validationResult = ItemSchema.safeParse(manifest)
     if (!validationResult.success) continue
 
@@ -354,7 +377,10 @@ export async function seedGraph() {
       if (depNodeId) {
         await db.query(
           `RELATE $from->dependency_of->$to SET created_at = time::now()`,
-          { from: new StringRecordId(nodeId), to: new StringRecordId(depNodeId) },
+          {
+            from: new StringRecordId(nodeId),
+            to: new StringRecordId(depNodeId),
+          },
         )
         depCount++
       }
@@ -365,7 +391,9 @@ export async function seedGraph() {
   // ============================================================================
   // Step 5: Summary
   // ============================================================================
-  const [allNodes] = await db.query<[Array<unknown>]>(`SELECT count() FROM node GROUP ALL`)
+  const [allNodes] = await db.query<[Array<unknown>]>(
+    `SELECT count() FROM node GROUP ALL`,
+  )
   const [allRelations] = await db.query<[Array<unknown>]>(
     `SELECT count() FROM has_supertag GROUP ALL`,
   )
@@ -377,7 +405,9 @@ export async function seedGraph() {
   console.log('  Graph seed complete!')
   console.log(`   Total nodes: ${nodeCount}`)
   console.log(`   Total has_supertag relations: ${relCount}`)
-  console.log(`   Items: ${itemsCount}, Commands: ${commandsCount}, Tags: ${tagsCount}`)
+  console.log(
+    `   Items: ${itemsCount}, Commands: ${commandsCount}, Tags: ${tagsCount}`,
+  )
   console.log('='.repeat(50) + '\n')
 
   // Close the connection to flush data to disk
@@ -386,7 +416,8 @@ export async function seedGraph() {
 }
 
 // Run if executed directly (not when imported by db-seed.ts)
-const isDirectRun = process.argv[1]?.endsWith('seed-graph.ts') ||
+const isDirectRun =
+  process.argv[1]?.endsWith('seed-graph.ts') ||
   process.argv[1]?.endsWith('seed-graph')
 if (isDirectRun) {
   seedGraph().catch(console.error)

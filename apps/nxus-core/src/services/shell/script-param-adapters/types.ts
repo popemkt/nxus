@@ -38,7 +38,7 @@ export type ScriptParam = z.infer<typeof ScriptParamSchema>
  * Result from parsing script parameters
  */
 export type ParseScriptParamsResult =
-  | { success: true; params: ScriptParam[] }
+  | { success: true; params: Array<ScriptParam> }
   | { success: false; error: string }
 
 /**
@@ -51,5 +51,5 @@ export interface ScriptParamAdapter {
    * @param scriptPath Absolute path to script file
    * @returns Parsed parameters or error
    */
-  parseParams(scriptPath: string): Promise<ParseScriptParamsResult>
+  parseParams: (scriptPath: string) => Promise<ParseScriptParamsResult>
 }

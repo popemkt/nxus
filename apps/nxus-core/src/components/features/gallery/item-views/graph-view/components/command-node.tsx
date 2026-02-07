@@ -1,8 +1,8 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { Command } from '@phosphor-icons/react'
-import type { CommandNodeData } from '../hooks/use-graph-nodes'
 import { cn } from '@nxus/ui'
+import type { CommandNodeData } from '../hooks/use-graph-nodes'
 
 interface CommandNodeProps {
   data: CommandNodeData

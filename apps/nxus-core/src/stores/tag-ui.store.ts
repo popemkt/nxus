@@ -14,13 +14,13 @@ interface TagUIState {
   // === ACTIONS ===
   toggleExpanded: (id: string) => void
   setExpanded: (id: string, expanded: boolean) => void
-  expandAll: (ids: string[]) => void
+  expandAll: (ids: Array<string>) => void
   collapseAll: () => void
 
   toggleSelected: (id: string) => void
   setSelected: (id: string, selected: boolean) => void
   clearSelection: () => void
-  setSelectedTags: (ids: string[]) => void
+  setSelectedTags: (ids: Array<string>) => void
 
   setIncludeSubTags: (id: string, include: boolean) => void
   getIncludeSubTags: (id: string) => boolean
@@ -56,7 +56,7 @@ export const useTagUIStore = create<TagUIState>((set, get) => ({
     set({ expandedIds: newExpanded })
   },
 
-  expandAll: (ids: string[]) => {
+  expandAll: (ids: Array<string>) => {
     const newExpanded = new Set(get().expandedIds)
     ids.forEach((id) => newExpanded.add(id))
     set({ expandedIds: newExpanded })
@@ -100,7 +100,7 @@ export const useTagUIStore = create<TagUIState>((set, get) => ({
     set({ selectedTagIds: new Set(), includeSubTags: new Map() })
   },
 
-  setSelectedTags: (ids: string[]) => {
+  setSelectedTags: (ids: Array<string>) => {
     const newIncludeSubTags = new Map<string, boolean>()
     ids.forEach((id) => newIncludeSubTags.set(id, true))
     set({

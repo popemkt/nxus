@@ -1,26 +1,27 @@
 import { useCallback } from 'react'
 import {
-  ReactFlow,
   Background,
   BackgroundVariant,
-  MiniMap,
   Controls,
+  MiniMap,
+  
+  ReactFlow,
   ReactFlowProvider,
-  useReactFlow,
-  type Node,
+  useReactFlow
 } from '@xyflow/react'
+import type {Node} from '@xyflow/react';
 import '@xyflow/react/dist/style.css'
 
-import type { WorkflowDefinition } from '@nxus/db'
 import { cn } from '@nxus/ui'
 import { useWorkflowGraph } from './hooks/use-workflow-graph'
 import { workflowNodeTypes } from './components/workflow-step-node'
 import {
-  workflowEdgeTypes,
   WorkflowEdgeMarkerDefs,
+  workflowEdgeTypes,
 } from './components/workflow-edge'
 import { WorkflowLegend } from './components/workflow-legend'
 import { STEP_TYPE_COLORS } from './types'
+import type { WorkflowDefinition } from '@nxus/db'
 import type { WorkflowNodeData } from './types'
 
 interface WorkflowGraphCanvasProps {
@@ -75,7 +76,10 @@ function WorkflowGraphCanvasInner({
   }, [fitView])
 
   return (
-    <div className={cn('w-full h-full', className)} style={{ minWidth: '100%', minHeight: '400px' }}>
+    <div
+      className={cn('w-full h-full', className)}
+      style={{ minWidth: '100%', minHeight: '400px' }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}

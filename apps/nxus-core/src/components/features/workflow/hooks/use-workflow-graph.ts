@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import * as dagre from 'dagre'
-import { Position, type Node, type Edge } from '@xyflow/react'
+import {   Position } from '@xyflow/react'
+import type {Edge, Node} from '@xyflow/react';
 import type { WorkflowDefinition, WorkflowStep } from '@nxus/db'
-import type { WorkflowNodeData, WorkflowEdgeData } from '../types'
+import type { WorkflowEdgeData, WorkflowNodeData } from '../types'
 
 // Node dimensions
 const NODE_WIDTH = 180
@@ -13,8 +14,8 @@ export type WorkflowNode = Node<WorkflowNodeData, 'workflow-step'>
 export type WorkflowEdge = Edge<WorkflowEdgeData>
 
 interface WorkflowGraphResult {
-  nodes: WorkflowNode[]
-  edges: WorkflowEdge[]
+  nodes: Array<WorkflowNode>
+  edges: Array<WorkflowEdge>
 }
 
 /**
@@ -83,8 +84,8 @@ function stepToNodeData(step: WorkflowStep): WorkflowNodeData {
 export function workflowToGraph(
   workflow: WorkflowDefinition,
 ): WorkflowGraphResult {
-  const nodes: WorkflowNode[] = []
-  const edges: WorkflowEdge[] = []
+  const nodes: Array<WorkflowNode> = []
+  const edges: Array<WorkflowEdge> = []
 
   // Create a map of step IDs for quick lookup
   const stepMap = new Map<string, WorkflowStep>()
@@ -208,10 +209,10 @@ export function workflowToGraph(
  * Applies dagre layout to the workflow graph
  */
 export function applyDagreLayout(
-  nodes: WorkflowNode[],
-  edges: WorkflowEdge[],
+  nodes: Array<WorkflowNode>,
+  edges: Array<WorkflowEdge>,
   direction: 'LR' | 'TB' = 'LR',
-): WorkflowNode[] {
+): Array<WorkflowNode> {
   if (nodes.length === 0) {
     return nodes
   }

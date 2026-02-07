@@ -1,5 +1,4 @@
-import { sql } from '@nxus/db/server'
-import { initDatabase, getDatabase, saveDatabase } from '@nxus/db/server'
+import { getDatabase, initDatabase, saveDatabase, sql  } from '@nxus/db/server'
 
 async function dropSlugColumn() {
   console.log('Starting slug column removal migration...')

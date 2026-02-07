@@ -1,15 +1,15 @@
 import { FlowArrow } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogCancel,
 } from '@nxus/ui'
-import type { WorkflowDefinition } from '@nxus/db'
 import { WorkflowGraphCanvas } from '../../workflow/workflow-graph-canvas'
+import type { WorkflowDefinition } from '@nxus/db'
 
 interface WorkflowPreviewModalProps {
   commandName: string

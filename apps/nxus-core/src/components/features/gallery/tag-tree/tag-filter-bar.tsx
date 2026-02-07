@@ -1,7 +1,7 @@
-import { X, CaretDown, Funnel } from '@phosphor-icons/react'
+import { CaretDown, Funnel, X } from '@phosphor-icons/react'
+import { cn } from '@nxus/ui'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useTagUIStore } from '@/stores/tag-ui.store'
-import { cn } from '@nxus/ui'
 
 interface TagFilterBarProps {
   className?: string
@@ -103,7 +103,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
 /**
  * Hook to filter items based on selected tags
  */
-export function useTagFilter<T extends { tags?: string[] }>(items: T[]): T[] {
+export function useTagFilter<T extends { tags?: Array<string> }>(items: Array<T>): Array<T> {
   const selectedTagIds = useTagUIStore((s) => s.selectedTagIds)
   const includeSubTags = useTagUIStore((s) => s.includeSubTags)
   const getDescendants = useTagDataStore((s) => s.getDescendants)

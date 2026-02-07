@@ -8,37 +8,38 @@
  * - graph.server.ts type converters: graphNodeToItem, serializeGraphNode, itemToGraphProps
  */
 
-import type { Surreal, RecordId } from 'surrealdb'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   setupTestGraphDatabase,
   teardownTestGraphDatabase,
 } from '@nxus/db/test-utils'
 import { eventBus } from '@nxus/db/server'
-import type { MutationEvent, EventFilter } from '@nxus/db/server'
 import {
+  
+  addRelation,
+  componentsRec,
   createNode,
+  deleteNode,
+  getIncomingRelations,
   getNode,
   getNodeBySystemId,
-  updateNode,
-  deleteNode,
-  purgeNode,
-  addRelation,
-  removeRelation,
-  getOutgoingRelations,
-  getIncomingRelations,
   getNodesBySupertag,
-  componentsRec,
+  getOutgoingRelations,
+  purgeNode,
+  removeRelation,
   searchNodes,
-  type GraphNode,
+  updateNode
 } from '../graph.service.js'
+import type {GraphNode} from '../graph.service.js';
+import type { EventFilter, MutationEvent } from '@nxus/db/server'
+import type { RecordId, Surreal } from 'surrealdb'
 
 // ============================================================================
 // Test Setup
 // ============================================================================
 
 let db: Surreal
-let events: MutationEvent[]
+let events: Array<MutationEvent>
 let unsubscribe: () => void
 
 beforeEach(async () => {
@@ -61,7 +62,7 @@ afterEach(async () => {
 
 describe('Graph Service → Event Bus Integration Pipeline', () => {
   it('should deliver node:created event to subscriber when node is created', async () => {
-    const received: MutationEvent[] = []
+    const received: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => received.push(e), {
       types: ['node:created'],
     })
@@ -85,7 +86,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
   })
 
   it('should deliver supertag:added event when supertag is assigned to a node', async () => {
-    const supertagEvents: MutationEvent[] = []
+    const supertagEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => supertagEvents.push(e), {
       types: ['supertag:added'],
     })
@@ -106,7 +107,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
     const node = await createNode({ content: 'Node' })
     await addRelation('has_supertag', node.id, 'supertag:tag')
 
-    const removeEvents: MutationEvent[] = []
+    const removeEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => removeEvents.push(e), {
       types: ['supertag:removed'],
     })
@@ -178,7 +179,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
   })
 
   it('should filter events by type for targeted subscribers', async () => {
-    const updateOnly: MutationEvent[] = []
+    const updateOnly: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => updateOnly.push(e), {
       types: ['node:updated'],
     })
@@ -198,7 +199,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
     const nodeA = await createNode({ content: 'Node A' })
     const nodeB = await createNode({ content: 'Node B' })
 
-    const nodeAEvents: MutationEvent[] = []
+    const nodeAEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => nodeAEvents.push(e), {
       nodeIds: [String(nodeA.id)],
     })
@@ -214,9 +215,9 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
   })
 
   it('should support multiple concurrent subscribers independently', async () => {
-    const allEvents: MutationEvent[] = []
-    const createdOnly: MutationEvent[] = []
-    const deletedOnly: MutationEvent[] = []
+    const allEvents: Array<MutationEvent> = []
+    const createdOnly: Array<MutationEvent> = []
+    const deletedOnly: Array<MutationEvent> = []
 
     const unsub1 = eventBus.subscribe((e) => allEvents.push(e))
     const unsub2 = eventBus.subscribe((e) => createdOnly.push(e), {
@@ -247,7 +248,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
 
 describe('Supertag Lifecycle Events', () => {
   it('should emit supertag:added then verify node appears in getNodesBySupertag', async () => {
-    const supertagEvents: MutationEvent[] = []
+    const supertagEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => supertagEvents.push(e), {
       types: ['supertag:added', 'supertag:removed'],
     })
@@ -278,7 +279,7 @@ describe('Supertag Lifecycle Events', () => {
     let items = await getNodesBySupertag('supertag:item')
     expect(items.some((n) => String(n.id) === String(node.id))).toBe(true)
 
-    const removeEvents: MutationEvent[] = []
+    const removeEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => removeEvents.push(e), {
       types: ['supertag:removed'],
     })
@@ -302,7 +303,7 @@ describe('Supertag Lifecycle Events', () => {
       supertag: 'supertag:item',
     })
 
-    const supertagEvents: MutationEvent[] = []
+    const supertagEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => supertagEvents.push(e), {
       types: ['supertag:added', 'supertag:removed'],
     })
@@ -332,7 +333,7 @@ describe('Supertag Lifecycle Events', () => {
 
 describe('Complex Graph + Event Bus Workflow', () => {
   it('should handle hierarchical node creation with events', async () => {
-    const allEvents: MutationEvent[] = []
+    const allEvents: Array<MutationEvent> = []
     const unsub = eventBus.subscribe((e) => allEvents.push(e))
 
     // Create a project hierarchy
@@ -400,12 +401,8 @@ describe('Complex Graph + Event Bus Workflow', () => {
     expect(updateEvents).toHaveLength(2)
 
     // Each event should reference the correct node
-    const node1Update = updateEvents.find(
-      (e) => e.nodeId === String(node1.id),
-    )
-    const node2Update = updateEvents.find(
-      (e) => e.nodeId === String(node2.id),
-    )
+    const node1Update = updateEvents.find((e) => e.nodeId === String(node1.id))
+    const node2Update = updateEvents.find((e) => e.nodeId === String(node2.id))
     expect(node1Update).toBeDefined()
     expect(node2Update).toBeDefined()
   })
@@ -733,9 +730,7 @@ describe('Tagged Relations → Event Pipeline', () => {
     await removeRelation('tagged_with', item.id, tag.id)
 
     // tagged_with removal should NOT emit supertag:removed
-    const supertagRemoved = events.filter(
-      (e) => e.type === 'supertag:removed',
-    )
+    const supertagRemoved = events.filter((e) => e.type === 'supertag:removed')
     expect(supertagRemoved).toHaveLength(0)
 
     // Verify relation is gone

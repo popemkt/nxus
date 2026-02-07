@@ -5,9 +5,10 @@
  */
 
 import Database from 'better-sqlite3'
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import {  drizzle } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '@nxus/db'
+import type {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import type { ItemType } from '@nxus/db'
 
 // In-memory database for testing
@@ -19,16 +20,16 @@ let db: BetterSQLite3Database<typeof schema>
  * Extracted from migrate-manifests.ts for testing.
  */
 function normalizeManifestTypes(manifest: Record<string, unknown>): {
-  types: ItemType[]
+  types: Array<ItemType>
   primaryType: ItemType
   type: ItemType
 } {
-  const rawTypes = manifest.types as ItemType[] | undefined
+  const rawTypes = manifest.types as Array<ItemType> | undefined
   const rawType = manifest.type as ItemType | undefined
   const rawPrimaryType = manifest.primaryType as ItemType | undefined
 
   // Determine types array
-  let types: ItemType[]
+  let types: Array<ItemType>
   if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
     types = rawTypes
   } else if (rawType) {
@@ -189,7 +190,7 @@ describe('migrate-manifests', () => {
       }
 
       expect(() => normalizeManifestTypes(manifest)).toThrow(
-        'Manifest must have either "type" or "types" field'
+        'Manifest must have either "type" or "types" field',
       )
     })
 
@@ -200,7 +201,7 @@ describe('migrate-manifests', () => {
       }
 
       expect(() => normalizeManifestTypes(manifest)).toThrow(
-        'Manifest must have either "type" or "types" field'
+        'Manifest must have either "type" or "types" field',
       )
     })
 
@@ -219,7 +220,12 @@ describe('migrate-manifests', () => {
     })
 
     it('should handle all valid item types', () => {
-      const validTypes: ItemType[] = ['html', 'typescript', 'remote-repo', 'tool']
+      const validTypes: Array<ItemType> = [
+        'html',
+        'typescript',
+        'remote-repo',
+        'tool',
+      ]
 
       for (const itemType of validTypes) {
         const manifest = { type: itemType }
@@ -233,7 +239,7 @@ describe('migrate-manifests', () => {
   describe('item_types table population', () => {
     it('should insert single type with is_primary=true', () => {
       const itemId = 'test-single-type'
-      const types: ItemType[] = ['tool']
+      const types: Array<ItemType> = ['tool']
       const primaryType: ItemType = 'tool'
 
       // Simulate migration logic
@@ -263,7 +269,7 @@ describe('migrate-manifests', () => {
 
     it('should insert multiple types with correct primary flag', () => {
       const itemId = 'test-multi-type'
-      const types: ItemType[] = ['tool', 'remote-repo']
+      const types: Array<ItemType> = ['tool', 'remote-repo']
       const primaryType: ItemType = 'tool'
 
       // Simulate migration logic
@@ -300,7 +306,7 @@ describe('migrate-manifests', () => {
 
     it('should handle non-first type as primary', () => {
       const itemId = 'test-non-first-primary'
-      const types: ItemType[] = ['tool', 'remote-repo', 'typescript']
+      const types: Array<ItemType> = ['tool', 'remote-repo', 'typescript']
       const primaryType: ItemType = 'remote-repo' // Second type is primary
 
       for (let i = 0; i < types.length; i++) {
@@ -339,7 +345,7 @@ describe('migrate-manifests', () => {
       // Simulate re-migration: delete then insert new types
       sqlite.exec(`DELETE FROM item_types WHERE item_id = '${itemId}'`)
 
-      const newTypes: ItemType[] = ['remote-repo', 'typescript']
+      const newTypes: Array<ItemType> = ['remote-repo', 'typescript']
       for (let i = 0; i < newTypes.length; i++) {
         sqlite.exec(`
           INSERT INTO item_types (item_id, type, is_primary, "order")
@@ -365,7 +371,7 @@ describe('migrate-manifests', () => {
   describe('backward compatibility', () => {
     it('should set legacy items.type to primaryType', () => {
       const itemId = 'test-backward-compat'
-      const types: ItemType[] = ['tool', 'remote-repo']
+      const types: Array<ItemType> = ['tool', 'remote-repo']
       const primaryType: ItemType = 'tool'
 
       // Insert into items table with primaryType

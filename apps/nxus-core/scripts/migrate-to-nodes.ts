@@ -6,20 +6,18 @@
  * Migrates items, tags, and commands from old tables to the node architecture.
  */
 
-import { eq, isNull } from '@nxus/db/server'
-import { uuidv7 } from 'uuidv7'
-import {
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS,
+  eq,
   getDatabase,
   initDatabase,
+  isNull,
+  itemCommands,
+  itemTags,
+  items,
   nodeProperties,
   nodes,
-  SYSTEM_FIELDS,
-  SYSTEM_SUPERTAGS,
-  itemCommands,
-  items,
-  itemTags,
-  tags,
-} from '@nxus/db/server'
+  tags } from '@nxus/db/server'
+import { uuidv7 } from 'uuidv7'
 
 // ID mappings: oldId → newNodeId
 const itemIdMap = new Map<string, string>()

@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAllAppsServerFn } from '../services/apps/apps.server'
 import { appRegistryService } from '../services/apps/registry.service'
@@ -106,7 +106,9 @@ export function useAppRegistry(
     }
 
     if (options.filterType) {
-      filtered = filtered.filter((app) => app.types?.includes(options.filterType!))
+      filtered = filtered.filter((app) =>
+        app.types?.includes(options.filterType),
+      )
     }
 
     if (options.filterStatus) {
@@ -140,7 +142,7 @@ export function useAppRegistry(
     apps: filteredApps,
     allApps: apps,
     loading: isLoading,
-    error: error as Error | null,
+    error: error,
     categories,
     tags,
     refetch: () => queryRefetch(),

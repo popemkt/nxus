@@ -7,7 +7,7 @@ export interface GraphFilterResult {
 }
 
 interface UseGraphFilterProps {
-  items: Item[]
+  items: Array<Item>
   searchQuery: string
   selectedTagIds: Set<string>
   /** Map of string tagId to tag slug for matching against metadata.tags */

@@ -1,13 +1,9 @@
-import { ThemeChooser } from '@/components/features/settings/theme-chooser'
-import { Button } from '@nxus/ui'
-import {
+import { Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@nxus/ui'
-import {
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
@@ -15,21 +11,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxLabel,
-  ComboboxList,
-} from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { useAppRegistry } from '@/hooks/use-app-registry'
-import { appRegistryService } from '@/services/apps/registry.service'
-import {
-  getAliasesServerFn,
-  removeAliasServerFn,
-  setAliasServerFn,
-} from '@/services/command-palette/alias.server'
-import { commandRegistry } from '@/services/command-palette/registry'
-import { useToolConfigStore } from '@/services/state/tool-config-state'
-import { useSettingsStore } from '@/stores/settings.store'
-import type { ToolItem } from '@nxus/db'
+  ComboboxList, Field, FieldLabel , Input  } from '@nxus/ui'
 import {
   ArrowLeftIcon,
   CommandIcon,
@@ -40,8 +22,20 @@ import {
   PlusIcon,
   TrashIcon,
 } from '@phosphor-icons/react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import React, { useEffect, useState } from 'react'
+import type { ToolItem } from '@nxus/db'
+import { useAppRegistry } from '@/hooks/use-app-registry'
+import { appRegistryService } from '@/services/apps/registry.service'
+import {
+  getAliasesServerFn,
+  removeAliasServerFn,
+  setAliasServerFn,
+} from '@/services/command-palette/alias.server'
+import { commandRegistry } from '@/services/command-palette/registry'
+import { useToolConfigStore } from '@/services/state/tool-config-state'
+import { useSettingsStore } from '@/stores/settings.store'
+import { ThemeChooser } from '@/components/features/settings/theme-chooser'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
@@ -178,7 +172,7 @@ function KeyboardSettings() {
 
   const handleKeyDown = (e: React.KeyboardEvent, key: 'commandPalette') => {
     e.preventDefault()
-    const parts: string[] = []
+    const parts: Array<string> = []
     if (e.ctrlKey) parts.push('Ctrl')
     if (e.shiftKey) parts.push('Shift')
     if (e.altKey) parts.push('Alt')
@@ -430,7 +424,8 @@ function AppConfigSettings({ searchQuery }: { searchQuery: string }) {
     const apps = appsResult.success ? appsResult.data : []
     return apps.filter(
       (app): app is ToolItem =>
-        (app.types?.includes('tool') ?? false) && !!(app as ToolItem).configSchema,
+        (app.types?.includes('tool') ?? false) &&
+        !!(app as ToolItem).configSchema,
     )
   }, [])
 

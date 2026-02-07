@@ -1,8 +1,8 @@
-import type { Item } from '@nxus/db'
 import { GraphCanvas } from './graph-view/graph-canvas'
+import type { Item } from '@nxus/db'
 
 interface GraphViewProps {
-  items: Item[]
+  items: Array<Item>
   searchQuery: string
 }
 

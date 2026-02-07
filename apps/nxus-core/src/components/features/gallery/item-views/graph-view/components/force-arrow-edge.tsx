@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { BaseEdge, type EdgeProps } from '@xyflow/react'
+import { BaseEdge  } from '@xyflow/react'
+import type {EdgeProps} from '@xyflow/react';
 
 // Node radius constant - should match SimpleNode baseSize / 2
 const NODE_RADIUS = 12

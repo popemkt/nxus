@@ -5,19 +5,16 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle, Button , Field, FieldLabel , Input 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
-import { Input } from '@nxus/ui'
+import { CodeIcon, DownloadIcon, FolderIcon } from '@phosphor-icons/react'
+import * as React from 'react'
 import { useInstallPath } from '@/hooks/use-install-path'
 import { commandExecutor } from '@/services/command-palette/executor'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 import { appStateService, useDevInfo } from '@/services/state/app-state'
 import { useInstallModalStore } from '@/stores/install-modal.store'
 import { useTerminalStore } from '@/stores/terminal.store'
-import { CodeIcon, DownloadIcon, FolderIcon } from '@phosphor-icons/react'
-import * as React from 'react'
 
 /**
  * Install Modal for cloning remote repositories

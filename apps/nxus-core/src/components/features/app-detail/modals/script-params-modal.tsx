@@ -1,31 +1,25 @@
 import * as React from 'react'
-import { PlayIcon, FolderOpenIcon } from '@phosphor-icons/react'
-import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
+import { FolderOpenIcon, PlayIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
-} from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Label } from '@nxus/ui'
-import { Checkbox } from '@nxus/ui'
-import {
+  AlertDialogTitle, Button , Checkbox , Input , Label ,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@nxus/ui'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
+import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 
 interface ScriptParamsModalProps {
   scriptName: string
-  params: ScriptParam[]
+  params: Array<ScriptParam>
   open: boolean
   onOpenChange: (open: boolean) => void
   onRun: (values: Record<string, string | number | boolean>) => void

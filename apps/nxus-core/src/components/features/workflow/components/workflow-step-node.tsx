@@ -1,19 +1,20 @@
 import { memo } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle,  Position } from '@xyflow/react'
 import {
-  TerminalIcon,
-  GitBranchIcon,
-  RowsIcon,
-  ClockIcon,
   BellIcon,
   ChatCircleIcon,
   CheckCircleIcon,
+  ClockIcon,
+  GitBranchIcon,
+  RowsIcon,
+  TerminalIcon,
   XCircleIcon,
 } from '@phosphor-icons/react'
-import type { Icon } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import type { WorkflowNodeData } from '../types'
 import { STEP_TYPE_COLORS } from '../types'
+import type {NodeProps} from '@xyflow/react';
+import type { Icon } from '@phosphor-icons/react'
+import type { WorkflowNodeData } from '../types'
 
 /**
  * Icon mapping for each step type

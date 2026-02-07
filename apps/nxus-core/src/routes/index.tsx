@@ -1,3 +1,8 @@
+import { cn } from '@nxus/ui'
+import { XIcon } from '@phosphor-icons/react'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
 import {
   FloatingFilterRow,
   FloatingHud,
@@ -19,11 +24,6 @@ import {
   useViewModeHasHydrated,
   useViewModeStore,
 } from '@/stores/view-mode.store'
-import { cn } from '@nxus/ui'
-import { XIcon } from '@phosphor-icons/react'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
 
 export const Route = createFileRoute('/')({ component: AppManager })
 

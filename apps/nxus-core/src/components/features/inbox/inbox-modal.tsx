@@ -2,17 +2,13 @@ import * as React from 'react'
 import { TrayIcon } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
+  AlertDialogTitle, Button , Field , FieldLabel , Input, Textarea 
 } from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Textarea } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
 import { useInboxModalStore } from '@/stores/inbox-modal.store'
 import { addInboxItemServerFn } from '@/services/inbox/inbox.server'
 

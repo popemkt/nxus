@@ -15,21 +15,19 @@
  * The migration populates the item_types junction table for multi-type support.
  */
 
-import { eq } from '@nxus/db/server'
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
-import { dirname, join, resolve } from 'path'
-import { fileURLToPath } from 'url'
-import {
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { ItemSchema,
+  eq,
   getDatabase,
   initDatabase,
-  saveMasterDatabase,
   itemCommands,
-  items,
   itemTypes,
+  items,
   nodes,
-  ItemSchema,
-  syncItemTypesToNodeSupertags,
-} from '@nxus/db/server'
+  saveMasterDatabase,
+  syncItemTypesToNodeSupertags } from '@nxus/db/server'
 import type { ItemType } from '@nxus/db'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -52,14 +50,14 @@ function toRawOrNull(value: unknown): any {
  * @returns Object with normalized types array and type (deprecated, equals types[0])
  */
 function normalizeManifestTypes(manifest: Record<string, unknown>): {
-  types: ItemType[]
+  types: Array<ItemType>
   type: ItemType
 } {
-  const rawTypes = manifest.types as ItemType[] | undefined
+  const rawTypes = manifest.types as Array<ItemType> | undefined
   const rawType = manifest.type as ItemType | undefined
 
   // Determine types array
-  let types: ItemType[]
+  let types: Array<ItemType>
   if (rawTypes && Array.isArray(rawTypes) && rawTypes.length > 0) {
     // New format: types array provided
     types = rawTypes
@@ -99,7 +97,7 @@ async function migrate() {
 
   let appsCount = 0
   let commandsCount = 0
-  const validationErrors: { app: string; errors: string[] }[] = []
+  const validationErrors: Array<{ app: string; errors: Array<string> }> = []
 
   for (const appDir of appDirs) {
     const manifestPath = join(appsDir, appDir, 'manifest.json')
@@ -109,7 +107,7 @@ async function migrate() {
       const rawManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
 
       // Normalize type fields (old single-type to new multi-type format)
-      let normalizedTypes: { types: ItemType[]; type: ItemType }
+      let normalizedTypes: { types: Array<ItemType>; type: ItemType }
       try {
         normalizedTypes = normalizeManifestTypes(rawManifest)
       } catch (err) {
@@ -190,7 +188,9 @@ async function migrate() {
 
       // Populate itemTypes junction table for multi-type support
       // First, delete existing types for this item (clean slate)
-      db.delete(itemTypes).where(eq(itemTypes.itemId, validatedManifest.id)).run()
+      db.delete(itemTypes)
+        .where(eq(itemTypes.itemId, validatedManifest.id))
+        .run()
 
       // Insert all types from the types array (order determines display type)
       const typesArray = validatedManifest.types
@@ -205,7 +205,9 @@ async function migrate() {
           .run()
       }
       if (typesArray.length > 1) {
-        console.log(`    Types: ${typesArray.join(', ')} (display: ${typesArray[0]})`)
+        console.log(
+          `    Types: ${typesArray.join(', ')} (display: ${typesArray[0]})`,
+        )
       }
 
       // Sync to node-based architecture (if node exists)
@@ -217,7 +219,11 @@ async function migrate() {
         .get()
 
       if (existingNode) {
-        const synced = syncItemTypesToNodeSupertags(db, validatedManifest.id, existingNode.id)
+        const synced = syncItemTypesToNodeSupertags(
+          db,
+          validatedManifest.id,
+          existingNode.id,
+        )
         if (synced && typesArray.length > 1) {
           console.log(`    Node supertags synced`)
         }

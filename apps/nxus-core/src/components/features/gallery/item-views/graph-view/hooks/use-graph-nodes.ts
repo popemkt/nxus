@@ -1,13 +1,13 @@
-import type { Node, Edge } from '@xyflow/react'
+import type { Edge, Node } from '@xyflow/react'
 import type { Item, ItemType } from '@nxus/db'
-import { getFirstTypeIcon } from '@/lib/app-constants'
 import type { GraphFilterResult } from './use-graph-filter'
 import type { GraphOptions } from '@/stores/view-mode.store'
+import { getFirstTypeIcon } from '@/lib/app-constants'
 
 export interface ItemNodeData extends Record<string, unknown> {
   label: string
   description: string
-  types: ItemType[]
+  types: Array<ItemType>
   /** @deprecated Use types[0] instead */
   type: ItemType
   status: Item['status']
@@ -29,7 +29,7 @@ export type CommandNode = Node<CommandNodeData, 'command'>
 export type DependencyEdge = Edge<{ isMatched: boolean }>
 
 interface UseGraphNodesProps {
-  items: Item[]
+  items: Array<Item>
   filterResult: GraphFilterResult
   graphOptions: GraphOptions
 }
@@ -39,14 +39,14 @@ export function useGraphNodes({
   filterResult,
   graphOptions,
 }: UseGraphNodesProps): {
-  nodes: (ItemNode | CommandNode)[]
-  edges: DependencyEdge[]
+  nodes: Array<ItemNode | CommandNode>
+  edges: Array<DependencyEdge>
 } {
   const { matchedIds, hasActiveFilter } = filterResult
   const { showCommands, filterMode } = graphOptions
 
   // Build item nodes
-  const itemNodes: ItemNode[] = items
+  const itemNodes: Array<ItemNode> = items
     .filter((item) => {
       // In show-only mode, filter out unmatched items
       if (
@@ -82,7 +82,7 @@ export function useGraphNodes({
     })
 
   // Build command nodes if enabled
-  const commandNodes: CommandNode[] = []
+  const commandNodes: Array<CommandNode> = []
   if (showCommands) {
     items.forEach((item) => {
       if (item.commands && item.commands.length > 0) {
@@ -104,7 +104,7 @@ export function useGraphNodes({
 
   // Build edges from dependencies
   const visibleIds = new Set(itemNodes.map((n) => n.id))
-  const edges: DependencyEdge[] = []
+  const edges: Array<DependencyEdge> = []
 
   items.forEach((item) => {
     if (item.dependencies && visibleIds.has(item.id)) {

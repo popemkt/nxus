@@ -1,36 +1,26 @@
 import * as React from 'react'
-import { PlayIcon, FolderOpenIcon, Warning } from '@phosphor-icons/react'
+import { FolderOpenIcon, PlayIcon, Warning } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
-import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
-import { getAppsByConfiguredTagServerFn } from '@/services/tag-config.server'
-import { getAllAppsServerFn } from '@/services/apps/apps.server'
-import { checkToolHealth } from '@/services/tool-health/tool-health.server'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
-} from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Label } from '@nxus/ui'
-import { Checkbox } from '@nxus/ui'
-import { Textarea } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import {
-  Select,
+  AlertDialogTitle, Badge , Button , Checkbox , Input , Label , Select ,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea, cn 
 } from '@nxus/ui'
-import { cn } from '@nxus/ui'
-import type { CommandRequirement, CommandParam } from '@nxus/db'
-import { isParamRequired, getParamLabel, getParamDefaultValue } from '@nxus/db'
-import type { Item } from '@nxus/db'
+import { getParamDefaultValue, getParamLabel, isParamRequired } from '@nxus/db'
+import type { CommandParam, CommandRequirement, Item  } from '@nxus/db'
+import { checkToolHealth } from '@/services/tool-health/tool-health.server'
+import { getAllAppsServerFn } from '@/services/apps/apps.server'
+import { getAppsByConfiguredTagServerFn } from '@/services/tag-config.server'
+import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
 
 interface RequirementOption {
   appId: string
@@ -43,8 +33,8 @@ interface RequirementOption {
 export interface CommandParamsModalProps {
   title: string
   description?: string
-  requirements?: CommandRequirement[]
-  params?: CommandParam[]
+  requirements?: Array<CommandRequirement>
+  params?: Array<CommandParam>
   open: boolean
   onOpenChange: (open: boolean) => void
   onRun: (result: {
@@ -80,7 +70,7 @@ export function CommandParamsModal({
   const { data: requirementOptions, isLoading } = useQuery({
     queryKey: ['command-requirement-options', requirements.map((r) => r.tagId)],
     queryFn: async () => {
-      const optionsByName: Record<string, RequirementOption[]> = {}
+      const optionsByName: Record<string, Array<RequirementOption>> = {}
 
       for (const req of requirements) {
         const [tagValuesResult, appsResult] = await Promise.all([
@@ -139,7 +129,7 @@ export function CommandParamsModal({
 
         optionsByName[req.name] = options.filter(
           (o): o is NonNullable<typeof o> => o !== null,
-        ) as RequirementOption[]
+        ) as Array<RequirementOption>
       }
 
       return optionsByName

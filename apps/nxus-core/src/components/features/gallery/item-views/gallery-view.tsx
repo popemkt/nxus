@@ -1,21 +1,23 @@
 import { Link } from '@tanstack/react-router'
-import type { Item } from '@nxus/db'
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+  CardFooter, CardHeader , CardTitle , cn 
 } from '@nxus/ui'
-import { Badge } from '@nxus/ui'
-import { Button } from '@nxus/ui'
 import {
   ArrowRightIcon,
   CheckCircle,
   Tag,
   XCircle,
 } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { TagEditorModal } from '../modals/tag-editor-modal'
+import type { GalleryMode } from '@/stores/view-mode.store'
+import type { Item } from '@nxus/db'
+import { useToolHealth } from '@/hooks/use-tool-health'
 import {
   APP_TYPE_ICONS,
   APP_TYPE_LABELS_SHORT,
@@ -24,14 +26,9 @@ import {
   getTypeBadges,
   hasMultipleTypes,
 } from '@/lib/app-constants'
-import { useToolHealth } from '@/hooks/use-tool-health'
-import { useState } from 'react'
-import { cn } from '@nxus/ui'
-import type { GalleryMode } from '@/stores/view-mode.store'
-import { TagEditorModal } from '../modals/tag-editor-modal'
 
 interface GalleryViewProps {
-  items: Item[]
+  items: Array<Item>
   mode: GalleryMode
   groupByType?: boolean
 }
@@ -308,13 +305,15 @@ export function GalleryView({
   // Items appear in ALL applicable groups based on their types array
   const tools = items.filter((app) => app.types?.includes('tool'))
   const repos = items.filter((app) => app.types?.includes('remote-repo'))
-  const typescriptApps = items.filter((app) => app.types?.includes('typescript'))
+  const typescriptApps = items.filter((app) =>
+    app.types?.includes('typescript'),
+  )
   const htmlApps = items.filter((app) => app.types?.includes('html'))
 
   // For now, show Tools vs Applications (combining repos, typescript, html)
   // Items with multiple types will appear in multiple sections
   const applications = items.filter((app) =>
-    app.types?.some(t => t !== 'tool')
+    app.types?.some((t) => t !== 'tool'),
   )
 
   return (

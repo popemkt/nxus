@@ -1,11 +1,11 @@
 import { create } from 'zustand'
-import type { Tag, CreateTagInput } from '@/types/tag'
+import type { CreateTagInput, Tag } from '@/types/tag'
 import {
   createTagServerFn,
-  updateTagServerFn,
   deleteTagServerFn,
-  moveTagServerFn,
   getTagsServerFn,
+  moveTagServerFn,
+  updateTagServerFn,
 } from '@/services/tag.server'
 
 /**
@@ -31,11 +31,11 @@ interface TagDataState {
 
   // === SELECTORS ===
   getTag: (id: number) => Tag | undefined
-  getChildren: (parentId: number | null) => Tag[]
-  getAncestors: (id: number) => Tag[]
-  getDescendants: (id: number) => Tag[]
-  getRootTags: () => Tag[]
-  getAllTags: () => Tag[]
+  getChildren: (parentId: number | null) => Array<Tag>
+  getAncestors: (id: number) => Array<Tag>
+  getDescendants: (id: number) => Array<Tag>
+  getRootTags: () => Array<Tag>
+  getAllTags: () => Array<Tag>
 }
 
 export const useTagDataStore = create<TagDataState>((set, get) => ({
@@ -245,7 +245,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   },
 
   getAncestors: (id: number) => {
-    const ancestors: Tag[] = []
+    const ancestors: Array<Tag> = []
     let current = get().tags.get(id)
 
     while (current?.parentId !== null && current?.parentId !== undefined) {
@@ -262,7 +262,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   },
 
   getDescendants: (id: number) => {
-    const descendants: Tag[] = []
+    const descendants: Array<Tag> = []
     const stack = [id]
 
     while (stack.length > 0) {
@@ -287,10 +287,10 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
  */
 export interface TagTreeNode {
   tag: Tag
-  children: TagTreeNode[]
+  children: Array<TagTreeNode>
 }
 
-export function buildTagTree(store: TagDataState): TagTreeNode[] {
+export function buildTagTree(store: TagDataState): Array<TagTreeNode> {
   const buildNode = (tag: Tag): TagTreeNode => ({
     tag,
     children: store.getChildren(tag.id).map(buildNode),

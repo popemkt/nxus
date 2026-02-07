@@ -45,7 +45,7 @@ function OAuthCallbackPage() {
         setErrorMessage(
           oauthError === 'access_denied'
             ? 'You denied access to Google Calendar. Please try again if you want to connect.'
-            : `Google returned an error: ${oauthError}`
+            : `Google returned an error: ${oauthError}`,
         )
         return
       }
@@ -75,7 +75,7 @@ function OAuthCallbackPage() {
       } catch (err) {
         setState('error')
         setErrorMessage(
-          err instanceof Error ? err.message : 'An unexpected error occurred.'
+          err instanceof Error ? err.message : 'An unexpected error occurred.',
         )
       }
     }

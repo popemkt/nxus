@@ -1,5 +1,5 @@
+import path from 'node:path'
 import { createServerFn } from '@tanstack/react-start'
-import path from 'path'
 
 export type DevInfo = {
   isDevMode: boolean
@@ -24,7 +24,7 @@ export const getDevInfoServerFn = createServerFn({ method: 'GET' }).handler(
       for (let i = 0; i < 5; i++) {
         const potentialReposPath = path.join(currentPath, 'packages', 'repos')
         try {
-          const fs = await import('fs/promises')
+          const fs = await import('node:fs/promises')
           const stat = await fs.stat(potentialReposPath)
           if (stat.isDirectory()) {
             nxusRootPath = currentPath

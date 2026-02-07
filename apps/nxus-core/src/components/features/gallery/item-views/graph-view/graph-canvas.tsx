@@ -1,55 +1,57 @@
-import { useCallback, useMemo, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
-  ReactFlow,
   Background,
   BackgroundVariant,
+  
   MiniMap,
-  useNodesState,
-  useEdgesState,
+  
+  ReactFlow,
   ReactFlowProvider,
   SelectionMode,
-  useReactFlow,
-  type Node,
-  type Edge,
+  useEdgesState,
+  useNodesState,
+  useReactFlow
 } from '@xyflow/react'
+import { useNavigate } from '@tanstack/react-router'
+import dagre from 'dagre'
+import {
+  
+  
+  
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  forceX,
+  forceY
+} from 'd3-force'
+import type {ItemNodeData} from './hooks';
+import type {Edge, Node} from '@xyflow/react';
 import '@xyflow/react/dist/style.css'
 
-import type { Item, ItemType } from '@nxus/db'
+import { cn } from '@nxus/ui'
 import {
-  ItemNode,
   CommandNode,
-  SimpleNode,
   DependencyEdge,
   ForceArrowEdge,
   ForceArrowMarkerDefs,
   GraphControls,
   GraphLegend,
+  ItemNode,
+  SimpleNode,
 } from './components'
-import { type ItemNodeData } from './hooks'
+import type { Item, ItemType } from '@nxus/db'
+import type {GraphLayout, GraphNodeStyle} from '@/stores/view-mode.store';
+import type {Simulation, SimulationLinkDatum, SimulationNodeDatum} from 'd3-force';
 import {
-  useViewModeStore,
-  type GraphLayout,
-  type GraphNodeStyle,
+  
+  
+  useViewModeStore
 } from '@/stores/view-mode.store'
-import { APP_TYPE_COLORS } from '@/lib/app-constants'
+import { APP_TYPE_COLORS, APP_TYPE_ICONS  } from '@/lib/app-constants'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import { useTagDataStore } from '@/stores/tag-data.store'
-import { cn } from '@nxus/ui'
-import { useNavigate } from '@tanstack/react-router'
-import dagre from 'dagre'
-import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceCenter,
-  forceCollide,
-  forceX,
-  forceY,
-  type Simulation,
-  type SimulationNodeDatum,
-  type SimulationLinkDatum,
-} from 'd3-force'
-import { APP_TYPE_ICONS } from '@/lib/app-constants'
 
 // Node type registrations
 const nodeTypes: Record<string, React.ComponentType<any>> = {
@@ -69,7 +71,7 @@ const NODE_HEIGHT = 100
 const SIMPLE_NODE_SIZE = 24
 
 interface GraphCanvasProps {
-  items: Item[]
+  items: Array<Item>
   searchQuery: string
   className?: string
 }
@@ -87,7 +89,7 @@ interface ForceNode extends SimulationNodeDatum {
  * Create nodes from items. Node data includes isForceLayout flag.
  */
 function createNodes(
-  items: Item[],
+  items: Array<Item>,
   matchedIds: Set<string>,
   hasActiveFilter: boolean,
   options: {
@@ -96,7 +98,7 @@ function createNodes(
     showLabels: boolean
     isForceLayout: boolean
   },
-): Node[] {
+): Array<Node> {
   const { nodeStyle, filterMode, showLabels, isForceLayout } = options
 
   // Calculate how many items depend on each item (dependents count)
@@ -169,12 +171,12 @@ function createNodes(
  * Create edges from item dependencies.
  */
 function createEdges(
-  items: Item[],
+  items: Array<Item>,
   visibleIds: Set<string>,
   matchedIds: Set<string>,
   edgeType: 'dependency' | 'forceArrow',
-): Edge[] {
-  const edges: Edge[] = []
+): Array<Edge> {
+  const edges: Array<Edge> = []
 
   items.forEach((item) => {
     if (item.dependencies && visibleIds.has(item.id)) {
@@ -201,10 +203,10 @@ function createEdges(
  * Apply dagre hierarchical layout to nodes.
  */
 function applyDagreLayout(
-  nodes: Node[],
-  edges: Edge[],
+  nodes: Array<Node>,
+  edges: Array<Edge>,
   nodeStyle: GraphNodeStyle,
-): Node[] {
+): Array<Node> {
   if (nodes.length === 0) return []
 
   const g = new dagre.graphlib.Graph()
@@ -255,7 +257,7 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
     ForceNode,
     SimulationLinkDatum<ForceNode>
   > | null>(null)
-  const nodesRef = useRef<Node[]>([])
+  const nodesRef = useRef<Array<Node>>([])
 
   // Store subscriptions
   const graphOptions = useViewModeStore((s) => s.graphOptions)
@@ -356,17 +358,17 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
   }, [])
 
   const startForceSimulation = useCallback(
-    (initialNodes: Node[], edgeData: Edge[]) => {
+    (initialNodes: Array<Node>, edgeData: Array<Edge>) => {
       stopSimulation()
 
       // Create force nodes from current positions
-      const forceNodes: ForceNode[] = initialNodes.map((node) => ({
+      const forceNodes: Array<ForceNode> = initialNodes.map((node) => ({
         id: node.id,
         x: node.position.x,
         y: node.position.y,
       }))
 
-      const forceLinks: SimulationLinkDatum<ForceNode>[] = edgeData.map(
+      const forceLinks: Array<SimulationLinkDatum<ForceNode>> = edgeData.map(
         (edge) => ({
           source: edge.source,
           target: edge.target,
@@ -676,7 +678,11 @@ function GraphCanvasInner({ items, searchQuery, className }: GraphCanvasProps) {
 
   const minimapNodeColor = useCallback((node: Node) => {
     if (node.type === 'simple') {
-      const data = node.data as { types?: ItemType[]; type?: ItemType; isDimmed: boolean }
+      const data = node.data as {
+        types?: Array<ItemType>
+        type?: ItemType
+        isDimmed: boolean
+      }
       if (data?.isDimmed) return 'var(--muted)'
       // Use first type from types array, fallback to single type
       const firstType = data?.types?.[0] ?? data?.type

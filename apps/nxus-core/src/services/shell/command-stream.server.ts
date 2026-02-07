@@ -1,7 +1,7 @@
-import fs from 'fs'
-import path from 'path'
-import url from 'url'
-import { spawn } from 'child_process'
+import fs from 'node:fs'
+import path from 'node:path'
+import url from 'node:url'
+import { spawn } from 'node:child_process'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
@@ -78,7 +78,7 @@ export const streamCommandServerFn = createServerFn({ method: 'POST' })
     console.log('[streamCommandServerFn] Resolved cwd:', resolvedCwd)
 
     // Queue for incoming chunks
-    const chunks: StreamChunk[] = []
+    const chunks: Array<StreamChunk> = []
     let resolveChunk: (() => void) | null = null
     let done = false
 

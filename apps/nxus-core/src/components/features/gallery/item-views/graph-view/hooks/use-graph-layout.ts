@@ -1,15 +1,17 @@
 import { useCallback, useMemo, useRef } from 'react'
 import dagre from 'dagre'
 import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
+  
+  
   forceCenter,
   forceCollide,
-  type SimulationNodeDatum,
-  type SimulationLinkDatum,
+  forceLink,
+  forceManyBody,
+  forceSimulation
 } from 'd3-force'
-import { useReactFlow, type Node, type Edge } from '@xyflow/react'
+import {   useReactFlow } from '@xyflow/react'
+import type {SimulationLinkDatum, SimulationNodeDatum} from 'd3-force';
+import type {Edge, Node} from '@xyflow/react';
 import type { GraphLayout } from '@/stores/view-mode.store'
 
 const NODE_WIDTH = 240
@@ -17,8 +19,8 @@ const NODE_HEIGHT = 100
 const COMMAND_NODE_SIZE = 60
 
 interface UseGraphLayoutProps {
-  nodes: Node[]
-  edges: Edge[]
+  nodes: Array<Node>
+  edges: Array<Edge>
   layout: GraphLayout
 }
 
@@ -35,7 +37,7 @@ export function useGraphLayout({ nodes, edges, layout }: UseGraphLayoutProps) {
 
   // Dagre hierarchical layout
   const getDagreLayout = useCallback(
-    (inputNodes: Node[], inputEdges: Edge[], direction: 'LR' | 'TB' = 'LR') => {
+    (inputNodes: Array<Node>, inputEdges: Array<Edge>, direction: 'LR' | 'TB' = 'LR') => {
       const dagreGraph = new dagre.graphlib.Graph()
       dagreGraph.setDefaultEdgeLabel(() => ({}))
       dagreGraph.setGraph({
@@ -84,8 +86,8 @@ export function useGraphLayout({ nodes, edges, layout }: UseGraphLayoutProps) {
 
   // D3 force-directed layout
   const getForceLayout = useCallback(
-    (inputNodes: Node[], inputEdges: Edge[]) => {
-      const forceNodes: ForceNode[] = inputNodes.map((node) => ({
+    (inputNodes: Array<Node>, inputEdges: Array<Edge>) => {
+      const forceNodes: Array<ForceNode> = inputNodes.map((node) => ({
         id: node.id,
         x: positionCache.current.get(node.id)?.x ?? Math.random() * 800,
         y: positionCache.current.get(node.id)?.y ?? Math.random() * 600,
@@ -93,7 +95,7 @@ export function useGraphLayout({ nodes, edges, layout }: UseGraphLayoutProps) {
         height: node.type === 'command' ? COMMAND_NODE_SIZE : NODE_HEIGHT,
       }))
 
-      const forceLinks: SimulationLinkDatum<ForceNode>[] = inputEdges.map(
+      const forceLinks: Array<SimulationLinkDatum<ForceNode>> = inputEdges.map(
         (edge) => ({
           source: edge.source,
           target: edge.target,

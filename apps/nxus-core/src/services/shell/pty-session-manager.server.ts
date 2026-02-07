@@ -5,9 +5,9 @@
  * Each session represents an interactive shell that can receive input and produce output.
  */
 
+import * as os from 'node:os'
+import * as fs from 'node:fs'
 import * as pty from 'node-pty'
-import * as os from 'os'
-import * as fs from 'fs'
 
 export interface PtySession {
   id: string
@@ -15,7 +15,7 @@ export interface PtySession {
   cwd: string
   shell: string
   createdAt: Date
-  outputBuffer: string[] // Buffer for reconnection
+  outputBuffer: Array<string> // Buffer for reconnection
   bufferOffset: number // Total characters shifted out of the buffer
   isAlive: boolean
   exitCode?: number
@@ -38,7 +38,7 @@ const cleanupTimers = new Map<string, NodeJS.Timeout>()
 /**
  * Detect the best shell for the current platform
  */
-function detectShell(): { shell: string; args: string[] } {
+function detectShell(): { shell: string; args: Array<string> } {
   const platform = os.platform()
 
   // Check for WSL
@@ -92,7 +92,7 @@ function detectShell(): { shell: string; args: string[] } {
 
   // Check if pwsh is in PATH
   try {
-    const { execSync } = require('child_process')
+    const { execSync } = require('node:child_process')
     execSync('where pwsh', { stdio: 'ignore' })
     return { shell: 'pwsh.exe', args: [] }
   } catch {
@@ -108,7 +108,7 @@ function detectShell(): { shell: string; args: string[] } {
 export function createPtySession(options?: {
   cwd?: string
   command?: string
-  args?: string[]
+  args?: Array<string>
   shellCommand?: string // Full command to execute in shell (shell handles parsing)
   cols?: number
   rows?: number

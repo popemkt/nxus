@@ -60,11 +60,14 @@ Each server function needs to:
 3. Return typed results
 
 Example:
+
 ```typescript
 export const getNodeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ identifier: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode } = await import('@nxus/db/server')
+    const { initDatabase, getDatabase, findNode } = await import(
+      '@nxus/db/server'
+    )
     const { identifier } = ctx.data
 
     initDatabase()
@@ -92,6 +95,7 @@ The adapter functions (`nodeToItem`, `nodeToTag`, etc.) are **pure functions**, 
 ## Current Imports to Update
 
 Files importing from `@nxus/workbench/server`:
+
 - `packages/nxus-core/src/services/apps/apps.server.ts` - uses `getAllItemsFromNodesServerFn`
 - `packages/nxus-core/src/services/nodes/index.ts` - re-exports many functions
 - Various scripts in `packages/nxus-core/scripts/`

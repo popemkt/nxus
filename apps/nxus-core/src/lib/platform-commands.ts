@@ -1,4 +1,4 @@
-import os from 'os'
+import os from 'node:os'
 
 /**
  * Platform types supported by the application
@@ -116,7 +116,7 @@ if ($result -eq 'OK') {
  * @param platforms Single platform or array of platforms to check
  * @returns true if current platform matches
  */
-export function isPlatform(platforms: Platform | Platform[]): boolean {
+export function isPlatform(platforms: Platform | Array<Platform>): boolean {
   const current = getPlatform()
   return Array.isArray(platforms)
     ? platforms.includes(current)

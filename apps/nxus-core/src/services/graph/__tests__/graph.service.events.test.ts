@@ -11,25 +11,25 @@
  * - removeRelation('has_supertag', ...) → supertag:removed
  */
 
-import type { Surreal } from 'surrealdb'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   setupTestGraphDatabase,
   teardownTestGraphDatabase,
 } from '@nxus/db/test-utils'
 import { eventBus } from '@nxus/db/server'
-import type { MutationEvent } from '@nxus/db/server'
 import {
+  addRelation,
   createNode,
-  updateNode,
   deleteNode,
   purgeNode,
-  addRelation,
   removeRelation,
+  updateNode,
 } from '../graph.service.js'
+import type { MutationEvent } from '@nxus/db/server'
+import type { Surreal } from 'surrealdb'
 
 let db: Surreal
-let events: MutationEvent[]
+let events: Array<MutationEvent>
 let unsubscribe: () => void
 
 beforeEach(async () => {

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, devtools } from 'zustand/middleware'
+import { devtools, persist } from 'zustand/middleware'
 import type { Platform } from '@nxus/db'
 
 // --- Internal Store (Implementation Detail) ---
@@ -19,7 +19,7 @@ interface DevInfo {
 }
 
 interface AppState {
-  installedApps: Record<string, InstalledAppRecord[]> // Array of installations per app
+  installedApps: Record<string, Array<InstalledAppRecord>> // Array of installations per app
   osInfo: { platform: Platform; arch: string; homeDir: string } | null
   devInfo: DevInfo | null
   _hasHydrated: boolean
@@ -174,12 +174,12 @@ export const appStateService = {
 }
 
 // Stable empty array to prevent infinite re-renders from new array references
-const EMPTY_INSTALLATIONS: InstalledAppRecord[] = []
+const EMPTY_INSTALLATIONS: Array<InstalledAppRecord> = []
 
 /**
  * Hook to get all installations for an app
  */
-export const useAppInstallations = (appId: string): InstalledAppRecord[] => {
+export const useAppInstallations = (appId: string): Array<InstalledAppRecord> => {
   const installations = useStore((state) => state.installedApps[appId])
   return installations ?? EMPTY_INSTALLATIONS
 }

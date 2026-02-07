@@ -9,30 +9,25 @@ import * as React from 'react'
 import { PencilSimple } from '@phosphor-icons/react'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
-} from '@nxus/ui'
-import { Button } from '@nxus/ui'
-import { Input } from '@nxus/ui'
-import { Textarea } from '@nxus/ui'
-import { Field, FieldLabel } from '@nxus/ui'
-import {
-  Select,
+  AlertDialogTitle, Button , Field , FieldLabel , Input, Select ,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea
 } from '@nxus/ui'
-import {
-  updateInboxItemServerFn,
-  deleteInboxItemServerFn,
-  type InboxItem,
-} from '@/services/inbox/inbox.server'
 import { useMutation } from '@tanstack/react-query'
+import type {InboxItem} from '@/services/inbox/inbox.server';
+import {
+  
+  deleteInboxItemServerFn,
+  updateInboxItemServerFn
+} from '@/services/inbox/inbox.server'
 
 export interface InboxEditModalProps {
   item: InboxItem
