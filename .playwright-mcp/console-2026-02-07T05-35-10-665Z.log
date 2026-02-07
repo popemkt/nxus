@@ -1,0 +1,70 @@
+[    3892ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/drawio.svg:0
+[    3916ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/jules.svg:0
+[    3938ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/tabby.svg:0
+[    3943ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/surrealdb.svg:0
+[    3954ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/zenflow.svg:0
+[    3982ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/tana-helper.svg:0
+[    3992ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/drawio.png:0
+[    4001ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/jules.png:0
+[    4011ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/surrealdb.png:0
+[    4019ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/tabby.png:0
+[    4025ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/zenflow.png:0
+[    4033ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/tana-helper.png:0
+[   28421ms] [ERROR] In HTML, %s cannot be a descendant of <%s>.
+This will cause a hydration error.%s <button> button 
+
+  ...
+    <div className="space-y-2">
+      <p>
+      <motion.div initial={{opacity:0,x:-10}} animate={{opacity:1,x:0}} transition={{duration:0.15, ...}}>
+        <div style={{opacity:0, ...}} ref={function}>
+          <div className="flex w-full">
+            <Button>
+            <DropdownMenu>
+              <MenuRoot data-slot="dropdown-menu">
+                <FloatingTree externalTree={{nodesRef:{...}, ...}}>
+                  <DropdownMenuTrigger asChild={true}>
+                    <MenuTrigger2 data-slot="dropdown-m..." asChild={true}>
+>                     <button
+>                       type="button"
+>                       onClick={function onClick}
+>                       onMouseDown={function onMouseDown}
+>                       onKeyDown={function}
+>                       onKeyUp={function onKeyUp}
+>                       onPointerDown={function onPointerDown}
+>                       tabIndex={0}
+>                       disabled={false}
+>                       onPointerEnter={function setPointerRef}
+>                       onMouseMove={function onMouseMove}
+>                       aria-haspopup="menu"
+>                       id="base-ui-_r_2v_"
+>                       data-slot="dropdown-menu-trigger"
+>                       asChild={true}
+>                       ref={function}
+>                     >
+                        <Button variant="outline" className="px-2 round..." title="More actions">
+                          <Button2 data-slot="button" className={"focus-vi..."} title="More actions">
+>                           <button
+>                             type="button"
+>                             onClick={function onClick}
+>                             onMouseDown={function onMouseDown}
+>                             onKeyDown={function}
+>                             onKeyUp={function onKeyUp}
+>                             onPointerDown={function onPointerDown}
+>                             tabIndex={0}
+>                             disabled={false}
+>                             data-slot="button"
+>                             title="More actions"
+>                             ref={function}
+>                             className={"focus-visible:border-ring focus-visible:ring-ring/30 aria-invalid:ring-dest..."}
+>                           >
+                  ...
+      ...
+    ...
+ @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=be5c2ba5:2155
+[   28421ms] [ERROR] <%s> cannot contain a nested %s.
+See this log for the ancestor stack trace. button <button> @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=be5c2ba5:2162
+[   28422ms] [ERROR] React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent component, remove it from the DOM element. asChild aschild @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=be5c2ba5:2402
+[   28456ms] [ERROR] Base UI: A component that acts as a button was not rendered as a native <button>, which does not match the default. Ensure that the element passed to the `render` prop of the component is a real <button>, or set the `nativeButton` prop on the component to `false`. @ http://localhost:3000/node_modules/.vite/deps/chunk-CZGPUV2T.js?v=be5c2ba5:29
+[   28487ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/surrealdb.svg:0
+[   28514ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/thumbnails/surrealdb.png:0
