@@ -293,24 +293,6 @@ export function bootstrapSystemNodesSync(
       if (parentId) {
         setProperty(db, id, extendsFieldId, JSON.stringify(parentId));
       }
-    } else {
-      // Clear any existing extends property (e.g. Task/Event no longer extend Item)
-      const extendsFieldNode = db
-        .select()
-        .from(nodes)
-        .where(eq(nodes.systemId, SYSTEM_FIELDS.EXTENDS))
-        .all()[0];
-      if (extendsFieldNode) {
-        const existingProp = db
-          .select()
-          .from(nodeProperties)
-          .where(eq(nodeProperties.nodeId, id))
-          .all()
-          .find((p) => p.fieldNodeId === extendsFieldNode.id);
-        if (existingProp) {
-          db.delete(nodeProperties).where(eq(nodeProperties.id, existingProp.id)).run();
-        }
-      }
     }
   }
 
