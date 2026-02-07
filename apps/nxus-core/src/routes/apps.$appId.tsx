@@ -157,8 +157,9 @@ function DetailThumbnail({
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
     'loading',
   )
+  const base = import.meta.env.BASE_URL || '/'
   const [src, setSrc] = useState(
-    registryThumbnail || `/thumbnails/${appId}.svg`,
+    registryThumbnail || `${base}thumbnails/${appId}.svg`,
   )
 
   // Common styles for the container
@@ -193,7 +194,7 @@ function DetailThumbnail({
           onLoad={() => setStatus('loaded')}
           onError={() => {
             if (src.endsWith('.svg')) {
-              setSrc(`/thumbnails/${appId}.png`)
+              setSrc(`${base}thumbnails/${appId}.png`)
             } else {
               setStatus('error')
             }

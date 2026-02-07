@@ -46,7 +46,8 @@ function ThumbnailWithFallback({
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
     'loading',
   )
-  const [src, setSrc] = useState(`/thumbnails/${appId}.svg`)
+  const base = import.meta.env.BASE_URL || '/'
+  const [src, setSrc] = useState(`${base}thumbnails/${appId}.svg`)
 
   const containerClass = cn(
     'w-full overflow-hidden bg-muted',
@@ -66,7 +67,7 @@ function ThumbnailWithFallback({
           onLoad={() => setStatus('loaded')}
           onError={() => {
             if (src.endsWith('.svg')) {
-              setSrc(`/thumbnails/${appId}.png`)
+              setSrc(`${base}thumbnails/${appId}.png`)
             } else {
               setStatus('error')
             }
