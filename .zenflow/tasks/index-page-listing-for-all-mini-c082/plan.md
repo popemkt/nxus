@@ -154,3 +154,11 @@ Create a standalone TanStack Start app in `apps/nxus-calendar/` that mounts the 
 
 ### [x] Step: Test and create tests if not there
 <!-- chat-id: bf5c2924-1124-4c69-863c-8bf7ca82c76a -->
+
+### [x] Step: Fixes after implementation
+<!-- chat-id: f2c8059a-f426-4744-8544-23f10cf6d418 -->
+
+A few problems i noticed:
+Using gateway,  the svgs are not being correctly resolved
+Gateway cannot resolve css i think
+nxus-core looks kinda different from other apps? other apps is like @nxus/{name}-app, nxus core running from pnpm run dev is just nxus-core:dev

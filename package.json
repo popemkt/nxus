@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "nx run-many --target=dev --projects=@nxus/gateway,nxus-core,@nxus/workbench-app,@nxus/calendar-app --parallel=4",
+    "dev": "nx run-many --target=dev --projects=@nxus/gateway,@nxus/core-app,@nxus/workbench-app,@nxus/calendar-app --parallel=4",
     "dev:gateway": "nx run @nxus/gateway:dev",
-    "dev:core": "nx run nxus-core:dev",
+    "dev:core": "nx run @nxus/core-app:dev",
     "dev:workbench": "nx run @nxus/workbench-app:dev",
     "dev:calendar": "nx run @nxus/calendar-app:dev",
     "test": "nx run-many --target=test --all",

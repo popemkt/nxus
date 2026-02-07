@@ -16,7 +16,7 @@
       "target": "item",
       "mode": "execute",
       "command": "npx tsx scripts/bootstrap-nodes.ts",
-      "cwd": "packages/nxus-core"
+      "cwd": "apps/nxus-core"
     },
     {
       "id": "seed-nodes",
@@ -27,7 +27,7 @@
       "target": "item",
       "mode": "execute",
       "command": "npx tsx scripts/db-seed-nodes.ts",
-      "cwd": "packages/nxus-core"
+      "cwd": "apps/nxus-core"
     },
     {
       "id": "seed-legacy",
@@ -38,7 +38,7 @@
       "target": "item",
       "mode": "execute",
       "command": "npx tsx scripts/db-seed.ts",
-      "cwd": "packages/nxus-core"
+      "cwd": "apps/nxus-core"
     },
     {
       "id": "export",
@@ -49,7 +49,7 @@
       "target": "item",
       "mode": "execute",
       "command": "npx tsx scripts/db-export.ts",
-      "cwd": "packages/nxus-core"
+      "cwd": "apps/nxus-core"
     },
     {
       "id": "reset-nodes",
@@ -60,7 +60,7 @@
       "target": "item",
       "mode": "execute",
       "command": "sqlite3 src/data/nxus.db 'DELETE FROM node_properties; DELETE FROM nodes;' && npx tsx scripts/bootstrap-nodes.ts && npx tsx scripts/db-seed-nodes.ts",
-      "cwd": "packages/nxus-core"
+      "cwd": "apps/nxus-core"
     },
     {
       "id": "inspect",

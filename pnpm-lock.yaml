@@ -105,6 +105,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
+      shadcn:
+        specifier: ^3.6.2
+        version: 3.6.2(@types/node@22.19.3)(babel-plugin-macros@3.1.0)(hono@4.11.1)(typescript@5.9.3)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -377,6 +380,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
+      shadcn:
+        specifier: ^3.6.2
+        version: 3.6.2(@types/node@22.19.3)(babel-plugin-macros@3.1.0)(hono@4.11.1)(typescript@5.9.3)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -468,6 +474,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
+      shadcn:
+        specifier: ^3.6.2
+        version: 3.6.2(@types/node@22.19.3)(babel-plugin-macros@3.1.0)(hono@4.11.1)(typescript@5.9.3)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
