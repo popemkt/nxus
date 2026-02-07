@@ -15,7 +15,6 @@
     "db:migrate": "tsx scripts/migrate-manifests.ts"
   },
   "dependencies": {
-    "@nxus/calendar": "workspace:*",
     "@nxus/db": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@nxus/workbench": "workspace:*",
