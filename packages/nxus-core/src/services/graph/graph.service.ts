@@ -10,6 +10,7 @@ import {
   getGraphDatabase,
   initGraphDatabase,
   toRecordId,
+  eventBus,
 } from '@nxus/db/server'
 
 // ============================================================================
@@ -118,6 +119,20 @@ export async function createNode(data: {
     throw new Error('Failed to create node')
   }
 
+  const now = new Date()
+
+  // Emit node:created event
+  eventBus.emit({
+    type: 'node:created',
+    timestamp: now,
+    nodeId: String(created.id),
+    afterValue: {
+      id: String(created.id),
+      content: data.content,
+      system_id: data.system_id,
+    },
+  })
+
   // Assign supertag if provided
   if (data.supertag) {
     await addRelation('has_supertag', created.id, data.supertag)
@@ -166,8 +181,15 @@ export async function updateNode(
 ): Promise<GraphNode | null> {
   const db = await getDb()
 
-  const updates: string[] = ['updated_at = time::now()']
   const recordId = typeof id === 'string' ? toRecordId(id) : id
+
+  // Fetch current state for beforeValue
+  const [before] = await db.query<[GraphNode[]]>(`SELECT * FROM $id`, {
+    id: recordId,
+  })
+  const beforeNode = before[0] || null
+
+  const updates: string[] = ['updated_at = time::now()']
   const params: Record<string, unknown> = { id: recordId }
 
   if (data.content !== undefined) {
@@ -186,7 +208,22 @@ export async function updateNode(
     params,
   )
 
-  return result[0] || null
+  const updated = result[0] || null
+
+  if (updated) {
+    const now = new Date()
+    eventBus.emit({
+      type: 'node:updated',
+      timestamp: now,
+      nodeId: String(updated.id),
+      beforeValue: beforeNode
+        ? { content: beforeNode.content, props: beforeNode.props }
+        : undefined,
+      afterValue: { content: updated.content, props: updated.props },
+    })
+  }
+
+  return updated
 }
 
 /**
@@ -196,6 +233,14 @@ export async function deleteNode(id: string | RecordId): Promise<boolean> {
   const db = await getDb()
   const recordId = typeof id === 'string' ? toRecordId(id) : id
   await db.query(`UPDATE $id SET deleted_at = time::now()`, { id: recordId })
+
+  const now = new Date()
+  eventBus.emit({
+    type: 'node:deleted',
+    timestamp: now,
+    nodeId: String(recordId),
+  })
+
   return true
 }
 
@@ -216,6 +261,14 @@ export async function purgeNode(id: string | RecordId): Promise<boolean> {
     `,
     { id: recordId },
   )
+
+  const now = new Date()
+  eventBus.emit({
+    type: 'node:deleted',
+    timestamp: now,
+    nodeId: String(recordId),
+  })
+
   return true
 }
 
@@ -308,6 +361,17 @@ export async function addRelation(
     throw new Error(`Failed to create ${type} relation`)
   }
 
+  // Emit supertag:added event when adding a has_supertag relation
+  if (type === 'has_supertag') {
+    const now = new Date()
+    eventBus.emit({
+      type: 'supertag:added',
+      timestamp: now,
+      nodeId: String(created.in),
+      supertagId: String(created.out),
+    })
+  }
+
   return created
 }
 
@@ -320,10 +384,25 @@ export async function removeRelation(
   toId: string | RecordId,
 ): Promise<boolean> {
   const db = await getDb()
+  const from = typeof fromId === 'string' ? toRecordId(fromId) : fromId
+  const to = typeof toId === 'string' ? toRecordId(toId) : toId
+
   await db.query(`DELETE FROM ${type} WHERE in = $from AND out = $to`, {
-    from: typeof fromId === 'string' ? toRecordId(fromId) : fromId,
-    to: typeof toId === 'string' ? toRecordId(toId) : toId,
+    from,
+    to,
   })
+
+  // Emit supertag:removed event when removing a has_supertag relation
+  if (type === 'has_supertag') {
+    const now = new Date()
+    eventBus.emit({
+      type: 'supertag:removed',
+      timestamp: now,
+      nodeId: String(from),
+      supertagId: String(to),
+    })
+  }
+
   return true
 }
 

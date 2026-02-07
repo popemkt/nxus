@@ -149,7 +149,8 @@ Write unit tests for the semantic traversal operators and search functionality.
 
 ---
 
-### [ ] Step: Event Bus Integration for SurrealDB Mutations
+### [x] Step: Event Bus Integration for SurrealDB Mutations
+<!-- chat-id: e5fb4417-05aa-40a2-b08b-81847942326f -->
 
 Integrate the reactive event bus with SurrealDB mutation operations so the reactive layer responds to graph changes.
 
