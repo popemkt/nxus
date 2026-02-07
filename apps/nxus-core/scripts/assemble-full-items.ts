@@ -23,7 +23,7 @@ import {
   type Item,
   type TagRef,
 } from '@nxus/db/server'
-import { nodeToCommand, nodeToItem } from '@nxus/workbench/server'
+import { nodeToCommand, nodeToItem } from '../src/services/apps/node-items.server'
 
 function getFullLegacyItem(
   db: ReturnType<typeof getDatabase>,

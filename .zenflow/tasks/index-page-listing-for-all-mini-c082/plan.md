@@ -57,7 +57,8 @@ Move existing packages to follow Nx conventions using `git mv` (preserves histor
 12. Run `pnpm install` to re-link workspace packages
 13. Verify: `nx graph` shows correct deps with all 5 projects (nxus-core + 4 libs including nxus-calendar)
 
-### [ ] Step: Decouple workbench from nxus-core
+### [x] Step: Decouple workbench from nxus-core
+<!-- chat-id: e87aab17-8c52-40b2-85bb-6bd02822b8a8 -->
 
 Remove the `/nodes` route and `@nxus/workbench` dependency from nxus-core.
 

@@ -12,8 +12,6 @@
 */
 @source "../../nxus-ui/src/**/*.ts";
 @source "../../nxus-ui/src/**/*.tsx";
-@source "../../nxus-workbench/src/**/*.ts";
-@source "../../nxus-workbench/src/**/*.tsx";
 @source "../../nxus-calendar/src/**/*.ts";
 @source "../../nxus-calendar/src/**/*.tsx";
 @source "../../nxus-calendar/src/**/*.css";

@@ -15,7 +15,7 @@ import {
   getNodesBySupertagWithInheritance,
   getProperty,
 } from '@nxus/db/server'
-import { nodeToCommand, nodeToItem } from '@nxus/workbench/server'
+import { nodeToCommand, nodeToItem } from '../src/services/apps/node-items.server'
 
 function compareItems() {
   const db = getDatabase()

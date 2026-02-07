@@ -30,7 +30,6 @@ import type {
   ItemMetadata,
   TagRef,
 } from '@nxus/db'
-import { getAllItemsFromNodesServerFn } from '@nxus/workbench/server'
 
 /**
  * Type entry from item_types junction table
@@ -152,6 +151,9 @@ export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
 
     if (isNodeArchitecture()) {
       console.log('[getAllAppsServerFn] Using node-based architecture')
+      const { getAllItemsFromNodesServerFn } = await import(
+        './node-items.server'
+      )
       const result = await getAllItemsFromNodesServerFn()
       if (result.success) {
         return { success: true as const, apps: result.items }
@@ -245,7 +247,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
     // Architecture switch - delegate to node-based function when enabled
     if (isNodeArchitecture()) {
       const { getItemByIdFromNodesServerFn } = await import(
-        '@nxus/workbench/server'
+        './node-items.server'
       )
       const result = await getItemByIdFromNodesServerFn({ data: { id } })
       if (result.success) {

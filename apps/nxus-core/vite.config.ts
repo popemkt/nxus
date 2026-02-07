@@ -42,7 +42,6 @@ const config = defineConfig({
       'better-sqlite3',
       'drizzle-orm/better-sqlite3',
       '@nxus/db',
-      '@nxus/workbench',
     ],
     // Force rrule to use its ESM entry point which has proper named exports
     esbuildOptions: {
@@ -75,7 +74,7 @@ const config = defineConfig({
   },
   ssr: {
     // These packages should only run on the server
-    noExternal: ['@nxus/db', '@nxus/workbench', '@nxus/calendar'],
+    noExternal: ['@nxus/db', '@nxus/calendar'],
   },
 })
 

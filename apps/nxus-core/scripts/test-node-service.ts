@@ -11,7 +11,7 @@ import {
   findNode,
   getNodesBySupertagWithInheritance,
 } from '@nxus/db/server'
-import { nodeToItem } from '@nxus/workbench/server'
+import { nodeToItem } from '../src/services/apps/node-items.server'
 
 async function test() {
   console.log('\n' + '='.repeat(50))

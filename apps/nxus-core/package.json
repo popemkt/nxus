@@ -18,7 +18,6 @@
     "@nxus/calendar": "workspace:*",
     "@nxus/db": "workspace:*",
     "@nxus/ui": "workspace:*",
-    "@nxus/workbench": "workspace:*",
     "@base-ui/react": "^1.0.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
