@@ -12,6 +12,7 @@
 import { bootstrapSystemNodes } from '@nxus/db/server'
 import {
   ARCHITECTURE_TYPE,
+  isGraphArchitecture,
   isNodeArchitecture,
   isTableArchitecture,
 } from '../src/config/feature-flags'
@@ -19,7 +20,11 @@ import {
 async function seed() {
   console.log(`\n[Architecture] Mode: ${ARCHITECTURE_TYPE}\n`)
 
-  if (isTableArchitecture()) {
+  if (isGraphArchitecture()) {
+    // Graph architecture: seed SurrealDB via embedded surrealkv://
+    const { seedGraph } = await import('./seed-graph')
+    await seedGraph()
+  } else if (isTableArchitecture()) {
     const { seedTables } = await import('./seed-tables')
     await seedTables()
   } else if (isNodeArchitecture()) {

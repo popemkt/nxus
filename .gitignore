@@ -46,6 +46,11 @@ packages/repos
 *.db-shm
 *.db-wal
 
+# SurrealKV runtime artifacts (the surreal.db directory itself is committed)
+**/surreal.db/.lock
+**/surreal.db/**/*.wal
+**/surreal.db/**/*.tmp
+
 # Prevent database from being created in wrong location
 # Correct location: packages/nxus-core/src/data/nxus.db
 packages/nxus-core/src/data/.fuse*
