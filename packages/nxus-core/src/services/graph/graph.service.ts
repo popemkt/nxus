@@ -459,7 +459,7 @@ export async function componentsRec(
   const db = await getDb()
   const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  // SurrealDB v2.1 recursive traversal with +collect to gather all intermediate nodes
+  // SurrealDB v2 recursive traversal with +collect to gather all intermediate nodes
   const result = await db.query<[null, GraphNode[]]>(
     `
     LET $ids = $nodeId.{..${maxDepth}+collect}(<-part_of<-node);

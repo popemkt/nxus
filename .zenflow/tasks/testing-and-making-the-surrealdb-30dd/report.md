@@ -79,7 +79,7 @@ This task made the SurrealDB backend functional by systematically testing and fi
 **Fix**: Used subquery approach — `SELECT * FROM node WHERE id IN (SELECT VALUE in FROM relation WHERE out = $nodeId)`.
 
 ### 3. Recursive Traversal Syntax
-**Problem**: SurrealDB v2.1 uses a different syntax for recursive graph traversals.
+**Problem**: SurrealDB v2 uses a different syntax for recursive graph traversals.
 **Fix**: Used `{..N+collect}` syntax (e.g., `$nodeId.{..10+collect}(<-part_of<-node)`) with JS-side deduplication for diamond hierarchies.
 
 ### 4. StringRecordId for Embedded Mode

@@ -97,7 +97,7 @@
       "category": "Run",
       "target": "item",
       "mode": "terminal",
-      "command": "surreal start --user root --pass root memory & sleep 2 && cd packages/nxus-core && ARCHITECTURE_TYPE=graph SURREAL_EMBEDDED=false pnpm dev"
+      "command": "surreal start --user root --pass root memory & (until curl -s -f http://127.0.0.1:8000/health > /dev/null 2>&1; do sleep 0.5; done; cd packages/nxus-core && ARCHITECTURE_TYPE=graph SURREAL_EMBEDDED=false pnpm dev)"
     },
     {
       "id": "sql-shell",
