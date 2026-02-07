@@ -259,6 +259,63 @@ When working on Nxus, AI assistants should:
     - **Integration**: The boundary file should import the logic file dynamically: `const logic = await import('./logic')`.
     - **Result**: This allows the Client to import the Boundary File (for types/validation) without dragging in Node.js modules.
 
+13. **Library Package Server Functions**: Server functions in library packages (`@nxus/*`) require extra care:
+    - **Node.js-Only Libraries**: Libraries like `googleapis` that access Node.js APIs at module load time MUST use dynamic imports:
+      ```typescript
+      // BAD - causes "Cannot read property 'isTTY'" error in browser
+      import { google } from 'googleapis'
+
+      // GOOD - only loads when function is called (on server)
+      async function getGoogleApis() {
+        const { google } = await import('googleapis')
+        return google
+      }
+      ```
+    - **Entry Point Separation**: Keep Node.js-dependent exports out of the main client entry point. Use separate entry points like `@nxus/package/server`.
+    - **TanStack Start API**: Use `.inputValidator()` NOT `.validator()` for server function validation schemas.
+    - **Consider App-Level Server Functions**: For complex cases, consider keeping server function definitions in the app (`nxus-core`) rather than library packages. Libraries can export the business logic functions, and apps define the server function wrappers.
+
+14. **CommonJS/ESM Interop in Vite + TanStack Start**: When using CommonJS packages in SSR environments, Vite handles modules differently between SSR and client. This causes "does not provide an export named 'default'" or "Named export 'X' not found" errors.
+
+    **Step 1: Check the package.json of the problematic package:**
+    ```bash
+    cat node_modules/<package>/package.json | grep -E '"main"|"module"|"exports"'
+    ```
+    Look for `"module"` field - this is the ESM entry point.
+
+    **Step 2: Add a Vite alias to force ESM resolution:**
+    ```typescript
+    // vite.config.ts
+    export default defineConfig({
+      resolve: {
+        alias: {
+          // Force packages to use their ESM entry points
+          // Check package.json "module" field for the correct path
+          rrule: 'rrule/dist/esm/index.js',
+          'react-big-calendar': 'react-big-calendar/dist/react-big-calendar.esm.js',
+        },
+      },
+    })
+    ```
+
+    **Step 3: Use named imports (NOT default imports):**
+    ```typescript
+    // CORRECT - use named imports that match ESM exports
+    import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
+    import { RRule, rrulestr } from 'rrule'
+
+    // WRONG - default imports often don't exist in ESM
+    import ReactBigCalendar from 'react-big-calendar'  // ❌
+    ```
+
+    **Step 4: For sub-modules without ESM (like addons), use fallback pattern:**
+    ```typescript
+    import withDragAndDropImport from 'react-big-calendar/lib/addons/dragAndDrop'
+    const withDragAndDrop = (withDragAndDropImport as any).default ?? withDragAndDropImport
+    ```
+
+    **Why this works:** Vite uses different module resolution strategies for SSR vs client bundling. By forcing both to use the ESM entry point via aliases, you get consistent named exports everywhere.
+
 ## Questions to Ask Before Implementing
 
 1. Is this type-safe?

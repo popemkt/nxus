@@ -101,6 +101,10 @@ export const SYSTEM_SUPERTAGS = {
 
   // Computed field supertag - for reactive computed/aggregated fields
   COMPUTED_FIELD: 'supertag:computed_field',
+
+  // Calendar supertags - for schedule management
+  TASK: 'supertag:task', // Nodes that are tasks (completable items)
+  EVENT: 'supertag:event', // Nodes that are calendar events
 } as const
 
 export const SYSTEM_FIELDS = {
@@ -167,6 +171,22 @@ export const SYSTEM_FIELDS = {
   COMPUTED_FIELD_DEFINITION: 'field:computed_field_definition', // JSON aggregation config (query + aggregation type)
   COMPUTED_FIELD_VALUE: 'field:computed_field_value', // Current computed value (cached)
   COMPUTED_FIELD_UPDATED_AT: 'field:computed_field_updated_at', // Timestamp of last recomputation
+
+  // Calendar-specific fields (for calendar events and tasks)
+  START_DATE: 'field:start_date', // ISO datetime or date string
+  END_DATE: 'field:end_date', // ISO datetime or date string (optional)
+  ALL_DAY: 'field:all_day', // Boolean for all-day events
+  RRULE: 'field:rrule', // RFC 5545 recurrence rule string
+  GCAL_EVENT_ID: 'field:gcal_event_id', // Google Calendar event ID
+  GCAL_SYNCED_AT: 'field:gcal_synced_at', // Last sync timestamp
+  REMINDER: 'field:reminder', // Reminder offset in minutes
+
+  // Google Calendar OAuth fields (stored on settings node)
+  GCAL_ACCESS_TOKEN: 'field:gcal_access_token', // OAuth access token (encrypted)
+  GCAL_REFRESH_TOKEN: 'field:gcal_refresh_token', // OAuth refresh token (encrypted)
+  GCAL_TOKEN_EXPIRY: 'field:gcal_token_expiry', // Token expiration timestamp
+  GCAL_USER_EMAIL: 'field:gcal_user_email', // Connected Google account email
+  GCAL_CALENDAR_ID: 'field:gcal_calendar_id', // Target calendar ID for sync
 } as const
 
 /**

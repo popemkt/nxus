@@ -11,6 +11,9 @@
     },
     {
       "path": "./packages/nxus-db"
+    },
+    {
+      "path": "./packages/nxus-calendar"
     }
   ]
 }
