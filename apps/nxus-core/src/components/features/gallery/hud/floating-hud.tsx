@@ -11,6 +11,7 @@ import {
   GearIcon,
   GraphIcon,
   GridFourIcon,
+  HouseIcon,
   MagnifyingGlassIcon,
   SquaresFourIcon,
   TableIcon,
@@ -60,6 +61,15 @@ export function FloatingHud({
         className="pointer-events-auto h-[52px] min-w-[580px] bg-background/85 backdrop-blur-xl border border-foreground/10 radius-panel flex items-center px-2 gap-1 shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
         style={{ opacity: isCommandPaletteOpen ? 0 : 1 }}
       >
+        {/* Home (Gateway) */}
+        <a
+          href="http://localhost:3001"
+          className={cn(btnBase, btnInactive, 'shrink-0 no-underline')}
+          title="Home"
+        >
+          <HouseIcon className="size-4" />
+        </a>
+
         {/* Logo */}
         <div className="w-9 h-9 radius-button bg-foreground/10 flex items-center justify-center shrink-0">
           <svg viewBox="0 0 64 64" className="w-6 h-6">

@@ -26,6 +26,7 @@ function NotFound() {
 export const getRouter = () => {
   const router = createRouter({
     routeTree,
+    basepath: '/workbench',
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
     defaultNotFoundComponent: NotFound,

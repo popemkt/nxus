@@ -2,7 +2,12 @@
   "name": "@nxus/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run-many --target=dev --projects=@nxus/gateway,nxus-core,@nxus/workbench-app --parallel=3",
+    "dev:gateway": "nx run @nxus/gateway:dev",
+    "dev:core": "nx run nxus-core:dev",
+    "dev:workbench": "nx run @nxus/workbench-app:dev"
+  },
   "private": true,
   "dependencies": {
     "zod": "^4.2.1"

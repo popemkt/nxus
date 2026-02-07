@@ -1,5 +1,5 @@
 import { cn } from '@nxus/ui'
-import { List, Graph, Funnel } from '@phosphor-icons/react'
+import { List, Graph, Funnel, House } from '@phosphor-icons/react'
 import { SidebarIcon } from './SidebarIcon.js'
 
 /** Available view modes in the workbench */
@@ -65,7 +65,15 @@ export function Sidebar({
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Future: Settings, Help, etc. could go here */}
+      {/* Home (Gateway) */}
+      <nav className="flex flex-col gap-2 pb-1">
+        <a href="http://localhost:3001" title="Home">
+          <SidebarIcon
+            icon={House}
+            tooltip="Home"
+          />
+        </a>
+      </nav>
     </div>
   )
 }

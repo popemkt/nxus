@@ -106,7 +106,8 @@ Create the gateway landing page app in `apps/nxus-gateway/`.
 7. Run `pnpm install`
 8. Verify: `nx run @nxus/gateway:dev` starts, shows mini-app cards, links point to `/core` and `/workbench`
 
-### [ ] Step: Configure base paths and multi-app dev experience
+### [x] Step: Configure base paths and multi-app dev experience
+<!-- chat-id: d5d7e2f7-c453-49cf-bcfd-81a48954cfab -->
 
 Set up base path routing for each app and a unified dev experience.
 
@@ -118,3 +119,5 @@ Set up base path routing for each app and a unified dev experience.
 6. Verify each app independently: gateway at :3001, core at :3000/core, workbench at :3002/workbench
 7. Verify `nx graph` shows the full dependency graph correctly
 8. Test: navigate from gateway to core and workbench, verify "home" link returns to gateway
+
+### [ ] Step: Comprehensive documentation/agent docs update and adjustment

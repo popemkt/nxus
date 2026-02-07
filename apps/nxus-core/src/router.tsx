@@ -30,6 +30,7 @@ function NotFound() {
 export const getRouter = () => {
   const router = createRouter({
     routeTree,
+    basepath: '/core',
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
     defaultNotFoundComponent: NotFound,
