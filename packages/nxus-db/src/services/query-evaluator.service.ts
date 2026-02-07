@@ -331,13 +331,34 @@ function compareValues(actual: unknown, op: FilterOp, target: unknown): boolean 
     case 'neq':
       return actual !== target
     case 'gt':
-      return typeof actual === 'number' && typeof target === 'number' && actual > target
     case 'gte':
-      return typeof actual === 'number' && typeof target === 'number' && actual >= target
     case 'lt':
-      return typeof actual === 'number' && typeof target === 'number' && actual < target
-    case 'lte':
-      return typeof actual === 'number' && typeof target === 'number' && actual <= target
+    case 'lte': {
+      // Numeric comparison
+      if (typeof actual === 'number' && typeof target === 'number') {
+        return op === 'gt' ? actual > target
+          : op === 'gte' ? actual >= target
+          : op === 'lt' ? actual < target
+          : actual <= target
+      }
+      // Date string comparison - parse ISO strings to timestamps for accurate ordering
+      if (typeof actual === 'string' && typeof target === 'string') {
+        const aTime = Date.parse(actual)
+        const tTime = Date.parse(target)
+        if (!isNaN(aTime) && !isNaN(tTime)) {
+          return op === 'gt' ? aTime > tTime
+            : op === 'gte' ? aTime >= tTime
+            : op === 'lt' ? aTime < tTime
+            : aTime <= tTime
+        }
+        // Fallback to lexicographic string comparison
+        return op === 'gt' ? actual > target
+          : op === 'gte' ? actual >= target
+          : op === 'lt' ? actual < target
+          : actual <= target
+      }
+      return false
+    }
     case 'contains':
       return (
         typeof actual === 'string' &&

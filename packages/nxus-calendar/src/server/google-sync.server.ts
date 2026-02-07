@@ -20,8 +20,12 @@ import {
   setProperty,
   getProperty,
   evaluateQuery,
+  eq,
+  and,
+  isNull,
   type AssembledNode,
 } from '@nxus/db/server'
+import { nodes } from '@nxus/db'
 import {
   generateAuthUrl,
   exchangeCodeForTokens,
@@ -61,14 +65,21 @@ const GCAL_SETTINGS_NODE_ID = 'item:google-calendar-settings'
 // ============================================================================
 
 /**
+ * Find the Google Calendar settings node by systemId
+ */
+function findSettingsNode(db: ReturnType<typeof initDatabase>) {
+  return db
+    .select()
+    .from(nodes)
+    .where(and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)))
+    .get()
+}
+
+/**
  * Find or create the Google Calendar settings node
  */
 function getOrCreateSettingsNode(db: ReturnType<typeof initDatabase>): string {
-  // Try to find existing settings node
-  const existingNode = db.query.nodes.findFirst({
-    where: (nodes, { eq, isNull, and }) =>
-      and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)),
-  })
+  const existingNode = findSettingsNode(db)
 
   if (existingNode) {
     return existingNode.id
@@ -88,10 +99,7 @@ function getOrCreateSettingsNode(db: ReturnType<typeof initDatabase>): string {
  * Get stored Google tokens from settings node
  */
 function getStoredTokens(db: ReturnType<typeof initDatabase>): GoogleTokens | null {
-  const settingsNode = db.query.nodes.findFirst({
-    where: (nodes, { eq, isNull, and }) =>
-      and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)),
-  })
+  const settingsNode = findSettingsNode(db)
 
   if (!settingsNode) {
     return null
@@ -141,10 +149,7 @@ function storeTokens(
  * Clear stored Google tokens (disconnect)
  */
 function clearTokens(db: ReturnType<typeof initDatabase>): void {
-  const settingsNode = db.query.nodes.findFirst({
-    where: (nodes, { eq, isNull, and }) =>
-      and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)),
-  })
+  const settingsNode = findSettingsNode(db)
 
   if (!settingsNode) {
     return
@@ -160,10 +165,7 @@ function clearTokens(db: ReturnType<typeof initDatabase>): void {
  * Get connected email from settings
  */
 function getConnectedEmail(db: ReturnType<typeof initDatabase>): string | undefined {
-  const settingsNode = db.query.nodes.findFirst({
-    where: (nodes, { eq, isNull, and }) =>
-      and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)),
-  })
+  const settingsNode = findSettingsNode(db)
 
   if (!settingsNode) {
     return undefined
@@ -181,10 +183,7 @@ function getConnectedEmail(db: ReturnType<typeof initDatabase>): string | undefi
  * Get configured calendar ID from settings
  */
 function getConfiguredCalendarId(db: ReturnType<typeof initDatabase>): string {
-  const settingsNode = db.query.nodes.findFirst({
-    where: (nodes, { eq, isNull, and }) =>
-      and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)),
-  })
+  const settingsNode = findSettingsNode(db)
 
   if (!settingsNode) {
     return 'primary'

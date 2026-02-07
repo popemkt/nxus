@@ -279,6 +279,9 @@ export function bootstrapSystemNodesSync(
     },
     { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox', extends: null },
     { systemId: SYSTEM_SUPERTAGS.QUERY, content: '#Query', extends: null },
+    // Calendar supertags
+    { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: SYSTEM_SUPERTAGS.ITEM },
+    { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: SYSTEM_SUPERTAGS.ITEM },
   ];
 
   for (const st of entitySupertags) {
@@ -413,6 +416,42 @@ export function bootstrapSystemNodesSync(
       systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT,
       content: 'queryEvaluatedAt',
       fieldType: 'text',
+    },
+    // Calendar-specific fields
+    {
+      systemId: SYSTEM_FIELDS.START_DATE,
+      content: 'startDate',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.END_DATE,
+      content: 'endDate',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.ALL_DAY,
+      content: 'allDay',
+      fieldType: 'boolean',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RRULE,
+      content: 'rrule',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.GCAL_EVENT_ID,
+      content: 'gcalEventId',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.GCAL_SYNCED_AT,
+      content: 'gcalSyncedAt',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.REMINDER,
+      content: 'reminder',
+      fieldType: 'number',
     },
   ];
 

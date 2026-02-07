@@ -667,9 +667,9 @@ export function CalendarEmptyState({
   className,
 }: CalendarEmptyStateProps) {
   return (
-    <div className={cn('calendar-empty', className)}>
+    <div className={cn('calendar-empty flex flex-col items-center justify-center gap-4 p-12 text-center text-muted-foreground', className)}>
       <svg
-        className="calendar-empty-icon"
+        className="calendar-empty-icon h-12 w-12 opacity-50"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
