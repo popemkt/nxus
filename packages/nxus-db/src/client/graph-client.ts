@@ -1,19 +1,27 @@
 /**
  * graph-client.ts - SurrealDB client for graph architecture
  *
- * Supports two connection modes:
+ * Supports three connection modes:
  *
- * 1. Remote mode (requires a running SurrealDB server):
+ * 1. Embedded file mode (default, no server needed):
+ *    - Uses @surrealdb/node with surrealkv:// protocol
+ *    - Database file at packages/nxus-db/src/data/surreal.db
+ *    - Data persists on disk and can be committed to the repo
+ *    - Set: SURREAL_EMBEDDED=true (default)
+ *
+ * 2. Remote mode (requires a running SurrealDB server):
  *    - Install: curl -sSf https://install.surrealdb.com | sh
  *    - Start: surreal start --user root --pass root memory
- *    - Set: SURREAL_URL=http://127.0.0.1:8000/rpc
+ *    - Set: SURREAL_EMBEDDED=false, SURREAL_URL=http://127.0.0.1:8000/rpc
  *
- * 2. Embedded mode (in-memory, no server needed):
+ * 3. In-memory mode (testing only):
  *    - Used for testing via createEmbeddedGraphDatabase()
  *    - Uses @surrealdb/node with mem:// protocol
  */
 
 import { Surreal, RecordId, StringRecordId } from 'surrealdb'
+import { dirname, resolve } from 'path'
+import { fileURLToPath } from 'url'
 
 export { RecordId, StringRecordId }
 
@@ -21,11 +29,20 @@ export { RecordId, StringRecordId }
 let db: Surreal | null = null
 let isInitialized = false
 
+// Default embedded database path (same directory as nxus.db)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const defaultEmbeddedPath = resolve(__dirname, '../data/surreal.db')
+
 /**
- * SurrealDB connection config for remote mode.
- * Default: http://127.0.0.1:8000/rpc
+ * SurrealDB connection config.
+ *
+ * Embedded mode (default): uses surrealkv:// with a local file.
+ * Remote mode: set SURREAL_EMBEDDED=false to connect to a server.
  */
 const SURREAL_CONFIG = {
+  embedded: process.env.SURREAL_EMBEDDED !== 'false', // default: true
+  embeddedPath: process.env.SURREAL_PATH || defaultEmbeddedPath,
   url: process.env.SURREAL_URL || 'http://127.0.0.1:8000/rpc',
   namespace: process.env.SURREAL_NS || 'nxus',
   database: process.env.SURREAL_DB || 'main',
@@ -34,33 +51,51 @@ const SURREAL_CONFIG = {
 }
 
 /**
- * Initialize SurrealDB connection and schema (remote mode).
- * Connects to a running SurrealDB server.
+ * Initialize SurrealDB connection and schema.
+ *
+ * Uses embedded file mode (surrealkv://) by default.
+ * Set SURREAL_EMBEDDED=false for remote server mode.
  */
 export async function initGraphDatabase(): Promise<Surreal> {
   if (db && isInitialized) return db
 
-  db = new Surreal()
-
   try {
-    const url = SURREAL_CONFIG.url
+    if (SURREAL_CONFIG.embedded) {
+      // Embedded file mode — no server needed
+      const { createNodeEngines } = await import('@surrealdb/node')
 
-    console.log('[GraphDB] Connecting to SurrealDB at:', url)
+      db = new Surreal({
+        engines: createNodeEngines(),
+      })
 
-    // Connect to SurrealDB server
-    await db.connect(url)
+      const surrealkvUrl = `surrealkv://${SURREAL_CONFIG.embeddedPath}`
+      console.log('[GraphDB] Opening embedded SurrealDB at:', surrealkvUrl)
 
-    // Sign in (required for remote connections)
-    await db.signin({
-      username: SURREAL_CONFIG.username,
-      password: SURREAL_CONFIG.password,
-    })
+      await db.connect(surrealkvUrl)
 
-    // Use namespace and database
-    await db.use({
-      namespace: SURREAL_CONFIG.namespace,
-      database: SURREAL_CONFIG.database,
-    })
+      await db.use({
+        namespace: SURREAL_CONFIG.namespace,
+        database: SURREAL_CONFIG.database,
+      })
+    } else {
+      // Remote server mode
+      db = new Surreal()
+
+      const url = SURREAL_CONFIG.url
+      console.log('[GraphDB] Connecting to SurrealDB at:', url)
+
+      await db.connect(url)
+
+      await db.signin({
+        username: SURREAL_CONFIG.username,
+        password: SURREAL_CONFIG.password,
+      })
+
+      await db.use({
+        namespace: SURREAL_CONFIG.namespace,
+        database: SURREAL_CONFIG.database,
+      })
+    }
 
     // Initialize schema
     await initGraphSchema(db)
@@ -71,10 +106,14 @@ export async function initGraphDatabase(): Promise<Surreal> {
     return db
   } catch (error: any) {
     console.error('[GraphDB] Failed to connect:', error?.message || error)
-    console.error('[GraphDB] Make sure SurrealDB server is running:')
-    console.error('[GraphDB]   surreal start --user root --pass root memory')
+    if (SURREAL_CONFIG.embedded) {
+      console.error('[GraphDB] Embedded mode failed. Check that @surrealdb/node is installed.')
+    } else {
+      console.error('[GraphDB] Make sure SurrealDB server is running:')
+      console.error('[GraphDB]   surreal start --user root --pass root memory')
+    }
     throw new Error(
-      `SurrealDB connection failed. Start server with: surreal start --user root --pass root memory`,
+      `SurrealDB connection failed: ${error?.message || error}`,
     )
   }
 }
@@ -102,6 +141,39 @@ export async function createEmbeddedGraphDatabase(options?: {
   await instance.use({
     namespace: options?.namespace ?? 'test',
     database: options?.database ?? 'test',
+  })
+
+  if (!options?.skipSchema) {
+    await initGraphSchema(instance)
+  }
+
+  return instance
+}
+
+/**
+ * Create an embedded file-based SurrealDB instance.
+ * Used for seeding — persists data to disk via surrealkv://.
+ *
+ * Requires @surrealdb/node.
+ */
+export async function createEmbeddedFileGraphDatabase(options?: {
+  path?: string
+  namespace?: string
+  database?: string
+  skipSchema?: boolean
+}): Promise<Surreal> {
+  const { createNodeEngines } = await import('@surrealdb/node')
+
+  const instance = new Surreal({
+    engines: createNodeEngines(),
+  })
+
+  const dbPath = options?.path ?? SURREAL_CONFIG.embeddedPath
+  await instance.connect(`surrealkv://${dbPath}`)
+
+  await instance.use({
+    namespace: options?.namespace ?? SURREAL_CONFIG.namespace,
+    database: options?.database ?? SURREAL_CONFIG.database,
   })
 
   if (!options?.skipSchema) {

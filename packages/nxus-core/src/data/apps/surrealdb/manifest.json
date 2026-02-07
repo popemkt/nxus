@@ -71,13 +71,33 @@
     },
     {
       "id": "start-nxus-graph",
-      "name": "Start for nxus (Graph Mode)",
-      "description": "Start SurrealDB and run nxus in graph architecture mode",
+      "name": "Start nxus (Graph Mode)",
+      "description": "Run nxus with embedded SurrealDB (no server needed)",
       "icon": "Play",
       "category": "Run",
       "target": "item",
       "mode": "terminal",
-      "command": "surreal start --user root --pass root memory & sleep 2 && cd packages/nxus-core && ARCHITECTURE_TYPE=graph pnpm dev"
+      "command": "cd packages/nxus-core && ARCHITECTURE_TYPE=graph pnpm dev"
+    },
+    {
+      "id": "seed-graph",
+      "name": "Seed Graph DB",
+      "description": "Seed the embedded SurrealDB from manifest files",
+      "icon": "Database",
+      "category": "Run",
+      "target": "item",
+      "mode": "terminal",
+      "command": "cd packages/nxus-core && ARCHITECTURE_TYPE=graph pnpm db:seed"
+    },
+    {
+      "id": "start-nxus-remote",
+      "name": "Start nxus (Remote Server)",
+      "description": "Run nxus with a remote SurrealDB server",
+      "icon": "Play",
+      "category": "Run",
+      "target": "item",
+      "mode": "terminal",
+      "command": "surreal start --user root --pass root memory & sleep 2 && cd packages/nxus-core && ARCHITECTURE_TYPE=graph SURREAL_EMBEDDED=false pnpm dev"
     },
     {
       "id": "sql-shell",
