@@ -21,7 +21,7 @@ import {
   setProperty,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'
-import { createEventBus, type EventBus } from '../event-bus.js'
+import { createEventBus, eventBus as singletonEventBus, type EventBus } from '../event-bus.js'
 import {
   createQuerySubscriptionService,
   type QuerySubscriptionService,
@@ -238,9 +238,11 @@ function createBenchContext(nodeCount: number, subscriptionCount: number): Bench
   const { sqlite, db } = setupTestDatabase()
   seedSystemNodes(sqlite)
 
-  const eventBus = createEventBus()
+  // Use the singleton eventBus that node.service.ts emits to,
+  // so subscriptions actually receive mutation events from createNode/setProperty
+  const eventBusRef = singletonEventBus
   const metrics = createReactiveMetrics()
-  const service = createQuerySubscriptionService(eventBus)
+  const service = createQuerySubscriptionService(eventBusRef)
   service.setDebounceMs(0)
 
   // Create nodes with various supertags
@@ -263,12 +265,12 @@ function createBenchContext(nodeCount: number, subscriptionCount: number): Bench
 
   // Reset metrics after data setup
   metrics.resetMetrics()
-  eventBus.clear()
+  eventBusRef.clear()
 
   // Create diverse subscriptions
   createDiverseSubscriptions(service, db, subscriptionCount)
 
-  return { sqlite, db, service, eventBus, metrics, nodeIds }
+  return { sqlite, db, service, eventBus: eventBusRef, metrics, nodeIds }
 }
 
 function cleanupContext(ctx: BenchContext) {

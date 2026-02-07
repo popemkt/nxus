@@ -533,8 +533,10 @@ describe('WebhookQueue', () => {
       await queue.processQueue()
 
       const job = queue.getJob(jobId)
+      expect(job).toBeDefined()
       expect(job?.nextRetryAt).toBeDefined()
-      expect(job?.nextRetryAt!.getTime()).toBeGreaterThan(Date.now())
+      const nextRetryAt = job!.nextRetryAt!
+      expect(nextRetryAt.getTime()).toBeGreaterThan(Date.now())
     })
 
     it('does not process jobs before nextRetryAt', async () => {
