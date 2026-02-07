@@ -7,7 +7,9 @@
     "dev:gateway": "nx run @nxus/gateway:dev",
     "dev:core": "nx run nxus-core:dev",
     "dev:workbench": "nx run @nxus/workbench-app:dev",
-    "dev:calendar": "nx run @nxus/calendar-app:dev"
+    "dev:calendar": "nx run @nxus/calendar-app:dev",
+    "test": "nx run-many --target=test --all",
+    "test:libs": "nx run-many --target=test --projects=@nxus/db,@nxus/workbench,@nxus/calendar,@nxus/ui"
   },
   "private": true,
   "dependencies": {

@@ -151,3 +151,6 @@ Create a standalone TanStack Start app in `apps/nxus-calendar/` that mounts the 
 
 ### [x] Step: Comprehensive documentation/agent docs update and adjustment
 <!-- chat-id: 9453a628-45bf-4da6-ae01-ddda54ccb7a9 -->
+
+### [x] Step: Test and create tests if not there
+<!-- chat-id: bf5c2924-1124-4c69-863c-8bf7ca82c76a -->
