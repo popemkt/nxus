@@ -127,6 +127,9 @@ importers:
       '@fontsource-variable/outfit':
         specifier: ^5.2.8
         version: 5.2.8
+      '@nxus/calendar':
+        specifier: workspace:*
+        version: link:../nxus-calendar
       '@nxus/db':
         specifier: workspace:*
         version: link:../nxus-db
