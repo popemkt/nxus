@@ -74,7 +74,8 @@ Upgrade SurrealDB dependencies and establish the test infrastructure for in-memo
 
 ---
 
-### [ ] Step: Test graph-client.ts (Connection and Schema)
+### [x] Step: Test graph-client.ts (Connection and Schema)
+<!-- chat-id: c1460c89-9f0e-4246-b247-b614130c1e0a -->
 
 Write unit tests for the SurrealDB connection layer.
 

@@ -172,42 +172,42 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
   // Core Node Table
   // ============================================================================
   await db.query(`
-    DEFINE TABLE node SCHEMAFULL;
+    DEFINE TABLE OVERWRITE node SCHEMAFULL;
 
     -- Core fields
-    DEFINE FIELD content ON node TYPE option<string>;
-    DEFINE FIELD content_plain ON node TYPE option<string>;
-    DEFINE FIELD system_id ON node TYPE option<string>;
-    DEFINE FIELD created_at ON node TYPE datetime DEFAULT time::now();
-    DEFINE FIELD updated_at ON node TYPE datetime DEFAULT time::now();
-    DEFINE FIELD deleted_at ON node TYPE option<datetime>;
+    DEFINE FIELD OVERWRITE content ON node TYPE option<string>;
+    DEFINE FIELD OVERWRITE content_plain ON node TYPE option<string>;
+    DEFINE FIELD OVERWRITE system_id ON node TYPE option<string>;
+    DEFINE FIELD OVERWRITE created_at ON node TYPE datetime DEFAULT time::now();
+    DEFINE FIELD OVERWRITE updated_at ON node TYPE datetime DEFAULT time::now();
+    DEFINE FIELD OVERWRITE deleted_at ON node TYPE option<datetime>;
 
     -- Flexible properties (schemaless within this field)
-    DEFINE FIELD props ON node FLEXIBLE TYPE option<object>;
+    DEFINE FIELD OVERWRITE props ON node FLEXIBLE TYPE option<object>;
 
     -- Indexes
-    DEFINE INDEX idx_system_id ON node FIELDS system_id UNIQUE;
-    DEFINE INDEX idx_content_plain ON node FIELDS content_plain;
-    DEFINE INDEX idx_deleted ON node FIELDS deleted_at;
+    DEFINE INDEX OVERWRITE idx_system_id ON node FIELDS system_id UNIQUE;
+    DEFINE INDEX OVERWRITE idx_content_plain ON node FIELDS content_plain;
+    DEFINE INDEX OVERWRITE idx_deleted ON node FIELDS deleted_at;
   `)
 
   // ============================================================================
   // Supertag Table (types/classes for nodes)
   // ============================================================================
   await db.query(`
-    DEFINE TABLE supertag SCHEMAFULL;
+    DEFINE TABLE OVERWRITE supertag SCHEMAFULL;
 
-    DEFINE FIELD name ON supertag TYPE string;
-    DEFINE FIELD system_id ON supertag TYPE option<string>;
-    DEFINE FIELD color ON supertag TYPE option<string>;
-    DEFINE FIELD icon ON supertag TYPE option<string>;
-    DEFINE FIELD created_at ON supertag TYPE datetime DEFAULT time::now();
+    DEFINE FIELD OVERWRITE name ON supertag TYPE string;
+    DEFINE FIELD OVERWRITE system_id ON supertag TYPE option<string>;
+    DEFINE FIELD OVERWRITE color ON supertag TYPE option<string>;
+    DEFINE FIELD OVERWRITE icon ON supertag TYPE option<string>;
+    DEFINE FIELD OVERWRITE created_at ON supertag TYPE datetime DEFAULT time::now();
 
     -- Schema definition for fields this supertag adds
-    DEFINE FIELD field_schema ON supertag FLEXIBLE TYPE option<array>;
+    DEFINE FIELD OVERWRITE field_schema ON supertag FLEXIBLE TYPE option<array>;
 
-    DEFINE INDEX idx_supertag_system ON supertag FIELDS system_id UNIQUE;
-    DEFINE INDEX idx_supertag_name ON supertag FIELDS name;
+    DEFINE INDEX OVERWRITE idx_supertag_system ON supertag FIELDS system_id UNIQUE;
+    DEFINE INDEX OVERWRITE idx_supertag_name ON supertag FIELDS name;
   `)
 
   // ============================================================================
@@ -216,15 +216,15 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
 
   // has_supertag: Node -> Supertag (type assignment)
   await db.query(`
-    DEFINE TABLE has_supertag SCHEMAFULL TYPE RELATION IN node OUT supertag;
-    DEFINE FIELD order ON has_supertag TYPE option<int> DEFAULT 0;
-    DEFINE FIELD created_at ON has_supertag TYPE datetime DEFAULT time::now();
+    DEFINE TABLE OVERWRITE has_supertag SCHEMAFULL TYPE RELATION IN node OUT supertag;
+    DEFINE FIELD OVERWRITE order ON has_supertag TYPE option<int> DEFAULT 0;
+    DEFINE FIELD OVERWRITE created_at ON has_supertag TYPE datetime DEFAULT time::now();
   `)
 
   // extends: Supertag -> Supertag (inheritance)
   await db.query(`
-    DEFINE TABLE extends SCHEMAFULL TYPE RELATION IN supertag OUT supertag;
-    DEFINE FIELD created_at ON extends TYPE datetime DEFAULT time::now();
+    DEFINE TABLE OVERWRITE extends SCHEMAFULL TYPE RELATION IN supertag OUT supertag;
+    DEFINE FIELD OVERWRITE created_at ON extends TYPE datetime DEFAULT time::now();
   `)
 
   // ============================================================================
@@ -233,36 +233,36 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
 
   // part_of: Node -> Node (hierarchical composition)
   await db.query(`
-    DEFINE TABLE part_of SCHEMAFULL TYPE RELATION IN node OUT node;
-    DEFINE FIELD order ON part_of TYPE option<int> DEFAULT 0;
-    DEFINE FIELD created_at ON part_of TYPE datetime DEFAULT time::now();
+    DEFINE TABLE OVERWRITE part_of SCHEMAFULL TYPE RELATION IN node OUT node;
+    DEFINE FIELD OVERWRITE order ON part_of TYPE option<int> DEFAULT 0;
+    DEFINE FIELD OVERWRITE created_at ON part_of TYPE datetime DEFAULT time::now();
 
-    DEFINE INDEX idx_part_of_out ON part_of FIELDS out;
+    DEFINE INDEX OVERWRITE idx_part_of_out ON part_of FIELDS out;
   `)
 
   // dependency_of: Node -> Node (sequential dependency)
   await db.query(`
-    DEFINE TABLE dependency_of SCHEMAFULL TYPE RELATION IN node OUT node;
-    DEFINE FIELD created_at ON dependency_of TYPE datetime DEFAULT time::now();
+    DEFINE TABLE OVERWRITE dependency_of SCHEMAFULL TYPE RELATION IN node OUT node;
+    DEFINE FIELD OVERWRITE created_at ON dependency_of TYPE datetime DEFAULT time::now();
 
-    DEFINE INDEX idx_dependency_out ON dependency_of FIELDS out;
+    DEFINE INDEX OVERWRITE idx_dependency_out ON dependency_of FIELDS out;
   `)
 
   // references: Node -> Node (generic link)
   await db.query(`
-    DEFINE TABLE references SCHEMAFULL TYPE RELATION IN node OUT node;
-    DEFINE FIELD context ON references TYPE option<string>;
-    DEFINE FIELD created_at ON references TYPE datetime DEFAULT time::now();
+    DEFINE TABLE OVERWRITE references SCHEMAFULL TYPE RELATION IN node OUT node;
+    DEFINE FIELD OVERWRITE context ON references TYPE option<string>;
+    DEFINE FIELD OVERWRITE created_at ON references TYPE datetime DEFAULT time::now();
 
-    DEFINE INDEX idx_references_out ON references FIELDS out;
+    DEFINE INDEX OVERWRITE idx_references_out ON references FIELDS out;
   `)
 
   // tagged_with: Node -> Node (tag assignment, where tag is also a node)
   await db.query(`
-    DEFINE TABLE tagged_with SCHEMAFULL TYPE RELATION IN node OUT node;
-    DEFINE FIELD created_at ON tagged_with TYPE datetime DEFAULT time::now();
+    DEFINE TABLE OVERWRITE tagged_with SCHEMAFULL TYPE RELATION IN node OUT node;
+    DEFINE FIELD OVERWRITE created_at ON tagged_with TYPE datetime DEFAULT time::now();
 
-    DEFINE INDEX idx_tagged_out ON tagged_with FIELDS out;
+    DEFINE INDEX OVERWRITE idx_tagged_out ON tagged_with FIELDS out;
   `)
 
   // ============================================================================
