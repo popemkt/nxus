@@ -120,7 +120,8 @@ Set up base path routing for each app and a unified dev experience.
 7. Verify `nx graph` shows the full dependency graph correctly
 8. Test: navigate from gateway to core and workbench, verify "home" link returns to gateway
 
-### [ ] Step: Create nxus-calendar app and decouple from nxus-core
+### [x] Step: Create nxus-calendar app and decouple from nxus-core
+<!-- chat-id: 41d8fb11-7cb8-48c9-8287-38b42c50b53f -->
 
 Create a standalone TanStack Start app in `apps/nxus-calendar/` that mounts the calendar library, mirroring how nxus-workbench was extracted.
 

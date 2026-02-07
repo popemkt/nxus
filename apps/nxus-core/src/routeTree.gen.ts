@@ -11,9 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as InboxRouteImport } from './routes/inbox'
-import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CalendarOauthCallbackRouteImport } from './routes/calendar.oauth-callback'
 import { Route as AppsAppIdRouteImport } from './routes/apps.$appId'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -26,20 +24,10 @@ const InboxRoute = InboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarOauthCallbackRoute = CalendarOauthCallbackRouteImport.update({
-  id: '/oauth-callback',
-  path: '/oauth-callback',
-  getParentRoute: () => CalendarRoute,
 } as any)
 const AppsAppIdRoute = AppsAppIdRouteImport.update({
   id: '/apps/$appId',
@@ -49,59 +37,46 @@ const AppsAppIdRoute = AppsAppIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/calendar': typeof CalendarRouteWithChildren
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
-  '/calendar/oauth-callback': typeof CalendarOauthCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/calendar': typeof CalendarRouteWithChildren
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
-  '/calendar/oauth-callback': typeof CalendarOauthCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/calendar': typeof CalendarRouteWithChildren
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
-  '/calendar/oauth-callback': typeof CalendarOauthCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/calendar'
     | '/inbox'
     | '/settings'
     | '/apps/$appId'
-    | '/calendar/oauth-callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/calendar'
     | '/inbox'
     | '/settings'
     | '/apps/$appId'
-    | '/calendar/oauth-callback'
   id:
     | '__root__'
     | '/'
-    | '/calendar'
     | '/inbox'
     | '/settings'
     | '/apps/$appId'
-    | '/calendar/oauth-callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CalendarRoute: typeof CalendarRouteWithChildren
   InboxRoute: typeof InboxRoute
   SettingsRoute: typeof SettingsRoute
   AppsAppIdRoute: typeof AppsAppIdRoute
@@ -123,26 +98,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/calendar/oauth-callback': {
-      id: '/calendar/oauth-callback'
-      path: '/oauth-callback'
-      fullPath: '/calendar/oauth-callback'
-      preLoaderRoute: typeof CalendarOauthCallbackRouteImport
-      parentRoute: typeof CalendarRoute
     }
     '/apps/$appId': {
       id: '/apps/$appId'
@@ -154,21 +115,8 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface CalendarRouteChildren {
-  CalendarOauthCallbackRoute: typeof CalendarOauthCallbackRoute
-}
-
-const CalendarRouteChildren: CalendarRouteChildren = {
-  CalendarOauthCallbackRoute: CalendarOauthCallbackRoute,
-}
-
-const CalendarRouteWithChildren = CalendarRoute._addFileChildren(
-  CalendarRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CalendarRoute: CalendarRouteWithChildren,
   InboxRoute: InboxRoute,
   SettingsRoute: SettingsRoute,
   AppsAppIdRoute: AppsAppIdRoute,

@@ -21,6 +21,7 @@ The project follows Nx conventions with `apps/` for runnable applications and `l
 - **nxus-gateway** (`@nxus/gateway`): Landing page that lists all mini-apps. Runs at `:3001` on `/`. No database dependency.
 - **nxus-core** (`nxus-core`): Main application with app management, command palette, settings. Runs at `:3000` with base path `/core`.
 - **nxus-workbench** (`@nxus/workbench-app`): Standalone workbench for node browsing and graph exploration. Runs at `:3002` with base path `/workbench`.
+- **nxus-calendar** (`@nxus/calendar-app`): Standalone calendar app with event management and Google Calendar sync. Runs at `:3003` with base path `/calendar`.
 
 #### Libraries (`libs/`)
 - **nxus-ui** (`@nxus/ui`): Shared UI components (shadcn/ui, theme, utilities). No dependencies.
@@ -123,7 +124,11 @@ apps/
 │       ├── routes/           # TanStack Router routes
 │       ├── lib/              # Utilities and helpers
 │       └── data/             # App registry JSON
-└── nxus-workbench/           # Workbench app (port 3002, basePath: /workbench)
+├── nxus-workbench/           # Workbench app (port 3002, basePath: /workbench)
+│   └── src/
+│       ├── routes/           # TanStack Router routes
+│       └── styles.css
+└── nxus-calendar/            # Calendar app (port 3003, basePath: /calendar)
     └── src/
         ├── routes/           # TanStack Router routes
         └── styles.css

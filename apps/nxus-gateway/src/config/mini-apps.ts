@@ -23,4 +23,12 @@ export const miniApps: MiniApp[] = [
     icon: 'graph',
     path: '/workbench',
   },
+  {
+    id: 'nxus-calendar',
+    name: 'nXus Calendar',
+    description:
+      'Calendar and schedule management with event tracking and Google Calendar sync.',
+    icon: 'calendar',
+    path: '/calendar',
+  },
 ]

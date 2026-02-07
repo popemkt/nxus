@@ -8,14 +8,15 @@ import { request as httpRequest } from 'node:http'
 import { connect as netConnect } from 'node:net'
 
 /**
- * Vite plugin that proxies /core and /workbench requests to the respective
- * mini-app dev servers. Uses configureServer to register middleware before
+ * Vite plugin that proxies /core, /workbench, and /calendar requests to the
+ * respective mini-app dev servers. Uses configureServer to register middleware before
  * TanStack Start / Nitro SSR, so HTML page requests are proxied correctly.
  */
 function miniAppProxy(): Plugin {
   const routes: Record<string, { target: string; port: number }> = {
     '/core': { target: 'localhost', port: 3000 },
     '/workbench': { target: 'localhost', port: 3002 },
+    '/calendar': { target: 'localhost', port: 3003 },
   }
 
   return {

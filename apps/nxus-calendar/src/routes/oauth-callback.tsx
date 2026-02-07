@@ -1,5 +1,5 @@
 /**
- * calendar.oauth-callback.tsx - Google OAuth callback handler route
+ * oauth-callback.tsx - Google OAuth callback handler route
  *
  * Handles the redirect from Google OAuth after user authorization.
  * Exchanges the authorization code for tokens and redirects back to calendar.
@@ -17,7 +17,7 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react'
 
-export const Route = createFileRoute('/calendar/oauth-callback')({
+export const Route = createFileRoute('/oauth-callback')({
   component: OAuthCallbackPage,
   validateSearch: (search: Record<string, unknown>) => ({
     code: search.code as string | undefined,
@@ -66,7 +66,7 @@ function OAuthCallbackPage() {
 
           // Redirect to calendar after a short delay to show success message
           setTimeout(() => {
-            navigate({ to: '/calendar' })
+            navigate({ to: '/' })
           }, 2000)
         } else {
           setState('error')
@@ -139,7 +139,7 @@ function OAuthCallbackPage() {
                 {errorMessage || authError?.message || 'An error occurred.'}
               </p>
               <div className="mt-6 flex flex-col gap-2">
-                <Button onClick={() => navigate({ to: '/calendar' })}>
+                <Button onClick={() => navigate({ to: '/' })}>
                   <ArrowLeftIcon data-icon="inline-start" />
                   Back to Calendar
                 </Button>
