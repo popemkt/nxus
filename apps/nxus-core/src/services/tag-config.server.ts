@@ -14,8 +14,9 @@ import {
   and,
   eq,
   initDatabase,
-  itemTagConfigs, saveDatabase, tagSchemas 
+  itemTagConfigs, saveDatabase, tagSchemas
 } from '@nxus/db/server'
+import { getAllSystemTags } from '@/lib/system-tags'
 
 // ============================================================================
 // Schema definitions for tag config fields
@@ -113,13 +114,28 @@ export const getAllConfigurableTagsServerFn = createServerFn({
 
   const configs = await db.select().from(tagSchemas)
 
+  // Start with DB-stored schemas
+  const result = configs.map((c) => ({
+    tagId: c.tagId,
+    schema: c.schema as unknown as TagConfigSchema,
+    description: c.description,
+  }))
+
+  // Also include system tags marked as configurable (even without a saved schema)
+  const dbTagIds = new Set(configs.map((c) => c.tagId))
+  for (const systemTag of getAllSystemTags()) {
+    if (systemTag.configurable && !dbTagIds.has(systemTag.id)) {
+      result.push({
+        tagId: systemTag.id,
+        schema: { fields: [] } as TagConfigSchema,
+        description: systemTag.description ?? null,
+      })
+    }
+  }
+
   return {
     success: true as const,
-    data: configs.map((c) => ({
-      tagId: c.tagId,
-      schema: c.schema as unknown as TagConfigSchema,
-      description: c.description,
-    })),
+    data: result,
   }
 })
 

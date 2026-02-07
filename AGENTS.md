@@ -15,13 +15,13 @@
 
 ### Monorepo Structure
 
-The project follows Nx conventions with `apps/` for runnable applications and `libs/` for shared libraries.
+The project follows Nx conventions with `apps/` for runnable applications and `libs/` for shared libraries. Package manager is **pnpm** with workspace support.
 
 #### Applications (`apps/`)
-- **nxus-gateway** (`@nxus/gateway`): Landing page that lists all mini-apps. Runs at `:3001` on `/`. No database dependency.
-- **nxus-core** (`nxus-core`): Main application with app management, command palette, settings. Runs at `:3000` with base path `/core`.
-- **nxus-workbench** (`@nxus/workbench-app`): Standalone workbench for node browsing and graph exploration. Runs at `:3002` with base path `/workbench`.
-- **nxus-calendar** (`@nxus/calendar-app`): Standalone calendar app with event management and Google Calendar sync. Runs at `:3003` with base path `/calendar`.
+- **nxus-gateway** (`@nxus/gateway`): Landing page that lists all mini-apps. Runs at `:3001` on `/`. No database dependency. Acts as a **reverse proxy** to all mini-apps.
+- **nxus-core** (`@nxus/core-app`): Main application with app management, command palette, settings. Runs at `:3000` with base path `/core/`.
+- **nxus-workbench** (`@nxus/workbench-app`): Standalone workbench for node browsing and graph exploration. Runs at `:3002` with base path `/workbench/`.
+- **nxus-calendar** (`@nxus/calendar-app`): Standalone calendar app with event management and Google Calendar sync. Runs at `:3003` with base path `/calendar/`.
 
 #### Libraries (`libs/`)
 - **nxus-ui** (`@nxus/ui`): Shared UI components (shadcn/ui, theme, utilities). No dependencies.
@@ -54,6 +54,76 @@ The project follows Nx conventions with `apps/` for runnable applications and `l
 - **Vite**: Build tool and dev server
 - **Node.js**: For script execution and file system operations
 - **Future**: Tauri or Electron for desktop app capabilities
+
+## Gateway Proxy Architecture (Critical)
+
+The gateway (`nxus-gateway`) acts as a reverse proxy that routes requests to mini-apps based on URL prefix. This is the primary way users access the apps — through `http://localhost:3001/core/`, `/workbench/`, `/calendar/`.
+
+### How It Works
+
+The `miniAppProxy()` Vite plugin in `apps/nxus-gateway/vite.config.ts` intercepts HTTP and WebSocket requests:
+
+| URL Prefix    | Proxied To           |
+|---------------|----------------------|
+| `/core/*`     | `localhost:3000`     |
+| `/workbench/*`| `localhost:3002`     |
+| `/calendar/*` | `localhost:3003`     |
+
+WebSocket connections (for Vite HMR) are also proxied so that hot reload works through the gateway.
+
+### Vite `base` Path — MUST Include Trailing Slash
+
+Each mini-app's `vite.config.ts` sets a `base` path so all assets (JS, CSS, images, API calls) are correctly prefixed:
+
+```typescript
+// apps/nxus-core/vite.config.ts
+base: '/core/',      // ✅ CORRECT — trailing slash required
+
+// ❌ WRONG — breaks asset URLs
+base: '/core',       // import.meta.env.BASE_URL becomes '/core' instead of '/core/'
+                     // This causes '/corethumbnails/...' instead of '/core/thumbnails/...'
+```
+
+**Why**: Vite's `import.meta.env.BASE_URL` reflects the `base` value exactly. Without a trailing slash, string concatenation like `${BASE_URL}thumbnails/foo.svg` produces broken paths. This also breaks TanStack Start server function RPC calls when accessed through the gateway.
+
+### CSS Dependencies
+
+Each app that uses shadcn components imports `shadcn/tailwind.css` for Radix UI state variant styles. The `shadcn` package must be listed as a **direct dependency** in each app's `package.json` — it is NOT provided by `@nxus/ui`. The `@nxus/ui` library provides component code, but each app needs the CSS foundation independently.
+
+### Running the Apps
+
+```bash
+# All apps together (recommended)
+pnpm dev
+
+# Individual apps
+pnpm dev:gateway   # Port 3001 — proxy + landing page
+pnpm dev:core      # Port 3000 — main app
+pnpm dev:workbench # Port 3002
+pnpm dev:calendar  # Port 3003
+
+# Tests
+pnpm test          # All tests
+pnpm test:libs     # Library tests only (faster)
+```
+
+### Naming Convention
+
+- Apps: `@nxus/{name}-app` (e.g., `@nxus/core-app`, `@nxus/workbench-app`)
+- Libs: `@nxus/{name}` (e.g., `@nxus/ui`, `@nxus/db`)
+- Gateway: `@nxus/gateway` (special — no `-app` suffix since it's the entry point)
+
+## Tag Configuration System
+
+### System Tags (`apps/nxus-core/src/lib/system-tags.ts`)
+
+System tags are predefined tags with stable integer IDs. They are seeded during database initialization and used for specific functionality. Some system tags are marked `configurable: true` (e.g., `AI_PROVIDER` with id 14), meaning apps can have per-app configuration values for that tag.
+
+### Tag Config Server Functions (`apps/nxus-core/src/services/tag-config.server.ts`)
+
+- `getAllConfigurableTagsServerFn`: Returns all configurable tags. Combines tags from the `tagSchemas` DB table with system tags marked `configurable: true` (even if they don't have a saved schema yet). This ensures the UI shows configuration buttons for system tags even before anyone has defined a schema in the database.
+- `setAppTagValuesServerFn`: Saves per-app config values, validated against the tag's schema.
+- Tag schemas define typed fields (text, password, boolean, number, select) for configuration forms.
 
 ## App Configuration Schema
 
@@ -347,6 +417,35 @@ When working on Nxus, AI assistants should:
     ```
 
     **Why this works:** Vite uses different module resolution strategies for SSR vs client bundling. By forcing both to use the ESM entry point via aliases, you get consistent named exports everywhere.
+
+## Common Pitfalls
+
+These are issues that have been debugged and resolved. Future agents should be aware of them:
+
+### 1. Assets 404 Through Gateway
+**Symptom**: SVG thumbnails, images, or server function calls return 404 when accessed through `localhost:3001/core/...` but work on `localhost:3000/core/...`.
+**Cause**: The `base` path in the app's `vite.config.ts` is missing a trailing slash (e.g., `'/core'` instead of `'/core/'`).
+**Fix**: Always use trailing slash: `base: '/core/'`.
+
+### 2. "Can't resolve 'shadcn/tailwind.css'"
+**Symptom**: CSS error overlay appears in the app.
+**Cause**: The `shadcn` package is not listed as a direct dependency in the app's `package.json`.
+**Fix**: Add `"shadcn": "^3.6.2"` to the app's `dependencies`. This is needed independently per app, not provided transitively by `@nxus/ui`.
+
+### 3. Tag Configuration Cog Icon Missing
+**Symptom**: Tags marked as `configurable: true` in `system-tags.ts` don't show the configuration gear icon in the UI.
+**Cause**: The `getAllConfigurableTagsServerFn` was only checking the `tagSchemas` DB table. If no schema has been explicitly saved for a system tag, it wouldn't appear as configurable.
+**Fix**: The function now also includes system tags with `configurable: true` from `getAllSystemTags()`, using an empty schema as fallback.
+
+### 4. Manifest `cwd` Paths
+**Symptom**: Commands in manifest.json files fail because they reference old directory paths.
+**Cause**: The project was restructured from `packages/` to `apps/`, but some manifest files still had old `cwd` or `command` paths.
+**Fix**: Ensure all `"cwd"` and `"command"` fields in manifest JSON files under `src/data/apps/` reference `apps/nxus-core` (not `packages/nxus-core`).
+
+### 5. CommonJS/ESM Module Errors
+**Symptom**: "does not provide an export named 'default'" or "Named export 'X' not found" errors.
+**Cause**: Vite handles modules differently between SSR and client. Some packages only have CJS entry points.
+**Fix**: Add a Vite alias to force ESM resolution (see detailed section in Coding Standards above).
 
 ## Questions to Ask Before Implementing
 
