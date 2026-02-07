@@ -120,5 +120,33 @@ Set up base path routing for each app and a unified dev experience.
 7. Verify `nx graph` shows the full dependency graph correctly
 8. Test: navigate from gateway to core and workbench, verify "home" link returns to gateway
 
+### [ ] Step: Create nxus-calendar app and decouple from nxus-core
+
+Create a standalone TanStack Start app in `apps/nxus-calendar/` that mounts the calendar library, mirroring how nxus-workbench was extracted.
+
+1. Create `apps/nxus-calendar/` directory structure: `package.json`, `tsconfig.json`, `vite.config.ts`, `src/routes/__root.tsx`, `src/routes/index.tsx`, `src/routes/oauth-callback.tsx`, `src/router.tsx`, `src/styles.css`, `src/lib/query-client.ts`
+2. `package.json`: name `@nxus/calendar-app`, port 3003, deps on `@nxus/calendar`, `@nxus/db`, `@nxus/ui`, TanStack Start, Vite, React, Tailwind, Nitro
+3. `vite.config.ts`: TanStack Start + Nitro + Tailwind + tsconfig paths, `base: '/calendar'`, SSR noExternal for `@nxus/db` and `@nxus/calendar`, rrule/react-big-calendar resolve aliases (copy from nxus-core)
+4. `router.tsx`: `basepath: '/calendar'`, same pattern as other apps
+5. `__root.tsx`: Minimal root with QueryClientProvider, theme support (reuse shared `nxus-theme` localStorage pattern from workbench/gateway)
+6. `index.tsx`: Mount `CalendarRoute` from `@nxus/calendar`, wire up `useGoogleCalendarSync` from `@nxus/calendar/server` (copy logic from `apps/nxus-core/src/routes/calendar.tsx`)
+7. `oauth-callback.tsx`: Move OAuth callback handler from `apps/nxus-core/src/routes/calendar.oauth-callback.tsx`
+8. `styles.css`: Import Tailwind, `@nxus/ui` theme styles, and `@nxus/calendar` styles
+9. Add home link to the calendar app (similar pattern to workbench sidebar or a floating home button)
+10. Remove from nxus-core:
+    - Delete `apps/nxus-core/src/routes/calendar.tsx` and `apps/nxus-core/src/routes/calendar.oauth-callback.tsx`
+    - Remove `@nxus/calendar` from `apps/nxus-core/package.json` dependencies
+    - Remove `@nxus/calendar` from `apps/nxus-core/vite.config.ts` SSR noExternal
+    - Remove `@nxus/calendar` reference from `apps/nxus-core/tsconfig.json` if present
+    - Remove calendar-specific resolve aliases (rrule, react-big-calendar) from nxus-core vite config
+11. Update gateway:
+    - Add calendar entry to `apps/nxus-gateway/src/config/mini-apps.ts` with `path: '/calendar'`, `icon: 'calendar'`
+    - Add `/calendar` proxy route in `apps/nxus-gateway/vite.config.ts` → `localhost:3003`
+    - Import `CalendarBlank` from `@phosphor-icons/react` and add to `iconMap` in gateway index.tsx
+12. Update root `package.json` `dev` script to include `@nxus/calendar-app` in run-many, add `dev:calendar` script
+13. Run `pnpm install`
+14. Verify: `nx run @nxus/calendar-app:dev` starts, calendar renders with event management, Google sync, and OAuth flow all functional
+15. Verify: gateway shows calendar card, proxy works at `localhost:3001/calendar`
+
 ### [x] Step: Comprehensive documentation/agent docs update and adjustment
 <!-- chat-id: 9453a628-45bf-4da6-ae01-ddda54ccb7a9 -->
