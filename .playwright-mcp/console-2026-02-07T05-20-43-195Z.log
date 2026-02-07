@@ -1,0 +1,1 @@
+[   39719ms] [WARNING] Your app (or one of its dependencies) is using an outdated JSX transform. Update to the modern JSX transform for faster performance: https://react.dev/link/new-jsx-transform @ http://localhost:3000/node_modules/.vite/deps/chunk-ODNUH3UV.js?v=02ad3883:766

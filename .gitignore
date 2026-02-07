@@ -55,5 +55,8 @@ packages/repos
 # Correct location: packages/nxus-core/src/data/nxus.db
 packages/nxus-core/src/data/.fuse*
 
+# Playwright MCP artifacts
+.playwright-mcp/
+
 # TypeScript build info
 *.tsbuildinfo

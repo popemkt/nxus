@@ -1,0 +1,2 @@
+[   22435ms] Error: Error: Field not found: field:start_date
+    at Object.mutationFn (http://localhost:3000/@fs/home/popemkt/.zenflow/worktrees/schedule-management-mini-app-e59d/packages/nxus-calendar/src/hooks/use-event-mutations.ts:16:15)
