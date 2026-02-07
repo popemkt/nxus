@@ -15,8 +15,9 @@
  */
 export type ArchitectureType = 'table' | 'node' | 'graph'
 
-export const ARCHITECTURE_TYPE: ArchitectureType = 'node'
-// (process.env.ARCHITECTURE_TYPE as ArchitectureType) || 'node'
+export const ARCHITECTURE_TYPE: ArchitectureType =
+  (process.env.ARCHITECTURE_TYPE as ArchitectureType) || 'node'
+// To use SurrealDB: set ARCHITECTURE_TYPE=graph in your environment
 
 /**
  * Helper functions for architecture checks
