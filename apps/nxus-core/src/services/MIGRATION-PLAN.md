@@ -2,100 +2,54 @@
 
 ## Current State
 
-`@nxus/workbench/server` still exports TanStack server functions with **top-level imports from `@nxus/db/server`**, which causes the `better-sqlite3` bundling issue when imported from non-`.server.ts` files.
+The migration from `@nxus/workbench/server` to local nxus-core services is **complete** for Item/Command adapters and query functions. Node CRUD and search/graph server functions remain in `@nxus/workbench` (which is now a separate app concern).
 
-### Files to Migrate
+### What was migrated to nxus-core
 
-1. **`nodes.server.ts`** - Node CRUD + legacy Item/Tag adapters
-   - `getNodeServerFn`
-   - `getNodesBySupertagServerFn`
-   - `updateNodeContentServerFn`
-   - `createNodeServerFn`
-   - `deleteNodeServerFn`
-   - `setNodePropertiesServerFn`
+1. **`apps/node-items.server.ts`** - Item/Command adapters + server functions
+   - `nodeToItem` (adapter)
+   - `nodeToCommand` (adapter)
    - `getAllItemsFromNodesServerFn`
    - `getItemByIdFromNodesServerFn`
-   - `getAllTagsFromNodesServerFn`
 
-2. **`search-nodes.server.ts`** - Search and navigation
-   - `searchNodesServerFn`
-   - `getSupertagsServerFn`
-   - `getAllNodesServerFn`
-   - `getBacklinksServerFn`
-   - `getOwnerChainServerFn`
-   - `getChildNodesServerFn`
+2. **`query/query.server.ts`** - Query execution (previously migrated)
 
-3. **`graph.server.ts`** - Graph visualization
-   - `getGraphStructureServerFn`
-   - `getBacklinksWithDepthServerFn`
-   - `getEdgesBetweenNodesServerFn`
+### What remains in `@nxus/workbench`
 
-4. **`adapters.ts`** - Legacy type converters (pure functions, not server functions)
-   - `nodeToItem`
-   - `nodeToTag`
-   - `nodeToCommand`
-   - `nodesToItems`
+These are workbench-specific concerns (node browsing, graph visualization, search):
 
-## Target Architecture
+- `nodes.server.ts` - Generic node CRUD (`getNodeServerFn`, `createNodeServerFn`, etc.)
+- `search-nodes.server.ts` - Node search and navigation
+- `graph.server.ts` - Graph visualization queries
+- `query.server.ts` - Saved query execution
+
+## Architecture
 
 ```
 @nxus/db/server
 ├── Pure functions (evaluateQuery, createNode, assembleNode, etc.)
 └── No TanStack dependency
 
-nxus-core/src/services/
-├── query/query.server.ts        ✅ DONE
-├── nodes/nodes.server.ts        TODO
-├── nodes/search.server.ts       TODO
-├── nodes/graph.server.ts        TODO
-└── nodes/adapters.ts            TODO (pure functions, can use top-level imports)
+apps/nxus-core/src/services/
+├── apps/node-items.server.ts   ✅ Item/Command adapters + server functions
+├── apps/apps.server.ts         ✅ Uses node-items.server via dynamic import
+└── query/query.server.ts       ✅ Query execution
+
+libs/nxus-workbench/src/server/
+├── nodes.server.ts             Generic node CRUD (workbench concern)
+├── search-nodes.server.ts      Node search (workbench concern)
+├── graph.server.ts             Graph visualization (workbench concern)
+└── query.server.ts             Saved queries (workbench concern)
 ```
 
-## Migration Pattern
+## Import Pattern
 
-Each server function needs to:
-
-1. Use **dynamic imports inside handlers** for `@nxus/db/server`
-2. Define validation schemas inline with Zod
-3. Return typed results
-
-Example:
+All `@nxus/db/server` imports in server functions use **dynamic imports inside handlers** to prevent Vite from bundling `better-sqlite3` into the client bundle:
 
 ```typescript
-export const getNodeServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ identifier: z.string() }))
-  .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode } = await import(
-      '@nxus/db/server'
-    )
-    const { identifier } = ctx.data
-
-    initDatabase()
-    const db = getDatabase()
-    const node = findNode(db, identifier)
-
-    if (!node) {
-      return { success: false as const, error: 'Node not found' }
-    }
-    return { success: true as const, node }
+export const myServerFn = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const { initDatabase, getDatabase } = await import('@nxus/db/server')
+    // ...
   })
 ```
-
-## Adapters Note
-
-The adapter functions (`nodeToItem`, `nodeToTag`, etc.) are **pure functions**, not server functions. They can be migrated as-is since they'll only be called from within `.server.ts` file handlers where dynamic imports have already loaded `@nxus/db/server`.
-
-## After Migration
-
-1. Remove server function exports from `@nxus/workbench/server/index.ts`
-2. Delete the migrated files from `@nxus/workbench/src/server/`
-3. Update imports in `nxus-core` to use local wrappers
-4. Keep `graph.types.ts` in workbench (client-safe types)
-
-## Current Imports to Update
-
-Files importing from `@nxus/workbench/server`:
-
-- `packages/nxus-core/src/services/apps/apps.server.ts` - uses `getAllItemsFromNodesServerFn`
-- `packages/nxus-core/src/services/nodes/index.ts` - re-exports many functions
-- Various scripts in `packages/nxus-core/scripts/`
