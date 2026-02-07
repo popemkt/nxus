@@ -63,7 +63,7 @@ export function FloatingHud({
       >
         {/* Home (Gateway) */}
         <a
-          href="http://localhost:3001"
+          href="/"
           className={cn(btnBase, btnInactive, 'shrink-0 no-underline')}
           title="Home"
         >

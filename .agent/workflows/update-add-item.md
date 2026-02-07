@@ -20,7 +20,7 @@ Before starting, identify what type of item you are working with:
 
 ## 2. Research & Analyze
 
-1.  **Check Existing Items**: Look at `packages/nxus-core/src/data/apps/` for similar items.
+1.  **Check Existing Items**: Look at `apps/nxus-core/src/data/apps/` for similar items.
     - Ref: `github-cli` (complex tool, custom install script, uninstaller).
     - Ref: `_scripts` (pure script collection, parameter parsing).
 2.  **Gather Documentation**:
@@ -30,7 +30,7 @@ Before starting, identify what type of item you are working with:
 
 ## 3. Create/Update Manifest
 
-The manifest lives at `packages/nxus-core/src/data/apps/<id>/manifest.json`.
+The manifest lives at `apps/nxus-core/src/data/apps/<id>/manifest.json`.
 
 ### Essential Fields
 
@@ -142,9 +142,9 @@ Example:
 ## 6. Verification Checklist
 
 - [ ] **Database & Files Synchronization**:
-  - Run `pnpm db:migrate` in `packages/nxus-core` to sync manifest changes to the local database.
-  - Run `pnpm db:export` in `packages/nxus-core` to export the updated state back to regional JSON files.
-  - Verify that `packages/nxus-core/src/data/apps/<id>/manifest.json` reflects the final state.
+  - Run `pnpm db:migrate` in `apps/nxus-core` to sync manifest changes to the local database.
+  - Run `pnpm db:export` in `apps/nxus-core` to export the updated state back to regional JSON files.
+  - Verify that `apps/nxus-core/src/data/apps/<id>/manifest.json` reflects the final state.
 - [ ] **Tags**:
   - [ ] `metadata.tags` uses `TagRef` format: `[{ "id": 1, "name": "..." }]`.
   - [ ] Tags reference existing IDs from the database.

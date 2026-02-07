@@ -120,4 +120,5 @@ Set up base path routing for each app and a unified dev experience.
 7. Verify `nx graph` shows the full dependency graph correctly
 8. Test: navigate from gateway to core and workbench, verify "home" link returns to gateway
 
-### [ ] Step: Comprehensive documentation/agent docs update and adjustment
+### [x] Step: Comprehensive documentation/agent docs update and adjustment
+<!-- chat-id: 9453a628-45bf-4da6-ae01-ddda54ccb7a9 -->

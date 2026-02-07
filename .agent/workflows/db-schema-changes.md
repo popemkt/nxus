@@ -10,7 +10,7 @@ When adding or modifying columns in the Nxus database, follow these steps to ens
 
 ### 1. Update the Drizzle Schema (Source of Truth)
 
-Edit `packages/nxus-core/src/db/schema.ts` to add or modify columns:
+Edit `apps/nxus-core/src/db/schema.ts` to add or modify columns:
 
 ```typescript
 // In the appropriate table (e.g., commands)
@@ -23,7 +23,7 @@ export const commands = sqliteTable('commands', {
 
 ### 2. Update the CREATE TABLE Statement
 
-Edit `packages/nxus-core/src/db/client.ts` to add the column in the `CREATE TABLE IF NOT EXISTS` statement:
+Edit `apps/nxus-core/src/db/client.ts` to add the column in the `CREATE TABLE IF NOT EXISTS` statement:
 
 ```typescript
 masterDb.exec(`
@@ -44,19 +44,19 @@ Run ALTER TABLE to add columns to the existing database:
 
 ```bash
 // turbo
-sqlite3 packages/nxus-core/src/data/nxus.db "ALTER TABLE commands ADD COLUMN my_new_column TEXT; ALTER TABLE commands ADD COLUMN my_text_column TEXT;"
+sqlite3 apps/nxus-core/src/data/nxus.db "ALTER TABLE commands ADD COLUMN my_new_column TEXT; ALTER TABLE commands ADD COLUMN my_text_column TEXT;"
 ```
 
 Verify the column was added:
 
 ```bash
 // turbo
-sqlite3 packages/nxus-core/src/data/nxus.db ".schema commands"
+sqlite3 apps/nxus-core/src/data/nxus.db ".schema commands"
 ```
 
 ### 4. Update the Seed Script
 
-Edit `packages/nxus-core/scripts/db-seed.ts` to include the new column in the record object:
+Edit `apps/nxus-core/scripts/db-seed.ts` to include the new column in the record object:
 
 ```typescript
 const commandRecord = {
@@ -67,7 +67,7 @@ const commandRecord = {
 
 ### 5. Update the Export Script
 
-Edit `packages/nxus-core/scripts/db-export.ts` to include the new column in command mapping:
+Edit `apps/nxus-core/scripts/db-export.ts` to include the new column in command mapping:
 
 ```typescript
 manifest.commands = appCommands.map((cmd) => ({
@@ -78,7 +78,7 @@ manifest.commands = appCommands.map((cmd) => ({
 
 ### 6. Update Types (if applicable)
 
-If the column is for AppCommand, update `packages/nxus-core/src/types/app.ts`:
+If the column is for AppCommand, update `apps/nxus-core/src/types/app.ts`:
 
 ```typescript
 export const AppCommandSchema = z.object({
@@ -141,12 +141,12 @@ When renaming entire tables (not just columns), follow this process:
 
 ```bash
 // turbo
-sqlite3 packages/nxus-core/src/data/nxus.db "ALTER TABLE old_name RENAME TO new_name;"
+sqlite3 apps/nxus-core/src/data/nxus.db "ALTER TABLE old_name RENAME TO new_name;"
 ```
 
 ### 2. Update Drizzle Schema
 
-Edit `packages/nxus-core/src/db/schema.ts`:
+Edit `apps/nxus-core/src/db/schema.ts`:
 
 - Change the export name: `export const newName = sqliteTable(...)`
 - Change the SQL string: `sqliteTable('new_name', { ... })`
@@ -154,7 +154,7 @@ Edit `packages/nxus-core/src/db/schema.ts`:
 
 ### 3. Update CREATE TABLE Statement
 
-Edit `packages/nxus-core/src/db/client.ts` to use new table name in `CREATE TABLE IF NOT EXISTS`.
+Edit `apps/nxus-core/src/db/client.ts` to use new table name in `CREATE TABLE IF NOT EXISTS`.
 
 ### 4. Update All Imports/Usages
 

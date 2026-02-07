@@ -2,7 +2,7 @@
 
 The `manifest.json` file is the source of truth for every application and tool in Nxus. This document details all available properties.
 
-> **Canonical Definition**: See `ItemCommandSchema` in `packages/nxus-db/src/types/item.ts` for the Zod schema.
+> **Canonical Definition**: See `ItemCommandSchema` in `libs/nxus-db/src/types/item.ts` for the Zod schema.
 
 ## Root Properties
 

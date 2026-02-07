@@ -105,7 +105,7 @@ For server functions from **external packages**, create local wrapper functions 
 
 ```tsx
 // ✅ GOOD: Local wrapper with dynamic import
-// packages/nxus-core/src/services/query/query.server.ts
+// apps/nxus-core/src/services/query/query.server.ts
 
 import { createServerFn } from '@tanstack/react-start'
 
@@ -135,7 +135,7 @@ import { evaluateQueryServerFn } from '@/services/query/query.server'
 
 ### Files Using This Pattern
 
-- `packages/nxus-core/src/services/query/query.server.ts` - Wraps all query-related server functions from `@nxus/workbench/server`
+- `apps/nxus-core/src/services/query/query.server.ts` - Wraps all query-related server functions from `@nxus/workbench/server`
 
 ### Vite Configuration
 
@@ -143,10 +143,10 @@ The following packages are configured in `vite.config.ts` to help with SSR:
 
 ```ts
 optimizeDeps: {
-  exclude: ['better-sqlite3', 'drizzle-orm/better-sqlite3', '@nxus/db', '@nxus/workbench'],
+  exclude: ['better-sqlite3', 'drizzle-orm/better-sqlite3', '@nxus/db'],
 },
 ssr: {
-  noExternal: ['@nxus/db', '@nxus/workbench'],
+  noExternal: ['@nxus/db'],
 }
 ```
 

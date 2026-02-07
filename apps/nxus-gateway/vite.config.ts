@@ -16,6 +16,18 @@ const config = defineConfig({
     viteReact(),
   ],
   server: {
+    proxy: {
+      '/core': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true,
+      },
+      '/workbench': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
     watch: {
       ignored: [
         '**/packages/repos/**',

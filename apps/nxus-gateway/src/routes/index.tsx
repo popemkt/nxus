@@ -19,7 +19,7 @@ function MiniAppCard({ app }: { app: MiniApp }) {
 
   return (
     <a
-      href={`http://localhost:${app.port}${app.path}`}
+      href={app.path}
       className="group block no-underline"
     >
       <Card className="h-full transition-all duration-200 hover:ring-primary/40 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5">

@@ -131,7 +131,7 @@ The graph feature is part of `@nxus/workbench`. No additional installation neede
 ## File Structure
 
 ```
-packages/nxus-workbench/src/features/graph/
+libs/nxus-workbench/src/features/graph/
 ├── provider/                      # Data layer (renderer-agnostic)
 │   ├── types.ts                   # GraphNode, GraphEdge, GraphData
 │   ├── use-graph-data.ts          # Main transformation hook

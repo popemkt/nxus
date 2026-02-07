@@ -15,8 +15,22 @@
 
 ### Monorepo Structure
 
-- **nxus-core**: Main application (React + TanStack Router + Vite)
-- **Future packages**: Additional tools, shared libraries, CLI utilities
+The project follows Nx conventions with `apps/` for runnable applications and `libs/` for shared libraries.
+
+#### Applications (`apps/`)
+- **nxus-gateway** (`@nxus/gateway`): Landing page that lists all mini-apps. Runs at `:3001` on `/`. No database dependency.
+- **nxus-core** (`nxus-core`): Main application with app management, command palette, settings. Runs at `:3000` with base path `/core`.
+- **nxus-workbench** (`@nxus/workbench-app`): Standalone workbench for node browsing and graph exploration. Runs at `:3002` with base path `/workbench`.
+
+#### Libraries (`libs/`)
+- **nxus-ui** (`@nxus/ui`): Shared UI components (shadcn/ui, theme, utilities). No dependencies.
+- **nxus-db** (`@nxus/db`): Database layer (SQLite schemas, node service, bootstrap). Depends on `@nxus/ui`.
+- **nxus-workbench** (`@nxus/workbench`): Node management components and server functions. Depends on `@nxus/db`, `@nxus/ui`.
+- **nxus-calendar** (`@nxus/calendar`): Calendar integration library. Depends on `@nxus/db`, `@nxus/ui`.
+
+#### Legacy (`packages/`)
+- **_commands**: CLI command definitions
+- **repos**: Repository configurations
 
 ### Technology Stack
 
@@ -94,18 +108,31 @@ Apps are defined in a JSON registry with the following structure:
 ### 4. File Organization
 
 ```
-packages/nxus-core/
-├── src/
-│   ├── types/           # TypeScript types and Zod schemas
-│   ├── services/        # Business logic (app registry, installer, etc.)
-│   ├── hooks/           # React hooks
-│   ├── components/      # UI components
-│   │   ├── ui/          # Base UI components
-│   │   ├── app/         # App-specific components
-│   │   └── layout/      # Layout components
-│   ├── routes/          # TanStack Router routes
-│   ├── lib/             # Utilities and helpers
-│   └── data/            # App registry JSON
+apps/
+├── nxus-gateway/             # Gateway landing page (port 3001, basePath: /)
+│   └── src/
+│       ├── config/           # Mini-app manifest (mini-apps.ts)
+│       ├── routes/           # TanStack Router routes
+│       └── styles.css
+├── nxus-core/                # Main application (port 3000, basePath: /core)
+│   └── src/
+│       ├── types/            # TypeScript types and Zod schemas
+│       ├── services/         # Business logic, server functions
+│       ├── hooks/            # React hooks
+│       ├── components/       # UI components
+│       ├── routes/           # TanStack Router routes
+│       ├── lib/              # Utilities and helpers
+│       └── data/             # App registry JSON
+└── nxus-workbench/           # Workbench app (port 3002, basePath: /workbench)
+    └── src/
+        ├── routes/           # TanStack Router routes
+        └── styles.css
+
+libs/
+├── nxus-ui/                  # Shared UI components
+├── nxus-db/                  # Database layer
+├── nxus-workbench/           # Node management library
+└── nxus-calendar/            # Calendar integration
 ```
 
 ### 5. Component Design

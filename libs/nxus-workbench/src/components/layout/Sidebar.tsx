@@ -67,7 +67,7 @@ export function Sidebar({
 
       {/* Home (Gateway) */}
       <nav className="flex flex-col gap-2 pb-1">
-        <a href="http://localhost:3001" title="Home">
+        <a href="/" title="Home">
           <SidebarIcon
             icon={House}
             tooltip="Home"

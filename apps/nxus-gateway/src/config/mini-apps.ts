@@ -4,7 +4,6 @@ export interface MiniApp {
   description: string
   icon: 'cube' | 'graph' | 'calendar'
   path: string
-  port: number
 }
 
 export const miniApps: MiniApp[] = [
@@ -15,7 +14,6 @@ export const miniApps: MiniApp[] = [
       'Central hub for managing applications, dependencies, and system configuration.',
     icon: 'cube',
     path: '/core',
-    port: 3000,
   },
   {
     id: 'nxus-workbench',
@@ -24,6 +22,5 @@ export const miniApps: MiniApp[] = [
       'Visual node editor for building and exploring graph-based workflows.',
     icon: 'graph',
     path: '/workbench',
-    port: 3002,
   },
 ]

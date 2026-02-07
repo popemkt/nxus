@@ -1,36 +1,93 @@
 # Nxus Package Architecture
 
 > **Status**: Implemented
-> **Last Updated**: 2026-01-24
+> **Last Updated**: 2026-02-07
 
 ## Overview
 
-Nxus is organized as a monorepo with four packages that follow a clean dependency hierarchy. This architecture enables code reuse across mini-apps while maintaining clear separation of concerns.
+Nxus is organized as an Nx monorepo with applications in `apps/` and shared libraries in `libs/`. A gateway app serves as the landing page, routing users to individual mini-apps that each run as standalone TanStack Start applications.
 
 ```
-                    ┌─────────────────────┐
-                    │     nxus-core       │  (Main application)
-                    │  - Route definitions│
-                    │  - App-specific UI  │
-                    │  - Data seeding     │
-                    └──────────┬──────────┘
-                               │ depends on
-            ┌──────────────────┼──────────────────┐
-            ▼                  ▼                  ▼
-  ┌──────────────────┐ ┌──────────────────┐ ┌─────────────┐
-  │  nxus-workbench  │ │     nxus-db      │ │   nxus-ui   │
-  │  - Node browser  │ │  - Schemas       │ │ - shadcn/ui │
-  │  - Node inspector│ │  - DB clients    │ │ - Utilities │
-  │  - Server fns    │ │  - Node service  │ └─────────────┘
-  └────────┬─────────┘ │  - Bootstrap     │        ▲
-           │           └──────────────────┘        │
-           │ depends on        ▲                   │
-           └───────────────────┴───────────────────┘
+                                 ┌─────────────────────┐
+                                 │    nxus-gateway     │  (Landing page)
+                                 │  - Mini-app listing │
+                                 │  - No DB dependency │
+                                 └──────────┬──────────┘
+                                            │ links to
+                        ┌───────────────────┼───────────────────┐
+                        ▼                                       ▼
+              ┌──────────────────┐                   ┌──────────────────┐
+              │    nxus-core     │  (App manager)    │ nxus-workbench   │  (App shell)
+              │  - App gallery   │                   │  - Mounts lib    │
+              │  - Commands      │                   │  - Standalone    │
+              │  - Settings      │                   └────────┬─────────┘
+              └──────────┬───────┘                            │ depends on
+                         │ depends on                         │
+           ┌─────────────┤                    ┌───────────────┤
+           ▼             ▼                    ▼               ▼
+  ┌──────────────┐ ┌──────────────┐  ┌──────────────────┐ ┌─────────────┐
+  │   nxus-db    │ │   nxus-ui    │  │  nxus-workbench  │ │  nxus-ui    │
+  │  - Schemas   │ │  - shadcn/ui │  │  - Node browser  │ │             │
+  │  - DB client │ │  - Utilities │  │  - Node inspector│ │             │
+  │  - Bootstrap │ └──────────────┘  │  - Server fns    │ └─────────────┘
+  └──────────────┘        ▲          └────────┬─────────┘
+         ▲                │                   │ depends on
+         │                └───────────────────┘
+         └────────────────────────────────────┘
 ```
 
-**Key principle**: No circular dependencies. Dependencies flow downward only.
+**Key principles**:
+- No circular dependencies. Dependencies flow downward only.
+- Apps are runnable; libs are reusable.
+- Each app runs on its own port with a unique base path.
 
-## Packages
+## Applications (`apps/`)
+
+### @nxus/gateway
+
+Gateway landing page — the entry point to the Nxus ecosystem.
+
+**Purpose**: Provide a clean landing page that lists all available mini-apps with navigation links.
+
+**Port**: 3001 | **Base Path**: `/`
+
+**Contains**:
+- Mini-app manifest (`src/config/mini-apps.ts`) — static list of registered apps
+- Landing page with app cards linking to each mini-app
+
+**Dependencies**: `@nxus/ui` only (no database)
+
+### nxus-core
+
+Main application for app management, commands, and settings.
+
+**Purpose**: The primary Nxus application with app gallery, command palette, and data management.
+
+**Port**: 3000 | **Base Path**: `/core`
+
+**Contains**:
+- Route definitions (`/`, `/settings`, etc.)
+- App-specific components (command palette, terminal, etc.)
+- Data seeding scripts (`db:seed`, `db:export`)
+- App manifests and configuration
+
+**Dependencies**: `@nxus/db`, `@nxus/ui`
+
+### @nxus/workbench-app
+
+Standalone workbench application for node browsing and graph exploration.
+
+**Purpose**: A thin TanStack Start shell that mounts the `@nxus/workbench` library as a standalone app.
+
+**Port**: 3002 | **Base Path**: `/workbench`
+
+**Contains**:
+- Root layout with theme support
+- Index route mounting `NodeWorkbenchRoute` from `@nxus/workbench`
+
+**Dependencies**: `@nxus/workbench`, `@nxus/db`, `@nxus/ui`
+
+## Libraries (`libs/`)
 
 ### @nxus/ui
 
@@ -67,9 +124,7 @@ Database layer with schemas, types, and operations.
 - Bootstrap: `bootstrapSystemNodes`, `initDatabaseWithBootstrap`
 - Constants: `SYSTEM_SUPERTAGS`, `SYSTEM_FIELDS`
 
-**Dependencies**:
-- `@nxus/ui` (for potential future shared types)
-- `better-sqlite3`, `drizzle-orm`, `surrealdb`, `zod`
+**Dependencies**: `@nxus/ui`, `better-sqlite3`, `drizzle-orm`, `surrealdb`, `zod`
 
 **Usage**:
 ```typescript
@@ -96,10 +151,7 @@ Node management UI components and server functions.
 - Server functions: `getNodeServerFn`, `searchNodesServerFn`, `getAllItemsFromNodesServerFn`
 - Legacy adapters: `nodeToItem`, `nodeToTag`, `nodeToCommand`, `nodesToItems`
 
-**Dependencies**:
-- `@nxus/db` - Database operations
-- `@nxus/ui` - UI components
-- `@tanstack/react-query`, `@tanstack/react-start`
+**Dependencies**: `@nxus/db`, `@nxus/ui`, `@tanstack/react-query`, `@tanstack/react-start`
 
 **Usage**:
 ```tsx
@@ -110,22 +162,13 @@ import { NodeWorkbenchRoute } from '@nxus/workbench'
 import { getNodeServerFn, nodeToItem } from '@nxus/workbench/server'
 ```
 
-### nxus-core
+### @nxus/calendar
 
-Main application that integrates all packages.
+Calendar integration library.
 
-**Purpose**: The primary Nxus application with routes, app-specific features, and data seeding.
+**Purpose**: Provide calendar UI and scheduling functionality.
 
-**Contains**:
-- Route definitions (`/`, `/nodes`, `/settings`, etc.)
-- App-specific components (command palette, terminal, etc.)
-- Data seeding scripts (`db:seed`, `db:export`)
-- App manifests and configuration
-
-**Dependencies**:
-- `@nxus/db` - Database layer
-- `@nxus/ui` - UI components
-- `@nxus/workbench` - Node management UI
+**Dependencies**: `@nxus/db`, `@nxus/ui`
 
 ## Data Flow
 
@@ -175,131 +218,147 @@ Existing UI Components (app cards, command palette)
 
 ## Creating a Mini-App
 
-A mini-app can use `@nxus/db` directly for data operations without depending on the full workbench:
+### 1. Create the app shell
 
-```typescript
-// mini-app/src/server/data.server.ts
-import {
-  initDatabaseWithBootstrap,
-  getNodesBySupertagWithInheritance,
-  SYSTEM_SUPERTAGS,
-} from '@nxus/db/server'
+Create a new TanStack Start app in `apps/`:
 
-export async function getItems() {
-  const db = initDatabaseWithBootstrap()
-  return getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.ITEM)
-}
+```bash
+mkdir -p apps/my-mini-app/src/routes
 ```
 
-If the mini-app needs node browsing UI:
+Set up `package.json`, `vite.config.ts`, `tsconfig.json`, router, root layout, and styles following the pattern in `apps/nxus-workbench/`.
+
+### 2. Add database access (optional)
+
+```typescript
+// my-mini-app/src/server/data.server.ts
+import { createServerFn } from '@tanstack/react-start'
+
+export const getItemsServerFn = createServerFn({ method: 'GET' }).handler(async () => {
+  const { initDatabaseWithBootstrap, getNodesBySupertagWithInheritance, SYSTEM_SUPERTAGS } =
+    await import('@nxus/db/server')
+  const db = await initDatabaseWithBootstrap()
+  return getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.ITEM)
+})
+```
+
+### 3. Add workbench UI (optional)
 
 ```tsx
-// mini-app/src/routes/nodes.tsx
+// my-mini-app/src/routes/nodes.tsx
 import { NodeWorkbenchRoute } from '@nxus/workbench'
-import { getAllNodesServerFn, getSupertagsServerFn } from '@nxus/workbench/server'
 
 export function NodesRoute() {
-  // Fetch data and render workbench
   return <NodeWorkbenchRoute {...props} />
 }
 ```
 
+### 4. Register in gateway
+
+Add the new app to `apps/nxus-gateway/src/config/mini-apps.ts`:
+
+```typescript
+{
+  id: 'my-mini-app',
+  name: 'My Mini App',
+  description: 'Description of what this app does.',
+  icon: 'cube',
+  path: '/my-app',
+  port: 3003,
+}
+```
+
+### 5. Configure base path
+
+In your app's `router.tsx`, set the TanStack Router `basePath`:
+
+```typescript
+export function createRouter() {
+  return createTanStackRouter({
+    routeTree,
+    basePath: '/my-app',
+  })
+}
+```
+
+### 6. Add dev script
+
+Add a dev script to the root `package.json`:
+
+```json
+"dev:my-app": "nx run @nxus/my-mini-app:dev"
+```
+
+And include it in the main `dev` script's `--projects` list.
+
 ## File Structure
 
 ```
-packages/
+apps/
+├── nxus-gateway/                # Gateway landing page (port 3001)
+│   ├── src/
+│   │   ├── config/mini-apps.ts  # Mini-app registry
+│   │   ├── routes/              # Landing page routes
+│   │   ├── router.tsx
+│   │   └── styles.css
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+│
+├── nxus-core/                   # Main application (port 3000, /core)
+│   ├── src/
+│   │   ├── routes/              # App routes
+│   │   ├── components/          # App-specific components
+│   │   ├── services/            # App services
+│   │   ├── hooks/               # React hooks
+│   │   ├── lib/                 # Pure utilities
+│   │   ├── types/               # TypeScript types
+│   │   └── data/                # JSON data files
+│   ├── scripts/                 # DB seeding scripts
+│   ├── package.json
+│   └── ARCHITECTURE.md
+│
+└── nxus-workbench/              # Workbench app shell (port 3002, /workbench)
+    ├── src/
+    │   ├── routes/              # Mounts @nxus/workbench
+    │   ├── router.tsx
+    │   └── styles.css
+    ├── package.json
+    └── tsconfig.json
+
+libs/
 ├── nxus-ui/
 │   ├── src/
-│   │   ├── components/      # shadcn/ui components
-│   │   ├── lib/utils.ts     # cn() utility
-│   │   └── index.ts         # Barrel export
-│   ├── package.json
-│   └── README.md
+│   │   ├── components/          # shadcn/ui components
+│   │   ├── lib/utils.ts         # cn() utility
+│   │   └── index.ts             # Barrel export
+│   └── package.json
 │
 ├── nxus-db/
 │   ├── src/
-│   │   ├── schemas/         # Drizzle schemas
-│   │   ├── services/        # Node operations
-│   │   ├── client/          # DB initialization
-│   │   ├── types/           # TypeScript types
-│   │   ├── index.ts         # Types-only export
-│   │   └── server.ts        # Full server export
-│   ├── examples/
-│   ├── package.json
-│   └── README.md
+│   │   ├── schemas/             # Drizzle schemas
+│   │   ├── services/            # Node operations
+│   │   ├── client/              # DB initialization
+│   │   ├── types/               # TypeScript types
+│   │   ├── index.ts             # Types-only export
+│   │   └── server.ts            # Full server export
+│   └── package.json
 │
 ├── nxus-workbench/
 │   ├── src/
-│   │   ├── components/      # Node UI components
-│   │   ├── server/          # Server functions
-│   │   ├── index.ts         # Component export
-│   │   └── route.tsx        # Main workbench route
-│   ├── package.json
-│   └── README.md
+│   │   ├── components/          # Node UI components
+│   │   ├── server/              # Server functions
+│   │   ├── index.ts             # Component export
+│   │   └── route.tsx            # Main workbench route
+│   └── package.json
 │
-└── nxus-core/
-    ├── src/
-    │   ├── routes/          # App routes
-    │   ├── components/      # App-specific components
-    │   ├── services/        # App services (re-exports)
-    │   └── data/            # JSON data files
-    ├── scripts/             # DB seeding scripts
-    ├── package.json
-    └── README.md
-```
+└── nxus-calendar/
+    ├── src/                     # Calendar components
+    └── package.json
 
-## Package.json Dependencies
-
-### @nxus/ui
-```json
-{
-  "dependencies": {
-    "class-variance-authority": "...",
-    "clsx": "...",
-    "framer-motion": "...",
-    "tailwind-merge": "..."
-  },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
-  }
-}
-```
-
-### @nxus/db
-```json
-{
-  "dependencies": {
-    "better-sqlite3": "...",
-    "drizzle-orm": "...",
-    "surrealdb": "...",
-    "uuidv7": "...",
-    "zod": "..."
-  }
-}
-```
-
-### @nxus/workbench
-```json
-{
-  "dependencies": {
-    "@nxus/db": "workspace:*",
-    "@nxus/ui": "workspace:*",
-    "@tanstack/react-query": "...",
-    "@tanstack/react-start": "..."
-  }
-}
-```
-
-### nxus-core
-```json
-{
-  "dependencies": {
-    "@nxus/db": "workspace:*",
-    "@nxus/ui": "workspace:*",
-    "@nxus/workbench": "workspace:*"
-  }
-}
+packages/
+├── _commands/                   # CLI command definitions
+└── repos/                       # Repository configurations
 ```
 
 ## Commands
@@ -307,17 +366,19 @@ packages/
 ### Development
 
 ```bash
-# Start development server
+# Start all apps (gateway + core + workbench)
 pnpm dev
+
+# Start individual apps
+pnpm dev:gateway    # http://localhost:3001/
+pnpm dev:core       # http://localhost:3000/core
+pnpm dev:workbench  # http://localhost:3002/workbench
 
 # Build all packages
 nx run-many -t build
 
 # Type check all packages
 nx run-many -t typecheck
-
-# Run tests
-pnpm -r test
 ```
 
 ### Database
@@ -333,19 +394,14 @@ pnpm db:export
 pnpm bootstrap-nodes
 ```
 
-## Migration Notes
+## Multi-App Routing
 
-When adding a new mini-app:
+Each app runs on its own port and has a unique base path configured in its TanStack Router:
 
-1. Create package in `packages/` directory
-2. Add `@nxus/db` as dependency for database access
-3. Optionally add `@nxus/ui` for UI components
-4. Optionally add `@nxus/workbench` for node management UI
-5. Use `initDatabaseWithBootstrap()` to ensure system nodes exist
-6. Query nodes using the node service functions
+| App | Port | Base Path | URL |
+|-----|------|-----------|-----|
+| Gateway | 3001 | `/` | `http://localhost:3001/` |
+| Core | 3000 | `/core` | `http://localhost:3000/core` |
+| Workbench | 3002 | `/workbench` | `http://localhost:3002/workbench` |
 
-The `@nxus/db` package handles all database operations including:
-- Creating/updating nodes
-- Setting properties
-- Querying by supertag (with inheritance)
-- Graph relationships (via SurrealDB)
+In development, each app runs independently. The gateway provides a landing page with links to each app. Each app includes a "home" link that navigates back to the gateway at `/`.

@@ -42,12 +42,11 @@ If you don't provide arguments, the script will prompt you for:
 
 To add a new script to this collection:
 
-1. **Create your script** in this folder (`/stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/_scripts/`)
+1. **Create your script** in this folder (`apps/nxus-core/src/data/apps/_scripts/`)
 
    ```bash
-   cd /stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/_scripts/
-   touch my-new-script.sh
-   chmod +x my-new-script.sh
+   touch apps/nxus-core/src/data/apps/_scripts/my-new-script.sh
+   chmod +x apps/nxus-core/src/data/apps/_scripts/my-new-script.sh
    ```
 
 2. **Update the manifest** at `manifest.json` (in the same folder)
@@ -63,7 +62,7 @@ To add a new script to this collection:
      "category": "Category",
      "target": "item",
      "mode": "terminal",
-     "command": "bash /stuff/WorkSpace/Nxus/nxus/packages/nxus-core/src/data/apps/_scripts/my-new-script.sh",
+     "command": "bash apps/nxus-core/src/data/apps/_scripts/my-new-script.sh",
      "requires": {
        "tools": ["required-tool-ids"]
      }
