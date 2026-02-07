@@ -33,9 +33,19 @@ Setting up Nxus is straightforward. Follow these steps to get your local environ
 
 4. **Start the Development Server**:
    ```bash
-   npx nx dev nxus-core
+   pnpm dev
    ```
-   This will start the TanStack Start development server. Open your browser to the URL provided in the terminal (usually `http://localhost:3000`).
+   This starts all three mini-apps simultaneously:
+   - **Gateway** at `http://localhost:3001/` — landing page with links to all apps
+   - **Core** at `http://localhost:3000/core` — main app management interface
+   - **Workbench** at `http://localhost:3002/workbench` — node browser and graph explorer
+
+   To start a single app:
+   ```bash
+   pnpm dev:gateway    # Gateway only
+   pnpm dev:core       # Core only
+   pnpm dev:workbench  # Workbench only
+   ```
 
 ## First Steps
 
@@ -54,7 +64,7 @@ Find an item with the `#remote-repo` tag (like `logseq` or `nxus` itself) and lo
 ## Troubleshooting
 
 - **Database Errors**: If you encounter issues with data loading, try resetting the database: `pnpm db:reset` (Warning: this will delete local data).
-- **Port Conflicts**: If port 3000 is taken, you can change it in the package configuration or by setting the `PORT` environment variable.
+- **Port Conflicts**: The apps use ports 3000 (core), 3001 (gateway), and 3002 (workbench). You can change ports in each app's `package.json`.
 
 ---
 

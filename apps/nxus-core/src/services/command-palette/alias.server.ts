@@ -1,0 +1,115 @@
+import { createServerFn } from '@tanstack/react-start'
+import { aliases,
+  eq,
+  getEphemeralDatabase,
+  initEphemeralDatabase,
+  saveEphemeralDatabase } from '@nxus/db/server'
+
+/**
+ * Get all aliases as a map of alias → commandId
+ */
+export const getAliasesServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    initEphemeralDatabase()
+    const db = getEphemeralDatabase()
+    const rows = await db.select().from(aliases)
+
+    const aliasMap: Record<string, string> = {}
+    for (const row of rows) {
+      aliasMap[row.alias] = row.commandId
+    }
+    return aliasMap
+  },
+)
+
+/**
+ * Set an alias for a command (upsert)
+ */
+export const setAliasServerFn = createServerFn({ method: 'POST' })
+  .inputValidator((data: { commandId: string; alias: string }) => data)
+  .handler(async ({ data: { commandId, alias } }) => {
+    initEphemeralDatabase()
+    const db = getEphemeralDatabase()
+
+    // Check if this command already has an alias
+    const existing = await db
+      .select()
+      .from(aliases)
+      .where(eq(aliases.commandId, commandId))
+
+    if (existing.length > 0) {
+      // Update existing
+      await db
+        .update(aliases)
+        .set({ alias, createdAt: new Date() })
+        .where(eq(aliases.commandId, commandId))
+    } else {
+      // Insert new
+      await db.insert(aliases).values({
+        id: crypto.randomUUID(),
+        commandId,
+        alias,
+        createdAt: new Date(),
+      })
+    }
+
+    saveEphemeralDatabase()
+    return { success: true }
+  })
+
+/**
+ * Remove an alias for a command
+ */
+export const removeAliasServerFn = createServerFn({ method: 'POST' })
+  .inputValidator((data: { commandId: string }) => data)
+  .handler(async ({ data: { commandId } }) => {
+    initEphemeralDatabase()
+    const db = getEphemeralDatabase()
+    await db.delete(aliases).where(eq(aliases.commandId, commandId))
+    saveEphemeralDatabase()
+    return { success: true }
+  })
+
+/**
+ * Pure utility functions that can run on client
+ * These work with pre-loaded alias data
+ */
+export const aliasUtils = {
+  /**
+   * Find exact alias match for a query
+   */
+  findExactMatch(
+    query: string,
+    allAliases: Record<string, string>,
+  ): string | null {
+    const lowerQuery = query.toLowerCase()
+    for (const [alias, commandId] of Object.entries(allAliases)) {
+      if (alias.toLowerCase() === lowerQuery) {
+        return commandId
+      }
+    }
+    return null
+  },
+
+  /**
+   * Get command IDs that match an alias (exact or prefix match)
+   */
+  getCommandsForAlias(
+    query: string,
+    allAliases: Record<string, string>,
+  ): Array<{ commandId: string; exact: boolean }> {
+    const lowerQuery = query.toLowerCase()
+    const matches: Array<{ commandId: string; exact: boolean }> = []
+
+    for (const [alias, commandId] of Object.entries(allAliases)) {
+      const lowerAlias = alias.toLowerCase()
+      if (lowerAlias === lowerQuery) {
+        matches.unshift({ commandId, exact: true })
+      } else if (lowerAlias.startsWith(lowerQuery)) {
+        matches.push({ commandId, exact: false })
+      }
+    }
+
+    return matches
+  },
+}

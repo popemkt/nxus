@@ -1,10 +1,17 @@
 ---
 trigger: always_on
 glob:
-description: Codebase conventions for nxus-core
+description: Codebase conventions for nxus monorepo (apps/ and libs/)
 ---
 
 # Codebase Rules
+
+## Monorepo Structure
+
+This is an Nx monorepo with three top-level directories:
+- `apps/` — Runnable TanStack Start applications (nxus-gateway, nxus-core, nxus-workbench)
+- `libs/` — Shared libraries (nxus-ui, nxus-db, nxus-workbench, nxus-calendar)
+- `packages/` — Legacy CLI commands and repo configs only
 
 ## Exports
 - Named exports only, no default exports
@@ -39,9 +46,9 @@ export const xyzServerFn = createServerFn({ method: 'GET' }).handler(async () =>
 When using database functions from `@nxus/db/server`, you MUST use dynamic imports to prevent Node.js-only code (better-sqlite3) from being bundled into the client.
 
 **Architecture:**
-- `@nxus/db`: Pure types and schemas (client-safe)
-- `@nxus/db/server`: Pure functions requiring Node.js (evaluateQuery, createNode, etc.)
-- `nxus-core`: TanStack `createServerFn` wrappers with dynamic imports
+- `@nxus/db`: Pure types and schemas (client-safe) — in `libs/nxus-db`
+- `@nxus/db/server`: Pure functions requiring Node.js (evaluateQuery, createNode, etc.) — in `libs/nxus-db`
+- Apps (`apps/nxus-core`, `apps/nxus-workbench`): TanStack `createServerFn` wrappers with dynamic imports
 
 ```typescript
 // ❌ BAD: Top-level import from @nxus/db/server

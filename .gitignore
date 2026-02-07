@@ -52,8 +52,8 @@ packages/repos
 **/surreal.db/**/*.tmp
 
 # Prevent database from being created in wrong location
-# Correct location: packages/nxus-core/src/data/nxus.db
-packages/nxus-core/src/data/.fuse*
+# Correct location: apps/nxus-core/src/data/nxus.db
+apps/nxus-core/src/data/.fuse*
 
 # Playwright MCP artifacts
 .playwright-mcp/

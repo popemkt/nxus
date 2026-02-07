@@ -4,10 +4,10 @@ Adding a new tool or application to Nxus is designed to be simple and declarativ
 
 ## Step 1: Create the Folder Structure
 
-All Nxus apps are stored in `packages/nxus-core/src/data/apps/`. Create a new folder for your app:
+All Nxus app manifests are stored in `apps/nxus-core/src/data/apps/`. Create a new folder for your app:
 
 ```bash
-mkdir packages/nxus-core/src/data/apps/my-cool-tool
+mkdir apps/nxus-core/src/data/apps/my-cool-tool
 ```
 
 ## Step 2: Create the `manifest.json`
