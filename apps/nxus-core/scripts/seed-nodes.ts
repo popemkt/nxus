@@ -482,15 +482,43 @@ export async function seedNodes() {
   console.log(`  Seeded ${itemsCount} items, ${commandsCount} commands`)
 
   // Resolve dependencies (second pass)
+  // NOTE: Must apply same type normalization as step 3 since raw manifests
+  // typically have `type` (string) not `types` (array), which ItemSchema requires.
   console.log('[4/5] Resolving dependencies...')
   let depCount = 0
 
   for (const appDir of appDirs) {
     const manifestPath = join(appsDir, appDir, 'manifest.json')
-    const manifest = loadJsonFile<Record<string, unknown>>(manifestPath)
-    if (!manifest) continue
+    const rawDep = loadJsonFile<Record<string, unknown>>(manifestPath)
+    if (!rawDep) continue
 
-    const validationResult = ItemSchema.safeParse(manifest)
+    // Normalize type fields (same logic as step 3)
+    const depRawTypes = rawDep.types as Array<ItemType> | undefined
+    const depRawType = rawDep.type as ItemType | undefined
+    const depRawPrimaryType = rawDep.primaryType as ItemType | undefined
+
+    let depTypes: Array<ItemType>
+    if (depRawTypes && Array.isArray(depRawTypes) && depRawTypes.length > 0) {
+      depTypes = depRawTypes
+    } else if (depRawType) {
+      depTypes = [depRawType]
+    } else {
+      continue
+    }
+
+    const depPrimaryType =
+      depRawPrimaryType && depTypes.includes(depRawPrimaryType)
+        ? depRawPrimaryType
+        : depTypes[0]
+
+    const normalizedManifest = {
+      ...rawDep,
+      types: depTypes,
+      primaryType: depPrimaryType,
+      type: depPrimaryType,
+    }
+
+    const validationResult = ItemSchema.safeParse(normalizedManifest)
     if (!validationResult.success) continue
 
     const item = validationResult.data

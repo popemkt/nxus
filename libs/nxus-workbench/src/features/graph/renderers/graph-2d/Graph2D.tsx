@@ -375,7 +375,7 @@ function Graph2DInner({
         nodeStrokeWidth={3}
         zoomable
         pannable
-        className="!bg-background/80 !border-border"
+        className="!bg-popover/90 !border-border rounded-lg shadow-lg"
       />
 
       {/* Zoom controls */}
@@ -383,7 +383,7 @@ function Graph2DInner({
         showZoom
         showFitView
         showInteractive={false}
-        className="!bg-background/80 !border-border !shadow-lg"
+        className="!bg-popover !border-border !rounded-lg !shadow-md [&>button]:!bg-popover [&>button]:!border-border [&>button]:!fill-foreground [&>button:hover]:!bg-accent"
       />
 
       {/* Stats panel */}

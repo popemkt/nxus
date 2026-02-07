@@ -70,6 +70,13 @@ Remove the `/nodes` route and `@nxus/workbench` dependency from nxus-core.
 6. Run `pnpm install`
 7. Verify: `nx run nxus-core:dev` works, all routes except `/nodes` function correctly
 
+### [x] Step: Fix couple of points
+<!-- chat-id: 8394af17-19cb-494c-879d-6b6246e47844 -->
+
+1. Css not applied to apps, we got this problem before, maybe the css from ui is not appied to nxus core, because of some reason, double check other mini apps as well
+2. Dependencies not showing between items in nxus core, it might be data problem where they're not synced from json to db (but maybe we could've lost it a long time ago)
+3. Clean up mini maps and graph elements, all graphs have the default react flow controls (controls and mini map) not respecting theme.
+
 ### [ ] Step: Create nxus-workbench app shell
 
 Create a thin TanStack Start app in `apps/nxus-workbench/` that mounts the workbench library.
