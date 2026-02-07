@@ -1,50 +1,31 @@
 /**
  * graph-client.ts - SurrealDB client for graph architecture
  *
- * IMPORTANT: The SurrealDB JS SDK requires a running SurrealDB server.
- * It does NOT support embedded/in-memory mode directly.
+ * Supports two connection modes:
  *
- * To use graph architecture:
+ * 1. Remote mode (requires a running SurrealDB server):
+ *    - Install: curl -sSf https://install.surrealdb.com | sh
+ *    - Start: surreal start --user root --pass root memory
+ *    - Set: SURREAL_URL=http://127.0.0.1:8000/rpc
  *
- * 1. Install SurrealDB:
- *    curl -sSf https://install.surrealdb.com | sh
- *
- * 2. Start the server (in-memory for dev):
- *    surreal start --user root --pass root memory
- *
- *    Or with file persistence:
- *    surreal start --user root --pass root file:~/.popemkt/.nxus/graph.db
- *
- * 3. Set environment variable (optional, defaults to localhost):
- *    export SURREAL_URL=http://127.0.0.1:8000/rpc
+ * 2. Embedded mode (in-memory, no server needed):
+ *    - Used for testing via createEmbeddedGraphDatabase()
+ *    - Uses @surrealdb/node with mem:// protocol
  */
 
-import { existsSync, mkdirSync } from 'fs'
-import { homedir } from 'os'
-import { resolve } from 'path'
-import Surreal from 'surrealdb'
+import { Surreal, RecordId, StringRecordId } from 'surrealdb'
 
-// User data directory for graph database
-const userDataDir = resolve(homedir(), '.popemkt', '.nxus')
-const graphDbPath = resolve(userDataDir, 'graph.db')
-
-// Ensure directory exists
-if (!existsSync(userDataDir)) {
-  mkdirSync(userDataDir, { recursive: true })
-}
+export { RecordId, StringRecordId }
 
 // Singleton instance
 let db: Surreal | null = null
 let isInitialized = false
 
 /**
- * SurrealDB connection config
- *
- * The JS SDK only supports connecting to a running server via HTTP or WebSocket.
+ * SurrealDB connection config for remote mode.
  * Default: http://127.0.0.1:8000/rpc
  */
 const SURREAL_CONFIG = {
-  // Connect to SurrealDB server
   url: process.env.SURREAL_URL || 'http://127.0.0.1:8000/rpc',
   namespace: process.env.SURREAL_NS || 'nxus',
   database: process.env.SURREAL_DB || 'main',
@@ -53,7 +34,8 @@ const SURREAL_CONFIG = {
 }
 
 /**
- * Initialize SurrealDB connection and schema
+ * Initialize SurrealDB connection and schema (remote mode).
+ * Connects to a running SurrealDB server.
  */
 export async function initGraphDatabase(): Promise<Surreal> {
   if (db && isInitialized) return db
@@ -68,7 +50,7 @@ export async function initGraphDatabase(): Promise<Surreal> {
     // Connect to SurrealDB server
     await db.connect(url)
 
-    // Sign in
+    // Sign in (required for remote connections)
     await db.signin({
       username: SURREAL_CONFIG.username,
       password: SURREAL_CONFIG.password,
@@ -98,6 +80,38 @@ export async function initGraphDatabase(): Promise<Surreal> {
 }
 
 /**
+ * Create an embedded in-memory SurrealDB instance.
+ * Used for testing — no external server needed.
+ *
+ * Requires @surrealdb/node as a devDependency.
+ */
+export async function createEmbeddedGraphDatabase(options?: {
+  namespace?: string
+  database?: string
+  skipSchema?: boolean
+}): Promise<Surreal> {
+  // Dynamic import so @surrealdb/node is only loaded in test/dev
+  const { createNodeEngines } = await import('@surrealdb/node')
+
+  const instance = new Surreal({
+    engines: createNodeEngines(),
+  })
+
+  await instance.connect('mem://')
+
+  await instance.use({
+    namespace: options?.namespace ?? 'test',
+    database: options?.database ?? 'test',
+  })
+
+  if (!options?.skipSchema) {
+    await initGraphSchema(instance)
+  }
+
+  return instance
+}
+
+/**
  * Get the SurrealDB instance (must call initGraphDatabase first)
  */
 export function getGraphDatabase(): Surreal {
@@ -107,6 +121,22 @@ export function getGraphDatabase(): Surreal {
     )
   }
   return db
+}
+
+/**
+ * Override the singleton instance (useful for injecting embedded DB in tests).
+ */
+export function setGraphDatabase(instance: Surreal): void {
+  db = instance
+  isInitialized = true
+}
+
+/**
+ * Reset the singleton (for test cleanup).
+ */
+export function resetGraphDatabase(): void {
+  db = null
+  isInitialized = false
 }
 
 /**
@@ -122,16 +152,28 @@ export async function closeGraphDatabase(): Promise<void> {
 }
 
 /**
- * Initialize the graph schema
- * Defines tables, fields, and indexes for the node-based architecture
+ * Parse a string record ID like "node:abc123" into a RecordId instance.
+ * If already a RecordId, returns as-is.
  */
-async function initGraphSchema(db: Surreal): Promise<void> {
+export function toRecordId(id: string | RecordId): RecordId | StringRecordId {
+  if (id instanceof RecordId) return id
+  if (typeof id === 'string' && id.includes(':')) {
+    return new StringRecordId(id)
+  }
+  return id as unknown as RecordId
+}
+
+/**
+ * Initialize the graph schema.
+ * Defines tables, fields, and indexes for the node-based architecture.
+ */
+export async function initGraphSchema(db: Surreal): Promise<void> {
   // ============================================================================
   // Core Node Table
   // ============================================================================
   await db.query(`
     DEFINE TABLE node SCHEMAFULL;
-    
+
     -- Core fields
     DEFINE FIELD content ON node TYPE option<string>;
     DEFINE FIELD content_plain ON node TYPE option<string>;
@@ -139,10 +181,10 @@ async function initGraphSchema(db: Surreal): Promise<void> {
     DEFINE FIELD created_at ON node TYPE datetime DEFAULT time::now();
     DEFINE FIELD updated_at ON node TYPE datetime DEFAULT time::now();
     DEFINE FIELD deleted_at ON node TYPE option<datetime>;
-    
+
     -- Flexible properties (schemaless within this field)
     DEFINE FIELD props ON node FLEXIBLE TYPE option<object>;
-    
+
     -- Indexes
     DEFINE INDEX idx_system_id ON node FIELDS system_id UNIQUE;
     DEFINE INDEX idx_content_plain ON node FIELDS content_plain;
@@ -154,16 +196,16 @@ async function initGraphSchema(db: Surreal): Promise<void> {
   // ============================================================================
   await db.query(`
     DEFINE TABLE supertag SCHEMAFULL;
-    
+
     DEFINE FIELD name ON supertag TYPE string;
     DEFINE FIELD system_id ON supertag TYPE option<string>;
     DEFINE FIELD color ON supertag TYPE option<string>;
     DEFINE FIELD icon ON supertag TYPE option<string>;
     DEFINE FIELD created_at ON supertag TYPE datetime DEFAULT time::now();
-    
+
     -- Schema definition for fields this supertag adds
     DEFINE FIELD field_schema ON supertag FLEXIBLE TYPE option<array>;
-    
+
     DEFINE INDEX idx_supertag_system ON supertag FIELDS system_id UNIQUE;
     DEFINE INDEX idx_supertag_name ON supertag FIELDS name;
   `)
@@ -190,31 +232,28 @@ async function initGraphSchema(db: Surreal): Promise<void> {
   // ============================================================================
 
   // part_of: Node -> Node (hierarchical composition)
-  // Use: COMPONENTS REC traversal
   await db.query(`
     DEFINE TABLE part_of SCHEMAFULL TYPE RELATION IN node OUT node;
     DEFINE FIELD order ON part_of TYPE option<int> DEFAULT 0;
     DEFINE FIELD created_at ON part_of TYPE datetime DEFAULT time::now();
-    
+
     DEFINE INDEX idx_part_of_out ON part_of FIELDS out;
   `)
 
   // dependency_of: Node -> Node (sequential dependency)
-  // Use: Task ordering, prerequisites
   await db.query(`
     DEFINE TABLE dependency_of SCHEMAFULL TYPE RELATION IN node OUT node;
     DEFINE FIELD created_at ON dependency_of TYPE datetime DEFAULT time::now();
-    
+
     DEFINE INDEX idx_dependency_out ON dependency_of FIELDS out;
   `)
 
   // references: Node -> Node (generic link)
-  // Use: Backlinks, mentions
   await db.query(`
     DEFINE TABLE references SCHEMAFULL TYPE RELATION IN node OUT node;
     DEFINE FIELD context ON references TYPE option<string>;
     DEFINE FIELD created_at ON references TYPE datetime DEFAULT time::now();
-    
+
     DEFINE INDEX idx_references_out ON references FIELDS out;
   `)
 
@@ -222,7 +261,7 @@ async function initGraphSchema(db: Surreal): Promise<void> {
   await db.query(`
     DEFINE TABLE tagged_with SCHEMAFULL TYPE RELATION IN node OUT node;
     DEFINE FIELD created_at ON tagged_with TYPE datetime DEFAULT time::now();
-    
+
     DEFINE INDEX idx_tagged_out ON tagged_with FIELDS out;
   `)
 
@@ -231,28 +270,28 @@ async function initGraphSchema(db: Surreal): Promise<void> {
   // ============================================================================
   await db.query(`
     -- Item supertag (for apps/tools)
-    UPSERT supertag:item SET 
+    UPSERT supertag:item SET
       name = 'Item',
       system_id = 'supertag:item',
       icon = 'Package',
       created_at = time::now();
-    
+
     -- Tag supertag (for user tags)
-    UPSERT supertag:tag SET 
+    UPSERT supertag:tag SET
       name = 'Tag',
       system_id = 'supertag:tag',
       icon = 'Tag',
       created_at = time::now();
-    
+
     -- Field supertag (for property definitions)
-    UPSERT supertag:field SET 
+    UPSERT supertag:field SET
       name = 'Field',
       system_id = 'supertag:field',
       icon = 'TextAa',
       created_at = time::now();
-    
+
     -- Command supertag (for item commands)
-    UPSERT supertag:command SET 
+    UPSERT supertag:command SET
       name = 'Command',
       system_id = 'supertag:command',
       icon = 'Terminal',
@@ -262,6 +301,5 @@ async function initGraphSchema(db: Surreal): Promise<void> {
   console.log('[GraphDB] Schema initialized')
 }
 
-// Export paths for reference
-export const GRAPH_DB_PATH = graphDbPath
+// Export config for reference
 export { SURREAL_CONFIG }

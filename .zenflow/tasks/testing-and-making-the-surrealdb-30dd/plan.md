@@ -52,7 +52,8 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 
 ---
 
-### [ ] Step: SDK Upgrade and Testing Infrastructure
+### [x] Step: SDK Upgrade and Testing Infrastructure
+<!-- chat-id: 0407a580-3bd8-435d-a397-2b8e76bf83a3 -->
 
 Upgrade SurrealDB dependencies and establish the test infrastructure for in-memory embedded testing.
 

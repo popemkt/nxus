@@ -5,8 +5,7 @@
  * Includes Tana-style recursive traversal operators.
  */
 
-import type Surreal from 'surrealdb'
-import type { RecordId } from 'surrealdb'
+import type { Surreal, RecordId } from 'surrealdb'
 import { getGraphDatabase, initGraphDatabase } from '@nxus/db/server'
 
 // ============================================================================
