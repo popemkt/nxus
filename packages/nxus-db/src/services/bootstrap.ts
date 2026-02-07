@@ -420,17 +420,17 @@ export function bootstrapSystemNodesSync(
     // Calendar-specific fields
     {
       systemId: SYSTEM_FIELDS.START_DATE,
-      content: 'startDate',
+      content: 'start_date',
       fieldType: 'text',
     },
     {
       systemId: SYSTEM_FIELDS.END_DATE,
-      content: 'endDate',
+      content: 'end_date',
       fieldType: 'text',
     },
     {
       systemId: SYSTEM_FIELDS.ALL_DAY,
-      content: 'allDay',
+      content: 'all_day',
       fieldType: 'boolean',
     },
     {
@@ -440,18 +440,44 @@ export function bootstrapSystemNodesSync(
     },
     {
       systemId: SYSTEM_FIELDS.GCAL_EVENT_ID,
-      content: 'gcalEventId',
+      content: 'gcal_event_id',
       fieldType: 'text',
     },
     {
       systemId: SYSTEM_FIELDS.GCAL_SYNCED_AT,
-      content: 'gcalSyncedAt',
+      content: 'gcal_synced_at',
       fieldType: 'text',
     },
     {
       systemId: SYSTEM_FIELDS.REMINDER,
       content: 'reminder',
       fieldType: 'number',
+    },
+    // Google Calendar OAuth fields (stored on settings node)
+    {
+      systemId: SYSTEM_FIELDS.GCAL_ACCESS_TOKEN,
+      content: 'gcal_access_token',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.GCAL_REFRESH_TOKEN,
+      content: 'gcal_refresh_token',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.GCAL_TOKEN_EXPIRY,
+      content: 'gcal_token_expiry',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.GCAL_USER_EMAIL,
+      content: 'gcal_user_email',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.GCAL_CALENDAR_ID,
+      content: 'gcal_calendar_id',
+      fieldType: 'text',
     },
   ];
 

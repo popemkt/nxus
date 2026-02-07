@@ -522,6 +522,64 @@ export function CalendarContainer({
     }
   }, [])
 
+  // Shared props for both calendar variants (with and without drag-and-drop)
+  const baseCalendarProps = useMemo(
+    () => ({
+      localizer,
+      events,
+      date: currentDate,
+      view: viewMap[currentView],
+      views,
+      onNavigate,
+      onView: handleViewChange,
+      onSelectSlot: handleSelectSlot,
+      onSelectEvent: handleSelectEvent,
+      selectable,
+      step,
+      timeslots,
+      scrollToTime,
+      formats,
+      components,
+      eventPropGetter,
+      dayPropGetter,
+      popup: true as const,
+      showMultiDayTimes: true as const,
+      messages: {
+        today: 'Today',
+        previous: 'Back',
+        next: 'Next',
+        month: 'Month',
+        week: 'Week',
+        day: 'Day',
+        agenda: 'Agenda',
+        date: 'Date',
+        time: 'Time',
+        event: 'Event',
+        noEventsInRange: 'No events in this range.',
+        showMore: (total: number) => `+${total} more`,
+      },
+    }),
+    [
+      localizer,
+      events,
+      currentDate,
+      currentView,
+      views,
+      onNavigate,
+      handleViewChange,
+      handleSelectSlot,
+      handleSelectEvent,
+      selectable,
+      step,
+      timeslots,
+      scrollToTime,
+      formats,
+      components,
+      eventPropGetter,
+      dayPropGetter,
+    ]
+  )
+
   return (
     <div
       className={cn('nxus-calendar relative', className)}
@@ -559,81 +617,15 @@ export function CalendarContainer({
       {/* Calendar - use drag-and-drop version if loaded, otherwise basic calendar */}
       {DragAndDropCalendar ? (
         <DragAndDropCalendar
-          localizer={localizer}
-          events={events}
-          date={currentDate}
-          view={viewMap[currentView]}
-          views={views}
-          onNavigate={onNavigate}
-          onView={handleViewChange}
-          onSelectSlot={handleSelectSlot}
-          onSelectEvent={handleSelectEvent}
+          {...baseCalendarProps}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventResize}
           draggableAccessor={draggableAccessor}
           resizableAccessor={resizableAccessor}
           resizable={resizable}
-          selectable={selectable}
-          step={step}
-          timeslots={timeslots}
-          scrollToTime={scrollToTime}
-          formats={formats}
-          components={components}
-          eventPropGetter={eventPropGetter}
-          dayPropGetter={dayPropGetter}
-          popup
-          showMultiDayTimes
-          messages={{
-            today: 'Today',
-            previous: 'Back',
-            next: 'Next',
-            month: 'Month',
-            week: 'Week',
-            day: 'Day',
-            agenda: 'Agenda',
-            date: 'Date',
-            time: 'Time',
-            event: 'Event',
-            noEventsInRange: 'No events in this range.',
-            showMore: (total: number) => `+${total} more`,
-          }}
         />
       ) : (
-        <BigCalendar
-          localizer={localizer}
-          events={events}
-          date={currentDate}
-          view={viewMap[currentView]}
-          views={views}
-          onNavigate={onNavigate}
-          onView={handleViewChange}
-          onSelectSlot={handleSelectSlot}
-          onSelectEvent={handleSelectEvent}
-          selectable={selectable}
-          step={step}
-          timeslots={timeslots}
-          scrollToTime={scrollToTime}
-          formats={formats}
-          components={components}
-          eventPropGetter={eventPropGetter}
-          dayPropGetter={dayPropGetter}
-          popup
-          showMultiDayTimes
-          messages={{
-            today: 'Today',
-            previous: 'Back',
-            next: 'Next',
-            month: 'Month',
-            week: 'Week',
-            day: 'Day',
-            agenda: 'Agenda',
-            date: 'Date',
-            time: 'Time',
-            event: 'Event',
-            noEventsInRange: 'No events in this range.',
-            showMore: (total: number) => `+${total} more`,
-          }}
-        />
+        <BigCalendar {...baseCalendarProps} />
       )}
     </div>
   )

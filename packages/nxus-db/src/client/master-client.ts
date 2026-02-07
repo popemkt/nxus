@@ -6,6 +6,7 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import * as ephemeralSchema from '../schemas/ephemeral-schema.js'
 import * as schema from '../schemas/item-schema.js'
+import { bootstrapSystemNodesSync } from '../services/bootstrap.js'
 
 // Get the data directory path relative to this file
 const __filename = fileURLToPath(import.meta.url)
@@ -255,6 +256,12 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   `)
 
   // No need to manually save - better-sqlite3 persists automatically
+
+  // Bootstrap system nodes (supertags, fields) if not already done
+  if (!bootstrapAttempted) {
+    bootstrapAttempted = true
+    bootstrapSystemNodesSync(masterDrizzleDb, { verbose: false })
+  }
 
   return masterDrizzleDb
 }
