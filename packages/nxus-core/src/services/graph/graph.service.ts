@@ -378,19 +378,22 @@ export async function componentsRec(
   maxDepth = 10,
 ): Promise<GraphNode[]> {
   const db = await getDb()
+  const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  // SurrealDB recursive traversal: ->relation->..->relation or ->relation*
-  const [result] = await db.query<[GraphNode[]]>(
+  // SurrealDB v2.1 recursive traversal with +collect to gather all intermediate nodes
+  const result = await db.query<[null, GraphNode[]]>(
     `
-    SELECT * FROM $nodeId<-part_of<-node<-part_of*${maxDepth}<-node
-    WHERE deleted_at IS NONE
+    LET $ids = $nodeId.{..${maxDepth}+collect}(<-part_of<-node);
+    SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
     `,
-    { nodeId },
+    { nodeId: recordId },
   )
+
+  const nodes = result[1] ?? []
 
   // Deduplicate results
   const seen = new Set<string>()
-  return result.filter((node) => {
+  return nodes.filter((node) => {
     const id = String(node.id)
     if (seen.has(id)) return false
     seen.add(id)
@@ -399,29 +402,35 @@ export async function componentsRec(
 }
 
 /**
- * Alternative COMPONENTS REC using explicit recursive query
+ * Alternative COMPONENTS REC using explicit iterative subquery approach.
+ * Falls back to manual depth expansion (useful if +collect is unavailable).
  */
 export async function componentsRecExplicit(
   nodeId: string | RecordId,
   maxDepth = 10,
 ): Promise<GraphNode[]> {
   const db = await getDb()
+  const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const [result] = await db.query<[GraphNode[]]>(
-    `
-    -- Get direct children and their children recursively
-    SELECT * FROM (
-      SELECT VALUE in FROM part_of WHERE out = $nodeId
-    ) UNION (
-      SELECT VALUE in FROM part_of WHERE out IN (
-        SELECT VALUE in FROM part_of WHERE out = $nodeId
-      )
-    )
-    `,
-    { nodeId, maxDepth },
-  )
+  // Build iterative LET expansion up to maxDepth
+  const lets: string[] = []
+  const depthVars: string[] = []
+  const clampedDepth = Math.min(maxDepth, 10)
+  for (let i = 1; i <= clampedDepth; i++) {
+    const prev = i === 1 ? '$nodeId' : `$d${i - 1}`
+    lets.push(`LET $d${i} = (SELECT VALUE in FROM part_of WHERE out IN ${prev === '$nodeId' ? '[$nodeId]' : prev});`)
+    depthVars.push(`$d${i}`)
+  }
 
-  return result
+  const query = `
+    ${lets.join('\n')}
+    LET $all = array::distinct(array::flatten([${depthVars.join(', ')}]));
+    SELECT * FROM node WHERE id IN $all AND deleted_at IS NONE;
+  `
+
+  const results = await db.query<unknown[]>(query, { nodeId: recordId })
+  // The SELECT result is the last element
+  return (results[results.length - 1] as GraphNode[]) ?? []
 }
 
 /**
@@ -434,16 +443,17 @@ export async function dependenciesRec(
   maxDepth = 10,
 ): Promise<GraphNode[]> {
   const db = await getDb()
+  const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const [result] = await db.query<[GraphNode[]]>(
+  const result = await db.query<[null, GraphNode[]]>(
     `
-    SELECT * FROM $nodeId->dependency_of*${maxDepth}->node
-    WHERE deleted_at IS NONE
+    LET $ids = $nodeId.{..${maxDepth}+collect}(->dependency_of->node);
+    SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
     `,
-    { nodeId },
+    { nodeId: recordId },
   )
 
-  return result
+  return result[1] ?? []
 }
 
 /**
@@ -456,16 +466,17 @@ export async function dependentsRec(
   maxDepth = 10,
 ): Promise<GraphNode[]> {
   const db = await getDb()
+  const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const [result] = await db.query<[GraphNode[]]>(
+  const result = await db.query<[null, GraphNode[]]>(
     `
-    SELECT * FROM node<-dependency_of*${maxDepth}<-$nodeId
-    WHERE deleted_at IS NONE
+    LET $ids = $nodeId.{..${maxDepth}+collect}(<-dependency_of<-node);
+    SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
     `,
-    { nodeId },
+    { nodeId: recordId },
   )
 
-  return result
+  return result[1] ?? []
 }
 
 /**
@@ -475,13 +486,16 @@ export async function backlinks(
   nodeId: string | RecordId,
 ): Promise<GraphNode[]> {
   const db = await getDb()
+  const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
+  // Use subquery approach — reliable with parameterized record IDs
   const [result] = await db.query<[GraphNode[]]>(
     `
-    SELECT * FROM node<-references<-$nodeId
-    WHERE deleted_at IS NONE
+    SELECT * FROM node WHERE id IN (
+      SELECT VALUE in FROM references WHERE out = $nodeId
+    ) AND deleted_at IS NONE
     `,
-    { nodeId },
+    { nodeId: recordId },
   )
 
   return result
@@ -495,16 +509,17 @@ export async function ancestorsRec(
   maxDepth = 10,
 ): Promise<GraphNode[]> {
   const db = await getDb()
+  const recordId = typeof nodeId === 'string' ? toRecordId(nodeId) : nodeId
 
-  const [result] = await db.query<[GraphNode[]]>(
+  const result = await db.query<[null, GraphNode[]]>(
     `
-    SELECT * FROM $nodeId->part_of*${maxDepth}->node
-    WHERE deleted_at IS NONE
+    LET $ids = $nodeId.{..${maxDepth}+collect}(->part_of->node);
+    SELECT * FROM node WHERE id IN $ids AND deleted_at IS NONE;
     `,
-    { nodeId },
+    { nodeId: recordId },
   )
 
-  return result
+  return result[1] ?? []
 }
 
 // ============================================================================

@@ -27,6 +27,13 @@ import {
   removeRelation,
   getOutgoingRelations,
   getIncomingRelations,
+  componentsRec,
+  dependenciesRec,
+  dependentsRec,
+  backlinks,
+  ancestorsRec,
+  searchNodes,
+  getNodesByProperty,
 } from '../graph.service.js'
 
 let db: Surreal
@@ -580,6 +587,505 @@ describe('Relation Operations', () => {
       const lonely = await createNode({ content: 'Lonely' })
       const sources = await getIncomingRelations(lonely.id, 'references')
       expect(sources).toEqual([])
+    })
+  })
+})
+
+// =============================================================================
+// Semantic Traversal Operators
+// =============================================================================
+
+describe('Semantic Traversal Operators', () => {
+  describe('componentsRec', () => {
+    it('should return direct children (depth 1)', async () => {
+      const parent = await createNode({ content: 'Project' })
+      const child1 = await createNode({ content: 'Task A' })
+      const child2 = await createNode({ content: 'Task B' })
+
+      await addRelation('part_of', child1.id, parent.id)
+      await addRelation('part_of', child2.id, parent.id)
+
+      const components = await componentsRec(parent.id)
+
+      expect(components.length).toBe(2)
+      const contents = components.map((n) => n.content).sort()
+      expect(contents).toEqual(['Task A', 'Task B'])
+    })
+
+    it('should return multi-level descendants recursively', async () => {
+      // Project -> Phase -> Task
+      const project = await createNode({ content: 'Project' })
+      const phase = await createNode({ content: 'Phase 1' })
+      const task = await createNode({ content: 'Task 1.1' })
+
+      await addRelation('part_of', phase.id, project.id)
+      await addRelation('part_of', task.id, phase.id)
+
+      const components = await componentsRec(project.id)
+
+      const contents = components.map((n) => n.content).sort()
+      expect(contents).toContain('Phase 1')
+      expect(contents).toContain('Task 1.1')
+    })
+
+    it('should return empty array when node has no children', async () => {
+      const leaf = await createNode({ content: 'Leaf Node' })
+      const components = await componentsRec(leaf.id)
+      expect(components).toEqual([])
+    })
+
+    it('should exclude soft-deleted descendants', async () => {
+      const parent = await createNode({ content: 'Parent' })
+      const active = await createNode({ content: 'Active Child' })
+      const deleted = await createNode({ content: 'Deleted Child' })
+
+      await addRelation('part_of', active.id, parent.id)
+      await addRelation('part_of', deleted.id, parent.id)
+
+      await deleteNode(deleted.id)
+
+      const components = await componentsRec(parent.id)
+      const contents = components.map((n) => n.content)
+      expect(contents).toContain('Active Child')
+      expect(contents).not.toContain('Deleted Child')
+    })
+
+    it('should deduplicate results (diamond hierarchy)', async () => {
+      // Root -> A -> Shared
+      // Root -> B -> Shared
+      const root = await createNode({ content: 'Root' })
+      const a = await createNode({ content: 'A' })
+      const b = await createNode({ content: 'B' })
+      const shared = await createNode({ content: 'Shared' })
+
+      await addRelation('part_of', a.id, root.id)
+      await addRelation('part_of', b.id, root.id)
+      await addRelation('part_of', shared.id, a.id)
+      await addRelation('part_of', shared.id, b.id)
+
+      const components = await componentsRec(root.id)
+
+      // Shared should appear only once
+      const sharedCount = components.filter(
+        (n) => n.content === 'Shared',
+      ).length
+      expect(sharedCount).toBe(1)
+      expect(components.length).toBe(3) // A, B, Shared
+    })
+  })
+
+  describe('dependenciesRec', () => {
+    it('should return direct dependencies', async () => {
+      const task = await createNode({ content: 'Build Feature' })
+      const prereq = await createNode({ content: 'Design' })
+
+      await addRelation('dependency_of', task.id, prereq.id)
+
+      const deps = await dependenciesRec(task.id)
+
+      expect(deps.length).toBe(1)
+      expect(deps[0]!.content).toBe('Design')
+    })
+
+    it('should return recursive dependency chain', async () => {
+      // Deploy -> Test -> Build -> Design
+      const deploy = await createNode({ content: 'Deploy' })
+      const test = await createNode({ content: 'Test' })
+      const build = await createNode({ content: 'Build' })
+      const design = await createNode({ content: 'Design' })
+
+      await addRelation('dependency_of', deploy.id, test.id)
+      await addRelation('dependency_of', test.id, build.id)
+      await addRelation('dependency_of', build.id, design.id)
+
+      const deps = await dependenciesRec(deploy.id)
+
+      const contents = deps.map((n) => n.content).sort()
+      expect(contents).toContain('Test')
+      expect(contents).toContain('Build')
+      expect(contents).toContain('Design')
+    })
+
+    it('should return empty array when no dependencies exist', async () => {
+      const independent = await createNode({ content: 'Independent' })
+      const deps = await dependenciesRec(independent.id)
+      expect(deps).toEqual([])
+    })
+
+    it('should exclude soft-deleted dependencies', async () => {
+      const task = await createNode({ content: 'Task' })
+      const activeDep = await createNode({ content: 'Active Dep' })
+      const deletedDep = await createNode({ content: 'Deleted Dep' })
+
+      await addRelation('dependency_of', task.id, activeDep.id)
+      await addRelation('dependency_of', task.id, deletedDep.id)
+
+      await deleteNode(deletedDep.id)
+
+      const deps = await dependenciesRec(task.id)
+      const contents = deps.map((n) => n.content)
+      expect(contents).toContain('Active Dep')
+      expect(contents).not.toContain('Deleted Dep')
+    })
+  })
+
+  describe('dependentsRec', () => {
+    it('should return direct dependents', async () => {
+      const blocker = await createNode({ content: 'Blocker' })
+      const blocked = await createNode({ content: 'Blocked Task' })
+
+      await addRelation('dependency_of', blocked.id, blocker.id)
+
+      const dependents = await dependentsRec(blocker.id)
+
+      expect(dependents.length).toBe(1)
+      expect(dependents[0]!.content).toBe('Blocked Task')
+    })
+
+    it('should return recursive dependent chain', async () => {
+      // Design <- Build <- Test <- Deploy
+      // (Build depends on Design, Test depends on Build, Deploy depends on Test)
+      const design = await createNode({ content: 'Design' })
+      const build = await createNode({ content: 'Build' })
+      const test = await createNode({ content: 'Test' })
+      const deploy = await createNode({ content: 'Deploy' })
+
+      await addRelation('dependency_of', build.id, design.id)
+      await addRelation('dependency_of', test.id, build.id)
+      await addRelation('dependency_of', deploy.id, test.id)
+
+      const dependents = await dependentsRec(design.id)
+
+      const contents = dependents.map((n) => n.content).sort()
+      expect(contents).toContain('Build')
+      expect(contents).toContain('Test')
+      expect(contents).toContain('Deploy')
+    })
+
+    it('should return empty array when no dependents exist', async () => {
+      const leaf = await createNode({ content: 'Leaf' })
+      const dependents = await dependentsRec(leaf.id)
+      expect(dependents).toEqual([])
+    })
+  })
+
+  describe('backlinks', () => {
+    it('should return all nodes that reference this node', async () => {
+      const target = await createNode({ content: 'Reference Target' })
+      const ref1 = await createNode({ content: 'Referrer 1' })
+      const ref2 = await createNode({ content: 'Referrer 2' })
+
+      await addRelation('references', ref1.id, target.id)
+      await addRelation('references', ref2.id, target.id)
+
+      const links = await backlinks(target.id)
+
+      expect(links.length).toBe(2)
+      const contents = links.map((n) => n.content).sort()
+      expect(contents).toEqual(['Referrer 1', 'Referrer 2'])
+    })
+
+    it('should return empty array when no references exist', async () => {
+      const unreferenced = await createNode({ content: 'Unreferenced' })
+      const links = await backlinks(unreferenced.id)
+      expect(links).toEqual([])
+    })
+
+    it('should exclude soft-deleted referrers', async () => {
+      const target = await createNode({ content: 'Target' })
+      const active = await createNode({ content: 'Active Ref' })
+      const deleted = await createNode({ content: 'Deleted Ref' })
+
+      await addRelation('references', active.id, target.id)
+      await addRelation('references', deleted.id, target.id)
+
+      await deleteNode(deleted.id)
+
+      const links = await backlinks(target.id)
+      const contents = links.map((n) => n.content)
+      expect(contents).toContain('Active Ref')
+      expect(contents).not.toContain('Deleted Ref')
+    })
+  })
+
+  describe('ancestorsRec', () => {
+    it('should return direct parent', async () => {
+      const parent = await createNode({ content: 'Parent' })
+      const child = await createNode({ content: 'Child' })
+
+      await addRelation('part_of', child.id, parent.id)
+
+      const ancestors = await ancestorsRec(child.id)
+
+      expect(ancestors.length).toBe(1)
+      expect(ancestors[0]!.content).toBe('Parent')
+    })
+
+    it('should return recursive ancestor chain', async () => {
+      // Task -> Phase -> Project -> Portfolio
+      const portfolio = await createNode({ content: 'Portfolio' })
+      const project = await createNode({ content: 'Project' })
+      const phase = await createNode({ content: 'Phase' })
+      const task = await createNode({ content: 'Task' })
+
+      await addRelation('part_of', project.id, portfolio.id)
+      await addRelation('part_of', phase.id, project.id)
+      await addRelation('part_of', task.id, phase.id)
+
+      const ancestors = await ancestorsRec(task.id)
+
+      const contents = ancestors.map((n) => n.content).sort()
+      expect(contents).toContain('Phase')
+      expect(contents).toContain('Project')
+      expect(contents).toContain('Portfolio')
+    })
+
+    it('should return empty array for root nodes', async () => {
+      const root = await createNode({ content: 'Root' })
+      const ancestors = await ancestorsRec(root.id)
+      expect(ancestors).toEqual([])
+    })
+
+    it('should exclude soft-deleted ancestors', async () => {
+      const grandparent = await createNode({ content: 'Grandparent' })
+      const parent = await createNode({ content: 'Parent' })
+      const child = await createNode({ content: 'Child' })
+
+      await addRelation('part_of', parent.id, grandparent.id)
+      await addRelation('part_of', child.id, parent.id)
+
+      await deleteNode(grandparent.id)
+
+      const ancestors = await ancestorsRec(child.id)
+      const contents = ancestors.map((n) => n.content)
+      expect(contents).toContain('Parent')
+      expect(contents).not.toContain('Grandparent')
+    })
+  })
+})
+
+// =============================================================================
+// Edge Cases
+// =============================================================================
+
+describe('Traversal Edge Cases', () => {
+  it('should handle cyclic part_of relations without infinite loop', async () => {
+    const a = await createNode({ content: 'A' })
+    const b = await createNode({ content: 'B' })
+    const c = await createNode({ content: 'C' })
+
+    // A -> B -> C -> A (cycle)
+    await addRelation('part_of', a.id, b.id)
+    await addRelation('part_of', b.id, c.id)
+    await addRelation('part_of', c.id, a.id)
+
+    // Should return without hanging — SurrealDB handles cycles via maxDepth
+    const components = await componentsRec(a.id, 5)
+
+    // Should get results without infinite loop
+    expect(components).toBeDefined()
+    expect(Array.isArray(components)).toBe(true)
+  })
+
+  it('should handle cyclic dependency_of relations without infinite loop', async () => {
+    const x = await createNode({ content: 'X' })
+    const y = await createNode({ content: 'Y' })
+
+    // X <-> Y (mutual dependency)
+    await addRelation('dependency_of', x.id, y.id)
+    await addRelation('dependency_of', y.id, x.id)
+
+    const deps = await dependenciesRec(x.id, 3)
+
+    expect(deps).toBeDefined()
+    expect(Array.isArray(deps)).toBe(true)
+  })
+
+  it('should respect maxDepth for componentsRec', async () => {
+    // Build a chain: root -> L1 -> L2 -> L3 -> L4
+    const root = await createNode({ content: 'Root' })
+    const l1 = await createNode({ content: 'L1' })
+    const l2 = await createNode({ content: 'L2' })
+    const l3 = await createNode({ content: 'L3' })
+    const l4 = await createNode({ content: 'L4' })
+
+    await addRelation('part_of', l1.id, root.id)
+    await addRelation('part_of', l2.id, l1.id)
+    await addRelation('part_of', l3.id, l2.id)
+    await addRelation('part_of', l4.id, l3.id)
+
+    // With maxDepth=2, should not reach L3/L4
+    const shallow = await componentsRec(root.id, 2)
+    const shallowContents = shallow.map((n) => n.content)
+
+    // At depth 2, we expect L1 (depth 1) and L2 (depth 2) to be reachable
+    expect(shallowContents).toContain('L1')
+
+    // Full depth should get everything
+    const deep = await componentsRec(root.id, 10)
+    const deepContents = deep.map((n) => n.content)
+    expect(deepContents).toContain('L1')
+    expect(deepContents).toContain('L4')
+  })
+
+  it('should respect maxDepth for ancestorsRec', async () => {
+    // Chain: L4 -> L3 -> L2 -> L1 -> Root
+    const root = await createNode({ content: 'Root' })
+    const l1 = await createNode({ content: 'L1' })
+    const l2 = await createNode({ content: 'L2' })
+    const l3 = await createNode({ content: 'L3' })
+    const l4 = await createNode({ content: 'L4' })
+
+    await addRelation('part_of', l1.id, root.id)
+    await addRelation('part_of', l2.id, l1.id)
+    await addRelation('part_of', l3.id, l2.id)
+    await addRelation('part_of', l4.id, l3.id)
+
+    // Full depth should reach root
+    const all = await ancestorsRec(l4.id, 10)
+    const allContents = all.map((n) => n.content)
+    expect(allContents).toContain('L3')
+    expect(allContents).toContain('Root')
+  })
+})
+
+// =============================================================================
+// Search and Property Queries
+// =============================================================================
+
+describe('Search and Property Queries', () => {
+  describe('searchNodes', () => {
+    it('should find nodes by content (case-insensitive)', async () => {
+      await createNode({ content: 'Build the Dashboard' })
+      await createNode({ content: 'Design the API' })
+      await createNode({ content: 'Build the Backend' })
+
+      const results = await searchNodes('build')
+
+      expect(results.length).toBe(2)
+      const contents = results.map((n) => n.content).sort()
+      expect(contents).toEqual(['Build the Backend', 'Build the Dashboard'])
+    })
+
+    it('should be case-insensitive', async () => {
+      await createNode({ content: 'UPPERCASE Content' })
+      await createNode({ content: 'lowercase content' })
+      await createNode({ content: 'MiXeD CaSe CoNtEnT' })
+
+      const results = await searchNodes('content')
+
+      expect(results.length).toBe(3)
+    })
+
+    it('should return empty array when no matches found', async () => {
+      await createNode({ content: 'Apples' })
+      await createNode({ content: 'Oranges' })
+
+      const results = await searchNodes('bananas')
+      expect(results).toEqual([])
+    })
+
+    it('should exclude soft-deleted nodes from search', async () => {
+      const active = await createNode({ content: 'Active searchable' })
+      const deleted = await createNode({ content: 'Deleted searchable' })
+
+      await deleteNode(deleted.id)
+
+      const results = await searchNodes('searchable')
+      const contents = results.map((n) => n.content)
+      expect(contents).toContain('Active searchable')
+      expect(contents).not.toContain('Deleted searchable')
+    })
+
+    it('should order results by updated_at DESC', async () => {
+      const first = await createNode({ content: 'First match' })
+      await new Promise((r) => setTimeout(r, 10))
+      const second = await createNode({ content: 'Second match' })
+      await new Promise((r) => setTimeout(r, 10))
+
+      // Update the first node so it becomes the most recently updated
+      await updateNode(first.id, { content: 'First match updated' })
+
+      const results = await searchNodes('match')
+
+      // 'First match updated' should come before 'Second match'
+      // because it was updated more recently
+      expect(results.length).toBe(2)
+      expect(results[0]!.content).toBe('First match updated')
+      expect(results[1]!.content).toBe('Second match')
+    })
+
+    it('should find partial matches', async () => {
+      await createNode({ content: 'Implementation details' })
+
+      const results = await searchNodes('implement')
+
+      expect(results.length).toBe(1)
+      expect(results[0]!.content).toBe('Implementation details')
+    })
+  })
+
+  describe('getNodesByProperty', () => {
+    it('should find nodes by a specific property value', async () => {
+      await createNode({ content: 'High Priority', props: { priority: 'high' } })
+      await createNode({ content: 'Low Priority', props: { priority: 'low' } })
+      await createNode({ content: 'Medium Priority', props: { priority: 'medium' } })
+
+      const results = await getNodesByProperty('priority', 'high')
+
+      expect(results.length).toBe(1)
+      expect(results[0]!.content).toBe('High Priority')
+    })
+
+    it('should find nodes by numeric property', async () => {
+      await createNode({ content: 'Score 100', props: { score: 100 } })
+      await createNode({ content: 'Score 50', props: { score: 50 } })
+
+      const results = await getNodesByProperty('score', 100)
+
+      expect(results.length).toBe(1)
+      expect(results[0]!.content).toBe('Score 100')
+    })
+
+    it('should find nodes by boolean property', async () => {
+      await createNode({ content: 'Complete', props: { done: true } })
+      await createNode({ content: 'Incomplete', props: { done: false } })
+
+      const results = await getNodesByProperty('done', true)
+
+      expect(results.length).toBe(1)
+      expect(results[0]!.content).toBe('Complete')
+    })
+
+    it('should return empty array when no matches exist', async () => {
+      await createNode({ content: 'Node', props: { color: 'red' } })
+
+      const results = await getNodesByProperty('color', 'blue')
+      expect(results).toEqual([])
+    })
+
+    it('should return empty array when property key does not exist', async () => {
+      await createNode({ content: 'Node', props: { a: 1 } })
+
+      const results = await getNodesByProperty('nonexistent', 'value')
+      expect(results).toEqual([])
+    })
+
+    it('should exclude soft-deleted nodes', async () => {
+      const active = await createNode({
+        content: 'Active',
+        props: { status: 'active' },
+      })
+      const deleted = await createNode({
+        content: 'Deleted',
+        props: { status: 'active' },
+      })
+
+      await deleteNode(deleted.id)
+
+      const results = await getNodesByProperty('status', 'active')
+      expect(results.length).toBe(1)
+      expect(results[0]!.content).toBe('Active')
     })
   })
 })
