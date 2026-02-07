@@ -95,7 +95,8 @@ Write unit tests for the SurrealDB connection layer.
 
 ---
 
-### [ ] Step: Test graph.service.ts (CRUD and Relations)
+### [x] Step: Test graph.service.ts (CRUD and Relations)
+<!-- chat-id: 907179f4-1a2a-4875-bef7-e44581cffec7 -->
 
 Write unit tests for the graph service CRUD operations and relation management.
 

@@ -22,6 +22,11 @@
       "import": "./src/server.ts",
       "default": "./src/server.ts"
     },
+    "./test-utils": {
+      "types": "./src/client/__tests__/graph-test-utils.ts",
+      "import": "./src/client/__tests__/graph-test-utils.ts",
+      "default": "./src/client/__tests__/graph-test-utils.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
