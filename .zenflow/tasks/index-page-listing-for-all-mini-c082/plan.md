@@ -92,7 +92,8 @@ Create a thin TanStack Start app in `apps/nxus-workbench/` that mounts the workb
 8. Run `pnpm install`
 9. Verify: `nx run @nxus/workbench-app:dev` starts, workbench renders with node browser, graph view, query builder all functional
 
-### [ ] Step: Create nxus-gateway app
+### [x] Step: Create nxus-gateway app
+<!-- chat-id: 77ab86c3-4e91-40bd-90e6-dcc0a361875d -->
 
 Create the gateway landing page app in `apps/nxus-gateway/`.
 
