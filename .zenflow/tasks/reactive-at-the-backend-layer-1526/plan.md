@@ -1064,3 +1064,25 @@ The field names must match the `content` property set in `bootstrap.ts` (e.g., `
 - [x] Saved queries list now shows correct filter count (e.g., "1 filter" instead of "filter 0")
 - [x] Clicking "Edit" on a saved query now loads the query correctly with its filters visible
 - [x] Query execution returns correct results
+
+### [x] Step: Review check
+<!-- chat-id: 905aaa65-892a-41ae-a948-7e0b897cb263 -->
+
+Check the reviews and see if they're legit. https://github.com/popemkt/nxus/pull/32
+
+**Reviewers:** Gemini Code Assist (1 comment), CodeRabbit (19 comments)
+
+**Legitimate code issues fixed (3):**
+1. **`performance.bench.ts` - Dual event bus** (Critical): Bench created a local `eventBus` but `createNode`/`setProperty` emit to the singleton, so benchmarks were not actually measuring reactive re-evaluation. Fixed by using the singleton `singletonEventBus`.
+2. **`performance-targets.test.ts:357` - Division by zero** (Minor): `skipRatio` would be `NaN` if both `evaluationCount` and `skippedEvaluations` were 0. Added guard: `totalConsidered > 0 ? ... : 0`.
+3. **`webhook-queue.test.ts:537` - Mixed optional chaining + non-null assertion** (Minor): `job?.nextRetryAt!` is an antipattern. Refactored to assert `job` is defined first, then extract `nextRetryAt`.
+
+**Noted but not actioned (1):**
+- **Gemini: `automation.service.ts` module-level `currentExecutionDepth` race condition** (High): Valid concern in theory, but mitigated in practice because: (a) SQLite is synchronous (no concurrent writes), (b) `processBatchedMutations` is guarded against concurrency, (c) the variable is scoped inside the factory function, not truly module-level. Can revisit if async execution is introduced.
+
+**Dismissed (16):**
+- 11 markdown lint comments on task artifact files (`.zenflow/tasks/`) - cosmetic, low value
+- 5 spec document suggestions about things already implemented correctly in the actual code (webhook security, Zod schemas, lastNodeStates, numeric edge cases, automation state management)
+
+**Verification:**
+- [x] All 374 tests pass (4 skipped), no regressions

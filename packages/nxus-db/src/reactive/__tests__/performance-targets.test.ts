@@ -354,7 +354,8 @@ describe('Performance Targets', () => {
 
       // The key metric: smart invalidation should skip most evaluations
       const { evaluationCount, skippedEvaluations } = reactiveMetrics.getMetrics()
-      const skipRatio = skippedEvaluations / (evaluationCount + skippedEvaluations)
+      const totalConsidered = evaluationCount + skippedEvaluations
+      const skipRatio = totalConsidered > 0 ? skippedEvaluations / totalConsidered : 0
       console.log(`Evaluations: ${evaluationCount}, Skipped: ${skippedEvaluations}, Skip ratio: ${(skipRatio * 100).toFixed(1)}%`)
 
       // At least 50% of evaluations should be skipped
