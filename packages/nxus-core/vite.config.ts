@@ -54,7 +54,10 @@ const config = defineConfig({
     alias: {
       // rrule: Force ESM module with proper named exports (RRule, RRuleSet, rrulestr)
       rrule: 'rrule/dist/esm/index.js',
-      // react-big-calendar drag-and-drop addon: Must resolve BEFORE the main alias
+      // react-big-calendar sub-path aliases: Must resolve BEFORE the main alias
+      // The base CSS provides essential layout/positioning styles
+      'react-big-calendar/lib/css/react-big-calendar.css':
+        'react-big-calendar/lib/css/react-big-calendar.css',
       // The addon is only available in lib/ (CommonJS), not in the ESM bundle
       'react-big-calendar/lib/addons/dragAndDrop/styles.css':
         'react-big-calendar/lib/addons/dragAndDrop/styles.css',

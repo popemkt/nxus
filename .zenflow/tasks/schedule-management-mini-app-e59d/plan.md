@@ -859,6 +859,32 @@ Merged latest `origin/main` into the current branch.
 - `npx tsc --noEmit -p packages/nxus-calendar/tsconfig.json` passes cleanly
 - Dev server starts successfully (`vite dev --port 3000`)
 - Calendar page loads correctly at `/calendar`
+
+### [x] Step: Misc fixes
+<!-- chat-id: 5fcf3ff0-dae2-4c8c-894e-05605c979e26 -->
+
+A few things i noticed:
+1. The events appearing in the nxus-core gallery, this shouldn't be the case as it is another mini app, an event also shouldn't be tagged with item
+2. The events with time are not placed properly on the dates. They're put at the end of the date always
+
+**Completed:** Both issues fixed.
+
+**Fix 1 - Events appearing in gallery:**
+- Root cause: `#Task` and `#Event` supertags in `bootstrap.ts` were configured with `extends: SYSTEM_SUPERTAGS.ITEM`, causing `getNodesBySupertagWithInheritance(ITEM)` to include calendar nodes in the gallery
+- Solution: Changed `extends` to `null` for both Task and Event supertags, and added cleanup logic to remove existing `extends` properties from the database for items that now have `extends: null`
+- File: `packages/nxus-db/src/services/bootstrap.ts`
+
+**Fix 2 - Events placed at wrong time position / week view layout broken:**
+- Root cause: The base `react-big-calendar/lib/css/react-big-calendar.css` was never imported. Only custom theme overrides existed in `calendar.css`, but the fundamental layout CSS (flexbox grid, absolute positioning for events) was missing
+- Solution: Added dynamic `import('react-big-calendar/lib/css/react-big-calendar.css')` inside a `useEffect` in `calendar-container.tsx`. Static CSS imports fail during SSR (`TypeError: Unknown file extension ".css"`), but dynamic imports inside `useEffect` only run on the client, matching the existing pattern used for the DnD addon CSS
+- Also added a specific Vite alias for the CSS path before the catch-all `react-big-calendar` ESM alias to prevent path resolution conflicts
+- Files: `packages/nxus-calendar/src/components/calendar-container.tsx`, `packages/nxus-core/vite.config.ts`, `packages/nxus-core/src/routes/calendar.tsx`
+
+**Verification:**
+- Calendar week view renders with proper 7-column layout
+- Events positioned at correct times (16:51, 17:15 etc.)
+- Gallery page shows no calendar events
+- No SSR errors, dev server starts cleanly
 ## Verification Commands
 
 ```bash

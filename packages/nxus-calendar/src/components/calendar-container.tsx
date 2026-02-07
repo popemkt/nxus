@@ -52,7 +52,7 @@ import { useCalendarSettingsStore } from '../stores/calendar-settings.store.js'
 import { CalendarToolbar, type CalendarToolbarProps } from './calendar-toolbar.js'
 import { EventBlock, AgendaEvent } from './event-block.js'
 
-// Import calendar CSS
+// Import calendar CSS (custom theme overrides)
 import '../styles/calendar.css'
 
 // Type for the enhanced calendar component with drag-and-drop
@@ -248,6 +248,15 @@ export function CalendarContainer({
   const workingHoursStart = useCalendarSettingsStore(
     (state) => state.display.workingHoursStart
   )
+
+  // Dynamically load the base react-big-calendar CSS on the client.
+  // Static imports of node_module CSS fail during SSR (Unknown file extension ".css"),
+  // so we use the same dynamic import pattern as the DnD addon CSS below.
+  useEffect(() => {
+    import('react-big-calendar/lib/css/react-big-calendar.css').catch(() => {
+      // CSS import may "fail" in some environments but still applies styles
+    })
+  }, [])
 
   // State for dynamically loaded drag-and-drop calendar component
   // The drag-and-drop addon is CommonJS-only and must be loaded on the client

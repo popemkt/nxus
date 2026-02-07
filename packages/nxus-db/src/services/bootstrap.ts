@@ -279,9 +279,9 @@ export function bootstrapSystemNodesSync(
     },
     { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox', extends: null },
     { systemId: SYSTEM_SUPERTAGS.QUERY, content: '#Query', extends: null },
-    // Calendar supertags
-    { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: SYSTEM_SUPERTAGS.ITEM },
-    { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: SYSTEM_SUPERTAGS.ITEM },
+    // Calendar supertags (independent from Item - should NOT appear in gallery)
+    { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null },
   ];
 
   for (const st of entitySupertags) {
@@ -292,6 +292,24 @@ export function bootstrapSystemNodesSync(
       const parentId = systemNodeIds.get(st.extends);
       if (parentId) {
         setProperty(db, id, extendsFieldId, JSON.stringify(parentId));
+      }
+    } else {
+      // Clear any existing extends property (e.g. Task/Event no longer extend Item)
+      const extendsFieldNode = db
+        .select()
+        .from(nodes)
+        .where(eq(nodes.systemId, SYSTEM_FIELDS.EXTENDS))
+        .all()[0];
+      if (extendsFieldNode) {
+        const existingProp = db
+          .select()
+          .from(nodeProperties)
+          .where(eq(nodeProperties.nodeId, id))
+          .all()
+          .find((p) => p.fieldNodeId === extendsFieldNode.id);
+        if (existingProp) {
+          db.delete(nodeProperties).where(eq(nodeProperties.id, existingProp.id)).run();
+        }
       }
     }
   }
