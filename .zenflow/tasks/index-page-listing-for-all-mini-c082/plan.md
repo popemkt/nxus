@@ -77,7 +77,8 @@ Remove the `/nodes` route and `@nxus/workbench` dependency from nxus-core.
 2. Dependencies not showing between items in nxus core, it might be data problem where they're not synced from json to db (but maybe we could've lost it a long time ago)
 3. Clean up mini maps and graph elements, all graphs have the default react flow controls (controls and mini map) not respecting theme.
 
-### [ ] Step: Create nxus-workbench app shell
+### [x] Step: Create nxus-workbench app shell
+<!-- chat-id: 43f4bb96-b991-4e1d-bdae-3195a98b3592 -->
 
 Create a thin TanStack Start app in `apps/nxus-workbench/` that mounts the workbench library.
 
