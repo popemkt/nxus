@@ -5,39 +5,49 @@
  */
 
 import {
-  Plus,
-  Hash,
-  TextT,
-  MagnifyingGlass,
-  Calendar,
-  LinkSimple,
-  CheckSquare,
-  TreeStructure,
-} from '@phosphor-icons/react'
-import {
   Button,
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   cn,
-} from '@nxus/ui'
+} from '@nxus/ui';
+import {
+  Calendar,
+  CheckSquare,
+  Hash,
+  LinkSimple,
+  MagnifyingGlass,
+  Plus,
+  TextT,
+  TreeStructure,
+} from '@phosphor-icons/react';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type FilterType = 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField' | 'and' | 'or' | 'not'
+type FilterType =
+  | 'supertag'
+  | 'property'
+  | 'content'
+  | 'relation'
+  | 'temporal'
+  | 'hasField'
+  | 'and'
+  | 'or'
+  | 'not';
 
 export interface AddFilterMenuProps {
   /** Called when a filter type is selected */
-  onAddFilter: (filterType: FilterType) => void
+  onAddFilter: (filterType: FilterType) => void;
   /** Compact mode */
-  compact?: boolean
+  compact?: boolean;
   /** Disabled state */
-  disabled?: boolean
+  disabled?: boolean;
 }
 
 // ============================================================================
@@ -66,7 +76,7 @@ const BASIC_FILTER_OPTIONS = [
     icon: MagnifyingGlass,
     color: '#22c55e', // Green
   },
-] as const
+] as const;
 
 const ADVANCED_FILTER_OPTIONS = [
   {
@@ -90,7 +100,7 @@ const ADVANCED_FILTER_OPTIONS = [
     icon: CheckSquare,
     color: '#06b6d4', // Cyan
   },
-] as const
+] as const;
 
 const LOGICAL_FILTER_OPTIONS = [
   {
@@ -114,7 +124,7 @@ const LOGICAL_FILTER_OPTIONS = [
     icon: TreeStructure,
     color: '#6b7280', // Gray
   },
-] as const
+] as const;
 
 // ============================================================================
 // Component
@@ -133,10 +143,7 @@ export function AddFilterMenu({
             variant="outline"
             size={compact ? 'xs' : 'sm'}
             disabled={disabled}
-            className={cn(
-              'border-dashed',
-              !compact && 'gap-1',
-            )}
+            className={cn('border-dashed', !compact && 'gap-1')}
           />
         }
       >
@@ -145,71 +152,79 @@ export function AddFilterMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel>Basic Filters</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Basic Filters</DropdownMenuLabel>
 
-        {BASIC_FILTER_OPTIONS.map((option) => (
-          <DropdownMenuItem
-            key={option.type}
-            onClick={() => onAddFilter(option.type)}
-          >
-            <option.icon
-              className="size-4 shrink-0"
-              weight="bold"
-              style={{ color: option.color }}
-            />
-            <div className="flex flex-col gap-0.5">
-              <span>{option.label}</span>
-              <span className="text-[10px] text-muted-foreground">
-                {option.description}
-              </span>
-            </div>
-          </DropdownMenuItem>
-        ))}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Advanced Filters</DropdownMenuLabel>
-
-        {ADVANCED_FILTER_OPTIONS.map((option) => (
-          <DropdownMenuItem
-            key={option.type}
-            onClick={() => onAddFilter(option.type)}
-          >
-            <option.icon
-              className="size-4 shrink-0"
-              weight="bold"
-              style={{ color: option.color }}
-            />
-            <div className="flex flex-col gap-0.5">
-              <span>{option.label}</span>
-              <span className="text-[10px] text-muted-foreground">
-                {option.description}
-              </span>
-            </div>
-          </DropdownMenuItem>
-        ))}
+          {BASIC_FILTER_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.type}
+              onClick={() => onAddFilter(option.type)}
+            >
+              <option.icon
+                className="size-4 shrink-0"
+                weight="bold"
+                style={{ color: option.color }}
+              />
+              <div className="flex flex-col gap-0.5">
+                <span>{option.label}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {option.description}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
-        <DropdownMenuLabel>Logical Groups</DropdownMenuLabel>
 
-        {LOGICAL_FILTER_OPTIONS.map((option) => (
-          <DropdownMenuItem
-            key={option.type}
-            onClick={() => onAddFilter(option.type)}
-          >
-            <option.icon
-              className="size-4 shrink-0"
-              weight="bold"
-              style={{ color: option.color }}
-            />
-            <div className="flex flex-col gap-0.5">
-              <span>{option.label}</span>
-              <span className="text-[10px] text-muted-foreground">
-                {option.description}
-              </span>
-            </div>
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Advanced Filters</DropdownMenuLabel>
+
+          {ADVANCED_FILTER_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.type}
+              onClick={() => onAddFilter(option.type)}
+            >
+              <option.icon
+                className="size-4 shrink-0"
+                weight="bold"
+                style={{ color: option.color }}
+              />
+              <div className="flex flex-col gap-0.5">
+                <span>{option.label}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {option.description}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Logical Groups</DropdownMenuLabel>
+
+          {LOGICAL_FILTER_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.type}
+              onClick={() => onAddFilter(option.type)}
+            >
+              <option.icon
+                className="size-4 shrink-0"
+                weight="bold"
+                style={{ color: option.color }}
+              />
+              <div className="flex flex-col gap-0.5">
+                <span>{option.label}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {option.description}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

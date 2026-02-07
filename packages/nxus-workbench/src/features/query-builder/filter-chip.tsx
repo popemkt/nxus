@@ -245,19 +245,19 @@ function getFilterDisplay(filter: QueryFilter): {
     case 'supertag':
       return {
         icon: Hash,
-        label: filter.supertagSystemId
-          ? formatSystemId(filter.supertagSystemId)
+        label: filter.supertagId
+          ? formatSystemId(filter.supertagId)
           : 'Select supertag...',
-        color: filter.supertagSystemId ? '#8b5cf6' : undefined, // Purple for supertags
+        color: filter.supertagId ? '#8b5cf6' : undefined, // Purple for supertags
       }
 
     case 'property':
       return {
         icon: TextT,
-        label: filter.fieldSystemId
-          ? `${formatSystemId(filter.fieldSystemId)} ${formatOp(filter.op)} ${formatValue(filter.value)}`
+        label: filter.fieldId
+          ? `${formatSystemId(filter.fieldId)} ${formatOp(filter.op)} ${formatValue(filter.value)}`
           : 'Select property...',
-        color: filter.fieldSystemId ? '#3b82f6' : undefined, // Blue for properties
+        color: filter.fieldId ? '#3b82f6' : undefined, // Blue for properties
       }
 
     case 'content':
@@ -286,10 +286,10 @@ function getFilterDisplay(filter: QueryFilter): {
     case 'hasField':
       return {
         icon: CheckSquare,
-        label: filter.fieldSystemId
-          ? `${filter.negate ? 'Missing' : 'Has'} ${formatSystemId(filter.fieldSystemId)}`
+        label: filter.fieldId
+          ? `${filter.negate ? 'Missing' : 'Has'} ${formatSystemId(filter.fieldId)}`
           : 'Select field...',
-        color: filter.fieldSystemId ? '#06b6d4' : undefined, // Cyan for hasField
+        color: filter.fieldId ? '#06b6d4' : undefined, // Cyan for hasField
       }
 
     case 'and':
@@ -315,9 +315,9 @@ function getFilterDisplay(filter: QueryFilter): {
 function isFilterComplete(filter: QueryFilter): boolean {
   switch (filter.type) {
     case 'supertag':
-      return !!filter.supertagSystemId
+      return !!filter.supertagId
     case 'property':
-      return !!(filter.fieldSystemId && filter.op)
+      return !!(filter.fieldId && filter.op)
     case 'content':
       return !!filter.query
     case 'temporal':
@@ -325,7 +325,7 @@ function isFilterComplete(filter: QueryFilter): boolean {
     case 'relation':
       return !!filter.relationType
     case 'hasField':
-      return !!filter.fieldSystemId
+      return !!filter.fieldId
     case 'and':
     case 'or':
     case 'not':

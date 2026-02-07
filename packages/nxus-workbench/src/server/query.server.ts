@@ -75,7 +75,7 @@ export const createQueryServerFn = createServerFn({ method: 'POST' })
 
     const queryId = createNode(db, {
       content: name,
-      supertagSystemId: SYSTEM_SUPERTAGS.QUERY,
+      supertagId: SYSTEM_SUPERTAGS.QUERY,
       ownerId,
     })
 
@@ -110,7 +110,7 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
     const {
       initDatabase,
       getDatabase,
-      findNode,
+      findNodeById,
       updateNodeContent,
       setProperty,
       SYSTEM_FIELDS,
@@ -120,7 +120,7 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
     initDatabase()
     const db = getDatabase()
 
-    const existingNode = findNode(db, queryId)
+    const existingNode = findNodeById(db, queryId)
     if (!existingNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
@@ -157,7 +157,7 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
 export const deleteQueryServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ queryId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNode, deleteNode } = await import(
+    const { initDatabase, getDatabase, findNodeById, deleteNode } = await import(
       '@nxus/db/server'
     )
     const { queryId } = ctx.data
@@ -165,7 +165,7 @@ export const deleteQueryServerFn = createServerFn({ method: 'POST' })
     initDatabase()
     const db = getDatabase()
 
-    const existingNode = findNode(db, queryId)
+    const existingNode = findNodeById(db, queryId)
     if (!existingNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
@@ -197,12 +197,14 @@ export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler
     )
 
     const queries = queryNodes.map((node) => {
-      const definition = getProperty(node, 'query_definition') ?? {
+      // Field names must match the 'content' property in bootstrap.ts
+      // (e.g., 'queryDefinition' not 'query_definition')
+      const definition = getProperty(node, 'queryDefinition') ?? {
         filters: [],
         limit: 500,
       }
-      const resultCache = getProperty<string[]>(node, 'query_result_cache')
-      const evaluatedAtStr = getProperty<string>(node, 'query_evaluated_at')
+      const resultCache = getProperty<string[]>(node, 'queryResultCache')
+      const evaluatedAtStr = getProperty<string>(node, 'queryEvaluatedAt')
 
       return {
         id: node.id,
@@ -235,7 +237,7 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const {
       initDatabaseWithBootstrap,
-      findNode,
+      findNodeById,
       evaluateQuery,
       getProperty,
       setProperty,
@@ -245,21 +247,22 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
 
     const db = await initDatabaseWithBootstrap()
 
-    const queryNode = findNode(db, queryId)
+    const queryNode = findNodeById(db, queryId)
     if (!queryNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
 
     // Get query definition - ensure it has required fields for evaluateQuery
+    // Field names must match the 'content' property in bootstrap.ts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const storedDefinition = getProperty(queryNode, 'query_definition') as any
+    const storedDefinition = getProperty(queryNode, 'queryDefinition') as any
     const definition = {
       filters: Array.isArray(storedDefinition?.filters) ? storedDefinition.filters : [],
       limit: typeof storedDefinition?.limit === 'number' ? storedDefinition.limit : 500,
       sort: storedDefinition?.sort,
     } as Parameters<typeof evaluateQuery>[1]
-    const resultCache = getProperty<string[]>(queryNode, 'query_result_cache')
-    const evaluatedAtStr = getProperty<string>(queryNode, 'query_evaluated_at')
+    const resultCache = getProperty<string[]>(queryNode, 'queryResultCache')
+    const evaluatedAtStr = getProperty<string>(queryNode, 'queryEvaluatedAt')
 
     const query = {
       id: queryNode.id,

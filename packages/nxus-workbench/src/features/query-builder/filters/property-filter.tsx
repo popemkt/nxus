@@ -79,7 +79,7 @@ export function PropertyFilterEditor({
   onUpdate,
   onClose,
 }: PropertyFilterEditorProps) {
-  const [fieldSystemId, setFieldSystemId] = useState(filter.fieldSystemId || '')
+  const [fieldId, setFieldId] = useState(filter.fieldId || '')
   const [op, setOp] = useState<FilterOp>(filter.op || 'eq')
   const [value, setValue] = useState(
     typeof filter.value === 'string' ? filter.value : '',
@@ -91,16 +91,16 @@ export function PropertyFilterEditor({
 
   // Update local state when filter changes
   useEffect(() => {
-    setFieldSystemId(filter.fieldSystemId || '')
+    setFieldId(filter.fieldId || '')
     setOp(filter.op || 'eq')
     setValue(typeof filter.value === 'string' ? filter.value : '')
   }, [filter])
 
   // Handle field change
-  const handleFieldChange = (newFieldSystemId: string | null) => {
-    if (!newFieldSystemId) return
-    setFieldSystemId(newFieldSystemId)
-    onUpdate({ fieldSystemId: newFieldSystemId })
+  const handleFieldChange = (newFieldId: string | null) => {
+    if (!newFieldId) return
+    setFieldId(newFieldId)
+    onUpdate({ fieldId: newFieldId })
   }
 
   // Handle operator change
@@ -125,9 +125,9 @@ export function PropertyFilterEditor({
 
   // Handle save
   const handleSave = () => {
-    if (fieldSystemId) {
+    if (fieldId) {
       onUpdate({
-        fieldSystemId,
+        fieldId,
         op,
         value: needsValue ? value : undefined,
       })
@@ -136,10 +136,10 @@ export function PropertyFilterEditor({
   }
 
   // Check if form is valid
-  const isValid = fieldSystemId && (!needsValue || value)
+  const isValid = fieldId && (!needsValue || value)
 
   // Get selected field label for display
-  const selectedFieldLabel = COMMON_FIELDS.find((f) => f.systemId === fieldSystemId)?.label
+  const selectedFieldLabel = COMMON_FIELDS.find((f) => f.systemId === fieldId)?.label
 
   return (
     <div className="flex flex-col gap-3">
@@ -151,7 +151,7 @@ export function PropertyFilterEditor({
       {/* Field selector */}
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs text-muted-foreground">Field</Label>
-        <Select value={fieldSystemId || undefined} onValueChange={handleFieldChange}>
+        <Select value={fieldId || undefined} onValueChange={handleFieldChange}>
           <SelectTrigger className="w-full">
             <SelectValue>
               {selectedFieldLabel || (

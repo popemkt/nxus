@@ -15,8 +15,10 @@ import {
   nodes,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
+  isSystemId,
 } from '../schemas/node-schema.js'
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
+import { eventBus } from '../reactive/event-bus.js'
 
 // Re-export types from the shared types file (for backward compatibility)
 export type {
@@ -24,6 +26,9 @@ export type {
   PropertyValue,
   CreateNodeOptions,
 } from '../types/node.js'
+
+// Re-export isSystemId for convenience (canonical version is in node-schema.ts)
+export { isSystemId } from '../schemas/node-schema.js'
 
 // Import types for use in this file
 import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
@@ -33,6 +38,7 @@ import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/n
 // ============================================================================
 
 const systemNodeCache = new Map<string, { id: string; content: string }>()
+const nodeIdCache = new Map<string, { id: string; content: string }>()
 
 /**
  * Get a system node by systemId (cached)
@@ -54,10 +60,57 @@ export function getSystemNode(
 }
 
 /**
+ * Get a node by id (cached) - for field/supertag lookups by UUID
+ */
+export function getNodeById(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): { id: string; content: string } | null {
+  if (nodeIdCache.has(nodeId)) {
+    return nodeIdCache.get(nodeId)!
+  }
+  const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+  if (node) {
+    const entry = { id: node.id, content: node.content || '' }
+    nodeIdCache.set(nodeId, entry)
+    return entry
+  }
+  return null
+}
+
+/**
+ * Resolve a field or supertag reference to its node.
+ *
+ * Accepts either:
+ * - A systemId (e.g., 'field:status', 'supertag:task') - looked up by systemId
+ * - A UUID (e.g., '019c0a49-abc...') - looked up by id
+ *
+ * Uses systemId prefix detection for unambiguous routing.
+ */
+export function getFieldOrSupertagNode(
+  db: ReturnType<typeof getDatabase>,
+  idOrSystemId: string,
+): { id: string; content: string } | null {
+  // Handle undefined/null/empty gracefully
+  if (!idOrSystemId) {
+    return null
+  }
+
+  // Route based on prefix - systemIds always have 'field:' or 'supertag:' prefix
+  if (isSystemId(idOrSystemId)) {
+    return getSystemNode(db, idOrSystemId)
+  }
+
+  // Otherwise treat as UUID
+  return getNodeById(db, idOrSystemId)
+}
+
+/**
  * Clear system node cache (call after bootstrap or migration)
  */
 export function clearSystemNodeCache(): void {
   systemNodeCache.clear()
+  nodeIdCache.clear()
 }
 
 /**
@@ -204,12 +257,24 @@ export function findNodeBySystemId(
 }
 
 /**
- * @deprecated Use findNodeById or findNodeBySystemId instead
+ * @deprecated Use findNodeById or findNodeBySystemId instead.
+ *
+ * This function has ambiguous behavior - it tries systemId first, then UUID.
+ * This can lead to unexpected results if a systemId happens to look like a UUID.
+ * Prefer explicit functions:
+ * - findNodeById(db, uuid) - when you have a UUID
+ * - findNodeBySystemId(db, systemId) - when you have a systemId like 'item:my-app'
  */
 export function findNode(
   db: ReturnType<typeof getDatabase>,
   identifier: string,
 ): AssembledNode | null {
+  // Log deprecation warning (only once per identifier to avoid spam)
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn(
+      `[DEPRECATED] findNode() called with '${identifier}'. Use findNodeById() or findNodeBySystemId() instead.`,
+    )
+  }
   // Try systemId first (more common for lookups)
   let result = findNodeBySystemId(db, identifier)
   if (result) return result
@@ -411,12 +476,31 @@ export function createNode(
     })
     .run()
 
-  // Assign supertag if provided
-  if (options.supertagSystemId) {
-    const supertag = getSystemNode(db, options.supertagSystemId)
+  // Emit node:created event
+  eventBus.emit({
+    type: 'node:created',
+    timestamp: now,
+    nodeId,
+    afterValue: {
+      id: nodeId,
+      content: options.content,
+      ownerId: options.ownerId,
+    },
+  })
+
+  // Assign supertag if provided (accepts UUID or systemId)
+  if (options.supertagId) {
+    const supertag = getFieldOrSupertagNode(db, options.supertagId)
     const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
     if (supertag && supertagField) {
       setProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertag.id)
+      // Emit supertag:added event so supertag-based queries re-evaluate
+      eventBus.emit({
+        type: 'supertag:added',
+        timestamp: now,
+        nodeId,
+        supertagId: supertag.id,
+      })
     }
   }
 
@@ -431,14 +515,28 @@ export function updateNodeContent(
   nodeId: string,
   content: string,
 ): void {
+  // Get current content for beforeValue
+  const currentNode = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
+  const beforeContent = currentNode?.content ?? null
+
+  const now = new Date()
   db.update(nodes)
     .set({
       content,
       contentPlain: content.toLowerCase(),
-      updatedAt: new Date(),
+      updatedAt: now,
     })
     .where(eq(nodes.id, nodeId))
     .run()
+
+  // Emit node:updated event
+  eventBus.emit({
+    type: 'node:updated',
+    timestamp: now,
+    nodeId,
+    beforeValue: beforeContent,
+    afterValue: content,
+  })
 }
 
 /**
@@ -448,29 +546,39 @@ export function deleteNode(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
 ): void {
+  const now = new Date()
   db.update(nodes)
-    .set({ deletedAt: new Date() })
+    .set({ deletedAt: now })
     .where(eq(nodes.id, nodeId))
     .run()
+
+  // Emit node:deleted event
+  eventBus.emit({
+    type: 'node:deleted',
+    timestamp: now,
+    nodeId,
+  })
 }
 
 /**
  * Set a property value (creates or updates)
+ *
+ * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:status')
  */
 export function setProperty(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
-  fieldSystemId: string,
+  fieldId: string,
   value: unknown,
   order: number = 0,
 ): void {
-  const field = getSystemNode(db, fieldSystemId)
-  if (!field) throw new Error(`Field not found: ${fieldSystemId}`)
+  const field = getFieldOrSupertagNode(db, fieldId)
+  if (!field) throw new Error(`Field not found: ${fieldId}`)
 
   const jsonValue = JSON.stringify(value)
   const now = new Date()
 
-  // Check if property exists
+  // Check if property exists and get beforeValue
   const existing = db
     .select()
     .from(nodeProperties)
@@ -478,7 +586,13 @@ export function setProperty(
     .all()
     .find((p) => p.fieldNodeId === field.id && p.order === order)
 
+  let beforeValue: unknown = undefined
   if (existing) {
+    try {
+      beforeValue = JSON.parse(existing.value || 'null')
+    } catch {
+      beforeValue = existing.value
+    }
     db.update(nodeProperties)
       .set({ value: jsonValue, updatedAt: now })
       .where(eq(nodeProperties.id, existing.id))
@@ -495,19 +609,35 @@ export function setProperty(
       })
       .run()
   }
+
+  // Include systemId in event if the input was a systemId (for dependency matching)
+  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
+
+  // Emit property:set event with field UUID and optional systemId
+  eventBus.emit({
+    type: 'property:set',
+    timestamp: now,
+    nodeId,
+    fieldId: field.id,
+    fieldSystemId,
+    beforeValue,
+    afterValue: value,
+  })
 }
 
 /**
  * Add a value to a multi-value property (like tags, dependencies)
+ *
+ * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:tags')
  */
 export function addPropertyValue(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
-  fieldSystemId: string,
+  fieldId: string,
   value: unknown,
 ): void {
-  const field = getSystemNode(db, fieldSystemId)
-  if (!field) throw new Error(`Field not found: ${fieldSystemId}`)
+  const field = getFieldOrSupertagNode(db, fieldId)
+  if (!field) throw new Error(`Field not found: ${fieldId}`)
 
   // Get current max order
   const existing = db
@@ -519,27 +649,43 @@ export function addPropertyValue(
 
   const maxOrder = existing.reduce((max, p) => Math.max(max, p.order || 0), -1)
 
+  const now = new Date()
   db.insert(nodeProperties)
     .values({
       nodeId,
       fieldNodeId: field.id,
       value: JSON.stringify(value),
       order: maxOrder + 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     })
     .run()
+
+  // Include systemId in event if the input was a systemId (for dependency matching)
+  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
+
+  // Emit property:added event with field UUID and optional systemId
+  eventBus.emit({
+    type: 'property:added',
+    timestamp: now,
+    nodeId,
+    fieldId: field.id,
+    fieldSystemId,
+    afterValue: value,
+  })
 }
 
 /**
  * Remove all property values for a field
+ *
+ * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:tags')
  */
 export function clearProperty(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
-  fieldSystemId: string,
+  fieldId: string,
 ): void {
-  const field = getSystemNode(db, fieldSystemId)
+  const field = getFieldOrSupertagNode(db, fieldId)
   if (!field) return
 
   const props = db
@@ -549,25 +695,53 @@ export function clearProperty(
     .all()
     .filter((p) => p.fieldNodeId === field.id)
 
+  // Collect beforeValues for event emission
+  const beforeValues: unknown[] = []
+  for (const prop of props) {
+    try {
+      beforeValues.push(JSON.parse(prop.value || 'null'))
+    } catch {
+      beforeValues.push(prop.value)
+    }
+  }
+
+  const now = new Date()
   for (const prop of props) {
     db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
+  }
+
+  // Include systemId in event if the input was a systemId (for dependency matching)
+  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
+
+  // Emit property:removed event for each removed value with field UUID and optional systemId
+  for (const beforeValue of beforeValues) {
+    eventBus.emit({
+      type: 'property:removed',
+      timestamp: now,
+      nodeId,
+      fieldId: field.id,
+      fieldSystemId,
+      beforeValue,
+    })
   }
 }
 
 /**
  * Link two nodes via a field (e.g., set parent, add dependency)
+ *
+ * @param fieldId The field identifier - can be either a UUID or systemId
  */
 export function linkNodes(
   db: ReturnType<typeof getDatabase>,
   fromNodeId: string,
-  fieldSystemId: string,
+  fieldId: string,
   toNodeId: string,
   append: boolean = false,
 ): void {
   if (append) {
-    addPropertyValue(db, fromNodeId, fieldSystemId, toNodeId)
+    addPropertyValue(db, fromNodeId, fieldId, toNodeId)
   } else {
-    setProperty(db, fromNodeId, fieldSystemId, toNodeId)
+    setProperty(db, fromNodeId, fieldId, toNodeId)
   }
 }
 
@@ -580,9 +754,9 @@ export function linkNodes(
  */
 export function getNodeIdsBySupertagWithInheritance(
   db: ReturnType<typeof getDatabase>,
-  supertagSystemId: string,
+  supertagId: string,
 ): string[] {
-  const targetSupertag = getSystemNode(db, supertagSystemId)
+  const targetSupertag = getFieldOrSupertagNode(db, supertagId)
   if (!targetSupertag) return []
 
   const extendsField = getSystemNode(db, SYSTEM_FIELDS.EXTENDS)
@@ -639,9 +813,9 @@ export function getNodeIdsBySupertagWithInheritance(
  */
 export function getNodesBySupertagWithInheritance(
   db: ReturnType<typeof getDatabase>,
-  supertagSystemId: string,
+  supertagId: string,
 ): AssembledNode[] {
-  const nodeIds = getNodeIdsBySupertagWithInheritance(db, supertagSystemId)
+  const nodeIds = getNodeIdsBySupertagWithInheritance(db, supertagId)
   return nodeIds
     .map((id) => assembleNode(db, id))
     .filter((n): n is AssembledNode => n !== null)
@@ -765,6 +939,15 @@ export function setNodeSupertags(
   const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
   if (!node) throw new Error(`Node not found: ${nodeId}`)
 
+  // Get current supertags before clearing (for event emission)
+  const currentSupertags = getNodeSupertagSystemIds(db, nodeId)
+
+  // Determine added and removed supertags
+  const currentSet = new Set(currentSupertags)
+  const newSet = new Set(supertagSystemIds)
+  const removedSupertags = currentSupertags.filter((st) => !newSet.has(st))
+  const addedSupertags = supertagSystemIds.filter((st) => !currentSet.has(st))
+
   // Clear existing supertags
   clearProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG)
 
@@ -778,7 +961,34 @@ export function setNodeSupertags(
   }
 
   // Update node timestamp
-  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+  const now = new Date()
+  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+
+  // Emit supertag:removed events with supertag UUID
+  for (const supertagSystemId of removedSupertags) {
+    const supertagNode = getSystemNode(db, supertagSystemId)
+    if (supertagNode) {
+      eventBus.emit({
+        type: 'supertag:removed',
+        timestamp: now,
+        nodeId,
+        supertagId: supertagNode.id,
+      })
+    }
+  }
+
+  // Emit supertag:added events with supertag UUID
+  for (const supertagSystemId of addedSupertags) {
+    const supertagNode = getSystemNode(db, supertagSystemId)
+    if (supertagNode) {
+      eventBus.emit({
+        type: 'supertag:added',
+        timestamp: now,
+        nodeId,
+        supertagId: supertagNode.id,
+      })
+    }
+  }
 }
 
 /**
@@ -805,7 +1015,16 @@ export function addNodeSupertag(
   addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
 
   // Update node timestamp
-  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+  const now = new Date()
+  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+
+  // Emit supertag:added event with supertag UUID
+  eventBus.emit({
+    type: 'supertag:added',
+    timestamp: now,
+    nodeId,
+    supertagId: supertagNode.id,
+  })
 
   return true
 }
@@ -848,7 +1067,16 @@ export function removeNodeSupertag(
   }
 
   // Update node timestamp
-  db.update(nodes).set({ updatedAt: new Date() }).where(eq(nodes.id, nodeId)).run()
+  const now = new Date()
+  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+
+  // Emit supertag:removed event with supertag UUID
+  eventBus.emit({
+    type: 'supertag:removed',
+    timestamp: now,
+    nodeId,
+    supertagId: supertagNode.id,
+  })
 
   return true
 }
