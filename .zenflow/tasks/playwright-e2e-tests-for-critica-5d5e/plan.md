@@ -41,7 +41,8 @@ Save to `{@artifacts_path}/spec.md` with:
 
 Broke down the spec into 7 concrete implementation steps below. Each step is a self-contained unit of work that can be verified independently.
 
-### [ ] Step: Infrastructure & Playwright Setup
+### [x] Step: Infrastructure & Playwright Setup
+<!-- chat-id: 5478cc45-132e-4955-b38d-757f1d23c027 -->
 
 Set up Playwright, project scaffolding, scripts, and shared test utilities.
 
