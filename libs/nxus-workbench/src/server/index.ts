@@ -4,7 +4,7 @@
  * TanStack Server functions for node workbench operations.
  */
 
-// Node server functions
+// Node server functions (generic CRUD)
 export {
   getNodeServerFn,
   getNodesBySupertagServerFn,
@@ -12,9 +12,6 @@ export {
   createNodeServerFn,
   deleteNodeServerFn,
   setNodePropertiesServerFn,
-  getAllItemsFromNodesServerFn,
-  getItemByIdFromNodesServerFn,
-  getAllTagsFromNodesServerFn,
 } from './nodes.server.js'
 
 // Search server functions
@@ -42,14 +39,6 @@ export type {
   RecursiveBacklinksResult,
   EdgesBetweenNodesResult,
 } from './graph.types.js'
-
-// Adapters for legacy type conversion
-export {
-  nodeToItem,
-  nodeToTag,
-  nodeToCommand,
-  nodesToItems,
-} from './adapters.js'
 
 // Query server functions
 export {

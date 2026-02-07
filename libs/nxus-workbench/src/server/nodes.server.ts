@@ -1,9 +1,8 @@
 /**
- * nodes.server.ts - TanStack server functions for node-based architecture
+ * nodes.server.ts - TanStack server functions for node operations
  *
- * Parallel to apps.server.ts - provides node-based queries that can
- * return legacy types via adapters. Use these when you want to leverage
- * the new node system with supertag inheritance.
+ * Generic node CRUD operations (get, create, update, delete, set properties).
+ * These work with AssembledNode directly — no app-specific type conversions.
  *
  * IMPORTANT: All @nxus/db/server imports are done dynamically inside handlers
  * to prevent Vite from bundling better-sqlite3 into the client bundle.
@@ -12,25 +11,15 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
-  eq,
   getDatabase,
   initDatabase,
   initDatabaseWithBootstrap,
-  nodeProperties,
-  nodes,
-  SYSTEM_FIELDS,
-  SYSTEM_SUPERTAGS,
   assembleNode,
   findNodeById,
-  getNodesBySupertagWithInheritance,
-  getProperty,
   createNode,
   deleteNode,
   setProperty,
-  type NodeProperty,
 } from '@nxus/db/server'
-import type { AssembledNode, Item, ItemCommand, TagRef } from '@nxus/db'
-import { nodeToCommand, nodeToItem, nodeToTag } from './adapters.js'
 
 // ============================================================================
 // Raw Node Queries (return AssembledNode)
@@ -205,228 +194,3 @@ export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
     return { success: true as const, node: updatedNode }
   })
 
-// ============================================================================
-// Legacy-Compatible Queries (return Item, Tag, Command)
-// ============================================================================
-
-/**
- * Get all items from node system (returns legacy Item type)
- *
- * This mirrors getAllAppsServerFn but uses the node architecture.
- * Includes #Tool and #Repo via inheritance from #Item.
- */
-export const getAllItemsFromNodesServerFn = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  const {
-    initDatabaseWithBootstrap,
-    getNodesBySupertagWithInheritance,
-    getProperty,
-    SYSTEM_SUPERTAGS,
-  } = await import('@nxus/db/server')
-
-  // Auto-bootstrap system nodes on first access (idempotent)
-  const db = await initDatabaseWithBootstrap()
-
-  // Get all items (with inheritance: #Item, #Tool, #Repo)
-  const itemNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.ITEM)
-
-  // Get all tags for lookup
-  const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
-  const tagLookup = new Map<string, TagRef>()
-  for (const tagNode of tagNodes) {
-    const legacyId = getProperty<number>(tagNode, 'legacyId')
-    tagLookup.set(tagNode.id, {
-      id: legacyId || 0,
-      name: tagNode.content || '',
-    })
-  }
-
-  // Build item lookup for dependency resolution (node ID → legacy ID)
-  const itemLookup = new Map<string, string>()
-  for (const itemNode of itemNodes) {
-    const legacyId =
-      getProperty<string>(itemNode, 'legacyId') ||
-      itemNode.systemId?.replace('item:', '') ||
-      itemNode.id
-    itemLookup.set(itemNode.id, legacyId)
-  }
-
-  // Get all commands to group by parent item
-  const commandNodes = getNodesBySupertagWithInheritance(
-    db,
-    SYSTEM_SUPERTAGS.COMMAND,
-  )
-  const commandsByItemId = new Map<string, ItemCommand[]>()
-
-  for (const cmdNode of commandNodes) {
-    // Commands use ownerId to link to their parent item
-    const parentId = cmdNode.ownerId
-    if (parentId) {
-      const cmds = commandsByItemId.get(parentId) ?? []
-      cmds.push(nodeToCommand(cmdNode))
-      commandsByItemId.set(parentId, cmds)
-    }
-  }
-
-  // Convert to legacy Item type
-  const items: Item[] = itemNodes.map((node: AssembledNode) =>
-    nodeToItem(node, {
-      resolveTagRefs: (tagNodeIds) =>
-        tagNodeIds
-          .map((id) => tagLookup.get(id))
-          .filter((t): t is TagRef => !!t),
-      resolveCommands: (itemId) => commandsByItemId.get(itemId) ?? [],
-      resolveDependencies: (depNodeIds) =>
-        depNodeIds
-          .map((id) => itemLookup.get(id))
-          .filter((id): id is string => !!id),
-    }),
-  )
-
-  return { success: true as const, items }
-})
-
-/**
- * Get a single item by legacy ID from node system
- */
-export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ id: z.string() }))
-  .handler(async (ctx) => {
-    const {
-      initDatabase,
-      getDatabase,
-      findNodeBySystemId,
-      assembleNode,
-      getNodesBySupertagWithInheritance,
-      getProperty,
-      nodes,
-      nodeProperties,
-      eq,
-      SYSTEM_SUPERTAGS,
-      SYSTEM_FIELDS,
-    } = await import('@nxus/db/server')
-    const { id } = ctx.data
-    initDatabase()
-    const db = getDatabase()
-
-    // Try to find by systemId first (item:xxx)
-    let node = findNodeBySystemId(db, `item:${id}`)
-
-    // If not found, search by legacyId property
-    if (!node) {
-      const legacyIdField = db
-        .select()
-        .from(nodes)
-        .where(eq(nodes.systemId, SYSTEM_FIELDS.LEGACY_ID))
-        .get()
-
-      if (legacyIdField) {
-        const prop = db
-          .select()
-          .from(nodeProperties)
-          .where(eq(nodeProperties.fieldNodeId, legacyIdField.id))
-          .all()
-          .find((p: { value: string | null }) => {
-            try {
-              return JSON.parse(p.value || '') === id
-            } catch {
-              return false
-            }
-          })
-
-        if (prop) {
-          node = assembleNode(db, prop.nodeId)
-        }
-      }
-    }
-
-    if (!node) {
-      return { success: false as const, error: `Item ${id} not found` }
-    }
-
-    // Get tags for this item
-    const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
-    const tagLookup = new Map<string, TagRef>()
-    for (const tagNode of tagNodes) {
-      const legacyId = getProperty<number>(tagNode, 'legacyId')
-      tagLookup.set(tagNode.id, {
-        id: legacyId || 0,
-        name: tagNode.content || '',
-      })
-    }
-
-    // Build item lookup for dependency resolution
-    const allItemNodes = getNodesBySupertagWithInheritance(
-      db,
-      SYSTEM_SUPERTAGS.ITEM,
-    )
-    const itemLookup = new Map<string, string>()
-    for (const itemNode of allItemNodes) {
-      const legacyId =
-        getProperty<string>(itemNode, 'legacyId') ||
-        itemNode.systemId?.replace('item:', '') ||
-        itemNode.id
-      itemLookup.set(itemNode.id, legacyId)
-    }
-
-    // Get commands for this item (commands use ownerId to link to their parent item)
-    const commandNodes = getNodesBySupertagWithInheritance(
-      db,
-      SYSTEM_SUPERTAGS.COMMAND,
-    )
-    const commands = commandNodes
-      .filter((cmd: AssembledNode) => cmd.ownerId === node!.id)
-      .map(nodeToCommand)
-
-    const item = nodeToItem(node, {
-      resolveTagRefs: (tagNodeIds) =>
-        tagNodeIds
-          .map((id) => tagLookup.get(id))
-          .filter((t): t is TagRef => !!t),
-      resolveCommands: () => commands,
-      resolveDependencies: (depNodeIds) =>
-        depNodeIds
-          .map((id) => itemLookup.get(id))
-          .filter((id): id is string => !!id),
-    })
-
-    return { success: true as const, item }
-  })
-
-/**
- * Get all tags from node system (returns legacy Tag type)
- */
-export const getAllTagsFromNodesServerFn = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  const {
-    initDatabase,
-    getDatabase,
-    getNodesBySupertagWithInheritance,
-    getProperty,
-    SYSTEM_SUPERTAGS,
-  } = await import('@nxus/db/server')
-
-  initDatabase()
-  const db = getDatabase()
-
-  const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
-
-  // Build parent lookup
-  const nodeIdToLegacyId = new Map<string, number>()
-  for (const node of tagNodes) {
-    const legacyId = getProperty<number>(node, 'legacyId')
-    if (legacyId) {
-      nodeIdToLegacyId.set(node.id, legacyId)
-    }
-  }
-
-  const tags = tagNodes.map((node: AssembledNode) =>
-    nodeToTag(node, {
-      resolveParentId: (nodeId) => nodeIdToLegacyId.get(nodeId) ?? null,
-    }),
-  )
-
-  return { success: true as const, tags }
-})
