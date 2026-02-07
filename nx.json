@@ -19,11 +19,11 @@
           "watchDepsName": "watch-deps"
         }
       },
-      "exclude": ["packages/nxus-ui/*"]
+      "exclude": ["libs/nxus-ui/*"]
     },
     {
       "plugin": "@nx/js/typescript",
-      "include": ["packages/nxus-ui/*"],
+      "include": ["libs/nxus-ui/*"],
       "options": {
         "typecheck": {
           "targetName": "typecheck"

@@ -36,16 +36,16 @@
   },
   "references": [
     {
-      "path": "../nxus-workbench"
+      "path": "../../libs/nxus-workbench"
     },
     {
-      "path": "../nxus-ui"
+      "path": "../../libs/nxus-ui"
     },
     {
-      "path": "../nxus-db"
+      "path": "../../libs/nxus-db"
     },
     {
-      "path": "../nxus-calendar"
+      "path": "../../libs/nxus-calendar"
     }
   ]
 }

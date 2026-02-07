@@ -39,7 +39,7 @@ Save to `{@artifacts_path}/spec.md` with:
 
 Replaced the Implementation step below with concrete tasks based on `{@artifacts_path}/spec.md`.
 
-### [ ] Step: Restructure monorepo to apps/ and libs/
+### [x] Step: Restructure monorepo to apps/ and libs/
 
 Move existing packages to follow Nx conventions using `git mv` (preserves history).
 
@@ -48,12 +48,14 @@ Move existing packages to follow Nx conventions using `git mv` (preserves histor
 3. `git mv packages/nxus-db libs/nxus-db`
 4. `git mv packages/nxus-ui libs/nxus-ui`
 5. `git mv packages/nxus-workbench libs/nxus-workbench`
-6. Update `pnpm-workspace.yaml` to include `apps/*` and `libs/*` (keep `packages/*` for `_commands`/`repos`)
-7. Update `nx.json` plugin `exclude`/`include` patterns from `packages/nxus-ui/*` to `libs/nxus-ui/*`
-8. Update `apps/nxus-core/tsconfig.json` references from `../nxus-*` to `../../libs/nxus-*`
-9. Update `apps/nxus-core/vite.config.ts` watch ignore paths if referencing `packages/repos` by relative path
-10. Run `pnpm install` to re-link workspace packages
-11. Verify: `nx graph` shows correct deps, `nx run nxus-core:dev` starts, `nx run nxus-core:typecheck` passes
+6. `git mv packages/nxus-calendar libs/nxus-calendar`
+7. Update `pnpm-workspace.yaml` to include `apps/*` and `libs/*` (keep `packages/*` for `_commands`/`repos`)
+8. Update `nx.json` plugin `exclude`/`include` patterns from `packages/nxus-ui/*` to `libs/nxus-ui/*`
+9. Update `apps/nxus-core/tsconfig.json` references from `../nxus-*` to `../../libs/nxus-*`
+10. Update root `tsconfig.json` references from `./packages/nxus-*` to `./libs/nxus-*`
+11. Update `.gitignore` nxus-core data path
+12. Run `pnpm install` to re-link workspace packages
+13. Verify: `nx graph` shows correct deps with all 5 projects (nxus-core + 4 libs including nxus-calendar)
 
 ### [ ] Step: Decouple workbench from nxus-core
 
