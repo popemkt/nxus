@@ -842,6 +842,23 @@ The drag-and-drop addon (`react-big-calendar/lib/addons/dragAndDrop`) is only av
 **Files Changed:**
 - `packages/nxus-core/vite.config.ts` - Added aliases for drag-and-drop addon
 - `packages/nxus-calendar/src/components/calendar-container.tsx` - Implemented dynamic loading of drag-and-drop addon
+
+### [x] Step: merge latest origin mastere
+<!-- chat-id: 14a3107c-3d45-423e-a876-ff9b3c32d6c9 -->
+
+Merged latest `origin/main` into the current branch.
+
+**What was done:**
+- Fetched latest from origin
+- Merged `origin/main` (which included PR #36 - SurrealDB testing work)
+- Resolved binary conflict in `packages/nxus-db/src/data/nxus.db` (took origin/main version)
+- Added `.playwright-mcp/` to `.gitignore` to prevent test artifacts from being committed
+- Removed previously tracked `.playwright-mcp/` files from git
+
+**Verification:**
+- `npx tsc --noEmit -p packages/nxus-calendar/tsconfig.json` passes cleanly
+- Dev server starts successfully (`vite dev --port 3000`)
+- Calendar page loads correctly at `/calendar`
 ## Verification Commands
 
 ```bash
