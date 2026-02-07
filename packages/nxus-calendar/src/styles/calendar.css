@@ -341,11 +341,6 @@
   flex: none;
 }
 
-/* Day column borders in time content */
-.nxus-calendar .rbc-time-content > * + * > * {
-  border-left: 1px solid var(--border);
-}
-
 .nxus-calendar .rbc-time-content > .rbc-day-slot {
   width: 100%;
   user-select: none;
@@ -366,10 +361,14 @@
 
 .nxus-calendar .rbc-time-slot {
   flex: 1;
-  border-top: 1px dashed color-mix(in oklch, var(--border) 50%, transparent);
 }
 
-.nxus-calendar .rbc-time-slot:first-child {
+/* Half-hour/quarter-hour dashed lines only in day columns, not the gutter */
+.nxus-calendar .rbc-day-slot .rbc-time-slot {
+  border-top: 1px dashed color-mix(in oklch, var(--muted) 80%, transparent);
+}
+
+.nxus-calendar .rbc-day-slot .rbc-time-slot:first-child {
   border-top: none;
 }
 
@@ -445,9 +444,9 @@
   z-index: 4;
 }
 
-.nxus-calendar .rbc-time-view .rbc-row {
+.nxus-calendar .rbc-time-view .rbc-allday-cell .rbc-row {
   box-sizing: border-box;
-  min-height: 20px;
+  min-height: 0;
 }
 
 /* Time view needs width: 100% and min-height: 0 from base */
@@ -513,8 +512,8 @@
 }
 
 .nxus-calendar .rbc-allday-events {
-  min-height: 1.5rem;
-  padding: 0.25rem 0;
+  min-height: 0;
+  padding: 0.125rem 0;
 }
 
 /* ============================================================================
