@@ -72,7 +72,8 @@ Set up Playwright, project scaffolding, scripts, and shared test utilities.
 - Directory structure exists
 - `pnpm e2e --help` resolves correctly
 
-### [ ] Step: Gateway E2E Tests (G1-G2)
+### [x] Step: Gateway E2E Tests (G1-G2)
+<!-- chat-id: 937782b0-b2f8-4ef7-b6eb-38dafd7fbfa7 -->
 
 Implement Gateway landing page and navigation tests.
 
