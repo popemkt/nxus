@@ -25,6 +25,9 @@ export type ThemePalette =
   | 'vaporwave'
   | 'neon'
   | 'brutalism'
+  | 'gothic'
+  | 'cyberpunk'
+  | 'bauhaus'
 
 // Color mode (light/dark)
 export type ColorMode = 'light' | 'dark'

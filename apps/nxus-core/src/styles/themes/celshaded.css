@@ -37,6 +37,7 @@
   --radius-card: 0px;
   --radius-panel: 0px;
   --radius-button: 0px;
+  --corner-shape: bevel;
 
   --chart-1: oklch(0.6 0.22 140);
   --chart-2: oklch(0.7 0.2 60);
@@ -89,6 +90,7 @@
   --radius-card: 0px;
   --radius-panel: 0px;
   --radius-button: 0px;
+  --corner-shape: bevel;
 
   --chart-1: oklch(0.72 0.22 140);
   --chart-2: oklch(0.75 0.22 60);

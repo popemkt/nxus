@@ -44,6 +44,7 @@
   --radius-panel: 26px;
   --radius-button: 9999px;
   --border-width: 1px;
+  --corner-shape: round;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.67 0.16 58);
@@ -145,6 +146,7 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    corner-shape: var(--corner-shape);
   }
   body {
     @apply font-sans bg-background text-foreground;
@@ -351,19 +353,23 @@
 /* Card radius - uses --radius-card variable */
 .radius-card {
   border-radius: var(--radius-card);
+  corner-shape: var(--corner-shape);
 }
 
 /* Panel radius - uses --radius-panel variable */
 .radius-panel {
   border-radius: var(--radius-panel);
+  corner-shape: var(--corner-shape);
 }
 
 /* Button radius - uses --radius-button variable */
 .radius-button {
   border-radius: var(--radius-button);
+  corner-shape: var(--corner-shape);
 }
 
 /* Base radius - uses --radius variable */
 .radius-base {
   border-radius: var(--radius);
+  corner-shape: var(--corner-shape);
 }

@@ -31,6 +31,8 @@
   --input: oklch(0.9 0.05 310);
   --ring: oklch(0.55 0.2 320);
 
+  --corner-shape: squircle;
+
   --chart-1: oklch(0.55 0.2 320);
   --chart-2: oklch(0.65 0.15 190);
   --chart-3: oklch(0.7 0.18 60);

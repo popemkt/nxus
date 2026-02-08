@@ -1,6 +1,9 @@
 import {
+  BoundingBoxIcon,
   CatIcon,
   CircleDashedIcon,
+  CircuitryIcon,
+  CrownIcon,
   CubeIcon,
   DiscIcon,
   FireIcon,
@@ -146,5 +149,23 @@ export const themeOptions: Array<ThemeOption> = [
     label: 'Brutalism',
     Icon: CubeIcon,
     color: '#1a1a1a',
+  },
+  {
+    value: 'gothic',
+    label: 'Gothic',
+    Icon: CrownIcon,
+    color: '#8b1a4a',
+  },
+  {
+    value: 'cyberpunk',
+    label: 'Cyberpunk',
+    Icon: CircuitryIcon,
+    color: '#f0e020',
+  },
+  {
+    value: 'bauhaus',
+    label: 'Bauhaus',
+    Icon: BoundingBoxIcon,
+    color: '#cc3333',
   },
 ]

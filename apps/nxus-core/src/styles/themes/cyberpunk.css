@@ -1,0 +1,109 @@
+/* Cyberpunk Theme */
+/* High-tech HUD aesthetic with electric yellows and hot magentas */
+/* 90-degree concave notched corners like sci-fi interface panels */
+
+/* Cyberpunk - Light Variant */
+.cyberpunk {
+  --background: oklch(0.96 0.02 90);
+  --foreground: oklch(0.15 0.04 280);
+
+  --card: oklch(0.98 0.015 90);
+  --card-foreground: oklch(0.15 0.04 280);
+
+  --popover: oklch(0.97 0.018 90);
+  --popover-foreground: oklch(0.15 0.04 280);
+
+  --primary: oklch(0.85 0.2 95);
+  --primary-foreground: oklch(0.15 0.04 280);
+
+  --secondary: oklch(0.9 0.04 90);
+  --secondary-foreground: oklch(0.2 0.04 280);
+
+  --muted: oklch(0.9 0.04 90);
+  --muted-foreground: oklch(0.45 0.04 280);
+
+  --accent: oklch(0.65 0.25 330);
+  --accent-foreground: oklch(0.98 0.01 90);
+
+  --destructive: oklch(0.55 0.25 25);
+
+  --border: oklch(0.7 0.12 95);
+  --input: oklch(0.92 0.03 90);
+  --ring: oklch(0.85 0.2 95);
+
+  /* Small notch — keeps 90° concave cuts subtle on badges and buttons */
+  --border-width: 2px;
+  --radius: 3px;
+  --radius-card: 5px;
+  --radius-panel: 6px;
+  --radius-button: 4px;
+  --corner-shape: notch;
+
+  --chart-1: oklch(0.85 0.2 95);
+  --chart-2: oklch(0.65 0.25 330);
+  --chart-3: oklch(0.7 0.2 200);
+  --chart-4: oklch(0.6 0.22 280);
+  --chart-5: oklch(0.75 0.18 30);
+
+  --sidebar: oklch(0.94 0.02 90);
+  --sidebar-foreground: oklch(0.15 0.04 280);
+  --sidebar-primary: oklch(0.85 0.2 95);
+  --sidebar-primary-foreground: oklch(0.15 0.04 280);
+  --sidebar-accent: oklch(0.86 0.06 90);
+  --sidebar-accent-foreground: oklch(0.15 0.04 280);
+  --sidebar-border: oklch(0.7 0.12 95);
+  --sidebar-ring: oklch(0.85 0.2 95);
+}
+
+/* Cyberpunk - Dark Variant */
+.dark.cyberpunk {
+  --background: oklch(0.06 0.02 280);
+  --foreground: oklch(0.92 0.04 95);
+
+  --card: oklch(0.1 0.03 280);
+  --card-foreground: oklch(0.92 0.04 95);
+
+  --popover: oklch(0.08 0.025 280);
+  --popover-foreground: oklch(0.92 0.04 95);
+
+  --primary: oklch(0.88 0.22 95);
+  --primary-foreground: oklch(0.06 0.02 280);
+
+  --secondary: oklch(0.16 0.05 280);
+  --secondary-foreground: oklch(0.9 0.04 95);
+
+  --muted: oklch(0.16 0.05 280);
+  --muted-foreground: oklch(0.6 0.08 95);
+
+  --accent: oklch(0.7 0.28 330);
+  --accent-foreground: oklch(0.06 0.02 280);
+
+  --destructive: oklch(0.65 0.28 25);
+
+  --border: oklch(0.5 0.18 95);
+  --input: oklch(0.12 0.03 280);
+  --ring: oklch(0.88 0.22 95);
+
+  /* Small notch — keeps 90° concave cuts subtle on badges and buttons */
+  --border-width: 2px;
+  --radius: 3px;
+  --radius-card: 5px;
+  --radius-panel: 6px;
+  --radius-button: 4px;
+  --corner-shape: notch;
+
+  --chart-1: oklch(0.88 0.22 95);
+  --chart-2: oklch(0.7 0.28 330);
+  --chart-3: oklch(0.75 0.22 200);
+  --chart-4: oklch(0.68 0.25 280);
+  --chart-5: oklch(0.8 0.2 30);
+
+  --sidebar: oklch(0.04 0.015 280);
+  --sidebar-foreground: oklch(0.92 0.04 95);
+  --sidebar-primary: oklch(0.88 0.22 95);
+  --sidebar-primary-foreground: oklch(0.06 0.02 280);
+  --sidebar-accent: oklch(0.16 0.05 280);
+  --sidebar-accent-foreground: oklch(0.92 0.04 95);
+  --sidebar-border: oklch(0.5 0.18 95);
+  --sidebar-ring: oklch(0.88 0.22 95);
+}
