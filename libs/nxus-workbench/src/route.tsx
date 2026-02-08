@@ -244,7 +244,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
       )}
 
       {/* Right Panel - Node Inspector (visible in all views) */}
-      <div className="w-[480px] border-l border-border flex flex-col bg-card/30">
+      <div className="w-[480px] border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
         {selectedNode ? (
           <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
         ) : (
