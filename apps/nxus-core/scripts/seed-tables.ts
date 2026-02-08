@@ -11,7 +11,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ItemSchema,
   eq,
-  
+
   getDatabase,
   inbox,
   initDatabase,
@@ -19,9 +19,11 @@ import { ItemSchema,
   itemTags,
   items,
   saveMasterDatabase,
+  tagSchemas,
   tags
  } from '@nxus/db/server'
 import type {TagRef} from '@nxus/db/server';
+import { SYSTEM_TAGS } from '../src/lib/system-tags'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -55,7 +57,7 @@ export async function seedTables() {
   console.log('  DB Seed: JSON → Tables')
   console.log('='.repeat(50) + '\n')
 
-  console.log('[1/4] Initializing database...')
+  console.log('[1/5] Initializing database...')
   initDatabase()
   const db = getDatabase()
 
@@ -63,7 +65,7 @@ export async function seedTables() {
   let commandsCount = 0
 
   // Seed apps from individual manifest.json files
-  console.log('[2/4] Seeding apps from manifests...')
+  console.log('[2/5] Seeding apps from manifests...')
 
   // Get all app directories
   const appDirs = readdirSync(appsDir).filter((name) => {
@@ -222,7 +224,7 @@ export async function seedTables() {
   console.log(`  Upserted ${appsCount} apps, ${commandsCount} commands`)
 
   // Seed tags
-  console.log('[3/4] Seeding tags...')
+  console.log('[3/5] Seeding tags...')
   const tagsData = loadJsonFile<{ tags: Array<Record<string, unknown>> }>(
     resolve(dataDir, 'tags.json'),
   )
@@ -256,8 +258,45 @@ export async function seedTables() {
     console.log('  ⚠️  tags.json not found, skipping')
   }
 
+  // Seed tag schemas for configurable system tags
+  console.log('[4/5] Seeding tag schemas...')
+  let tagSchemasCount = 0
+
+  for (const systemTag of Object.values(SYSTEM_TAGS)) {
+    if (systemTag.configurable && systemTag.schema) {
+      const existing = db
+        .select()
+        .from(tagSchemas)
+        .where(eq(tagSchemas.tagId, systemTag.id))
+        .get()
+
+      if (existing) {
+        db.update(tagSchemas)
+          .set({
+            schema: systemTag.schema,
+            description: systemTag.description,
+            updatedAt: new Date(),
+          })
+          .where(eq(tagSchemas.tagId, systemTag.id))
+          .run()
+      } else {
+        db.insert(tagSchemas)
+          .values({
+            tagId: systemTag.id,
+            schema: systemTag.schema,
+            description: systemTag.description,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .run()
+      }
+      tagSchemasCount++
+    }
+  }
+  console.log(`  Upserted ${tagSchemasCount} tag schemas`)
+
   // Seed inbox
-  console.log('[4/4] Seeding inbox items...')
+  console.log('[5/5] Seeding inbox items...')
   const inboxData = loadJsonFile<{ items: Array<Record<string, unknown>> }>(
     resolve(dataDir, 'inbox.json'),
   )
@@ -302,6 +341,6 @@ export async function seedTables() {
   console.log('\n' + '='.repeat(50))
   console.log('✅ Tables seed complete!')
   console.log(`   Apps: ${appsCount}, Commands: ${commandsCount}`)
-  console.log(`   Tags: ${tagsCount}, Inbox: ${inboxCount}`)
+  console.log(`   Tags: ${tagsCount}, Tag Schemas: ${tagSchemasCount}, Inbox: ${inboxCount}`)
   console.log('='.repeat(50) + '\n')
 }

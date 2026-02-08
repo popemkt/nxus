@@ -7,12 +7,24 @@
  * - Should not be deleted by users
  */
 
+export interface TagConfigField {
+  key: string
+  label: string
+  type: 'text' | 'password' | 'boolean' | 'number' | 'select'
+  required?: boolean
+  default?: string | number | boolean
+  placeholder?: string
+  options?: Array<string>
+}
+
 export interface SystemTag {
   id: number
   name: string
   description: string
   /** Whether this tag has a configuration schema */
   configurable?: boolean
+  /** Schema defining the configuration fields for this tag */
+  schema?: { fields: Array<TagConfigField> }
 }
 
 /**
@@ -25,6 +37,30 @@ export const SYSTEM_TAGS = {
     name: 'AI CLI Provider',
     description: 'AI tools that can be configured to provide AI capabilities',
     configurable: true,
+    schema: {
+      fields: [
+        {
+          key: 'cliCommand',
+          label: 'CLI Command',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., claude, gemini, opencode',
+        },
+        {
+          key: 'promptFormat',
+          label: 'Prompt Format',
+          type: 'select',
+          options: ['direct', 'file', 'stdin'],
+          default: 'direct',
+        },
+        {
+          key: 'supportsInteractive',
+          label: 'Supports Interactive Mode',
+          type: 'boolean',
+          default: true,
+        },
+      ],
+    },
   },
   // Add more system tags here as needed
   // Example:

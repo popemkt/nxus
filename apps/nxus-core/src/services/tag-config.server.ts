@@ -122,12 +122,13 @@ export const getAllConfigurableTagsServerFn = createServerFn({
   }))
 
   // Also include system tags marked as configurable (even without a saved schema)
+  // Use the schema from the system tag definition as fallback
   const dbTagIds = new Set(configs.map((c) => c.tagId))
   for (const systemTag of getAllSystemTags()) {
     if (systemTag.configurable && !dbTagIds.has(systemTag.id)) {
       result.push({
         tagId: systemTag.id,
-        schema: { fields: [] } as TagConfigSchema,
+        schema: (systemTag.schema ?? { fields: [] }) as TagConfigSchema,
         description: systemTag.description ?? null,
       })
     }
