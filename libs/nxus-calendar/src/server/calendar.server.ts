@@ -369,57 +369,64 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
 
       // Update the status
       const newStatus = completed ? 'done' : 'pending'
-      setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, newStatus)
 
-      // For recurring tasks being marked as complete, create the next instance
-      if (completed && isRecurring && rrule) {
-        const currentStartStr = getProperty<string>(node, 'start_date')
-        const currentEndStr = getProperty<string>(node, 'end_date')
-        const allDay = getProperty<boolean>(node, 'all_day') ?? false
-        const reminder = getProperty<number>(node, 'reminder')
-        const description = getProperty<string>(node, 'description')
+      // Wrap all DB mutations in a transaction for atomicity:
+      // status update + next instance creation + property sets
+      db.transaction((tx) => {
+        const txDb = tx as unknown as typeof db
 
-        const currentStart = currentStartStr ? new Date(currentStartStr) : new Date()
-        const currentEnd = currentEndStr ? new Date(currentEndStr) : new Date(currentStart.getTime() + 60 * 60 * 1000)
+        setProperty(txDb, nodeId, SYSTEM_FIELDS.STATUS, newStatus)
 
-        // Calculate duration of the task
-        const duration = currentEnd.getTime() - currentStart.getTime()
+        // For recurring tasks being marked as complete, create the next instance
+        if (completed && isRecurring && rrule) {
+          const currentStartStr = getProperty<string>(node, 'start_date')
+          const currentEndStr = getProperty<string>(node, 'end_date')
+          const allDay = getProperty<boolean>(node, 'all_day') ?? false
+          const reminder = getProperty<number>(node, 'reminder')
+          const description = getProperty<string>(node, 'description')
 
-        // Get the next occurrence based on the current start date
-        const nextOccurrence = getNextInstance(rrule, currentStart)
+          const currentStart = currentStartStr ? new Date(currentStartStr) : new Date()
+          const currentEnd = currentEndStr ? new Date(currentEndStr) : new Date(currentStart.getTime() + 60 * 60 * 1000)
 
-        if (nextOccurrence) {
-          // Create a new task node for the next occurrence
-          const nextTaskId = createNode(db, {
-            content: node.content,
-            supertagId: SYSTEM_SUPERTAGS.TASK,
-            ownerId: node.ownerId,
-          })
+          // Calculate duration of the task
+          const duration = currentEnd.getTime() - currentStart.getTime()
 
-          // Set the dates for the next occurrence
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.START_DATE, nextOccurrence.toISOString())
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.END_DATE, new Date(nextOccurrence.getTime() + duration).toISOString())
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.ALL_DAY, allDay)
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.RRULE, rrule)
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.STATUS, 'pending')
+          // Get the next occurrence based on the current start date
+          const nextOccurrence = getNextInstance(rrule, currentStart)
 
-          // Copy optional fields
-          if (reminder !== undefined && reminder !== null) {
-            setProperty(db, nextTaskId, SYSTEM_FIELDS.REMINDER, reminder)
+          if (nextOccurrence) {
+            // Create a new task node for the next occurrence
+            const nextTaskId = createNode(txDb, {
+              content: node.content,
+              supertagId: SYSTEM_SUPERTAGS.TASK,
+              ownerId: node.ownerId,
+            })
+
+            // Set the dates for the next occurrence
+            setProperty(txDb, nextTaskId, SYSTEM_FIELDS.START_DATE, nextOccurrence.toISOString())
+            setProperty(txDb, nextTaskId, SYSTEM_FIELDS.END_DATE, new Date(nextOccurrence.getTime() + duration).toISOString())
+            setProperty(txDb, nextTaskId, SYSTEM_FIELDS.ALL_DAY, allDay)
+            setProperty(txDb, nextTaskId, SYSTEM_FIELDS.RRULE, rrule)
+            setProperty(txDb, nextTaskId, SYSTEM_FIELDS.STATUS, 'pending')
+
+            // Copy optional fields
+            if (reminder !== undefined && reminder !== null) {
+              setProperty(txDb, nextTaskId, SYSTEM_FIELDS.REMINDER, reminder)
+            }
+            if (description) {
+              setProperty(txDb, nextTaskId, SYSTEM_FIELDS.DESCRIPTION, description)
+            }
+
+            console.log('[completeTaskServerFn] Created next recurring task instance:', nextTaskId, 'at', nextOccurrence.toISOString())
+          } else {
+            console.log('[completeTaskServerFn] No more occurrences for recurring task')
           }
-          if (description) {
-            setProperty(db, nextTaskId, SYSTEM_FIELDS.DESCRIPTION, description)
-          }
 
-          console.log('[completeTaskServerFn] Created next recurring task instance:', nextTaskId, 'at', nextOccurrence.toISOString())
-        } else {
-          console.log('[completeTaskServerFn] No more occurrences for recurring task')
+          // Remove the rrule from the completed task so it doesn't expand again
+          // The recurrence pattern is now carried by the new instance
+          setProperty(txDb, nodeId, SYSTEM_FIELDS.RRULE, '')
         }
-
-        // Remove the rrule from the completed task so it doesn't expand again
-        // The recurrence pattern is now carried by the new instance
-        setProperty(db, nodeId, SYSTEM_FIELDS.RRULE, '')
-      }
+      })
 
       saveDatabase()
 

@@ -948,23 +948,29 @@ export function setNodeSupertags(
   const removedSupertags = currentSupertags.filter((st) => !newSet.has(st))
   const addedSupertags = supertagSystemIds.filter((st) => !currentSet.has(st))
 
-  // Clear existing supertags
-  clearProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG)
-
-  // Add new supertags
-  for (let i = 0; i < supertagSystemIds.length; i++) {
-    const supertagSystemId = supertagSystemIds[i]
-    const supertagNode = getSystemNode(db, supertagSystemId)
-    if (supertagNode) {
-      addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
-    }
-  }
-
-  // Update node timestamp
+  // Wrap DB mutations in a transaction for atomicity:
+  // clear old supertags → add new ones → update timestamp
   const now = new Date()
-  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+  db.transaction((tx) => {
+    const txDb = tx as unknown as ReturnType<typeof getDatabase>
 
-  // Emit supertag:removed events with supertag UUID
+    // Clear existing supertags
+    clearProperty(txDb, nodeId, SYSTEM_FIELDS.SUPERTAG)
+
+    // Add new supertags
+    for (let i = 0; i < supertagSystemIds.length; i++) {
+      const supertagSystemId = supertagSystemIds[i]
+      const supertagNode = getSystemNode(txDb, supertagSystemId)
+      if (supertagNode) {
+        addPropertyValue(txDb, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
+      }
+    }
+
+    // Update node timestamp
+    tx.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+  })
+
+  // Emit supertag:removed events with supertag UUID (outside transaction)
   for (const supertagSystemId of removedSupertags) {
     const supertagNode = getSystemNode(db, supertagSystemId)
     if (supertagNode) {
@@ -977,7 +983,7 @@ export function setNodeSupertags(
     }
   }
 
-  // Emit supertag:added events with supertag UUID
+  // Emit supertag:added events with supertag UUID (outside transaction)
   for (const supertagSystemId of addedSupertags) {
     const supertagNode = getSystemNode(db, supertagSystemId)
     if (supertagNode) {
@@ -1297,21 +1303,24 @@ export function syncNodeSupertagsToItemTypes(
   const types = supertagsToItemTypes(supertagSystemIds)
   if (types.length === 0) return false
 
-  // Delete existing itemTypes entries for this item
-  db.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
+  // Wrap delete-then-insert in a transaction for atomicity
+  db.transaction((tx) => {
+    // Delete existing itemTypes entries for this item
+    tx.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
 
-  // Insert new itemTypes entries
-  // First type is primary by default
-  for (let i = 0; i < types.length; i++) {
-    db.insert(itemTypes)
-      .values({
-        itemId,
-        type: types[i],
-        isPrimary: i === 0,
-        order: i,
-      })
-      .run()
-  }
+    // Insert new itemTypes entries
+    // First type is primary by default
+    for (let i = 0; i < types.length; i++) {
+      tx.insert(itemTypes)
+        .values({
+          itemId,
+          type: types[i],
+          isPrimary: i === 0,
+          order: i,
+        })
+        .run()
+    }
+  })
 
   return true
 }

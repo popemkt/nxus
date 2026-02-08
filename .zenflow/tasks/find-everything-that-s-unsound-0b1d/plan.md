@@ -84,7 +84,8 @@ Fix CSRF validation, "Try Again" behavior, and useEffect cleanup in OAuth callba
 
 **Verification:** Run calendar E2E tests.
 
-### [ ] Step: Add database transactions for multi-step operations (B1, B3, B8)
+### [x] Step: Add database transactions for multi-step operations (B1, B3, B8)
+<!-- chat-id: eb71ccb2-c4a1-4e1d-ba62-4788c010de37 -->
 
 Wrap multi-step database operations in transactions using `better-sqlite3` synchronous transaction support.
 
