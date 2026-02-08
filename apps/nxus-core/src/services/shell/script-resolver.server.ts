@@ -4,6 +4,27 @@ import { z } from 'zod'
 import { CwdSchema } from '@nxus/db'
 import { PATHS } from '@/paths'
 
+/**
+ * Validate that a resolved path stays within an expected base directory.
+ * Prevents path traversal attacks (e.g. scriptPath = "../../etc/passwd").
+ */
+function assertPathContainment(
+  resolvedPath: string,
+  baseDir: string,
+  label: string,
+): void {
+  const normalizedBase = path.resolve(baseDir) + path.sep
+  const normalizedTarget = path.resolve(resolvedPath)
+  if (
+    normalizedTarget !== path.resolve(baseDir) &&
+    !normalizedTarget.startsWith(normalizedBase)
+  ) {
+    throw new Error(
+      `Path traversal detected in ${label}: resolved path escapes base directory`,
+    )
+  }
+}
+
 const CommonSchema = z.object({
   appId: z.string(),
   scriptPath: z.string(),
@@ -59,20 +80,28 @@ export const resolveScriptServerFn = createServerFn({ method: 'GET' })
     let defaultCwd: string
 
     switch (scriptSource) {
-      case 'nxus-app':
+      case 'nxus-app': {
+        const baseDir = PATHS.app(appId)
         scriptFullPath = PATHS.app(appId, scriptPath)
+        assertPathContainment(scriptFullPath, baseDir, 'scriptPath')
         defaultCwd = path.dirname(scriptFullPath)
         break
+      }
 
-      case 'shared':
+      case 'shared': {
+        const baseDir = PATHS.sharedScripts()
         scriptFullPath = PATHS.sharedScripts(scriptPath)
+        assertPathContainment(scriptFullPath, baseDir, 'scriptPath')
         defaultCwd = path.dirname(scriptFullPath)
         break
+      }
 
-      case 'repo':
+      case 'repo': {
         scriptFullPath = path.join(instancePath, scriptPath)
+        assertPathContainment(scriptFullPath, instancePath, 'scriptPath')
         defaultCwd = instancePath
         break
+      }
     }
 
     // Resolve cwd based on override or default

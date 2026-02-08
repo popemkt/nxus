@@ -57,7 +57,8 @@ Fix shell command injection in git clone and platform commands.
 
 **Verification:** Run `pnpm test:libs` to ensure no regressions. Manually verify git clone still works.
 
-### [ ] Step: Fix path traversal and gateway security (A3, A4, A5)
+### [x] Step: Fix path traversal and gateway security (A3, A4, A5)
+<!-- chat-id: 0600cf02-3b5e-4725-a736-fbe77a5f2ba5 -->
 
 Fix path traversal in script resolver and proxy security issues in gateway.
 
