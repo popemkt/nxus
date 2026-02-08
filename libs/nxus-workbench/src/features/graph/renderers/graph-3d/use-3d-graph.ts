@@ -146,6 +146,15 @@ const DEFAULT_FOCUS_DISTANCE = 200
 /** Default camera position */
 const DEFAULT_CAMERA_POSITION = { x: 0, y: 0, z: 500 }
 
+/** Convert a hex color to rgba string with given opacity */
+function hexToRgba(hex: string, opacity: number): string {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.substring(0, 2), 16)
+  const g = parseInt(clean.substring(2, 4), 16)
+  const b = parseInt(clean.substring(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}
+
 // ============================================================================
 // Hook Implementation
 // ============================================================================
@@ -223,24 +232,20 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
         return 2
       })
       .nodeColor((node: Graph3DNode) => {
-        // Dimmed if not in local graph
-        if (!node.isInLocalGraph && !node.isFocused) {
-          return 'rgba(107, 114, 128, 0.3)' // Gray with low opacity
-        }
-        // Focused node gets special color
+        // Determine base color
+        let color: string
         if (node.isFocused) {
-          return '#f59e0b' // Amber-500
+          color = '#f59e0b' // Amber-500
+        } else if (node.isVirtual) {
+          color = '#a855f7' // Purple
+        } else {
+          color = node.supertag?.color ?? '#6b7280'
         }
-        // Highlighted nodes (direct connections)
-        if (node.isHighlighted) {
-          return node.supertag?.color ?? '#3b82f6'
+        // Apply dimming via RGBA when not in local graph (nodeOpacity doesn't support per-node fn)
+        if (!node.isInLocalGraph && !node.isFocused) {
+          return hexToRgba(color, 0.3)
         }
-        // Virtual nodes (tags)
-        if (node.isVirtual) {
-          return '#a855f7' // Purple
-        }
-        // Regular nodes use supertag color
-        return node.supertag?.color ?? '#6b7280'
+        return color
       })
       .nodeOpacity(0.9)
       // Link appearance
