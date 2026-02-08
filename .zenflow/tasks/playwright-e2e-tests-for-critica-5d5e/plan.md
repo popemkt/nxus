@@ -90,7 +90,8 @@ Implement Gateway landing page and navigation tests.
 
 **Verification:** `pnpm e2e e2e/gateway/` passes
 
-### [ ] Step: Core App E2E Tests (C1-C12)
+### [x] Step: Core App E2E Tests (C1-C12)
+<!-- chat-id: 7337abe3-acf6-493a-b34b-0b8d2f263ccd -->
 
 Implement all Core app tests across 5 spec files.
 
