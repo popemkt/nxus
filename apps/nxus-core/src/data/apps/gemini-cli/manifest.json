@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://github.com/google-gemini/gemini-cli",
   "homepage": "https://github.com/google-gemini/gemini-cli",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "gemini --version",
   "installInstructions": "Install via npm: npm install -g @google/gemini-cli",
   "commands": [
@@ -56,6 +60,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "Google"
-  },
-  "status": "not-installed"
+  }
 }

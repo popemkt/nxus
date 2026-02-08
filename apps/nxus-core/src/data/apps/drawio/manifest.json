@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://www.drawio.com/",
   "homepage": "https://www.drawio.com/",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "drawio --version",
   "commands": [
     {

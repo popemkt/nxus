@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://cli.github.com/",
   "homepage": "https://cli.github.com/",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "gh --version",
   "installInstructions": "Visit https://cli.github.com/ for installation instructions for your platform",
   "commands": [
@@ -19,7 +23,9 @@
       "mode": "script",
       "command": "install.ps1",
       "requires": {
-        "tools": ["powershell"],
+        "tools": [
+          "powershell"
+        ],
         "selfNotInstalled": true
       }
     },
@@ -32,7 +38,9 @@
       "target": "item",
       "mode": "execute",
       "command": "sudo dnf remove -y gh",
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "requires": {
         "selfInstalled": true
       }
@@ -125,7 +133,9 @@
       "mode": "terminal",
       "command": "gh pr create",
       "requires": {
-        "tools": ["git"],
+        "tools": [
+          "git"
+        ],
         "selfInstalled": true
       }
     },
@@ -152,7 +162,9 @@
       "mode": "terminal",
       "command": "gh pr checkout",
       "requires": {
-        "tools": ["git"],
+        "tools": [
+          "git"
+        ],
         "selfInstalled": true
       }
     },
@@ -406,6 +418,5 @@
     "updatedAt": "2026-01-03T07:59:33Z",
     "version": "1.0.0",
     "author": "GitHub"
-  },
-  "status": "not-installed"
+  }
 }

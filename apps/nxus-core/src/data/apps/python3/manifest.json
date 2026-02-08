@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://www.python.org",
   "homepage": "https://www.python.org",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "python3 --version",
   "installInstructions": "Visit https://www.python.org to download and install Python 3 for your platform",
   "commands": [
@@ -47,6 +51,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://factory.ai",
   "homepage": "https://factory.ai",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "droid --version",
   "installInstructions": "curl -fsSL https://app.factory.ai/cli | sh",
   "commands": [
@@ -19,7 +23,9 @@
       "mode": "script",
       "command": "install.ps1",
       "requires": {
-        "tools": ["powershell"],
+        "tools": [
+          "powershell"
+        ],
         "selfNotInstalled": true
       }
     },
@@ -96,6 +102,5 @@
     "updatedAt": "2026-01-15T00:00:00.000Z",
     "version": "1.0.0",
     "author": "Factory AI"
-  },
-  "status": "not-installed"
+  }
 }

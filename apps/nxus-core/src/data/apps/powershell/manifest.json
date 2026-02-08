@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://github.com/PowerShell/PowerShell",
   "homepage": "https://github.com/PowerShell/PowerShell",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "pwsh -v",
   "installInstructions": "Visit https://github.com/PowerShell/PowerShell for installation instructions.",
   "commands": [
@@ -18,7 +22,9 @@
       "target": "item",
       "mode": "execute",
       "command": "sudo dnf install powershell",
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "requires": {
         "selfNotInstalled": true
       }
@@ -32,7 +38,9 @@
       "target": "item",
       "mode": "execute",
       "command": "brew install --cask powershell",
-      "platforms": ["macos"],
+      "platforms": [
+        "macos"
+      ],
       "requires": {
         "selfNotInstalled": true
       }
@@ -46,7 +54,9 @@
       "target": "item",
       "mode": "execute",
       "command": "winget install --id Microsoft.Powershell --source winget",
-      "platforms": ["windows"],
+      "platforms": [
+        "windows"
+      ],
       "requires": {
         "selfNotInstalled": true
       }
@@ -59,6 +69,5 @@
     "updatedAt": "2026-01-03T09:15:00Z",
     "version": "7.4.0",
     "author": "Microsoft"
-  },
-  "status": "not-installed"
+  }
 }

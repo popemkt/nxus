@@ -164,6 +164,17 @@ export function getAllTypeIcons(item: Pick<Item, 'types'>): Array<Icon> {
 }
 
 /**
+ * Checks if a tool item has a checkCommand for health checking.
+ */
+export function hasCheckCommand(item: Pick<Item, 'types'>): boolean {
+  return (
+    (item.types?.includes('tool') ?? false) &&
+    'checkCommand' in item &&
+    !!item.checkCommand
+  )
+}
+
+/**
  * Checks if an item has multiple types.
  */
 export function hasMultipleTypes(item: Pick<Item, 'types'>): boolean {

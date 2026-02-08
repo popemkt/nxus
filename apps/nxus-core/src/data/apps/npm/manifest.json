@@ -5,10 +5,16 @@
   "type": "tool",
   "path": "https://www.npmjs.com",
   "homepage": "https://www.npmjs.com",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "npm --version",
   "installInstructions": "npm is included with Node.js installation",
-  "dependencies": ["node"],
+  "dependencies": [
+    "node"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -16,6 +22,5 @@
     "updatedAt": "2025-12-31T16:48:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

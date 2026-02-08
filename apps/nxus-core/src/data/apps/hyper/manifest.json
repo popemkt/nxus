@@ -6,7 +6,11 @@
   "path": "https://hyper.is/",
   "homepage": "https://hyper.is/",
   "thumbnail": "/thumbnails/hyper.svg",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "hyper --version",
   "installInstructions": "Download from https://hyper.is/ or install via package manager",
   "commands": [
@@ -90,6 +94,5 @@
     "updatedAt": "2026-01-11T21:55:46Z",
     "version": "1.0.0",
     "author": "Vercel"
-  },
-  "status": "not-installed"
+  }
 }

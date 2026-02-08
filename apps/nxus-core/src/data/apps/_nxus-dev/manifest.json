@@ -4,7 +4,11 @@
   "description": "Database and development utilities for Nxus",
   "type": "tool",
   "path": ".",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "echo true",
   "commands": [
     {
@@ -150,13 +154,20 @@
             "type": "prompt",
             "message": "Select environment:",
             "variable": "selectedEnv",
-            "options": ["production", "development", "test"],
+            "options": [
+              "production",
+              "development",
+              "test"
+            ],
             "next": "parallel-tasks"
           },
           {
             "id": "parallel-tasks",
             "type": "parallel",
-            "steps": ["task-a", "task-b"],
+            "steps": [
+              "task-a",
+              "task-b"
+            ],
             "onComplete": "wait-step"
           },
           {
@@ -220,7 +231,9 @@
       "icon": "Graph"
     }
   ],
-  "dependencies": ["nodejs"],
+  "dependencies": [
+    "nodejs"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -228,6 +241,5 @@
     "updatedAt": "2026-01-21T00:00:00Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

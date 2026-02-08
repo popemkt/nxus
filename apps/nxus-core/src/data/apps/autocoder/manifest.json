@@ -35,7 +35,10 @@
       "icon": "BookOpen"
     }
   ],
-  "dependencies": ["claude-code", "python3"],
+  "dependencies": [
+    "claude-code",
+    "python3"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -43,6 +46,5 @@
     "updatedAt": "2026-01-08T21:07:00.000Z",
     "version": "1.0.0",
     "author": "Leon van Zyl"
-  },
-  "status": "not-installed"
+  }
 }

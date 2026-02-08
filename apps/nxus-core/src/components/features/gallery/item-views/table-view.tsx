@@ -14,18 +14,15 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
-  CheckCircle,
-  XCircle,
 } from '@phosphor-icons/react'
 import type {SortingState} from '@tanstack/react-table';
 import type { Item } from '@nxus/db'
 import {
-  APP_TYPE_ICONS,
-  APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
-  getTypeBadges,
 } from '@/lib/app-constants'
-import { useToolHealth } from '@/hooks/use-tool-health'
+import { TypeBadgesList } from '../type-badges-list'
+import { TruncatedTagsList } from '../truncated-tags-list'
+import { ItemHealthBadge } from '../item-health-badge'
 
 interface TableViewProps {
   items: Array<Item>
@@ -33,41 +30,6 @@ interface TableViewProps {
 
 const columnHelper = createColumnHelper<Item>()
 
-// Cell component for health status - uses TanStack Query via domain hook
-function HealthCell({ app }: { app: Item }) {
-  const isTool = app.types?.includes('tool') ?? false
-  const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
-  const healthCheck = useToolHealth(app, hasCheckCommand)
-
-  if (!hasCheckCommand) return null
-
-  if (healthCheck.isLoading) {
-    return (
-      <Badge variant="outline" className="animate-pulse">
-        Checking...
-      </Badge>
-    )
-  }
-
-  return (
-    <Badge
-      variant={healthCheck.isInstalled ? 'default' : 'destructive'}
-      className="flex items-center gap-1"
-    >
-      {healthCheck.isInstalled ? (
-        <>
-          <CheckCircle className="h-3 w-3" weight="fill" />
-          {healthCheck.version || 'Installed'}
-        </>
-      ) : (
-        <>
-          <XCircle className="h-3 w-3" weight="fill" />
-          Not Found
-        </>
-      )}
-    </Badge>
-  )
-}
 
 export function TableView({ items }: TableViewProps) {
   const navigate = useNavigate()
@@ -85,27 +47,11 @@ export function TableView({ items }: TableViewProps) {
       }),
       columnHelper.accessor('types', {
         header: 'Type',
-        cell: (info) => {
-          const types = info.getValue()
-          const badges = getTypeBadges({ types })
-          return (
-            <div className="flex items-center gap-1">
-              {badges.map((badge) => {
-                const TypeIcon = badge.icon
-                return (
-                  <Badge
-                    key={badge.type}
-                    variant={badge.isFirst ? 'secondary' : 'outline'}
-                    className="flex items-center gap-1 text-xs"
-                  >
-                    <TypeIcon className="h-3 w-3" />
-                    {badge.label}
-                  </Badge>
-                )
-              })}
-            </div>
-          )
-        },
+        cell: (info) => (
+          <div className="flex items-center gap-1">
+            <TypeBadgesList item={{ types: info.getValue() }} showIcons className="text-xs" />
+          </div>
+        ),
       }),
       columnHelper.accessor('status', {
         header: 'Status',
@@ -118,29 +64,16 @@ export function TableView({ items }: TableViewProps) {
       columnHelper.display({
         id: 'health',
         header: 'Health',
-        cell: (info) => <HealthCell app={info.row.original} />,
+        cell: (info) => <ItemHealthBadge app={info.row.original} />,
       }),
       columnHelper.accessor((row) => row.metadata.tags, {
         id: 'tags',
         header: 'Tags',
-        cell: (info) => {
-          const tags = info.getValue()
-          if (!tags || tags.length === 0) return null
-          return (
-            <div className="flex flex-wrap gap-1">
-              {tags.slice(0, 3).map((tag) => (
-                <Badge key={tag.id} variant="outline" className="text-xs">
-                  {tag.name}
-                </Badge>
-              ))}
-              {tags.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          )
-        },
+        cell: (info) => (
+          <div className="flex flex-wrap gap-1">
+            <TruncatedTagsList tags={info.getValue()} limit={3} className="text-xs" />
+          </div>
+        ),
         enableSorting: false,
       }),
       columnHelper.accessor('dependencies', {

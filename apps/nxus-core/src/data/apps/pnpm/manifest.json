@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://pnpm.io",
   "homepage": "https://pnpm.io",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "pnpm --version",
   "installInstructions": "Run: npm install -g pnpm",
   "commands": [
@@ -19,7 +23,9 @@
       "mode": "execute",
       "command": "npm install -g pnpm",
       "requires": {
-        "tools": ["npm"],
+        "tools": [
+          "npm"
+        ],
         "selfNotInstalled": true
       }
     },
@@ -33,7 +39,9 @@
       "mode": "execute",
       "command": "npm update -g pnpm",
       "requires": {
-        "tools": ["npm"],
+        "tools": [
+          "npm"
+        ],
         "selfInstalled": true
       }
     },
@@ -47,12 +55,16 @@
       "mode": "execute",
       "command": "npm uninstall -g pnpm",
       "requires": {
-        "tools": ["npm"],
+        "tools": [
+          "npm"
+        ],
         "selfInstalled": true
       }
     }
   ],
-  "dependencies": ["node"],
+  "dependencies": [
+    "node"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -60,6 +72,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

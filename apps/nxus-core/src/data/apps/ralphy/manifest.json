@@ -125,7 +125,9 @@
       "icon": "BookOpen"
     }
   ],
-  "dependencies": ["git"],
+  "dependencies": [
+    "git"
+  ],
   "metadata": {
     "tags": [
       {
@@ -138,6 +140,5 @@
     "updatedAt": "2026-01-19T00:00:00.000Z",
     "version": "4.0.0",
     "author": "Michael Shimeles"
-  },
-  "status": "not-installed"
+  }
 }

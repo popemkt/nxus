@@ -5,7 +5,6 @@ import {
   ArrowsClockwiseIcon,
   BookOpenIcon,
   CalendarIcon,
-  CheckCircleIcon,
   FolderOpenIcon,
   GithubLogoIcon,
   GlobeIcon,
@@ -15,7 +14,6 @@ import {
   TagIcon,
   UserIcon,
   WarningIcon,
-  XCircleIcon,
 } from '@phosphor-icons/react'
 import { Badge, Button ,
   Card,
@@ -28,7 +26,6 @@ import { useAppRegistry } from '@/hooks/use-app-registry'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { DependencyList } from '@/components/features/app-detail/dependency-list'
 import {
-  useToolHealth,
   useToolHealthInvalidation,
 } from '@/hooks/use-tool-health'
 import { useTerminalStore } from '@/stores/terminal.store'
@@ -38,6 +35,7 @@ import { AppActionsPanel } from '@/components/features/app-detail/actions/app-ac
 import { DocViewer } from '@/components/features/app-detail/doc-viewer'
 import { InstallModal } from '@/components/features/app-detail/modals/install-modal'
 import { AppDetailTags } from '@/components/features/app-detail/app-detail-tags'
+import { ItemHealthBadge } from '@/components/features/gallery/item-health-badge'
 import { getAppManifestPathServerFn } from '@/services/apps/docs.server'
 import { openPathServerFn } from '@/services/shell/open-path.server'
 import { openFolderPickerServerFn } from '@/services/shell/folder-picker.server'
@@ -49,13 +47,11 @@ import {
 import { installModalService } from '@/stores/install-modal.store'
 import { commandExecutor } from '@/services/command-palette/executor'
 import {
-  APP_TYPE_ICONS,
-  APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
   getFirstTypeIcon,
-  getTypeBadges,
-  hasMultipleTypes,
+  hasCheckCommand,
 } from '@/lib/app-constants'
+import { TypeBadgesList } from '@/components/features/gallery/type-badges-list'
 import { openApp } from '@/lib/app-actions'
 import { useDelayedLoading } from '@/hooks/use-delayed-loading'
 
@@ -515,11 +511,7 @@ function AppDetailPage() {
   const app = apps.find((a) => a.id === appId)
   const { isInstalled } = useAppCheck(appId)
 
-  // Health check for the tool itself - uses TanStack Query via domain hook
-  const isTool = app?.types?.includes('tool') ?? false
-  const hasCheckCommand =
-    isTool && app && 'checkCommand' in app && !!app.checkCommand
-  const healthCheck = useToolHealth(app, hasCheckCommand)
+  const canCheckHealth = app ? hasCheckCommand(app) : false
   const { invalidate } = useToolHealthInvalidation()
 
   const [selectedInstance, setSelectedInstance] =
@@ -607,7 +599,6 @@ function AppDetailPage() {
   }
 
   const TypeIcon = getFirstTypeIcon(app)
-  const typeBadges = getTypeBadges(app)
   const effectiveStatus = isInstalled ? 'installed' : app.status
 
   const handleOpen = () => {
@@ -652,61 +643,12 @@ function AppDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
-          <Badge variant={STATUS_VARIANTS[effectiveStatus]}>
-            {effectiveStatus.replace('-', ' ')}
-          </Badge>
-          {/* Show all type badges */}
-          {typeBadges.map((badge) => {
-            const BadgeIcon = badge.icon
-            return (
-              <Badge
-                key={badge.type}
-                variant={badge.isFirst ? 'secondary' : 'outline'}
-                className="flex items-center gap-1"
-              >
-                <BadgeIcon className="h-3 w-3" />
-                {badge.label}
-              </Badge>
-            )
-          })}
-
-          {/* Health check status for tools in header */}
-          {hasCheckCommand && healthCheck.isLoading && (
-            <Badge
-              variant="outline"
-              className="flex items-center gap-1.5 animate-pulse"
-            >
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-ping" />
-              Checking
+          <ItemHealthBadge app={app} fallbackStatusBadge={
+            <Badge variant={STATUS_VARIANTS[effectiveStatus]}>
+              {effectiveStatus.replace('-', ' ')}
             </Badge>
-          )}
-
-          {hasCheckCommand && !healthCheck.isLoading && (
-            <Badge
-              variant={healthCheck.isInstalled ? 'default' : 'destructive'}
-              className="flex items-center gap-1 animate-fade-in status-transition"
-            >
-              {healthCheck.isInstalled ? (
-                <>
-                  <CheckCircleIcon className="h-3 w-3" weight="fill" />
-                  Installed
-                </>
-              ) : (
-                <>
-                  <XCircleIcon className="h-3 w-3" weight="fill" />
-                  Not Found
-                </>
-              )}
-            </Badge>
-          )}
-
-          {hasCheckCommand &&
-            healthCheck.isInstalled &&
-            healthCheck.version && (
-              <Badge variant="outline" className="font-mono animate-fade-in">
-                {healthCheck.version}
-              </Badge>
-            )}
+          } />
+          <TypeBadgesList item={app} showIcons />
 
           <AppDetailTags
             appId={appId}
@@ -744,7 +686,7 @@ function AppDetailPage() {
                   setGitStatusRefreshKey={setGitStatusRefreshKey}
                   onExecuteCommand={executeInstanceCommand}
                   onRefreshHealth={() =>
-                    hasCheckCommand && invalidate((app as any).checkCommand)
+                    canCheckHealth && invalidate((app as any).checkCommand)
                   }
                 />
               </TabsContent>
@@ -786,7 +728,7 @@ function AppDetailPage() {
                 setGitStatusRefreshKey={setGitStatusRefreshKey}
                 onExecuteCommand={executeInstanceCommand}
                 onRefreshHealth={() =>
-                  hasCheckCommand && invalidate((app as any).checkCommand)
+                  canCheckHealth && invalidate((app as any).checkCommand)
                 }
               />
             </div>

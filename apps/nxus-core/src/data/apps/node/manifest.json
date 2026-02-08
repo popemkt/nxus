@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://nodejs.org",
   "homepage": "https://nodejs.org",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "node --version",
   "installInstructions": "Visit https://nodejs.org to download and install Node.js for your platform",
   "commands": [
@@ -47,6 +51,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

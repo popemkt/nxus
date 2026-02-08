@@ -5,7 +5,9 @@
   "type": "remote-repo",
   "path": "random",
   "homepage": "random",
-  "dependencies": ["git"],
+  "dependencies": [
+    "git"
+  ],
   "metadata": {
     "tags": [],
     "category": "company-apps",
@@ -16,7 +18,10 @@
   },
   "installConfig": {
     "script": "echo 'Ready to use'",
-    "platform": ["linux", "macos", "windows"]
-  },
-  "status": "not-installed"
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  }
 }

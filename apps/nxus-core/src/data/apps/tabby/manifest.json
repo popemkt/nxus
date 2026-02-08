@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://tabby.sh/",
   "homepage": "https://tabby.sh/",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "tabby --version",
   "commands": [
     {

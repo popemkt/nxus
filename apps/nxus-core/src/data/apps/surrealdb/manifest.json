@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://surrealdb.com",
   "homepage": "https://surrealdb.com",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "surreal version 2>/dev/null || $HOME/.surrealdb/surreal version",
   "installInstructions": "Run: curl -sSf https://install.surrealdb.com | sh\nThen add to PATH: export PATH=$HOME/.surrealdb:$PATH",
   "commands": [
@@ -147,6 +151,5 @@
     "updatedAt": "2026-02-07T00:00:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://www.docker.com",
   "homepage": "https://www.docker.com",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "docker --version",
   "installInstructions": "Visit https://www.docker.com to download and install Docker Desktop for your platform",
   "commands": [
@@ -47,6 +51,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://yarnpkg.com",
   "homepage": "https://yarnpkg.com",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "yarn --version",
   "installInstructions": "Run: npm install -g yarn",
   "commands": [
@@ -19,7 +23,9 @@
       "mode": "execute",
       "command": "npm install -g yarn",
       "requires": {
-        "tools": ["npm"],
+        "tools": [
+          "npm"
+        ],
         "selfNotInstalled": true
       }
     },
@@ -33,7 +39,9 @@
       "mode": "execute",
       "command": "npm update -g yarn",
       "requires": {
-        "tools": ["npm"],
+        "tools": [
+          "npm"
+        ],
         "selfInstalled": true
       }
     },
@@ -47,12 +55,16 @@
       "mode": "execute",
       "command": "npm uninstall -g yarn",
       "requires": {
-        "tools": ["npm"],
+        "tools": [
+          "npm"
+        ],
         "selfInstalled": true
       }
     }
   ],
-  "dependencies": ["node"],
+  "dependencies": [
+    "node"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -60,6 +72,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }
