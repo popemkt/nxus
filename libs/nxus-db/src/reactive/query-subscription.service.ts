@@ -33,17 +33,16 @@ import {
   type DependencyTracker,
 } from './dependency-tracker.js'
 import { reactiveMetrics } from './metrics.js'
+import type { getDatabase } from '../client/master-client.js'
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /**
- * Database type - accepts any object with the required methods
- * This allows the service to work with any drizzle database instance
+ * Database type - matches the drizzle database instance returned by getDatabase()
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Database = any
+type Database = ReturnType<typeof getDatabase>
 
 /**
  * Callback for query result changes

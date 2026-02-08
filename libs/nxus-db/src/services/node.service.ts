@@ -31,7 +31,7 @@ export type {
 export { isSystemId } from '../schemas/node-schema.js'
 
 // Import types for use in this file
-import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
+import type { AssembledNode, PropertyValue, PropertyValueType, CreateNodeOptions } from '../types/node.js'
 
 // ============================================================================
 // System Node Cache (runtime cache for field/supertag lookups)
@@ -338,9 +338,9 @@ export function assembleNode(
     const fieldInfo = fieldCache.get(prop.fieldNodeId)
     const fieldName = fieldInfo?.content || prop.fieldNodeId
 
-    let parsedValue: unknown = prop.value
+    let parsedValue: PropertyValueType = prop.value as PropertyValueType
     try {
-      parsedValue = JSON.parse(prop.value || 'null')
+      parsedValue = JSON.parse(prop.value || 'null') as PropertyValueType
     } catch {
       // Keep as string
     }
@@ -429,7 +429,7 @@ export function assembleNodeWithInheritance(
         // Add inherited field with default value
         if (def.defaultValue !== undefined && def.defaultValue !== null) {
           const inheritedPv: PropertyValue = {
-            value: def.defaultValue,
+            value: def.defaultValue as PropertyValueType,
             rawValue: JSON.stringify(def.defaultValue),
             fieldNodeId: def.fieldNodeId,
             fieldName: def.fieldName,

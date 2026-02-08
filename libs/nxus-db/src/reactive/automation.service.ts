@@ -41,6 +41,7 @@ import type {
   QueryResultChangeEvent,
 } from './types.js'
 import {
+  AutomationDefinitionSchema,
   isQueryMembershipTrigger,
   isThresholdTrigger,
   isSetPropertyAction,
@@ -745,10 +746,19 @@ export function createAutomationService(
 
     let definition: AutomationDefinition
     try {
-      definition =
+      const raw =
         typeof definitionProp.value === 'string'
           ? JSON.parse(definitionProp.value)
           : definitionProp.value
+      const parsed = AutomationDefinitionSchema.safeParse(raw)
+      if (!parsed.success) {
+        console.error(
+          `[AutomationService] Invalid automation definition for ${automationId}:`,
+          parsed.error.message,
+        )
+        return null
+      }
+      definition = parsed.data
     } catch {
       console.error(
         `[AutomationService] Failed to parse automation definition for ${automationId}`,

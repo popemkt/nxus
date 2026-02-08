@@ -21,6 +21,7 @@ import {
   useGraphLocalGraph,
 } from '../../store'
 import { useLazyForceGraph } from './use-lazy-force-graph'
+import type { ForceGraph3DConstructor } from './lazy-loader'
 import { Graph3DLoading } from './Graph3DLoading'
 import { use3DGraph, type Graph3DNode, type Graph3DLink, type Graph3DData } from './use-3d-graph'
 import { EDGE_DIRECTION_COLORS } from './edge-renderer'
@@ -101,9 +102,8 @@ function convertToGraph3DLinks(graphEdges: GraphEdge[]): Graph3DLink[] {
 // ============================================================================
 
 interface Graph3DInnerProps extends Omit<Graph3DProps, 'className'> {
-  /** ForceGraph3D constructor from lazy loader - typed as any to avoid complex generic issues */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ForceGraph3D: any
+  /** ForceGraph3D constructor from lazy loader */
+  ForceGraph3D: ForceGraph3DConstructor<Graph3DNode, Graph3DLink>
 }
 
 function Graph3DInner({
@@ -309,7 +309,7 @@ export function Graph3D({ className, ...props }: Graph3DProps) {
     isError,
     error,
     load,
-  } = useLazyForceGraph({ autoLoad: true })
+  } = useLazyForceGraph<Graph3DNode, Graph3DLink>({ autoLoad: true })
 
   // Show loading state
   if (isLoading || (!ForceGraph3D && !isError)) {

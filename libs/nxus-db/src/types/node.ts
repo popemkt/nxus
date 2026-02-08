@@ -21,11 +21,22 @@ export interface AssembledNode {
 }
 
 /**
+ * The set of JSON-representable values a property can hold.
+ * Values are produced by JSON.parse() on the stored string.
+ */
+export type PropertyValueType =
+  | string
+  | number
+  | boolean
+  | null
+  | Record<string, unknown>
+  | unknown[]
+
+/**
  * A single property value attached to a node
  */
 export interface PropertyValue {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: any
+  value: PropertyValueType
   rawValue: string
   fieldNodeId: string
   fieldName: string

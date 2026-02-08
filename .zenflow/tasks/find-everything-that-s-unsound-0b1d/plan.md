@@ -178,7 +178,8 @@ Configure QueryClient retry/gcTime and surface calendar sync errors.
 
 **Verification:** Run existing E2E tests.
 
-### [ ] Step: Fix type safety issues (D1, D2, D3, D4, D5, D6)
+### [x] Step: Fix type safety issues (D1, D2, D3, D4, D5, D6)
+<!-- chat-id: bd7cb755-17b1-4ab5-bc76-b90dafae8c29 -->
 
 Remove `any` types from core data paths and add proper validation.
 
