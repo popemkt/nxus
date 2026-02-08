@@ -150,7 +150,8 @@ Add `errorComponent` to all 4 root routes.
 
 **Verification:** Run existing E2E tests.
 
-### [ ] Step: Fix error handling gaps (C2, C3, C4, C5, C6, C8, C9)
+### [x] Step: Fix error handling gaps (C2, C3, C4, C5, C6, C8, C9)
+<!-- chat-id: 75c51fa6-1bfa-4fac-89bb-3cbeb0cc3dfb -->
 
 Fix silent errors, empty catch blocks, and missing cleanup handlers.
 

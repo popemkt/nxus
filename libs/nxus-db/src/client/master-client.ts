@@ -144,13 +144,12 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   // Migrate existing item_commands table if columns are missing
   try {
     masterDb.exec('ALTER TABLE item_commands ADD COLUMN workflow TEXT')
-  } catch (e) {
-    // Column already exists, ignore
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (!message.includes('duplicate column') && !message.includes('already exists')) {
+      throw e
+    }
   }
-  try {
-    // SQLite doesn't support DROP NOT NULL easily, but we can try to re-create or just ignore if it's already nullable
-    // For now, adding workflow is more important. If command NOT NULL is an issue, we'll see it in seed.
-  } catch (e) {}
 
   // Tag configuration tables
   masterDb.exec(`
