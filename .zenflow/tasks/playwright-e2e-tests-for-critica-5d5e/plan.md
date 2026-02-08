@@ -158,7 +158,8 @@ Implement all Workbench tests across 4 spec files.
 
 **Verification:** `pnpm e2e e2e/workbench/` passes
 
-### [ ] Step: Calendar App E2E Tests — Views & Navigation (CA1-CA3)
+### [x] Step: Calendar App E2E Tests — Views & Navigation (CA1-CA3)
+<!-- chat-id: 3ae2360f-53c0-4fdf-a0c1-9eeca9dfbfd6 -->
 
 Implement calendar display, navigation, and view switching tests.
 
