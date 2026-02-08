@@ -210,7 +210,8 @@ Fix hardcoded values, trailing slash inconsistencies, unbounded growth, and othe
 
 **Verification:** Run existing E2E tests. Verify workbench and calendar asset loading.
 
-### [ ] Step: Fix reactive system reliability (F1, F2, F3, F4)
+### [x] Step: Fix reactive system reliability (F1, F2, F3, F4)
+<!-- chat-id: e96f8654-8e01-49d0-bfb6-332c06e4a33b -->
 
 Fix subscription leak detection, stale DB references, and concurrency guards.
 

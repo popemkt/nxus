@@ -246,7 +246,7 @@ export function createWebhookQueue(config: Partial<WebhookQueueConfig> = {}): We
   const fullConfig: WebhookQueueConfig = { ...DEFAULT_CONFIG, ...config }
   const jobs = new Map<string, WebhookJob>()
   let processingInterval: ReturnType<typeof setInterval> | null = null
-  let isCurrentlyProcessing = false
+  let processingPromise: Promise<number> | null = null
 
   // Allow custom fetch for testing
   let fetchFn: typeof fetch = globalThis.fetch
@@ -399,38 +399,43 @@ export function createWebhookQueue(config: Partial<WebhookQueueConfig> = {}): We
     },
 
     async processQueue(): Promise<number> {
-      if (isCurrentlyProcessing) {
-        return 0 // Prevent concurrent processing
+      // If already processing, share the same promise so concurrent callers
+      // await the same run instead of silently returning 0
+      if (processingPromise) {
+        return processingPromise
       }
 
-      isCurrentlyProcessing = true
-      let processedCount = 0
+      processingPromise = (async () => {
+        let processedCount = 0
 
-      try {
-        const pendingJobs = Array.from(jobs.values()).filter(
-          (job) => job.status === 'pending',
-        )
+        try {
+          const pendingJobs = Array.from(jobs.values()).filter(
+            (job) => job.status === 'pending',
+          )
 
-        for (const job of pendingJobs) {
-          await processJob(job)
-          processedCount++
-        }
-
-        // Clean up completed/failed jobs older than 1 hour
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-        for (const [id, job] of jobs) {
-          if (
-            (job.status === 'completed' || job.status === 'failed') &&
-            job.createdAt < oneHourAgo
-          ) {
-            jobs.delete(id)
+          for (const job of pendingJobs) {
+            await processJob(job)
+            processedCount++
           }
-        }
-      } finally {
-        isCurrentlyProcessing = false
-      }
 
-      return processedCount
+          // Clean up completed/failed jobs older than 1 hour
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+          for (const [id, job] of jobs) {
+            if (
+              (job.status === 'completed' || job.status === 'failed') &&
+              job.createdAt < oneHourAgo
+            ) {
+              jobs.delete(id)
+            }
+          }
+        } finally {
+          processingPromise = null
+        }
+
+        return processedCount
+      })()
+
+      return processingPromise
     },
 
     getPendingJobs(): WebhookJob[] {

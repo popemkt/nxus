@@ -628,7 +628,7 @@ export function createAutomationService(
 
     // Subscribe to the query
     const handle = queryService.subscribe(
-      db,
+      () => db,
       trigger.queryDefinition,
       (event) => {
         handleQueryResultChange(db, automation, event)

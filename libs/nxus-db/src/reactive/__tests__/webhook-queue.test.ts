@@ -926,9 +926,11 @@ describe('WebhookQueue', () => {
         queue.processQueue(),
       ])
 
-      // Only one should have processed (due to isCurrentlyProcessing guard)
-      const totalProcessed = count1 + count2 + count3
-      expect(totalProcessed).toBe(1)
+      // All concurrent callers share the same processing run and get the same result
+      expect(count1).toBe(1)
+      expect(count2).toBe(1)
+      expect(count3).toBe(1)
+      // But fetch is only called once (no duplicate processing)
       expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 

@@ -356,7 +356,7 @@ export const subscribeToQueryServerFn = createServerFn({ method: 'POST' })
     // Note: The callback here is a placeholder - in a real implementation,
     // you'd want to notify clients via WebSocket, SSE, or polling
     const handle = querySubscriptionService.subscribe(
-      db,
+      () => db,
       queryDefinition,
       (_event: QueryResultChangeEvent) => {
         // For now, we just track the subscription server-side

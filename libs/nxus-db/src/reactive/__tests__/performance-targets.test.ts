@@ -259,7 +259,7 @@ function createDiverseSubscriptions(count: number): void {
         break
     }
 
-    service.subscribe(db, queryDefinition, () => {})
+    service.subscribe(() => db, queryDefinition, () => {})
   }
 }
 
