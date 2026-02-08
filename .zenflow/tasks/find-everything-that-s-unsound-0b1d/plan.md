@@ -223,7 +223,8 @@ Fix subscription leak detection, stale DB references, and concurrency guards.
 
 **Verification:** Run `pnpm test:libs` — the reactive system has 11 test files that must pass. Pay special attention to `event-bus.test.ts`, `query-subscription.test.ts`, and `webhook-queue.test.ts`.
 
-### [ ] Step: Fix E2E test reliability (H1, H2, H3)
+### [x] Step: Fix E2E test reliability (H1, H2, H3)
+<!-- chat-id: 59796637-e34f-4d71-8bf8-34af04e0a59b -->
 
 Make E2E tests independent and less flaky.
 

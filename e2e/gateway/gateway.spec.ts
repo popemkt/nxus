@@ -29,21 +29,21 @@ test.describe('Gateway Landing Page', () => {
   test('G2 — Navigation to nXus Core', async ({ page }) => {
     await page.locator(`a[href="${APP_URLS.core}"]`).click()
     await page.waitForURL(`**${APP_URLS.core}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     await expect(page.locator('body')).not.toBeEmpty()
   })
 
   test('G2 — Navigation to nXus Workbench', async ({ page }) => {
     await page.locator(`a[href="${APP_URLS.workbench}"]`).click()
     await page.waitForURL(`**${APP_URLS.workbench}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     await expect(page.locator('body')).not.toBeEmpty()
   })
 
   test('G2 — Navigation to nXus Calendar', async ({ page }) => {
     await page.locator(`a[href="${APP_URLS.calendar}"]`).click()
     await page.waitForURL(`**${APP_URLS.calendar}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     await expect(page.locator('body')).not.toBeEmpty()
   })
 })

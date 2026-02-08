@@ -16,7 +16,7 @@ test.describe('Core App Detail Page', () => {
 
     // Wait for detail page to load
     await page.waitForURL(`**${href}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Verify app detail page loads with a title heading
     await expect(page.locator('h1')).toBeVisible()
@@ -31,7 +31,7 @@ test.describe('Core App Detail Page', () => {
     await expect(appLinks.first()).toBeVisible({ timeout: 15000 })
 
     await appLinks.first().click()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Verify main heading (app name)
     const heading = page.locator('h1')
@@ -58,7 +58,7 @@ test.describe('Core App Detail Page', () => {
     // Verify Back to Gallery button works
     await page.getByText('Back to Gallery').click()
     // Wait for URL to change back to gallery (may be /core or /core/)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     expect(page.url()).toMatch(/\/core\/?$/)
   })
 })

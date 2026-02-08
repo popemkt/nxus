@@ -3,12 +3,12 @@ import { test, expect } from '../fixtures/base.fixture.js'
 test.describe('Core Settings Page', () => {
   test('C9 — Navigate to Settings and verify layout', async ({ page }) => {
     await page.goto('/core')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Click Settings link in HUD
     await page.getByRole('link', { name: 'Settings' }).click()
     await page.waitForURL('**/core/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Verify Settings heading
     await expect(
@@ -46,7 +46,7 @@ test.describe('Core Settings Page', () => {
 
   test('C10 — Theme toggle between light and dark', async ({ page }) => {
     await page.goto('/core/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Wait for General section to load (default active section)
     await expect(page.getByText('Appearance')).toBeVisible()
