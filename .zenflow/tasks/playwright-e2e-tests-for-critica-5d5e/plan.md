@@ -128,7 +128,8 @@ Implement all Core app tests across 5 spec files.
 
 **Verification:** `pnpm e2e e2e/core/` passes
 
-### [ ] Step: Workbench App E2E Tests (W1-W8)
+### [x] Step: Workbench App E2E Tests (W1-W8)
+<!-- chat-id: b595f910-0f69-441f-a9bf-5273e6bdeadf -->
 
 Implement all Workbench tests across 4 spec files.
 
