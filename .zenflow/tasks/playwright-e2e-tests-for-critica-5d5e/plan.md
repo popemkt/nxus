@@ -197,7 +197,8 @@ Implement event create, read, update, delete tests as a serial sequence.
 
 **Verification:** `pnpm e2e e2e/calendar/event-crud.spec.ts` passes
 
-### [ ] Step: Calendar App E2E Tests — Tasks & Recurrence (CA8-CA10)
+### [x] Step: Calendar App E2E Tests — Tasks & Recurrence (CA8-CA10)
+<!-- chat-id: f4dc11de-c893-4293-b395-6d1df5cdc508 -->
 
 Implement task management and recurring event tests.
 
