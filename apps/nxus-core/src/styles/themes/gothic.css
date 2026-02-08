@@ -31,11 +31,11 @@
   --input: oklch(0.92 0.02 300);
   --ring: oklch(0.4 0.18 350);
 
-  --border-width: 2px;
-  --radius: 10px;
-  --radius-card: 18px;
-  --radius-panel: 24px;
-  --radius-button: 12px;
+  /* Subtle scoop — small radii keep concave corners from clipping content */
+  --radius: 4px;
+  --radius-card: 6px;
+  --radius-panel: 8px;
+  --radius-button: 5px;
   --corner-shape: scoop;
 
   --chart-1: oklch(0.4 0.18 350);
@@ -83,11 +83,11 @@
   --input: oklch(0.14 0.04 290);
   --ring: oklch(0.55 0.22 350);
 
-  --border-width: 2px;
-  --radius: 10px;
-  --radius-card: 18px;
-  --radius-panel: 24px;
-  --radius-button: 12px;
+  /* Subtle scoop — small radii keep concave corners from clipping content */
+  --radius: 4px;
+  --radius-card: 6px;
+  --radius-panel: 8px;
+  --radius-button: 5px;
   --corner-shape: scoop;
 
   --chart-1: oklch(0.55 0.22 350);
