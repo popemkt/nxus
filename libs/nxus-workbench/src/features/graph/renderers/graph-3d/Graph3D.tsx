@@ -129,6 +129,8 @@ function Graph3DInner({
   }, [data.nodes])
 
   // Convert GraphData to 3d-force-graph format
+  // Note: selectedNodeId is NOT a dependency here — changing selection should not
+  // rebuild graph data (which resets the simulation). isHighlighted is updated in-place below.
   const graph3DData = useMemo((): Graph3DData => {
     const nodes = convertToGraph3DNodes(
       data.nodes,
@@ -138,7 +140,7 @@ function Graph3DInner({
     const links = convertToGraph3DLinks(data.edges)
 
     return { nodes, links }
-  }, [data.nodes, data.edges, display.nodeSize, selectedNodeId])
+  }, [data.nodes, data.edges, display.nodeSize])
 
   // Node click handler
   const handleNodeClick = useCallback(
@@ -184,7 +186,7 @@ function Graph3DInner({
   const {
     containerRef,
     setGraphData,
-    focusOnNode,
+    refreshStyles,
     isPaused,
     pauseSimulation,
     resumeSimulation,
@@ -198,17 +200,18 @@ function Graph3DInner({
     onNodeHover: handleNodeHover,
   })
 
-  // Update graph data when it changes
+  // Update graph data when it changes (structural changes only)
   useEffect(() => {
     setGraphData(graph3DData)
   }, [graph3DData, setGraphData])
 
-  // Focus on selected node when it changes
+  // Update isHighlighted in-place when selection changes (no simulation reset)
   useEffect(() => {
-    if (selectedNodeId) {
-      focusOnNode(selectedNodeId)
+    for (const node of graph3DData.nodes) {
+      node.isHighlighted = node.id === (selectedNodeId ?? null)
     }
-  }, [selectedNodeId, focusOnNode])
+    refreshStyles()
+  }, [selectedNodeId, graph3DData.nodes, refreshStyles])
 
   return (
     <div className="relative h-full w-full">

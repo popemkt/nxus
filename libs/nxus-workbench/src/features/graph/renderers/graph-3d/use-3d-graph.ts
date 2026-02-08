@@ -132,6 +132,8 @@ export interface Use3DGraphResult {
   resumeSimulation: () => void
   /** Reheat the simulation (restart with high energy) */
   reheatSimulation: () => void
+  /** Refresh node/link visual styles without resetting positions */
+  refreshStyles: () => void
   /** Whether the simulation is currently paused */
   isPaused: boolean
 }
@@ -401,6 +403,15 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
     graph.d3ReheatSimulation()
   }, [])
 
+  // Refresh node/link visual styles without resetting positions or simulation
+  const refreshStyles = useCallback(() => {
+    const graph = graphRef.current
+    if (!graph) return
+
+    // Re-trigger accessor evaluation (pattern from 3d-force-graph docs)
+    graph.nodeColor(graph.nodeColor())
+  }, [])
+
   return {
     containerRef: containerRef as React.RefObject<HTMLDivElement>,
     graphInstance: graphRef.current,
@@ -410,6 +421,7 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
     resumeSimulation,
     reheatSimulation,
     resetCamera,
+    refreshStyles,
     isPaused,
   }
 }
