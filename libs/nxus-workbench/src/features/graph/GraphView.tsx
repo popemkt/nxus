@@ -239,7 +239,7 @@ export function GraphView({
   }
 
   return (
-    <div className={`relative h-full w-full ${className ?? ''}`}>
+    <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
       {/* Graph Renderer */}
       {is3D ? (
         <Graph3D

@@ -214,11 +214,11 @@ function Graph3DInner({
   }, [selectedNodeId, graph3DData.nodes, refreshStyles])
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden">
       {/* 3D Graph Container */}
       <div
         ref={containerRef}
-        className="h-full w-full bg-background"
+        className="h-full w-full bg-background overflow-hidden"
         style={{ touchAction: 'none' }}
       />
 
@@ -334,7 +334,7 @@ export function Graph3D({ className, ...props }: Graph3DProps) {
 
   // Render 3D graph
   return (
-    <div className={className} style={{ width: '100%', height: '100%' }}>
+    <div className={className} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
       <Graph3DInner {...props} ForceGraph3D={ForceGraph3D!} />
     </div>
   )

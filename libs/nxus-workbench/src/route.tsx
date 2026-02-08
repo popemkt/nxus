@@ -229,7 +229,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
 
       {/* Graph View - full width with overlay inspector */}
       {viewMode === 'graph' && (
-        <div className="flex-1 h-full relative">
+        <div className="flex-1 h-full relative min-w-0 overflow-hidden">
           <GraphView
             nodes={nodes}
             isLoading={nodesLoading}
