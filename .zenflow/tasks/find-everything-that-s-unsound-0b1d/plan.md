@@ -194,7 +194,8 @@ Remove `any` types from core data paths and add proper validation.
 
 **Verification:** Run `npx tsc --noEmit` (or equivalent Nx typecheck target) across affected projects. Run `pnpm test:libs`.
 
-### [ ] Step: Fix architecture and configuration issues (E1, E2, E3, E5, E6, E7)
+### [x] Step: Fix architecture and configuration issues (E1, E2, E3, E5, E6, E7)
+<!-- chat-id: 4d9daa43-1865-489d-b7bd-47de32990e51 -->
 
 Fix hardcoded values, trailing slash inconsistencies, unbounded growth, and other config issues.
 
