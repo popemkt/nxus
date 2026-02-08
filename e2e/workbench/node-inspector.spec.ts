@@ -33,8 +33,8 @@ test.describe('Workbench Node Inspector', () => {
       page.getByText('Select a node to inspect')
     ).toBeHidden({ timeout: 5000 })
 
-    // Inspector panel is the right side panel with w-[480px]
-    const inspector = page.locator('.w-\\[480px\\]')
+    // Inspector panel
+    const inspector = page.getByTestId('node-inspector-panel')
 
     // Verify inspector has section headers (Properties, Supertags, etc.)
     await expect(
@@ -57,8 +57,8 @@ test.describe('Workbench Node Inspector', () => {
       return
     }
 
-    // Inspector panel is the right side panel with w-[480px]
-    const inspector = page.locator('.w-\\[480px\\]')
+    // Inspector panel
+    const inspector = page.getByTestId('node-inspector-panel')
 
     // System nodes can't be edited. We need to find a non-system node.
     // First, wait for supertags to load in the sidebar, then filter to a
@@ -92,7 +92,6 @@ test.describe('Workbench Node Inspector', () => {
 
       // Click this supertag to filter
       await allSupertagBtns.nth(i).click()
-      await page.waitForTimeout(500)
 
       // Check if any nodes appeared
       const nodeItem = page.locator('.ml-5 button').first()
@@ -102,7 +101,6 @@ test.describe('Workbench Node Inspector', () => {
 
       // Click the first node
       await nodeItem.click()
-      await page.waitForTimeout(300)
 
       // Check if inspector loaded and the node title is an h2
       const titleHeading = inspector.locator('h2').first()

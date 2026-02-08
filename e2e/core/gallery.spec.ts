@@ -44,35 +44,24 @@ test.describe('Core Gallery Page', () => {
       return
     }
 
-    // Get the name of the first card to use as search query
-    const firstCardText = await viewDetailsLinks.first()
-      .locator('..').locator('..').textContent()
+    // Get the name of the first card to use as search query.
+    // Each card has an h3 heading with the app name.
+    const firstCardHeading = page.locator('h3').first()
+    const firstCardText = await firstCardHeading.textContent()
 
     // Type a partial match — use first few characters to filter
     const searchQuery = firstCardText?.trim().slice(0, 4) || 'test'
     await searchInput.fill(searchQuery)
 
-    // Wait for filtering to take effect
-    await page.waitForTimeout(300)
-
-    // After filtering, the count should be different from initial or same
-    // (if all match). The key is that filtering doesn't crash.
-    const filteredCount = await viewDetailsLinks.count()
-    expect(filteredCount).toBeGreaterThanOrEqual(0)
-
     // Type a nonsense query to verify filtering shows no results
     await searchInput.fill('zzznonexistentapp999')
-    await page.waitForTimeout(300)
 
-    const noResultsCount = await viewDetailsLinks.count()
-    if (noResultsCount === 0) {
-      // "No apps found" message should appear
-      await expect(page.getByText('No apps found')).toBeVisible()
-    }
+    // "No apps found" message should appear
+    await expect(page.getByText('No apps found')).toBeVisible({ timeout: 5000 })
 
     // Clear search → all cards return
     await searchInput.clear()
-    await page.waitForTimeout(300)
+    await expect(viewDetailsLinks.first()).toBeVisible({ timeout: 5000 })
 
     const restoredCount = await viewDetailsLinks.count()
     expect(restoredCount).toBe(initialCount)

@@ -145,7 +145,7 @@ test.describe.serial('Calendar Event CRUD (CA4-CA7)', () => {
     ).toBeVisible()
 
     // Close the modal by clicking the close button (X)
-    await page.locator('[class*="sr-only"]').filter({ hasText: 'Close' }).locator('..').click()
+    await page.getByRole('button', { name: 'Close' }).click()
   })
 
   test('CA6 — Edit event', async ({ page }) => {
@@ -188,7 +188,7 @@ test.describe.serial('Calendar Event CRUD (CA4-CA7)', () => {
 
     // Close the modal — the selectedEvent prop in the parent may still hold
     // stale data until the query refetch completes, so verify on the calendar instead
-    await page.locator('[class*="sr-only"]').filter({ hasText: 'Close' }).locator('..').click()
+    await page.getByRole('button', { name: 'Close' }).click()
 
     // Wait for any refetch to complete
     await waitForCalendarReady(page)

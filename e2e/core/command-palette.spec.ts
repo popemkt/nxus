@@ -41,26 +41,17 @@ test.describe('Core Command Palette', () => {
     const paletteInput = page.getByPlaceholder('Search commands...')
     await expect(paletteInput).toBeVisible({ timeout: 5000 })
 
-    // Wait for command list to populate
-    await page.waitForTimeout(500)
-
     // Type a nonsense query that shouldn't match any commands
     await paletteInput.fill('zzznonexistent999')
-    await page.waitForTimeout(300)
 
     // Should show "No commands found"
-    await expect(page.getByText('No commands found')).toBeVisible()
+    await expect(page.getByText('No commands found')).toBeVisible({ timeout: 5000 })
 
-    // Clear and type a real query
-    await paletteInput.fill('')
-    await page.waitForTimeout(300)
-
-    // Type something that should match (e.g. "thumbnail" for generate thumbnail)
+    // Clear and type a real query (e.g. "thumbnail" for generate thumbnail)
     await paletteInput.fill('thumbnail')
-    await page.waitForTimeout(300)
 
     // "No commands found" should NOT be visible when there's a match
-    await expect(page.getByText('No commands found')).toBeHidden()
+    await expect(page.getByText('No commands found')).toBeHidden({ timeout: 5000 })
 
     // Close palette
     await page.keyboard.press('Escape')

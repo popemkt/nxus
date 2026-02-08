@@ -157,9 +157,7 @@ test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
 
     // Close the modal — the modal event state may not refresh immediately
     // after the mutation, so we verify completion on the calendar instead.
-    // Wait a moment for the API call to complete before closing.
-    await page.waitForTimeout(1000)
-    await page.locator('[class*="sr-only"]').filter({ hasText: 'Close' }).locator('..').click()
+    await page.getByRole('button', { name: 'Close' }).click()
 
     // Wait for the calendar to refetch and update
     await waitForCalendarReady(page)
