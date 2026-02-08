@@ -98,7 +98,8 @@ Wrap multi-step database operations in transactions using `better-sqlite3` synch
 
 **Verification:** Run `pnpm test:libs`. Unit tests for node.service.ts already exist.
 
-### [ ] Step: Fix optimistic updates and soft-delete cleanup (B2, B7)
+### [x] Step: Fix optimistic updates and soft-delete cleanup (B2, B7)
+<!-- chat-id: 11f10695-0725-4e38-b365-ea12840dba84 -->
 
 Add rollback logic for optimistic updates and handle orphaned properties from soft-deleted nodes.
 

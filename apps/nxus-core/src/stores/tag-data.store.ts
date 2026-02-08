@@ -75,7 +75,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
       }
     } catch (error) {
       console.error('[TagDataStore] Failed to initialize:', error)
-      set({ isLoading: false, isInitialized: true })
+      set({ isLoading: false })
     }
   },
 
@@ -140,6 +140,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
       updatedAt: now,
     }
 
+    // Optimistic update
     const newTags = new Map(get().tags)
     newTags.set(id, updated)
     set({ tags: newTags })
@@ -149,11 +150,18 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
       await updateTagServerFn({ data: { id, ...updates } })
     } catch (err) {
       console.error('[TagDataStore] SQLite sync failed:', err)
+      // Rollback optimistic update
+      const rollbackTags = new Map(get().tags)
+      rollbackTags.set(id, existing)
+      set({ tags: rollbackTags })
     }
   },
 
   // Delete a tag (optionally cascade to children)
   deleteTag: async (id: number, cascade = false) => {
+    // Capture previous state for rollback
+    const previousTags = new Map(get().tags)
+
     const newTags = new Map(get().tags)
     const tag = get().tags.get(id)
 
@@ -184,6 +192,8 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
       await deleteTagServerFn({ data: { id, cascade } })
     } catch (err) {
       console.error('[TagDataStore] SQLite delete failed:', err)
+      // Rollback optimistic update
+      set({ tags: previousTags })
     }
   },
 

@@ -7,7 +7,7 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
 import {
@@ -290,7 +290,7 @@ export function assembleNode(
   nodeId: string,
 ): AssembledNode | null {
   const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
-  if (!node) return null
+  if (!node || node.deletedAt) return null
 
   const props = db
     .select()
@@ -785,7 +785,8 @@ export function getNodeIdsBySupertagWithInheritance(
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   if (!supertagField) return []
 
-  const nodeIds: string[] = []
+  // Collect candidate node IDs from supertag properties
+  const candidateIds = new Set<string>()
   for (const stId of allSupertagIds) {
     const withSupertag = db
       .select()
@@ -801,11 +802,19 @@ export function getNodeIdsBySupertagWithInheritance(
       })
 
     for (const p of withSupertag) {
-      if (!nodeIds.includes(p.nodeId)) nodeIds.push(p.nodeId)
+      candidateIds.add(p.nodeId)
     }
   }
 
-  return nodeIds
+  // Filter out soft-deleted nodes
+  const nonDeletedNodes = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(isNull(nodes.deletedAt))
+    .all()
+  const nonDeletedIds = new Set(nonDeletedNodes.map((n) => n.id))
+
+  return Array.from(candidateIds).filter((id) => nonDeletedIds.has(id))
 }
 
 /**
@@ -1204,9 +1213,18 @@ export function getNodeIdsBySupertags(
     nodeSupertags.get(prop.nodeId)!.add(supertagId)
   }
 
-  // Filter nodes based on matchAll flag
+  // Get non-deleted node IDs for filtering
+  const nonDeletedNodes = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(isNull(nodes.deletedAt))
+    .all()
+  const nonDeletedIds = new Set(nonDeletedNodes.map((n) => n.id))
+
+  // Filter nodes based on matchAll flag, excluding soft-deleted nodes
   const matchingNodeIds: string[] = []
   for (const [nodeId, tags] of nodeSupertags) {
+    if (!nonDeletedIds.has(nodeId)) continue
     if (matchAll) {
       if (supertagNodeIds.every((stId) => tags.has(stId))) {
         matchingNodeIds.push(nodeId)
