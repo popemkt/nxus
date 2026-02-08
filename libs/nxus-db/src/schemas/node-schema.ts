@@ -32,6 +32,7 @@ export const nodes = sqliteTable(
     index('idx_nodes_system_id').on(t.systemId),
     index('idx_nodes_owner_id').on(t.ownerId),
     index('idx_nodes_content_plain').on(t.contentPlain),
+    index('idx_nodes_deleted_at').on(t.deletedAt),
   ],
 )
 

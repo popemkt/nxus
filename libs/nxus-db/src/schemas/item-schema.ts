@@ -58,8 +58,12 @@ export type NewTag = typeof tags.$inferInsert
 export const itemTags = sqliteTable(
   'item_tags',
   {
-    appId: text('app_id').notNull(),
-    tagId: integer('tag_id').notNull(),
+    appId: text('app_id')
+      .notNull()
+      .references(() => items.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => [primaryKey({ columns: [table.appId, table.tagId] })],
 )
@@ -139,7 +143,9 @@ export type DbCommandMode =
  */
 export const itemCommands = sqliteTable('item_commands', {
   id: text('id').primaryKey(), // Format: "{appId}:{commandId}"
-  appId: text('app_id').notNull(),
+  appId: text('app_id')
+    .notNull()
+    .references(() => items.id, { onDelete: 'cascade' }),
   commandId: text('command_id').notNull(), // Local ID within app
   name: text('name').notNull(),
   description: text('description'),
@@ -202,8 +208,12 @@ export type NewTagSchema = typeof tagSchemas.$inferInsert
  * Stores the actual values an app provides for a configurable tag.
  */
 export const itemTagConfigs = sqliteTable('item_tag_configs', {
-  appId: text('app_id').notNull(),
-  tagId: integer('tag_id').notNull(), // References tags.id
+  appId: text('app_id')
+    .notNull()
+    .references(() => items.id, { onDelete: 'cascade' }),
+  tagId: integer('tag_id')
+    .notNull()
+    .references(() => tags.id, { onDelete: 'cascade' }),
   configValues: json<Record<string, unknown>>()('config_values').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())

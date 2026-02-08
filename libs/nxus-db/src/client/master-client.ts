@@ -55,6 +55,9 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   // Enable WAL mode for better concurrency
   masterDb.pragma('journal_mode = WAL')
 
+  // Enable foreign key enforcement (off by default in SQLite)
+  masterDb.pragma('foreign_keys = ON')
+
   masterDrizzleDb = drizzle(masterDb, { schema })
 
   // Create tables if they don't exist
@@ -229,6 +232,10 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   masterDb.exec(`
     CREATE INDEX IF NOT EXISTS idx_nodes_content_plain ON nodes(content_plain)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_nodes_deleted_at ON nodes(deleted_at)
   `)
 
   masterDb.exec(`

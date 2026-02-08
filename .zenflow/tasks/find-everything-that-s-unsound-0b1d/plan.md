@@ -125,7 +125,8 @@ Fix token refresh race condition, duplicate event creation, and date handling is
 
 **Verification:** Run `pnpm test:libs` (calendar lib has 5 test files including `date-utils.test.ts`).
 
-### [ ] Step: Add foreign key constraints and missing index (B6, E4)
+### [x] Step: Add foreign key constraints and missing index (B6, E4)
+<!-- chat-id: af009cb1-b83b-4b9e-8407-fb154ef4c426 -->
 
 Add FK constraints to junction tables and missing index on `deletedAt`.
 
