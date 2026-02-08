@@ -177,7 +177,8 @@ Implement calendar display, navigation, and view switching tests.
 
 **Verification:** `pnpm e2e e2e/calendar/calendar-view.spec.ts` passes
 
-### [ ] Step: Calendar App E2E Tests — Event CRUD (CA4-CA7)
+### [x] Step: Calendar App E2E Tests — Event CRUD (CA4-CA7)
+<!-- chat-id: 0bca0b75-cfe5-4cda-a740-01a9aafa1a90 -->
 
 Implement event create, read, update, delete tests as a serial sequence.
 
