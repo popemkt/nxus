@@ -33,6 +33,7 @@
 
   /* Bold borders for anime feel */
   --border-width: 2px;
+  --corner-shape: squircle;
 
   --chart-1: oklch(0.6 0.28 340);
   --chart-2: oklch(0.7 0.22 200);
@@ -81,6 +82,7 @@
 
   /* Bold borders for anime feel */
   --border-width: 2px;
+  --corner-shape: squircle;
 
   --chart-1: oklch(0.7 0.3 340);
   --chart-2: oklch(0.75 0.25 200);
