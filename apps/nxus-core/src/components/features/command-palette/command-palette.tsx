@@ -439,7 +439,7 @@ export function CommandPalette() {
             selectCommand({ source: 'generic', id: cmd.id, command: cmd })
           } else {
             close()
-            cmd.execute()
+            cmd.execute(undefined, undefined, { navigate: (to) => navigate({ to }) })
           }
         } else {
           // App command
@@ -567,7 +567,7 @@ export function CommandPalette() {
     const { executeGenericCommandById } = await import(
       '@/lib/command-execution'
     )
-    await executeGenericCommandById(selectedCommand.command.id, appId)
+    await executeGenericCommandById(selectedCommand.command.id, { navigate: (to) => navigate({ to }) }, appId)
   }
 
   // Handle action panel action execution
@@ -737,7 +737,7 @@ export function CommandPalette() {
                                 })
                               } else {
                                 close()
-                                cmd.execute()
+                                cmd.execute(undefined, undefined, { navigate: (to) => navigate({ to }) })
                               }
                             }}
                             className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md text-left ${
