@@ -16,7 +16,7 @@
  * - Bidirectional focus synchronization between views
  */
 
-import { Cube } from '@phosphor-icons/react'
+import { Cube, X } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -64,6 +64,9 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [supertagFilter, setSupertagFilter] = useState<string | null>(null)
+
+  // Inspector panel visibility for graph view (overlay mode)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
 
   // Graph store for local graph focus synchronization
   const { localGraph, setLocalGraph } = useGraphStore()
@@ -144,6 +147,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
   const handleGraphNodeClick = useCallback(
     (nodeId: string) => {
       setSelectedNodeId(nodeId)
+      setInspectorOpen(true)
 
       // Update local graph focus when clicking in graph
       if (localGraph.enabled) {
@@ -160,6 +164,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
   const handleGraphNodeDoubleClick = useCallback(
     (nodeId: string) => {
       setSelectedNodeId(nodeId)
+      setInspectorOpen(true)
 
       // Always update focus on double-click (enables "drill down" behavior)
       if (localGraph.enabled) {
@@ -175,6 +180,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
    */
   const handleGraphBackgroundClick = useCallback(() => {
     setSelectedNodeId(null)
+    setInspectorOpen(false)
   }, [])
 
   /**
@@ -221,9 +227,9 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
         </>
       )}
 
-      {/* Graph View */}
+      {/* Graph View - full width with overlay inspector */}
       {viewMode === 'graph' && (
-        <div className="flex-1 h-full">
+        <div className="flex-1 h-full relative">
           <GraphView
             nodes={nodes}
             isLoading={nodesLoading}
@@ -232,6 +238,25 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onNodeDoubleClick={handleGraphNodeDoubleClick}
             onBackgroundClick={handleGraphBackgroundClick}
           />
+
+          {/* Overlay Node Inspector */}
+          {inspectorOpen && selectedNode && (
+            <div
+              className="absolute top-0 right-0 h-full w-[480px] border-l border-border flex flex-col bg-card/95 backdrop-blur-sm z-20 shadow-xl"
+              data-testid="node-inspector-panel"
+            >
+              <div className="flex items-center justify-end px-2 pt-2">
+                <button
+                  onClick={() => setInspectorOpen(false)}
+                  className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Close inspector"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <NodeInspector node={selectedNode} onNavigate={(nodeId) => { setSelectedNodeId(nodeId); setInspectorOpen(true); }} />
+            </div>
+          )}
         </div>
       )}
 
@@ -243,26 +268,26 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
         />
       )}
 
-      {/* Right Panel - Node Inspector (visible in all views) */}
-      <div className="w-[480px] border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
-        {selectedNode ? (
-          <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <Cube className="size-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Select a node to inspect</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                {viewMode === 'list'
-                  ? 'Use ↑↓ to navigate, Enter to select'
-                  : viewMode === 'graph'
-                    ? 'Click a node in the graph to select'
+      {/* Right Panel - Node Inspector (visible in list and query views) */}
+      {viewMode !== 'graph' && (
+        <div className="w-[480px] border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
+          {selectedNode ? (
+            <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Cube className="size-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Select a node to inspect</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  {viewMode === 'list'
+                    ? 'Use ↑↓ to navigate, Enter to select'
                     : 'Add filters and select a result'}
-              </p>
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

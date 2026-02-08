@@ -35,3 +35,8 @@ Implement the task directly based on the task description.
 4. Perform basic manual verification if applicable
 
 Save a brief summary of what was done to `{@artifacts_path}/report.md` if significant changes were made.
+
+### [x] Step: Tweak graph view
+<!-- chat-id: 30c03885-823f-4e5c-a02d-bbb1d97541af -->
+
+in workbench, now can we make the node inspection panel closable. And in the graph view of both the 2d and 3d graph will take up the whole space, with the inspection panel on top of the graph, so that when i click a node, the graph's viewport (or dimensions aren't resized). and i can close the panel whenever i want. This will also unify the dimension behavior of both 2d and 3d graphs, as they're now different (3d takes a lot of space and seems to not have inspection panel on click, 2d have panel always)
