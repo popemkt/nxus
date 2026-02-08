@@ -137,7 +137,8 @@ Add FK constraints to junction tables and missing index on `deletedAt`.
 
 **Verification:** Run `pnpm test:libs`. Verify database initialization still works.
 
-### [ ] Step: Add root error boundaries to all apps (C1)
+### [x] Step: Add root error boundaries to all apps (C1)
+<!-- chat-id: b4105b0e-ddea-4541-932c-311665762bbb -->
 
 Add `errorComponent` to all 4 root routes.
 
