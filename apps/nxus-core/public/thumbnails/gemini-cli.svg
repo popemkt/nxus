@@ -1,18 +1,46 @@
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
-  <!--
-  Description: SVG image for Gemini CLI app.
-  Style: Modern vibrant colors, simple iconic design.
-  Aspect Ratio: 800x450.
-  No text labels.
-  "Make it pop" implies dynamic and engaging visual elements.
+  <defs>
+    <linearGradient id="geminiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe" />
+      <stop offset="50%" stop-color="#c471ed" />
+      <stop offset="100%" stop-color="#f64f59" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
 
-  This is a placeholder. A graphical tool would be needed to create the actual visual representation.
-  -->
-  <rect width="800" height="450" fill="#22C55E"/>
-  <circle cx="200" cy="225" r="80" fill="#FACC15"/>
-  <circle cx="400" cy="225" r="80" fill="#EF4444"/>
-  <circle cx="600" cy="225" r="80" fill="#3B82F6"/>
-  <path d="M150 225 L250 175 L250 275 Z" fill="#FFFFFF"/>
-  <path d="M350 225 L450 175 L450 275 Z" fill="#FFFFFF"/>
-  <path d="M550 225 L650 175 L650 275 Z" fill="#FFFFFF"/>
+  <!-- Background -->
+  <rect width="800" height="450" fill="#0f172a" />
+
+  <!-- Centered Group -->
+  <g transform="translate(400, 225)">
+    <!-- Terminal Prompt ">" -->
+    <!-- Positioned to the left -->
+    <path d="M -130 -80 L -50 0 L -130 80"
+          stroke="white"
+          stroke-width="24"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+          opacity="0.9"/>
+
+    <!-- AI Sparkle Icon -->
+    <!-- Positioned to the right, replacing the cursor -->
+    <path d="M 60 -95
+             Q 60 0 155 0
+             Q 60 0 60 95
+             Q 60 0 -35 0
+             Q 60 0 60 -95 Z"
+          fill="url(#geminiGrad)"
+          filter="url(#glow)" />
+
+    <!-- Smaller secondary sparkles for detail -->
+    <circle cx="140" cy="-60" r="10" fill="white" opacity="0.6" filter="url(#glow)" />
+    <circle cx="10" cy="80" r="6" fill="white" opacity="0.4" filter="url(#glow)" />
+  </g>
 </svg>
