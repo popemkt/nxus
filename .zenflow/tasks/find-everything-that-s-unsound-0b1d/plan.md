@@ -46,7 +46,8 @@ Verified all 67 issues against the actual codebase. Key findings during verifica
 - 25 existing unit test files across libs must continue to pass
 - All 4 root routes confirmed missing `errorComponent`
 
-### [ ] Step: Fix command injection vulnerabilities (A1, A2)
+### [x] Step: Fix command injection vulnerabilities (A1, A2)
+<!-- chat-id: a0e55779-9c69-44e2-b6a5-0c4aca799d2f -->
 
 Fix shell command injection in git clone and platform commands.
 
