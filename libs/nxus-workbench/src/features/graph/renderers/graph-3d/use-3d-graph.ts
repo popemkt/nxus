@@ -146,13 +146,19 @@ const DEFAULT_FOCUS_DISTANCE = 200
 /** Default camera position */
 const DEFAULT_CAMERA_POSITION = { x: 0, y: 0, z: 500 }
 
-/** Convert a hex color to rgba string with given opacity */
+/** Convert a hex color to rgba string with given opacity (cached to avoid per-frame alloc) */
+const rgbaCache = new Map<string, string>()
 function hexToRgba(hex: string, opacity: number): string {
+  const key = hex + opacity
+  let result = rgbaCache.get(key)
+  if (result) return result
   const clean = hex.replace('#', '')
   const r = parseInt(clean.substring(0, 2), 16)
   const g = parseInt(clean.substring(2, 4), 16)
   const b = parseInt(clean.substring(4, 6), 16)
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`
+  result = `rgba(${r}, ${g}, ${b}, ${opacity})`
+  rgbaCache.set(key, result)
+  return result
 }
 
 // ============================================================================
