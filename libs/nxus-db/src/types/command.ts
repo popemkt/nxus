@@ -24,6 +24,26 @@ import type { CommandRequirement, CommandParam } from './command-params.js'
 export type GenericCommandTarget = 'item' | 'instance' | 'none'
 
 // ============================================================================
+// Generic Command Context
+// ============================================================================
+
+/**
+ * Context bag passed to generic command execute functions.
+ * Provides UI capabilities (navigate, etc.) via dependency injection.
+ */
+export interface GenericCommandContext {
+  /** Navigate to a route path (basepath-aware via TanStack Router) */
+  navigate: (to: string) => void
+  /** Resolved requirement selections from the params modal */
+  requirements?: Record<
+    string,
+    { appId: string; value: Record<string, unknown> }
+  >
+  /** Resolved parameter values from the params modal */
+  params?: Record<string, string | number | boolean>
+}
+
+// ============================================================================
 // Generic Command Definition
 // ============================================================================
 
@@ -48,15 +68,9 @@ export interface GenericCommand {
   params?: CommandParam[]
   /** Execute the command */
   execute: (
-    targetId?: string,
-    targetPath?: string,
-    context?: {
-      requirements?: Record<
-        string,
-        { appId: string; value: Record<string, unknown> }
-      >
-      params?: Record<string, string | number | boolean>
-    },
+    targetId: string | undefined,
+    targetPath: string | undefined,
+    context: GenericCommandContext,
   ) => void | Promise<void>
 }
 

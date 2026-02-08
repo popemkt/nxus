@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   ArrowLeftIcon,
@@ -225,11 +225,12 @@ function DetailThumbnail({
  * (requirements, params, execute logic) is defined in ONE place (registry.ts)
  */
 function GenerateThumbnailButton({ appId }: { appId: string }) {
+  const navigate = useNavigate()
   const handleClick = async () => {
     const { executeGenericCommandById } = await import(
       '@/lib/command-execution'
     )
-    await executeGenericCommandById('generate-thumbnail', appId)
+    await executeGenericCommandById('generate-thumbnail', { navigate: (to) => navigate({ to }) }, appId)
   }
 
   return (

@@ -34,8 +34,8 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Settings',
     icon: 'Gear',
     target: 'none',
-    execute: () => {
-      window.location.href = '/settings'
+    execute: (_targetId, _targetPath, context) => {
+      context.navigate('/settings')
     },
   },
   {
@@ -43,8 +43,8 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Go to Inbox',
     icon: 'Tray',
     target: 'none',
-    execute: () => {
-      window.location.href = '/inbox'
+    execute: (_targetId, _targetPath, context) => {
+      context.navigate('/inbox')
     },
   },
   {
@@ -52,7 +52,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Add to Inbox',
     icon: 'Plus',
     target: 'none',
-    execute: async () => {
+    execute: async (_targetId, _targetPath, _context) => {
       const { inboxModalService } = await import('@/stores/inbox-modal.store')
       inboxModalService.open()
     },
@@ -62,8 +62,8 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Go to App',
     icon: 'ArrowSquareOut',
     target: 'item',
-    execute: (appId) => {
-      window.location.href = `/apps/${appId}`
+    execute: (appId, _targetPath, context) => {
+      context.navigate(`/apps/${appId}`)
     },
   },
   {
@@ -91,8 +91,8 @@ export const genericCommands: Array<GenericCommand> = [
     execute: async (appId, _targetPath, context) => {
       if (!appId) return
 
-      const provider = context?.requirements?.provider
-      const additionalPrompt = context?.params?.additionalPrompt as
+      const provider = context.requirements?.provider
+      const additionalPrompt = context.params?.additionalPrompt as
         | string
         | undefined
 
@@ -155,7 +155,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Edit Manifest',
     icon: 'PencilSimple',
     target: 'item',
-    execute: async (appId) => {
+    execute: async (appId, _targetPath, _context) => {
       if (!appId) return
       const paths = await getAppManifestPathServerFn({ data: { appId } })
       await openPathServerFn({ data: { path: paths.manifestPath } })
@@ -166,7 +166,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Edit Docs',
     icon: 'BookOpen',
     target: 'item',
-    execute: async (appId) => {
+    execute: async (appId, _targetPath, _context) => {
       if (!appId) return
       const paths = await getAppManifestPathServerFn({ data: { appId } })
       if (paths.docsPath) {
@@ -180,7 +180,7 @@ export const genericCommands: Array<GenericCommand> = [
     icon: 'Plus',
     target: 'item',
     targetFilter: (app) => app.types?.includes('remote-repo') ?? false,
-    execute: async (appId) => {
+    execute: async (appId, _targetPath, _context) => {
       if (!appId) return
       // Import dynamically to avoid circular deps
       const { installModalService } = await import(
@@ -201,7 +201,7 @@ export const genericCommands: Array<GenericCommand> = [
     icon: 'FolderPlus',
     target: 'item',
     targetFilter: (app) => app.types?.includes('remote-repo') ?? false,
-    execute: async (appId) => {
+    execute: async (appId, _targetPath, _context) => {
       if (!appId) return
       const { openFolderPickerServerFn } = await import(
         '@/services/shell/folder-picker.server'
@@ -226,7 +226,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Open in File Explorer',
     icon: 'FolderOpen',
     target: 'instance',
-    execute: (_appId, instancePath) => {
+    execute: (_appId, instancePath, _context) => {
       if (instancePath) {
         // Will be handled by the palette executor
       }
@@ -237,7 +237,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'Open Terminal Here',
     icon: 'Terminal',
     target: 'instance',
-    execute: (_appId, instancePath) => {
+    execute: (_appId, instancePath, _context) => {
       if (instancePath) {
         // Will be handled by the palette executor
       }
@@ -249,7 +249,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'DB: Bootstrap System Nodes',
     icon: 'CircuitBoard',
     target: 'none',
-    execute: async () => {
+    execute: async (_targetId, _targetPath, _context) => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
@@ -272,7 +272,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'DB: Sync JSON → Database (includes Bootstrap)',
     icon: 'ArrowDown',
     target: 'none',
-    execute: async () => {
+    execute: async (_targetId, _targetPath, _context) => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
@@ -295,7 +295,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'DB: Sync Database → JSON',
     icon: 'ArrowUp',
     target: 'none',
-    execute: async () => {
+    execute: async (_targetId, _targetPath, _context) => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
@@ -318,7 +318,7 @@ export const genericCommands: Array<GenericCommand> = [
     name: 'DB: Migrate Manifests (One-time)',
     icon: 'Database',
     target: 'none',
-    execute: async () => {
+    execute: async (_targetId, _targetPath, _context) => {
       const { getPackageRootServerFn } = await import(
         '@/services/db/db-actions.server'
       )
