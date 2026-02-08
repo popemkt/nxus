@@ -111,7 +111,8 @@ Add rollback logic for optimistic updates and handle orphaned properties from so
 
 **Verification:** Run `pnpm test:libs`.
 
-### [ ] Step: Fix Google Calendar sync issues (B4, B5, G1, G2, G3)
+### [x] Step: Fix Google Calendar sync issues (B4, B5, G1, G2, G3)
+<!-- chat-id: 60713575-f1ac-46ec-9a5e-6f8ae4db8cea -->
 
 Fix token refresh race condition, duplicate event creation, and date handling issues.
 

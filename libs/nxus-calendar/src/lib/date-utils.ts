@@ -132,14 +132,40 @@ export function getPreviousPeriodDate(view: CalendarView, currentDate: Date): Da
 // ============================================================================
 
 /**
- * Convert a local date to UTC ISO string for storage
+ * TIMEZONE CONVENTION:
+ *
+ * This codebase stores dates as ISO 8601 strings with local timezone offsets
+ * (e.g., "2026-02-08T10:00:00-05:00") via `formatISO`. The `parseISO` function
+ * correctly interprets these offsets when reading them back, producing the
+ * correct absolute point in time regardless of the reader's timezone.
+ *
+ * This is a local-first application — all data is stored on the user's machine.
+ * There is no multi-user / multi-timezone scenario for the local database.
+ * If multi-timezone support is needed in the future, consider storing UTC
+ * timestamps (e.g., using `date.toISOString()` which always uses Z/+00:00)
+ * and converting to local time at display time.
+ *
+ * For Google Calendar sync, timed events include an explicit `timeZone` field
+ * from `Intl.DateTimeFormat().resolvedOptions().timeZone`, ensuring Google
+ * interprets the times correctly.
+ */
+
+/**
+ * Convert a local date to an ISO string for storage.
+ *
+ * Note: `formatISO` produces a string with the local timezone offset
+ * (e.g., "2026-02-08T10:00:00-05:00"), NOT a UTC "Z" timestamp.
+ * See the timezone convention note above.
  */
 export function toUTC(date: Date): string {
   return formatISO(date, { representation: 'complete' })
 }
 
 /**
- * Parse a UTC ISO string to local Date object
+ * Parse an ISO date string back to a Date object.
+ *
+ * `parseISO` correctly handles both offset strings (from `toUTC`/`formatISO`)
+ * and UTC "Z" strings, converting to the correct absolute time.
  */
 export function fromUTC(isoString: string): Date {
   const parsed = parseISO(isoString)

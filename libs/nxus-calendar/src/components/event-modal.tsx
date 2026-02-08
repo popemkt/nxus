@@ -104,17 +104,24 @@ function toTimeString(date: Date): string {
 }
 
 /**
- * Combine date string and time string to a Date object
+ * Combine date string and time string to a Date object.
+ * Validates date components to reject obviously invalid values
+ * (e.g., month 13, day 45) that JavaScript's Date would silently overflow.
  */
 function combineDateAndTime(dateStr: string, timeStr: string): Date {
   const parts = dateStr.split('-').map(Number)
   const timeParts = timeStr.split(':').map(Number)
   const year = parts[0] ?? 0
-  const month = (parts[1] ?? 1) - 1
+  const month = (parts[1] ?? 1)
   const day = parts[2] ?? 1
   const hours = timeParts[0] ?? 0
   const minutes = timeParts[1] ?? 0
-  const date = new Date(year, month, day, hours, minutes)
+
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    throw new Error(`Invalid date/time values: ${dateStr} ${timeStr}`)
+  }
+
+  const date = new Date(year, month - 1, day, hours, minutes)
   return date
 }
 
@@ -325,14 +332,19 @@ export function EventModal({
 
     // Validate end date/time is after start
     if (!formData.allDay) {
-      const start = combineDateAndTime(formData.startDate, formData.startTime)
-      const end = combineDateAndTime(
-        formData.endDate || formData.startDate,
-        formData.endTime || formData.startTime
-      )
+      try {
+        const start = combineDateAndTime(formData.startDate, formData.startTime)
+        const end = combineDateAndTime(
+          formData.endDate || formData.startDate,
+          formData.endTime || formData.startTime
+        )
 
-      if (end <= start) {
-        setError('End time must be after start time')
+        if (end <= start) {
+          setError('End time must be after start time')
+          return false
+        }
+      } catch {
+        setError('Invalid date or time values')
         return false
       }
     }
