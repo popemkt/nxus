@@ -165,7 +165,8 @@ Fix silent errors, empty catch blocks, and missing cleanup handlers.
 
 **Verification:** Run `pnpm test:libs`.
 
-### [ ] Step: Add QueryClient defaults and calendar sync feedback (C7, C11)
+### [x] Step: Add QueryClient defaults and calendar sync feedback (C7, C11)
+<!-- chat-id: 5cbb042a-6dcd-4c99-9aa2-3e8a75e0fa51 -->
 
 Configure QueryClient retry/gcTime and surface calendar sync errors.
 

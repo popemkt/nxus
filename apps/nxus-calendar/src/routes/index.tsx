@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { CalendarRoute } from '@nxus/calendar'
 // Import Google sync hook from server entry to avoid bundling googleapis on client
@@ -9,6 +10,8 @@ export const Route = createFileRoute('/')({
 })
 
 function CalendarPage() {
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null)
+
   // Google Calendar sync integration
   const {
     isConnected,
@@ -17,9 +20,11 @@ function CalendarPage() {
     connect,
   } = useGoogleCalendarSync({
     onSyncSuccess: (result) => {
+      setSyncErrorMessage(null)
       console.log('Sync completed:', result.syncedCount, 'events synced')
     },
     onSyncError: (error) => {
+      setSyncErrorMessage(error.message)
       console.error('Sync failed:', error.message)
     },
   })
@@ -49,6 +54,7 @@ function CalendarPage() {
         isGoogleConnected={isConnected}
         isSyncing={isSyncing}
         onSyncClick={handleSyncClick}
+        syncError={syncErrorMessage}
       />
     </div>
   )

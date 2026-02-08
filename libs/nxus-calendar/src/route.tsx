@@ -14,10 +14,16 @@
  * - Settings initialization
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { cn } from '@nxus/ui'
-import { ArrowLeftIcon, CalendarIcon, PlusIcon } from '@phosphor-icons/react'
+import {
+  ArrowLeftIcon,
+  CalendarIcon,
+  PlusIcon,
+  WarningIcon,
+  XIcon,
+} from '@phosphor-icons/react'
 import { Button } from '@nxus/ui'
 
 // Calendar components
@@ -84,6 +90,9 @@ export interface CalendarRouteProps {
   /** Whether a sync is in progress */
   isSyncing?: boolean
 
+  /** Error from Google Calendar sync to display as a banner */
+  syncError?: string | null
+
   /** Whether to use the built-in create event modal (default: true if onCreateEvent not provided) */
   useBuiltInModal?: boolean
 
@@ -130,6 +139,7 @@ export function CalendarRoute({
   onSyncClick,
   isGoogleConnected = false,
   isSyncing = false,
+  syncError,
   useBuiltInModal,
   useBuiltInEventModal,
   useBuiltInSettings,
@@ -148,6 +158,18 @@ export function CalendarRoute({
 
   // State for the built-in settings modal
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  // State for dismissing sync error banner
+  const [dismissedSyncError, setDismissedSyncError] = useState<string | null>(
+    null
+  )
+
+  // Reset dismissed state when a new error appears
+  useEffect(() => {
+    if (syncError && syncError !== dismissedSyncError) {
+      setDismissedSyncError(null)
+    }
+  }, [syncError, dismissedSyncError])
 
   // Determine if we should use the built-in modal
   const shouldUseBuiltInModal = useBuiltInModal ?? !onCreateEvent
@@ -439,6 +461,23 @@ export function CalendarRoute({
             </Button>
           )}
         </div>
+
+        {/* Sync error banner */}
+        {syncError && dismissedSyncError !== syncError && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <WarningIcon className="size-4 shrink-0" />
+            <span className="flex-1">
+              Google Calendar sync failed: {syncError}
+            </span>
+            <button
+              onClick={() => setDismissedSyncError(syncError)}
+              className="shrink-0 rounded p-0.5 hover:bg-destructive/20 transition-colors"
+              aria-label="Dismiss sync error"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Calendar content wrapped in error boundary */}
         <CalendarErrorBoundary onRetry={() => refetch()}>

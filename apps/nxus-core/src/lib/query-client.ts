@@ -11,6 +11,10 @@ export const queryClient = new QueryClient({
     queries: {
       // Default stale time of 1 minute (less aggressive than before)
       staleTime: 60 * 1000,
+      // Retry failed queries up to 2 times before surfacing the error
+      retry: 2,
+      // Keep unused query data in cache for 5 minutes
+      gcTime: 5 * 60 * 1000,
     },
   },
 })
