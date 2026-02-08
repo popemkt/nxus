@@ -32,7 +32,7 @@ See also: [Package Architecture](./package-architecture.md) for the overall pack
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                       RUNTIME (Node-based SQLite)                        │
 ├─────────────────────────────────────────────────────────────────────────┤
-│   @nxus/db (packages/nxus-db)                                            │
+│   @nxus/db (libs/nxus-db)                                                │
 │   ├── nodes             ← All entities as nodes                          │
 │   ├── nodeProperties    ← Properties as field-value pairs                │
 │   └── System schema:                                                     │

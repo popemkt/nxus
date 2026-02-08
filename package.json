@@ -2,7 +2,15 @@
   "name": "@nxus/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run-many --target=dev --projects=@nxus/gateway,@nxus/core-app,@nxus/workbench-app,@nxus/calendar-app --parallel=4",
+    "dev:gateway": "nx run @nxus/gateway:dev",
+    "dev:core": "nx run @nxus/core-app:dev",
+    "dev:workbench": "nx run @nxus/workbench-app:dev",
+    "dev:calendar": "nx run @nxus/calendar-app:dev",
+    "test": "nx run-many --target=test --all",
+    "test:libs": "nx run-many --target=test --projects=@nxus/db,@nxus/workbench,@nxus/calendar,@nxus/ui"
+  },
   "private": true,
   "dependencies": {
     "zod": "^4.2.1"

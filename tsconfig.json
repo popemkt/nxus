@@ -4,16 +4,16 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/nxus-ui"
+      "path": "./libs/nxus-ui"
     },
     {
-      "path": "./packages/nxus-workbench"
+      "path": "./libs/nxus-workbench"
     },
     {
-      "path": "./packages/nxus-db"
+      "path": "./libs/nxus-db"
     },
     {
-      "path": "./packages/nxus-calendar"
+      "path": "./libs/nxus-calendar"
     }
   ]
 }

@@ -1,0 +1,233 @@
+{
+  "id": "_nxus-dev",
+  "name": "Nxus Development",
+  "description": "Database and development utilities for Nxus",
+  "type": "tool",
+  "path": ".",
+  "platform": ["linux", "macos", "windows"],
+  "checkCommand": "echo true",
+  "commands": [
+    {
+      "id": "bootstrap",
+      "name": "Bootstrap Nodes",
+      "description": "Create system schema (supertags, fields). Run once after DB reset.",
+      "icon": "Gear",
+      "category": "Node",
+      "target": "item",
+      "mode": "execute",
+      "command": "npx tsx scripts/bootstrap-nodes.ts",
+      "cwd": "apps/nxus-core"
+    },
+    {
+      "id": "seed-nodes",
+      "name": "Seed Node Database",
+      "description": "Seed all data: items, commands, tags, inbox",
+      "icon": "Database",
+      "category": "Node",
+      "target": "item",
+      "mode": "execute",
+      "command": "npx tsx scripts/db-seed-nodes.ts",
+      "cwd": "apps/nxus-core"
+    },
+    {
+      "id": "seed-legacy",
+      "name": "Seed Legacy Database",
+      "description": "Seed items table from manifests (for table mode)",
+      "icon": "Database",
+      "category": "Table",
+      "target": "item",
+      "mode": "execute",
+      "command": "npx tsx scripts/db-seed.ts",
+      "cwd": "apps/nxus-core"
+    },
+    {
+      "id": "export",
+      "name": "Export Database",
+      "description": "Export DB changes back to manifest.json files",
+      "icon": "Export",
+      "category": "Maintenance",
+      "target": "item",
+      "mode": "execute",
+      "command": "npx tsx scripts/db-export.ts",
+      "cwd": "apps/nxus-core"
+    },
+    {
+      "id": "reset-nodes",
+      "name": "Reset Node DB",
+      "description": "Wipe node tables and re-seed everything",
+      "icon": "ArrowsClockwise",
+      "category": "Node",
+      "target": "item",
+      "mode": "execute",
+      "command": "sqlite3 src/data/nxus.db 'DELETE FROM node_properties; DELETE FROM nodes;' && npx tsx scripts/bootstrap-nodes.ts && npx tsx scripts/db-seed-nodes.ts",
+      "cwd": "apps/nxus-core"
+    },
+    {
+      "id": "inspect",
+      "name": "Inspect Node",
+      "description": "View details of a specific node",
+      "icon": "MagnifyingGlass",
+      "category": "Debug",
+      "target": "item",
+      "mode": "script",
+      "command": "inspect-node.ps1"
+    },
+    {
+      "id": "full-db-setup",
+      "name": "Full Database Setup",
+      "description": "Bootstrap and seed the database in sequence",
+      "icon": "FlowArrow",
+      "category": "Automation",
+      "target": "item",
+      "mode": "workflow",
+      "workflow": {
+        "steps": [
+          {
+            "id": "start",
+            "type": "command",
+            "ref": "bootstrap",
+            "onSuccess": "seed",
+            "onFailure": "error-handler"
+          },
+          {
+            "id": "seed",
+            "type": "command",
+            "ref": "seed-nodes",
+            "onSuccess": "done"
+          },
+          {
+            "id": "error-handler",
+            "type": "notify",
+            "message": "Setup failed!",
+            "level": "error"
+          },
+          {
+            "id": "done",
+            "type": "notify",
+            "message": "Database setup complete!",
+            "level": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "workflow-demo",
+      "name": "Workflow Demo (All Step Types)",
+      "description": "Demonstrates all workflow step types for testing graph visualization",
+      "icon": "TreeStructure",
+      "category": "Demo",
+      "target": "item",
+      "mode": "workflow",
+      "workflow": {
+        "description": "A comprehensive workflow demonstrating all step types",
+        "steps": [
+          {
+            "id": "check-env",
+            "type": "condition",
+            "expression": "env.NODE_ENV",
+            "branches": {
+              "production": "prod-path",
+              "development": "dev-path",
+              "default": "ask-user"
+            }
+          },
+          {
+            "id": "prod-path",
+            "type": "notify",
+            "message": "Running in production mode",
+            "level": "warning",
+            "next": "parallel-tasks"
+          },
+          {
+            "id": "dev-path",
+            "type": "notify",
+            "message": "Running in development mode",
+            "level": "info",
+            "next": "parallel-tasks"
+          },
+          {
+            "id": "ask-user",
+            "type": "prompt",
+            "message": "Select environment:",
+            "variable": "selectedEnv",
+            "options": ["production", "development", "test"],
+            "next": "parallel-tasks"
+          },
+          {
+            "id": "parallel-tasks",
+            "type": "parallel",
+            "steps": ["task-a", "task-b"],
+            "onComplete": "wait-step"
+          },
+          {
+            "id": "task-a",
+            "type": "command",
+            "ref": "bootstrap",
+            "onSuccess": "end-success",
+            "onFailure": "end-failure"
+          },
+          {
+            "id": "task-b",
+            "type": "command",
+            "ref": "seed-nodes",
+            "onSuccess": "end-success",
+            "onFailure": "end-failure"
+          },
+          {
+            "id": "wait-step",
+            "type": "delay",
+            "duration": 1000,
+            "next": "final-notify"
+          },
+          {
+            "id": "final-notify",
+            "type": "notify",
+            "message": "Workflow completed successfully!",
+            "level": "success",
+            "next": "end-success"
+          },
+          {
+            "id": "end-success",
+            "type": "end",
+            "status": "success"
+          },
+          {
+            "id": "end-failure",
+            "type": "end",
+            "status": "failure"
+          }
+        ]
+      }
+    }
+  ],
+  "docs": [
+    {
+      "id": "node-workflow",
+      "title": "Node Workflow",
+      "file": "node-workflow.md",
+      "icon": "Hexagon"
+    },
+    {
+      "id": "table-workflow",
+      "title": "Table Workflow",
+      "file": "table-workflow.md",
+      "icon": "Table"
+    },
+    {
+      "id": "graph-workflow",
+      "title": "Graph Workflow",
+      "file": "graph-workflow.md",
+      "icon": "Graph"
+    }
+  ],
+  "dependencies": ["nodejs"],
+  "metadata": {
+    "tags": [],
+    "category": "development-tools",
+    "createdAt": "2026-01-21T00:00:00Z",
+    "updatedAt": "2026-01-21T00:00:00Z",
+    "version": "1.0.0",
+    "author": "nxus"
+  },
+  "status": "not-installed"
+}
