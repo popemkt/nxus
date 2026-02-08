@@ -117,7 +117,7 @@ export interface UseGoogleSyncResult {
 }
 
 export interface UseGoogleConnectResult {
-  /** Start OAuth flow - returns URL to redirect to */
+  /** Start OAuth flow - returns URL to redirect to. Generates and stores a CSRF state token in localStorage. */
   getAuthUrl: () => Promise<string | null>
 
   /** Complete OAuth flow with authorization code */
@@ -321,8 +321,13 @@ export function useGoogleConnect(): UseGoogleConnectResult {
   // Get auth URL mutation
   const authUrlMutation = useMutation({
     mutationFn: async () => {
-      const result = await getGoogleAuthUrlServerFn()
+      // Generate CSRF state token and store in localStorage for validation on callback
+      const state = crypto.randomUUID()
+      localStorage.setItem('oauth_state', state)
+
+      const result = await getGoogleAuthUrlServerFn({ data: { state } })
       if (!result.success) {
+        localStorage.removeItem('oauth_state')
         throw new Error(result.error ?? 'Failed to get auth URL')
       }
       return result.url ?? null

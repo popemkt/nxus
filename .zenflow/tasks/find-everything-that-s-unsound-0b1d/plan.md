@@ -72,7 +72,8 @@ Fix path traversal in script resolver and proxy security issues in gateway.
 
 **Verification:** Run existing E2E tests. Manually test gateway proxy routing.
 
-### [ ] Step: Fix OAuth callback issues (A6, A7, C10)
+### [x] Step: Fix OAuth callback issues (A6, A7, C10)
+<!-- chat-id: 4b96d944-7b00-4a47-9af6-df324226f441 -->
 
 Fix CSRF validation, "Try Again" behavior, and useEffect cleanup in OAuth callback.
 
