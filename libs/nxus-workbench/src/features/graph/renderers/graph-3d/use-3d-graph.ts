@@ -318,11 +318,49 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
     })
     resizeObserver.observe(container)
 
-    // Cleanup
+    // Cleanup — 3d-force-graph has no public destroy(), so we manually tear down
     return () => {
       resizeObserver.disconnect()
-      // Note: 3d-force-graph doesn't have a destroy method,
-      // but removing the container element should clean up
+
+      // Stop the render loop and d3-force simulation
+      graph.pauseAnimation()
+
+      // Dispose the Three.js WebGL renderer to free GPU memory
+      try {
+        const renderer = graph.renderer()
+        renderer.dispose()
+        renderer.forceContextLoss()
+        renderer.domElement.remove()
+      } catch {
+        // renderer may not be initialized if cleanup runs early
+      }
+
+      // Dispose scene objects (geometries, materials, textures)
+      try {
+        const scene = graph.scene()
+        scene.traverse((obj: { geometry?: { dispose: () => void }; material?: { dispose: () => void } | Array<{ dispose: () => void }> }) => {
+          if (obj.geometry) obj.geometry.dispose()
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((m) => m.dispose())
+            } else {
+              obj.material.dispose()
+            }
+          }
+        })
+        scene.clear()
+      } catch {
+        // scene may not be initialized
+      }
+
+      // Clear graph data to release node/link references
+      graph.graphData({ nodes: [], links: [] })
+
+      // Remove any remaining DOM children the graph appended
+      while (container.firstChild) {
+        container.removeChild(container.firstChild)
+      }
+
       graphRef.current = null
     }
   }, [ForceGraph3D])
