@@ -14,6 +14,12 @@ import { useState } from 'react'
 
 import { useGraphStore, useGraphFilter } from '../store'
 
+/** Edge direction colors (shared between 2D and 3D renderers) */
+const EDGE_DIRECTION_COLORS = {
+  outgoing: '#14b8a6', // Teal-500
+  incoming: '#8b5cf6', // Violet-500
+}
+
 export interface GraphLegendProps {
   /** Map of supertag ID to color hex */
   supertagColors: Map<string, string>
@@ -138,7 +144,27 @@ export function GraphLegend({
 
       {/* Content */}
       {!collapsed && (
-        <div className="px-2 pb-2 space-y-0.5">
+        <div className="px-2 pb-2">
+          {/* Edge directions */}
+          <div className="flex items-center gap-3 px-2 py-1.5 mb-1">
+            <div className="flex items-center gap-1.5">
+              <span
+                className="h-2 w-3 rounded-full"
+                style={{ backgroundColor: EDGE_DIRECTION_COLORS.outgoing }}
+              />
+              <span className="text-[10px] text-muted-foreground">Outgoing</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="h-2 w-3 rounded-full"
+                style={{ backgroundColor: EDGE_DIRECTION_COLORS.incoming }}
+              />
+              <span className="text-[10px] text-muted-foreground">Incoming</span>
+            </div>
+          </div>
+
+          {/* Supertag colors */}
+          <div className="space-y-0.5">
           {supertagIds.map((id) => (
             <LegendItem
               key={id}
@@ -167,6 +193,7 @@ export function GraphLegend({
               Clear all filters
             </button>
           )}
+          </div>
         </div>
       )}
     </div>

@@ -23,7 +23,6 @@ import {
 import { useLazyForceGraph } from './use-lazy-force-graph'
 import { Graph3DLoading } from './Graph3DLoading'
 import { use3DGraph, type Graph3DNode, type Graph3DLink, type Graph3DData } from './use-3d-graph'
-import { EDGE_DIRECTION_COLORS } from './edge-renderer'
 
 // ============================================================================
 // Types
@@ -222,14 +221,12 @@ function Graph3DInner({
         style={{ touchAction: 'none' }}
       />
 
-      {/* Stats panel */}
-      <div className="absolute bottom-4 left-4 text-xs text-muted-foreground">
-        {data.stats.totalNodes} nodes · {data.stats.totalEdges} edges
-        {data.stats.orphanCount > 0 && ` · ${data.stats.orphanCount} orphans`}
-      </div>
-
-      {/* Simulation controls */}
-      <div className="absolute bottom-4 right-4 flex gap-2">
+      {/* Bottom bar: stats + simulation controls */}
+      <div className="absolute bottom-4 left-4 flex items-center gap-3">
+        <span className="text-xs text-muted-foreground">
+          {data.stats.totalNodes} nodes · {data.stats.totalEdges} edges
+          {data.stats.orphanCount > 0 && ` · ${data.stats.orphanCount} orphans`}
+        </span>
         <button
           onClick={isPaused ? resumeSimulation : pauseSimulation}
           className="rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium shadow-sm ring-1 ring-border transition-colors hover:bg-muted"
@@ -241,7 +238,7 @@ function Graph3DInner({
 
       {/* Hovered node tooltip */}
       {hoveredNodeId && (
-        <div className="absolute left-4 top-4 max-w-xs rounded-md bg-background/90 px-3 py-2 shadow-lg ring-1 ring-border backdrop-blur">
+        <div className="absolute left-4 top-16 max-w-xs rounded-md bg-background/90 px-3 py-2 shadow-lg ring-1 ring-border backdrop-blur z-10">
           <p className="text-sm font-medium">{nodeMap.get(hoveredNodeId)?.label}</p>
           {nodeMap.get(hoveredNodeId)?.supertag && (
             <p
@@ -256,24 +253,6 @@ function Graph3DInner({
           </p>
         </div>
       )}
-
-      {/* Direction legend */}
-      <div className="absolute right-4 top-4 flex flex-col gap-1 rounded-md bg-background/80 px-3 py-2 text-xs shadow-sm ring-1 ring-border">
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2 w-4 rounded-full"
-            style={{ backgroundColor: EDGE_DIRECTION_COLORS.outgoing }}
-          />
-          <span className="text-muted-foreground">Outgoing →</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2 w-4 rounded-full"
-            style={{ backgroundColor: EDGE_DIRECTION_COLORS.incoming }}
-          />
-          <span className="text-muted-foreground">Incoming ←</span>
-        </div>
-      </div>
     </div>
   )
 }
