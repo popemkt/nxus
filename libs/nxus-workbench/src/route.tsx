@@ -263,9 +263,10 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
           {/* Overlay Node Inspector */}
           {inspectorOpen && selectedNode && (
             <div className="absolute top-0 right-0 h-full flex z-20">
-              <ResizeHandle side="next" minSize={300} maxSize={800} defaultSize={layout.graphInspector} onResize={(s) => setPanelSize('graphInspector', s)} />
+              <ResizeHandle side="next" minSize={300} maxSize={800} onResize={(s) => setPanelSize('graphInspector', s)} />
               <div
                 className="w-[480px] h-full border-l border-border flex flex-col bg-card/95 backdrop-blur-sm shadow-xl"
+                style={layout.graphInspector ? { width: layout.graphInspector } : undefined}
                 data-testid="node-inspector-panel"
               >
                 <div className="flex items-center justify-end px-2 pt-2">
