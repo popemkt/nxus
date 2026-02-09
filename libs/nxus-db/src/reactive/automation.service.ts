@@ -41,6 +41,7 @@ import type {
   QueryResultChangeEvent,
 } from './types.js'
 import {
+  AutomationDefinitionSchema,
   isQueryMembershipTrigger,
   isThresholdTrigger,
   isSetPropertyAction,
@@ -108,6 +109,11 @@ const AUTOMATION_SUPERTAG = SYSTEM_SUPERTAGS.AUTOMATION
 type Database = ReturnType<typeof getDatabase>
 
 /**
+ * Maximum consecutive failures before logging at error level
+ */
+const MAX_CONSECUTIVE_FAILURES = 3
+
+/**
  * Runtime automation tracking
  */
 interface ActiveAutomation {
@@ -118,6 +124,7 @@ interface ActiveAutomation {
   computedFieldUnsubscribe: (() => void) | null
   thresholdCrossed: boolean // Track if threshold is currently crossed (for fireOnce)
   previousValue: number | null // Track previous value for crossing detection
+  consecutiveFailures: number // Track consecutive action execution failures
 }
 
 /**
@@ -263,6 +270,8 @@ export function createAutomationService(
     // Increment depth for nested executions
     currentExecutionDepth = context.depth + 1
 
+    const activeAutomation = activeAutomations.get(automationId)
+
     try {
       if (isSetPropertyAction(action)) {
         let value = action.value
@@ -297,11 +306,32 @@ export function createAutomationService(
         })
       }
       // Future: create_node action
+
+      // Reset consecutive failure counter on success
+      if (activeAutomation) {
+        activeAutomation.consecutiveFailures = 0
+      }
     } catch (error) {
-      console.error(
-        `[AutomationService] Error executing action for automation ${automationId} on node ${targetNodeId}:`,
-        error,
-      )
+      // Track consecutive failures
+      if (activeAutomation) {
+        activeAutomation.consecutiveFailures++
+        if (activeAutomation.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          console.error(
+            `[AutomationService] REPEATED FAILURE: Automation "${automationName || automationId}" has failed ${activeAutomation.consecutiveFailures} consecutive times. Last error:`,
+            error,
+          )
+        } else {
+          console.error(
+            `[AutomationService] Error executing action for automation ${automationId} on node ${targetNodeId} (failure ${activeAutomation.consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`,
+            error,
+          )
+        }
+      } else {
+        console.error(
+          `[AutomationService] Error executing action for automation ${automationId} on node ${targetNodeId}:`,
+          error,
+        )
+      }
     } finally {
       currentExecutionDepth = context.depth
     }
@@ -598,7 +628,7 @@ export function createAutomationService(
 
     // Subscribe to the query
     const handle = queryService.subscribe(
-      db,
+      () => db,
       trigger.queryDefinition,
       (event) => {
         handleQueryResultChange(db, automation, event)
@@ -716,10 +746,19 @@ export function createAutomationService(
 
     let definition: AutomationDefinition
     try {
-      definition =
+      const raw =
         typeof definitionProp.value === 'string'
           ? JSON.parse(definitionProp.value)
           : definitionProp.value
+      const parsed = AutomationDefinitionSchema.safeParse(raw)
+      if (!parsed.success) {
+        console.error(
+          `[AutomationService] Invalid automation definition for ${automationId}:`,
+          parsed.error.message,
+        )
+        return null
+      }
+      definition = parsed.data
     } catch {
       console.error(
         `[AutomationService] Failed to parse automation definition for ${automationId}`,
@@ -792,6 +831,7 @@ export function createAutomationService(
           computedFieldUnsubscribe: null,
           thresholdCrossed: false,
           previousValue: null,
+          consecutiveFailures: 0,
         }
         activeAutomations.set(automationId, automation)
         registerSubscription(db, automation)
@@ -828,6 +868,7 @@ export function createAutomationService(
               computedFieldUnsubscribe: null,
               thresholdCrossed: loadedData.state?.thresholdCrossed ?? false,
               previousValue: loadedData.state?.previousValue ?? null,
+              consecutiveFailures: 0,
             }
             activeAutomations.set(automationId, automation)
             registerSubscription(db, automation)
@@ -1013,6 +1054,7 @@ export function createAutomationService(
             computedFieldUnsubscribe: null,
             thresholdCrossed: auto.state?.thresholdCrossed ?? false,
             previousValue: auto.state?.previousValue ?? null,
+            consecutiveFailures: 0,
           }
           activeAutomations.set(auto.id, automation)
           registerSubscription(db, automation)

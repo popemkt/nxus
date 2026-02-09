@@ -6,6 +6,22 @@ import os from 'node:os'
 export type Platform = 'win32' | 'darwin' | 'linux'
 
 /**
+ * Escape a string for use inside double quotes in a shell command.
+ * Handles $, `, \, ", and ! which have special meaning inside double quotes.
+ */
+function escapeForDoubleQuotes(s: string): string {
+  return s.replace(/[\\"$`!]/g, '\\$&')
+}
+
+/**
+ * Escape a string for use inside single quotes in a POSIX shell.
+ * The only character that needs escaping in single quotes is the single quote itself.
+ */
+function escapeForSingleQuotes(s: string): string {
+  return s.replace(/'/g, "'\\''")
+}
+
+/**
  * Platform-specific commands for common operations
  */
 export interface PlatformCommands {
@@ -42,19 +58,28 @@ export function getPlatformCommands(): PlatformCommands {
 
   const commands: Record<Platform, PlatformCommands> = {
     win32: {
-      openTerminal: (path: string) => `start cmd /K "cd /d "${path}""`,
+      openTerminal: (path: string) => {
+        const safePath = escapeForDoubleQuotes(path)
+        return `start cmd /K "cd /d "${safePath}""`
+      },
       openTerminalWithCommand: (command: string, cwd?: string) => {
-        // Escape double quotes in the command
+        // Escape double quotes in the command for cmd.exe context
         const escapedCmd = command.replace(/"/g, '\\"')
-        const cdPart = cwd ? `cd /d "${cwd}" && ` : ''
+        const cdPart = cwd
+          ? `cd /d "${escapeForDoubleQuotes(cwd)}" && `
+          : ''
         // Echo the command first, then execute it. /K keeps the terminal open after execution
         return `start cmd /K "${cdPart}echo Executing command: && echo ${escapedCmd} && ${escapedCmd}"`
       },
-      openFolder: (path: string) => `start "" "${path}"`,
+      openFolder: (path: string) => {
+        const safePath = escapeForDoubleQuotes(path)
+        return `start "" "${safePath}"`
+      },
       whichCommand: 'where',
       folderPickerCommand: (startPath: string, title: string) => {
         // Use base64-encoded script to avoid escaping issues with $ characters
         // Also use a TopMost form as the owner so the dialog appears in front of other windows
+        // PowerShell single-quote escaping: replace ' with ''
         const psScript = `
 Add-Type -AssemblyName System.Windows.Forms
 $topForm = New-Object System.Windows.Forms.Form
@@ -77,34 +102,60 @@ if ($result -eq 'OK') {
     },
 
     darwin: {
-      openTerminal: (path: string) => `open -a Terminal "${path}"`,
+      openTerminal: (path: string) => {
+        const safePath = escapeForDoubleQuotes(path)
+        return `open -a Terminal "${safePath}"`
+      },
       openTerminalWithCommand: (command: string, cwd?: string) => {
         // AppleScript to open Terminal.app and run the command
+        // Escape for the inner shell that Terminal.app runs
         const escapedCmd = command.replace(/"/g, '\\"').replace(/'/g, "'\\''")
-        const cdPart = cwd ? `cd '${cwd}' && ` : ''
-        const fullScript = `${cdPart}echo 'Executing command:' && echo '${command}' && ${escapedCmd}`
+        const cdPart = cwd
+          ? `cd '${escapeForSingleQuotes(cwd)}' && `
+          : ''
+        // Escape the echo'd command for single-quote context
+        const escapedCmdForEcho = escapeForSingleQuotes(command)
+        const fullScript = `${cdPart}echo 'Executing command:' && echo '${escapedCmdForEcho}' && ${escapedCmd}`
         return `osascript -e 'tell application "Terminal" to do script "${fullScript}"' -e 'tell application "Terminal" to activate'`
       },
-      openFolder: (path: string) => `open "${path}"`,
+      openFolder: (path: string) => {
+        const safePath = escapeForDoubleQuotes(path)
+        return `open "${safePath}"`
+      },
       whichCommand: 'which',
-      folderPickerCommand: (startPath: string, title: string) =>
-        `osascript -e 'POSIX path of (choose folder with prompt "${title}" default location POSIX file "${startPath}")'`,
+      folderPickerCommand: (startPath: string, title: string) => {
+        const safeTitle = escapeForDoubleQuotes(title)
+        const safePath = escapeForDoubleQuotes(startPath)
+        return `osascript -e 'POSIX path of (choose folder with prompt "${safeTitle}" default location POSIX file "${safePath}")'`
+      },
     },
 
     linux: {
-      openTerminal: (path: string) =>
-        `which xdg-terminal > /dev/null 2>&1 && xdg-terminal --cwd="${path}" || gnome-terminal --working-directory="${path}"`,
+      openTerminal: (path: string) => {
+        const safePath = escapeForDoubleQuotes(path)
+        return `which xdg-terminal > /dev/null 2>&1 && xdg-terminal --cwd="${safePath}" || gnome-terminal --working-directory="${safePath}"`
+      },
       openTerminalWithCommand: (command: string, cwd?: string) => {
         // Try gnome-terminal first, fall back to xterm
-        const escapedCmd = command.replace(/"/g, '\\\\"')
-        const cwdPart = cwd ? `--working-directory="${cwd}"` : ''
+        // Escape the command for nested double-quote context (bash -c "...")
+        const escapedCmd = command.replace(/[\\"$`!]/g, '\\\\$&')
+        const cwdPart = cwd
+          ? `--working-directory="${escapeForDoubleQuotes(cwd)}"`
+          : ''
+        const escapedCmdForEcho = escapeForSingleQuotes(command)
         // Echo the command first, then execute it, then keep bash open
-        return `gnome-terminal ${cwdPart} -- bash -c "echo 'Executing command:' && echo '${escapedCmd}' && ${escapedCmd}; exec bash" 2>/dev/null || xterm -e bash -c "echo 'Executing command:' && echo '${escapedCmd}' && ${escapedCmd}; exec bash"`
+        return `gnome-terminal ${cwdPart} -- bash -c "echo 'Executing command:' && echo '${escapedCmdForEcho}' && ${escapedCmd}; exec bash" 2>/dev/null || xterm -e bash -c "echo 'Executing command:' && echo '${escapedCmdForEcho}' && ${escapedCmd}; exec bash"`
       },
-      openFolder: (path: string) => `xdg-open "${path}"`,
+      openFolder: (path: string) => {
+        const safePath = escapeForDoubleQuotes(path)
+        return `xdg-open "${safePath}"`
+      },
       whichCommand: 'which',
-      folderPickerCommand: (startPath: string, title: string) =>
-        `zenity --file-selection --directory --title="${title}" --filename="${startPath}/" 2>/dev/null || kdialog --getexistingdirectory "${startPath}" --title "${title}" 2>/dev/null`,
+      folderPickerCommand: (startPath: string, title: string) => {
+        const safeTitle = escapeForDoubleQuotes(title)
+        const safePath = escapeForDoubleQuotes(startPath)
+        return `zenity --file-selection --directory --title="${safeTitle}" --filename="${safePath}/" 2>/dev/null || kdialog --getexistingdirectory "${safePath}" --title "${safeTitle}" 2>/dev/null`
+      },
     },
   }
 

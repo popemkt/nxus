@@ -219,8 +219,8 @@ function getNodeIdsByDirectSupertag(
         nodeIds.push(prop.nodeId)
       }
     } catch (error) {
-      // Log warning for malformed supertag property values (potential data corruption)
-      console.warn(
+      // Log error for malformed supertag property values (potential data corruption)
+      console.error(
         `[QueryEvaluator] Malformed supertag property value for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
       )
     }
@@ -633,8 +633,8 @@ function evaluateLinksToRelation(
         result.add(prop.nodeId)
       }
     } catch (error) {
-      // Log warning for malformed property values in relation queries
-      console.warn(
+      // Log error for malformed property values in relation queries
+      console.error(
         `[QueryEvaluator] Malformed property value in linksTo query for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
       )
     }
@@ -686,8 +686,8 @@ function evaluateLinkedFromRelation(
         }
       }
     } catch (error) {
-      // Log warning for malformed property values in backlink queries
-      console.warn(
+      // Log error for malformed property values in backlink queries
+      console.error(
         `[QueryEvaluator] Malformed property value in linkedFrom query for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
       )
     }

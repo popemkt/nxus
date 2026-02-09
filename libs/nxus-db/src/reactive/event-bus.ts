@@ -22,11 +22,18 @@ interface Subscriber {
 }
 
 /**
+ * Maximum number of subscribers before emitting a warning.
+ * Similar to Node.js EventEmitter maxListeners, this helps detect subscription leaks.
+ */
+const MAX_SUBSCRIBERS = 50
+
+/**
  * Creates a new event bus instance
  */
 export function createEventBus(): EventBus {
   const subscribers = new Map<string, Subscriber>()
   let nextId = 0
+  let maxSubscribersWarned = false
 
   /**
    * Check if an event matches a filter
@@ -68,9 +75,22 @@ export function createEventBus(): EventBus {
       const id = `sub_${nextId++}`
       subscribers.set(id, { id, listener, filter })
 
+      // Warn if subscriber count exceeds threshold (potential leak detection)
+      if (subscribers.size > MAX_SUBSCRIBERS && !maxSubscribersWarned) {
+        maxSubscribersWarned = true
+        console.warn(
+          `[EventBus] Subscriber count (${subscribers.size}) exceeds threshold of ${MAX_SUBSCRIBERS}. ` +
+            `This may indicate a subscription leak. Check that all subscriptions are being properly unsubscribed.`,
+        )
+      }
+
       // Return unsubscribe function
       return () => {
         subscribers.delete(id)
+        // Reset warning flag when count drops back below threshold
+        if (subscribers.size <= MAX_SUBSCRIBERS) {
+          maxSubscribersWarned = false
+        }
       }
     },
 

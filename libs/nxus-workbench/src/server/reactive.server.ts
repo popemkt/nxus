@@ -21,6 +21,8 @@ import { z } from 'zod'
 import {
   ComputedFieldDefinitionSchema,
   AutomationDefinitionSchema,
+  QueryFilterSchema,
+  QuerySortSchema,
   type QueryResultChangeEvent,
   type AssembledNode,
 } from '@nxus/db'
@@ -31,11 +33,10 @@ import {
 
 /**
  * QueryDefinition schema for validating query inputs
- * Using z.any() for filters since they're complex and already validated in @nxus/db
  */
 const QueryDefinitionSchema = z.object({
-  filters: z.array(z.any()),
-  sort: z.any().optional(),
+  filters: z.array(QueryFilterSchema),
+  sort: QuerySortSchema.optional(),
   limit: z.number().optional(),
 })
 
@@ -355,7 +356,7 @@ export const subscribeToQueryServerFn = createServerFn({ method: 'POST' })
     // Note: The callback here is a placeholder - in a real implementation,
     // you'd want to notify clients via WebSocket, SSE, or polling
     const handle = querySubscriptionService.subscribe(
-      db,
+      () => db,
       queryDefinition,
       (_event: QueryResultChangeEvent) => {
         // For now, we just track the subscription server-side

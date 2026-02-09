@@ -25,6 +25,7 @@ import type {
   ItemCommand,
   ItemMetadata,
   ItemType,
+  Platform,
   ScriptCommand,
   TagRef,
 } from '@nxus/db'
@@ -67,7 +68,7 @@ function parseAppRecord(
   }
 
   // Robust helper to ensure we always have an array for array-typed fields
-  const ensureArray = <T>(val: any): Array<T> | undefined =>
+  const ensureArray = <T>(val: unknown): Array<T> | undefined =>
     Array.isArray(val) ? (val as Array<T>) : undefined
 
   // Build types array from junction table or fall back to single type from record
@@ -87,9 +88,9 @@ function parseAppRecord(
     path: record.path,
     homepage: record.homepage ?? undefined,
     thumbnail: record.thumbnail ?? undefined,
-    platform: ensureArray<string>(record.platform) as any,
-    docs: ensureArray<DocEntry>(record.docs) as any,
-    dependencies: ensureArray<string>(record.dependencies) as any,
+    platform: ensureArray<Platform>(record.platform),
+    docs: ensureArray<DocEntry>(record.docs),
+    dependencies: ensureArray<string>(record.dependencies),
     metadata, // Now guaranteed to have proper shape
     installConfig: record.installConfig as Item['installConfig'],
     checkCommand: record.checkCommand ?? undefined,

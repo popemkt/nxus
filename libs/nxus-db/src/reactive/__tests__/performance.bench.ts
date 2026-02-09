@@ -223,7 +223,7 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
         break
     }
 
-    service.subscribe(db, queryDefinition, () => {
+    service.subscribe(() => db, queryDefinition, () => {
       // Empty callback - we're just measuring re-evaluation time
     })
   }

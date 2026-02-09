@@ -429,7 +429,7 @@ export function createComputedFieldService(
 
     // Subscribe to the query
     const handle = queryService.subscribe(
-      db,
+      () => db,
       definition.query,
       (event) => {
         handleQueryResultChange(db, computedField, event)

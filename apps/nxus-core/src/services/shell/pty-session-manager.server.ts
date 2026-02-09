@@ -342,3 +342,42 @@ export function getPtySessionBuffer(
     ? { buffer: session.outputBuffer.join(''), offset: session.bufferOffset }
     : null
 }
+
+/**
+ * Clean up all active PTY sessions.
+ * Called on process exit/termination to prevent orphaned PTY processes.
+ */
+function cleanupAllSessions(): void {
+  for (const [sessionId, session] of sessions) {
+    try {
+      if (session.isAlive) {
+        session.pty.kill()
+      }
+    } catch {
+      // Best-effort cleanup during shutdown
+    }
+    if (session.resizeDebounceTimeout) {
+      clearTimeout(session.resizeDebounceTimeout)
+    }
+  }
+  for (const timer of cleanupTimers.values()) {
+    clearTimeout(timer)
+  }
+  sessions.clear()
+  cleanupTimers.clear()
+}
+
+// Ensure PTY processes are cleaned up on process termination
+process.on('SIGTERM', () => {
+  console.log('[PTY] SIGTERM received, cleaning up all sessions')
+  cleanupAllSessions()
+})
+
+process.on('SIGINT', () => {
+  console.log('[PTY] SIGINT received, cleaning up all sessions')
+  cleanupAllSessions()
+})
+
+process.on('exit', () => {
+  cleanupAllSessions()
+})

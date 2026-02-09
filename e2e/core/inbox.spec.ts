@@ -3,12 +3,12 @@ import { test, expect } from '../fixtures/base.fixture.js'
 test.describe('Core Inbox Page', () => {
   test('C6 — Navigate to Inbox page', async ({ page }) => {
     await page.goto('/core')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Click the Inbox link in the HUD (it's a link, not a button)
     await page.getByRole('link', { name: /Inbox|^\d/ }).click()
     await page.waitForURL('**/core/inbox')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Verify Inbox heading
     await expect(
@@ -21,7 +21,7 @@ test.describe('Core Inbox Page', () => {
 
   test('C7 — Add inbox item via modal', async ({ page }) => {
     await page.goto('/core/inbox')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Wait for page to load
     await expect(
@@ -75,7 +75,7 @@ test.describe('Core Inbox Page', () => {
 
   test('C8 — Edit and delete inbox item', async ({ page }) => {
     await page.goto('/core/inbox')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Wait for items to load — there should be existing pending items
     await expect(

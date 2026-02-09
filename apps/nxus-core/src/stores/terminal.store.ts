@@ -98,7 +98,9 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
     addLog: (tabId, log) => {
       set((state) => ({
         tabs: state.tabs.map((t) =>
-          t.id === tabId ? { ...t, logs: [...t.logs, log] } : t,
+          t.id === tabId
+            ? { ...t, logs: [...t.logs, log].slice(-10_000) }
+            : t,
         ),
       }))
     },

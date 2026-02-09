@@ -687,7 +687,7 @@ function AppDetailPage() {
                   setGitStatusRefreshKey={setGitStatusRefreshKey}
                   onExecuteCommand={executeInstanceCommand}
                   onRefreshHealth={() =>
-                    canCheckHealth && invalidate((app as any).checkCommand)
+                    canCheckHealth && invalidate(app.checkCommand!)
                   }
                 />
               </TabsContent>
@@ -729,7 +729,7 @@ function AppDetailPage() {
                 setGitStatusRefreshKey={setGitStatusRefreshKey}
                 onExecuteCommand={executeInstanceCommand}
                 onRefreshHealth={() =>
-                  canCheckHealth && invalidate((app as any).checkCommand)
+                  canCheckHealth && invalidate(app.checkCommand!)
                 }
               />
             </div>

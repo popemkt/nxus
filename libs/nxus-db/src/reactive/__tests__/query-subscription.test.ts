@@ -176,7 +176,7 @@ describe('QuerySubscriptionService', () => {
         filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
-      const handle = service.subscribe(db, query, vi.fn())
+      const handle = service.subscribe(() => db, query, vi.fn())
 
       expect(handle.id).toBeDefined()
       expect(handle.id).toMatch(/^qsub_/)
@@ -195,7 +195,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const results = handle.getLastResults()
       expect(results.length).toBe(2)
@@ -212,7 +212,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const results = handle.getLastResults()
       expect(results.length).toBe(0)
@@ -223,10 +223,10 @@ describe('QuerySubscriptionService', () => {
       expect(service.subscriptionCount()).toBe(0)
 
       const query: QueryDefinition = { filters: [] }
-      service.subscribe(db, query, vi.fn())
+      service.subscribe(() => db, query, vi.fn())
       expect(service.subscriptionCount()).toBe(1)
 
-      service.subscribe(db, query, vi.fn())
+      service.subscribe(() => db, query, vi.fn())
       expect(service.subscriptionCount()).toBe(2)
     })
 
@@ -238,8 +238,8 @@ describe('QuerySubscriptionService', () => {
         filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
       }
 
-      service.subscribe(db, query1, vi.fn())
-      service.subscribe(db, query2, vi.fn())
+      service.subscribe(() => db, query1, vi.fn())
+      service.subscribe(() => db, query2, vi.fn())
 
       const active = service.getActiveSubscriptions()
       expect(active.length).toBe(2)
@@ -259,7 +259,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Create a new task - should trigger callback
       const newTaskId = createNode(db, { content: 'New Task', supertagId: 'supertag:task' })
@@ -281,7 +281,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Initial results should be empty
       expect(callback).not.toHaveBeenCalled()
@@ -310,7 +310,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Initial results should be empty (status is 'pending')
       expect(callback).not.toHaveBeenCalled()
@@ -330,7 +330,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Create a project (not a task)
       createNode(db, { content: 'Project', supertagId: 'supertag:project' })
@@ -352,7 +352,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // Verify initial state
       expect(handle.getLastResults().length).toBe(1)
@@ -375,7 +375,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Remove the supertag - should no longer match
       removeNodeSupertag(db, taskId, 'supertag:task')
@@ -400,7 +400,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // Verify initial state
       expect(handle.getLastResults().length).toBe(1)
@@ -428,7 +428,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Update content - node still matches but changed
       updateNodeContent(db, taskId, 'Updated content')
@@ -451,7 +451,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Change priority (not in filter) - node still matches but changed
       setProperty(db, taskId, 'field:priority', 'high')
@@ -470,7 +470,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Add another supertag - node still matches task but changed
       addNodeSupertag(db, taskId, 'supertag:project')
@@ -494,8 +494,8 @@ describe('QuerySubscriptionService', () => {
 
       const callback1 = vi.fn()
       const callback2 = vi.fn()
-      service.subscribe(db, query, callback1)
-      service.subscribe(db, query, callback2)
+      service.subscribe(() => db, query, callback1)
+      service.subscribe(() => db, query, callback2)
 
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
@@ -519,8 +519,8 @@ describe('QuerySubscriptionService', () => {
 
       const taskCallback = vi.fn()
       const projectCallback = vi.fn()
-      service.subscribe(db, taskQuery, taskCallback)
-      service.subscribe(db, projectQuery, projectCallback)
+      service.subscribe(() => db, taskQuery, taskCallback)
+      service.subscribe(() => db, projectQuery, projectCallback)
 
       // Create a task
       createNode(db, { content: 'Task', supertagId: 'supertag:task' })
@@ -547,7 +547,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // First mutation - should receive
       createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -567,7 +567,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // First mutation - should receive
       createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -584,8 +584,8 @@ describe('QuerySubscriptionService', () => {
     it('should decrement subscription count after unsubscribe', () => {
       const query: QueryDefinition = { filters: [] }
 
-      const handle1 = service.subscribe(db, query, vi.fn())
-      const handle2 = service.subscribe(db, query, vi.fn())
+      const handle1 = service.subscribe(() => db, query, vi.fn())
+      const handle2 = service.subscribe(() => db, query, vi.fn())
       expect(service.subscriptionCount()).toBe(2)
 
       handle1.unsubscribe()
@@ -602,7 +602,7 @@ describe('QuerySubscriptionService', () => {
         filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
       }
 
-      const handle = service.subscribe(db, query, vi.fn())
+      const handle = service.subscribe(() => db, query, vi.fn())
       expect(handle.getLastResults().length).toBe(1)
 
       handle.unsubscribe()
@@ -621,7 +621,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // Rapid mutations
       createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -638,7 +638,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const id1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       const id2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
@@ -670,7 +670,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // Task should be in initial results due to inheritance
       const results = handle.getLastResults()
@@ -686,7 +686,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // Task should NOT be in results (requires direct Item supertag)
       const results = handle.getLastResults()
@@ -713,7 +713,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const results = handle.getLastResults()
       expect(results.length).toBe(1)
@@ -734,7 +734,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const results = handle.getLastResults()
       expect(results.length).toBe(1)
@@ -770,7 +770,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const results = handle.getLastResults()
       expect(results.length).toBe(1)
@@ -801,7 +801,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       const results = handle.getLastResults()
       expect(results.length).toBe(2)
@@ -830,7 +830,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // Initially doesn't match
       expect(handle.getLastResults().length).toBe(0)
@@ -856,7 +856,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       // Initial state
       expect(handle.getLastResults().length).toBe(0)
@@ -888,7 +888,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       // refreshAll with no changes
       service.refreshAll(db)
@@ -905,8 +905,8 @@ describe('QuerySubscriptionService', () => {
     it('should remove all subscriptions', () => {
       const query: QueryDefinition = { filters: [] }
 
-      service.subscribe(db, query, vi.fn())
-      service.subscribe(db, query, vi.fn())
+      service.subscribe(() => db, query, vi.fn())
+      service.subscribe(() => db, query, vi.fn())
       expect(service.subscriptionCount()).toBe(2)
 
       service.clear()
@@ -921,7 +921,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      service.subscribe(db, query, callback)
+      service.subscribe(() => db, query, callback)
 
       service.clear()
 
@@ -949,8 +949,8 @@ describe('QuerySubscriptionService', () => {
       }
       const successCallback = vi.fn()
 
-      service.subscribe(db, query, failingCallback)
-      service.subscribe(db, query, successCallback)
+      service.subscribe(() => db, query, failingCallback)
+      service.subscribe(() => db, query, successCallback)
 
       // Create a task - should trigger both callbacks
       createNode(db, { content: 'Task', supertagId: 'supertag:task' })
@@ -974,7 +974,7 @@ describe('QuerySubscriptionService', () => {
       expect(eventBus.listenerCount()).toBe(0)
 
       const query: QueryDefinition = { filters: [] }
-      service.subscribe(db, query, vi.fn())
+      service.subscribe(() => db, query, vi.fn())
 
       expect(eventBus.listenerCount()).toBe(1)
     })
@@ -982,8 +982,8 @@ describe('QuerySubscriptionService', () => {
     it('should unsubscribe from event bus when last subscription removed', () => {
       const query: QueryDefinition = { filters: [] }
 
-      const handle1 = service.subscribe(db, query, vi.fn())
-      const handle2 = service.subscribe(db, query, vi.fn())
+      const handle1 = service.subscribe(() => db, query, vi.fn())
+      const handle2 = service.subscribe(() => db, query, vi.fn())
       expect(eventBus.listenerCount()).toBe(1) // Single listener shared
 
       handle1.unsubscribe()
@@ -996,13 +996,13 @@ describe('QuerySubscriptionService', () => {
     it('should re-subscribe to event bus if new subscription after all cleared', () => {
       const query: QueryDefinition = { filters: [] }
 
-      const handle = service.subscribe(db, query, vi.fn())
+      const handle = service.subscribe(() => db, query, vi.fn())
       expect(eventBus.listenerCount()).toBe(1)
 
       handle.unsubscribe()
       expect(eventBus.listenerCount()).toBe(0)
 
-      service.subscribe(db, query, vi.fn())
+      service.subscribe(() => db, query, vi.fn())
       expect(eventBus.listenerCount()).toBe(1)
     })
   })
@@ -1021,7 +1021,7 @@ describe('QuerySubscriptionService', () => {
       }
 
       const callback = vi.fn()
-      const handle = service.subscribe(db, query, callback)
+      const handle = service.subscribe(() => db, query, callback)
 
       expect(handle.getLastResults().length).toBe(2)
 
@@ -1071,7 +1071,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         // Each mutation should trigger immediately
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -1094,7 +1094,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         // Rapid mutations - should be batched
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -1121,7 +1121,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        const handle = service.subscribe(db, query, callback)
+        const handle = service.subscribe(() => db, query, callback)
 
         // Create 3 tasks rapidly
         const id1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -1154,7 +1154,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        const handle = service.subscribe(db, query, callback)
+        const handle = service.subscribe(() => db, query, callback)
 
         expect(handle.getLastResults().length).toBe(1)
 
@@ -1190,7 +1190,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         // Rapid changes to the same node
         updateNodeContent(db, taskId, 'First update')
@@ -1215,7 +1215,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         // First mutation
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -1248,7 +1248,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         // Create nodes (will be batched)
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -1271,7 +1271,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
         service.flushPendingMutations()
@@ -1288,7 +1288,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         // No mutations made
         service.flushPendingMutations()
@@ -1309,8 +1309,8 @@ describe('QuerySubscriptionService', () => {
 
         const taskCallback = vi.fn()
         const projectCallback = vi.fn()
-        service.subscribe(db, taskQuery, taskCallback)
-        service.subscribe(db, projectQuery, projectCallback)
+        service.subscribe(() => db, taskQuery, taskCallback)
+        service.subscribe(() => db, projectQuery, projectCallback)
 
         // Create multiple tasks rapidly
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
@@ -1341,7 +1341,7 @@ describe('QuerySubscriptionService', () => {
         }
 
         const callback = vi.fn()
-        service.subscribe(db, query, callback)
+        service.subscribe(() => db, query, callback)
 
         createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
         expect(callback).toHaveBeenCalledTimes(0)

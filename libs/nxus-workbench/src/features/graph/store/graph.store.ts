@@ -61,6 +61,13 @@ export const useGraphStore = create<WorkbenchGraphStore>()(
     {
       name: 'nxus-graph-options',
       version: 1,
+      migrate: (persistedState, version) => {
+        // Identity migration template — extend with version-specific logic as needed
+        if (version === 0) {
+          return { ...DEFAULT_GRAPH_STORE_STATE, ...(persistedState as Record<string, unknown>) }
+        }
+        return persistedState as WorkbenchGraphStore
+      },
     },
   ),
 )

@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, ErrorComponentProps } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import appCss from '../styles.css?url'
@@ -48,6 +48,31 @@ const ALL_PALETTES: ThemePalette[] = [
   'brutalism',
 ]
 
+function RootErrorComponent({ error }: ErrorComponentProps) {
+  return (
+    <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
+      <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Something went wrong</h1>
+      {import.meta.env.DEV && (
+        <pre style={{ whiteSpace: 'pre-wrap', color: '#ef4444', marginBottom: '1rem' }}>
+          {error instanceof Error ? error.message : String(error)}
+        </pre>
+      )}
+      <button
+        onClick={() => window.location.reload()}
+        style={{
+          padding: '0.5rem 1rem',
+          cursor: 'pointer',
+          borderRadius: '0.375rem',
+          border: '1px solid #d1d5db',
+          background: '#f9fafb',
+        }}
+      >
+        Reload
+      </button>
+    </div>
+  )
+}
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -59,6 +84,7 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
     ],
   }),
+  errorComponent: RootErrorComponent,
   shellComponent: RootDocument,
 })
 

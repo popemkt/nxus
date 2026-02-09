@@ -194,13 +194,29 @@ export function isTokenExpired(tokens: GoogleTokens): boolean {
 }
 
 /**
- * Ensure tokens are valid, refreshing if needed
+ * Module-level promise used to deduplicate concurrent token refresh calls.
+ * When multiple API calls detect an expired token simultaneously, they all
+ * await the same refresh promise instead of each triggering a separate refresh.
+ */
+let refreshPromise: Promise<GoogleTokens> | null = null
+
+/**
+ * Ensure tokens are valid, refreshing if needed.
+ *
+ * Uses a shared promise so concurrent callers coalesce into a single refresh
+ * request, avoiding Google API rate-limit errors from parallel refreshes.
  */
 export async function ensureValidTokens(
   tokens: GoogleTokens
 ): Promise<GoogleTokens> {
   if (isTokenExpired(tokens)) {
-    return refreshTokens(tokens)
+    if (refreshPromise) {
+      return refreshPromise
+    }
+    refreshPromise = refreshTokens(tokens).finally(() => {
+      refreshPromise = null
+    })
+    return refreshPromise
   }
   return tokens
 }
@@ -277,9 +293,13 @@ export function toGoogleCalendarEvent(
 
   // Handle all-day vs timed events
   if (event.allDay) {
-    // Google Calendar expects dates in YYYY-MM-DD format for all-day events
+    // DATE CONVENTION: Our internal CalendarEvent model stores all-day end dates
+    // as INCLUSIVE (e.g., a single-day event on Jan 5 has start=Jan 5, end=Jan 5).
+    // Google Calendar's API uses EXCLUSIVE end dates (the same event needs
+    // start=Jan 5, end=Jan 6). The +1 day adjustment below accounts for this
+    // difference. Do NOT remove this without also updating all event creation
+    // and display logic in the codebase.
     const startDate = event.start.toISOString().split('T')[0]
-    // For all-day events, end date is exclusive, so add 1 day
     const endDate = new Date(event.end)
     endDate.setDate(endDate.getDate() + 1)
     const endDateStr = endDate.toISOString().split('T')[0]
@@ -408,12 +428,25 @@ export async function updateGoogleEvent(
       operation: 'updated',
     }
   } catch (error) {
-    // If event not found, try to create it instead
+    // If event not found in Google Calendar, do NOT auto-create — it may have
+    // been intentionally deleted by the user on the Google side. Auto-creating
+    // would produce an unwanted duplicate. Log a warning instead and report
+    // the failure so the caller can clear the stale gcalEventId.
     if (
       error instanceof Error &&
       error.message.includes('404')
     ) {
-      return createGoogleEvent(tokens, event, calendarId)
+      console.warn(
+        `[google-calendar] Event ${gcalEventId} not found in Google Calendar during update. ` +
+        `It may have been deleted externally. Skipping auto-create to avoid duplicates.`
+      )
+      return {
+        eventId: event.nodeId,
+        success: false,
+        gcalEventId,
+        error: 'Event not found in Google Calendar. It may have been deleted externally.',
+        operation: 'updated',
+      }
     }
 
     return {

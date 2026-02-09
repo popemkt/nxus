@@ -257,31 +257,33 @@ function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
  *
  * Returns a URL that the user should be redirected to for OAuth consent.
  */
-export const getGoogleAuthUrlServerFn = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<GetGoogleAuthUrlResponse> => {
-    try {
-      // Check if required environment variables are set
-      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+export const getGoogleAuthUrlServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ state: z.string().optional() }))
+  .handler(
+    async ({ data }): Promise<GetGoogleAuthUrlResponse> => {
+      try {
+        // Check if required environment variables are set
+        if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+          return {
+            success: false,
+            error:
+              'Google Calendar integration not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.',
+          }
+        }
+
+        const url = await generateAuthUrl(data.state)
+        console.log('[getGoogleAuthUrlServerFn] Generated auth URL')
+
+        return { success: true, url }
+      } catch (error) {
+        console.error('[getGoogleAuthUrlServerFn] Error:', error)
         return {
           success: false,
-          error:
-            'Google Calendar integration not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.',
+          error: error instanceof Error ? error.message : String(error),
         }
       }
-
-      const url = await generateAuthUrl()
-      console.log('[getGoogleAuthUrlServerFn] Generated auth URL')
-
-      return { success: true, url }
-    } catch (error) {
-      console.error('[getGoogleAuthUrlServerFn] Error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      }
     }
-  }
-)
+  )
 
 /**
  * Handle Google OAuth callback

@@ -1,11 +1,49 @@
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
+import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
 import { createServerFn } from '@tanstack/react-start'
 
-const execAsync = promisify(exec)
+const ALLOWED_GIT_PROTOCOLS = ['https:', 'git:', 'ssh:', 'http:']
+
+function validateGitUrl(url: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new Error(`Invalid URL: ${url}`)
+  }
+  if (!ALLOWED_GIT_PROTOCOLS.includes(parsed.protocol)) {
+    throw new Error(
+      `Unsupported protocol "${parsed.protocol}". Allowed: ${ALLOWED_GIT_PROTOCOLS.join(', ')}`,
+    )
+  }
+}
+
+function spawnAsync(
+  command: string,
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args)
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (data) => {
+      stdout += data
+    })
+    child.stderr.on('data', (data) => {
+      stderr += data
+    })
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr })
+      } else {
+        reject(new Error(`git clone failed with code ${code}: ${stderr}`))
+      }
+    })
+    child.on('error', reject)
+  })
+}
 
 export const InstallParamsSchema = z.object({
   id: z.string(),
@@ -49,9 +87,12 @@ export const installAppServerFn = createServerFn({ method: 'POST' })
         }
       }
 
-      // Clone the repository
+      // Validate URL protocol before cloning
+      validateGitUrl(url)
+
+      // Clone the repository using spawn to avoid shell injection
       console.log(`[installAppServerFn] Cloning ${url} into ${appDir}...`)
-      await execAsync(`git clone ${url} ${appDir}`)
+      await spawnAsync('git', ['clone', url, appDir])
 
       console.log('[installAppServerFn] Success:', appDir)
       return {

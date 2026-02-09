@@ -33,17 +33,16 @@ import {
   type DependencyTracker,
 } from './dependency-tracker.js'
 import { reactiveMetrics } from './metrics.js'
+import type { getDatabase } from '../client/master-client.js'
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /**
- * Database type - accepts any object with the required methods
- * This allows the service to work with any drizzle database instance
+ * Database type - matches the drizzle database instance returned by getDatabase()
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Database = any
+type Database = ReturnType<typeof getDatabase>
 
 /**
  * Callback for query result changes
@@ -69,13 +68,15 @@ export interface QuerySubscriptionService {
   /**
    * Subscribe to a query's results with automatic re-evaluation on mutations
    *
-   * @param db - Database instance for query evaluation
+   * @param getDb - Getter function returning database instance for query evaluation.
+   *   Using a getter ensures the subscription always uses a fresh db reference,
+   *   avoiding stale reference issues after database reconnection.
    * @param definition - Query definition to subscribe to
    * @param onResultChange - Callback for result changes
    * @returns Subscription handle with id, unsubscribe, and getLastResults
    */
   subscribe(
-    db: Database,
+    getDb: () => Database,
     definition: QueryDefinition,
     onResultChange: QueryResultChangeCallback,
   ): SubscriptionHandle
@@ -158,7 +159,7 @@ export interface QuerySubscriptionService {
  * Internal subscription entry with additional metadata
  */
 interface InternalSubscription extends QuerySubscription {
-  db: Database
+  getDb: () => Database
   callback: QueryResultChangeCallback
   lastAssembledNodes: Map<string, AssembledNode>
 }
@@ -190,6 +191,9 @@ export function createQuerySubscriptionService(
   let debounceMs = 0
   let pendingMutations: MutationEvent[] = []
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Guard flag to prevent processing after clear() has been called
+  let cleared = false
 
   /**
    * Compute a hash/signature for an AssembledNode to detect changes
@@ -231,10 +235,10 @@ export function createQuerySubscriptionService(
     subscription: InternalSubscription,
   ): QueryResultChangeEvent | null {
     const startTime = performance.now()
-    const { db, queryDefinition, lastResults, lastAssembledNodes } = subscription
+    const { getDb, queryDefinition, lastResults, lastAssembledNodes } = subscription
 
-    // Evaluate the query
-    const result = evaluateQuery(db, queryDefinition)
+    // Evaluate the query using fresh db reference from getter
+    const result = evaluateQuery(getDb(), queryDefinition)
     const newNodeIds = new Set(result.nodes.map((n) => n.id))
     const newNodesMap = new Map(result.nodes.map((n) => [n.id, n]))
 
@@ -322,6 +326,7 @@ export function createQuerySubscriptionService(
    * 3. Clears the pending mutations
    */
   function processBatchedMutations(): void {
+    if (cleared) return
     if (pendingMutations.length === 0) return
 
     const mutationsToProcess = pendingMutations
@@ -429,14 +434,16 @@ export function createQuerySubscriptionService(
 
   return {
     subscribe(
-      db: Database,
+      getDb: () => Database,
       definition: QueryDefinition,
       onResultChange: QueryResultChangeCallback,
     ): SubscriptionHandle {
+      // Reset cleared flag when new subscriptions are added
+      cleared = false
       const id = `qsub_${nextId++}`
 
-      // Initial evaluation
-      const initialResult = evaluateQuery(db, definition)
+      // Initial evaluation using fresh db reference
+      const initialResult = evaluateQuery(getDb(), definition)
       const initialNodeIds = new Set(initialResult.nodes.map((n) => n.id))
       const initialNodesMap = new Map(initialResult.nodes.map((n) => [n.id, n]))
 
@@ -448,7 +455,7 @@ export function createQuerySubscriptionService(
         lastNodeStates: initialNodesMap,
         lastAssembledNodes: initialNodesMap,
         lastEvaluatedAt: initialResult.evaluatedAt,
-        db,
+        getDb,
         callback: onResultChange,
         onResultChange,
       }
@@ -501,8 +508,6 @@ export function createQuerySubscriptionService(
 
     refreshAll(db: Database): void {
       for (const subscription of subscriptions.values()) {
-        // Update db reference in case it changed
-        subscription.db = db
         const changeEvent = evaluateAndDiff(subscription)
         if (changeEvent) {
           try {
@@ -522,6 +527,7 @@ export function createQuerySubscriptionService(
     },
 
     clear(): void {
+      cleared = true
       // Cancel any pending debounce timer
       if (debounceTimer !== null) {
         clearTimeout(debounceTimer)

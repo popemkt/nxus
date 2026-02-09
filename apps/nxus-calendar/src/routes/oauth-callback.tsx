@@ -30,65 +30,96 @@ type CallbackState = 'processing' | 'success' | 'error'
 
 function OAuthCallbackPage() {
   const navigate = useNavigate()
-  const { code, error: oauthError } = Route.useSearch()
+  const { code, error: oauthError, state: oauthState } = Route.useSearch()
   const { completeAuth, error: authError } = useGoogleConnect()
 
-  const [state, setState] = useState<CallbackState>('processing')
+  const [callbackState, setCallbackState] = useState<CallbackState>('processing')
   const [email, setEmail] = useState<string | undefined>()
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
 
   useEffect(() => {
+    let aborted = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+
     async function handleCallback() {
+      // Validate CSRF state token
+      const storedState = localStorage.getItem('oauth_state')
+      localStorage.removeItem('oauth_state')
+      if (!oauthState || oauthState !== storedState) {
+        if (!aborted) {
+          setCallbackState('error')
+          setErrorMessage('Invalid OAuth state. This may be a CSRF attempt or a stale callback. Please try connecting again.')
+        }
+        return
+      }
+
       // Check for OAuth error from Google
       if (oauthError) {
-        setState('error')
-        setErrorMessage(
-          oauthError === 'access_denied'
-            ? 'You denied access to Google Calendar. Please try again if you want to connect.'
-            : `Google returned an error: ${oauthError}`,
-        )
+        if (!aborted) {
+          setCallbackState('error')
+          setErrorMessage(
+            oauthError === 'access_denied'
+              ? 'You denied access to Google Calendar. Please try again if you want to connect.'
+              : `Google returned an error: ${oauthError}`,
+          )
+        }
         return
       }
 
       // Check if we have an authorization code
       if (!code) {
-        setState('error')
-        setErrorMessage('No authorization code received from Google.')
+        if (!aborted) {
+          setCallbackState('error')
+          setErrorMessage('No authorization code received from Google.')
+        }
         return
       }
 
       try {
         // Exchange code for tokens
         const result = await completeAuth(code)
+        if (aborted) return
+
         if (result?.email) {
           setEmail(result.email)
-          setState('success')
+          setCallbackState('success')
 
           // Redirect to calendar after a short delay to show success message
-          setTimeout(() => {
-            navigate({ to: '/' })
+          timeoutId = setTimeout(() => {
+            if (!aborted) {
+              navigate({ to: '/' })
+            }
           }, 2000)
         } else {
-          setState('error')
+          setCallbackState('error')
           setErrorMessage('Failed to complete authentication.')
         }
       } catch (err) {
-        setState('error')
-        setErrorMessage(
-          err instanceof Error ? err.message : 'An unexpected error occurred.',
-        )
+        if (!aborted) {
+          setCallbackState('error')
+          setErrorMessage(
+            err instanceof Error ? err.message : 'An unexpected error occurred.',
+          )
+        }
       }
     }
 
     handleCallback()
-  }, [code, oauthError, completeAuth, navigate])
+
+    return () => {
+      aborted = true
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [code, oauthError, oauthState, completeAuth, navigate])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="rounded-lg border bg-card p-8 shadow-sm">
           {/* Processing state */}
-          {state === 'processing' && (
+          {callbackState === 'processing' && (
             <div className="text-center">
               <CircleNotch className="mx-auto h-12 w-12 animate-spin text-primary" />
               <h1 className="mt-4 text-xl font-semibold">
@@ -101,7 +132,7 @@ function OAuthCallbackPage() {
           )}
 
           {/* Success state */}
-          {state === 'success' && (
+          {callbackState === 'success' && (
             <div className="text-center">
               <CheckCircle
                 className="mx-auto h-12 w-12 text-green-500"
@@ -126,7 +157,7 @@ function OAuthCallbackPage() {
           )}
 
           {/* Error state */}
-          {state === 'error' && (
+          {callbackState === 'error' && (
             <div className="text-center">
               <WarningCircle
                 className="mx-auto h-12 w-12 text-red-500"
@@ -145,10 +176,7 @@ function OAuthCallbackPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setState('processing')
-                    window.location.reload()
-                  }}
+                  onClick={() => navigate({ to: '/' })}
                 >
                   Try Again
                 </Button>

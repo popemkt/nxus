@@ -7,7 +7,7 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
 import {
@@ -31,7 +31,7 @@ export type {
 export { isSystemId } from '../schemas/node-schema.js'
 
 // Import types for use in this file
-import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
+import type { AssembledNode, PropertyValue, PropertyValueType, CreateNodeOptions } from '../types/node.js'
 
 // ============================================================================
 // System Node Cache (runtime cache for field/supertag lookups)
@@ -290,7 +290,7 @@ export function assembleNode(
   nodeId: string,
 ): AssembledNode | null {
   const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
-  if (!node) return null
+  if (!node || node.deletedAt) return null
 
   const props = db
     .select()
@@ -338,9 +338,9 @@ export function assembleNode(
     const fieldInfo = fieldCache.get(prop.fieldNodeId)
     const fieldName = fieldInfo?.content || prop.fieldNodeId
 
-    let parsedValue: unknown = prop.value
+    let parsedValue: PropertyValueType = prop.value as PropertyValueType
     try {
-      parsedValue = JSON.parse(prop.value || 'null')
+      parsedValue = JSON.parse(prop.value || 'null') as PropertyValueType
     } catch {
       // Keep as string
     }
@@ -429,7 +429,7 @@ export function assembleNodeWithInheritance(
         // Add inherited field with default value
         if (def.defaultValue !== undefined && def.defaultValue !== null) {
           const inheritedPv: PropertyValue = {
-            value: def.defaultValue,
+            value: def.defaultValue as PropertyValueType,
             rawValue: JSON.stringify(def.defaultValue),
             fieldNodeId: def.fieldNodeId,
             fieldName: def.fieldName,
@@ -785,7 +785,8 @@ export function getNodeIdsBySupertagWithInheritance(
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   if (!supertagField) return []
 
-  const nodeIds: string[] = []
+  // Collect candidate node IDs from supertag properties
+  const candidateIds = new Set<string>()
   for (const stId of allSupertagIds) {
     const withSupertag = db
       .select()
@@ -801,11 +802,19 @@ export function getNodeIdsBySupertagWithInheritance(
       })
 
     for (const p of withSupertag) {
-      if (!nodeIds.includes(p.nodeId)) nodeIds.push(p.nodeId)
+      candidateIds.add(p.nodeId)
     }
   }
 
-  return nodeIds
+  // Filter out soft-deleted nodes
+  const nonDeletedNodes = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(isNull(nodes.deletedAt))
+    .all()
+  const nonDeletedIds = new Set(nonDeletedNodes.map((n) => n.id))
+
+  return Array.from(candidateIds).filter((id) => nonDeletedIds.has(id))
 }
 
 /**
@@ -948,23 +957,29 @@ export function setNodeSupertags(
   const removedSupertags = currentSupertags.filter((st) => !newSet.has(st))
   const addedSupertags = supertagSystemIds.filter((st) => !currentSet.has(st))
 
-  // Clear existing supertags
-  clearProperty(db, nodeId, SYSTEM_FIELDS.SUPERTAG)
-
-  // Add new supertags
-  for (let i = 0; i < supertagSystemIds.length; i++) {
-    const supertagSystemId = supertagSystemIds[i]
-    const supertagNode = getSystemNode(db, supertagSystemId)
-    if (supertagNode) {
-      addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
-    }
-  }
-
-  // Update node timestamp
+  // Wrap DB mutations in a transaction for atomicity:
+  // clear old supertags → add new ones → update timestamp
   const now = new Date()
-  db.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+  db.transaction((tx) => {
+    const txDb = tx as unknown as ReturnType<typeof getDatabase>
 
-  // Emit supertag:removed events with supertag UUID
+    // Clear existing supertags
+    clearProperty(txDb, nodeId, SYSTEM_FIELDS.SUPERTAG)
+
+    // Add new supertags
+    for (let i = 0; i < supertagSystemIds.length; i++) {
+      const supertagSystemId = supertagSystemIds[i]
+      const supertagNode = getSystemNode(txDb, supertagSystemId)
+      if (supertagNode) {
+        addPropertyValue(txDb, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
+      }
+    }
+
+    // Update node timestamp
+    tx.update(nodes).set({ updatedAt: now }).where(eq(nodes.id, nodeId)).run()
+  })
+
+  // Emit supertag:removed events with supertag UUID (outside transaction)
   for (const supertagSystemId of removedSupertags) {
     const supertagNode = getSystemNode(db, supertagSystemId)
     if (supertagNode) {
@@ -977,7 +992,7 @@ export function setNodeSupertags(
     }
   }
 
-  // Emit supertag:added events with supertag UUID
+  // Emit supertag:added events with supertag UUID (outside transaction)
   for (const supertagSystemId of addedSupertags) {
     const supertagNode = getSystemNode(db, supertagSystemId)
     if (supertagNode) {
@@ -1198,9 +1213,18 @@ export function getNodeIdsBySupertags(
     nodeSupertags.get(prop.nodeId)!.add(supertagId)
   }
 
-  // Filter nodes based on matchAll flag
+  // Get non-deleted node IDs for filtering
+  const nonDeletedNodes = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(isNull(nodes.deletedAt))
+    .all()
+  const nonDeletedIds = new Set(nonDeletedNodes.map((n) => n.id))
+
+  // Filter nodes based on matchAll flag, excluding soft-deleted nodes
   const matchingNodeIds: string[] = []
   for (const [nodeId, tags] of nodeSupertags) {
+    if (!nonDeletedIds.has(nodeId)) continue
     if (matchAll) {
       if (supertagNodeIds.every((stId) => tags.has(stId))) {
         matchingNodeIds.push(nodeId)
@@ -1297,21 +1321,24 @@ export function syncNodeSupertagsToItemTypes(
   const types = supertagsToItemTypes(supertagSystemIds)
   if (types.length === 0) return false
 
-  // Delete existing itemTypes entries for this item
-  db.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
+  // Wrap delete-then-insert in a transaction for atomicity
+  db.transaction((tx) => {
+    // Delete existing itemTypes entries for this item
+    tx.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
 
-  // Insert new itemTypes entries
-  // First type is primary by default
-  for (let i = 0; i < types.length; i++) {
-    db.insert(itemTypes)
-      .values({
-        itemId,
-        type: types[i],
-        isPrimary: i === 0,
-        order: i,
-      })
-      .run()
-  }
+    // Insert new itemTypes entries
+    // First type is primary by default
+    for (let i = 0; i < types.length; i++) {
+      tx.insert(itemTypes)
+        .values({
+          itemId,
+          type: types[i],
+          isPrimary: i === 0,
+          order: i,
+        })
+        .run()
+    }
+  })
 
   return true
 }

@@ -55,6 +55,9 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   // Enable WAL mode for better concurrency
   masterDb.pragma('journal_mode = WAL')
 
+  // Enable foreign key enforcement (off by default in SQLite)
+  masterDb.pragma('foreign_keys = ON')
+
   masterDrizzleDb = drizzle(masterDb, { schema })
 
   // Create tables if they don't exist
@@ -141,13 +144,12 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   // Migrate existing item_commands table if columns are missing
   try {
     masterDb.exec('ALTER TABLE item_commands ADD COLUMN workflow TEXT')
-  } catch (e) {
-    // Column already exists, ignore
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (!message.includes('duplicate column') && !message.includes('already exists')) {
+      throw e
+    }
   }
-  try {
-    // SQLite doesn't support DROP NOT NULL easily, but we can try to re-create or just ignore if it's already nullable
-    // For now, adding workflow is more important. If command NOT NULL is an issue, we'll see it in seed.
-  } catch (e) {}
 
   // Tag configuration tables
   masterDb.exec(`
@@ -229,6 +231,10 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   masterDb.exec(`
     CREATE INDEX IF NOT EXISTS idx_nodes_content_plain ON nodes(content_plain)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_nodes_deleted_at ON nodes(deleted_at)
   `)
 
   masterDb.exec(`

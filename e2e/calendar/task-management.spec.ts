@@ -1,69 +1,19 @@
 import { test, expect } from '../fixtures/base.fixture.js'
-import type { Page } from '@playwright/test'
+import {
+  ensureCalendarVisible,
+  waitForCalendarReady,
+  createEvent,
+  findEventOnDayView,
+  todayDateString,
+} from '../helpers/calendar.js'
 
-/**
- * Helper: ensure the calendar is showing the full calendar view (not empty state).
- * If the empty state is shown, creates a quick event so the full calendar renders.
- * Also handles transient error states by retrying via page reload.
- */
-async function ensureCalendarVisible(page: Page) {
-  const calendarContainer = page.locator('.nxus-calendar')
-  const emptyState = page.locator('.calendar-empty')
-  const errorState = page.getByText('Error loading calendar')
-
-  await expect(calendarContainer.or(emptyState).or(errorState)).toBeVisible({
-    timeout: 15000,
-  })
-
-  // If error state, retry by reloading
-  if (await errorState.isVisible()) {
-    await page.getByRole('button', { name: 'Try Again' }).click()
-    await expect(calendarContainer.or(emptyState)).toBeVisible({ timeout: 15000 })
-  }
-
-  if (await emptyState.isVisible()) {
-    await page.getByRole('button', { name: /New Event|Create Event/ }).first().click()
-    const titleInput = page.locator('#event-title')
-    await expect(titleInput).toBeVisible({ timeout: 5000 })
-    await titleInput.fill('Bootstrap Event')
-    await titleInput.press('Enter')
-    await expect(titleInput).toBeHidden({ timeout: 10000 })
-    await expect(calendarContainer).toBeVisible({ timeout: 15000 })
-  }
-
-  // Wait for loading overlay to disappear
-  await waitForCalendarReady(page)
-}
-
-/**
- * Helper: wait for the calendar loading overlay to disappear
- */
-async function waitForCalendarReady(page: Page) {
-  const loadingOverlay = page.locator('.nxus-calendar .absolute.inset-0.z-10')
-  await expect(loadingOverlay).toBeHidden({ timeout: 15000 }).catch(() => {
-    // Overlay was never present — that's OK
-  })
-}
-
-/**
- * Helper: format today's date as YYYY-MM-DD
- */
-function todayDateString(): string {
-  const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
-
-test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
-  const taskTitle = `E2E Task ${Date.now()}`
-
+test.describe('Calendar Task Management (CA8-CA9)', () => {
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('calendar')
   })
 
   test('CA8 — Create task via New Event button with Task toggle', async ({ page }) => {
+    const taskTitle = `E2E Task ${Date.now()}`
     await ensureCalendarVisible(page)
 
     // Open the create modal
@@ -127,7 +77,11 @@ test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
   })
 
   test('CA9 — Complete task via event detail modal', async ({ page }) => {
+    const taskTitle = `E2E Complete ${Date.now()}`
     await ensureCalendarVisible(page)
+
+    // Create a task for this test
+    await createEvent(page, { title: taskTitle, startTime: '09:00', endTime: '10:00', isTask: true })
 
     // Switch to Day view to find the task
     await page.getByRole('button', { name: 'Day', exact: true }).click()
@@ -143,8 +97,7 @@ test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
     await expect(modalTitle).toBeVisible({ timeout: 5000 })
 
     // The modal should show a task completion checkbox — a <button> element
-    // sitting to the left of the h2 title in the modal. It's a plain button
-    // styled as a rounded checkbox, not role="checkbox".
+    // sitting to the left of the h2 title in the modal.
     const titleContainer = modalTitle.locator('..')
     const modalCheckbox = titleContainer.locator('button').first()
     await expect(modalCheckbox).toBeVisible()
@@ -155,8 +108,7 @@ test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
     // Click the modal checkbox to complete the task
     await modalCheckbox.click()
 
-    // Close the modal — the modal event state may not refresh immediately
-    // after the mutation, so we verify completion on the calendar instead.
+    // Close the modal
     await page.getByRole('button', { name: 'Close' }).click()
 
     // Wait for the calendar to refetch and update
@@ -181,13 +133,12 @@ test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
 })
 
 test.describe('Calendar Recurring Events (CA10)', () => {
-  const recurringTitle = `E2E Recurring ${Date.now()}`
-
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('calendar')
   })
 
   test('CA10 — Create recurring event with daily preset', async ({ page }) => {
+    const recurringTitle = `E2E Recurring ${Date.now()}`
     await ensureCalendarVisible(page)
 
     // Open the create modal
@@ -208,8 +159,6 @@ test.describe('Calendar Recurring Events (CA10)', () => {
     await page.locator('#event-end-time').fill('15:00')
 
     // Find the Repeat / recurrence dropdown — it defaults to "Does not repeat"
-    // The recurrence selector is labelled "Repeat" and contains a Select with
-    // a trigger that shows the current value
     const repeatSection = page.getByText('Repeat').locator('..')
     const repeatTrigger = repeatSection.locator('[role="combobox"]')
     await expect(repeatTrigger).toBeVisible()
@@ -256,7 +205,6 @@ test.describe('Calendar Recurring Events (CA10)', () => {
     await expect(agendaView).toBeVisible({ timeout: 10000 })
 
     // In agenda view, a daily recurring event should appear on multiple days.
-    // The agenda shows events as rows with text content.
     const agendaEvents = agendaView.getByText(recurringTitle)
     const eventCount = await agendaEvents.count()
     expect(eventCount).toBeGreaterThan(1)

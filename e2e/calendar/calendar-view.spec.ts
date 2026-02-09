@@ -1,36 +1,5 @@
 import { test, expect } from '../fixtures/base.fixture.js'
-import type { Page } from '@playwright/test'
-
-/**
- * Helper: ensure the calendar container (with toolbar) is visible.
- * If the empty state is shown, creates a quick event so the full calendar renders.
- */
-async function ensureCalendarVisible(page: Page) {
-  const calendarContainer = page.locator('.nxus-calendar')
-  const emptyState = page.locator('.calendar-empty')
-
-  await expect(calendarContainer.or(emptyState)).toBeVisible({
-    timeout: 15000,
-  })
-
-  // If empty state is shown, create an event to trigger the calendar view
-  if (await emptyState.isVisible()) {
-    await page.getByRole('button', { name: 'New Event' }).click()
-
-    // Wait for the create modal to open
-    const titleInput = page.locator('#event-title')
-    await expect(titleInput).toBeVisible({ timeout: 5000 })
-
-    // Fill minimal form and submit via the modal's submit button
-    await titleInput.fill('Test Event')
-    // Use the form submit button (type="submit") inside the modal dialog
-    await titleInput.press('Enter')
-
-    // Wait for modal to close and calendar container to appear
-    await expect(titleInput).toBeHidden({ timeout: 10000 })
-    await expect(calendarContainer).toBeVisible({ timeout: 15000 })
-  }
-}
+import { ensureCalendarVisible } from '../helpers/calendar.js'
 
 test.describe('Calendar Views & Navigation', () => {
   test.beforeEach(async ({ navigateToApp }) => {
@@ -119,7 +88,7 @@ test.describe('Calendar Views & Navigation', () => {
     // navigation by verifying the period label changes and using Today
     // to return to the period with events.
 
-    // Click Previous → either the period label changes or empty state appears
+    // Click Previous — either the period label changes or empty state appears
     await page.getByRole('button', { name: 'Previous' }).click()
 
     // Wait for re-render — either a new period label or the empty state
@@ -133,12 +102,10 @@ test.describe('Calendar Views & Navigation', () => {
     }
     // Either way, navigation happened. Now go back with Today.
 
-    // If empty state is showing, use the page-level "New Event" button to re-enter,
-    // or navigate back to the calendar page to reset.
+    // If empty state is showing, reload to return to the current period
     if (await emptyState.isVisible()) {
-      // Reload the page to return to the current period (with the event)
       await page.goto('/calendar')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
       await expect(page.locator('.nxus-calendar')).toBeVisible({ timeout: 15000 })
     }
 
@@ -147,7 +114,7 @@ test.describe('Calendar Views & Navigation', () => {
     await expect(restoredLabel).toBeVisible()
     await expect(restoredLabel).toHaveText(initialLabel!)
 
-    // Click Next → tests forward navigation
+    // Click Next — tests forward navigation
     await page.getByRole('button', { name: 'Next' }).click()
     await expect(
       page.locator('.nxus-calendar h2').first().or(emptyState)
@@ -156,7 +123,7 @@ test.describe('Calendar Views & Navigation', () => {
     // Navigation occurred — verify by returning with Today
     if (await emptyState.isVisible()) {
       await page.goto('/calendar')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
       await expect(page.locator('.nxus-calendar')).toBeVisible({ timeout: 15000 })
     } else {
       await page.getByRole('button', { name: 'Today' }).click()
@@ -205,7 +172,7 @@ test.describe('Calendar Views & Navigation', () => {
     // If Day view showed the empty state (no toolbar), reload and switch to Agenda
     if (await emptyState.isVisible()) {
       await page.goto('/calendar')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
       await ensureCalendarVisible(page)
     }
     await page.getByRole('button', { name: 'Agenda', exact: true }).click()
