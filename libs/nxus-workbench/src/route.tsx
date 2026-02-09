@@ -224,7 +224,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
       {/* List View: Supertag Sidebar + Node Browser + Inspector */}
       {viewMode === 'list' && (
         <ResizablePanelGroup orientation="horizontal" id="workbench-list">
-          <ResizablePanel id="supertag-sidebar" defaultSize={15} minSize={10} maxSize={25}>
+          <ResizablePanel id="supertag-sidebar" defaultSize={18} minSize={12} maxSize={30}>
             <SupertagSidebar
               supertags={supertags}
               selectedSupertag={supertagFilter}
@@ -233,7 +233,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             />
           </ResizablePanel>
           <ResizableHandle />
-          <ResizablePanel id="node-browser" defaultSize={55} minSize={25}>
+          <ResizablePanel id="node-browser" defaultSize={47} minSize={20}>
             <NodeBrowser
               nodes={nodes}
               selectedNodeId={selectedNodeId}
@@ -244,7 +244,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             />
           </ResizablePanel>
           <ResizableHandle />
-          <ResizablePanel id="inspector-list" defaultSize={30} minSize={15} maxSize={50}>
+          <ResizablePanel id="inspector-list" defaultSize={35} minSize={20} maxSize={50}>
             <div className="h-full border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
               {selectedNode ? (
                 <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
