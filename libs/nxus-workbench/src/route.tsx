@@ -230,7 +230,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onSelectSupertag={setSupertagFilter}
             isLoading={supertagsLoading}
           />
-          <ResizeHandle side="previous" minSize={160} maxSize={400} />
+          <ResizeHandle side="previous" minSize={160} maxSize={400} persistId="list-supertag" />
           <NodeBrowser
             nodes={nodes}
             selectedNodeId={selectedNodeId}
@@ -239,7 +239,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onSearchChange={setSearchQuery}
             isLoading={nodesLoading}
           />
-          <ResizeHandle side="next" minSize={280} maxSize={700} />
+          <ResizeHandle side="next" minSize={280} maxSize={700} persistId="list-inspector" />
         </>
       )}
 
@@ -257,20 +257,23 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
 
           {/* Overlay Node Inspector */}
           {inspectorOpen && selectedNode && (
-            <div
-              className="absolute top-0 right-0 h-full w-[480px] border-l border-border flex flex-col bg-card/95 backdrop-blur-sm z-20 shadow-xl"
-              data-testid="node-inspector-panel"
-            >
-              <div className="flex items-center justify-end px-2 pt-2">
-                <button
-                  onClick={() => setInspectorOpen(false)}
-                  className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  title="Close inspector"
-                >
-                  <X className="size-4" />
-                </button>
+            <div className="absolute top-0 right-0 h-full flex z-20">
+              <ResizeHandle side="next" minSize={300} maxSize={800} persistId="graph-inspector" />
+              <div
+                className="w-[480px] h-full border-l border-border flex flex-col bg-card/95 backdrop-blur-sm shadow-xl"
+                data-testid="node-inspector-panel"
+              >
+                <div className="flex items-center justify-end px-2 pt-2">
+                  <button
+                    onClick={() => setInspectorOpen(false)}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    title="Close inspector"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+                <NodeInspector node={selectedNode} onNavigate={(nodeId) => { setSelectedNodeId(nodeId); setInspectorOpen(true); }} />
               </div>
-              <NodeInspector node={selectedNode} onNavigate={(nodeId) => { setSelectedNodeId(nodeId); setInspectorOpen(true); }} />
             </div>
           )}
         </div>
@@ -283,7 +286,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             selectedNodeId={selectedNodeId}
             onSelectNode={handleNodeBrowserSelect}
           />
-          <ResizeHandle side="next" minSize={280} maxSize={700} />
+          <ResizeHandle side="next" minSize={280} maxSize={700} persistId="query-inspector" />
         </>
       )}
 

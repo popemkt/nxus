@@ -1,5 +1,7 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '../lib/utils'
+
+const STORAGE_PREFIX = 'resize-handle:'
 
 interface ResizeHandleProps {
   /** Which sibling to resize: 'previous' (left/above) or 'next' (right/below) */
@@ -10,7 +12,26 @@ interface ResizeHandleProps {
   minSize?: number
   /** Max size in px for the target panel */
   maxSize?: number
+  /** When set, persists the panel size to localStorage under this key */
+  persistId?: string
   className?: string
+}
+
+function getPersistedSize(id: string): number | null {
+  try {
+    const val = localStorage.getItem(STORAGE_PREFIX + id)
+    return val ? Number(val) : null
+  } catch {
+    return null
+  }
+}
+
+function persistSize(id: string, size: number) {
+  try {
+    localStorage.setItem(STORAGE_PREFIX + id, String(Math.round(size)))
+  } catch {
+    // ignore
+  }
 }
 
 /**
@@ -23,9 +44,34 @@ function ResizeHandle({
   orientation = 'horizontal',
   minSize = 100,
   maxSize = 800,
+  persistId,
   className,
 }: ResizeHandleProps) {
   const handleRef = useRef<HTMLDivElement>(null)
+
+  // Restore persisted size on mount
+  useEffect(() => {
+    if (!persistId) return
+    const saved = getPersistedSize(persistId)
+    if (saved === null) return
+
+    const handle = handleRef.current
+    if (!handle) return
+
+    const target =
+      side === 'previous'
+        ? (handle.previousElementSibling as HTMLElement)
+        : (handle.nextElementSibling as HTMLElement)
+    if (!target) return
+
+    const isHorizontal = orientation === 'horizontal'
+    const clamped = Math.min(maxSize, Math.max(minSize, saved))
+    if (isHorizontal) {
+      target.style.width = `${clamped}px`
+    } else {
+      target.style.height = `${clamped}px`
+    }
+  }, [persistId, side, orientation, minSize, maxSize])
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -53,6 +99,8 @@ function ResizeHandle({
       document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize'
       document.body.style.userSelect = 'none'
 
+      let lastSize = startSize
+
       const onPointerMove = (ev: PointerEvent) => {
         const delta = isHorizontal
           ? ev.clientX - startPos
@@ -61,6 +109,7 @@ function ResizeHandle({
           maxSize,
           Math.max(minSize, startSize + delta * direction),
         )
+        lastSize = newSize
         if (isHorizontal) {
           target.style.width = `${newSize}px`
         } else {
@@ -73,12 +122,16 @@ function ResizeHandle({
         document.body.style.userSelect = ''
         handle.removeEventListener('pointermove', onPointerMove)
         handle.removeEventListener('pointerup', onPointerUp)
+
+        if (persistId) {
+          persistSize(persistId, lastSize)
+        }
       }
 
       handle.addEventListener('pointermove', onPointerMove)
       handle.addEventListener('pointerup', onPointerUp)
     },
-    [side, orientation, minSize, maxSize],
+    [side, orientation, minSize, maxSize, persistId],
   )
 
   const isHorizontal = orientation === 'horizontal'
