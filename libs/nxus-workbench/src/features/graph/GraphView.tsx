@@ -273,7 +273,7 @@ export function GraphView({
 
       {/* Graph Legend (bottom-right) */}
       {graphData.supertagColors.size > 0 && (
-        <div className="absolute bottom-4 right-4 z-10 max-h-[40vh] w-48 overflow-auto">
+        <div className="absolute bottom-4 right-4 z-10">
           <GraphLegend
             supertagColors={graphData.supertagColors}
             supertagNames={supertagNames}

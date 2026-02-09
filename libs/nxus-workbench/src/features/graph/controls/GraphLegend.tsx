@@ -1,10 +1,10 @@
 /**
- * GraphLegend - Displays supertag colors and enables filtering
+ * GraphLegend - Displays edge direction colors and supertag colors
  *
  * Features:
- * - Shows all supertags with their assigned colors
- * - Click to toggle supertag filter
- * - Visual indication of active filters
+ * - Edge direction section (outgoing/incoming colors)
+ * - Supertag color section with click-to-filter
+ * - Internal scrolling for long supertag lists
  * - Collapsible for space efficiency
  */
 
@@ -73,7 +73,7 @@ function LegendItem({
 }
 
 /**
- * Legend showing supertag colors with click-to-filter functionality.
+ * Legend showing edge directions and supertag colors with click-to-filter.
  * When filters are active, only selected supertags are shown at full opacity.
  */
 export function GraphLegend({
@@ -94,12 +94,10 @@ export function GraphLegend({
     const isActive = currentFilter.includes(supertagId)
 
     if (isActive) {
-      // Remove from filter
       setFilter({
         supertagFilter: currentFilter.filter((id) => id !== supertagId),
       })
     } else {
-      // Add to filter
       setFilter({
         supertagFilter: [...currentFilter, supertagId],
       })
@@ -117,9 +115,9 @@ export function GraphLegend({
   return (
     <div
       className={cn(
-        'bg-background/95 backdrop-blur-sm',
+        'w-48 bg-background/95 backdrop-blur-sm',
         'border border-border rounded-lg shadow-md',
-        'overflow-hidden',
+        'flex flex-col max-h-[40vh]',
         className,
       )}
     >
@@ -127,8 +125,9 @@ export function GraphLegend({
       <button
         onClick={() => setCollapsed(!collapsed)}
         className={cn(
-          'w-full flex items-center justify-between px-3 py-2',
+          'w-full flex items-center justify-between px-3 py-2 shrink-0',
           'hover:bg-muted/50 transition-colors',
+          !collapsed && 'border-b border-border',
         )}
       >
         <div className="flex items-center gap-2">
@@ -144,55 +143,63 @@ export function GraphLegend({
 
       {/* Content */}
       {!collapsed && (
-        <div className="px-2 pb-2">
-          {/* Edge directions */}
-          <div className="flex items-center gap-3 px-2 py-1.5 mb-1">
-            <div className="flex items-center gap-1.5">
-              <span
-                className="h-2 w-3 rounded-full"
-                style={{ backgroundColor: EDGE_DIRECTION_COLORS.outgoing }}
-              />
-              <span className="text-[10px] text-muted-foreground">Outgoing</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span
-                className="h-2 w-3 rounded-full"
-                style={{ backgroundColor: EDGE_DIRECTION_COLORS.incoming }}
-              />
-              <span className="text-[10px] text-muted-foreground">Incoming</span>
+        <div className="flex flex-col min-h-0">
+          {/* Edge directions — fixed, never scrolls */}
+          <div className="shrink-0 px-3 py-2 border-b border-border/50">
+            <p className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1.5">Edges</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="h-2 w-3 rounded-full"
+                  style={{ backgroundColor: EDGE_DIRECTION_COLORS.outgoing }}
+                />
+                <span className="text-[10px] text-muted-foreground">Outgoing</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="h-2 w-3 rounded-full"
+                  style={{ backgroundColor: EDGE_DIRECTION_COLORS.incoming }}
+                />
+                <span className="text-[10px] text-muted-foreground">Incoming</span>
+              </div>
             </div>
           </div>
 
-          {/* Supertag colors */}
-          <div className="space-y-0.5">
-          {supertagIds.map((id) => (
-            <LegendItem
-              key={id}
-              id={id}
-              name={supertagNames.get(id) || 'Unknown'}
-              color={supertagColors.get(id) || '#888888'}
-              isFiltered={hasFilters}
-              isActive={filter.supertagFilter.includes(id)}
-              onToggle={handleToggle}
-            />
-          ))}
+          {/* Supertag colors — scrollable */}
+          <div className="px-3 pt-2 shrink-0">
+            <p className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1.5">Nodes</p>
+          </div>
+          <div className="overflow-y-auto min-h-0 px-1 pb-2">
+            <div className="space-y-0.5">
+              {supertagIds.map((id) => (
+                <LegendItem
+                  key={id}
+                  id={id}
+                  name={supertagNames.get(id) || 'Unknown'}
+                  color={supertagColors.get(id) || '#888888'}
+                  isFiltered={hasFilters}
+                  isActive={filter.supertagFilter.includes(id)}
+                  onToggle={handleToggle}
+                />
+              ))}
+            </div>
 
-          {/* Clear filters button */}
-          {hasFilters && (
-            <button
-              onClick={handleClearFilters}
-              className={cn(
-                'w-full flex items-center justify-center gap-1.5',
-                'px-2 py-1.5 mt-2 rounded-md text-xs',
-                'text-muted-foreground hover:text-foreground',
-                'hover:bg-muted/50 transition-colors',
-                'border border-dashed border-border',
-              )}
-            >
-              <X className="size-3" />
-              Clear all filters
-            </button>
-          )}
+            {/* Clear filters button */}
+            {hasFilters && (
+              <button
+                onClick={handleClearFilters}
+                className={cn(
+                  'w-full flex items-center justify-center gap-1.5',
+                  'px-2 py-1.5 mt-2 rounded-md text-xs',
+                  'text-muted-foreground hover:text-foreground',
+                  'hover:bg-muted/50 transition-colors',
+                  'border border-dashed border-border',
+                )}
+              >
+                <X className="size-3" />
+                Clear all filters
+              </button>
+            )}
           </div>
         </div>
       )}
