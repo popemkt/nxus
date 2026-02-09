@@ -223,7 +223,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
 
       {/* List View: Supertag Sidebar + Node Browser + Inspector */}
       {viewMode === 'list' && (
-        <ResizablePanelGroup orientation="horizontal" id="workbench-list">
+        <ResizablePanelGroup orientation="horizontal" id="workbench-list" className="flex-1 min-w-0 overflow-hidden">
           <ResizablePanel id="supertag-sidebar" defaultSize={18} minSize={12} maxSize={30}>
             <SupertagSidebar
               supertags={supertags}
@@ -291,7 +291,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
 
       {/* Query View: Query Results + Inspector */}
       {viewMode === 'query' && (
-        <ResizablePanelGroup orientation="horizontal" id="workbench-query">
+        <ResizablePanelGroup orientation="horizontal" id="workbench-query" className="flex-1 min-w-0 overflow-hidden">
           <ResizablePanel id="query-results" defaultSize={65} minSize={30}>
             <QueryResultsView
               selectedNodeId={selectedNodeId}
