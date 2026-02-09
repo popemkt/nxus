@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '../lib/utils'
 
-const STORAGE_PREFIX = 'resize-handle:'
-
 interface ResizeHandleProps {
   /** Which sibling to resize: 'previous' (left/above) or 'next' (right/below) */
   side?: 'previous' | 'next'
@@ -12,26 +10,11 @@ interface ResizeHandleProps {
   minSize?: number
   /** Max size in px for the target panel */
   maxSize?: number
-  /** When set, persists the panel size to localStorage under this key */
-  persistId?: string
+  /** Initial size to apply on mount (e.g. from a persisted store). Null = use CSS default. */
+  defaultSize?: number | null
+  /** Called with the new size in px when the user finishes dragging */
+  onResize?: (size: number) => void
   className?: string
-}
-
-function getPersistedSize(id: string): number | null {
-  try {
-    const val = localStorage.getItem(STORAGE_PREFIX + id)
-    return val ? Number(val) : null
-  } catch {
-    return null
-  }
-}
-
-function persistSize(id: string, size: number) {
-  try {
-    localStorage.setItem(STORAGE_PREFIX + id, String(Math.round(size)))
-  } catch {
-    // ignore
-  }
 }
 
 /**
@@ -44,16 +27,15 @@ function ResizeHandle({
   orientation = 'horizontal',
   minSize = 100,
   maxSize = 800,
-  persistId,
+  defaultSize,
+  onResize,
   className,
 }: ResizeHandleProps) {
   const handleRef = useRef<HTMLDivElement>(null)
 
-  // Restore persisted size on mount
+  // Apply persisted size on mount
   useEffect(() => {
-    if (!persistId) return
-    const saved = getPersistedSize(persistId)
-    if (saved === null) return
+    if (defaultSize == null) return
 
     const handle = handleRef.current
     if (!handle) return
@@ -65,13 +47,13 @@ function ResizeHandle({
     if (!target) return
 
     const isHorizontal = orientation === 'horizontal'
-    const clamped = Math.min(maxSize, Math.max(minSize, saved))
+    const clamped = Math.min(maxSize, Math.max(minSize, defaultSize))
     if (isHorizontal) {
       target.style.width = `${clamped}px`
     } else {
       target.style.height = `${clamped}px`
     }
-  }, [persistId, side, orientation, minSize, maxSize])
+  }, [defaultSize, side, orientation, minSize, maxSize])
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -123,15 +105,13 @@ function ResizeHandle({
         handle.removeEventListener('pointermove', onPointerMove)
         handle.removeEventListener('pointerup', onPointerUp)
 
-        if (persistId) {
-          persistSize(persistId, lastSize)
-        }
+        onResize?.(Math.round(lastSize))
       }
 
       handle.addEventListener('pointermove', onPointerMove)
       handle.addEventListener('pointerup', onPointerUp)
     },
-    [side, orientation, minSize, maxSize, persistId],
+    [side, orientation, minSize, maxSize, onResize],
   )
 
   const isHorizontal = orientation === 'horizontal'
@@ -155,3 +135,4 @@ function ResizeHandle({
 }
 
 export { ResizeHandle }
+export type { ResizeHandleProps }

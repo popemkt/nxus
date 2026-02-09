@@ -29,6 +29,7 @@ import { QueryResultsView } from './components/query-results/index.js'
 import { Sidebar, type ViewMode } from './components/layout/index.js'
 import { GraphView } from './features/graph/index.js'
 import { useGraphStore } from './features/graph/store/index.js'
+import { useLayoutStore } from './stores/index.js'
 import type { AssembledNode } from '@nxus/db'
 import { getNodeServerFn } from './server/nodes.server.js'
 import {
@@ -87,6 +88,10 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
 
   // Graph store for local graph focus synchronization
   const { localGraph, setLocalGraph } = useGraphStore()
+
+  // Persisted panel sizes
+  const layout = useLayoutStore()
+  const setPanelSize = useLayoutStore((s) => s.setPanelSize)
 
   // ============================================================================
   // Data Fetching
@@ -230,7 +235,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onSelectSupertag={setSupertagFilter}
             isLoading={supertagsLoading}
           />
-          <ResizeHandle side="previous" minSize={160} maxSize={400} persistId="list-supertag" />
+          <ResizeHandle side="previous" minSize={160} maxSize={400} defaultSize={layout.listSupertag} onResize={(s) => setPanelSize('listSupertag', s)} />
           <NodeBrowser
             nodes={nodes}
             selectedNodeId={selectedNodeId}
@@ -239,7 +244,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onSearchChange={setSearchQuery}
             isLoading={nodesLoading}
           />
-          <ResizeHandle side="next" minSize={280} maxSize={700} persistId="list-inspector" />
+          <ResizeHandle side="next" minSize={280} maxSize={700} defaultSize={layout.listInspector} onResize={(s) => setPanelSize('listInspector', s)} />
         </>
       )}
 
@@ -258,7 +263,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
           {/* Overlay Node Inspector */}
           {inspectorOpen && selectedNode && (
             <div className="absolute top-0 right-0 h-full flex z-20">
-              <ResizeHandle side="next" minSize={300} maxSize={800} persistId="graph-inspector" />
+              <ResizeHandle side="next" minSize={300} maxSize={800} defaultSize={layout.graphInspector} onResize={(s) => setPanelSize('graphInspector', s)} />
               <div
                 className="w-[480px] h-full border-l border-border flex flex-col bg-card/95 backdrop-blur-sm shadow-xl"
                 data-testid="node-inspector-panel"
@@ -286,7 +291,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             selectedNodeId={selectedNodeId}
             onSelectNode={handleNodeBrowserSelect}
           />
-          <ResizeHandle side="next" minSize={280} maxSize={700} persistId="query-inspector" />
+          <ResizeHandle side="next" minSize={280} maxSize={700} defaultSize={layout.queryInspector} onResize={(s) => setPanelSize('queryInspector', s)} />
         </>
       )}
 
