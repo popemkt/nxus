@@ -1,69 +1,104 @@
-import {
-  Group,
-  Panel,
-  Separator,
-  type GroupProps,
-  type PanelProps,
-  type SeparatorProps,
-} from 'react-resizable-panels'
-
+import { useCallback, useRef } from 'react'
 import { cn } from '../lib/utils'
 
-function ResizablePanelGroup({
+interface ResizeHandleProps {
+  /** Which sibling to resize: 'previous' (left/above) or 'next' (right/below) */
+  side?: 'previous' | 'next'
+  /** Orientation of the handle */
+  orientation?: 'horizontal' | 'vertical'
+  /** Min size in px for the target panel */
+  minSize?: number
+  /** Max size in px for the target panel */
+  maxSize?: number
+  className?: string
+}
+
+/**
+ * A drag handle placed between two flex siblings.
+ * Dragging resizes the adjacent panel by setting its inline width/height.
+ * The other sibling(s) should use flex-1 to fill remaining space.
+ */
+function ResizeHandle({
+  side = 'previous',
+  orientation = 'horizontal',
+  minSize = 100,
+  maxSize = 800,
   className,
-  ...props
-}: React.ComponentProps<typeof Group>) {
+}: ResizeHandleProps) {
+  const handleRef = useRef<HTMLDivElement>(null)
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault()
+
+      const handle = handleRef.current
+      if (!handle) return
+
+      const target =
+        side === 'previous'
+          ? (handle.previousElementSibling as HTMLElement)
+          : (handle.nextElementSibling as HTMLElement)
+      if (!target) return
+
+      const isHorizontal = orientation === 'horizontal'
+      const startPos = isHorizontal ? e.clientX : e.clientY
+      const startSize = isHorizontal
+        ? target.getBoundingClientRect().width
+        : target.getBoundingClientRect().height
+
+      // Flip direction for 'next' — dragging right should shrink the next sibling
+      const direction = side === 'previous' ? 1 : -1
+
+      handle.setPointerCapture(e.pointerId)
+      document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize'
+      document.body.style.userSelect = 'none'
+
+      const onPointerMove = (ev: PointerEvent) => {
+        const delta = isHorizontal
+          ? ev.clientX - startPos
+          : ev.clientY - startPos
+        const newSize = Math.min(
+          maxSize,
+          Math.max(minSize, startSize + delta * direction),
+        )
+        if (isHorizontal) {
+          target.style.width = `${newSize}px`
+        } else {
+          target.style.height = `${newSize}px`
+        }
+      }
+
+      const onPointerUp = () => {
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+        handle.removeEventListener('pointermove', onPointerMove)
+        handle.removeEventListener('pointerup', onPointerUp)
+      }
+
+      handle.addEventListener('pointermove', onPointerMove)
+      handle.addEventListener('pointerup', onPointerUp)
+    },
+    [side, orientation, minSize, maxSize],
+  )
+
+  const isHorizontal = orientation === 'horizontal'
+
   return (
-    <Group
-      data-slot="resizable-panel-group"
+    <div
+      ref={handleRef}
+      onPointerDown={onPointerDown}
       className={cn(
-        'flex h-full w-full data-[orientation=vertical]:flex-col',
+        'shrink-0 bg-border hover:bg-primary/30 transition-colors',
+        isHorizontal ? 'w-px cursor-col-resize' : 'h-px cursor-row-resize',
+        // Wider hit area via pseudo-element
+        'relative after:absolute after:content-[""]',
+        isHorizontal
+          ? 'after:inset-y-0 after:left-1/2 after:w-2 after:-translate-x-1/2'
+          : 'after:inset-x-0 after:top-1/2 after:h-2 after:-translate-y-1/2',
         className,
       )}
-      {...props}
     />
   )
 }
 
-function ResizablePanel({ ...props }: React.ComponentProps<typeof Panel>) {
-  return <Panel data-slot="resizable-panel" {...props} />
-}
-
-function ResizableHandle({
-  withHandle = false,
-  className,
-  ...props
-}: React.ComponentProps<typeof Separator> & { withHandle?: boolean }) {
-  return (
-    <Separator
-      data-slot="resizable-handle"
-      className={cn(
-        'bg-border focus-visible:ring-ring relative flex w-px items-center justify-center after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden data-[orientation=vertical]:h-px data-[orientation=vertical]:w-full data-[orientation=vertical]:after:left-0 data-[orientation=vertical]:after:h-1 data-[orientation=vertical]:after:w-full data-[orientation=vertical]:after:-translate-y-1/2 data-[orientation=vertical]:after:translate-x-0 [&[data-orientation=vertical]>div]:rotate-90',
-        className,
-      )}
-      {...props}
-    >
-      {withHandle && (
-        <div className="bg-border z-10 flex h-4 w-3 items-center justify-center rounded-xs border">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 6 16"
-            fill="currentColor"
-            className="size-2.5"
-          >
-            <path d="M1 0a1 1 0 0 0 0 2h0a1 1 0 0 0 0-2h0zm0 7a1 1 0 0 0 0 2h0a1 1 0 0 0 0-2h0zm0 7a1 1 0 0 0 0 2h0a1 1 0 0 0 0-2h0zm4-14a1 1 0 0 0 0 2h0a1 1 0 0 0 0-2h0zm0 7a1 1 0 0 0 0 2h0a1 1 0 0 0 0-2h0zm0 7a1 1 0 0 0 0 2h0a1 1 0 0 0 0-2h0z" />
-          </svg>
-        </div>
-      )}
-    </Separator>
-  )
-}
-
-export {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-  type GroupProps as ResizablePanelGroupProps,
-  type PanelProps as ResizablePanelProps,
-  type SeparatorProps as ResizableHandleProps,
-}
+export { ResizeHandle }

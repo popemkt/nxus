@@ -7,7 +7,6 @@ export interface SupertagSidebarProps {
   selectedSupertag: string | null
   onSelectSupertag: (systemId: string | null) => void
   isLoading?: boolean
-  className?: string
 }
 
 /**
@@ -24,10 +23,9 @@ export function SupertagSidebar({
   selectedSupertag,
   onSelectSupertag,
   isLoading,
-  className,
 }: SupertagSidebarProps) {
   return (
-    <div className={cn('h-full border-r border-border flex flex-col bg-card/50', className)}>
+    <div className="w-64 shrink-0 border-r border-border flex flex-col bg-card/50">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">

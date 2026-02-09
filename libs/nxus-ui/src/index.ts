@@ -110,11 +110,7 @@ export {
   SelectValue,
 } from './components/select'
 
-export {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from './components/resizable'
+export { ResizeHandle } from './components/resizable'
 
 export { Separator } from './components/separator'
 

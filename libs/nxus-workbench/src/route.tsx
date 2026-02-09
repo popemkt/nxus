@@ -14,13 +14,13 @@
  * - Node inspector for deep visualization
  * - Keyboard navigation
  * - Bidirectional focus synchronization between views
- * - Resizable panels for all views
+ * - Resizable panel borders
  */
 
 import { Cube, X } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@nxus/ui'
+import { ResizeHandle } from '@nxus/ui'
 
 import { NodeBrowser } from './components/node-browser/index.js'
 import { NodeInspector } from './components/node-inspector/index.js'
@@ -221,39 +221,26 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
       {/* Far Left - View Mode Sidebar (fixed, not resizable) */}
       <Sidebar activeView={viewMode} onViewChange={setViewMode} />
 
-      {/* List View: Supertag Sidebar + Node Browser + Inspector */}
+      {/* List View: Supertag Sidebar | Node Browser | Inspector */}
       {viewMode === 'list' && (
-        <ResizablePanelGroup orientation="horizontal" id="workbench-list" className="flex-1 min-w-0 overflow-hidden">
-          <ResizablePanel id="supertag-sidebar" defaultSize={18} minSize={12} maxSize={30}>
-            <SupertagSidebar
-              supertags={supertags}
-              selectedSupertag={supertagFilter}
-              onSelectSupertag={setSupertagFilter}
-              isLoading={supertagsLoading}
-            />
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel id="node-browser" defaultSize={47} minSize={20}>
-            <NodeBrowser
-              nodes={nodes}
-              selectedNodeId={selectedNodeId}
-              onSelectNode={handleNodeBrowserSelect}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              isLoading={nodesLoading}
-            />
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel id="inspector-list" defaultSize={35} minSize={20} maxSize={50}>
-            <div className="h-full border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
-              {selectedNode ? (
-                <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
-              ) : (
-                <InspectorEmptyState hint="Use ↑↓ to navigate, Enter to select" />
-              )}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <>
+          <SupertagSidebar
+            supertags={supertags}
+            selectedSupertag={supertagFilter}
+            onSelectSupertag={setSupertagFilter}
+            isLoading={supertagsLoading}
+          />
+          <ResizeHandle side="previous" minSize={160} maxSize={400} />
+          <NodeBrowser
+            nodes={nodes}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleNodeBrowserSelect}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            isLoading={nodesLoading}
+          />
+          <ResizeHandle side="next" minSize={280} maxSize={700} />
+        </>
       )}
 
       {/* Graph View - full width with overlay inspector */}
@@ -289,26 +276,28 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
         </div>
       )}
 
-      {/* Query View: Query Results + Inspector */}
+      {/* Query View: Query Results | Inspector */}
       {viewMode === 'query' && (
-        <ResizablePanelGroup orientation="horizontal" id="workbench-query" className="flex-1 min-w-0 overflow-hidden">
-          <ResizablePanel id="query-results" defaultSize={65} minSize={30}>
-            <QueryResultsView
-              selectedNodeId={selectedNodeId}
-              onSelectNode={handleNodeBrowserSelect}
+        <>
+          <QueryResultsView
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleNodeBrowserSelect}
+          />
+          <ResizeHandle side="next" minSize={280} maxSize={700} />
+        </>
+      )}
+
+      {/* Right Panel - Node Inspector (visible in list and query views) */}
+      {viewMode !== 'graph' && (
+        <div className="w-[480px] shrink-0 border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
+          {selectedNode ? (
+            <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
+          ) : (
+            <InspectorEmptyState
+              hint={viewMode === 'list' ? 'Use ↑↓ to navigate, Enter to select' : 'Add filters and select a result'}
             />
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel id="inspector-query" defaultSize={35} minSize={15} maxSize={50}>
-            <div className="h-full border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
-              {selectedNode ? (
-                <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
-              ) : (
-                <InspectorEmptyState hint="Add filters and select a result" />
-              )}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          )}
+        </div>
       )}
     </div>
   )
