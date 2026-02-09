@@ -21,8 +21,8 @@ import { useQuery } from '@tanstack/react-query'
 import { getTagConfigServerFn } from '@/services/tag-config.server'
 
 export interface TagSchemaModalProps {
-  /** Integer tag ID */
-  tagId: number
+  /** Tag ID (node UUID) */
+  tagId: string
   /** Display name/slug for the modal title */
   tagName?: string
   open: boolean
@@ -49,7 +49,7 @@ export function TagSchemaModal({
   const { data: configResult, isLoading } = useQuery({
     queryKey: ['tag-config', tagId],
     queryFn: () => getTagConfigServerFn({ data: { tagId } }),
-    enabled: open && tagId > 0,
+    enabled: open && !!tagId,
   })
 
   const config = configResult as

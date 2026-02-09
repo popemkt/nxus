@@ -44,7 +44,7 @@ export type InstallConfig = z.infer<typeof InstallConfigSchema>
  * Tag reference in app metadata
  */
 export const TagRefSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   name: z.string(),
 })
 export type TagRef = z.infer<typeof TagRefSchema>

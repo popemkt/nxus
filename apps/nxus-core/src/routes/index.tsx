@@ -42,19 +42,15 @@ function AppManager() {
   const tags = useTagDataStore((s) => s.tags)
 
   // Build tag filter list including descendants if needed
-  // selectedTagIds are stringified integer IDs, tags Map uses number keys
   const filterTags = useMemo(() => {
     if (selectedTagIds.size === 0) return undefined
 
-    const tagObjects: Array<{ id: number; name: string }> = []
-    for (const tagIdStr of selectedTagIds) {
-      const tagId = parseInt(tagIdStr, 10)
-      if (isNaN(tagId)) continue
-
+    const tagObjects: Array<{ id: string; name: string }> = []
+    for (const tagId of selectedTagIds) {
       const tag = tags.get(tagId)
       if (tag) tagObjects.push({ id: tag.id, name: tag.name })
 
-      if (includeSubTags.get(tagIdStr)) {
+      if (includeSubTags.get(tagId)) {
         const descendants = getDescendants(tagId)
         for (const desc of descendants) {
           tagObjects.push({ id: desc.id, name: desc.name })

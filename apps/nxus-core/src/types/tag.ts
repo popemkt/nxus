@@ -2,15 +2,15 @@ import { z } from 'zod'
 
 /**
  * Tag schema for hierarchical tag organization
- * Tags use integer ID for efficient indexing
+ * Tags are nodes — IDs are node UUIDs.
  */
 export const TagSchema = z.object({
-  id: z.number().describe('Integer primary key'),
+  id: z.string().describe('Node UUID'),
   name: z.string().min(1).describe('Display name'),
   parentId: z
-    .number()
+    .string()
     .nullable()
-    .describe('Parent tag ID for nesting, null for root'),
+    .describe('Parent node UUID for nesting, null for root'),
   order: z.number().describe('Sort order within siblings'),
   color: z.string().nullable().optional().describe('Optional hex color'),
   icon: z
@@ -29,7 +29,7 @@ export type Tag = z.infer<typeof TagSchema>
  */
 export const CreateTagInputSchema = z.object({
   name: z.string().min(1),
-  parentId: z.number().nullable().default(null),
+  parentId: z.string().nullable().default(null),
   color: z.string().optional(),
   icon: z.string().optional(),
 })
@@ -40,9 +40,9 @@ export type CreateTagInput = z.infer<typeof CreateTagInputSchema>
  * Input for updating a tag
  */
 export const UpdateTagInputSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   name: z.string().min(1).optional(),
-  parentId: z.number().nullable().optional(),
+  parentId: z.string().nullable().optional(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
   icon: z.string().nullable().optional(),

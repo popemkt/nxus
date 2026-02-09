@@ -5,7 +5,7 @@
  * Tags like "ai-provider" can have schema definitions that require
  * apps to provide configuration values.
  *
- * Uses integer tag IDs for proper foreign key relationships.
+ * Uses string tag IDs (node UUIDs) for proper foreign key relationships.
  */
 
 import { createServerFn } from '@tanstack/react-start'
@@ -75,10 +75,10 @@ const TagConfigSchemaValidator = z.object({
 // ============================================================================
 
 /**
- * Get schema for a configurable tag by integer ID
+ * Get schema for a configurable tag by string ID (node UUID)
  */
 export const getTagConfigServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ tagId: z.number() }))
+  .inputValidator(z.object({ tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getTagConfigServerFn] Fetching:', ctx.data.tagId)
     const db = initDatabase()
@@ -146,7 +146,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
 export const setTagConfigServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
-      tagId: z.number(),
+      tagId: z.string(),
       schema: TagConfigSchemaValidator,
       description: z.string().optional(),
     }),
@@ -193,7 +193,7 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
  * Get an app's configuration values for a specific tag
  */
 export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
+  .inputValidator(z.object({ appId: z.string(), tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getAppTagValuesServerFn] Fetching:', ctx.data)
     const db = initDatabase()
@@ -253,7 +253,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       appId: z.string(),
-      tagId: z.number(),
+      tagId: z.string(),
       configValues: z.any(), // Use z.any() instead of z.record() to avoid validation issues
     }),
   )
@@ -345,7 +345,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
  * Delete an app's configuration values for a tag
  */
 export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
+  .inputValidator(z.object({ appId: z.string(), tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[deleteAppTagValuesServerFn] Deleting:', ctx.data)
     const db = initDatabase()
@@ -369,7 +369,7 @@ export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
  * Useful for finding all AI providers, for example
  */
 export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ tagId: z.number() }))
+  .inputValidator(z.object({ tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getAppsByConfiguredTagServerFn] Fetching:', ctx.data.tagId)
     const db = initDatabase()

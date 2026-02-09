@@ -18,7 +18,7 @@ export interface TagConfigField {
 }
 
 export interface SystemTag {
-  id: number
+  id: string
   name: string
   description: string
   /** Whether this tag has a configuration schema */
@@ -29,11 +29,11 @@ export interface SystemTag {
 
 /**
  * Dictionary of system tags with their IDs and metadata
- * IDs are stable - do not change them once assigned!
+ * IDs are stable system identifiers used to look up or create the corresponding node.
  */
 export const SYSTEM_TAGS = {
   AI_PROVIDER: {
-    id: 14,
+    id: 'system:ai-provider',
     name: 'AI CLI Provider',
     description: 'AI tools that can be configured to provide AI capabilities',
     configurable: true,
@@ -62,13 +62,6 @@ export const SYSTEM_TAGS = {
       ],
     },
   },
-  // Add more system tags here as needed
-  // Example:
-  // INSTALLED: {
-  //   id: 13,
-  //   name: 'Installed',
-  //   description: 'Apps/tools that have been installed on this system',
-  // },
 } as const satisfies Record<string, SystemTag>
 
 /**
@@ -93,6 +86,6 @@ export function getAllSystemTags(): Array<SystemTag> {
 /**
  * Check if a tag ID is a system tag
  */
-export function isSystemTag(tagId: number): boolean {
+export function isSystemTag(tagId: string): boolean {
   return Object.values(SYSTEM_TAGS).some((t) => t.id === tagId)
 }

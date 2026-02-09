@@ -31,12 +31,12 @@ export type NewInboxEntry = typeof inbox.$inferInsert
 
 /**
  * Tags - hierarchical tag tree for organizing items
- * Uses integer ID for efficient indexing
+ * Uses string UUIDs (node IDs) as primary key
  */
 export const tags = sqliteTable('tags', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+  id: text('id').primaryKey(),
   name: text('name').notNull(),
-  parentId: integer('parent_id'),
+  parentId: text('parent_id'),
   order: integer('order').notNull().default(0),
   color: text('color'),
   icon: text('icon'),
@@ -59,7 +59,7 @@ export const itemTags = sqliteTable(
   'item_tags',
   {
     appId: text('app_id').notNull(),
-    tagId: integer('tag_id').notNull(),
+    tagId: text('tag_id').notNull(),
   },
   (table) => [primaryKey({ columns: [table.appId, table.tagId] })],
 )
@@ -183,7 +183,7 @@ export type NewDbItemCommand = typeof itemCommands.$inferInsert
  * provide values matching this schema.
  */
 export const tagSchemas = sqliteTable('tag_schemas', {
-  tagId: integer('tag_id').primaryKey(), // References tags.id
+  tagId: text('tag_id').primaryKey(), // References tag node UUID
   schema: json<Record<string, unknown>>()('schema').notNull(),
   description: text('description'),
   createdAt: integer('created_at', { mode: 'timestamp' })
@@ -203,7 +203,7 @@ export type NewTagSchema = typeof tagSchemas.$inferInsert
  */
 export const itemTagConfigs = sqliteTable('item_tag_configs', {
   appId: text('app_id').notNull(),
-  tagId: integer('tag_id').notNull(), // References tags.id
+  tagId: text('tag_id').notNull(), // References tag node UUID
   configValues: json<Record<string, unknown>>()('config_values').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())

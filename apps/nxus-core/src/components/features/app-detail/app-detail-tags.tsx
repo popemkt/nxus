@@ -24,7 +24,7 @@ interface AppDetailTagsProps {
 export function AppDetailTags({ appId, appName, tags }: AppDetailTagsProps) {
   const queryClient = useQueryClient()
   const [configModalTag, setConfigModalTag] = React.useState<{
-    id: number
+    id: string
     name: string
   } | null>(null)
 
@@ -40,20 +40,20 @@ export function AppDetailTags({ appId, appName, tags }: AppDetailTagsProps) {
     queryFn: () => getAllAppTagValuesServerFn({ data: { appId } }),
   })
 
-  // Compute which tags are configurable and which are configured (numeric IDs)
+  // Compute which tags are configurable and which are configured (string UUIDs)
   const configurableTagIds = React.useMemo(() => {
     const result = configurableTagsResult as
-      | { success: boolean; data?: Array<{ tagId: number }> }
+      | { success: boolean; data?: Array<{ tagId: string }> }
       | undefined
-    if (!result?.success || !result.data) return new Set<number>()
+    if (!result?.success || !result.data) return new Set<string>()
     return new Set(result.data.map((t) => t.tagId))
   }, [configurableTagsResult])
 
   const configuredTagIds = React.useMemo(() => {
     const result = appTagValuesResult as
-      | { success: boolean; data?: Array<{ tagId: number }> }
+      | { success: boolean; data?: Array<{ tagId: string }> }
       | undefined
-    if (!result?.success || !result.data) return new Set<number>()
+    if (!result?.success || !result.data) return new Set<string>()
     return new Set(result.data.map((v) => v.tagId))
   }, [appTagValuesResult])
 

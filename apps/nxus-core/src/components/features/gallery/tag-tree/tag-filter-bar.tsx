@@ -24,18 +24,8 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
   }
 
   const selectedTags = Array.from(selectedTagIds)
-    .map((idStr) => {
-      const id = parseInt(idStr, 10)
-      if (isNaN(id)) return null
-      const tag = tags.get(id)
-      if (!tag) return null
-      return { ...tag, idStr } // Add string ID for UI operations
-    })
-    .filter(Boolean) as Array<{
-    id: number
-    idStr: string
-    name: string
-  }>
+    .map((id) => tags.get(id) ?? null)
+    .filter(Boolean)
 
   return (
     <div
@@ -49,7 +39,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
       <div className="flex flex-wrap gap-1.5 flex-1">
         {selectedTags.map((tag) => {
           if (!tag) return null
-          const includesSubTags = includeSubTags.get(tag.idStr) ?? false
+          const includesSubTags = includeSubTags.get(tag.id) ?? false
 
           return (
             <div
@@ -63,7 +53,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
 
               {/* Include sub-tags dropdown */}
               <button
-                onClick={() => setIncludeSubTags(tag.idStr, !includesSubTags)}
+                onClick={() => setIncludeSubTags(tag.id, !includesSubTags)}
                 className={cn(
                   'flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-primary/20 transition-colors',
                   includesSubTags && 'bg-primary/20',
@@ -78,7 +68,7 @@ export function TagFilterBar({ className }: TagFilterBarProps) {
 
               {/* Remove button */}
               <button
-                onClick={() => toggleSelected(tag.idStr)}
+                onClick={() => toggleSelected(tag.id)}
                 className="p-0.5 rounded-full hover:bg-primary/20 transition-colors"
                 title="Remove filter"
               >
@@ -116,14 +106,11 @@ export function useTagFilter<T extends { tags?: Array<string> }>(items: Array<T>
 
   // Build the set of tag names to match
   const matchTagNames = new Set<string>()
-  for (const tagIdStr of selectedTagIds) {
-    const tagId = parseInt(tagIdStr, 10)
-    if (isNaN(tagId)) continue
-
+  for (const tagId of selectedTagIds) {
     const tag = tags.get(tagId)
     if (tag) matchTagNames.add(tag.name)
 
-    if (includeSubTags.get(tagIdStr)) {
+    if (includeSubTags.get(tagId)) {
       // Add all descendants
       const descendants = getDescendants(tagId)
       for (const desc of descendants) {

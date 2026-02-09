@@ -35,8 +35,8 @@ interface TagConfigSchema {
 }
 
 export interface TagConfigModalProps {
-  /** Tag ID to configure */
-  tagId: number
+  /** Tag ID to configure (node UUID) */
+  tagId: string
   /** Tag name for display */
   tagName?: string
   /** App ID to configure values for */
