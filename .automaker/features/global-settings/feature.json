@@ -1,0 +1,12 @@
+{
+  "id": "global-settings",
+  "category": "UI",
+  "title": "Global Settings Panel",
+  "description": "Centralized settings interface for app configuration including database location, backup settings, theme, and behavior preferences.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.800Z",
+  "updatedAt": "2026-02-09T14:55:22.800Z"
+}

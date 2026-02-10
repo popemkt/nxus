@@ -1,0 +1,12 @@
+{
+  "id": "analytics-dashboard",
+  "category": "UI",
+  "title": "Analytics and Insights Dashboard",
+  "description": "Visualize workspace statistics including node counts, tag usage, activity trends, and productivity metrics.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.804Z",
+  "updatedAt": "2026-02-09T14:55:22.804Z"
+}

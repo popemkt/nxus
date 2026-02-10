@@ -1,0 +1,12 @@
+{
+  "id": "node-templates",
+  "category": "Core",
+  "title": "Node Templates System",
+  "description": "Allow users to create and save node templates with pre-configured properties, supertags, and default values. Templates can be instantiated to quickly create new nodes with consistent structure.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.782Z",
+  "updatedAt": "2026-02-09T14:55:22.782Z"
+}

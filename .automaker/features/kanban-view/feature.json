@@ -1,0 +1,12 @@
+{
+  "id": "kanban-view",
+  "category": "UI",
+  "title": "Kanban Board View",
+  "description": "Visualize nodes as cards in columns based on property values. Supports drag-and-drop between columns, WIP limits, and swimlanes.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.791Z",
+  "updatedAt": "2026-02-09T14:55:22.791Z"
+}

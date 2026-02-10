@@ -1,0 +1,12 @@
+{
+  "id": "trash-recovery",
+  "category": "Core",
+  "title": "Trash Bin and Recovery",
+  "description": "Soft-delete nodes to trash bin with recovery options and automatic permanent deletion after retention period.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.798Z",
+  "updatedAt": "2026-02-09T14:55:22.798Z"
+}

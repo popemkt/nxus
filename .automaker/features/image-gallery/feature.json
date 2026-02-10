@@ -1,0 +1,14 @@
+{
+  "id": "image-gallery",
+  "category": "UI",
+  "title": "Image Gallery Field Type",
+  "description": "Display multiple images in a gallery layout with lightbox view, drag-to-reorder, and thumbnail generation.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "file-attachments"
+  ],
+  "createdAt": "2026-02-09T14:55:22.797Z",
+  "updatedAt": "2026-02-09T14:55:22.797Z"
+}

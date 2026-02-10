@@ -1,0 +1,12 @@
+{
+  "id": "view-presets",
+  "category": "UI",
+  "title": "Saved View Presets",
+  "description": "Save and load custom view configurations including visible columns, sort order, filters, and grouping settings for table and gallery views.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.790Z",
+  "updatedAt": "2026-02-09T14:55:22.790Z"
+}
