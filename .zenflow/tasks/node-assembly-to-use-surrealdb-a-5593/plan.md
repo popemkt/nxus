@@ -118,7 +118,8 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 - `npx nx run nxus-db:test` — all existing + new tests pass
 - `npx nx run-many --target=typecheck --all` — type-checks pass
 
-### [ ] Step: SurrealDB graph schema for field table and has_field edges
+### [x] Step: SurrealDB graph schema for field table and has_field edges
+<!-- chat-id: bea25e9f-75b5-4c8c-8847-f82f91c4219a -->
 
 **Goal:** Extend the SurrealDB schema to include `field` table and `has_field` relation. Write a bootstrap function for SurrealDB field definitions. Test schema creation.
 
