@@ -154,7 +154,8 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 **Verification:**
 - `npx nx run nxus-db:test` — all existing + new tests pass (including the 157 existing SurrealDB tests which now also init the field schema)
 
-### [ ] Step: SurrealDB backend implementation with graph-based assembly
+### [x] Step: SurrealDB backend implementation with graph-based assembly
+<!-- chat-id: 79dc768a-47fd-46dc-a154-1ad302f9060b -->
 
 **Goal:** Implement the full `SurrealBackend` class with graph-based assembly (properties as `has_field` edges) and comprehensive tests.
 

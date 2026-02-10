@@ -251,6 +251,7 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
     DEFINE FIELD OVERWRITE content ON node TYPE option<string>;
     DEFINE FIELD OVERWRITE content_plain ON node TYPE option<string>;
     DEFINE FIELD OVERWRITE system_id ON node TYPE option<string>;
+    DEFINE FIELD OVERWRITE owner_id ON node TYPE option<string>;
     DEFINE FIELD OVERWRITE created_at ON node TYPE datetime DEFAULT time::now();
     DEFINE FIELD OVERWRITE updated_at ON node TYPE datetime DEFAULT time::now();
     DEFINE FIELD OVERWRITE deleted_at ON node TYPE option<datetime>;
