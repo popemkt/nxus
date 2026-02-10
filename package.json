@@ -10,6 +10,7 @@
     "dev:calendar": "nx run @nxus/calendar-app:dev",
     "test": "nx run-many --target=test --all",
     "test:libs": "nx run-many --target=test --projects=@nxus/db,@nxus/workbench,@nxus/calendar,@nxus/ui",
+    "test:all": "nx run-many --target=test --all && playwright test",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed"
