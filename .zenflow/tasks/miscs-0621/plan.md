@@ -50,3 +50,11 @@ Based on the tweaks we did, add tests and e2e tests if necessary
 <!-- chat-id: 242d59d4-1047-49a4-bf1c-fbf387fa8d84 -->
 
 Check this github pr and see if the comments are legit, if yes fix them https://github.com/popemkt/nxus/pull/42
+
+### [x] Step: Fix PR
+<!-- chat-id: 5b34b0eb-65fd-4273-bc8b-b9f1734703b4 -->
+
+Do you have github access for action results and logs?
+
+the pr is failing some tests and stuff. can you look or do you need my help
+https://github.com/popemkt/nxus/pull/42

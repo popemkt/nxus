@@ -3,7 +3,7 @@
  */
 
 import type { AssembledNode } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import { describe, expect, it } from 'vitest'
 import {
   transformToGraphData,
@@ -214,7 +214,7 @@ describe('transformToGraphData', () => {
         id: '11111111-1111-1111-1111-111111111111',
         content: 'Node 1',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: createProperty(
+          [FIELD_NAMES.DEPENDENCIES]: createProperty(
             '22222222-2222-2222-2222-222222222222',
             'dependencies',
           ),
@@ -287,7 +287,7 @@ describe('transformToGraphData', () => {
         id: '11111111-1111-1111-1111-111111111111',
         content: 'Hub Node',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: createProperty(
+          [FIELD_NAMES.DEPENDENCIES]: createProperty(
             [
               '22222222-2222-2222-2222-222222222222',
               '33333333-3333-3333-3333-333333333333',
@@ -326,7 +326,7 @@ describe('transformToGraphData', () => {
       const connected1 = createMockNode({
         id: '11111111-1111-1111-1111-111111111111',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: createProperty(
+          [FIELD_NAMES.DEPENDENCIES]: createProperty(
             '22222222-2222-2222-2222-222222222222',
             'dependencies',
           ),
@@ -378,7 +378,7 @@ describe('transformToGraphData', () => {
       const connected1 = createMockNode({
         id: '11111111-1111-1111-1111-111111111111',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: createProperty(
+          [FIELD_NAMES.DEPENDENCIES]: createProperty(
             '22222222-2222-2222-2222-222222222222',
             'dependencies',
           ),
@@ -474,7 +474,7 @@ describe('transformToGraphData', () => {
       const node1 = createMockNode({
         id: '11111111-1111-1111-1111-111111111111',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: createProperty(
+          [FIELD_NAMES.DEPENDENCIES]: createProperty(
             '22222222-2222-2222-2222-222222222222',
             'dependencies',
           ),
@@ -502,7 +502,7 @@ describe('transformToGraphData', () => {
       const node = createMockNode({
         id: 'node-1',
         properties: {
-          [SYSTEM_FIELDS.TAGS]: createProperty(
+          [FIELD_NAMES.TAGS]: createProperty(
             '11111111-1111-1111-1111-111111111111',
             'tags',
           ),
@@ -529,7 +529,7 @@ describe('transformToGraphData', () => {
       const node = createMockNode({
         id: 'node-1',
         properties: {
-          [SYSTEM_FIELDS.TAGS]: createProperty(
+          [FIELD_NAMES.TAGS]: createProperty(
             '11111111-1111-1111-1111-111111111111',
             'tags',
           ),
@@ -553,7 +553,7 @@ describe('transformToGraphData', () => {
       const node = createMockNode({
         id: 'node-1',
         properties: {
-          [SYSTEM_FIELDS.TAGS]: createProperty(
+          [FIELD_NAMES.TAGS]: createProperty(
             '11111111-1111-1111-1111-111111111111',
             'tags',
           ),

@@ -9,16 +9,16 @@
  */
 
 import type { AssembledNode, PropertyValue } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import type { EdgeExtractionContext, GraphEdge } from '../types.js'
 
 /** Fields that create explicit relationships (excluded from backlink detection) */
 const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
-  SYSTEM_FIELDS.DEPENDENCIES,
-  SYSTEM_FIELDS.PARENT,
-  SYSTEM_FIELDS.TAGS,
-  SYSTEM_FIELDS.SUPERTAG,
-  SYSTEM_FIELDS.EXTENDS,
+  FIELD_NAMES.DEPENDENCIES,
+  FIELD_NAMES.PARENT,
+  FIELD_NAMES.TAGS,
+  FIELD_NAMES.SUPERTAG,
+  FIELD_NAMES.EXTENDS,
 ])
 
 /**

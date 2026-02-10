@@ -3,7 +3,7 @@
  */
 
 import type { AssembledNode } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import { describe, expect, it } from 'vitest'
 import type { EdgeExtractionContext, GraphNode } from '../types.js'
 import { extractDependencyEdges } from './dependency-extractor.js'
@@ -89,7 +89,7 @@ describe('extractDependencyEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.DEPENDENCIES]: createProperty('node-b', 'dependencies'),
+        [FIELD_NAMES.DEPENDENCIES]: createProperty('node-b', 'dependencies'),
       },
     })
 
@@ -109,7 +109,7 @@ describe('extractDependencyEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.DEPENDENCIES]: createProperty(['node-b', 'node-c'], 'dependencies'),
+        [FIELD_NAMES.DEPENDENCIES]: createProperty(['node-b', 'node-c'], 'dependencies'),
       },
     })
 
@@ -125,7 +125,7 @@ describe('extractDependencyEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.DEPENDENCIES]: createProperty('["node-b", "node-c"]', 'dependencies'),
+        [FIELD_NAMES.DEPENDENCIES]: createProperty('["node-b", "node-c"]', 'dependencies'),
       },
     })
 
@@ -139,7 +139,7 @@ describe('extractDependencyEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.DEPENDENCIES]: createProperty('node-b', 'dependencies'),
+        [FIELD_NAMES.DEPENDENCIES]: createProperty('node-b', 'dependencies'),
       },
     })
 
@@ -185,8 +185,8 @@ describe('buildBacklinkMap', () => {
     const nodeA = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.DEPENDENCIES]: createProperty('11111111-1111-1111-1111-111111111111', 'dependencies'),
-        [SYSTEM_FIELDS.PARENT]: createProperty('22222222-2222-2222-2222-222222222222', 'parent'),
+        [FIELD_NAMES.DEPENDENCIES]: createProperty('11111111-1111-1111-1111-111111111111', 'dependencies'),
+        [FIELD_NAMES.PARENT]: createProperty('22222222-2222-2222-2222-222222222222', 'parent'),
       },
     })
 
@@ -272,8 +272,8 @@ describe('extractReferenceEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.DEPENDENCIES]: createProperty('11111111-1111-1111-1111-111111111111', 'dependencies'),
-        [SYSTEM_FIELDS.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
+        [FIELD_NAMES.DEPENDENCIES]: createProperty('11111111-1111-1111-1111-111111111111', 'dependencies'),
+        [FIELD_NAMES.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
       },
     })
 
@@ -301,7 +301,7 @@ describe('extractReferenceEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        [SYSTEM_FIELDS.COMMANDS]: createProperty('11111111-1111-1111-1111-111111111111', 'commands'),
+        [FIELD_NAMES.COMMANDS]: createProperty('11111111-1111-1111-1111-111111111111', 'commands'),
       },
     })
 
@@ -321,7 +321,7 @@ describe('extractHierarchyEdges', () => {
     const node = createMockNode({
       id: 'child-node',
       properties: {
-        [SYSTEM_FIELDS.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
+        [FIELD_NAMES.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
       },
     })
 
@@ -359,7 +359,7 @@ describe('extractHierarchyEdges', () => {
       id: 'child-node',
       ownerId: '11111111-1111-1111-1111-111111111111',
       properties: {
-        [SYSTEM_FIELDS.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
+        [FIELD_NAMES.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
       },
     })
 
@@ -373,7 +373,7 @@ describe('extractHierarchyEdges', () => {
     const node = createMockNode({
       id: 'child-node',
       properties: {
-        [SYSTEM_FIELDS.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
+        [FIELD_NAMES.PARENT]: createProperty('11111111-1111-1111-1111-111111111111', 'parent'),
       },
     })
 
@@ -393,7 +393,7 @@ describe('buildChildrenMap', () => {
     const child2 = createMockNode({
       id: 'child-2',
       properties: {
-        [SYSTEM_FIELDS.PARENT]: createProperty(parentId, 'parent'),
+        [FIELD_NAMES.PARENT]: createProperty(parentId, 'parent'),
       },
     })
 
@@ -413,7 +413,7 @@ describe('extractAllEdges', () => {
       createMockNode({
         id: '11111111-1111-1111-1111-111111111111',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: createProperty('22222222-2222-2222-2222-222222222222', 'dependencies'),
+          [FIELD_NAMES.DEPENDENCIES]: createProperty('22222222-2222-2222-2222-222222222222', 'dependencies'),
         },
       }),
       createMockNode({
@@ -463,7 +463,7 @@ describe('extractAllEdges', () => {
       createMockNode({
         id: '11111111-1111-1111-1111-111111111111',
         properties: {
-          [SYSTEM_FIELDS.DEPENDENCIES]: [
+          [FIELD_NAMES.DEPENDENCIES]: [
             ...createProperty('22222222-2222-2222-2222-222222222222', 'dependencies'),
             ...createProperty('22222222-2222-2222-2222-222222222222', 'dependencies'), // duplicate
           ],
