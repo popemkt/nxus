@@ -2,13 +2,18 @@
  * Node Services - Entry point for node-based architecture
  *
  * Re-exports from @nxus/db/server for convenience.
+ * Prefer using `nodeFacade` for all operations — the direct functions
+ * are still exported for backward compatibility but are sync/SQLite-only.
  */
 
 // ============================================================================
 // Re-export from @nxus/db/server for convenience
 // ============================================================================
 export {
-  // Read API
+  // Facade (preferred API)
+  nodeFacade,
+  NodeFacade,
+  // Read API (sync, SQLite-only — prefer facade equivalents)
   assembleNode,
   assembleNodeWithInheritance,
   clearSystemNodeCache,
@@ -20,7 +25,7 @@ export {
   getNodesBySupertagWithInheritance,
   getSupertagFieldDefinitions,
   getSystemNode,
-  // Write API
+  // Write API (sync, SQLite-only — prefer facade equivalents)
   addPropertyValue,
   clearProperty,
   createNode,
@@ -28,11 +33,12 @@ export {
   linkNodes,
   setProperty,
   updateNodeContent,
-  // Property Helpers
+  // Property Helpers (pure functions — use directly)
   getProperty,
   getPropertyValues,
   // Types
   type AssembledNode,
   type CreateNodeOptions,
   type PropertyValue,
+  type NodeBackend,
 } from '@nxus/db/server'

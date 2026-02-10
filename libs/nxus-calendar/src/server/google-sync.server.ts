@@ -11,22 +11,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
-  initDatabase,
-  saveDatabase,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  assembleNode,
-  createNode,
-  setProperty,
   getProperty,
-  evaluateQuery,
-  eq,
-  and,
-  isNull,
+  nodeFacade,
   FIELD_NAMES,
   type AssembledNode,
 } from '@nxus/db/server'
-import { nodes } from '@nxus/db'
 import {
   generateAuthUrl,
   exchangeCodeForTokens,
@@ -68,26 +59,22 @@ const GCAL_SETTINGS_NODE_ID = 'item:google-calendar-settings'
 /**
  * Find the Google Calendar settings node by systemId
  */
-function findSettingsNode(db: ReturnType<typeof initDatabase>) {
-  return db
-    .select()
-    .from(nodes)
-    .where(and(eq(nodes.systemId, GCAL_SETTINGS_NODE_ID), isNull(nodes.deletedAt)))
-    .get()
+async function findSettingsNode(): Promise<AssembledNode | null> {
+  return await nodeFacade.findNodeBySystemId(GCAL_SETTINGS_NODE_ID)
 }
 
 /**
  * Find or create the Google Calendar settings node
  */
-function getOrCreateSettingsNode(db: ReturnType<typeof initDatabase>): string {
-  const existingNode = findSettingsNode(db)
+async function getOrCreateSettingsNode(): Promise<string> {
+  const existingNode = await findSettingsNode()
 
   if (existingNode) {
     return existingNode.id
   }
 
   // Create new settings node
-  const nodeId = createNode(db, {
+  const nodeId = await nodeFacade.createNode({
     content: 'Google Calendar Settings',
     systemId: GCAL_SETTINGS_NODE_ID,
     supertagId: SYSTEM_SUPERTAGS.SYSTEM,
@@ -99,14 +86,9 @@ function getOrCreateSettingsNode(db: ReturnType<typeof initDatabase>): string {
 /**
  * Get stored Google tokens from settings node
  */
-function getStoredTokens(db: ReturnType<typeof initDatabase>): GoogleTokens | null {
-  const settingsNode = findSettingsNode(db)
+async function getStoredTokens(): Promise<GoogleTokens | null> {
+  const node = await findSettingsNode()
 
-  if (!settingsNode) {
-    return null
-  }
-
-  const node = assembleNode(db, settingsNode.id)
   if (!node) {
     return null
   }
@@ -130,49 +112,44 @@ function getStoredTokens(db: ReturnType<typeof initDatabase>): GoogleTokens | nu
 /**
  * Store Google tokens in settings node
  */
-function storeTokens(
-  db: ReturnType<typeof initDatabase>,
-  tokens: GoogleTokens,
-  email?: string
-): void {
-  const nodeId = getOrCreateSettingsNode(db)
+async function storeTokens(tokens: GoogleTokens, email?: string): Promise<void> {
+  const nodeId = await getOrCreateSettingsNode()
 
-  setProperty(db, nodeId, SYSTEM_FIELDS.GCAL_ACCESS_TOKEN, tokens.accessToken)
-  setProperty(db, nodeId, SYSTEM_FIELDS.GCAL_REFRESH_TOKEN, tokens.refreshToken)
-  setProperty(db, nodeId, SYSTEM_FIELDS.GCAL_TOKEN_EXPIRY, tokens.expiresAt.toISOString())
+  await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.GCAL_ACCESS_TOKEN, tokens.accessToken)
+  await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.GCAL_REFRESH_TOKEN, tokens.refreshToken)
+  await nodeFacade.setProperty(
+    nodeId,
+    SYSTEM_FIELDS.GCAL_TOKEN_EXPIRY,
+    tokens.expiresAt.toISOString()
+  )
 
   if (email) {
-    setProperty(db, nodeId, SYSTEM_FIELDS.GCAL_USER_EMAIL, email)
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.GCAL_USER_EMAIL, email)
   }
 }
 
 /**
  * Clear stored Google tokens (disconnect)
  */
-function clearTokens(db: ReturnType<typeof initDatabase>): void {
-  const settingsNode = findSettingsNode(db)
+async function clearTokens(): Promise<void> {
+  const settingsNode = await findSettingsNode()
 
   if (!settingsNode) {
     return
   }
 
-  setProperty(db, settingsNode.id, SYSTEM_FIELDS.GCAL_ACCESS_TOKEN, null)
-  setProperty(db, settingsNode.id, SYSTEM_FIELDS.GCAL_REFRESH_TOKEN, null)
-  setProperty(db, settingsNode.id, SYSTEM_FIELDS.GCAL_TOKEN_EXPIRY, null)
-  setProperty(db, settingsNode.id, SYSTEM_FIELDS.GCAL_USER_EMAIL, null)
+  await nodeFacade.setProperty(settingsNode.id, SYSTEM_FIELDS.GCAL_ACCESS_TOKEN, null)
+  await nodeFacade.setProperty(settingsNode.id, SYSTEM_FIELDS.GCAL_REFRESH_TOKEN, null)
+  await nodeFacade.setProperty(settingsNode.id, SYSTEM_FIELDS.GCAL_TOKEN_EXPIRY, null)
+  await nodeFacade.setProperty(settingsNode.id, SYSTEM_FIELDS.GCAL_USER_EMAIL, null)
 }
 
 /**
  * Get connected email from settings
  */
-function getConnectedEmail(db: ReturnType<typeof initDatabase>): string | undefined {
-  const settingsNode = findSettingsNode(db)
+async function getConnectedEmail(): Promise<string | undefined> {
+  const node = await findSettingsNode()
 
-  if (!settingsNode) {
-    return undefined
-  }
-
-  const node = assembleNode(db, settingsNode.id)
   if (!node) {
     return undefined
   }
@@ -183,14 +160,9 @@ function getConnectedEmail(db: ReturnType<typeof initDatabase>): string | undefi
 /**
  * Get configured calendar ID from settings
  */
-function getConfiguredCalendarId(db: ReturnType<typeof initDatabase>): string {
-  const settingsNode = findSettingsNode(db)
+async function getConfiguredCalendarId(): Promise<string> {
+  const node = await findSettingsNode()
 
-  if (!settingsNode) {
-    return 'primary'
-  }
-
-  const node = assembleNode(db, settingsNode.id)
   if (!node) {
     return 'primary'
   }
@@ -300,9 +272,9 @@ export const handleGoogleCallbackServerFn = createServerFn({ method: 'POST' })
       const { tokens, email } = await exchangeCodeForTokens(code)
 
       // Store tokens in database
-      const db = initDatabase()
-      storeTokens(db, tokens, email)
-      saveDatabase()
+      await nodeFacade.init()
+      await storeTokens(tokens, email)
+      await nodeFacade.save()
 
       console.log('[handleGoogleCallbackServerFn] Connected:', email)
       return { success: true, email }
@@ -323,12 +295,12 @@ export const handleGoogleCallbackServerFn = createServerFn({ method: 'POST' })
 export const getGoogleSyncStatusServerFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<GetSyncStatusResponse> => {
     try {
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Check if connected
-      const tokens = getStoredTokens(db)
-      const email = getConnectedEmail(db)
-      const calendarId = getConfiguredCalendarId(db)
+      const tokens = await getStoredTokens()
+      const email = await getConnectedEmail()
+      const calendarId = await getConfiguredCalendarId()
 
       if (!tokens) {
         return {
@@ -346,7 +318,7 @@ export const getGoogleSyncStatusServerFn = createServerFn({ method: 'GET' }).han
 
       // Count pending sync events (events without gcal_event_id)
       const pendingQuery = buildPendingSyncQuery()
-      const pendingResult = evaluateQuery(db, pendingQuery)
+      const pendingResult = await nodeFacade.evaluateQuery(pendingQuery)
 
       const syncStatus: SyncStatusInfo = {
         status: isExpired ? 'error' : 'idle',
@@ -379,10 +351,10 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
       console.log('[syncToGoogleCalendarServerFn] Starting sync:', data)
       const { eventIds, calendarId = 'primary', force = false } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Get stored tokens
-      let tokens = getStoredTokens(db)
+      let tokens = await getStoredTokens()
       if (!tokens) {
         return {
           success: false,
@@ -394,11 +366,11 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
       try {
         tokens = await ensureValidTokens(tokens)
         // Update stored tokens if they were refreshed
-        storeTokens(db, tokens)
+        await storeTokens(tokens)
       } catch (error) {
         if (isAuthError(error)) {
-          clearTokens(db)
-          saveDatabase()
+          await clearTokens()
+          await nodeFacade.save()
           return {
             success: false,
             error: 'Google Calendar authentication expired. Please reconnect.',
@@ -412,14 +384,16 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
 
       if (eventIds && eventIds.length > 0) {
         // Sync specific events
-        eventsToSync = eventIds
-          .map((id) => assembleNode(db, id))
+        const assembledNodes = await Promise.all(
+          eventIds.map((id) => nodeFacade.assembleNode(id))
+        )
+        eventsToSync = assembledNodes
           .filter((node): node is AssembledNode => node !== null)
           .map(nodeToCalendarEvent)
       } else {
         // Sync all events that need syncing (pending or force all)
         const query = buildPendingSyncQuery()
-        const result = evaluateQuery(db, query)
+        const result = await nodeFacade.evaluateQuery(query)
         eventsToSync = result.nodes.map(nodeToCalendarEvent)
 
         // If force, include already synced events too
@@ -439,7 +413,7 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
             ],
             limit: 1000,
           }
-          const syncedResult = evaluateQuery(db, syncedQuery)
+          const syncedResult = await nodeFacade.evaluateQuery(syncedQuery)
           const syncedEvents = syncedResult.nodes.map(nodeToCalendarEvent)
 
           // Merge without duplicates
@@ -472,9 +446,12 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
       // Update local nodes with Google Calendar IDs
       for (const result of results) {
         if (result.success && result.gcalEventId) {
-          setProperty(db, result.eventId, SYSTEM_FIELDS.GCAL_EVENT_ID, result.gcalEventId)
-          setProperty(
-            db,
+          await nodeFacade.setProperty(
+            result.eventId,
+            SYSTEM_FIELDS.GCAL_EVENT_ID,
+            result.gcalEventId
+          )
+          await nodeFacade.setProperty(
             result.eventId,
             SYSTEM_FIELDS.GCAL_SYNCED_AT,
             new Date().toISOString()
@@ -482,7 +459,7 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
         }
       }
 
-      saveDatabase()
+      await nodeFacade.save()
 
       const syncResult: SyncResult = {
         success: results.every((r) => r.success),
@@ -520,9 +497,9 @@ export const disconnectGoogleCalendarServerFn = createServerFn({
 }).handler(async (): Promise<ServerResponse<void>> => {
   try {
     console.log('[disconnectGoogleCalendarServerFn] Disconnecting')
-    const db = initDatabase()
-    clearTokens(db)
-    saveDatabase()
+    await nodeFacade.init()
+    await clearTokens()
+    await nodeFacade.save()
 
     return { success: true }
   } catch (error) {
@@ -542,9 +519,9 @@ export const disconnectGoogleCalendarServerFn = createServerFn({
 export const getGoogleCalendarsServerFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<GetGoogleCalendarsResponse> => {
     try {
-      const db = initDatabase()
+      await nodeFacade.init()
 
-      let tokens = getStoredTokens(db)
+      let tokens = await getStoredTokens()
       if (!tokens) {
         return {
           success: false,
@@ -555,8 +532,8 @@ export const getGoogleCalendarsServerFn = createServerFn({ method: 'GET' }).hand
       // Ensure tokens are valid
       try {
         tokens = await ensureValidTokens(tokens)
-        storeTokens(db, tokens)
-        saveDatabase()
+        await storeTokens(tokens)
+        await nodeFacade.save()
       } catch (error) {
         if (isAuthError(error)) {
           return {
@@ -590,11 +567,11 @@ export const setGoogleCalendarIdServerFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<ServerResponse<void>> => {
     try {
       console.log('[setGoogleCalendarIdServerFn] Setting calendar:', data.calendarId)
-      const db = initDatabase()
+      await nodeFacade.init()
 
-      const nodeId = getOrCreateSettingsNode(db)
-      setProperty(db, nodeId, SYSTEM_FIELDS.GCAL_CALENDAR_ID, data.calendarId)
-      saveDatabase()
+      const nodeId = await getOrCreateSettingsNode()
+      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.GCAL_CALENDAR_ID, data.calendarId)
+      await nodeFacade.save()
 
       return { success: true }
     } catch (error) {

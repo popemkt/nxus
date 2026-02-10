@@ -14,9 +14,8 @@ import {
   SYSTEM_SUPERTAGS,
   and,
   eq,
-  getNodesBySupertagWithInheritance,
   initDatabase,
-  itemTagConfigs, nodes, saveDatabase, tagSchemas
+  itemTagConfigs, nodes, nodeFacade, saveDatabase, tagSchemas
 } from '@nxus/db/server'
 import { getAllSystemTags, type TagConfigField } from '@/lib/system-tags'
 
@@ -151,7 +150,8 @@ export const getAllConfigurableTagsServerFn = createServerFn({
   // Also include system tags marked as configurable (even without a saved schema)
   // Resolve system tag names to actual node UUIDs so the UI can match them
   const dbTagIds = new Set(configs.map((c) => c.tagId))
-  const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
+  await nodeFacade.init()
+  const tagNodes = await nodeFacade.getNodesBySupertagWithInheritance(SYSTEM_SUPERTAGS.TAG)
   for (const systemTag of getAllSystemTags()) {
     if (!systemTag.configurable) continue
     // Find the tag node by matching content (name) to the system tag name

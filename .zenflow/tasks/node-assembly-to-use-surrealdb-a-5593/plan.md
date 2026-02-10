@@ -251,7 +251,8 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 **Verification:**
 - `npx nx run nxus-db:test` — all tests pass, including equivalence tests for both backends
 
-### [ ] Step: Consumer migration to facade API
+### [x] Step: Consumer migration to facade API
+<!-- chat-id: 7c11dcd6-6a61-4eba-bc6a-4d82071588b0 -->
 
 **Goal:** Migrate all consumer files from direct `node.service` / `getDatabase()` imports to the `nodeFacade` API. Remove backend-switching logic from `apps.server.ts`.
 

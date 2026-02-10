@@ -1,23 +1,13 @@
 /**
  * apps-mutations.server.ts - Server functions for modifying apps
  *
- * Uses node-based architecture exclusively. Legacy table paths removed.
+ * Uses the NodeFacade for all node operations.
  */
 
 import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  addPropertyValue,
-  clearProperty,
-  eq,
-  findNodeBySystemId,
-  getDatabase,
-  getSystemNode,
-  initDatabase,
-  nodeProperties,
-  nodes,
-  saveDatabase,
-  setProperty
+  nodeFacade,
 } from '@nxus/db/server'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
@@ -29,57 +19,32 @@ import { z } from 'zod'
 /**
  * Find tag node by name and return its UUID
  */
-function findTagNodeByName(
-  db: ReturnType<typeof getDatabase>,
-  tagName: string,
-): string | null {
-  const tagSupertag = getSystemNode(db, SYSTEM_SUPERTAGS.TAG)
-  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
-  if (!tagSupertag || !supertagField) return null
-
-  // Find nodes with #Tag supertag
-  const tagProps = db
-    .select()
-    .from(nodeProperties)
-    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
-    .all()
-    .filter((p) => {
-      try {
-        return JSON.parse(p.value || '') === tagSupertag.id
-      } catch {
-        return false
-      }
-    })
-
-  // Find the one with matching content
-  for (const prop of tagProps) {
-    const node = db.select().from(nodes).where(eq(nodes.id, prop.nodeId)).get()
-    if (node && node.content === tagName) {
-      return node.id
-    }
-  }
-  return null
+async function findTagNodeByName(tagName: string): Promise<string | null> {
+  const tagNodes = await nodeFacade.getNodesBySupertagWithInheritance(
+    SYSTEM_SUPERTAGS.TAG,
+  )
+  const tagNode = tagNodes.find((n) => n.content === tagName)
+  return tagNode?.id ?? null
 }
 
 /**
  * Update tags on item node
  */
-function updateItemNodeTags(
-  db: ReturnType<typeof getDatabase>,
+async function updateItemNodeTags(
   itemSystemId: string,
   tagNames: Array<string>,
-): boolean {
-  const itemNode = findNodeBySystemId(db, itemSystemId)
+): Promise<boolean> {
+  const itemNode = await nodeFacade.findNodeBySystemId(itemSystemId)
   if (!itemNode) return false
 
   // Clear existing tags
-  clearProperty(db, itemNode.id, SYSTEM_FIELDS.TAGS)
+  await nodeFacade.clearProperty(itemNode.id, SYSTEM_FIELDS.TAGS)
 
   // Add new tags
   for (const tagName of tagNames) {
-    const tagNodeId = findTagNodeByName(db, tagName)
+    const tagNodeId = await findTagNodeByName(tagName)
     if (tagNodeId) {
-      addPropertyValue(db, itemNode.id, SYSTEM_FIELDS.TAGS, tagNodeId)
+      await nodeFacade.addPropertyValue(itemNode.id, SYSTEM_FIELDS.TAGS, tagNodeId)
     }
   }
   return true
@@ -88,15 +53,14 @@ function updateItemNodeTags(
 /**
  * Update category on item node
  */
-function updateItemNodeCategory(
-  db: ReturnType<typeof getDatabase>,
+async function updateItemNodeCategory(
   itemSystemId: string,
   category: string,
-): boolean {
-  const itemNode = findNodeBySystemId(db, itemSystemId)
+): Promise<boolean> {
+  const itemNode = await nodeFacade.findNodeBySystemId(itemSystemId)
   if (!itemNode) return false
 
-  setProperty(db, itemNode.id, SYSTEM_FIELDS.CATEGORY, category)
+  await nodeFacade.setProperty(itemNode.id, SYSTEM_FIELDS.CATEGORY, category)
   return true
 }
 
@@ -123,15 +87,14 @@ export const updateAppTagsServerFn = createServerFn({ method: 'POST' })
     const { appId, tags: tagRefs } = ctx.data
     console.log('[updateAppTagsServerFn] Updating:', appId, tagRefs)
 
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
     const tagNames = tagRefs.map((t) => t.name)
-    const success = updateItemNodeTags(db, `item:${appId}`, tagNames)
+    const success = await updateItemNodeTags(`item:${appId}`, tagNames)
     if (!success) {
       return { success: false as const, error: 'Item node not found' }
     }
-    saveDatabase()
+    await nodeFacade.save()
     return { success: true as const, data: { tags: tagRefs } }
   })
 
@@ -149,13 +112,12 @@ export const updateAppCategoryServerFn = createServerFn({ method: 'POST' })
     const { appId, category } = ctx.data
     console.log('[updateAppCategoryServerFn] Updating:', appId)
 
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
-    const success = updateItemNodeCategory(db, `item:${appId}`, category)
+    const success = await updateItemNodeCategory(`item:${appId}`, category)
     if (!success) {
       return { success: false as const, error: 'Item node not found' }
     }
-    saveDatabase()
+    await nodeFacade.save()
     return { success: true as const }
   })
