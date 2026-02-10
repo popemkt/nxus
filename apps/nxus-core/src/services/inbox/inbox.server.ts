@@ -137,7 +137,7 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
 
     const nodeId = createNode(db, {
       content: title,
-      supertagSystemId: SYSTEM_SUPERTAGS.INBOX,
+      supertagId: SYSTEM_SUPERTAGS.INBOX,
     })
 
     // Set status to pending

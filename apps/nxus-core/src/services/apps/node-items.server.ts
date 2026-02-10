@@ -173,9 +173,8 @@ export const getAllItemsFromNodesServerFn = createServerFn({
   const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
   const tagLookup = new Map<string, TagRef>()
   for (const tagNode of tagNodes) {
-    const legacyId = dbGetProperty<number>(tagNode, SERVER_FIELD_NAMES.LEGACY_ID)
     tagLookup.set(tagNode.id, {
-      id: legacyId || 0,
+      id: tagNode.id,
       name: tagNode.content || '',
     })
   }
@@ -281,9 +280,8 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
     const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
     const tagLookup = new Map<string, TagRef>()
     for (const tagNode of tagNodes) {
-      const legacyId = dbGetProperty<number>(tagNode, SERVER_FIELD_NAMES.LEGACY_ID)
       tagLookup.set(tagNode.id, {
-        id: legacyId || 0,
+        id: tagNode.id,
         name: tagNode.content || '',
       })
     }

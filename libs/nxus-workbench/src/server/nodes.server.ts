@@ -108,7 +108,7 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     const nodeId = createNode(db, {
       content,
       systemId,
-      supertagSystemId,
+      supertagId: supertagSystemId,
       ownerId,
     })
 

@@ -66,7 +66,7 @@ export const createTagServerFn = createServerFn({ method: 'POST' })
 
     const nodeId = createNode(db, {
       content: ctx.data.name,
-      supertagSystemId: SYSTEM_SUPERTAGS.TAG,
+      supertagId: SYSTEM_SUPERTAGS.TAG,
     })
 
     if (ctx.data.color)
@@ -205,10 +205,10 @@ export const getTagByIdServerFn = createServerFn({ method: 'GET' })
       data: {
         id: node.id,
         name: node.content || '',
-        parentId: getProperty<string>(node, 'parent') ?? null,
-        order: getProperty<number>(node, 'order') ?? 0,
-        color: getProperty<string>(node, 'color') ?? null,
-        icon: getProperty<string>(node, 'icon') ?? null,
+        parentId: getProperty<string>(node, FIELD_NAMES.PARENT) ?? null,
+        order: getProperty<number>(node, FIELD_NAMES.ORDER) ?? 0,
+        color: getProperty<string>(node, FIELD_NAMES.COLOR) ?? null,
+        icon: getProperty<string>(node, FIELD_NAMES.ICON) ?? null,
         createdAt: node.createdAt,
         updatedAt: node.updatedAt,
       },
