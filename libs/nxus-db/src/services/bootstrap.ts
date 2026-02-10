@@ -329,6 +329,7 @@ export function bootstrapSystemNodesSync(
       fieldType: 'nodes',
     },
     { systemId: SYSTEM_FIELDS.PARENT, content: 'parent', fieldType: 'node' },
+    { systemId: SYSTEM_FIELDS.ORDER, content: 'order', fieldType: 'number' },
     {
       systemId: SYSTEM_FIELDS.CHECK_COMMAND,
       content: 'checkCommand',

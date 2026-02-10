@@ -132,6 +132,8 @@ export interface Use3DGraphResult {
   resumeSimulation: () => void
   /** Reheat the simulation (restart with high energy) */
   reheatSimulation: () => void
+  /** Refresh node/link visual styles without resetting positions */
+  refreshStyles: () => void
   /** Whether the simulation is currently paused */
   isPaused: boolean
 }
@@ -145,6 +147,21 @@ const DEFAULT_FOCUS_DISTANCE = 200
 
 /** Default camera position */
 const DEFAULT_CAMERA_POSITION = { x: 0, y: 0, z: 500 }
+
+/** Convert a hex color to rgba string with given opacity (cached to avoid per-frame alloc) */
+const rgbaCache = new Map<string, string>()
+function hexToRgba(hex: string, opacity: number): string {
+  const key = hex + opacity
+  let result = rgbaCache.get(key)
+  if (result) return result
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.substring(0, 2), 16)
+  const g = parseInt(clean.substring(2, 4), 16)
+  const b = parseInt(clean.substring(4, 6), 16)
+  result = `rgba(${r}, ${g}, ${b}, ${opacity})`
+  rgbaCache.set(key, result)
+  return result
+}
 
 // ============================================================================
 // Hook Implementation
@@ -223,24 +240,20 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
         return 2
       })
       .nodeColor((node: Graph3DNode) => {
-        // Dimmed if not in local graph
-        if (!node.isInLocalGraph && !node.isFocused) {
-          return 'rgba(107, 114, 128, 0.3)' // Gray with low opacity
-        }
-        // Focused node gets special color
+        // Determine base color
+        let color: string
         if (node.isFocused) {
-          return '#f59e0b' // Amber-500
+          color = '#f59e0b' // Amber-500
+        } else if (node.isVirtual) {
+          color = '#a855f7' // Purple
+        } else {
+          color = node.supertag?.color ?? '#6b7280'
         }
-        // Highlighted nodes (direct connections)
-        if (node.isHighlighted) {
-          return node.supertag?.color ?? '#3b82f6'
+        // Apply dimming via RGBA when not in local graph (nodeOpacity doesn't support per-node fn)
+        if (!node.isInLocalGraph && !node.isFocused) {
+          return hexToRgba(color, 0.3)
         }
-        // Virtual nodes (tags)
-        if (node.isVirtual) {
-          return '#a855f7' // Purple
-        }
-        // Regular nodes use supertag color
-        return node.supertag?.color ?? '#6b7280'
+        return color
       })
       .nodeOpacity(0.9)
       // Link appearance
@@ -305,11 +318,49 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
     })
     resizeObserver.observe(container)
 
-    // Cleanup
+    // Cleanup — 3d-force-graph has no public destroy(), so we manually tear down
     return () => {
       resizeObserver.disconnect()
-      // Note: 3d-force-graph doesn't have a destroy method,
-      // but removing the container element should clean up
+
+      // Stop the render loop and d3-force simulation
+      graph.pauseAnimation()
+
+      // Dispose the Three.js WebGL renderer to free GPU memory
+      try {
+        const renderer = graph.renderer()
+        renderer.dispose()
+        renderer.forceContextLoss()
+        renderer.domElement.remove()
+      } catch {
+        // renderer may not be initialized if cleanup runs early
+      }
+
+      // Dispose scene objects (geometries, materials, textures)
+      try {
+        const scene = graph.scene()
+        scene.traverse((obj: { geometry?: { dispose: () => void }; material?: { dispose: () => void } | Array<{ dispose: () => void }> }) => {
+          if (obj.geometry) obj.geometry.dispose()
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((m) => { m.dispose() })
+            } else {
+              obj.material.dispose()
+            }
+          }
+        })
+        scene.clear()
+      } catch {
+        // scene may not be initialized
+      }
+
+      // Clear graph data to release node/link references
+      graph.graphData({ nodes: [], links: [] })
+
+      // Remove any remaining DOM children the graph appended
+      while (container.firstChild) {
+        container.removeChild(container.firstChild)
+      }
+
       graphRef.current = null
     }
   }, [ForceGraph3D])
@@ -390,6 +441,15 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
     graph.d3ReheatSimulation()
   }, [])
 
+  // Refresh node/link visual styles without resetting positions or simulation
+  const refreshStyles = useCallback(() => {
+    const graph = graphRef.current
+    if (!graph) return
+
+    // Re-trigger accessor evaluation (pattern from 3d-force-graph docs)
+    graph.nodeColor(graph.nodeColor())
+  }, [])
+
   return {
     containerRef: containerRef as React.RefObject<HTMLDivElement>,
     graphInstance: graphRef.current,
@@ -399,6 +459,7 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
     resumeSimulation,
     reheatSimulation,
     resetCamera,
+    refreshStyles,
     isPaused,
   }
 }

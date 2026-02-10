@@ -7,7 +7,7 @@
  */
 
 import type { AssembledNode } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import type { EdgeExtractionContext, GraphEdge } from '../types.js'
 
 /**
@@ -24,7 +24,7 @@ export function extractDependencyEdges(
   const edges: GraphEdge[] = []
 
   // Get dependencies from the node's properties
-  const dependencyField = SYSTEM_FIELDS.DEPENDENCIES
+  const dependencyField = FIELD_NAMES.DEPENDENCIES
   const dependencyValues = node.properties[dependencyField]
 
   if (!dependencyValues || dependencyValues.length === 0) {

@@ -23,7 +23,6 @@ import {
 import { useLazyForceGraph } from './use-lazy-force-graph'
 import { Graph3DLoading } from './Graph3DLoading'
 import { use3DGraph, type Graph3DNode, type Graph3DLink, type Graph3DData } from './use-3d-graph'
-import { EDGE_DIRECTION_COLORS } from './edge-renderer'
 
 // ============================================================================
 // Types
@@ -129,6 +128,8 @@ function Graph3DInner({
   }, [data.nodes])
 
   // Convert GraphData to 3d-force-graph format
+  // Note: selectedNodeId is NOT a dependency here — changing selection should not
+  // rebuild graph data (which resets the simulation). isHighlighted is updated in-place below.
   const graph3DData = useMemo((): Graph3DData => {
     const nodes = convertToGraph3DNodes(
       data.nodes,
@@ -138,7 +139,7 @@ function Graph3DInner({
     const links = convertToGraph3DLinks(data.edges)
 
     return { nodes, links }
-  }, [data.nodes, data.edges, display.nodeSize, selectedNodeId])
+  }, [data.nodes, data.edges, display.nodeSize])
 
   // Node click handler
   const handleNodeClick = useCallback(
@@ -184,7 +185,7 @@ function Graph3DInner({
   const {
     containerRef,
     setGraphData,
-    focusOnNode,
+    refreshStyles,
     isPaused,
     pauseSimulation,
     resumeSimulation,
@@ -198,35 +199,34 @@ function Graph3DInner({
     onNodeHover: handleNodeHover,
   })
 
-  // Update graph data when it changes
+  // Update graph data when it changes (structural changes only)
   useEffect(() => {
     setGraphData(graph3DData)
   }, [graph3DData, setGraphData])
 
-  // Focus on selected node when it changes
+  // Update isHighlighted in-place when selection changes (no simulation reset)
   useEffect(() => {
-    if (selectedNodeId) {
-      focusOnNode(selectedNodeId)
+    for (const node of graph3DData.nodes) {
+      node.isHighlighted = node.id === (selectedNodeId ?? null)
     }
-  }, [selectedNodeId, focusOnNode])
+    refreshStyles()
+  }, [selectedNodeId, graph3DData.nodes, refreshStyles])
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden">
       {/* 3D Graph Container */}
       <div
         ref={containerRef}
-        className="h-full w-full bg-background"
+        className="h-full w-full bg-background overflow-hidden"
         style={{ touchAction: 'none' }}
       />
 
-      {/* Stats panel */}
-      <div className="absolute bottom-4 left-4 text-xs text-muted-foreground">
-        {data.stats.totalNodes} nodes · {data.stats.totalEdges} edges
-        {data.stats.orphanCount > 0 && ` · ${data.stats.orphanCount} orphans`}
-      </div>
-
-      {/* Simulation controls */}
-      <div className="absolute bottom-4 right-4 flex gap-2">
+      {/* Bottom bar: stats + simulation controls */}
+      <div className="absolute bottom-4 left-4 flex items-center gap-3">
+        <span className="text-xs text-muted-foreground">
+          {data.stats.totalNodes} nodes · {data.stats.totalEdges} edges
+          {data.stats.orphanCount > 0 && ` · ${data.stats.orphanCount} orphans`}
+        </span>
         <button
           onClick={isPaused ? resumeSimulation : pauseSimulation}
           className="rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium shadow-sm ring-1 ring-border transition-colors hover:bg-muted"
@@ -238,7 +238,7 @@ function Graph3DInner({
 
       {/* Hovered node tooltip */}
       {hoveredNodeId && (
-        <div className="absolute left-4 top-4 max-w-xs rounded-md bg-background/90 px-3 py-2 shadow-lg ring-1 ring-border backdrop-blur">
+        <div className="absolute left-4 top-16 max-w-xs rounded-md bg-background/90 px-3 py-2 shadow-lg ring-1 ring-border backdrop-blur z-10">
           <p className="text-sm font-medium">{nodeMap.get(hoveredNodeId)?.label}</p>
           {nodeMap.get(hoveredNodeId)?.supertag && (
             <p
@@ -253,24 +253,6 @@ function Graph3DInner({
           </p>
         </div>
       )}
-
-      {/* Direction legend */}
-      <div className="absolute right-4 top-4 flex flex-col gap-1 rounded-md bg-background/80 px-3 py-2 text-xs shadow-sm ring-1 ring-border">
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2 w-4 rounded-full"
-            style={{ backgroundColor: EDGE_DIRECTION_COLORS.outgoing }}
-          />
-          <span className="text-muted-foreground">Outgoing →</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2 w-4 rounded-full"
-            style={{ backgroundColor: EDGE_DIRECTION_COLORS.incoming }}
-          />
-          <span className="text-muted-foreground">Incoming ←</span>
-        </div>
-      </div>
     </div>
   )
 }
@@ -331,7 +313,7 @@ export function Graph3D({ className, ...props }: Graph3DProps) {
 
   // Render 3D graph
   return (
-    <div className={className} style={{ width: '100%', height: '100%' }}>
+    <div className={className} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
       <Graph3DInner {...props} ForceGraph3D={ForceGraph3D!} />
     </div>
   )

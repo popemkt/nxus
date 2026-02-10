@@ -47,11 +47,11 @@ interface TagTreeItemProps {
   node: TagTreeNode
   level: number
   mode: 'editor' | 'filter'
-  onSelect?: (tagId: number) => void
+  onSelect?: (tagId: string) => void
   searchQuery?: string
   /** Set of configurable tag IDs */
-  configurableTagIds?: Set<number>
-  onViewSchema?: (tagId: number, tagName: string) => void
+  configurableTagIds?: Set<string>
+  onViewSchema?: (tagId: string, tagName: string) => void
 }
 
 function TagTreeItem({
@@ -73,9 +73,8 @@ function TagTreeItem({
   const toggleSelected = useTagUIStore((s) => s.toggleSelected)
   const updateTag = useTagDataStore((s) => s.updateTag)
 
-  const tagIdStr = String(tag.id)
-  const isExpanded = expandedIds.has(tagIdStr)
-  const isSelected = selectedTagIds.has(tagIdStr)
+  const isExpanded = expandedIds.has(tag.id)
+  const isSelected = selectedTagIds.has(tag.id)
 
   // In-place edit state
   const [isEditing, setIsEditing] = useState(false)
@@ -126,7 +125,7 @@ function TagTreeItem({
 
   const handleClick = () => {
     // Always toggle selection (for filter bar)
-    toggleSelected(tagIdStr)
+    toggleSelected(tag.id)
     // In editor mode, also call the onSelect callback
     if (mode === 'editor') {
       onSelect?.(tag.id)
@@ -147,7 +146,7 @@ function TagTreeItem({
 
   const handleExpandClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    toggleExpanded(tagIdStr)
+    toggleExpanded(tag.id)
   }
 
   if (!matchesSearch && children.length === 0) {
@@ -204,7 +203,7 @@ function TagTreeItem({
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={() => toggleSelected(tagIdStr)}
+            onChange={() => toggleSelected(tag.id)}
             className="mr-1"
             onClick={(e) => e.stopPropagation()}
           />
@@ -264,7 +263,7 @@ function TagTreeItem({
   // Wrap ALL levels in DraggableTagItem in editor mode for multi-level nesting
   if (mode === 'editor') {
     return (
-      <SortableTagItemWithIndicator id={tagIdStr}>
+      <SortableTagItemWithIndicator id={tag.id}>
         {content}
       </SortableTagItemWithIndicator>
     )
@@ -275,7 +274,7 @@ function TagTreeItem({
 
 interface TagTreeProps {
   mode: 'editor' | 'filter'
-  onSelect?: (tagId: number) => void
+  onSelect?: (tagId: string) => void
   className?: string
 }
 
@@ -295,11 +294,11 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
   const [newTagName, setNewTagName] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [schemaModalTag, setSchemaModalTag] = useState<{
-    id: number
+    id: string
     name: string
   } | null>(null)
 
-  // Fetch configurable tags (now returns integer tagIds)
+  // Fetch configurable tags (returns string tagIds - node UUIDs)
   const { data: configurableTagsResult } = useQuery({
     queryKey: ['configurable-tags'],
     queryFn: () => getAllConfigurableTagsServerFn(),
@@ -308,11 +307,10 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
   // Build a set of configurable tag IDs for O(1) lookup
   const configurableTagIds = React.useMemo(() => {
     const result = configurableTagsResult as
-      | { success: boolean; data?: Array<{ tagId: number }> }
+      | { success: boolean; data?: Array<{ tagId: string }> }
       | undefined
-    if (!result?.success || !result.data) return new Set<number>()
+    if (!result?.success || !result.data) return new Set<string>()
 
-    // Create a set of configurable tag IDs
     return new Set(result.data.map(({ tagId }) => tagId))
   }, [configurableTagsResult])
 
@@ -337,8 +335,8 @@ export function TagTree({ mode, onSelect, className }: TagTreeProps) {
     moveTag: async () => {},
   })
 
-  // Get root tag IDs for sortable context (as strings for DnD)
-  const rootTagIds = treeNodes.map((n) => String(n.tag.id))
+  // Get root tag IDs for sortable context
+  const rootTagIds = treeNodes.map((n) => n.tag.id)
 
   const handleAddTag = async () => {
     if (!newTagName.trim()) return

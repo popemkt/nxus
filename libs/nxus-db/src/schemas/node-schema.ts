@@ -75,6 +75,27 @@ export type NodeProperty = typeof nodeProperties.$inferSelect
 export type NewNodeProperty = typeof nodeProperties.$inferInsert
 
 // ============================================================================
+// Branded types for field identifiers
+// ============================================================================
+
+declare const __fieldSystemId: unique symbol
+declare const __fieldContentName: unique symbol
+
+/**
+ * A field systemId like 'field:parent', 'field:status'.
+ * Used for write operations (setProperty, addPropertyValue, etc.)
+ * and for DB-level field resolution via getFieldOrSupertagNode().
+ */
+export type FieldSystemId = string & { readonly [__fieldSystemId]: true }
+
+/**
+ * A field content/display name like 'parent', 'legacyId'.
+ * Used for reading from AssembledNode.properties (keyed by field content).
+ * Use FIELD_NAMES constants instead of raw strings.
+ */
+export type FieldContentName = string & { readonly [__fieldContentName]: true }
+
+// ============================================================================
 // System Node Constants (systemId values)
 // ============================================================================
 
@@ -107,86 +128,183 @@ export const SYSTEM_SUPERTAGS = {
   EVENT: 'supertag:event', // Nodes that are calendar events
 } as const
 
+/**
+ * System field IDs — used for write operations (setProperty, addPropertyValue, etc.).
+ * Values are typed as FieldSystemId to prevent accidental use with getProperty/node.properties.
+ * For read operations, use FIELD_NAMES instead.
+ */
 export const SYSTEM_FIELDS = {
   // Core system fields
-  SUPERTAG: 'field:supertag', // Links node to its supertag(s)
-  EXTENDS: 'field:extends', // Supertag inheritance
-  FIELD_TYPE: 'field:field_type', // Type of a field (text, node, nodes, etc.)
+  SUPERTAG: 'field:supertag' as FieldSystemId, // Links node to its supertag(s)
+  EXTENDS: 'field:extends' as FieldSystemId, // Supertag inheritance
+  FIELD_TYPE: 'field:field_type' as FieldSystemId, // Type of a field (text, node, nodes, etc.)
 
   // Common entity fields
-  TYPE: 'field:type',
-  PATH: 'field:path',
-  HOMEPAGE: 'field:homepage',
-  DESCRIPTION: 'field:description',
-  COLOR: 'field:color',
-  ICON: 'field:icon',
-  LEGACY_ID: 'field:legacy_id', // For migration: stores old ID
-  CATEGORY: 'field:category',
-  PLATFORM: 'field:platform', // platforms array
-  DOCS: 'field:docs', // docs JSON array
+  TYPE: 'field:type' as FieldSystemId,
+  PATH: 'field:path' as FieldSystemId,
+  HOMEPAGE: 'field:homepage' as FieldSystemId,
+  DESCRIPTION: 'field:description' as FieldSystemId,
+  COLOR: 'field:color' as FieldSystemId,
+  ICON: 'field:icon' as FieldSystemId,
+  LEGACY_ID: 'field:legacy_id' as FieldSystemId, // For migration: stores old ID
+  CATEGORY: 'field:category' as FieldSystemId,
+  PLATFORM: 'field:platform' as FieldSystemId, // platforms array
+  DOCS: 'field:docs' as FieldSystemId, // docs JSON array
 
   // Relation fields
-  DEPENDENCIES: 'field:dependencies',
-  TAGS: 'field:tags',
-  COMMANDS: 'field:commands',
-  PARENT: 'field:parent',
+  DEPENDENCIES: 'field:dependencies' as FieldSystemId,
+  TAGS: 'field:tags' as FieldSystemId,
+  COMMANDS: 'field:commands' as FieldSystemId,
+  PARENT: 'field:parent' as FieldSystemId,
+  ORDER: 'field:order' as FieldSystemId,
 
   // Tool-specific
-  CHECK_COMMAND: 'field:check_command',
-  INSTALL_INSTRUCTIONS: 'field:install_instructions',
+  CHECK_COMMAND: 'field:check_command' as FieldSystemId,
+  INSTALL_INSTRUCTIONS: 'field:install_instructions' as FieldSystemId,
 
   // Command-specific
-  COMMAND: 'field:command',
-  COMMAND_ID: 'field:command_id',
-  MODE: 'field:mode',
-  TARGET: 'field:target',
-  SCRIPT_SOURCE: 'field:script_source',
-  CWD: 'field:cwd',
-  PLATFORMS: 'field:platforms', // command platforms
-  REQUIRES: 'field:requires',
-  OPTIONS: 'field:options',
-  PARAMS: 'field:params',
-  REQUIREMENTS: 'field:requirements',
-  WORKFLOW: 'field:workflow',
+  COMMAND: 'field:command' as FieldSystemId,
+  COMMAND_ID: 'field:command_id' as FieldSystemId,
+  MODE: 'field:mode' as FieldSystemId,
+  TARGET: 'field:target' as FieldSystemId,
+  SCRIPT_SOURCE: 'field:script_source' as FieldSystemId,
+  CWD: 'field:cwd' as FieldSystemId,
+  PLATFORMS: 'field:platforms' as FieldSystemId, // command platforms
+  REQUIRES: 'field:requires' as FieldSystemId,
+  OPTIONS: 'field:options' as FieldSystemId,
+  PARAMS: 'field:params' as FieldSystemId,
+  REQUIREMENTS: 'field:requirements' as FieldSystemId,
+  WORKFLOW: 'field:workflow' as FieldSystemId,
 
   // Inbox-specific
-  STATUS: 'field:status',
-  NOTES: 'field:notes',
-  TITLE: 'field:title',
+  STATUS: 'field:status' as FieldSystemId,
+  NOTES: 'field:notes' as FieldSystemId,
+  TITLE: 'field:title' as FieldSystemId,
 
   // Query-specific fields (for saved queries with supertag:query)
-  QUERY_DEFINITION: 'field:query_definition', // JSON query definition
-  QUERY_SORT: 'field:query_sort', // Sort configuration
-  QUERY_LIMIT: 'field:query_limit', // Max results
-  QUERY_RESULT_CACHE: 'field:query_result_cache', // Cached node IDs (optional)
-  QUERY_EVALUATED_AT: 'field:query_evaluated_at', // Last evaluation timestamp
+  QUERY_DEFINITION: 'field:query_definition' as FieldSystemId,
+  QUERY_SORT: 'field:query_sort' as FieldSystemId,
+  QUERY_LIMIT: 'field:query_limit' as FieldSystemId,
+  QUERY_RESULT_CACHE: 'field:query_result_cache' as FieldSystemId,
+  QUERY_EVALUATED_AT: 'field:query_evaluated_at' as FieldSystemId,
 
-  // Automation-specific fields (for reactive automations with supertag:automation)
-  AUTOMATION_DEFINITION: 'field:automation_definition', // JSON automation config
-  AUTOMATION_STATE: 'field:automation_state', // JSON state tracking
-  AUTOMATION_LAST_FIRED: 'field:automation_last_fired', // Timestamp of last execution
-  AUTOMATION_ENABLED: 'field:automation_enabled', // Boolean - whether automation is active
+  // Automation-specific fields
+  AUTOMATION_DEFINITION: 'field:automation_definition' as FieldSystemId,
+  AUTOMATION_STATE: 'field:automation_state' as FieldSystemId,
+  AUTOMATION_LAST_FIRED: 'field:automation_last_fired' as FieldSystemId,
+  AUTOMATION_ENABLED: 'field:automation_enabled' as FieldSystemId,
 
-  // Computed field-specific fields (for reactive computed/aggregated fields with supertag:computed_field)
-  COMPUTED_FIELD_DEFINITION: 'field:computed_field_definition', // JSON aggregation config (query + aggregation type)
-  COMPUTED_FIELD_VALUE: 'field:computed_field_value', // Current computed value (cached)
-  COMPUTED_FIELD_UPDATED_AT: 'field:computed_field_updated_at', // Timestamp of last recomputation
+  // Computed field-specific fields
+  COMPUTED_FIELD_DEFINITION: 'field:computed_field_definition' as FieldSystemId,
+  COMPUTED_FIELD_VALUE: 'field:computed_field_value' as FieldSystemId,
+  COMPUTED_FIELD_UPDATED_AT: 'field:computed_field_updated_at' as FieldSystemId,
 
-  // Calendar-specific fields (for calendar events and tasks)
-  START_DATE: 'field:start_date', // ISO datetime or date string
-  END_DATE: 'field:end_date', // ISO datetime or date string (optional)
-  ALL_DAY: 'field:all_day', // Boolean for all-day events
-  RRULE: 'field:rrule', // RFC 5545 recurrence rule string
-  GCAL_EVENT_ID: 'field:gcal_event_id', // Google Calendar event ID
-  GCAL_SYNCED_AT: 'field:gcal_synced_at', // Last sync timestamp
-  REMINDER: 'field:reminder', // Reminder offset in minutes
+  // Calendar-specific fields
+  START_DATE: 'field:start_date' as FieldSystemId,
+  END_DATE: 'field:end_date' as FieldSystemId,
+  ALL_DAY: 'field:all_day' as FieldSystemId,
+  RRULE: 'field:rrule' as FieldSystemId,
+  GCAL_EVENT_ID: 'field:gcal_event_id' as FieldSystemId,
+  GCAL_SYNCED_AT: 'field:gcal_synced_at' as FieldSystemId,
+  REMINDER: 'field:reminder' as FieldSystemId,
 
   // Google Calendar OAuth fields (stored on settings node)
-  GCAL_ACCESS_TOKEN: 'field:gcal_access_token', // OAuth access token (encrypted)
-  GCAL_REFRESH_TOKEN: 'field:gcal_refresh_token', // OAuth refresh token (encrypted)
-  GCAL_TOKEN_EXPIRY: 'field:gcal_token_expiry', // Token expiration timestamp
-  GCAL_USER_EMAIL: 'field:gcal_user_email', // Connected Google account email
-  GCAL_CALENDAR_ID: 'field:gcal_calendar_id', // Target calendar ID for sync
+  GCAL_ACCESS_TOKEN: 'field:gcal_access_token' as FieldSystemId,
+  GCAL_REFRESH_TOKEN: 'field:gcal_refresh_token' as FieldSystemId,
+  GCAL_TOKEN_EXPIRY: 'field:gcal_token_expiry' as FieldSystemId,
+  GCAL_USER_EMAIL: 'field:gcal_user_email' as FieldSystemId,
+  GCAL_CALENDAR_ID: 'field:gcal_calendar_id' as FieldSystemId,
+} as const
+
+/**
+ * Field content names — used for read operations (getProperty, node.properties[]).
+ * Values are the field node's `content` value as seeded in bootstrap.
+ * Each entry matches a SYSTEM_FIELDS entry (same key, different value).
+ *
+ * SYSTEM_FIELDS.PARENT = 'field:parent' (for writes)
+ * FIELD_NAMES.PARENT   = 'parent'       (for reads)
+ */
+export const FIELD_NAMES = {
+  // Core system fields
+  SUPERTAG: 'Supertag' as FieldContentName,
+  EXTENDS: 'Extends' as FieldContentName,
+  FIELD_TYPE: 'Field Type' as FieldContentName,
+
+  // Common entity fields
+  TYPE: 'type' as FieldContentName,
+  PATH: 'path' as FieldContentName,
+  HOMEPAGE: 'homepage' as FieldContentName,
+  DESCRIPTION: 'description' as FieldContentName,
+  COLOR: 'color' as FieldContentName,
+  ICON: 'icon' as FieldContentName,
+  LEGACY_ID: 'legacyId' as FieldContentName,
+  CATEGORY: 'category' as FieldContentName,
+  PLATFORM: 'platform' as FieldContentName,
+  DOCS: 'docs' as FieldContentName,
+
+  // Relation fields
+  DEPENDENCIES: 'dependencies' as FieldContentName,
+  TAGS: 'tags' as FieldContentName,
+  COMMANDS: 'commands' as FieldContentName,
+  PARENT: 'parent' as FieldContentName,
+  ORDER: 'order' as FieldContentName,
+
+  // Tool-specific
+  CHECK_COMMAND: 'checkCommand' as FieldContentName,
+  INSTALL_INSTRUCTIONS: 'installInstructions' as FieldContentName,
+
+  // Command-specific
+  COMMAND: 'command' as FieldContentName,
+  COMMAND_ID: 'commandId' as FieldContentName,
+  MODE: 'mode' as FieldContentName,
+  TARGET: 'target' as FieldContentName,
+  SCRIPT_SOURCE: 'scriptSource' as FieldContentName,
+  CWD: 'cwd' as FieldContentName,
+  PLATFORMS: 'platforms' as FieldContentName,
+  REQUIRES: 'requires' as FieldContentName,
+  OPTIONS: 'options' as FieldContentName,
+  PARAMS: 'params' as FieldContentName,
+  REQUIREMENTS: 'requirements' as FieldContentName,
+  WORKFLOW: 'workflow' as FieldContentName,
+
+  // Inbox-specific
+  STATUS: 'status' as FieldContentName,
+  NOTES: 'notes' as FieldContentName,
+  TITLE: 'title' as FieldContentName,
+
+  // Query-specific fields
+  QUERY_DEFINITION: 'queryDefinition' as FieldContentName,
+  QUERY_SORT: 'querySort' as FieldContentName,
+  QUERY_LIMIT: 'queryLimit' as FieldContentName,
+  QUERY_RESULT_CACHE: 'queryResultCache' as FieldContentName,
+  QUERY_EVALUATED_AT: 'queryEvaluatedAt' as FieldContentName,
+
+  // Automation-specific fields
+  AUTOMATION_DEFINITION: 'automationDefinition' as FieldContentName,
+  AUTOMATION_STATE: 'automationState' as FieldContentName,
+  AUTOMATION_LAST_FIRED: 'automationLastFired' as FieldContentName,
+  AUTOMATION_ENABLED: 'automationEnabled' as FieldContentName,
+
+  // Computed field-specific fields
+  COMPUTED_FIELD_DEFINITION: 'computedFieldDefinition' as FieldContentName,
+  COMPUTED_FIELD_VALUE: 'computedFieldValue' as FieldContentName,
+  COMPUTED_FIELD_UPDATED_AT: 'computedFieldUpdatedAt' as FieldContentName,
+
+  // Calendar-specific fields
+  START_DATE: 'start_date' as FieldContentName,
+  END_DATE: 'end_date' as FieldContentName,
+  ALL_DAY: 'all_day' as FieldContentName,
+  RRULE: 'rrule' as FieldContentName,
+  GCAL_EVENT_ID: 'gcal_event_id' as FieldContentName,
+  GCAL_SYNCED_AT: 'gcal_synced_at' as FieldContentName,
+  REMINDER: 'reminder' as FieldContentName,
+
+  // Google Calendar OAuth fields
+  GCAL_ACCESS_TOKEN: 'gcal_access_token' as FieldContentName,
+  GCAL_REFRESH_TOKEN: 'gcal_refresh_token' as FieldContentName,
+  GCAL_TOKEN_EXPIRY: 'gcal_token_expiry' as FieldContentName,
+  GCAL_USER_EMAIL: 'gcal_user_email' as FieldContentName,
+  GCAL_CALENDAR_ID: 'gcal_calendar_id' as FieldContentName,
 } as const
 
 /**

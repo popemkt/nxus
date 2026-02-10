@@ -71,9 +71,9 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   masterDb.exec(`
     CREATE TABLE IF NOT EXISTS tags (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      parent_id INTEGER,
+      parent_id TEXT,
       "order" INTEGER NOT NULL DEFAULT 0,
       color TEXT,
       icon TEXT,
@@ -85,7 +85,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   masterDb.exec(`
     CREATE TABLE IF NOT EXISTS item_tags (
       app_id TEXT NOT NULL,
-      tag_id INTEGER NOT NULL,
+      tag_id TEXT NOT NULL,
       PRIMARY KEY (app_id, tag_id)
     )
   `)
@@ -152,7 +152,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   // Tag configuration tables
   masterDb.exec(`
     CREATE TABLE IF NOT EXISTS tag_schemas (
-      tag_id INTEGER PRIMARY KEY,
+      tag_id TEXT PRIMARY KEY,
       schema TEXT NOT NULL,
       description TEXT,
       created_at INTEGER NOT NULL,
@@ -163,7 +163,7 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
   masterDb.exec(`
     CREATE TABLE IF NOT EXISTS item_tag_configs (
       app_id TEXT NOT NULL,
-      tag_id INTEGER NOT NULL,
+      tag_id TEXT NOT NULL,
       config_values TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,

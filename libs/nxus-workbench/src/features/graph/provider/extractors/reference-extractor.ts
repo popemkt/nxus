@@ -9,28 +9,28 @@
  */
 
 import type { AssembledNode, PropertyValue } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import type { EdgeExtractionContext, GraphEdge } from '../types.js'
 
 /** Fields handled by dedicated extractors (excluded from generic reference extraction) */
 const DEDICATED_EXTRACTORS_FIELDS = new Set([
   // Handled by dependency-extractor
-  SYSTEM_FIELDS.DEPENDENCIES,
+  FIELD_NAMES.DEPENDENCIES,
   // Handled by hierarchy-extractor
-  SYSTEM_FIELDS.PARENT,
+  FIELD_NAMES.PARENT,
   // Handled by tag extraction (virtual nodes)
-  SYSTEM_FIELDS.TAGS,
+  FIELD_NAMES.TAGS,
   // System fields that aren't visualized as graph edges
-  SYSTEM_FIELDS.SUPERTAG,
-  SYSTEM_FIELDS.EXTENDS,
-  SYSTEM_FIELDS.FIELD_TYPE,
+  FIELD_NAMES.SUPERTAG,
+  FIELD_NAMES.EXTENDS,
+  FIELD_NAMES.FIELD_TYPE,
 ])
 
 /** Fields that are known to contain node references */
 const KNOWN_REFERENCE_FIELDS = new Set([
-  SYSTEM_FIELDS.COMMANDS,
-  SYSTEM_FIELDS.REQUIRES,
-  SYSTEM_FIELDS.TARGET,
+  FIELD_NAMES.COMMANDS,
+  FIELD_NAMES.REQUIRES,
+  FIELD_NAMES.TARGET,
 ])
 
 /**

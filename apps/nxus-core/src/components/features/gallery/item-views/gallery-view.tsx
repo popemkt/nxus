@@ -9,23 +9,19 @@ import {
 } from '@nxus/ui'
 import {
   ArrowRightIcon,
-  CheckCircle,
   Tag,
-  XCircle,
 } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { TagEditorModal } from '../modals/tag-editor-modal'
 import type { GalleryMode } from '@/stores/view-mode.store'
 import type { Item } from '@nxus/db'
-import { useToolHealth } from '@/hooks/use-tool-health'
+import { ItemHealthBadge } from '../item-health-badge'
 import {
-  APP_TYPE_ICONS,
-  APP_TYPE_LABELS_SHORT,
   STATUS_VARIANTS,
   getFirstTypeIcon,
-  getTypeBadges,
-  hasMultipleTypes,
 } from '@/lib/app-constants'
+import { TypeBadgesList } from '../type-badges-list'
+import { TruncatedTagsList } from '../truncated-tags-list'
 
 interface GalleryViewProps {
   items: Array<Item>
@@ -95,13 +91,7 @@ function ThumbnailWithFallback({
 function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false)
   const TypeIcon = getFirstTypeIcon(app)
-  const typeBadges = getTypeBadges(app)
   const isTool = app.types?.includes('tool') ?? false
-  const hasCheckCommand = isTool && 'checkCommand' in app && !!app.checkCommand
-
-  // Health check for tools - uses TanStack Query via domain hook
-  const healthCheck = useToolHealth(app, hasCheckCommand)
-  const isCheckingHealth = hasCheckCommand && healthCheck.isLoading
 
   return (
     <>
@@ -175,77 +165,18 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
 
           <CardContent className={compact ? 'p-3 pt-0' : undefined}>
             <div className="flex flex-wrap gap-1.5">
-              <Badge
-                variant={STATUS_VARIANTS[app.status]}
-                className={compact ? 'text-xs' : undefined}
-              >
-                {app.status.replace('-', ' ')}
-              </Badge>
-              {/* Show all type badges */}
-              {typeBadges.map((badge) => (
+              <ItemHealthBadge app={app} compact={compact} fallbackStatusBadge={
                 <Badge
-                  key={badge.type}
-                  variant={badge.isFirst ? 'secondary' : 'outline'}
+                  variant={STATUS_VARIANTS[app.status]}
                   className={compact ? 'text-xs' : undefined}
                 >
-                  {badge.label}
+                  {app.status.replace('-', ' ')}
                 </Badge>
-              ))}
-
-              {isTool && isCheckingHealth && (
-                <Badge
-                  variant="outline"
-                  className="flex items-center gap-1.5 animate-pulse"
-                >
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-ping" />
-                  Checking
-                </Badge>
-              )}
-
-              {hasCheckCommand && !isCheckingHealth && healthCheck && (
-                <Badge
-                  variant={healthCheck.isInstalled ? 'default' : 'destructive'}
-                  className="flex items-center gap-1 animate-fade-in"
-                >
-                  {healthCheck.isInstalled ? (
-                    <>
-                      <CheckCircle className="h-3 w-3" weight="fill" />
-                      {!compact && 'Installed'}
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-3 w-3" weight="fill" />
-                      {!compact && 'Not Found'}
-                    </>
-                  )}
-                </Badge>
-              )}
-
-              {hasCheckCommand &&
-                healthCheck?.isInstalled &&
-                healthCheck.version &&
-                !compact && (
-                  <Badge
-                    variant="outline"
-                    className="font-mono text-xs animate-fade-in"
-                  >
-                    {healthCheck.version}
-                  </Badge>
-                )}
+              } />
+              <TypeBadgesList item={app} className={compact ? 'text-xs' : undefined} />
 
               {!isTool && !compact && (
-                <>
-                  {app.metadata.tags.slice(0, 2).map((tag) => (
-                    <Badge key={tag.id} variant="outline">
-                      {tag.name}
-                    </Badge>
-                  ))}
-                  {app.metadata.tags.length > 2 && (
-                    <Badge variant="outline">
-                      +{app.metadata.tags.length - 2}
-                    </Badge>
-                  )}
-                </>
+                <TruncatedTagsList tags={app.metadata.tags} limit={2} />
               )}
             </div>
           </CardContent>

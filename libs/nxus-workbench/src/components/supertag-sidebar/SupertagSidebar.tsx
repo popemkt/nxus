@@ -25,7 +25,7 @@ export function SupertagSidebar({
   isLoading,
 }: SupertagSidebarProps) {
   return (
-    <div className="w-64 border-r border-border flex flex-col bg-card/50">
+    <div className="w-64 shrink-0 border-r border-border flex flex-col bg-card/50">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">

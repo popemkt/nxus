@@ -110,6 +110,8 @@ export {
   SelectValue,
 } from './components/select'
 
+export { ResizeHandle } from './components/resizable'
+
 export { Separator } from './components/separator'
 
 export {

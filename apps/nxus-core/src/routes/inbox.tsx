@@ -78,7 +78,7 @@ function InboxPage() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     const result = await deleteInboxItemServerFn({ data: { id } })
     if (result.success) {
       setLocalItems(localItems.filter((i) => i.id !== id))

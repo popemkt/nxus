@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx nx run:*)",
+      "Bash(grep:*)",
+      "Bash(jq:*)",
+      "Bash(npx nx show projects:*)",
+      "Bash(npx playwright test:*)"
+    ]
+  }
+}

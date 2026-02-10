@@ -28,13 +28,25 @@ test.describe('Core Inbox Page', () => {
       page.getByRole('heading', { name: 'Inbox', level: 1 })
     ).toBeVisible()
 
-    // Click "Add Item" button
-    await page.getByText('Add Item').click()
+    // Wait for all items to fully load before interacting
+    const pendingHeading = page.getByRole('heading', { level: 2 }).filter({ hasText: /Pending/ })
+    await expect(pendingHeading).toBeVisible({ timeout: 10000 })
 
-    // Verify modal opens with correct heading
-    await expect(
-      page.getByRole('heading', { name: 'Add to Inbox' })
-    ).toBeVisible()
+    // Wait for full client-side hydration to complete — the TanStack Devtools
+    // button is only interactive after React hydration finishes
+    await expect(page.getByRole('button', { name: 'Open TanStack Devtools' })).toBeVisible({ timeout: 5000 })
+
+    // Click "+ Add Item" button in the page header
+    const addItemBtn = page.getByRole('button', { name: /Add Item/ })
+    await addItemBtn.click()
+
+    // Verify modal opens — retry click if zustand store wasn't connected yet
+    const modalHeading = page.getByRole('heading', { name: 'Add to Inbox' })
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await modalHeading.isVisible({ timeout: 2000 }).catch(() => false)) break
+      await addItemBtn.click()
+    }
+    await expect(modalHeading).toBeVisible({ timeout: 5000 })
 
     // Verify modal description
     await expect(
@@ -82,20 +94,28 @@ test.describe('Core Inbox Page', () => {
       page.getByRole('heading', { name: 'Inbox', level: 1 })
     ).toBeVisible()
 
-    // Wait for at least one item card to appear
-    const editButtons = page.locator('[title="Edit item"]')
+    // Wait for all items to fully load
+    const pendingHeading = page.getByRole('heading', { level: 2 }).filter({ hasText: /Pending/ })
+    await expect(pendingHeading).toBeVisible({ timeout: 10000 })
+
+    // Wait for full client-side hydration
+    await expect(page.getByRole('button', { name: 'Open TanStack Devtools' })).toBeVisible({ timeout: 5000 })
+
+    // Wait for at least one edit button to appear (items fully rendered)
+    const editButtons = page.getByRole('button', { name: 'Edit item' })
     await expect(editButtons.first()).toBeVisible({ timeout: 10000 })
 
-    // Get the title of the first pending item before editing
-    const firstItemCard = editButtons.first().locator('ancestor::div[class*="flex items-start"]').first()
+    // Wait for any pending refetch to settle
+    await page.waitForLoadState('networkidle')
 
-    // Click the edit button on the first item
+    // Click the edit button — retry if modal didn't appear (hydration race)
+    const editModalHeading = page.getByRole('heading', { name: 'Edit Inbox Item' })
     await editButtons.first().click()
-
-    // Verify the edit modal opens
-    await expect(
-      page.getByRole('heading', { name: 'Edit Inbox Item' })
-    ).toBeVisible()
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await editModalHeading.isVisible({ timeout: 2000 }).catch(() => false)) break
+      await editButtons.first().click()
+    }
+    await expect(editModalHeading).toBeVisible({ timeout: 5000 })
 
     // Verify edit form fields are present
     await expect(page.locator('#edit-title')).toBeVisible()

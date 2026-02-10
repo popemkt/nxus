@@ -51,7 +51,7 @@ export function TagEditorModal({
   const [showSuggestions, setShowSuggestions] = React.useState(false)
   const [selectedIndex, setSelectedIndex] = React.useState(0)
   const [configModalTag, setConfigModalTag] = React.useState<{
-    id: number
+    id: string
     name: string
   } | null>(null)
 
@@ -99,20 +99,20 @@ export function TagEditorModal({
     return Array.from(allTags.values())
   }, [allTags])
 
-  // Compute which tags are configurable and which are configured (numeric IDs)
+  // Compute which tags are configurable and which are configured (string UUIDs)
   const configurableTagIds = React.useMemo(() => {
     const result = configurableTagsResult as
-      | { success: boolean; data?: Array<{ tagId: number }> }
+      | { success: boolean; data?: Array<{ tagId: string }> }
       | undefined
-    if (!result?.success || !result.data) return new Set<number>()
+    if (!result?.success || !result.data) return new Set<string>()
     return new Set(result.data.map((t) => t.tagId))
   }, [configurableTagsResult])
 
   const configuredTagIds = React.useMemo(() => {
     const result = appTagValuesResult as
-      | { success: boolean; data?: Array<{ tagId: number }> }
+      | { success: boolean; data?: Array<{ tagId: string }> }
       | undefined
-    if (!result?.success || !result.data) return new Set<number>()
+    if (!result?.success || !result.data) return new Set<string>()
     return new Set(result.data.map((v) => v.tagId))
   }, [appTagValuesResult])
 
@@ -144,7 +144,7 @@ export function TagEditorModal({
       !selectedTags.some((t) => t.name.toLowerCase() === query)
     ) {
       matches.push({
-        id: -1, // Marker for "create new"
+        id: '__new__', // Marker for "create new"
         name: inputValue.trim(),
       })
     }
@@ -153,11 +153,11 @@ export function TagEditorModal({
   }, [inputValue, allExistingTags, selectedTagIds, selectedTags])
 
   const handleAddTag = (suggestion: TagRef) => {
-    if (suggestion.id === -1) {
+    if (suggestion.id === '__new__') {
       // Creating a new tag - for now just add with temp ID
       // The server will create the tag if it doesn't exist
       // TODO: Consider creating tag on server first
-      const newTag = { id: Date.now(), name: suggestion.name }
+      const newTag = { id: `temp:${Date.now()}`, name: suggestion.name }
       setSelectedTags([...selectedTags, newTag])
     } else {
       // Existing tag
@@ -171,7 +171,7 @@ export function TagEditorModal({
     inputRef.current?.focus()
   }
 
-  const handleRemoveTag = (tagId: number) => {
+  const handleRemoveTag = (tagId: string) => {
     setSelectedTags(selectedTags.filter((t) => t.id !== tagId))
   }
 
@@ -188,7 +188,7 @@ export function TagEditorModal({
         handleAddTag(suggestions[selectedIndex])
       } else if (inputValue.trim()) {
         // Create new tag on Enter
-        handleAddTag({ id: -1, name: inputValue.trim() })
+        handleAddTag({ id: '__new__', name: inputValue.trim() })
       }
     } else if (
       e.key === 'Backspace' &&
@@ -262,7 +262,7 @@ export function TagEditorModal({
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
                     {suggestions.map((suggestion, index) => {
-                      const isCreate = suggestion.id === -1
+                      const isCreate = suggestion.id === '__new__'
 
                       return (
                         <button

@@ -9,31 +9,31 @@ import {
 } from '@/services/tag.server'
 
 /**
- * Tag Data Store - In-memory cache synced with SQLite
- * Uses integer IDs for tags
+ * Tag Data Store - In-memory cache synced with node-based DB
+ * Uses string UUIDs for tag IDs
  */
 interface TagDataState {
-  // === DATA (in-memory cache, source is SQLite) ===
-  tags: Map<number, Tag>
+  // === DATA (in-memory cache, source is node DB) ===
+  tags: Map<string, Tag>
   isInitialized: boolean
   isLoading: boolean
 
   // === ACTIONS ===
   initialize: () => Promise<void>
   addTag: (input: CreateTagInput) => Promise<Tag>
-  updateTag: (id: number, updates: Partial<Tag>) => Promise<void>
-  deleteTag: (id: number, cascade?: boolean) => Promise<void>
+  updateTag: (id: string, updates: Partial<Tag>) => Promise<void>
+  deleteTag: (id: string, cascade?: boolean) => Promise<void>
   moveTag: (
-    id: number,
-    newParentId: number | null,
+    id: string,
+    newParentId: string | null,
     newOrder: number,
   ) => Promise<void>
 
   // === SELECTORS ===
-  getTag: (id: number) => Tag | undefined
-  getChildren: (parentId: number | null) => Array<Tag>
-  getAncestors: (id: number) => Array<Tag>
-  getDescendants: (id: number) => Array<Tag>
+  getTag: (id: string) => Tag | undefined
+  getChildren: (parentId: string | null) => Array<Tag>
+  getAncestors: (id: string) => Array<Tag>
+  getDescendants: (id: string) => Array<Tag>
   getRootTags: () => Array<Tag>
   getAllTags: () => Array<Tag>
 }
@@ -44,7 +44,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   isInitialized: false,
   isLoading: false,
 
-  // Initialize from SQLite
+  // Initialize from DB
   initialize: async () => {
     if (get().isInitialized) return
 
@@ -63,7 +63,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
         console.log(
           '[TagDataStore] Loaded',
           result.data.length,
-          'tags from SQLite',
+          'tags from DB',
         )
       } else {
         set({
@@ -88,7 +88,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     const maxOrder =
       siblings.length > 0 ? Math.max(...siblings.map((s) => s.order)) : -1
 
-    // Sync to SQLite first to get the generated ID
+    // Sync to DB first to get the generated ID
     try {
       const result = await createTagServerFn({
         data: {
@@ -128,7 +128,7 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
   },
 
   // Update tag properties
-  updateTag: async (id: number, updates: Partial<Tag>) => {
+  updateTag: async (id: string, updates: Partial<Tag>) => {
     const existing = get().tags.get(id)
     if (!existing) return
 
@@ -144,16 +144,16 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     newTags.set(id, updated)
     set({ tags: newTags })
 
-    // Sync to SQLite
+    // Sync to DB
     try {
       await updateTagServerFn({ data: { id, ...updates } })
     } catch (err) {
-      console.error('[TagDataStore] SQLite sync failed:', err)
+      console.error('[TagDataStore] DB sync failed:', err)
     }
   },
 
   // Delete a tag (optionally cascade to children)
-  deleteTag: async (id: number, cascade = false) => {
+  deleteTag: async (id: string, cascade = false) => {
     const newTags = new Map(get().tags)
     const tag = get().tags.get(id)
 
@@ -179,16 +179,16 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     newTags.delete(id)
     set({ tags: newTags })
 
-    // Sync to SQLite
+    // Sync to DB
     try {
       await deleteTagServerFn({ data: { id, cascade } })
     } catch (err) {
-      console.error('[TagDataStore] SQLite delete failed:', err)
+      console.error('[TagDataStore] DB delete failed:', err)
     }
   },
 
   // Move tag to new parent and/or reorder
-  moveTag: async (id: number, newParentId: number | null, newOrder: number) => {
+  moveTag: async (id: string, newParentId: string | null, newOrder: number) => {
     const tag = get().tags.get(id)
     if (!tag) return
 
@@ -227,24 +227,24 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
 
     set({ tags: newTags })
 
-    // Sync to SQLite
+    // Sync to DB
     try {
       await moveTagServerFn({ data: { id, newParentId, newOrder } })
     } catch (err) {
-      console.error('[TagDataStore] SQLite move failed:', err)
+      console.error('[TagDataStore] DB move failed:', err)
     }
   },
 
   // === SELECTORS ===
-  getTag: (id: number) => get().tags.get(id),
+  getTag: (id: string) => get().tags.get(id),
 
-  getChildren: (parentId: number | null) => {
+  getChildren: (parentId: string | null) => {
     return Array.from(get().tags.values())
       .filter((t) => t.parentId === parentId)
       .sort((a, b) => a.order - b.order)
   },
 
-  getAncestors: (id: number) => {
+  getAncestors: (id: string) => {
     const ancestors: Array<Tag> = []
     let current = get().tags.get(id)
 
@@ -261,9 +261,9 @@ export const useTagDataStore = create<TagDataState>((set, get) => ({
     return ancestors
   },
 
-  getDescendants: (id: number) => {
+  getDescendants: (id: string) => {
     const descendants: Array<Tag> = []
-    const stack = [id]
+    const stack: Array<string> = [id]
 
     while (stack.length > 0) {
       const currentId = stack.pop()!

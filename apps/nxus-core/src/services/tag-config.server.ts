@@ -5,18 +5,23 @@
  * Tags like "ai-provider" can have schema definitions that require
  * apps to provide configuration values.
  *
- * Uses integer tag IDs for proper foreign key relationships.
+ * Uses string tag IDs (node UUIDs) for proper foreign key relationships.
  */
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
+  SYSTEM_SUPERTAGS,
   and,
   eq,
+  getNodesBySupertagWithInheritance,
   initDatabase,
-  itemTagConfigs, saveDatabase, tagSchemas
+  itemTagConfigs, nodes, saveDatabase, tagSchemas
 } from '@nxus/db/server'
-import { getAllSystemTags } from '@/lib/system-tags'
+import { getAllSystemTags, type TagConfigField } from '@/lib/system-tags'
+
+// Re-export for consumers that import from this file
+export type { TagConfigField }
 
 // ============================================================================
 // Schema definitions for tag config fields
@@ -31,19 +36,6 @@ export type TagConfigFieldType =
   | 'boolean'
   | 'number'
   | 'select'
-
-/**
- * Individual field definition in a tag config schema
- */
-export interface TagConfigField {
-  key: string
-  label: string
-  type: TagConfigFieldType
-  required?: boolean
-  default?: string | number | boolean
-  placeholder?: string
-  options?: Array<string> // For select type
-}
 
 /**
  * Complete schema definition for a configurable tag
@@ -75,19 +67,54 @@ const TagConfigSchemaValidator = z.object({
 // ============================================================================
 
 /**
- * Get schema for a configurable tag by integer ID
+ * Get schema for a configurable tag by tag ID (node UUID or system tag ID).
+ *
+ * Handles the migration from legacy system tag IDs ('system:ai-provider')
+ * to node UUIDs by resolving the tag node's name to a system tag.
  */
 export const getTagConfigServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ tagId: z.number() }))
+  .inputValidator(z.object({ tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getTagConfigServerFn] Fetching:', ctx.data.tagId)
     const db = initDatabase()
 
-    const config = await db
+    // Try direct DB lookup first
+    let config = await db
       .select()
       .from(tagSchemas)
       .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
+
+    // If not found, the tagId might be a node UUID while the DB stores a system tag ID.
+    // Resolve the node UUID to a tag name and find the system tag by name.
+    if (!config) {
+      const tagNode = db.select().from(nodes).where(eq(nodes.id, ctx.data.tagId)).get()
+      if (tagNode?.content) {
+        const systemTag = getAllSystemTags().find(
+          (t) => t.name === tagNode.content && t.configurable,
+        )
+        if (systemTag) {
+          // Try looking up by system tag ID
+          config = await db
+            .select()
+            .from(tagSchemas)
+            .where(eq(tagSchemas.tagId, systemTag.id))
+            .get()
+
+          // If still not in DB, use the system tag's built-in schema
+          if (!config && systemTag.schema) {
+            return {
+              success: true as const,
+              data: {
+                tagId: ctx.data.tagId,
+                schema: systemTag.schema as TagConfigSchema,
+                description: systemTag.description ?? null,
+              },
+            }
+          }
+        }
+      }
+    }
 
     if (!config) {
       return { success: false as const, error: 'Tag config not found' }
@@ -96,7 +123,7 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
     return {
       success: true as const,
       data: {
-        tagId: config.tagId,
+        tagId: ctx.data.tagId,
         schema: config.schema as unknown as TagConfigSchema,
         description: config.description,
       },
@@ -122,12 +149,18 @@ export const getAllConfigurableTagsServerFn = createServerFn({
   }))
 
   // Also include system tags marked as configurable (even without a saved schema)
+  // Resolve system tag names to actual node UUIDs so the UI can match them
   const dbTagIds = new Set(configs.map((c) => c.tagId))
+  const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
   for (const systemTag of getAllSystemTags()) {
-    if (systemTag.configurable && !dbTagIds.has(systemTag.id)) {
+    if (!systemTag.configurable) continue
+    // Find the tag node by matching content (name) to the system tag name
+    const tagNode = tagNodes.find((n) => n.content === systemTag.name)
+    const resolvedTagId = tagNode?.id ?? systemTag.id
+    if (!dbTagIds.has(resolvedTagId)) {
       result.push({
-        tagId: systemTag.id,
-        schema: { fields: [] } as TagConfigSchema,
+        tagId: resolvedTagId,
+        schema: (systemTag.schema ?? { fields: [] }) as TagConfigSchema,
         description: systemTag.description ?? null,
       })
     }
@@ -145,7 +178,7 @@ export const getAllConfigurableTagsServerFn = createServerFn({
 export const setTagConfigServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
-      tagId: z.number(),
+      tagId: z.string(),
       schema: TagConfigSchemaValidator,
       description: z.string().optional(),
     }),
@@ -192,7 +225,7 @@ export const setTagConfigServerFn = createServerFn({ method: 'POST' })
  * Get an app's configuration values for a specific tag
  */
 export const getAppTagValuesServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
+  .inputValidator(z.object({ appId: z.string(), tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getAppTagValuesServerFn] Fetching:', ctx.data)
     const db = initDatabase()
@@ -252,7 +285,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       appId: z.string(),
-      tagId: z.number(),
+      tagId: z.string(),
       configValues: z.any(), // Use z.any() instead of z.record() to avoid validation issues
     }),
   )
@@ -269,14 +302,37 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
 
     const db = initDatabase()
 
-    // 1. Get tag schema for validation
-    const tagConfig = await db
+    // 1. Get tag schema for validation (DB first, then system tag fallback)
+    let tagConfig = await db
       .select()
       .from(tagSchemas)
       .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
 
+    // Resolve node UUID to system tag name if direct lookup fails
+    let resolvedSystemTag: ReturnType<typeof getAllSystemTags>[number] | undefined
     if (!tagConfig) {
+      const tagNode = db.select().from(nodes).where(eq(nodes.id, ctx.data.tagId)).get()
+      if (tagNode?.content) {
+        resolvedSystemTag = getAllSystemTags().find(
+          (t) => t.name === tagNode.content && t.configurable,
+        )
+        if (resolvedSystemTag) {
+          tagConfig = await db
+            .select()
+            .from(tagSchemas)
+            .where(eq(tagSchemas.tagId, resolvedSystemTag.id))
+            .get()
+        }
+      }
+    }
+
+    let schema: TagConfigSchema
+    if (tagConfig) {
+      schema = tagConfig.schema as unknown as TagConfigSchema
+    } else if (resolvedSystemTag?.schema) {
+      schema = resolvedSystemTag.schema as TagConfigSchema
+    } else {
       return {
         success: false as const,
         error: `Tag ID ${ctx.data.tagId} has no configuration schema`,
@@ -284,7 +340,6 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     }
 
     // 2. Build dynamic Zod validator from schema
-    const schema = tagConfig.schema as unknown as TagConfigSchema
     const validationResult = validateValuesAgainstSchema(
       ctx.data.configValues,
       schema,
@@ -344,7 +399,7 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
  * Delete an app's configuration values for a tag
  */
 export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ appId: z.string(), tagId: z.number() }))
+  .inputValidator(z.object({ appId: z.string(), tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[deleteAppTagValuesServerFn] Deleting:', ctx.data)
     const db = initDatabase()
@@ -368,7 +423,7 @@ export const deleteAppTagValuesServerFn = createServerFn({ method: 'POST' })
  * Useful for finding all AI providers, for example
  */
 export const getAppsByConfiguredTagServerFn = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ tagId: z.number() }))
+  .inputValidator(z.object({ tagId: z.string() }))
   .handler(async (ctx) => {
     console.log('[getAppsByConfiguredTagServerFn] Fetching:', ctx.data.tagId)
     const db = initDatabase()

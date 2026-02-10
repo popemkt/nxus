@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://claude.ai/code",
   "homepage": "https://claude.ai/code",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "claude --version",
   "installInstructions": "npm install -g @anthropic-ai/claude-code",
   "commands": [
@@ -75,6 +79,5 @@
     "updatedAt": "2026-01-11T11:58:47.519Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

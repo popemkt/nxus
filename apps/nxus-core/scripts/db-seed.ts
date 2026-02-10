@@ -4,17 +4,14 @@
  * Usage: pnpm db:seed
  *
  * Automatically detects the current architecture mode and seeds appropriately:
- * - 'table': Seeds legacy relational tables (items, commands, tags, inbox)
  * - 'node': Seeds node-based tables (nodes, nodeProperties)
- * - 'graph': (Future) Seeds graph database
+ * - 'graph': Seeds graph database (SurrealDB)
  */
 
 import { bootstrapSystemNodes } from '@nxus/db/server'
 import {
   ARCHITECTURE_TYPE,
   isGraphArchitecture,
-  isNodeArchitecture,
-  isTableArchitecture,
 } from '../src/config/feature-flags'
 
 async function seed() {
@@ -24,13 +21,8 @@ async function seed() {
     // Graph architecture: seed SurrealDB via embedded surrealkv://
     const { seedGraph } = await import('./seed-graph')
     await seedGraph()
-  } else if (isTableArchitecture()) {
-    const { seedTables } = await import('./seed-tables')
-    await seedTables()
-  } else if (isNodeArchitecture()) {
-    // For node architecture, seed both for backwards compatibility during migration
-    // This ensures legacy tables stay in sync if needed
-    const { seedTables } = await import('./seed-tables')
+  } else {
+    // Node architecture (default)
     const { seedNodes } = await import('./seed-nodes')
 
     // Bootstrap system nodes first (supertags, fields)
@@ -42,13 +34,7 @@ async function seed() {
       console.log('System schema already exists, proceeding to seed...\n')
     }
 
-    await seedTables()
     await seedNodes()
-  } else {
-    console.log(
-      `⚠️  Architecture mode '${ARCHITECTURE_TYPE}' not yet supported`,
-    )
-    process.exit(1)
   }
 }
 

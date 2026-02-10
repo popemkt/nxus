@@ -2,11 +2,18 @@
   "id": "goose",
   "name": "Goose",
   "description": "An open source, extensible AI agent that goes beyond code suggestions - install, execute, edit, and test with any LLM",
-  "types": ["tool", "remote-repo"],
+  "types": [
+    "tool",
+    "remote-repo"
+  ],
   "primaryType": "tool",
   "path": "https://github.com/block/goose.git",
   "homepage": "https://block.github.io/goose/",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "goose --version",
   "commands": [
     {
@@ -18,7 +25,10 @@
       "target": "item",
       "mode": "script",
       "command": "install.sh",
-      "platforms": ["linux", "macos"],
+      "platforms": [
+        "linux",
+        "macos"
+      ],
       "requires": {
         "selfNotInstalled": true
       }
@@ -32,7 +42,9 @@
       "target": "item",
       "mode": "script",
       "command": "install.ps1",
-      "platforms": ["windows"],
+      "platforms": [
+        "windows"
+      ],
       "requires": {
         "selfNotInstalled": true
       }
@@ -125,6 +137,5 @@
     "updatedAt": "2026-01-17T05:17:00.000Z",
     "version": "1.0.0",
     "author": "Block"
-  },
-  "status": "not-installed"
+  }
 }

@@ -15,7 +15,10 @@
   },
   "installConfig": {
     "script": "install.sh",
-    "platform": ["linux", "macos", "windows"]
-  },
-  "status": "not-installed"
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  }
 }

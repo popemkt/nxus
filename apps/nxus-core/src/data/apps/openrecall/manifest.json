@@ -17,7 +17,10 @@
       "command": "git pull"
     }
   ],
-  "dependencies": ["python3", "git"],
+  "dependencies": [
+    "python3",
+    "git"
+  ],
   "metadata": {
     "tags": [],
     "category": "productivity",
@@ -28,7 +31,10 @@
   },
   "installConfig": {
     "script": "python3 -m pip install --upgrade --no-cache-dir git+https://github.com/openrecall/openrecall.git",
-    "platform": ["linux", "macos", "windows"]
-  },
-  "status": "not-installed"
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  }
 }

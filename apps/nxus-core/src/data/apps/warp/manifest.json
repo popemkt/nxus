@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://www.warp.dev/",
   "homepage": "https://www.warp.dev/",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "warp-terminal --dump-debug-info | head -n 1",
   "metadata": {
     "tags": [
@@ -23,6 +27,5 @@
     "updatedAt": "2026-01-17T13:00:00.000Z",
     "version": "1.0.0",
     "author": "Warp"
-  },
-  "status": "not-installed"
+  }
 }

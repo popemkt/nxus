@@ -6,7 +6,7 @@
  */
 
 import type { AssembledNode } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import type { GraphEdge, GraphNode } from '../types.js'
 
 /**
@@ -101,7 +101,7 @@ function extractTagReferences(
   const refs: Array<{ id: string; name: string }> = []
 
   // Extract from field:tags
-  const tagsProperty = node.properties[SYSTEM_FIELDS.TAGS]
+  const tagsProperty = node.properties[FIELD_NAMES.TAGS]
   if (tagsProperty) {
     for (const prop of tagsProperty) {
       const value = prop.value

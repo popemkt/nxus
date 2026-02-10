@@ -14,11 +14,13 @@
  * - Node inspector for deep visualization
  * - Keyboard navigation
  * - Bidirectional focus synchronization between views
+ * - Resizable panel borders
  */
 
-import { Cube } from '@phosphor-icons/react'
+import { Cube, X } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
+import { ResizeHandle } from '@nxus/ui'
 
 import { NodeBrowser } from './components/node-browser/index.js'
 import { NodeInspector } from './components/node-inspector/index.js'
@@ -27,6 +29,7 @@ import { QueryResultsView } from './components/query-results/index.js'
 import { Sidebar, type ViewMode } from './components/layout/index.js'
 import { GraphView } from './features/graph/index.js'
 import { useGraphStore } from './features/graph/store/index.js'
+import { useLayoutStore } from './stores/index.js'
 import type { AssembledNode } from '@nxus/db'
 import { getNodeServerFn } from './server/nodes.server.js'
 import {
@@ -38,6 +41,21 @@ import {
 export interface NodeWorkbenchRouteProps {
   /** Custom class name for the container */
   className?: string
+}
+
+/**
+ * Inspector empty state shown when no node is selected.
+ */
+function InspectorEmptyState({ hint }: { hint: string }) {
+  return (
+    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+      <div className="text-center">
+        <Cube className="size-12 mx-auto mb-3 opacity-30" />
+        <p className="text-sm">Select a node to inspect</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">{hint}</p>
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -65,8 +83,15 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [supertagFilter, setSupertagFilter] = useState<string | null>(null)
 
+  // Inspector panel visibility for graph view (overlay mode)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+
   // Graph store for local graph focus synchronization
   const { localGraph, setLocalGraph } = useGraphStore()
+
+  // Persisted panel sizes
+  const layout = useLayoutStore()
+  const setPanelSize = useLayoutStore((s) => s.setPanelSize)
 
   // ============================================================================
   // Data Fetching
@@ -144,6 +169,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
   const handleGraphNodeClick = useCallback(
     (nodeId: string) => {
       setSelectedNodeId(nodeId)
+      setInspectorOpen(true)
 
       // Update local graph focus when clicking in graph
       if (localGraph.enabled) {
@@ -160,6 +186,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
   const handleGraphNodeDoubleClick = useCallback(
     (nodeId: string) => {
       setSelectedNodeId(nodeId)
+      setInspectorOpen(true)
 
       // Always update focus on double-click (enables "drill down" behavior)
       if (localGraph.enabled) {
@@ -175,6 +202,7 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
    */
   const handleGraphBackgroundClick = useCallback(() => {
     setSelectedNodeId(null)
+    setInspectorOpen(false)
   }, [])
 
   /**
@@ -195,21 +223,19 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
 
   return (
     <div className={`h-screen bg-background flex ${className || ''}`}>
-      {/* Far Left - View Mode Sidebar */}
+      {/* Far Left - View Mode Sidebar (fixed, not resizable) */}
       <Sidebar activeView={viewMode} onViewChange={setViewMode} />
 
-      {/* List View: Supertag Sidebar + Node Browser */}
+      {/* List View: Supertag Sidebar | Node Browser | Inspector */}
       {viewMode === 'list' && (
         <>
-          {/* Left Sidebar - Supertag Browser */}
           <SupertagSidebar
             supertags={supertags}
             selectedSupertag={supertagFilter}
             onSelectSupertag={setSupertagFilter}
             isLoading={supertagsLoading}
           />
-
-          {/* Center - Node Browser */}
+          <ResizeHandle side="previous" minSize={160} maxSize={400} defaultSize={layout.listSupertag} onResize={(s) => setPanelSize('listSupertag', s)} />
           <NodeBrowser
             nodes={nodes}
             selectedNodeId={selectedNodeId}
@@ -218,12 +244,13 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onSearchChange={setSearchQuery}
             isLoading={nodesLoading}
           />
+          <ResizeHandle side="next" minSize={280} maxSize={700} defaultSize={layout.listInspector} onResize={(s) => setPanelSize('listInspector', s)} />
         </>
       )}
 
-      {/* Graph View */}
+      {/* Graph View - full width with overlay inspector */}
       {viewMode === 'graph' && (
-        <div className="flex-1 h-full">
+        <div className="flex-1 h-full relative min-w-0 overflow-hidden">
           <GraphView
             nodes={nodes}
             isLoading={nodesLoading}
@@ -232,37 +259,55 @@ export function NodeWorkbenchRoute({ className }: NodeWorkbenchRouteProps) {
             onNodeDoubleClick={handleGraphNodeDoubleClick}
             onBackgroundClick={handleGraphBackgroundClick}
           />
+
+          {/* Overlay Node Inspector */}
+          {inspectorOpen && selectedNode && (
+            <div className="absolute top-0 right-0 h-full flex z-20">
+              <ResizeHandle side="next" minSize={300} maxSize={800} onResize={(s) => setPanelSize('graphInspector', s)} />
+              <div
+                className="w-[480px] h-full border-l border-border flex flex-col bg-card/95 backdrop-blur-sm shadow-xl"
+                style={layout.graphInspector ? { width: layout.graphInspector } : undefined}
+                data-testid="node-inspector-panel"
+              >
+                <div className="flex items-center justify-end px-2 pt-2">
+                  <button
+                    onClick={() => setInspectorOpen(false)}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    title="Close inspector"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+                <NodeInspector node={selectedNode} onNavigate={(nodeId) => { setSelectedNodeId(nodeId); setInspectorOpen(true); }} />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Query View */}
+      {/* Query View: Query Results | Inspector */}
       {viewMode === 'query' && (
-        <QueryResultsView
-          selectedNodeId={selectedNodeId}
-          onSelectNode={handleNodeBrowserSelect}
-        />
+        <>
+          <QueryResultsView
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleNodeBrowserSelect}
+          />
+          <ResizeHandle side="next" minSize={280} maxSize={700} defaultSize={layout.queryInspector} onResize={(s) => setPanelSize('queryInspector', s)} />
+        </>
       )}
 
-      {/* Right Panel - Node Inspector (visible in all views) */}
-      <div className="w-[480px] border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
-        {selectedNode ? (
-          <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <Cube className="size-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Select a node to inspect</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                {viewMode === 'list'
-                  ? 'Use ↑↓ to navigate, Enter to select'
-                  : viewMode === 'graph'
-                    ? 'Click a node in the graph to select'
-                    : 'Add filters and select a result'}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Right Panel - Node Inspector (visible in list and query views) */}
+      {viewMode !== 'graph' && (
+        <div className="w-[480px] shrink-0 border-l border-border flex flex-col bg-card/30" data-testid="node-inspector-panel">
+          {selectedNode ? (
+            <NodeInspector node={selectedNode} onNavigate={setSelectedNodeId} />
+          ) : (
+            <InspectorEmptyState
+              hint={viewMode === 'list' ? 'Use ↑↓ to navigate, Enter to select' : 'Add filters and select a result'}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

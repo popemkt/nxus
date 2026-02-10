@@ -108,44 +108,52 @@ test.describe('Calendar Views & Navigation', () => {
   }) => {
     await ensureCalendarVisible(page)
 
-    // Get the initial period label text
-    const periodLabel = page.locator('.nxus-calendar h2').first()
-    await expect(periodLabel).toBeVisible()
-    const initialLabel = await periodLabel.textContent()
-    expect(initialLabel).toBeTruthy()
-
     // Note: When navigating to a period with no events, the app replaces
     // the calendar with an empty state (removing the toolbar). We test
-    // navigation by verifying the period label changes and using Today
-    // to return to the period with events.
+    // navigation by verifying the period label changes after Previous/Next,
+    // and that Today returns to a consistent period.
+
+    // First click Today to anchor on the current period (the calendar may
+    // initially show a different week if that's where events are).
+    await page.getByRole('button', { name: 'Today' }).click()
+    await page.waitForTimeout(500)
+
+    // Get the "today" period label as our baseline
+    const periodLabel = page.locator('.nxus-calendar h2').first()
+    await expect(periodLabel).toBeVisible()
+    const todayLabel = await periodLabel.textContent()
+    expect(todayLabel).toBeTruthy()
+
+    const emptyState = page.locator('.calendar-empty')
 
     // Click Previous → either the period label changes or empty state appears
     await page.getByRole('button', { name: 'Previous' }).click()
 
     // Wait for re-render — either a new period label or the empty state
-    const emptyState = page.locator('.calendar-empty')
     const newPeriodLabel = page.locator('.nxus-calendar h2').first()
     await expect(newPeriodLabel.or(emptyState)).toBeVisible({ timeout: 10000 })
 
     if (await newPeriodLabel.isVisible()) {
       // Period label changed — calendar stayed visible (events in previous period)
-      await expect(newPeriodLabel).not.toHaveText(initialLabel!)
+      await expect(newPeriodLabel).not.toHaveText(todayLabel!)
     }
     // Either way, navigation happened. Now go back with Today.
 
-    // If empty state is showing, use the page-level "New Event" button to re-enter,
-    // or navigate back to the calendar page to reset.
+    // If empty state is showing, navigate back to reset.
     if (await emptyState.isVisible()) {
-      // Reload the page to return to the current period (with the event)
       await page.goto('/calendar')
       await page.waitForLoadState('networkidle')
       await expect(page.locator('.nxus-calendar')).toBeVisible({ timeout: 15000 })
     }
 
-    // Verify the period label is back to the initial (Today period)
+    // Click Today to return to the baseline period
+    await page.getByRole('button', { name: 'Today' }).click()
+    await page.waitForTimeout(500)
+
+    // Verify the period label matches our baseline
     const restoredLabel = page.locator('.nxus-calendar h2').first()
     await expect(restoredLabel).toBeVisible()
-    await expect(restoredLabel).toHaveText(initialLabel!)
+    await expect(restoredLabel).toHaveText(todayLabel!)
 
     // Click Next → tests forward navigation
     await page.getByRole('button', { name: 'Next' }).click()
@@ -153,19 +161,19 @@ test.describe('Calendar Views & Navigation', () => {
       page.locator('.nxus-calendar h2').first().or(emptyState)
     ).toBeVisible({ timeout: 10000 })
 
-    // Navigation occurred — verify by returning with Today
+    // Return with Today
     if (await emptyState.isVisible()) {
       await page.goto('/calendar')
       await page.waitForLoadState('networkidle')
       await expect(page.locator('.nxus-calendar')).toBeVisible({ timeout: 15000 })
-    } else {
-      await page.getByRole('button', { name: 'Today' }).click()
     }
+    await page.getByRole('button', { name: 'Today' }).click()
+    await page.waitForTimeout(500)
 
-    // Verify Today returned us to the original period
-    const todayLabel = page.locator('.nxus-calendar h2').first()
-    await expect(todayLabel).toBeVisible()
-    await expect(todayLabel).toHaveText(initialLabel!)
+    // Verify Today returned us to the baseline period
+    const finalLabel = page.locator('.nxus-calendar h2').first()
+    await expect(finalLabel).toBeVisible()
+    await expect(finalLabel).toHaveText(todayLabel!)
   })
 
   test('CA3 — View switching (Day, Week, Month, Agenda)', async ({

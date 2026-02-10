@@ -198,12 +198,18 @@ export function GraphView({
   const rawGraphData = useGraphData(nodes, dataOptions)
 
   // Apply local graph filtering/annotation
-  const graphData = useLocalGraph(rawGraphData, {
-    enabled: localGraph.enabled,
-    focusNodeId: localGraph.focusNodeId,
-    depth: localGraph.depth,
-    linkTypes: localGraph.linkTypes,
-  })
+  // Memoize options to avoid new object reference on every render,
+  // which would cause useLocalGraph to recompute and reset the 3D graph simulation.
+  const localGraphOptions = useMemo(
+    () => ({
+      enabled: localGraph.enabled,
+      focusNodeId: localGraph.focusNodeId,
+      depth: localGraph.depth,
+      linkTypes: localGraph.linkTypes,
+    }),
+    [localGraph.enabled, localGraph.focusNodeId, localGraph.depth, localGraph.linkTypes],
+  )
+  const graphData = useLocalGraph(rawGraphData, localGraphOptions)
 
   // Build supertag names for legend
   const supertagNames = useMemo(
@@ -233,7 +239,7 @@ export function GraphView({
   }
 
   return (
-    <div className={`relative h-full w-full ${className ?? ''}`}>
+    <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
       {/* Graph Renderer */}
       {is3D ? (
         <Graph3D
@@ -267,7 +273,7 @@ export function GraphView({
 
       {/* Graph Legend (bottom-right) */}
       {graphData.supertagColors.size > 0 && (
-        <div className="absolute bottom-4 right-4 z-10 max-h-[40vh] w-48 overflow-auto">
+        <div className="absolute bottom-4 right-4 z-10">
           <GraphLegend
             supertagColors={graphData.supertagColors}
             supertagNames={supertagNames}

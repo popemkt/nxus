@@ -7,32 +7,61 @@
  * - Should not be deleted by users
  */
 
+export interface TagConfigField {
+  key: string
+  label: string
+  type: 'text' | 'password' | 'boolean' | 'number' | 'select'
+  required?: boolean
+  default?: string | number | boolean
+  placeholder?: string
+  options?: Array<string>
+}
+
 export interface SystemTag {
-  id: number
+  id: string
   name: string
   description: string
   /** Whether this tag has a configuration schema */
   configurable?: boolean
+  /** Schema defining the configuration fields for this tag */
+  schema?: { fields: Array<TagConfigField> }
 }
 
 /**
  * Dictionary of system tags with their IDs and metadata
- * IDs are stable - do not change them once assigned!
+ * IDs are stable system identifiers used to look up or create the corresponding node.
  */
 export const SYSTEM_TAGS = {
   AI_PROVIDER: {
-    id: 14,
+    id: 'system:ai-provider',
     name: 'AI CLI Provider',
     description: 'AI tools that can be configured to provide AI capabilities',
     configurable: true,
+    schema: {
+      fields: [
+        {
+          key: 'cliCommand',
+          label: 'CLI Command',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., claude, gemini, opencode',
+        },
+        {
+          key: 'promptFormat',
+          label: 'Prompt Format',
+          type: 'select',
+          options: ['direct', 'file', 'stdin'],
+          default: 'direct',
+        },
+        {
+          key: 'supportsInteractive',
+          label: 'Supports Interactive Mode',
+          type: 'boolean',
+          default: true,
+        },
+      ],
+    },
   },
-  // Add more system tags here as needed
-  // Example:
-  // INSTALLED: {
-  //   id: 13,
-  //   name: 'Installed',
-  //   description: 'Apps/tools that have been installed on this system',
-  // },
 } as const satisfies Record<string, SystemTag>
 
 /**
@@ -57,6 +86,6 @@ export function getAllSystemTags(): Array<SystemTag> {
 /**
  * Check if a tag ID is a system tag
  */
-export function isSystemTag(tagId: number): boolean {
+export function isSystemTag(tagId: string): boolean {
   return Object.values(SYSTEM_TAGS).some((t) => t.id === tagId)
 }

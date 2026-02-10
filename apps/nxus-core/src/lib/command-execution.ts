@@ -5,6 +5,7 @@
  * are defined in ONE place (registry.ts) and reused everywhere.
  */
 
+import type { GenericCommandContext } from '@nxus/db'
 import { commandRegistry } from '@/services/command-palette/registry'
 import { commandParamsModalService } from '@/stores/command-params-modal.store'
 
@@ -21,6 +22,7 @@ import { commandParamsModalService } from '@/stores/command-params-modal.store'
  */
 export async function executeGenericCommandById(
   commandId: string,
+  context: GenericCommandContext,
   targetId?: string,
   targetPath?: string,
 ): Promise<void> {
@@ -53,14 +55,19 @@ export async function executeGenericCommandById(
         for (const [name, opt] of Object.entries(result.requirements)) {
           reqContext[name] = { appId: opt.appId, value: opt.value }
         }
-        command.execute(targetId, targetPath, {
-          requirements: reqContext,
-          params: result.params,
+        Promise.resolve(
+          command.execute(targetId, targetPath, {
+            navigate: context.navigate,
+            requirements: reqContext,
+            params: result.params,
+          }),
+        ).catch((err: unknown) => {
+          console.error(`Command '${commandId}' execution failed:`, err)
         })
       },
     })
   } else {
     // No requirements/params - execute directly
-    await command.execute(targetId, targetPath)
+    await command.execute(targetId, targetPath, context)
   }
 }

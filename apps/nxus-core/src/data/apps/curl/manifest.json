@@ -6,7 +6,11 @@
   "path": "https://curl.se",
   "homepage": "https://curl.se",
   "thumbnail": "/thumbnails/curl.svg",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "curl --version",
   "installInstructions": "curl is usually pre-installed on most systems. If not:\n- Linux: sudo apt install curl or sudo dnf install curl\n- macOS: brew install curl\n- Windows: Included in Windows 10+ or use winget install curl",
   "commands": [
@@ -64,6 +68,5 @@
     "updatedAt": "2026-01-24T06:14:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

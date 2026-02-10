@@ -4,7 +4,11 @@
   "description": "Collection of custom scripts for generic automation tasks",
   "type": "tool",
   "path": ".",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "echo true",
   "commands": [
     {
@@ -17,7 +21,11 @@
       "mode": "script",
       "command": "create-repo.ps1",
       "requires": {
-        "tools": ["github-cli", "git", "powershell"]
+        "tools": [
+          "github-cli",
+          "git",
+          "powershell"
+        ]
       }
     },
     {
@@ -30,7 +38,9 @@
       "mode": "script",
       "command": "bash-config.ps1",
       "requires": {
-        "tools": ["powershell"]
+        "tools": [
+          "powershell"
+        ]
       },
       "options": {
         "interactive": true
@@ -46,11 +56,18 @@
       "mode": "script",
       "command": "launch-agents.ps1",
       "requires": {
-        "tools": ["warp", "powershell"]
+        "tools": [
+          "warp",
+          "powershell"
+        ]
       }
     }
   ],
-  "dependencies": ["github-cli", "git", "powershell"],
+  "dependencies": [
+    "github-cli",
+    "git",
+    "powershell"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -58,6 +75,5 @@
     "updatedAt": "2026-01-03T09:40:00Z",
     "version": "1.0.0",
     "author": "popemkt"
-  },
-  "status": "not-installed"
+  }
 }

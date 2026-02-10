@@ -9,7 +9,7 @@ interface UseAppRegistryOptions {
   filterType?: ItemType
   filterStatus?: ItemStatus
   filterCategory?: string
-  filterTags?: Array<{ id: number; name: string }>
+  filterTags?: Array<{ id: string; name: string }>
 }
 
 interface UseAppRegistryReturn {

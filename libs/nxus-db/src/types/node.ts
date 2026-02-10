@@ -5,8 +5,14 @@
  * NO runtime imports here - types only!
  */
 
+import type { FieldContentName } from '../schemas/node-schema.js'
+
 /**
- * A fully assembled node with all its properties and supertags resolved
+ * A fully assembled node with all its properties and supertags resolved.
+ *
+ * Properties are keyed by FieldContentName (the field node's `content` value,
+ * e.g., 'parent', 'status'). Use FIELD_NAMES constants for type-safe access.
+ * Do NOT use SYSTEM_FIELDS here — those are for write operations only.
  */
 export interface AssembledNode {
   id: string
@@ -16,7 +22,7 @@ export interface AssembledNode {
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
-  properties: Record<string, PropertyValue[]>
+  properties: Record<FieldContentName, PropertyValue[]>
   supertags: { id: string; content: string; systemId: string | null }[]
 }
 

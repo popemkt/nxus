@@ -18,6 +18,7 @@ import {
   updateNodeContent,
   getProperty,
   evaluateQuery,
+  FIELD_NAMES,
   type AssembledNode,
 } from '@nxus/db/server'
 import {
@@ -42,15 +43,15 @@ import { getNextInstance } from '../lib/rrule-utils.js'
  * Convert an assembled node to a CalendarEvent
  */
 function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
-  const startDateStr = getProperty<string>(node, 'start_date')
-  const endDateStr = getProperty<string>(node, 'end_date')
-  const allDay = getProperty<boolean>(node, 'all_day') ?? false
-  const rrule = getProperty<string>(node, 'rrule')
-  const reminder = getProperty<number>(node, 'reminder')
-  const gcalEventId = getProperty<string>(node, 'gcal_event_id')
-  const gcalSyncedAtStr = getProperty<string>(node, 'gcal_synced_at')
-  const status = getProperty<string>(node, 'status')
-  const description = getProperty<string>(node, 'description')
+  const startDateStr = getProperty<string>(node, FIELD_NAMES.START_DATE)
+  const endDateStr = getProperty<string>(node, FIELD_NAMES.END_DATE)
+  const allDay = getProperty<boolean>(node, FIELD_NAMES.ALL_DAY) ?? false
+  const rrule = getProperty<string>(node, FIELD_NAMES.RRULE)
+  const reminder = getProperty<number>(node, FIELD_NAMES.REMINDER)
+  const gcalEventId = getProperty<string>(node, FIELD_NAMES.GCAL_EVENT_ID)
+  const gcalSyncedAtStr = getProperty<string>(node, FIELD_NAMES.GCAL_SYNCED_AT)
+  const status = getProperty<string>(node, FIELD_NAMES.STATUS)
+  const description = getProperty<string>(node, FIELD_NAMES.DESCRIPTION)
 
   // Determine if this is a task by checking supertags
   const isTask = node.supertags.some(
@@ -364,7 +365,7 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
       }
 
       // Check if this is a recurring task
-      const rrule = getProperty<string>(node, 'rrule')
+      const rrule = getProperty<string>(node, FIELD_NAMES.RRULE)
       const isRecurring = !!rrule
 
       // Update the status
@@ -373,11 +374,11 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
 
       // For recurring tasks being marked as complete, create the next instance
       if (completed && isRecurring && rrule) {
-        const currentStartStr = getProperty<string>(node, 'start_date')
-        const currentEndStr = getProperty<string>(node, 'end_date')
-        const allDay = getProperty<boolean>(node, 'all_day') ?? false
-        const reminder = getProperty<number>(node, 'reminder')
-        const description = getProperty<string>(node, 'description')
+        const currentStartStr = getProperty<string>(node, FIELD_NAMES.START_DATE)
+        const currentEndStr = getProperty<string>(node, FIELD_NAMES.END_DATE)
+        const allDay = getProperty<boolean>(node, FIELD_NAMES.ALL_DAY) ?? false
+        const reminder = getProperty<number>(node, FIELD_NAMES.REMINDER)
+        const description = getProperty<string>(node, FIELD_NAMES.DESCRIPTION)
 
         const currentStart = currentStartStr ? new Date(currentStartStr) : new Date()
         const currentEnd = currentEndStr ? new Date(currentEndStr) : new Date(currentStart.getTime() + 60 * 60 * 1000)

@@ -16,6 +16,8 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   isSystemId,
+  type FieldSystemId,
+  type FieldContentName,
 } from '../schemas/node-schema.js'
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
 import { eventBus } from '../reactive/event-bus.js'
@@ -336,7 +338,7 @@ export function assembleNode(
 
   for (const prop of props) {
     const fieldInfo = fieldCache.get(prop.fieldNodeId)
-    const fieldName = fieldInfo?.content || prop.fieldNodeId
+    const fieldName = (fieldInfo?.content || prop.fieldNodeId) as FieldContentName
 
     let parsedValue: unknown = prop.value
     try {
@@ -437,10 +439,11 @@ export function assembleNodeWithInheritance(
             order: 0,
           }
 
-          if (!node.properties[def.fieldName]) {
-            node.properties[def.fieldName] = []
+          const key = def.fieldName as FieldContentName
+          if (!node.properties[key]) {
+            node.properties[key] = []
           }
-          node.properties[def.fieldName].push(inheritedPv)
+          node.properties[key].push(inheritedPv)
           existingFieldSystemIds.add(fieldSystemId)
         }
       }
@@ -561,14 +564,15 @@ export function deleteNode(
 }
 
 /**
- * Set a property value (creates or updates)
+ * Set a property value (creates or updates).
  *
- * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:status')
+ * @param fieldId A FieldSystemId (e.g., SYSTEM_FIELDS.STATUS).
+ *   Resolved internally via getFieldOrSupertagNode().
  */
 export function setProperty(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
-  fieldId: string,
+  fieldId: FieldSystemId,
   value: unknown,
   order: number = 0,
 ): void {
@@ -610,30 +614,27 @@ export function setProperty(
       .run()
   }
 
-  // Include systemId in event if the input was a systemId (for dependency matching)
-  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
-
-  // Emit property:set event with field UUID and optional systemId
+  // Emit property:set event with field UUID and systemId
   eventBus.emit({
     type: 'property:set',
     timestamp: now,
     nodeId,
     fieldId: field.id,
-    fieldSystemId,
+    fieldSystemId: fieldId as string,
     beforeValue,
     afterValue: value,
   })
 }
 
 /**
- * Add a value to a multi-value property (like tags, dependencies)
+ * Add a value to a multi-value property (like tags, dependencies).
  *
- * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:tags')
+ * @param fieldId A FieldSystemId (e.g., SYSTEM_FIELDS.TAGS).
  */
 export function addPropertyValue(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
-  fieldId: string,
+  fieldId: FieldSystemId,
   value: unknown,
 ): void {
   const field = getFieldOrSupertagNode(db, fieldId)
@@ -661,29 +662,26 @@ export function addPropertyValue(
     })
     .run()
 
-  // Include systemId in event if the input was a systemId (for dependency matching)
-  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
-
-  // Emit property:added event with field UUID and optional systemId
+  // Emit property:added event with field UUID and systemId
   eventBus.emit({
     type: 'property:added',
     timestamp: now,
     nodeId,
     fieldId: field.id,
-    fieldSystemId,
+    fieldSystemId: fieldId as string,
     afterValue: value,
   })
 }
 
 /**
- * Remove all property values for a field
+ * Remove all property values for a field.
  *
- * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:tags')
+ * @param fieldId A FieldSystemId (e.g., SYSTEM_FIELDS.TAGS).
  */
 export function clearProperty(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
-  fieldId: string,
+  fieldId: FieldSystemId,
 ): void {
   const field = getFieldOrSupertagNode(db, fieldId)
   if (!field) return
@@ -710,31 +708,28 @@ export function clearProperty(
     db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
   }
 
-  // Include systemId in event if the input was a systemId (for dependency matching)
-  const fieldSystemId = isSystemId(fieldId) ? fieldId : undefined
-
-  // Emit property:removed event for each removed value with field UUID and optional systemId
+  // Emit property:removed event for each removed value
   for (const beforeValue of beforeValues) {
     eventBus.emit({
       type: 'property:removed',
       timestamp: now,
       nodeId,
       fieldId: field.id,
-      fieldSystemId,
+      fieldSystemId: fieldId as string,
       beforeValue,
     })
   }
 }
 
 /**
- * Link two nodes via a field (e.g., set parent, add dependency)
+ * Link two nodes via a field (e.g., set parent, add dependency).
  *
- * @param fieldId The field identifier - can be either a UUID or systemId
+ * @param fieldId A FieldSystemId (e.g., SYSTEM_FIELDS.PARENT).
  */
 export function linkNodes(
   db: ReturnType<typeof getDatabase>,
   fromNodeId: string,
-  fieldId: string,
+  fieldId: FieldSystemId,
   toNodeId: string,
   append: boolean = false,
 ): void {
@@ -826,11 +821,15 @@ export function getNodesBySupertagWithInheritance(
 // ============================================================================
 
 /**
- * Get single property value from assembled node
+ * Get single property value from assembled node.
+ *
+ * @param fieldName A FieldContentName (e.g., FIELD_NAMES.PARENT, FIELD_NAMES.STATUS).
+ *   This is the field node's `content` value, NOT a systemId.
+ *   For writes, use setProperty with SYSTEM_FIELDS instead.
  */
 export function getProperty<T = unknown>(
   node: AssembledNode,
-  fieldName: string,
+  fieldName: FieldContentName,
 ): T | undefined {
   const props = node.properties[fieldName]
   if (!props || props.length === 0) return undefined
@@ -838,11 +837,14 @@ export function getProperty<T = unknown>(
 }
 
 /**
- * Get all property values from assembled node (for multi-value fields)
+ * Get all property values from assembled node (for multi-value fields).
+ *
+ * @param fieldName A FieldContentName (e.g., FIELD_NAMES.TAGS).
+ *   This is the field node's `content` value, NOT a systemId.
  */
 export function getPropertyValues<T = unknown>(
   node: AssembledNode,
-  fieldName: string,
+  fieldName: FieldContentName,
 ): T[] {
   const props = node.properties[fieldName]
   if (!props) return []

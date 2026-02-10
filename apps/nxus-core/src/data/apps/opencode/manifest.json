@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://opencode.ai",
   "homepage": "https://opencode.ai",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "opencode version",
   "installInstructions": "OpenCode can be installed via:\n- Linux/macOS: curl -fsSL https://opencode.ai/install | bash\n- Homebrew: brew install opencode-ai/tap/opencode\n- Windows: winget install opencode\n- Go: go install github.com/opencode-ai/opencode@latest",
   "commands": [
@@ -19,7 +23,9 @@
       "mode": "script",
       "command": "install.ps1",
       "requires": {
-        "tools": ["powershell"],
+        "tools": [
+          "powershell"
+        ],
         "selfNotInstalled": true
       }
     },
@@ -211,6 +217,5 @@
         "placeholder": "anthropic:claude-sonnet-4-20250514"
       }
     ]
-  },
-  "status": "not-installed"
+  }
 }

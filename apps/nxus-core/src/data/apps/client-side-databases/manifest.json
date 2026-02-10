@@ -87,7 +87,11 @@
       "command": "git pull"
     }
   ],
-  "dependencies": ["node", "npm", "git"],
+  "dependencies": [
+    "node",
+    "npm",
+    "git"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -98,7 +102,10 @@
   },
   "installConfig": {
     "script": "npm install && npm run build",
-    "platform": ["linux", "macos", "windows"]
-  },
-  "status": "not-installed"
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  }
 }

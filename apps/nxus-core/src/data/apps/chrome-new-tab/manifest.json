@@ -17,7 +17,11 @@
       "command": "git pull"
     }
   ],
-  "dependencies": ["node", "npm", "git"],
+  "dependencies": [
+    "node",
+    "npm",
+    "git"
+  ],
   "metadata": {
     "tags": [],
     "category": "extensions",
@@ -28,7 +32,10 @@
   },
   "installConfig": {
     "script": "npm install",
-    "platform": ["linux", "macos", "windows"]
-  },
-  "status": "not-installed"
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  }
 }

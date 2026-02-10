@@ -6,7 +6,7 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, FIELD_NAMES, type FieldSystemId, type FieldContentName } from '../schemas/node-schema.js'
 import {
   assembleNode,
   clearSystemNodeCache,
@@ -81,8 +81,8 @@ function seedSystemNodes() {
     { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'Supertag' },
     { id: 'field-extends', systemId: SYSTEM_FIELDS.EXTENDS, content: 'Extends' },
     { id: 'field-type', systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'Field Type' },
-    { id: 'field-path', systemId: 'field:path', content: 'Path' },
-    { id: 'field-description', systemId: 'field:description', content: 'Description' },
+    { id: 'field-path', systemId: 'field:path', content: 'path' },
+    { id: 'field-description', systemId: 'field:description', content: 'description' },
   ]
 
   for (const field of systemFields) {
@@ -229,27 +229,27 @@ describe('node.service', () => {
   describe('setProperty', () => {
     it('should set a property on a node', () => {
       const nodeId = createNode(db, { content: 'Node With Property' })
-      setProperty(db, nodeId, 'field:path', '/usr/bin/test')
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, '/usr/bin/test')
 
       const node = findNodeById(db, nodeId)
-      expect(node?.properties['Path']).toBeDefined()
-      expect(node?.properties['Path'][0].value).toBe('/usr/bin/test')
+      expect(node?.properties[FIELD_NAMES.PATH]).toBeDefined()
+      expect(node?.properties[FIELD_NAMES.PATH][0].value).toBe('/usr/bin/test')
     })
 
     it('should update existing property', () => {
       const nodeId = createNode(db, { content: 'Node' })
-      setProperty(db, nodeId, 'field:path', '/first/path')
-      setProperty(db, nodeId, 'field:path', '/second/path')
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, '/first/path')
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, '/second/path')
 
       const node = findNodeById(db, nodeId)
-      expect(node?.properties['Path']).toHaveLength(1)
-      expect(node?.properties['Path'][0].value).toBe('/second/path')
+      expect(node?.properties[FIELD_NAMES.PATH]).toHaveLength(1)
+      expect(node?.properties[FIELD_NAMES.PATH][0].value).toBe('/second/path')
     })
 
     it('should throw for non-existent field', () => {
       const nodeId = createNode(db, { content: 'Node' })
       expect(() => {
-        setProperty(db, nodeId, 'non-existent:field', 'value')
+        setProperty(db, nodeId, 'non-existent:field' as FieldSystemId, 'value')
       }).toThrow('Field not found')
     })
   })
@@ -260,15 +260,15 @@ describe('node.service', () => {
         content: 'Full Node',
         supertagId: SYSTEM_SUPERTAGS.ITEM,
       })
-      setProperty(db, nodeId, 'field:path', '/test/path')
-      setProperty(db, nodeId, 'field:description', 'A test description')
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, '/test/path')
+      setProperty(db, nodeId, SYSTEM_FIELDS.DESCRIPTION, 'A test description')
 
       const node = assembleNode(db, nodeId)
       expect(node).not.toBeNull()
       expect(node?.content).toBe('Full Node')
       expect(node?.supertags.length).toBe(1)
-      expect(node?.properties['Path']).toBeDefined()
-      expect(node?.properties['Description']).toBeDefined()
+      expect(node?.properties[FIELD_NAMES.PATH]).toBeDefined()
+      expect(node?.properties[FIELD_NAMES.DESCRIPTION]).toBeDefined()
     })
   })
 
@@ -311,27 +311,27 @@ describe('node.service', () => {
   describe('property helpers', () => {
     it('getProperty should return single value', () => {
       const nodeId = createNode(db, { content: 'Node' })
-      setProperty(db, nodeId, 'field:path', '/my/path')
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, '/my/path')
 
       const node = findNodeById(db, nodeId) as AssembledNode
-      const path = getProperty<string>(node, 'Path')
+      const path = getProperty<string>(node, FIELD_NAMES.PATH)
       expect(path).toBe('/my/path')
     })
 
     it('getProperty should return undefined for missing field', () => {
       const nodeId = createNode(db, { content: 'Node' })
       const node = findNodeById(db, nodeId) as AssembledNode
-      const missing = getProperty<string>(node, 'NonExistent')
+      const missing = getProperty<string>(node, 'NonExistent' as FieldContentName)
       expect(missing).toBeUndefined()
     })
 
     it('getPropertyValues should return array of values', () => {
       const nodeId = createNode(db, { content: 'Node' })
-      setProperty(db, nodeId, 'field:path', 'value1', 0)
-      setProperty(db, nodeId, 'field:path', 'value2', 1)
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, 'value1', 0)
+      setProperty(db, nodeId, SYSTEM_FIELDS.PATH, 'value2', 1)
 
       const node = findNodeById(db, nodeId) as AssembledNode
-      const values = getPropertyValues<string>(node, 'Path')
+      const values = getPropertyValues<string>(node, FIELD_NAMES.PATH)
       expect(values).toHaveLength(2)
       expect(values).toContain('value1')
       expect(values).toContain('value2')

@@ -6,7 +6,11 @@
   "path": "https://git-scm.com",
   "homepage": "https://git-scm.com",
   "thumbnail": "/thumbnails/git.svg",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "git --version",
   "installInstructions": "Visit https://git-scm.com to download and install Git for your platform",
   "commands": [
@@ -48,6 +52,5 @@
     "updatedAt": "2026-01-01T22:37:00.000Z",
     "version": "1.0.0",
     "author": "nxus"
-  },
-  "status": "not-installed"
+  }
 }

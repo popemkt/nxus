@@ -5,7 +5,11 @@
   "type": "tool",
   "path": "https://z.ai",
   "homepage": "https://z.ai",
-  "platform": ["linux", "macos", "windows"],
+  "platform": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "checkCommand": "claude --version",
   "installInstructions": "Set environment variables before running claude:\nexport ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"your_z_ai_key\"",
   "commands": [
@@ -39,7 +43,9 @@
       "mode": "execute",
       "command": "rm -f ~/.claude/settings.json ~/.claude.json",
       "requires": {
-        "tools": ["claude-code"]
+        "tools": [
+          "claude-code"
+        ]
       }
     },
     {
@@ -77,7 +83,9 @@
       "icon": "Lightbulb"
     }
   ],
-  "dependencies": ["claude-code"],
+  "dependencies": [
+    "claude-code"
+  ],
   "metadata": {
     "tags": [],
     "category": "development-tools",
@@ -104,6 +112,5 @@
         "placeholder": "API endpoint URL"
       }
     ]
-  },
-  "status": "not-installed"
+  }
 }
