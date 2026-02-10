@@ -41,7 +41,8 @@ Save to `{@artifacts_path}/spec.md` with:
 
 Detailed implementation plan created below. The generic "Implementation" step has been replaced with 7 concrete steps.
 
-### [ ] Step: NodeBackend interface and SQLite backend
+### [x] Step: NodeBackend interface and SQLite backend
+<!-- chat-id: 8babdb45-7f1d-4d38-94b6-d70ebee6e6bd -->
 
 **Goal:** Define the `NodeBackend` interface, implement the `SqliteBackend` that wraps existing `node.service.ts` functions, and write tests proving the wrapper delegates correctly.
 
