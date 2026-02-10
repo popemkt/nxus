@@ -6,6 +6,7 @@
  */
 
 import {
+  FIELD_NAMES,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   clearProperty,
@@ -174,10 +175,10 @@ export const getTagsServerFn = createServerFn({ method: 'GET' }).handler(
     const data = tagNodes.map((node) => ({
       id: node.id,
       name: node.content || '',
-      parentId: getProperty<string>(node, 'parent') ?? null,
-      order: getProperty<number>(node, 'order') ?? 0,
-      color: getProperty<string>(node, 'color') ?? null,
-      icon: getProperty<string>(node, 'icon') ?? null,
+      parentId: getProperty<string>(node, FIELD_NAMES.PARENT) ?? null,
+      order: getProperty<number>(node, FIELD_NAMES.ORDER) ?? 0,
+      color: getProperty<string>(node, FIELD_NAMES.COLOR) ?? null,
+      icon: getProperty<string>(node, FIELD_NAMES.ICON) ?? null,
       createdAt: node.createdAt,
       updatedAt: node.updatedAt,
     }))

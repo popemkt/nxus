@@ -10,7 +10,7 @@
  */
 
 import type { AssembledNode } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import type { EdgeExtractionContext, GraphEdge } from '../types.js'
 
 /**
@@ -32,7 +32,7 @@ export function extractHierarchyEdges(
   const addedParents = new Set<string>()
 
   // 1. Check field:parent property
-  const parentField = SYSTEM_FIELDS.PARENT
+  const parentField = FIELD_NAMES.PARENT
   const parentValues = node.properties[parentField]
 
   if (parentValues && parentValues.length > 0) {
@@ -86,7 +86,7 @@ export function buildChildrenMap(nodes: AssembledNode[]): Map<string, string[]> 
     const parentIds = new Set<string>()
 
     // Check field:parent
-    const parentField = SYSTEM_FIELDS.PARENT
+    const parentField = FIELD_NAMES.PARENT
     const parentValues = node.properties[parentField]
 
     if (parentValues) {

@@ -20,6 +20,7 @@ import {
   deleteNode,
   setProperty,
 } from '@nxus/db/server'
+import type { FieldSystemId } from '@nxus/db'
 
 // ============================================================================
 // Raw Node Queries (return AssembledNode)
@@ -115,7 +116,7 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     if (properties) {
       for (const [fieldSystemId, value] of Object.entries(properties)) {
         if (value !== null) {
-          setProperty(db, nodeId, fieldSystemId, value)
+          setProperty(db, nodeId, fieldSystemId as FieldSystemId, value)
         }
       }
     }
@@ -182,7 +183,7 @@ export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
 
     // Set each property
     for (const [fieldSystemId, value] of Object.entries(properties)) {
-      setProperty(db, nodeId, fieldSystemId, value)
+      setProperty(db, nodeId, fieldSystemId as FieldSystemId, value)
     }
 
     // Return the updated node

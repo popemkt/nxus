@@ -23,6 +23,7 @@ import {
   eq,
   and,
   isNull,
+  FIELD_NAMES,
   type AssembledNode,
 } from '@nxus/db/server'
 import { nodes } from '@nxus/db'
@@ -110,9 +111,9 @@ function getStoredTokens(db: ReturnType<typeof initDatabase>): GoogleTokens | nu
     return null
   }
 
-  const accessToken = getProperty<string>(node, 'gcal_access_token')
-  const refreshToken = getProperty<string>(node, 'gcal_refresh_token')
-  const tokenExpiry = getProperty<string>(node, 'gcal_token_expiry')
+  const accessToken = getProperty<string>(node, FIELD_NAMES.GCAL_ACCESS_TOKEN)
+  const refreshToken = getProperty<string>(node, FIELD_NAMES.GCAL_REFRESH_TOKEN)
+  const tokenExpiry = getProperty<string>(node, FIELD_NAMES.GCAL_TOKEN_EXPIRY)
 
   if (!accessToken || !refreshToken) {
     return null
@@ -176,7 +177,7 @@ function getConnectedEmail(db: ReturnType<typeof initDatabase>): string | undefi
     return undefined
   }
 
-  return getProperty<string>(node, 'gcal_user_email') ?? undefined
+  return getProperty<string>(node, FIELD_NAMES.GCAL_USER_EMAIL) ?? undefined
 }
 
 /**
@@ -194,22 +195,22 @@ function getConfiguredCalendarId(db: ReturnType<typeof initDatabase>): string {
     return 'primary'
   }
 
-  return getProperty<string>(node, 'gcal_calendar_id') ?? 'primary'
+  return getProperty<string>(node, FIELD_NAMES.GCAL_CALENDAR_ID) ?? 'primary'
 }
 
 /**
  * Convert assembled node to CalendarEvent for sync
  */
 function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
-  const startDateStr = getProperty<string>(node, 'start_date')
-  const endDateStr = getProperty<string>(node, 'end_date')
-  const allDay = getProperty<boolean>(node, 'all_day') ?? false
-  const rrule = getProperty<string>(node, 'rrule')
-  const reminder = getProperty<number>(node, 'reminder')
-  const gcalEventId = getProperty<string>(node, 'gcal_event_id')
-  const gcalSyncedAtStr = getProperty<string>(node, 'gcal_synced_at')
-  const status = getProperty<string>(node, 'status')
-  const description = getProperty<string>(node, 'description')
+  const startDateStr = getProperty<string>(node, FIELD_NAMES.START_DATE)
+  const endDateStr = getProperty<string>(node, FIELD_NAMES.END_DATE)
+  const allDay = getProperty<boolean>(node, FIELD_NAMES.ALL_DAY) ?? false
+  const rrule = getProperty<string>(node, FIELD_NAMES.RRULE)
+  const reminder = getProperty<number>(node, FIELD_NAMES.REMINDER)
+  const gcalEventId = getProperty<string>(node, FIELD_NAMES.GCAL_EVENT_ID)
+  const gcalSyncedAtStr = getProperty<string>(node, FIELD_NAMES.GCAL_SYNCED_AT)
+  const status = getProperty<string>(node, FIELD_NAMES.STATUS)
+  const description = getProperty<string>(node, FIELD_NAMES.DESCRIPTION)
 
   const isTask = node.supertags.some(
     (st) => st.systemId === SYSTEM_SUPERTAGS.TASK

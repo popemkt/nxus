@@ -73,7 +73,7 @@ import {
   getSystemNode,
   deleteNode,
 } from '../services/node.service.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../schemas/node-schema.js'
 import type { getDatabase } from '../client/master-client.js'
 
 // ============================================================================
@@ -270,7 +270,7 @@ export function createAutomationService(
         if (isNowMarker(value)) {
           value = new Date().toISOString()
         }
-        setProperty(db, targetNodeId, action.fieldId, value)
+        setProperty(db, targetNodeId, action.fieldId as FieldSystemId, value)
       } else if (isAddSupertagAction(action)) {
         addNodeSupertag(db, targetNodeId, action.supertagId)
       } else if (isRemoveSupertagAction(action)) {

@@ -187,6 +187,7 @@ export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler
       getNodesBySupertagWithInheritance,
       getProperty,
       SYSTEM_SUPERTAGS,
+      FIELD_NAMES,
     } = await import('@nxus/db/server')
 
     const db = await initDatabaseWithBootstrap()
@@ -199,12 +200,12 @@ export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler
     const queries = queryNodes.map((node) => {
       // Field names must match the 'content' property in bootstrap.ts
       // (e.g., 'queryDefinition' not 'query_definition')
-      const definition = getProperty(node, 'queryDefinition') ?? {
+      const definition = getProperty(node, FIELD_NAMES.QUERY_DEFINITION) ?? {
         filters: [],
         limit: 500,
       }
-      const resultCache = getProperty<string[]>(node, 'queryResultCache')
-      const evaluatedAtStr = getProperty<string>(node, 'queryEvaluatedAt')
+      const resultCache = getProperty<string[]>(node, FIELD_NAMES.QUERY_RESULT_CACHE)
+      const evaluatedAtStr = getProperty<string>(node, FIELD_NAMES.QUERY_EVALUATED_AT)
 
       return {
         id: node.id,
@@ -242,6 +243,7 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
       getProperty,
       setProperty,
       SYSTEM_FIELDS,
+      FIELD_NAMES,
     } = await import('@nxus/db/server')
     const { queryId, cacheResults } = ctx.data
 
@@ -255,14 +257,14 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
     // Get query definition - ensure it has required fields for evaluateQuery
     // Field names must match the 'content' property in bootstrap.ts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const storedDefinition = getProperty(queryNode, 'queryDefinition') as any
+    const storedDefinition = getProperty(queryNode, FIELD_NAMES.QUERY_DEFINITION) as any
     const definition = {
       filters: Array.isArray(storedDefinition?.filters) ? storedDefinition.filters : [],
       limit: typeof storedDefinition?.limit === 'number' ? storedDefinition.limit : 500,
       sort: storedDefinition?.sort,
     } as Parameters<typeof evaluateQuery>[1]
-    const resultCache = getProperty<string[]>(queryNode, 'queryResultCache')
-    const evaluatedAtStr = getProperty<string>(queryNode, 'queryEvaluatedAt')
+    const resultCache = getProperty<string[]>(queryNode, FIELD_NAMES.QUERY_RESULT_CACHE)
+    const evaluatedAtStr = getProperty<string>(queryNode, FIELD_NAMES.QUERY_EVALUATED_AT)
 
     const query = {
       id: queryNode.id,

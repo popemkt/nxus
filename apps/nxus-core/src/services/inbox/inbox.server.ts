@@ -5,6 +5,7 @@
  */
 
 import {
+  FIELD_NAMES,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   assembleNode,
@@ -43,7 +44,7 @@ function nodeToInboxItem(
 ): InboxItem | null {
   if (!node) return null
 
-  const status = getProperty<string>(node, 'status') as
+  const status = getProperty<string>(node, FIELD_NAMES.STATUS) as
     | 'pending'
     | 'processing'
     | 'done'
@@ -51,7 +52,7 @@ function nodeToInboxItem(
   return {
     id: node.id,
     title: node.content || '',
-    notes: getProperty<string>(node, 'notes') ?? null,
+    notes: getProperty<string>(node, FIELD_NAMES.NOTES) ?? null,
     status: status || 'pending',
     createdAt: node.createdAt,
     updatedAt: node.updatedAt,

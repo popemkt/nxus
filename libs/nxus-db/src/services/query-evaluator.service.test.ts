@@ -6,7 +6,7 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../schemas/node-schema.js'
 import {
   clearSystemNodeCache,
   createNode,
@@ -232,8 +232,8 @@ describe('query-evaluator.service', () => {
     it('should filter by eq operator', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:status', 'active')
-      setProperty(db, node2, 'field:status', 'inactive')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, node2, 'field:status' as FieldSystemId, 'inactive')
 
       const candidates = new Set([node1, node2])
 
@@ -255,8 +255,8 @@ describe('query-evaluator.service', () => {
     it('should filter by neq operator', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:status', 'active')
-      setProperty(db, node2, 'field:status', 'inactive')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, node2, 'field:status' as FieldSystemId, 'inactive')
 
       const candidates = new Set([node1, node2])
 
@@ -279,9 +279,9 @@ describe('query-evaluator.service', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
       const node3 = createNode(db, { content: 'Node 3' })
-      setProperty(db, node1, 'field:priority', 1)
-      setProperty(db, node2, 'field:priority', 5)
-      setProperty(db, node3, 'field:priority', 10)
+      setProperty(db, node1, 'field:priority' as FieldSystemId, 1)
+      setProperty(db, node2, 'field:priority' as FieldSystemId, 5)
+      setProperty(db, node3, 'field:priority' as FieldSystemId, 10)
 
       const candidates = new Set([node1, node2, node3])
 
@@ -328,9 +328,9 @@ describe('query-evaluator.service', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
       const node3 = createNode(db, { content: 'Node 3' })
-      setProperty(db, node1, 'field:category', 'web-development')
-      setProperty(db, node2, 'field:category', 'mobile-development')
-      setProperty(db, node3, 'field:category', 'web-design')
+      setProperty(db, node1, 'field:category' as FieldSystemId, 'web-development')
+      setProperty(db, node2, 'field:category' as FieldSystemId, 'mobile-development')
+      setProperty(db, node3, 'field:category' as FieldSystemId, 'web-design')
 
       const candidates = new Set([node1, node2, node3])
 
@@ -367,7 +367,7 @@ describe('query-evaluator.service', () => {
     it('should filter by isEmpty operator', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:status', 'active')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
       // node2 has no status
 
       const candidates = new Set([node1, node2])
@@ -385,7 +385,7 @@ describe('query-evaluator.service', () => {
     it('should filter by isNotEmpty operator', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:status', 'active')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
       // node2 has no status
 
       const candidates = new Set([node1, node2])
@@ -477,7 +477,7 @@ describe('query-evaluator.service', () => {
     it('should filter nodes that have a field', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:status', 'active')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
 
       const candidates = new Set([node1, node2])
 
@@ -494,7 +494,7 @@ describe('query-evaluator.service', () => {
     it('should filter nodes that do NOT have a field (negate=true)', () => {
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:status', 'active')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
 
       const candidates = new Set([node1, node2])
 
@@ -622,7 +622,7 @@ describe('query-evaluator.service', () => {
       const target = createNode(db, { content: 'Target' })
       const node1 = createNode(db, { content: 'Node 1' })
       const node2 = createNode(db, { content: 'Node 2' })
-      setProperty(db, node1, 'field:dependencies', target)
+      setProperty(db, node1, 'field:dependencies' as FieldSystemId, target)
 
       const candidates = new Set([node1, node2])
 
@@ -640,7 +640,7 @@ describe('query-evaluator.service', () => {
       const source = createNode(db, { content: 'Source' })
       const target1 = createNode(db, { content: 'Target 1' })
       const target2 = createNode(db, { content: 'Target 2' })
-      setProperty(db, source, 'field:dependencies', target1)
+      setProperty(db, source, 'field:dependencies' as FieldSystemId, target1)
 
       // Candidates are potential targets
       const candidates = new Set([target1, target2])
@@ -665,8 +665,8 @@ describe('query-evaluator.service', () => {
       const node1 = createNode(db, { content: 'Node 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const node2 = createNode(db, { content: 'Node 2', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const node3 = createNode(db, { content: 'Node 3', supertagId: SYSTEM_SUPERTAGS.COMMAND })
-      setProperty(db, node1, 'field:status', 'active')
-      setProperty(db, node2, 'field:status', 'inactive')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, node2, 'field:status' as FieldSystemId, 'inactive')
 
       const candidates = new Set([node1, node2, node3])
 
@@ -736,9 +736,9 @@ describe('query-evaluator.service', () => {
       const node1 = createNode(db, { content: 'Node 1', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const node2 = createNode(db, { content: 'Node 2', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const node3 = createNode(db, { content: 'Node 3', supertagId: SYSTEM_SUPERTAGS.COMMAND })
-      setProperty(db, node1, 'field:status', 'active')
-      setProperty(db, node2, 'field:status', 'inactive')
-      setProperty(db, node3, 'field:status', 'active')
+      setProperty(db, node1, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, node2, 'field:status' as FieldSystemId, 'inactive')
+      setProperty(db, node3, 'field:status' as FieldSystemId, 'active')
 
       const candidates = new Set([node1, node2, node3])
 
@@ -776,8 +776,8 @@ describe('query-evaluator.service', () => {
       const item1 = createNode(db, { content: 'Active Tool', supertagId: 'supertag:tool' })
       const item2 = createNode(db, { content: 'Inactive Tool', supertagId: 'supertag:tool' })
       createNode(db, { content: 'Command', supertagId: SYSTEM_SUPERTAGS.COMMAND }) // Should be excluded
-      setProperty(db, item1, 'field:status', 'active')
-      setProperty(db, item2, 'field:status', 'inactive')
+      setProperty(db, item1, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, item2, 'field:status' as FieldSystemId, 'inactive')
 
       const result = evaluateQuery(db, {
         filters: [
@@ -844,9 +844,9 @@ describe('query-evaluator.service', () => {
       const n1 = createNode(db, { content: 'Low Priority', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const n2 = createNode(db, { content: 'High Priority', supertagId: SYSTEM_SUPERTAGS.ITEM })
       const n3 = createNode(db, { content: 'Medium Priority', supertagId: SYSTEM_SUPERTAGS.ITEM })
-      setProperty(db, n1, 'field:priority', 1)
-      setProperty(db, n2, 'field:priority', 10)
-      setProperty(db, n3, 'field:priority', 5)
+      setProperty(db, n1, 'field:priority' as FieldSystemId, 1)
+      setProperty(db, n2, 'field:priority' as FieldSystemId, 10)
+      setProperty(db, n3, 'field:priority' as FieldSystemId, 5)
 
       const result = evaluateQuery(db, {
         filters: [
