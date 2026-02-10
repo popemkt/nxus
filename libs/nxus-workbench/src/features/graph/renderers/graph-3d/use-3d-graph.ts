@@ -342,7 +342,7 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
           if (obj.geometry) obj.geometry.dispose()
           if (obj.material) {
             if (Array.isArray(obj.material)) {
-              obj.material.forEach((m) => m.dispose())
+              obj.material.forEach((m) => { m.dispose() })
             } else {
               obj.material.dispose()
             }

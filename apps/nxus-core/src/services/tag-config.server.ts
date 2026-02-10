@@ -16,7 +16,10 @@ import {
   initDatabase,
   itemTagConfigs, saveDatabase, tagSchemas
 } from '@nxus/db/server'
-import { getAllSystemTags } from '@/lib/system-tags'
+import { getAllSystemTags, type TagConfigField } from '@/lib/system-tags'
+
+// Re-export for consumers that import from this file
+export type { TagConfigField }
 
 // ============================================================================
 // Schema definitions for tag config fields
@@ -31,19 +34,6 @@ export type TagConfigFieldType =
   | 'boolean'
   | 'number'
   | 'select'
-
-/**
- * Individual field definition in a tag config schema
- */
-export interface TagConfigField {
-  key: string
-  label: string
-  type: TagConfigFieldType
-  required?: boolean
-  default?: string | number | boolean
-  placeholder?: string
-  options?: Array<string> // For select type
-}
 
 /**
  * Complete schema definition for a configurable tag
@@ -270,22 +260,31 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
 
     const db = initDatabase()
 
-    // 1. Get tag schema for validation
+    // 1. Get tag schema for validation (DB first, then system tag fallback)
     const tagConfig = await db
       .select()
       .from(tagSchemas)
       .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
 
-    if (!tagConfig) {
-      return {
-        success: false as const,
-        error: `Tag ID ${ctx.data.tagId} has no configuration schema`,
+    let schema: TagConfigSchema
+    if (tagConfig) {
+      schema = tagConfig.schema as unknown as TagConfigSchema
+    } else {
+      // Fall back to system tag schema
+      const systemTag = getAllSystemTags().find(
+        (t) => t.id === ctx.data.tagId && t.configurable,
+      )
+      if (!systemTag?.schema) {
+        return {
+          success: false as const,
+          error: `Tag ID ${ctx.data.tagId} has no configuration schema`,
+        }
       }
+      schema = systemTag.schema as TagConfigSchema
     }
 
     // 2. Build dynamic Zod validator from schema
-    const schema = tagConfig.schema as unknown as TagConfigSchema
     const validationResult = validateValuesAgainstSchema(
       ctx.data.configValues,
       schema,

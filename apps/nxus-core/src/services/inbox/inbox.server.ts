@@ -231,8 +231,11 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
 
     const node = assembleNode(db, ctx.data.id)
     const entry = nodeToInboxItem(node)
+    if (!entry) {
+      return { success: false as const, error: 'Item not found' }
+    }
     console.log('[markAsProcessingServerFn] Success:', ctx.data.id)
-    return { success: true, data: entry }
+    return { success: true as const, data: entry }
   })
 
 /**
@@ -249,6 +252,9 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
 
     const node = assembleNode(db, ctx.data.id)
     const entry = nodeToInboxItem(node)
+    if (!entry) {
+      return { success: false as const, error: 'Item not found' }
+    }
     console.log('[markAsDoneServerFn] Success:', ctx.data.id)
-    return { success: true, data: entry }
+    return { success: true as const, data: entry }
   })

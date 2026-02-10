@@ -46,6 +46,11 @@ in workbench, now can we make the node inspection panel closable. And in the gra
 
 Based on the tweaks we did, add tests and e2e tests if necessary
 
+### [x] Step: fix pr comments
+<!-- chat-id: 242d59d4-1047-49a4-bf1c-fbf387fa8d84 -->
+
+Check this github pr and see if the comments are legit, if yes fix them https://github.com/popemkt/nxus/pull/42
+
 ### [ ] Step: tweak calendar
 
 Right now in calendar, the way it works is quite bad. Because if you don't have event the calendar a

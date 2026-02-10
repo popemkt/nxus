@@ -159,7 +159,7 @@ export function useTagDnd(options?: UseTagDndOptions) {
         const newIndex =
           currentIndicator.type === 'after' ? overIndex + 1 : overIndex
         await moveTag(activeTagId, parentId, newIndex)
-        options?.onMoveTag?.(activeTagId, parentId as string, newIndex)
+        options?.onMoveTag?.(activeTagId, parentId, newIndex)
       }
     }
   }

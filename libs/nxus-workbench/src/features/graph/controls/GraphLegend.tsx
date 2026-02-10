@@ -13,12 +13,7 @@ import { cn } from '@nxus/ui'
 import { useState } from 'react'
 
 import { useGraphStore, useGraphFilter } from '../store'
-
-/** Edge direction colors (shared between 2D and 3D renderers) */
-const EDGE_DIRECTION_COLORS = {
-  outgoing: '#14b8a6', // Teal-500
-  incoming: '#8b5cf6', // Violet-500
-}
+import { EDGE_DIRECTION_COLORS } from '../renderers/graph-2d/edges/types'
 
 export interface GraphLegendProps {
   /** Map of supertag ID to color hex */

@@ -130,6 +130,7 @@ export const SYSTEM_FIELDS = {
   TAGS: 'field:tags',
   COMMANDS: 'field:commands',
   PARENT: 'field:parent',
+  ORDER: 'field:order',
 
   // Tool-specific
   CHECK_COMMAND: 'field:check_command',

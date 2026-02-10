@@ -55,10 +55,14 @@ export async function executeGenericCommandById(
         for (const [name, opt] of Object.entries(result.requirements)) {
           reqContext[name] = { appId: opt.appId, value: opt.value }
         }
-        command.execute(targetId, targetPath, {
-          navigate: context.navigate,
-          requirements: reqContext,
-          params: result.params,
+        Promise.resolve(
+          command.execute(targetId, targetPath, {
+            navigate: context.navigate,
+            requirements: reqContext,
+            params: result.params,
+          }),
+        ).catch((err: unknown) => {
+          console.error(`Command '${commandId}' execution failed:`, err)
         })
       },
     })

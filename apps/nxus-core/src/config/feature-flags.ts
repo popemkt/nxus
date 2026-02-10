@@ -10,8 +10,12 @@
 
 export type ArchitectureType = 'node' | 'graph'
 
+const VALID_ARCHITECTURES = new Set<ArchitectureType>(['node', 'graph'])
+const envArch = process.env.ARCHITECTURE_TYPE
 export const ARCHITECTURE_TYPE: ArchitectureType =
-  (process.env.ARCHITECTURE_TYPE as ArchitectureType) || 'node'
+  envArch && VALID_ARCHITECTURES.has(envArch as ArchitectureType)
+    ? (envArch as ArchitectureType)
+    : 'node'
 
 /**
  * Helper functions for architecture checks
