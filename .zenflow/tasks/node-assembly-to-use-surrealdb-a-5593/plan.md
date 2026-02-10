@@ -79,7 +79,8 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 **Verification:**
 - `npx nx run nxus-db:test` — all existing tests pass, new tests pass
 
-### [ ] Step: NodeFacade class and barrel exports
+### [x] Step: NodeFacade class and barrel exports
+<!-- chat-id: c7c4ded7-1326-4b1f-9c4d-05ab1815392c -->
 
 **Goal:** Create the `NodeFacade` class that selects a backend based on `ARCHITECTURE_TYPE` and delegates all operations. Export from `@nxus/db/server`.
 

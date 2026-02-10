@@ -13,15 +13,10 @@ import type { AssembledNode, CreateNodeOptions } from '../../types/node.js'
 import type { FieldSystemId } from '../../schemas/node-schema.js'
 import type { QueryDefinition } from '../../types/query.js'
 import type { SupertagInfo } from '../node.service.js'
+import type { QueryEvaluationResult } from '../query-evaluator.service.js'
 
-/**
- * Result of evaluating a query against the node database
- */
-export interface QueryEvaluationResult {
-  nodes: AssembledNode[]
-  totalCount: number
-  evaluatedAt: Date
-}
+// Re-export from the canonical definition in query-evaluator.service
+export type { QueryEvaluationResult } from '../query-evaluator.service.js'
 
 /**
  * The async backend contract. All database backends must implement this.
