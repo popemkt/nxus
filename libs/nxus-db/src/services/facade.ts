@@ -28,7 +28,7 @@ export class NodeFacade implements NodeBackend {
    *
    * Reads `process.env.ARCHITECTURE_TYPE` to determine which backend to use:
    * - 'node' (default): SQLite backend via node.service.ts
-   * - 'graph': SurrealDB backend (placeholder — falls back to SQLite with warning)
+   * - 'graph': SurrealDB backend (graph-based assembly via has_field edges)
    *
    * Idempotent: calling init() multiple times is safe.
    */
@@ -39,14 +39,13 @@ export class NodeFacade implements NodeBackend {
       process.env.ARCHITECTURE_TYPE === 'graph' ? 'graph' : 'node'
 
     if (archType === 'graph') {
-      console.warn(
-        '[NodeFacade] ARCHITECTURE_TYPE=graph requested but SurrealDB backend is not yet implemented. Falling back to SQLite.',
-      )
+      const { SurrealBackend } = await import('./backends/surreal-backend.js')
+      this.backend = new SurrealBackend()
+    } else {
+      const { SqliteBackend } = await import('./backends/sqlite-backend.js')
+      this.backend = new SqliteBackend()
     }
 
-    // For now, always use SqliteBackend. SurrealBackend will be wired in a later step.
-    const { SqliteBackend } = await import('./backends/sqlite-backend.js')
-    this.backend = new SqliteBackend()
     await this.backend.init()
 
     this.initialized = true

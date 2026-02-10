@@ -215,7 +215,8 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 **Verification:**
 - `npx nx run nxus-db:test` — all tests pass
 
-### [ ] Step: Backend equivalence tests and facade integration with SurrealDB
+### [x] Step: Backend equivalence tests and facade integration with SurrealDB
+<!-- chat-id: 8dcc07b6-4ef7-4e44-9ad6-5e0320d4ed89 -->
 
 **Goal:** Wire the `SurrealBackend` into the facade's `init()` method, write parametric tests that verify both backends produce equivalent `AssembledNode` output.
 
