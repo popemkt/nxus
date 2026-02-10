@@ -11,10 +11,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
+  SYSTEM_SUPERTAGS,
   and,
   eq,
+  getNodesBySupertagWithInheritance,
   initDatabase,
-  itemTagConfigs, saveDatabase, tagSchemas
+  itemTagConfigs, nodes, saveDatabase, tagSchemas
 } from '@nxus/db/server'
 import { getAllSystemTags, type TagConfigField } from '@/lib/system-tags'
 
@@ -65,7 +67,10 @@ const TagConfigSchemaValidator = z.object({
 // ============================================================================
 
 /**
- * Get schema for a configurable tag by string ID (node UUID)
+ * Get schema for a configurable tag by tag ID (node UUID or system tag ID).
+ *
+ * Handles the migration from legacy system tag IDs ('system:ai-provider')
+ * to node UUIDs by resolving the tag node's name to a system tag.
  */
 export const getTagConfigServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ tagId: z.string() }))
@@ -73,11 +78,43 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
     console.log('[getTagConfigServerFn] Fetching:', ctx.data.tagId)
     const db = initDatabase()
 
-    const config = await db
+    // Try direct DB lookup first
+    let config = await db
       .select()
       .from(tagSchemas)
       .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
+
+    // If not found, the tagId might be a node UUID while the DB stores a system tag ID.
+    // Resolve the node UUID to a tag name and find the system tag by name.
+    if (!config) {
+      const tagNode = db.select().from(nodes).where(eq(nodes.id, ctx.data.tagId)).get()
+      if (tagNode?.content) {
+        const systemTag = getAllSystemTags().find(
+          (t) => t.name === tagNode.content && t.configurable,
+        )
+        if (systemTag) {
+          // Try looking up by system tag ID
+          config = await db
+            .select()
+            .from(tagSchemas)
+            .where(eq(tagSchemas.tagId, systemTag.id))
+            .get()
+
+          // If still not in DB, use the system tag's built-in schema
+          if (!config && systemTag.schema) {
+            return {
+              success: true as const,
+              data: {
+                tagId: ctx.data.tagId,
+                schema: systemTag.schema as TagConfigSchema,
+                description: systemTag.description ?? null,
+              },
+            }
+          }
+        }
+      }
+    }
 
     if (!config) {
       return { success: false as const, error: 'Tag config not found' }
@@ -86,7 +123,7 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
     return {
       success: true as const,
       data: {
-        tagId: config.tagId,
+        tagId: ctx.data.tagId,
         schema: config.schema as unknown as TagConfigSchema,
         description: config.description,
       },
@@ -112,12 +149,17 @@ export const getAllConfigurableTagsServerFn = createServerFn({
   }))
 
   // Also include system tags marked as configurable (even without a saved schema)
-  // Use the schema from the system tag definition as fallback
+  // Resolve system tag names to actual node UUIDs so the UI can match them
   const dbTagIds = new Set(configs.map((c) => c.tagId))
+  const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
   for (const systemTag of getAllSystemTags()) {
-    if (systemTag.configurable && !dbTagIds.has(systemTag.id)) {
+    if (!systemTag.configurable) continue
+    // Find the tag node by matching content (name) to the system tag name
+    const tagNode = tagNodes.find((n) => n.content === systemTag.name)
+    const resolvedTagId = tagNode?.id ?? systemTag.id
+    if (!dbTagIds.has(resolvedTagId)) {
       result.push({
-        tagId: systemTag.id,
+        tagId: resolvedTagId,
         schema: (systemTag.schema ?? { fields: [] }) as TagConfigSchema,
         description: systemTag.description ?? null,
       })
@@ -261,27 +303,40 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     const db = initDatabase()
 
     // 1. Get tag schema for validation (DB first, then system tag fallback)
-    const tagConfig = await db
+    let tagConfig = await db
       .select()
       .from(tagSchemas)
       .where(eq(tagSchemas.tagId, ctx.data.tagId))
       .get()
 
+    // Resolve node UUID to system tag name if direct lookup fails
+    let resolvedSystemTag: ReturnType<typeof getAllSystemTags>[number] | undefined
+    if (!tagConfig) {
+      const tagNode = db.select().from(nodes).where(eq(nodes.id, ctx.data.tagId)).get()
+      if (tagNode?.content) {
+        resolvedSystemTag = getAllSystemTags().find(
+          (t) => t.name === tagNode.content && t.configurable,
+        )
+        if (resolvedSystemTag) {
+          tagConfig = await db
+            .select()
+            .from(tagSchemas)
+            .where(eq(tagSchemas.tagId, resolvedSystemTag.id))
+            .get()
+        }
+      }
+    }
+
     let schema: TagConfigSchema
     if (tagConfig) {
       schema = tagConfig.schema as unknown as TagConfigSchema
+    } else if (resolvedSystemTag?.schema) {
+      schema = resolvedSystemTag.schema as TagConfigSchema
     } else {
-      // Fall back to system tag schema
-      const systemTag = getAllSystemTags().find(
-        (t) => t.id === ctx.data.tagId && t.configurable,
-      )
-      if (!systemTag?.schema) {
-        return {
-          success: false as const,
-          error: `Tag ID ${ctx.data.tagId} has no configuration schema`,
-        }
+      return {
+        success: false as const,
+        error: `Tag ID ${ctx.data.tagId} has no configuration schema`,
       }
-      schema = systemTag.schema as TagConfigSchema
     }
 
     // 2. Build dynamic Zod validator from schema
