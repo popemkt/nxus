@@ -308,7 +308,8 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 - `npx nx run-many --target=typecheck --all` — type-checks pass
 - Verify no remaining direct imports of `getDatabase()`, `initDatabase()` in consumer files (except ephemeral DB consumers)
 
-### [ ] Step: SQLite-to-SurrealDB migration script and final validation
+### [x] Step: SQLite-to-SurrealDB migration script and final validation
+<!-- chat-id: 176271ff-fceb-4c47-b050-6c9625be4f28 -->
 
 **Goal:** Create a migration script that reads all data from SQLite and writes it to SurrealDB using the graph model. Validate end-to-end.
 
