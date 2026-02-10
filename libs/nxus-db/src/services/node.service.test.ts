@@ -336,5 +336,36 @@ describe('node.service', () => {
       expect(values).toContain('value1')
       expect(values).toContain('value2')
     })
+
+    it('getProperty should accept systemId (e.g., SYSTEM_FIELDS.PATH)', () => {
+      const nodeId = createNode(db, { content: 'Node' })
+      setProperty(db, nodeId, 'field:path', '/my/path')
+
+      const node = findNodeById(db, nodeId) as AssembledNode
+      // Using systemId instead of field content name
+      const path = getProperty<string>(node, SYSTEM_FIELDS.PATH)
+      expect(path).toBe('/my/path')
+    })
+
+    it('getPropertyValues should accept systemId', () => {
+      const nodeId = createNode(db, { content: 'Node' })
+      setProperty(db, nodeId, 'field:path', 'value1', 0)
+      setProperty(db, nodeId, 'field:path', 'value2', 1)
+
+      const node = findNodeById(db, nodeId) as AssembledNode
+      // Using systemId instead of field content name
+      const values = getPropertyValues<string>(node, SYSTEM_FIELDS.PATH)
+      expect(values).toHaveLength(2)
+      expect(values).toContain('value1')
+      expect(values).toContain('value2')
+    })
+
+    it('getProperty with systemId should return undefined for missing field', () => {
+      const nodeId = createNode(db, { content: 'Node' })
+      const node = findNodeById(db, nodeId) as AssembledNode
+      // field:color is a valid systemId but not set on this node
+      const missing = getProperty<string>(node, 'field:color')
+      expect(missing).toBeUndefined()
+    })
   })
 })

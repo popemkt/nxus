@@ -561,9 +561,10 @@ export function deleteNode(
 }
 
 /**
- * Set a property value (creates or updates)
+ * Set a property value (creates or updates).
  *
- * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:status')
+ * @param fieldId The field identifier — accepts a UUID or systemId (e.g., SYSTEM_FIELDS.STATUS = 'field:status').
+ *   Resolved internally via getFieldOrSupertagNode().
  */
 export function setProperty(
   db: ReturnType<typeof getDatabase>,
@@ -626,9 +627,10 @@ export function setProperty(
 }
 
 /**
- * Add a value to a multi-value property (like tags, dependencies)
+ * Add a value to a multi-value property (like tags, dependencies).
  *
- * @param fieldId The field identifier - can be either a UUID or systemId (e.g., 'field:tags')
+ * @param fieldId The field identifier — accepts a UUID or systemId (e.g., SYSTEM_FIELDS.TAGS = 'field:tags').
+ *   Resolved internally via getFieldOrSupertagNode().
  */
 export function addPropertyValue(
   db: ReturnType<typeof getDatabase>,
@@ -826,25 +828,63 @@ export function getNodesBySupertagWithInheritance(
 // ============================================================================
 
 /**
- * Get single property value from assembled node
+ * Resolve a field identifier to the content-based key used in AssembledNode.properties.
+ *
+ * Accepts either:
+ * - A field content name (e.g., 'parent', 'order') — returned as-is
+ * - A systemId (e.g., 'field:parent', 'field:order') — resolved by scanning properties
+ *
+ * This allows callers to use SYSTEM_FIELDS constants consistently with both
+ * getProperty (read) and setProperty (write).
+ */
+function resolveFieldKey(
+  node: AssembledNode,
+  fieldKey: string,
+): string {
+  if (!isSystemId(fieldKey)) return fieldKey
+
+  // Scan properties to find the content key matching this systemId
+  for (const [contentKey, values] of Object.entries(node.properties)) {
+    if (values.length > 0 && values[0].fieldSystemId === fieldKey) {
+      return contentKey
+    }
+  }
+
+  // Fallback: strip the 'field:' prefix as a best-effort guess
+  // (handles cases where the node has no properties for this field yet)
+  return fieldKey.startsWith('field:') ? fieldKey.slice(6) : fieldKey
+}
+
+/**
+ * Get single property value from assembled node.
+ *
+ * @param fieldKey The field identifier — accepts either a field content name
+ *   (e.g., 'parent') or a systemId (e.g., SYSTEM_FIELDS.PARENT = 'field:parent').
+ *   Both forms work identically.
  */
 export function getProperty<T = unknown>(
   node: AssembledNode,
-  fieldName: string,
+  fieldKey: string,
 ): T | undefined {
-  const props = node.properties[fieldName]
+  const key = resolveFieldKey(node, fieldKey)
+  const props = node.properties[key]
   if (!props || props.length === 0) return undefined
   return props[0].value as T
 }
 
 /**
- * Get all property values from assembled node (for multi-value fields)
+ * Get all property values from assembled node (for multi-value fields).
+ *
+ * @param fieldKey The field identifier — accepts either a field content name
+ *   (e.g., 'tags') or a systemId (e.g., SYSTEM_FIELDS.TAGS = 'field:tags').
+ *   Both forms work identically.
  */
 export function getPropertyValues<T = unknown>(
   node: AssembledNode,
-  fieldName: string,
+  fieldKey: string,
 ): T[] {
-  const props = node.properties[fieldName]
+  const key = resolveFieldKey(node, fieldKey)
+  const props = node.properties[key]
   if (!props) return []
   return props.sort((a, b) => a.order - b.order).map((p) => p.value as T)
 }
