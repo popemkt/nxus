@@ -125,7 +125,8 @@ Create the automations management experience:
 
 ---
 
-### [ ] Step: Final Integration & Report
+### [x] Step: Final Integration & Report
+<!-- chat-id: 5a4381f3-d131-440d-a03e-1754856965f6 -->
 
 1. Run full test suite: `pnpm test:libs`, `pnpm e2e`
 2. Run build: `nx run @nxus/core-app:build`
