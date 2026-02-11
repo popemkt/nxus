@@ -78,7 +78,8 @@ Create `apps/nxus-core/src/services/inbox/inbox-reactive.server.ts` with:
 
 ---
 
-### [ ] Step: Inbox Metrics Bar UI
+### [x] Step: Inbox Metrics Bar UI
+<!-- chat-id: e5491937-1060-4306-a90c-7e7c22c38186 -->
 
 Create `apps/nxus-core/src/components/features/inbox/inbox-metrics-bar.tsx`:
 - Displays 4 stat cards (Total, Pending, Processing, Done)

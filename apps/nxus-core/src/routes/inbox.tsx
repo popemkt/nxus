@@ -12,19 +12,26 @@ import {
 import { Badge, Button , Card, CardContent  } from '@nxus/ui'
 import type {InboxItem} from '@/services/inbox/inbox.server';
 import {
-  
+
   deleteInboxItemServerFn,
   getInboxItemsServerFn,
   updateInboxItemServerFn
 } from '@/services/inbox/inbox.server'
+import { initInboxReactiveServerFn } from '@/services/inbox/inbox-reactive.server'
 import { useInboxModalStore } from '@/stores/inbox-modal.store'
 import { InboxEditModal } from '@/components/features/inbox/inbox-edit-modal'
 import { ProcessInboxModal } from '@/components/features/inbox/process-inbox-modal'
+import { InboxMetricsBar } from '@/components/features/inbox/inbox-metrics-bar'
 
 export const Route = createFileRoute('/inbox')({
   component: InboxPage,
   loader: async () => {
-    const result = await getInboxItemsServerFn()
+    const [result] = await Promise.all([
+      getInboxItemsServerFn(),
+      // Initialize inbox reactive system (computed fields, automations) —
+      // idempotent, seeds the metrics so the first poll is instant.
+      initInboxReactiveServerFn().catch(() => null),
+    ])
     return result.success ? result.data : []
   },
 })
@@ -114,6 +121,9 @@ function InboxPage() {
           Add Item
         </Button>
       </div>
+
+      {/* Metrics Bar */}
+      <InboxMetricsBar />
 
       {/* Pending Items */}
       <div className="space-y-4 mb-8">
