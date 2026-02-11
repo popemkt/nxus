@@ -386,8 +386,8 @@ export async function seedGraph() {
             status: item.status,
             notes: item.notes,
           },
-          created_at: item.createdAt,
-          updated_at: item.updatedAt,
+          created_at: new Date(item.createdAt),
+          updated_at: new Date(item.updatedAt),
         },
       )
 
