@@ -1,6 +1,9 @@
 import { test, expect } from '../fixtures/base.fixture.js'
 
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+
 test.describe('Core Inbox Page', () => {
+  test.skip(isGraphMode, 'Inbox tests require seed data (not available in graph mode)')
   test('C6 — Navigate to Inbox page', async ({ page }) => {
     await page.goto('/core')
     await page.waitForLoadState('networkidle')

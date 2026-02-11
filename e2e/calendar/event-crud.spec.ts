@@ -1,6 +1,8 @@
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+
 /**
  * Helper: ensure the calendar is showing the full calendar view (not empty state).
  * If the empty state is shown, creates a quick event so the full calendar renders.
@@ -58,6 +60,7 @@ function todayDateString(): string {
 }
 
 test.describe.serial('Calendar Event CRUD (CA4-CA7)', () => {
+  test.skip(isGraphMode, 'Calendar tests require seed data (not available in graph mode)')
   const eventTitle = `E2E CRUD Event ${Date.now()}`
   const editedTitle = `${eventTitle} (edited)`
 
