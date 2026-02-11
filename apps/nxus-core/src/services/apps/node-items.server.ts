@@ -1,12 +1,9 @@
 /**
  * node-items.server.ts - Node-based item queries for nxus-core
  *
- * These functions query items from the node architecture using @nxus/db
+ * These functions query items from the node architecture using the NodeFacade
  * and convert them to legacy Item types. Previously lived in @nxus/workbench/server,
  * moved here to decouple nxus-core from the workbench package.
- *
- * IMPORTANT: All @nxus/db/server imports are done dynamically inside handlers
- * to prevent Vite from bundling better-sqlite3 into the client bundle.
  */
 
 import { createServerFn } from '@tanstack/react-start'
@@ -159,18 +156,17 @@ export const getAllItemsFromNodesServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   const {
-    initDatabaseWithBootstrap,
-    getNodesBySupertagWithInheritance,
+    nodeFacade,
     getProperty: dbGetProperty,
     SYSTEM_SUPERTAGS,
     FIELD_NAMES: SERVER_FIELD_NAMES,
   } = await import('@nxus/db/server')
 
-  const db = await initDatabaseWithBootstrap()
+  await nodeFacade.init()
 
-  const itemNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.ITEM)
+  const itemNodes = await nodeFacade.getNodesBySupertagWithInheritance(SYSTEM_SUPERTAGS.ITEM)
 
-  const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
+  const tagNodes = await nodeFacade.getNodesBySupertagWithInheritance(SYSTEM_SUPERTAGS.TAG)
   const tagLookup = new Map<string, TagRef>()
   for (const tagNode of tagNodes) {
     tagLookup.set(tagNode.id, {
@@ -188,8 +184,7 @@ export const getAllItemsFromNodesServerFn = createServerFn({
     itemLookup.set(itemNode.id, legacyId)
   }
 
-  const commandNodes = getNodesBySupertagWithInheritance(
-    db,
+  const commandNodes = await nodeFacade.getNodesBySupertagWithInheritance(
     SYSTEM_SUPERTAGS.COMMAND,
   )
   const commandsByItemId = new Map<string, Array<ItemCommand>>()
@@ -227,26 +222,31 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async (ctx) => {
     const {
+      nodeFacade,
+      getProperty: dbGetProperty,
+      // Keep Drizzle imports for legacy ID fallback lookup
       initDatabase,
       getDatabase,
-      findNodeBySystemId,
-      assembleNode,
-      getNodesBySupertagWithInheritance,
-      getProperty: dbGetProperty,
       nodes,
       nodeProperties,
       eq,
+      assembleNode,
       SYSTEM_SUPERTAGS,
       SYSTEM_FIELDS,
       FIELD_NAMES: SERVER_FIELD_NAMES,
     } = await import('@nxus/db/server')
     const { id } = ctx.data
-    initDatabase()
-    const db = getDatabase()
 
-    let node = findNodeBySystemId(db, `item:${id}`)
+    await nodeFacade.init()
 
+    let node = await nodeFacade.findNodeBySystemId(`item:${id}`)
+
+    // Fallback: search by legacy ID using raw Drizzle queries
+    // (the facade doesn't expose raw table access needed for this)
     if (!node) {
+      initDatabase()
+      const db = getDatabase()
+
       const legacyIdField = db
         .select()
         .from(nodes)
@@ -277,7 +277,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
       return { success: false as const, error: `Item ${id} not found` }
     }
 
-    const tagNodes = getNodesBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.TAG)
+    const tagNodes = await nodeFacade.getNodesBySupertagWithInheritance(SYSTEM_SUPERTAGS.TAG)
     const tagLookup = new Map<string, TagRef>()
     for (const tagNode of tagNodes) {
       tagLookup.set(tagNode.id, {
@@ -286,8 +286,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
       })
     }
 
-    const allItemNodes = getNodesBySupertagWithInheritance(
-      db,
+    const allItemNodes = await nodeFacade.getNodesBySupertagWithInheritance(
       SYSTEM_SUPERTAGS.ITEM,
     )
     const itemLookup = new Map<string, string>()
@@ -299,8 +298,7 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
       itemLookup.set(itemNode.id, legacyId)
     }
 
-    const commandNodes = getNodesBySupertagWithInheritance(
-      db,
+    const commandNodes = await nodeFacade.getNodesBySupertagWithInheritance(
       SYSTEM_SUPERTAGS.COMMAND,
     )
     const commands = commandNodes

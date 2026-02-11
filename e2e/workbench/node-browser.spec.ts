@@ -54,41 +54,46 @@ test.describe('Workbench Node Browser', () => {
   })
 
   test('W3 — Search filters nodes in real time', async ({ page }) => {
+    // This test involves multiple server round-trips which can be slow in CI
+    test.setTimeout(60_000)
+
     const searchInput = page.getByPlaceholder('Search all nodes...')
-
-    // Wait for nodes to load
     const emptyState = page.getByText('No nodes found')
-    const nodeCount = page.getByText(/\d+ nodes/)
+    const loadingIndicator = page.getByText('Loading nodes...')
 
-    // Wait for initial load to complete
-    await expect(nodeCount.or(emptyState)).toBeVisible({ timeout: 15000 })
+    // Wait for initial data load to complete (loading spinner must disappear)
+    await expect(loadingIndicator).toBeHidden({ timeout: 20_000 })
 
-    if (await emptyState.isVisible()) {
+    // After loading, check if we have data to test with
+    if (await emptyState.isVisible().catch(() => false)) {
       test.skip(true, 'No nodes available for search test')
       return
     }
 
-    // Type a search query
-    await searchInput.fill('test')
-    await page.waitForTimeout(300)
-
-    // Verify search indicator appears
-    await expect(page.getByText(/Searching: "test"/)).toBeVisible()
+    // Nodes should show a positive count (not "0 nodes")
+    const nodeCount = page.getByText(/[1-9]\d* nodes/)
+    await expect(nodeCount).toBeVisible({ timeout: 5_000 })
 
     // Type a nonsense query to get no results
     await searchInput.fill('zzznonexistentnode999')
-    await page.waitForTimeout(300)
 
-    // Should show no nodes found
-    await expect(page.getByText('No nodes found')).toBeVisible()
+    // Verify search indicator appears (confirms React state updated)
+    await expect(
+      page.getByText(/Searching: "zzznonexistentnode999"/)
+    ).toBeVisible({ timeout: 10_000 })
+
+    // Wait for loading to finish, then verify empty state
+    await expect(loadingIndicator).toBeHidden({ timeout: 20_000 })
+    await expect(page.getByText('No nodes found')).toBeVisible({
+      timeout: 5_000,
+    })
 
     // Clear search → all nodes return
     await searchInput.clear()
-    await page.waitForTimeout(300)
 
     // Search indicator should be gone and nodes should be back
-    await expect(page.getByText(/Searching:/)).toBeHidden()
-    await expect(nodeCount).toBeVisible()
+    await expect(page.getByText(/Searching:/)).toBeHidden({ timeout: 10_000 })
+    await expect(nodeCount).toBeVisible({ timeout: 10_000 })
   })
 
   test('W5 — Supertag filter narrows node list', async ({ page }) => {

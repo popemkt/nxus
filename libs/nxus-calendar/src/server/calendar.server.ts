@@ -7,17 +7,10 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import {
-  initDatabase,
-  saveDatabase,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  assembleNode,
-  createNode,
-  deleteNode,
-  setProperty,
-  updateNodeContent,
   getProperty,
-  evaluateQuery,
+  nodeFacade,
   FIELD_NAMES,
   type AssembledNode,
 } from '@nxus/db/server'
@@ -117,7 +110,7 @@ export const getCalendarEventsServerFn = createServerFn({ method: 'POST' })
         eventSupertags = [],
       } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Build the query for calendar events
       const query = buildCalendarQuery({
@@ -131,7 +124,7 @@ export const getCalendarEventsServerFn = createServerFn({ method: 'POST' })
       })
 
       // Evaluate the query
-      const result = evaluateQuery(db, query)
+      const result = await nodeFacade.evaluateQuery(query)
       console.log('[getCalendarEventsServerFn] Found:', result.totalCount, 'events')
 
       // Convert nodes to CalendarEvent objects
@@ -172,53 +165,53 @@ export const createCalendarEventServerFn = createServerFn({ method: 'POST' })
         ownerId,
       } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Create the node with appropriate supertag
       const supertagId = isTask ? SYSTEM_SUPERTAGS.TASK : SYSTEM_SUPERTAGS.EVENT
-      const nodeId = createNode(db, {
+      const nodeId = await nodeFacade.createNode({
         content: title,
         supertagId,
         ownerId,
       })
 
       // Set start date (required)
-      setProperty(db, nodeId, SYSTEM_FIELDS.START_DATE, startDate)
+      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.START_DATE, startDate)
 
       // Set end date (optional, defaults to start + 1 hour if not all-day)
       if (endDate) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.END_DATE, endDate)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.END_DATE, endDate)
       } else if (!allDay) {
         // Default to 1 hour after start for timed events
         const defaultEnd = new Date(new Date(startDate).getTime() + 60 * 60 * 1000)
-        setProperty(db, nodeId, SYSTEM_FIELDS.END_DATE, defaultEnd.toISOString())
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.END_DATE, defaultEnd.toISOString())
       }
 
       // Set all-day flag
-      setProperty(db, nodeId, SYSTEM_FIELDS.ALL_DAY, allDay)
+      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.ALL_DAY, allDay)
 
       // Set optional fields
       if (rrule) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.RRULE, rrule)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.RRULE, rrule)
       }
 
       if (reminder !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.REMINDER, reminder)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.REMINDER, reminder)
       }
 
       if (description) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.DESCRIPTION, description)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.DESCRIPTION, description)
       }
 
       // For tasks, set initial status
       if (isTask) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, 'pending')
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.STATUS, 'pending')
       }
 
-      saveDatabase()
+      await nodeFacade.save()
 
       // Assemble and return the created event
-      const node = assembleNode(db, nodeId)
+      const node = await nodeFacade.assembleNode(nodeId)
       if (!node) {
         return { success: false, error: 'Failed to assemble created node' }
       }
@@ -251,46 +244,46 @@ export const updateCalendarEventServerFn = createServerFn({ method: 'POST' })
         description,
       } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Update title if provided
       if (title !== undefined) {
-        updateNodeContent(db, nodeId, title)
+        await nodeFacade.updateNodeContent(nodeId, title)
       }
 
       // Update dates
       if (startDate !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.START_DATE, startDate)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.START_DATE, startDate)
       }
 
       if (endDate !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.END_DATE, endDate)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.END_DATE, endDate)
       }
 
       // Update all-day flag
       if (allDay !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.ALL_DAY, allDay)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.ALL_DAY, allDay)
       }
 
       // Update recurrence rule
       if (rrule !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.RRULE, rrule)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.RRULE, rrule)
       }
 
       // Update reminder
       if (reminder !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.REMINDER, reminder)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.REMINDER, reminder)
       }
 
       // Update description
       if (description !== undefined) {
-        setProperty(db, nodeId, SYSTEM_FIELDS.DESCRIPTION, description)
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.DESCRIPTION, description)
       }
 
-      saveDatabase()
+      await nodeFacade.save()
 
       // Assemble and return the updated event
-      const node = assembleNode(db, nodeId)
+      const node = await nodeFacade.assembleNode(nodeId)
       if (!node) {
         return { success: false, error: 'Event not found' }
       }
@@ -314,17 +307,17 @@ export const deleteCalendarEventServerFn = createServerFn({ method: 'POST' })
       console.log('[deleteCalendarEventServerFn] Input:', data)
       const { nodeId } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Verify the node exists before deleting
-      const node = assembleNode(db, nodeId)
+      const node = await nodeFacade.assembleNode(nodeId)
       if (!node) {
         return { success: false, error: 'Event not found' }
       }
 
       // Soft delete the node
-      deleteNode(db, nodeId)
-      saveDatabase()
+      await nodeFacade.deleteNode(nodeId)
+      await nodeFacade.save()
 
       console.log('[deleteCalendarEventServerFn] Deleted:', nodeId)
       return { success: true }
@@ -348,10 +341,10 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
       console.log('[completeTaskServerFn] Input:', data)
       const { nodeId, completed } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
       // Verify the node exists
-      const node = assembleNode(db, nodeId)
+      const node = await nodeFacade.assembleNode(nodeId)
       if (!node) {
         return { success: false, error: 'Task not found' }
       }
@@ -370,7 +363,7 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
 
       // Update the status
       const newStatus = completed ? 'done' : 'pending'
-      setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, newStatus)
+      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.STATUS, newStatus)
 
       // For recurring tasks being marked as complete, create the next instance
       if (completed && isRecurring && rrule) {
@@ -391,25 +384,25 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
 
         if (nextOccurrence) {
           // Create a new task node for the next occurrence
-          const nextTaskId = createNode(db, {
+          const nextTaskId = await nodeFacade.createNode({
             content: node.content,
             supertagId: SYSTEM_SUPERTAGS.TASK,
             ownerId: node.ownerId,
           })
 
           // Set the dates for the next occurrence
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.START_DATE, nextOccurrence.toISOString())
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.END_DATE, new Date(nextOccurrence.getTime() + duration).toISOString())
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.ALL_DAY, allDay)
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.RRULE, rrule)
-          setProperty(db, nextTaskId, SYSTEM_FIELDS.STATUS, 'pending')
+          await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.START_DATE, nextOccurrence.toISOString())
+          await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.END_DATE, new Date(nextOccurrence.getTime() + duration).toISOString())
+          await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.ALL_DAY, allDay)
+          await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.RRULE, rrule)
+          await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.STATUS, 'pending')
 
           // Copy optional fields
           if (reminder !== undefined && reminder !== null) {
-            setProperty(db, nextTaskId, SYSTEM_FIELDS.REMINDER, reminder)
+            await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.REMINDER, reminder)
           }
           if (description) {
-            setProperty(db, nextTaskId, SYSTEM_FIELDS.DESCRIPTION, description)
+            await nodeFacade.setProperty(nextTaskId, SYSTEM_FIELDS.DESCRIPTION, description)
           }
 
           console.log('[completeTaskServerFn] Created next recurring task instance:', nextTaskId, 'at', nextOccurrence.toISOString())
@@ -419,13 +412,13 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
 
         // Remove the rrule from the completed task so it doesn't expand again
         // The recurrence pattern is now carried by the new instance
-        setProperty(db, nodeId, SYSTEM_FIELDS.RRULE, '')
+        await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.RRULE, '')
       }
 
-      saveDatabase()
+      await nodeFacade.save()
 
       // Assemble and return the updated event
-      const updatedNode = assembleNode(db, nodeId)
+      const updatedNode = await nodeFacade.assembleNode(nodeId)
       if (!updatedNode) {
         return { success: false, error: 'Failed to assemble updated task' }
       }
@@ -449,9 +442,9 @@ export const getCalendarEventServerFn = createServerFn({ method: 'POST' })
       console.log('[getCalendarEventServerFn] Input:', data)
       const { nodeId } = data
 
-      const db = initDatabase()
+      await nodeFacade.init()
 
-      const node = assembleNode(db, nodeId)
+      const node = await nodeFacade.assembleNode(nodeId)
       if (!node) {
         return { success: false, error: 'Event not found' }
       }

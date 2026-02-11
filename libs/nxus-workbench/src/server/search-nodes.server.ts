@@ -31,125 +31,45 @@ type ChildNodesResult = { success: true; children: AssembledNode[] }
 
 /**
  * Search nodes by content (case-insensitive via content_plain)
+ * MIGRATED: Uses NodeFacade.evaluateQuery with content filter
  */
 export const searchNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ query: z.string(), limit: z.number().optional() }))
   .handler(async (ctx): Promise<SearchNodesResult> => {
-    const {
-      initDatabase,
-      getDatabase,
-      nodes,
-      assembleNode,
-      and,
-      like,
-      isNull,
-    } = await import('@nxus/db/server')
+    const { nodeFacade } = await import('@nxus/db/server')
 
     const { query, limit = 50 } = ctx.data
-    initDatabase()
-    const db = getDatabase()
 
     if (!query.trim()) {
       return { success: true, nodes: [] }
     }
 
-    // Search by content_plain (lowercase indexed field)
-    const searchPattern = `%${query.toLowerCase()}%`
-    const matchingNodes = db
-      .select()
-      .from(nodes)
-      .where(
-        and(like(nodes.contentPlain, searchPattern), isNull(nodes.deletedAt)),
-      )
-      .limit(limit)
-      .all()
+    await nodeFacade.init()
 
-    // Assemble each node with full properties
-    const assembledNodes: AssembledNode[] = []
-    for (const node of matchingNodes) {
-      const assembled = assembleNode(db, node.id)
-      if (assembled) {
-        assembledNodes.push(assembled)
-      }
-    }
+    // Use facade's evaluateQuery with content filter
+    const result = await nodeFacade.evaluateQuery({
+      filters: [{ type: 'content', query }],
+      limit,
+    })
 
-    return { success: true, nodes: assembledNodes }
+    return { success: true, nodes: result.nodes }
   })
 
 /**
  * Get all supertags (nodes that are themselves supertags)
  * Returns nodes with #Supertag supertag, including inheritance info
+ * MIGRATED: Uses NodeFacade.getNodesBySupertagWithInheritance
  */
 export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<SupertagsResult> => {
-    const {
-      initDatabase,
-      getDatabase,
-      nodes,
-      nodeProperties,
-      assembleNode,
-      eq,
-      SYSTEM_FIELDS,
-    } = await import('@nxus/db/server')
+    const { nodeFacade } = await import('@nxus/db/server')
 
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
-    // Find the supertag field node
-    const supertagFieldNode = db
-      .select()
-      .from(nodes)
-      .where(eq(nodes.systemId, SYSTEM_FIELDS.SUPERTAG))
-      .get()
-
-    if (!supertagFieldNode) {
-      return { success: true, supertags: [] }
-    }
-
-    // Find the #Supertag supertag node
-    const supertagSupertag = db
-      .select()
-      .from(nodes)
-      .where(eq(nodes.systemId, 'supertag:supertag'))
-      .get()
-
-    if (!supertagSupertag) {
-      return { success: true, supertags: [] }
-    }
-
-    // Find all nodes that have supertag:supertag as their supertag
-    const supertagProps = db
-      .select()
-      .from(nodeProperties)
-      .where(eq(nodeProperties.fieldNodeId, supertagFieldNode.id))
-      .all()
-
-    const supertagNodeIds = new Set<string>()
-    for (const prop of supertagProps) {
-      try {
-        const value = JSON.parse(prop.value || '')
-        if (value === supertagSupertag.id) {
-          supertagNodeIds.add(prop.nodeId)
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    // Assemble all supertag nodes
-    const supertags: AssembledNode[] = []
-    for (const nodeId of supertagNodeIds) {
-      const assembled = assembleNode(db, nodeId)
-      if (assembled) {
-        supertags.push(assembled)
-      }
-    }
-
-    // Also include the #Supertag itself
-    const supertagNode = assembleNode(db, supertagSupertag.id)
-    if (supertagNode && !supertagNodeIds.has(supertagSupertag.id)) {
-      supertags.unshift(supertagNode)
-    }
+    // Use facade to get all supertag nodes
+    const supertags = await nodeFacade.getNodesBySupertagWithInheritance(
+      'supertag:supertag',
+    )
 
     return { success: true, supertags }
   },
@@ -158,6 +78,7 @@ export const getSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
 /**
  * Get all nodes (with optional supertag filter)
  * Used by the Node Browser for listing all nodes
+ * PARTIALLY MIGRATED: Uses NodeFacade for supertag filtering; keeps Drizzle for all-nodes case
  */
 export const getAllNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(
@@ -169,26 +90,17 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
   )
   .handler(async (ctx): Promise<AllNodesResult> => {
     const {
-      initDatabase,
-      getDatabase,
-      nodes,
-      assembleNode,
-      isNull,
-      getNodesBySupertagWithInheritance,
-    } = await import('@nxus/db/server')
-
-    const {
       supertagSystemId,
       limit = 200,
       includeSystemNodes = true,
     } = ctx.data
-    initDatabase()
-    const db = getDatabase()
 
-    // If supertag filter is provided, use inheritance-aware query
+    // If supertag filter is provided, use facade
     if (supertagSystemId) {
-      const filteredNodes = getNodesBySupertagWithInheritance(
-        db,
+      const { nodeFacade } = await import('@nxus/db/server')
+      await nodeFacade.init()
+
+      const filteredNodes = await nodeFacade.getNodesBySupertagWithInheritance(
         supertagSystemId,
       )
       return {
@@ -197,7 +109,19 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
       }
     }
 
-    // Otherwise get all non-deleted nodes
+    // Otherwise use raw Drizzle for efficiency (full table scan)
+    const {
+      initDatabase,
+      getDatabase,
+      nodes,
+      assembleNode,
+      isNull,
+    } = await import('@nxus/db/server')
+
+    initDatabase()
+    const db = getDatabase()
+
+    // Get all non-deleted nodes
     const allNodes = db
       .select()
       .from(nodes)
@@ -224,6 +148,7 @@ export const getAllNodesServerFn = createServerFn({ method: 'GET' })
 
 /**
  * Get backlinks for a node (nodes that reference this node)
+ * NOT MIGRATED: Uses raw Drizzle for property value pattern search (facade doesn't support this)
  */
 export const getBacklinksServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
@@ -284,6 +209,7 @@ export const getBacklinksServerFn = createServerFn({ method: 'GET' })
 /**
  * Get the owner chain (breadcrumbs) for a node
  * Traverses up the ownerId chain until reaching the root
+ * NOT MIGRATED: Uses raw Drizzle for efficiency (simple ownerId chain traversal)
  */
 export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
@@ -326,6 +252,7 @@ export const getOwnerChainServerFn = createServerFn({ method: 'GET' })
 /**
  * Get child nodes of a parent node (nodes where ownerId === parentId)
  * Optionally filter by supertag (e.g., 'supertag:command')
+ * NOT MIGRATED: Uses raw Drizzle (child node query by ownerId not in facade)
  */
 export const getChildNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(

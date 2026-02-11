@@ -1,12 +1,12 @@
 /**
  * query.server.ts - TanStack server functions for query and node operations
  *
- * This file creates server functions that wrap the pure database functions
+ * This file creates server functions that wrap the NodeFacade API
  * from @nxus/db. The dynamic imports inside handlers prevent Vite from
  * bundling better-sqlite3 into the client.
  *
  * Architecture:
- * - @nxus/db/server: Pure functions (evaluateQuery, createNode, etc.)
+ * - @nxus/db/server: NodeFacade API (evaluateQuery, createNode, etc.)
  * - This file: TanStack createServerFn wrappers with validation
  */
 
@@ -28,19 +28,17 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, evaluateQuery } = await import(
-      '@nxus/db/server'
-    )
+    const { nodeFacade } = await import('@nxus/db/server')
     const { definition, limit } = ctx.data
 
-    const db = await initDatabaseWithBootstrap()
+    await nodeFacade.init()
 
     const effectiveDefinition = {
       ...definition,
       limit: limit ?? definition.limit ?? 500,
     }
 
-    const result = evaluateQuery(db, effectiveDefinition)
+    const result = await nodeFacade.evaluateQuery(effectiveDefinition)
 
     return {
       success: true as const,
@@ -62,31 +60,27 @@ export const createQueryServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const {
-      initDatabaseWithBootstrap,
-      createNode,
-      setProperty,
-      SYSTEM_SUPERTAGS,
-      SYSTEM_FIELDS,
-    } = await import('@nxus/db/server')
+    const { nodeFacade, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } = await import(
+      '@nxus/db/server'
+    )
     const { name, definition, ownerId } = ctx.data
 
-    const db = await initDatabaseWithBootstrap()
+    await nodeFacade.init()
 
-    const queryId = createNode(db, {
+    const queryId = await nodeFacade.createNode({
       content: name,
       supertagId: SYSTEM_SUPERTAGS.QUERY,
       ownerId,
     })
 
-    setProperty(db, queryId, SYSTEM_FIELDS.QUERY_DEFINITION, definition)
+    await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_DEFINITION, definition)
 
     if (definition.sort) {
-      setProperty(db, queryId, SYSTEM_FIELDS.QUERY_SORT, definition.sort)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_SORT, definition.sort)
     }
 
     if (definition.limit !== undefined) {
-      setProperty(db, queryId, SYSTEM_FIELDS.QUERY_LIMIT, definition.limit)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_LIMIT, definition.limit)
     }
 
     return {
@@ -107,42 +101,34 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const {
-      initDatabase,
-      getDatabase,
-      findNodeById,
-      updateNodeContent,
-      setProperty,
-      SYSTEM_FIELDS,
-    } = await import('@nxus/db/server')
+    const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
     const { queryId, name, definition } = ctx.data
 
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
-    const existingNode = findNodeById(db, queryId)
+    const existingNode = await nodeFacade.findNodeById(queryId)
     if (!existingNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
 
     if (name !== undefined) {
-      updateNodeContent(db, queryId, name)
+      await nodeFacade.updateNodeContent(queryId, name)
     }
 
     if (definition !== undefined) {
-      setProperty(db, queryId, SYSTEM_FIELDS.QUERY_DEFINITION, definition)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_DEFINITION, definition)
 
       if (definition.sort) {
-        setProperty(db, queryId, SYSTEM_FIELDS.QUERY_SORT, definition.sort)
+        await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_SORT, definition.sort)
       }
 
       if (definition.limit !== undefined) {
-        setProperty(db, queryId, SYSTEM_FIELDS.QUERY_LIMIT, definition.limit)
+        await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_LIMIT, definition.limit)
       }
 
       // Clear cached results when definition changes
-      setProperty(db, queryId, SYSTEM_FIELDS.QUERY_RESULT_CACHE, null)
-      setProperty(db, queryId, SYSTEM_FIELDS.QUERY_EVALUATED_AT, null)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_RESULT_CACHE, null)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_EVALUATED_AT, null)
     }
 
     return {
@@ -157,20 +143,17 @@ export const updateQueryServerFn = createServerFn({ method: 'POST' })
 export const deleteQueryServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ queryId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNodeById, deleteNode } = await import(
-      '@nxus/db/server'
-    )
+    const { nodeFacade } = await import('@nxus/db/server')
     const { queryId } = ctx.data
 
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
-    const existingNode = findNodeById(db, queryId)
+    const existingNode = await nodeFacade.findNodeById(queryId)
     if (!existingNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
 
-    deleteNode(db, queryId)
+    await nodeFacade.deleteNode(queryId)
 
     return {
       success: true as const,
@@ -182,18 +165,13 @@ export const deleteQueryServerFn = createServerFn({ method: 'POST' })
  */
 export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const {
-      initDatabaseWithBootstrap,
-      getNodesBySupertagWithInheritance,
-      getProperty,
-      SYSTEM_SUPERTAGS,
-      FIELD_NAMES,
-    } = await import('@nxus/db/server')
+    const { nodeFacade, getProperty, SYSTEM_SUPERTAGS, FIELD_NAMES } = await import(
+      '@nxus/db/server'
+    )
 
-    const db = await initDatabaseWithBootstrap()
+    await nodeFacade.init()
 
-    const queryNodes = getNodesBySupertagWithInheritance(
-      db,
+    const queryNodes = await nodeFacade.getNodesBySupertagWithInheritance(
       SYSTEM_SUPERTAGS.QUERY
     )
 
@@ -236,20 +214,14 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const {
-      initDatabaseWithBootstrap,
-      findNodeById,
-      evaluateQuery,
-      getProperty,
-      setProperty,
-      SYSTEM_FIELDS,
-      FIELD_NAMES,
-    } = await import('@nxus/db/server')
+    const { nodeFacade, getProperty, SYSTEM_FIELDS, FIELD_NAMES } = await import(
+      '@nxus/db/server'
+    )
     const { queryId, cacheResults } = ctx.data
 
-    const db = await initDatabaseWithBootstrap()
+    await nodeFacade.init()
 
-    const queryNode = findNodeById(db, queryId)
+    const queryNode = await nodeFacade.findNodeById(queryId)
     if (!queryNode) {
       throw new Error(`Query not found: ${queryId}`)
     }
@@ -262,7 +234,7 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
       filters: Array.isArray(storedDefinition?.filters) ? storedDefinition.filters : [],
       limit: typeof storedDefinition?.limit === 'number' ? storedDefinition.limit : 500,
       sort: storedDefinition?.sort,
-    } as Parameters<typeof evaluateQuery>[1]
+    }
     const resultCache = getProperty<string[]>(queryNode, FIELD_NAMES.QUERY_RESULT_CACHE)
     const evaluatedAtStr = getProperty<string>(queryNode, FIELD_NAMES.QUERY_EVALUATED_AT)
 
@@ -277,14 +249,13 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
     }
 
     // Evaluate the query
-    const result = evaluateQuery(db, definition)
+    const result = await nodeFacade.evaluateQuery(definition)
 
     // Optionally cache results
     if (cacheResults) {
       const cachedIds = result.nodes.map((n: { id: string }) => n.id)
-      setProperty(db, queryId, SYSTEM_FIELDS.QUERY_RESULT_CACHE, cachedIds)
-      setProperty(
-        db,
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_RESULT_CACHE, cachedIds)
+      await nodeFacade.setProperty(
         queryId,
         SYSTEM_FIELDS.QUERY_EVALUATED_AT,
         result.evaluatedAt.toISOString()
@@ -305,16 +276,11 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
  */
 export const getQuerySupertagsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const {
-      initDatabaseWithBootstrap,
-      getNodesBySupertagWithInheritance,
-      SYSTEM_SUPERTAGS,
-    } = await import('@nxus/db/server')
+    const { nodeFacade, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
 
-    const db = await initDatabaseWithBootstrap()
+    await nodeFacade.init()
 
-    const supertags = getNodesBySupertagWithInheritance(
-      db,
+    const supertags = await nodeFacade.getNodesBySupertagWithInheritance(
       SYSTEM_SUPERTAGS.SUPERTAG
     )
 

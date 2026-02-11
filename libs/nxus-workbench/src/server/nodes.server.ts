@@ -10,16 +10,6 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import {
-  getDatabase,
-  initDatabase,
-  initDatabaseWithBootstrap,
-  assembleNode,
-  findNodeById,
-  createNode,
-  deleteNode,
-  setProperty,
-} from '@nxus/db/server'
 import type { FieldSystemId } from '@nxus/db'
 
 // ============================================================================
@@ -32,14 +22,14 @@ import type { FieldSystemId } from '@nxus/db'
 export const getNodeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ identifier: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, isSystemId, findNodeById, findNodeBySystemId } = await import('@nxus/db/server')
+    const { nodeFacade, isSystemId } = await import('@nxus/db/server')
     const { identifier } = ctx.data
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
+
     // Use explicit lookup based on identifier type
     const node = isSystemId(identifier)
-      ? findNodeBySystemId(db, identifier)
-      : findNodeById(db, identifier)
+      ? await nodeFacade.findNodeBySystemId(identifier)
+      : await nodeFacade.findNodeById(identifier)
 
     if (!node) {
       return { success: false as const, error: 'Node not found' }
@@ -53,11 +43,11 @@ export const getNodeServerFn = createServerFn({ method: 'GET' })
 export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ supertagSystemId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, getNodesBySupertagWithInheritance } = await import('@nxus/db/server')
+    const { nodeFacade } = await import('@nxus/db/server')
     const { supertagSystemId } = ctx.data
-    initDatabase()
-    const db = getDatabase()
-    const nodesList = getNodesBySupertagWithInheritance(db, supertagSystemId)
+    await nodeFacade.init()
+
+    const nodesList = await nodeFacade.getNodesBySupertagWithInheritance(supertagSystemId)
     return { success: true as const, nodes: nodesList }
   })
 
@@ -67,15 +57,14 @@ export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
 export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), content: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, assembleNode, updateNodeContent: updateFn } = await import('@nxus/db/server')
+    const { nodeFacade } = await import('@nxus/db/server')
     const { nodeId, content } = ctx.data
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
-    updateFn(db, nodeId, content)
+    await nodeFacade.updateNodeContent(nodeId, content)
 
     // Return the updated node
-    const updatedNode = assembleNode(db, nodeId)
+    const updatedNode = await nodeFacade.assembleNode(nodeId)
     if (!updatedNode) {
       return { success: false as const, error: 'Node not found after update' }
     }
@@ -101,11 +90,12 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
+    const { nodeFacade } = await import('@nxus/db/server')
     const { content, systemId, supertagSystemId, ownerId, properties } = ctx.data
-    const db = await initDatabaseWithBootstrap()
+    await nodeFacade.init()
 
     // Create the node
-    const nodeId = createNode(db, {
+    const nodeId = await nodeFacade.createNode({
       content,
       systemId,
       supertagId: supertagSystemId,
@@ -116,13 +106,13 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     if (properties) {
       for (const [fieldSystemId, value] of Object.entries(properties)) {
         if (value !== null) {
-          setProperty(db, nodeId, fieldSystemId as FieldSystemId, value)
+          await nodeFacade.setProperty(nodeId, fieldSystemId as FieldSystemId, value)
         }
       }
     }
 
     // Return the assembled node
-    const node = assembleNode(db, nodeId)
+    const node = await nodeFacade.assembleNode(nodeId)
     if (!node) {
       return { success: false as const, error: 'Failed to assemble created node' }
     }
@@ -138,18 +128,18 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
 export const deleteNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
+    const { nodeFacade } = await import('@nxus/db/server')
     const { nodeId } = ctx.data
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
     // Verify the node exists
-    const existingNode = findNodeById(db, nodeId)
+    const existingNode = await nodeFacade.findNodeById(nodeId)
     if (!existingNode) {
       return { success: false as const, error: 'Node not found' }
     }
 
     // Soft delete the node
-    deleteNode(db, nodeId)
+    await nodeFacade.deleteNode(nodeId)
 
     return { success: true as const }
   })
@@ -170,28 +160,26 @@ export const setNodePropertiesServerFn = createServerFn({ method: 'POST' })
     })
   )
   .handler(async (ctx) => {
-    const { initDatabase, getDatabase, findNodeById, assembleNode, setProperty } = await import('@nxus/db/server')
+    const { nodeFacade } = await import('@nxus/db/server')
     const { nodeId, properties } = ctx.data
-    initDatabase()
-    const db = getDatabase()
+    await nodeFacade.init()
 
     // Verify the node exists
-    const existingNode = findNodeById(db, nodeId)
+    const existingNode = await nodeFacade.findNodeById(nodeId)
     if (!existingNode) {
       return { success: false as const, error: 'Node not found' }
     }
 
     // Set each property
     for (const [fieldSystemId, value] of Object.entries(properties)) {
-      setProperty(db, nodeId, fieldSystemId as FieldSystemId, value)
+      await nodeFacade.setProperty(nodeId, fieldSystemId as FieldSystemId, value)
     }
 
     // Return the updated node
-    const updatedNode = assembleNode(db, nodeId)
+    const updatedNode = await nodeFacade.assembleNode(nodeId)
     if (!updatedNode) {
       return { success: false as const, error: 'Failed to assemble updated node' }
     }
 
     return { success: true as const, node: updatedNode }
   })
-

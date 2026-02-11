@@ -8,13 +8,9 @@ import {
   FIELD_NAMES,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
-  assembleNode,
-  createNode,
-  deleteNode,
-  getNodesBySupertagWithInheritance,
   getProperty,
-  initDatabase,
-  saveDatabase, setProperty, updateNodeContent
+  nodeFacade,
+  type AssembledNode,
 } from '@nxus/db/server'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
@@ -40,7 +36,7 @@ export interface InboxItem {
  * Convert inbox node to InboxItem
  */
 function nodeToInboxItem(
-  node: ReturnType<typeof assembleNode>,
+  node: AssembledNode | null,
 ): InboxItem | null {
   if (!node) return null
 
@@ -69,10 +65,9 @@ function nodeToInboxItem(
 export const getInboxItemsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     console.log('[getInboxItemsServerFn] Fetching all items')
-    const db = initDatabase()
+    await nodeFacade.init()
 
-    const inboxNodes = getNodesBySupertagWithInheritance(
-      db,
+    const inboxNodes = await nodeFacade.getNodesBySupertagWithInheritance(
       SYSTEM_SUPERTAGS.INBOX,
     )
 
@@ -98,10 +93,9 @@ export const getPendingInboxItemsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   console.log('[getPendingInboxItemsServerFn] Fetching pending items')
-  const db = initDatabase()
+  await nodeFacade.init()
 
-  const inboxNodes = getNodesBySupertagWithInheritance(
-    db,
+  const inboxNodes = await nodeFacade.getNodesBySupertagWithInheritance(
     SYSTEM_SUPERTAGS.INBOX,
   )
 
@@ -132,23 +126,23 @@ export const addInboxItemServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[addInboxItemServerFn] Input:', ctx.data)
     const { title, notes } = ctx.data
-    const db = initDatabase()
+    await nodeFacade.init()
     const now = new Date()
 
-    const nodeId = createNode(db, {
+    const nodeId = await nodeFacade.createNode({
       content: title,
       supertagId: SYSTEM_SUPERTAGS.INBOX,
     })
 
     // Set status to pending
-    setProperty(db, nodeId, SYSTEM_FIELDS.STATUS, 'pending')
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.STATUS, 'pending')
 
     // Set notes if provided
     if (notes) {
-      setProperty(db, nodeId, SYSTEM_FIELDS.NOTES, notes)
+      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.NOTES, notes)
     }
 
-    saveDatabase()
+    await nodeFacade.save()
 
     const newEntry: InboxItem = {
       id: nodeId,
@@ -178,22 +172,22 @@ export const updateInboxItemServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[updateInboxItemServerFn] Input:', ctx.data)
     const { id, ...updates } = ctx.data
-    const db = initDatabase()
+    await nodeFacade.init()
 
     if (updates.title) {
-      updateNodeContent(db, id, updates.title)
+      await nodeFacade.updateNodeContent(id, updates.title)
     }
     if (updates.notes !== undefined) {
-      setProperty(db, id, SYSTEM_FIELDS.NOTES, updates.notes)
+      await nodeFacade.setProperty(id, SYSTEM_FIELDS.NOTES, updates.notes)
     }
     if (updates.status) {
-      setProperty(db, id, SYSTEM_FIELDS.STATUS, updates.status)
+      await nodeFacade.setProperty(id, SYSTEM_FIELDS.STATUS, updates.status)
     }
 
-    saveDatabase()
+    await nodeFacade.save()
 
     // Return updated entry
-    const node = assembleNode(db, id)
+    const node = await nodeFacade.assembleNode(id)
     const entry = nodeToInboxItem(node)
     if (!entry) {
       return { success: false as const, error: 'Item not found' }
@@ -210,10 +204,10 @@ export const deleteInboxItemServerFn = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     console.log('[deleteInboxItemServerFn] Input:', ctx.data)
     const { id } = ctx.data
-    const db = initDatabase()
+    await nodeFacade.init()
 
-    deleteNode(db, id)
-    saveDatabase()
+    await nodeFacade.deleteNode(id)
+    await nodeFacade.save()
     console.log('[deleteInboxItemServerFn] Success:', id)
     return { success: true as const }
   })
@@ -225,12 +219,12 @@ export const markAsProcessingServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async (ctx) => {
     console.log('[markAsProcessingServerFn] Input:', ctx.data)
-    const db = initDatabase()
+    await nodeFacade.init()
 
-    setProperty(db, ctx.data.id, SYSTEM_FIELDS.STATUS, 'processing')
-    saveDatabase()
+    await nodeFacade.setProperty(ctx.data.id, SYSTEM_FIELDS.STATUS, 'processing')
+    await nodeFacade.save()
 
-    const node = assembleNode(db, ctx.data.id)
+    const node = await nodeFacade.assembleNode(ctx.data.id)
     const entry = nodeToInboxItem(node)
     if (!entry) {
       return { success: false as const, error: 'Item not found' }
@@ -246,12 +240,12 @@ export const markAsDoneServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async (ctx) => {
     console.log('[markAsDoneServerFn] Input:', ctx.data)
-    const db = initDatabase()
+    await nodeFacade.init()
 
-    setProperty(db, ctx.data.id, SYSTEM_FIELDS.STATUS, 'done')
-    saveDatabase()
+    await nodeFacade.setProperty(ctx.data.id, SYSTEM_FIELDS.STATUS, 'done')
+    await nodeFacade.save()
 
-    const node = assembleNode(db, ctx.data.id)
+    const node = await nodeFacade.assembleNode(ctx.data.id)
     const entry = nodeToInboxItem(node)
     if (!entry) {
       return { success: false as const, error: 'Item not found' }

@@ -8,6 +8,13 @@
  *
  * IMPORTANT: All @nxus/db/server imports are done dynamically inside handlers
  * to prevent Vite from bundling better-sqlite3 into the client bundle.
+ *
+ * ARCHITECTURE NOTE: These functions perform performance-sensitive work for
+ * graph visualization with 500+ nodes. They use raw Drizzle queries on the
+ * nodes and nodeProperties tables for lightweight data extraction WITHOUT
+ * full node assembly. The NodeFacade is used only where it provides value
+ * (e.g., getNodesBySupertagWithInheritance) while keeping raw Drizzle access
+ * for performance-critical lightweight queries.
  */
 
 import { createServerFn } from '@tanstack/react-start'
@@ -89,8 +96,11 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
     }),
   )
   .handler(async (ctx): Promise<GraphStructureResult> => {
+    // Import facade for high-level operations
+    const { nodeFacade } = await import('@nxus/db/server')
+
+    // Import raw Drizzle access for lightweight queries
     const {
-      initDatabase,
       getDatabase,
       nodes,
       nodeProperties,
@@ -98,7 +108,6 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
       and,
       isNull,
       SYSTEM_FIELDS,
-      getNodesBySupertagWithInheritance,
     } = await import('@nxus/db/server')
 
     const {
@@ -107,7 +116,11 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
       includeHierarchy = true,
       includeReferences = true,
     } = ctx.data
-    initDatabase()
+
+    // Initialize facade (idempotent, ensures DB is ready)
+    await nodeFacade.init()
+
+    // Get raw Drizzle DB for lightweight queries
     const db = getDatabase()
 
     // Build EXPLICIT_RELATIONSHIP_FIELDS set dynamically
@@ -173,8 +186,8 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
 
     let rawNodes: RawNode[]
     if (supertagSystemId) {
-      const filteredNodes = getNodesBySupertagWithInheritance(
-        db,
+      // Use facade for supertag-based filtering with inheritance
+      const filteredNodes = await nodeFacade.getNodesBySupertagWithInheritance(
         supertagSystemId,
       )
       rawNodes = filteredNodes.slice(0, limit).map((an) => ({
@@ -330,8 +343,11 @@ export const getBacklinksWithDepthServerFn = createServerFn({ method: 'GET' })
     }),
   )
   .handler(async (ctx): Promise<RecursiveBacklinksResult> => {
+    // Import facade for initialization
+    const { nodeFacade } = await import('@nxus/db/server')
+
+    // Import raw Drizzle access for lightweight queries
     const {
-      initDatabase,
       getDatabase,
       nodes,
       nodeProperties,
@@ -342,7 +358,11 @@ export const getBacklinksWithDepthServerFn = createServerFn({ method: 'GET' })
     } = await import('@nxus/db/server')
 
     const { nodeId, depth = 1 } = ctx.data
-    initDatabase()
+
+    // Initialize facade (idempotent, ensures DB is ready)
+    await nodeFacade.init()
+
+    // Get raw Drizzle DB for lightweight queries
     const db = getDatabase()
 
     // Get supertag field for looking up supertag IDs
@@ -468,8 +488,11 @@ export const getEdgesBetweenNodesServerFn = createServerFn({ method: 'GET' })
     async (
       ctx,
     ): Promise<{ success: true; edges: LightweightGraphEdge[] }> => {
+      // Import facade for initialization
+      const { nodeFacade } = await import('@nxus/db/server')
+
+      // Import raw Drizzle access for lightweight queries
       const {
-        initDatabase,
         getDatabase,
         nodes,
         nodeProperties,
@@ -478,7 +501,11 @@ export const getEdgesBetweenNodesServerFn = createServerFn({ method: 'GET' })
       } = await import('@nxus/db/server')
 
       const { nodeIds, includeReferences = true } = ctx.data
-      initDatabase()
+
+      // Initialize facade (idempotent, ensures DB is ready)
+      await nodeFacade.init()
+
+      // Get raw Drizzle DB for lightweight queries
       const db = getDatabase()
 
       if (nodeIds.length === 0) {
