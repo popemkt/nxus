@@ -97,7 +97,8 @@ Modify `apps/nxus-core/src/routes/inbox.tsx`:
 
 ---
 
-### [ ] Step: Automations Page & Management UI
+### [x] Step: Automations Page & Management UI
+<!-- chat-id: fc7bbd69-7683-457a-9ac4-1000743447af -->
 
 Create the automations management experience:
 

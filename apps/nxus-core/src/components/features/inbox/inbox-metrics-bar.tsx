@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { GearIcon } from '@phosphor-icons/react'
 import { Badge, Card, CardContent, Button } from '@nxus/ui'
 import { getInboxMetricsServerFn } from '@/services/inbox/inbox-reactive.server'
@@ -46,12 +47,12 @@ export function InboxMetricsBar() {
               variant="outline"
             />
           </div>
-          <a href="/inbox/automations">
+          <Link to="/inbox/automations">
             <Button variant="ghost" size="sm">
               <GearIcon data-icon="inline-start" />
               Automations
             </Button>
-          </a>
+          </Link>
         </div>
       </CardContent>
     </Card>
