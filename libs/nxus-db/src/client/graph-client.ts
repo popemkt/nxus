@@ -43,6 +43,7 @@ const defaultEmbeddedPath = resolve(__dirname, '../data/surreal.db')
  */
 const SURREAL_CONFIG = {
   embedded: process.env.SURREAL_EMBEDDED !== 'false', // default: true
+  memory: process.env.SURREAL_MEMORY === 'true', // in-memory mode (no persistence)
   embeddedPath: process.env.SURREAL_PATH || defaultEmbeddedPath,
   url: process.env.SURREAL_URL || 'http://127.0.0.1:8000/rpc',
   namespace: process.env.SURREAL_NS || 'nxus',
@@ -61,7 +62,23 @@ export async function initGraphDatabase(): Promise<Surreal> {
   if (db && isInitialized) return db
 
   try {
-    if (SURREAL_CONFIG.embedded) {
+    if (SURREAL_CONFIG.memory) {
+      // In-memory mode — no persistence, no file conflicts
+      const { createNodeEngines } = await import('@surrealdb/node')
+
+      db = new Surreal({
+        engines: createNodeEngines(),
+      })
+
+      console.log('[GraphDB] Opening in-memory SurrealDB')
+
+      await db.connect('mem://')
+
+      await db.use({
+        namespace: SURREAL_CONFIG.namespace,
+        database: SURREAL_CONFIG.database,
+      })
+    } else if (SURREAL_CONFIG.embedded) {
       // Embedded file mode — no server needed
       const { createNodeEngines } = await import('@surrealdb/node')
 

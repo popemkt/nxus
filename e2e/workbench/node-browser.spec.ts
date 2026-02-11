@@ -70,25 +70,26 @@ test.describe('Workbench Node Browser', () => {
 
     // Type a search query
     await searchInput.fill('test')
-    await page.waitForTimeout(300)
 
     // Verify search indicator appears
-    await expect(page.getByText(/Searching: "test"/)).toBeVisible()
+    await expect(page.getByText(/Searching: "test"/)).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Type a nonsense query to get no results
     await searchInput.fill('zzznonexistentnode999')
-    await page.waitForTimeout(300)
 
-    // Should show no nodes found
-    await expect(page.getByText('No nodes found')).toBeVisible()
+    // Should show no nodes found (server-side search may take time in CI)
+    await expect(page.getByText('No nodes found')).toBeVisible({
+      timeout: 15_000,
+    })
 
     // Clear search → all nodes return
     await searchInput.clear()
-    await page.waitForTimeout(300)
 
     // Search indicator should be gone and nodes should be back
-    await expect(page.getByText(/Searching:/)).toBeHidden()
-    await expect(nodeCount).toBeVisible()
+    await expect(page.getByText(/Searching:/)).toBeHidden({ timeout: 10_000 })
+    await expect(nodeCount).toBeVisible({ timeout: 10_000 })
   })
 
   test('W5 — Supertag filter narrows node list', async ({ page }) => {
