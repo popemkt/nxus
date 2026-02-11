@@ -35,7 +35,8 @@ import {
   getSystemNode,
   deleteNode,
 } from '../services/node.service.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, nodeProperties } from '../schemas/node-schema.js'
+import { eq } from 'drizzle-orm'
 import type { getDatabase } from '../client/master-client.js'
 
 // ============================================================================
@@ -650,13 +651,6 @@ export function createComputedFieldService(
       if (!supertagField) return results
 
       // Query for all computed field nodes via property lookup
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { nodeProperties } = require('../schemas/node-schema.js') as {
-        nodeProperties: typeof import('../schemas/node-schema.js').nodeProperties
-      }
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { eq } = require('drizzle-orm') as typeof import('drizzle-orm')
-
       const computedFieldProps = db
         .select()
         .from(nodeProperties)
