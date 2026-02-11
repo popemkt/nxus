@@ -337,3 +337,10 @@ Detailed implementation plan created below. The generic "Implementation" step ha
 **Verification:**
 - `npx nx run nxus-db:test` — all tests pass
 - Migration test: zero differences between SQLite and SurrealDB assembled output
+
+### [x] Step: Check PR and fixes
+<!-- chat-id: e2c7e174-5b2f-4a38-a01a-dc746655751e -->
+
+https://github.com/popemkt/nxus/pull/45
+
+Even better, can we do 2 e2e steps in github actions, one for node based and one for surreal based.

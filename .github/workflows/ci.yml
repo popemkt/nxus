@@ -27,8 +27,14 @@ jobs:
       - run: pnpm test
 
   e2e-tests:
-    name: E2E Tests
+    name: E2E Tests (${{ matrix.architecture }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [node, graph]
+    env:
+      ARCHITECTURE_TYPE: ${{ matrix.architecture }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,10 +50,12 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
       - run: pnpm e2e
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.architecture }}
           path: playwright-report/
           retention-days: 7
