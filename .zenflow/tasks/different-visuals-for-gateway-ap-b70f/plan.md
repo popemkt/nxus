@@ -94,7 +94,8 @@ Build the "Orbital" visual component at `src/components/visuals/orbital-cards.ts
 - Uses `MiniApp` interface, existing `iconMap` pattern, theme CSS variables
 - Run `npx nx run nxus-gateway:build` to verify no TS errors
 
-### [ ] Step: Integrate visual switcher and update gateway page
+### [x] Step: Integrate visual switcher and update gateway page
+<!-- chat-id: cc62a012-835d-4048-b598-86bdbb804ddf -->
 
 - Create `src/components/visual-switcher.tsx`: small unobtrusive UI to toggle between 4 visuals (default + 3 new), stores preference in `localStorage` (`nxus-gateway-visual` key)
 - Update `src/routes/index.tsx`:

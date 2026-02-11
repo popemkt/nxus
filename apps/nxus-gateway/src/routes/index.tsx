@@ -1,8 +1,18 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
 import { Card, CardHeader, CardTitle, CardDescription } from '@nxus/ui'
 import { miniApps } from '@/config/mini-apps'
 import type { MiniApp } from '@/config/mini-apps'
+import { Glass3DCards } from '@/components/visuals/glass-3d-cards'
+import { TerminalCards } from '@/components/visuals/terminal-cards'
+import { OrbitalCards } from '@/components/visuals/orbital-cards'
+import {
+  VisualSwitcher,
+  getStoredVisual,
+  setStoredVisual,
+} from '@/components/visual-switcher'
+import type { VisualStyle } from '@/components/visual-switcher'
 
 export const Route = createFileRoute('/')({
   component: GatewayPage,
@@ -42,7 +52,7 @@ function MiniAppCard({ app }: { app: MiniApp }) {
   )
 }
 
-function GatewayPage() {
+function DefaultVisual({ apps }: { apps: MiniApp[] }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="w-full max-w-2xl space-y-8">
@@ -56,11 +66,36 @@ function GatewayPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {miniApps.map((app) => (
+          {apps.map((app) => (
             <MiniAppCard key={app.id} app={app} />
           ))}
         </div>
       </div>
     </div>
+  )
+}
+
+const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[] }>> = {
+  default: DefaultVisual,
+  'glass-3d': Glass3DCards,
+  terminal: TerminalCards,
+  orbital: OrbitalCards,
+}
+
+function GatewayPage() {
+  const [visual, setVisual] = useState<VisualStyle>(getStoredVisual)
+
+  const handleVisualChange = (v: VisualStyle) => {
+    setVisual(v)
+    setStoredVisual(v)
+  }
+
+  const VisualComponent = visualComponents[visual]
+
+  return (
+    <>
+      <VisualComponent apps={miniApps} />
+      <VisualSwitcher current={visual} onChange={handleVisualChange} />
+    </>
   )
 }
