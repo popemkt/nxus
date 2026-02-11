@@ -1,6 +1,8 @@
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+
 /**
  * Helper: ensure the calendar container (with toolbar) is visible.
  * If the empty state is shown, creates a quick event so the full calendar renders.
@@ -33,6 +35,9 @@ async function ensureCalendarVisible(page: Page) {
 }
 
 test.describe('Calendar Views & Navigation', () => {
+  // Calendar events are not yet seeded in graph mode (seed-graph.ts covers items/tags/commands only)
+  test.skip(isGraphMode, 'Calendar events not seeded in graph mode')
+
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('calendar')
   })
