@@ -51,7 +51,7 @@ jobs:
 
       - name: Seed graph database
         if: matrix.architecture == 'graph'
-        run: pnpm --filter nxus-core db:seed
+        run: pnpm --filter @nxus/core-app db:seed
 
       - run: pnpm e2e
         env:
