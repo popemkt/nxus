@@ -18,7 +18,7 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
 
 Assess the task's difficulty, as underestimating it leads to poor outcomes.
 - easy: Straightforward implementation, trivial bug fix or feature
@@ -52,16 +52,53 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Implement Glass 3D Cards visual
 
-Implement the task according to the technical specification and general engineering best practices.
+Build the "Glass 3D" visual component at `src/components/visuals/glass-3d-cards.tsx`:
+- CSS 3D perspective container with `transform-style: preserve-3d` cards
+- Mouse-tracking tilt via `onMouseMove`/`onMouseLeave` (rotateX/rotateY, max ~15deg)
+- Layered card internals: background glow (translateZ -20px), content (translateZ 0), icon (translateZ 30px)
+- Glassmorphism: `backdrop-blur-xl`, semi-transparent card bg, subtle white/10 border
+- Floating light reflection gradient that shifts with mouse
+- Soft primary-colored glow shadow beneath cards
+- Uses `MiniApp` interface, existing `iconMap` pattern, theme CSS variables
+- Run `npx nx run nxus-gateway:build` to verify no TS errors
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase
-3. If relevant, write unit tests alongside each change.
-4. Run relevant tests and linters in the end of each step.
-5. Perform basic manual verification if applicable.
-6. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+### [ ] Step: Implement Terminal Cards visual
+
+Build the "Terminal" visual component at `src/components/visuals/terminal-cards.tsx`:
+- Cards styled as terminal windows with dark bg and primary-tinted monospace text
+- Top bar with colored dots and fake terminal title
+- `>` prompt prefix on app names
+- Typing animation on hover via CSS `steps()` on width
+- CRT scanline overlay using `repeating-linear-gradient`
+- Blinking `_` cursor with `@keyframes` blink
+- Add required `@keyframes` to `src/styles.css`
+- Uses `MiniApp` interface, existing `iconMap` pattern, theme CSS variables
+- Run `npx nx run nxus-gateway:build` to verify no TS errors
+
+### [ ] Step: Implement Orbital Cards visual
+
+Build the "Orbital" visual component at `src/components/visuals/orbital-cards.tsx`:
+- Central "nXus" hub element with subtle pulse/glow animation
+- Cards arranged radially around the hub using CSS transforms/positioning
+- Compact cards (icon + name), description hidden by default
+- Hover: card scales up (1.15x), reveals description, gains glow shadow
+- Non-hovered cards dim (opacity 0.7, scale 0.95x) when a sibling is hovered
+- Connecting visual elements between hub and cards
+- Responsive fallback to column layout on small screens
+- Add required `@keyframes` to `src/styles.css`
+- Uses `MiniApp` interface, existing `iconMap` pattern, theme CSS variables
+- Run `npx nx run nxus-gateway:build` to verify no TS errors
+
+### [ ] Step: Integrate visual switcher and update gateway page
+
+- Create `src/components/visual-switcher.tsx`: small unobtrusive UI to toggle between 4 visuals (default + 3 new), stores preference in `localStorage` (`nxus-gateway-visual` key)
+- Update `src/routes/index.tsx`:
+  - Extract current `GatewayPage` content as the "default" visual (keep identical behavior)
+  - Import all 3 new visual components and the switcher
+  - Read stored visual preference, render selected visual
+  - Render switcher overlay
+- Run `npx nx run nxus-gateway:build` and `npx nx run nxus-gateway:test`
+- Verify all 4 visuals render, switcher works, links navigate correctly
+- Write implementation report to `{@artifacts_path}/report.md`
