@@ -127,49 +127,66 @@ const INBOX_COMPUTED_FIELD_DEFS: Array<{
  */
 let inboxComputedFieldIds: string[] | null = null
 let reactiveInitialized = false
+let reactiveInitFailed = false
 
 /**
  * Ensure reactive services are initialized and inbox computed fields exist.
  * Idempotent — safe to call multiple times.
  *
  * Returns the computed field IDs for the 4 inbox metrics.
+ * Throws if initialization fails (callers should catch).
+ * After a failure, subsequent calls immediately throw to avoid
+ * hammering a potentially corrupted database.
  */
 async function ensureInboxReactiveInit(): Promise<string[]> {
-  const { initDatabaseWithBootstrap, computedFieldService, automationService } =
-    await import('@nxus/db/server')
-
-  const db = await initDatabaseWithBootstrap()
-
-  // Initialize reactive services once
-  if (!reactiveInitialized) {
-    computedFieldService.initialize(db)
-    automationService.initialize(db)
-    reactiveInitialized = true
+  // If a previous init attempt failed, don't keep retrying
+  if (reactiveInitFailed) {
+    throw new Error('Reactive init previously failed; skipping retry')
   }
 
-  // Create inbox computed fields if not already tracked
-  if (!inboxComputedFieldIds) {
-    const existing = computedFieldService.getAll(db)
-    const ids: string[] = []
+  try {
+    const { initDatabaseWithBootstrap, computedFieldService, automationService } =
+      await import('@nxus/db/server')
 
-    for (const def of INBOX_COMPUTED_FIELD_DEFS) {
-      // Check if a computed field with this name already exists
-      const found = existing.find((cf) => cf.name === def.name)
-      if (found) {
-        ids.push(found.id)
-      } else {
-        const id = computedFieldService.create(db, {
-          name: def.name,
-          definition: def.definition,
-        })
-        ids.push(id)
-      }
+    const db = await initDatabaseWithBootstrap()
+
+    // Initialize reactive services once
+    if (!reactiveInitialized) {
+      computedFieldService.initialize(db)
+      automationService.initialize(db)
+      reactiveInitialized = true
     }
 
-    inboxComputedFieldIds = ids
-  }
+    // Create inbox computed fields if not already tracked
+    if (!inboxComputedFieldIds) {
+      const existing = computedFieldService.getAll(db)
+      const ids: string[] = []
 
-  return inboxComputedFieldIds
+      for (const def of INBOX_COMPUTED_FIELD_DEFS) {
+        // Check if a computed field with this name already exists
+        const found = existing.find((cf) => cf.name === def.name)
+        if (found) {
+          ids.push(found.id)
+        } else {
+          const id = computedFieldService.create(db, {
+            name: def.name,
+            definition: def.definition,
+          })
+          ids.push(id)
+        }
+      }
+
+      inboxComputedFieldIds = ids
+    }
+
+    return inboxComputedFieldIds
+  } catch (err) {
+    // Mark as permanently failed to avoid repeated attempts on a broken DB
+    reactiveInitFailed = true
+    reactiveInitialized = false
+    inboxComputedFieldIds = null
+    throw err
+  }
 }
 
 // ============================================================================
