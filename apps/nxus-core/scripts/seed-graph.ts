@@ -35,14 +35,14 @@ export async function seedGraph() {
   // ============================================================================
   // Step 1: Connect to embedded SurrealDB
   // ============================================================================
-  console.log('[1/5] Connecting to embedded SurrealDB...')
+  console.log('[1/6] Connecting to embedded SurrealDB...')
   const db = await createEmbeddedFileGraphDatabase()
   console.log('  Connected (schema initialized)')
 
   // ============================================================================
   // Step 2: Seed tags from tags.json
   // ============================================================================
-  console.log('[2/5] Seeding tags from tags.json...')
+  console.log('[2/6] Seeding tags from tags.json...')
   const tagsJsonPath = resolve(dataDir, 'tags.json')
   const tagsData = loadJsonFile<{
     tags: Array<{
@@ -127,7 +127,7 @@ export async function seedGraph() {
   // ============================================================================
   // Step 3: Seed items from manifests
   // ============================================================================
-  console.log('[3/5] Seeding items from manifests...')
+  console.log('[3/6] Seeding items from manifests...')
   const appDirs = readdirSync(appsDir).filter((name) => {
     const fullPath = join(appsDir, name)
     return (
@@ -339,9 +339,68 @@ export async function seedGraph() {
   console.log(`  Seeded ${itemsCount} items, ${commandsCount} commands`)
 
   // ============================================================================
-  // Step 4: Resolve dependencies
+  // Step 4: Seed inbox items from inbox.json
   // ============================================================================
-  console.log('[4/5] Resolving dependencies...')
+  console.log('[4/6] Seeding inbox items from inbox.json...')
+  const inboxJsonPath = resolve(dataDir, 'inbox.json')
+  const inboxData = loadJsonFile<{
+    items: Array<{
+      id: number
+      title: string
+      notes: string | null
+      status: string
+      createdAt: string
+      updatedAt: string
+    }>
+  }>(inboxJsonPath)
+
+  let inboxCount = 0
+
+  if (inboxData?.items) {
+    for (const item of inboxData.items) {
+      const [nodes] = await db.query<[Array<Record<string, unknown>>]>(
+        `CREATE node SET
+          content = $content,
+          content_plain = $content_plain,
+          props = $props,
+          created_at = $created_at,
+          updated_at = $updated_at`,
+        {
+          content: item.title,
+          content_plain: item.title.toLowerCase(),
+          props: {
+            legacy_id: item.id,
+            status: item.status,
+            notes: item.notes,
+          },
+          created_at: item.createdAt,
+          updated_at: item.updatedAt,
+        },
+      )
+
+      const node = nodes[0]
+      if (!node) continue
+
+      const nodeId = String(node.id)
+
+      // Assign #Inbox supertag
+      await db.query(
+        `RELATE $from->has_supertag->$to SET order = 0, created_at = time::now()`,
+        {
+          from: new StringRecordId(nodeId),
+          to: new StringRecordId('supertag:inbox'),
+        },
+      )
+
+      inboxCount++
+    }
+  }
+  console.log(`  Seeded ${inboxCount} inbox items`)
+
+  // ============================================================================
+  // Step 5: Resolve dependencies
+  // ============================================================================
+  console.log('[5/6] Resolving dependencies...')
   let depCount = 0
 
   for (const appDir of appDirs) {
@@ -389,7 +448,7 @@ export async function seedGraph() {
   console.log(`  Created ${depCount} dependency relationships`)
 
   // ============================================================================
-  // Step 5: Summary
+  // Step 6: Summary
   // ============================================================================
   const [allNodes] = await db.query<[Array<unknown>]>(
     `SELECT count() FROM node GROUP ALL`,
@@ -406,7 +465,7 @@ export async function seedGraph() {
   console.log(`   Total nodes: ${nodeCount}`)
   console.log(`   Total has_supertag relations: ${relCount}`)
   console.log(
-    `   Items: ${itemsCount}, Commands: ${commandsCount}, Tags: ${tagsCount}`,
+    `   Items: ${itemsCount}, Commands: ${commandsCount}, Tags: ${tagsCount}, Inbox: ${inboxCount}`,
   )
   console.log('='.repeat(50) + '\n')
 
