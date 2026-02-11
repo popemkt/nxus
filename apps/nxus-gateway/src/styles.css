@@ -213,3 +213,13 @@
     ) !important;
   }
 }
+
+/* Terminal visual - blinking cursor */
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.terminal-cursor {
+  animation: terminal-blink 1s step-end infinite;
+}

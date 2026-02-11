@@ -65,7 +65,8 @@ Build the "Glass 3D" visual component at `src/components/visuals/glass-3d-cards.
 - Uses `MiniApp` interface, existing `iconMap` pattern, theme CSS variables
 - Run `npx nx run nxus-gateway:build` to verify no TS errors
 
-### [ ] Step: Implement Terminal Cards visual
+### [x] Step: Implement Terminal Cards visual
+<!-- chat-id: d0621b0f-54a4-4ba8-9bb0-d0825ebb512f -->
 
 Build the "Terminal" visual component at `src/components/visuals/terminal-cards.tsx`:
 - Cards styled as terminal windows with dark bg and primary-tinted monospace text
