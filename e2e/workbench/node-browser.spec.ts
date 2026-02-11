@@ -54,11 +54,15 @@ test.describe('Workbench Node Browser', () => {
   })
 
   test('W3 — Search filters nodes in real time', async ({ page }) => {
+    // This test involves multiple server round-trips which can be slow in CI
+    test.setTimeout(60_000)
+
     const searchInput = page.getByPlaceholder('Search all nodes...')
 
     // Wait for nodes to load
     const emptyState = page.getByText('No nodes found')
     const nodeCount = page.getByText(/\d+ nodes/)
+    const loadingIndicator = page.getByText('Loading nodes...')
 
     // Wait for initial load to complete
     await expect(nodeCount.or(emptyState)).toBeVisible({ timeout: 15000 })
@@ -68,20 +72,21 @@ test.describe('Workbench Node Browser', () => {
       return
     }
 
-    // Type a search query
-    await searchInput.fill('test')
-
-    // Verify search indicator appears
-    await expect(page.getByText(/Searching: "test"/)).toBeVisible({
-      timeout: 10_000,
-    })
+    // Capture that we have nodes initially
+    const initialCountText = await nodeCount.textContent()
 
     // Type a nonsense query to get no results
     await searchInput.fill('zzznonexistentnode999')
 
-    // Should show no nodes found (server-side search may take time in CI)
+    // Verify search indicator appears (confirms React state updated)
+    await expect(
+      page.getByText(/Searching: "zzznonexistentnode999"/)
+    ).toBeVisible({ timeout: 10_000 })
+
+    // Wait for loading to finish, then verify empty state
+    await expect(loadingIndicator).toBeHidden({ timeout: 20_000 })
     await expect(page.getByText('No nodes found')).toBeVisible({
-      timeout: 15_000,
+      timeout: 5_000,
     })
 
     // Clear search → all nodes return
@@ -90,6 +95,9 @@ test.describe('Workbench Node Browser', () => {
     // Search indicator should be gone and nodes should be back
     await expect(page.getByText(/Searching:/)).toBeHidden({ timeout: 10_000 })
     await expect(nodeCount).toBeVisible({ timeout: 10_000 })
+
+    // Verify we got back to the original count
+    await expect(nodeCount).toHaveText(initialCountText!, { timeout: 5_000 })
   })
 
   test('W5 — Supertag filter narrows node list', async ({ page }) => {

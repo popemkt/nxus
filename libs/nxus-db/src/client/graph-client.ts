@@ -29,6 +29,7 @@ export { RecordId, StringRecordId }
 // Singleton instance
 let db: Surreal | null = null
 let isInitialized = false
+let initPromise: Promise<Surreal> | null = null
 
 // Default embedded database path (same directory as nxus.db)
 const __filename = fileURLToPath(import.meta.url)
@@ -59,6 +60,19 @@ const SURREAL_CONFIG = {
  * Set SURREAL_EMBEDDED=false for remote server mode.
  */
 export async function initGraphDatabase(): Promise<Surreal> {
+  if (db && isInitialized) return db
+
+  // Serialize concurrent init calls — only the first one does the work
+  if (initPromise) return initPromise
+  initPromise = doInitGraphDatabase()
+  try {
+    return await initPromise
+  } finally {
+    initPromise = null
+  }
+}
+
+async function doInitGraphDatabase(): Promise<Surreal> {
   if (db && isInitialized) return db
 
   try {
@@ -124,8 +138,8 @@ export async function initGraphDatabase(): Promise<Surreal> {
     return db
   } catch (error: any) {
     console.error('[GraphDB] Failed to connect:', error?.message || error)
-    if (SURREAL_CONFIG.embedded) {
-      console.error('[GraphDB] Embedded mode failed. Check that @surrealdb/node is installed.')
+    if (SURREAL_CONFIG.memory || SURREAL_CONFIG.embedded) {
+      console.error(`[GraphDB] ${SURREAL_CONFIG.memory ? 'In-memory' : 'Embedded'} mode failed. Check that @surrealdb/node is installed.`)
     } else {
       console.error('[GraphDB] Make sure SurrealDB server is running:')
       console.error('[GraphDB]   surreal start --user root --pass root memory')
