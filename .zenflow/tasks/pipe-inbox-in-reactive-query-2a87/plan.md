@@ -48,7 +48,8 @@ Add system fields and supertags required by the reactive services to the bootstr
 
 ---
 
-### [ ] Step: Inbox Reactive Server Functions
+### [x] Step: Inbox Reactive Server Functions
+<!-- chat-id: a7ff277a-0685-404c-a98b-f6164d70d12b -->
 
 Create `apps/nxus-core/src/services/inbox/inbox-reactive.server.ts` with:
 
