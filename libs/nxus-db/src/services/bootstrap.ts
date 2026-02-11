@@ -279,6 +279,9 @@ export function bootstrapSystemNodesSync(
     },
     { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox', extends: null },
     { systemId: SYSTEM_SUPERTAGS.QUERY, content: '#Query', extends: null },
+    // Reactive system supertags
+    { systemId: SYSTEM_SUPERTAGS.AUTOMATION, content: '#Automation', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.COMPUTED_FIELD, content: '#ComputedField', extends: null },
     // Calendar supertags (independent from Item - should NOT appear in gallery)
     { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null },
     { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null },
@@ -392,6 +395,7 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.STATUS, content: 'status', fieldType: 'select' },
     { systemId: SYSTEM_FIELDS.NOTES, content: 'notes', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.TITLE, content: 'title', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.ARCHIVED_AT, content: 'archivedAt', fieldType: 'text' },
     // Query-specific (for saved queries with supertag:query)
     {
       systemId: SYSTEM_FIELDS.QUERY_DEFINITION,
@@ -416,6 +420,43 @@ export function bootstrapSystemNodesSync(
     {
       systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT,
       content: 'queryEvaluatedAt',
+      fieldType: 'text',
+    },
+    // Automation-specific fields
+    {
+      systemId: SYSTEM_FIELDS.AUTOMATION_DEFINITION,
+      content: 'automationDefinition',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.AUTOMATION_STATE,
+      content: 'automationState',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.AUTOMATION_LAST_FIRED,
+      content: 'automationLastFired',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.AUTOMATION_ENABLED,
+      content: 'automationEnabled',
+      fieldType: 'boolean',
+    },
+    // Computed field-specific fields
+    {
+      systemId: SYSTEM_FIELDS.COMPUTED_FIELD_DEFINITION,
+      content: 'computedFieldDefinition',
+      fieldType: 'json',
+    },
+    {
+      systemId: SYSTEM_FIELDS.COMPUTED_FIELD_VALUE,
+      content: 'computedFieldValue',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.COMPUTED_FIELD_UPDATED_AT,
+      content: 'computedFieldUpdatedAt',
       fieldType: 'text',
     },
     // Calendar-specific fields

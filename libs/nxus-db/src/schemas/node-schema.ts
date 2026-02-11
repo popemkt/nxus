@@ -180,6 +180,7 @@ export const SYSTEM_FIELDS = {
   STATUS: 'field:status' as FieldSystemId,
   NOTES: 'field:notes' as FieldSystemId,
   TITLE: 'field:title' as FieldSystemId,
+  ARCHIVED_AT: 'field:archived_at' as FieldSystemId,
 
   // Query-specific fields (for saved queries with supertag:query)
   QUERY_DEFINITION: 'field:query_definition' as FieldSystemId,
@@ -271,6 +272,7 @@ export const FIELD_NAMES = {
   STATUS: 'status' as FieldContentName,
   NOTES: 'notes' as FieldContentName,
   TITLE: 'title' as FieldContentName,
+  ARCHIVED_AT: 'archivedAt' as FieldContentName,
 
   // Query-specific fields
   QUERY_DEFINITION: 'queryDefinition' as FieldContentName,

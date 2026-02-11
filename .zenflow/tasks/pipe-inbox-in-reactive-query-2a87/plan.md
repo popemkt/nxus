@@ -33,7 +33,8 @@ Created spec at `.zenflow/tasks/pipe-inbox-in-reactive-query-2a87/spec.md` cover
 
 ---
 
-### [ ] Step: Bootstrap & Data Model Updates
+### [x] Step: Bootstrap & Data Model Updates
+<!-- chat-id: 1ccefa01-8592-4fe1-96db-950a09e8538a -->
 
 Add system fields and supertags required by the reactive services to the bootstrap and schema.
 
@@ -131,3 +132,7 @@ Create the automations management experience:
    - Create backlog_overflow automation → add items until threshold → webhook fires
    - Create auto_tag automation → add item with keyword → supertag added
 4. Write report to `.zenflow/tasks/pipe-inbox-in-reactive-query-2a87/report.md`
+
+### [ ] Step: PR to github and check pipeline
+
+PR to github and wait to check pipeline status, if fail then fix it
