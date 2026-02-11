@@ -52,7 +52,8 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 
 ---
 
-### [ ] Step: Implement Glass 3D Cards visual
+### [x] Step: Implement Glass 3D Cards visual
+<!-- chat-id: d1874e92-40c0-43af-96cc-bc00b1a82463 -->
 
 Build the "Glass 3D" visual component at `src/components/visuals/glass-3d-cards.tsx`:
 - CSS 3D perspective container with `transform-style: preserve-3d` cards
