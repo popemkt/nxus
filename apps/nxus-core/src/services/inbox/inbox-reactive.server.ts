@@ -1,9 +1,11 @@
 /**
- * inbox-reactive.server.ts - Reactive server functions for inbox metrics and automations
+ * inbox-reactive.server.ts - Reactive server functions for inbox metrics, queries, and automations
  *
- * Wraps the reactive services (computed fields, automations) with inbox-specific logic:
+ * Wraps the reactive services (computed fields, automations, query evaluation)
+ * with inbox-specific logic:
  * - Lazy initialization of reactive services
  * - Inbox computed fields (total, pending, processing, done counts)
+ * - Query-based inbox item listings (pending, processing, done)
  * - Automation templates (auto_archive, backlog_overflow, auto_tag)
  * - CRUD operations for inbox automations
  *
@@ -14,12 +16,14 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
+  FIELD_NAMES,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   type FieldSystemId,
 } from '@nxus/db'
-import type { QueryDefinition } from '@nxus/db'
+import type { QueryDefinition, AssembledNode } from '@nxus/db'
 import type { AutomationDefinition, ComputedFieldDefinition } from '@nxus/db'
+import type { InboxItem } from './inbox.server.js'
 
 // ============================================================================
 // Types
@@ -323,7 +327,98 @@ export function getInboxQueries() {
 }
 
 // ============================================================================
-// Server Functions
+// Node → InboxItem Conversion
+// ============================================================================
+
+/**
+ * Convert an AssembledNode to an InboxItem.
+ * Uses getProperty to extract fields from the node's property bag.
+ */
+function nodeToInboxItem(node: AssembledNode): InboxItem {
+  const props = node.properties
+  const statusValues = props[FIELD_NAMES.STATUS]
+  const notesValues = props[FIELD_NAMES.NOTES]
+
+  const status = (statusValues?.[0]?.value as string) || 'pending'
+
+  return {
+    id: node.id,
+    title: node.content || '',
+    notes: notesValues?.[0]?.value as string | null ?? null,
+    status: status as 'pending' | 'processing' | 'done',
+    createdAt: node.createdAt,
+    updatedAt: node.updatedAt,
+  }
+}
+
+// ============================================================================
+// Server Functions — Query-Based Item Listings
+// ============================================================================
+
+/**
+ * Get inbox items by status using the query evaluator.
+ * Evaluates the appropriate INBOX_QUERY and converts results to InboxItem[].
+ */
+async function queryInboxItemsByStatus(
+  queryDef: QueryDefinition,
+): Promise<InboxItem[]> {
+  const { nodeFacade } = await import('@nxus/db/server')
+  await nodeFacade.init()
+
+  const result = await nodeFacade.evaluateQuery(queryDef)
+
+  return result.nodes
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .map(nodeToInboxItem)
+}
+
+/**
+ * Get pending inbox items via reactive query.
+ */
+export const getInboxPendingQueryServerFn = createServerFn({
+  method: 'GET',
+}).handler(async () => {
+  try {
+    const data = await queryInboxItemsByStatus(INBOX_QUERIES.pendingItems)
+    return { success: true as const, data }
+  } catch (err) {
+    console.error('[getInboxPendingQueryServerFn] Failed:', err)
+    return { success: false as const, data: [] as InboxItem[] }
+  }
+})
+
+/**
+ * Get processing inbox items via reactive query.
+ */
+export const getInboxProcessingQueryServerFn = createServerFn({
+  method: 'GET',
+}).handler(async () => {
+  try {
+    const data = await queryInboxItemsByStatus(INBOX_QUERIES.processingItems)
+    return { success: true as const, data }
+  } catch (err) {
+    console.error('[getInboxProcessingQueryServerFn] Failed:', err)
+    return { success: false as const, data: [] as InboxItem[] }
+  }
+})
+
+/**
+ * Get done inbox items via reactive query.
+ */
+export const getInboxDoneQueryServerFn = createServerFn({
+  method: 'GET',
+}).handler(async () => {
+  try {
+    const data = await queryInboxItemsByStatus(INBOX_QUERIES.doneItems)
+    return { success: true as const, data }
+  } catch (err) {
+    console.error('[getInboxDoneQueryServerFn] Failed:', err)
+    return { success: false as const, data: [] as InboxItem[] }
+  }
+})
+
+// ============================================================================
+// Server Functions — Computed Fields & Metrics
 // ============================================================================
 
 const EMPTY_METRICS: InboxMetrics = {

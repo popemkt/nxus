@@ -12,61 +12,76 @@ import {
 import { Badge, Button , Card, CardContent  } from '@nxus/ui'
 import type {InboxItem} from '@/services/inbox/inbox.server';
 import {
-
   deleteInboxItemServerFn,
-  getInboxItemsServerFn,
   updateInboxItemServerFn
 } from '@/services/inbox/inbox.server'
-import { initInboxReactiveServerFn } from '@/services/inbox/inbox-reactive.server'
+import {
+  getInboxPendingQueryServerFn,
+  getInboxProcessingQueryServerFn,
+  getInboxDoneQueryServerFn,
+  initInboxReactiveServerFn,
+} from '@/services/inbox/inbox-reactive.server'
 import { useInboxModalStore } from '@/stores/inbox-modal.store'
 import { InboxEditModal } from '@/components/features/inbox/inbox-edit-modal'
 import { ProcessInboxModal } from '@/components/features/inbox/process-inbox-modal'
 import { InboxMetricsBar } from '@/components/features/inbox/inbox-metrics-bar'
 
+interface InboxLoaderData {
+  pending: InboxItem[]
+  processing: InboxItem[]
+  done: InboxItem[]
+}
+
 export const Route = createFileRoute('/inbox')({
   component: InboxPage,
-  loader: async () => {
-    const [result] = await Promise.all([
-      getInboxItemsServerFn(),
-      // Initialize inbox reactive system (computed fields, automations) —
-      // idempotent, seeds the metrics so the first poll is instant.
+  loader: async (): Promise<InboxLoaderData> => {
+    // Run all 3 status queries + reactive init in parallel.
+    // The queries use the reactive query evaluator; the reactive init
+    // seeds computed fields & automations (idempotent).
+    const [pendingResult, processingResult, doneResult] = await Promise.all([
+      getInboxPendingQueryServerFn(),
+      getInboxProcessingQueryServerFn(),
+      getInboxDoneQueryServerFn(),
       initInboxReactiveServerFn().catch(() => null),
     ])
-    return result.success ? result.data : []
+
+    return {
+      pending: pendingResult.success ? pendingResult.data : [],
+      processing: processingResult.success ? processingResult.data : [],
+      done: doneResult.success ? doneResult.data : [],
+    }
   },
 })
 
 function InboxPage() {
-  const items = Route.useLoaderData()
-  const [localItems, setLocalItems] = useState<Array<InboxItem>>(items)
+  const loaderData = Route.useLoaderData()
+  const [pendingItems, setPendingItems] = useState<InboxItem[]>(loaderData.pending)
+  const [processingItems, setProcessingItems] = useState<InboxItem[]>(loaderData.processing)
+  const [doneItems, setDoneItems] = useState<InboxItem[]>(loaderData.done)
   const { isOpen } = useInboxModalStore()
 
   // Modal state
   const [editingItem, setEditingItem] = useState<InboxItem | null>(null)
   const [processingItem, setProcessingItem] = useState<InboxItem | null>(null)
 
-  // Refresh items helper
-  const refreshItems = async () => {
-    const result = await getInboxItemsServerFn()
-    if (result.success) {
-      setLocalItems(result.data)
-    }
+  // Refresh all 3 query lists in parallel
+  const refreshAll = async () => {
+    const [p, pr, d] = await Promise.all([
+      getInboxPendingQueryServerFn(),
+      getInboxProcessingQueryServerFn(),
+      getInboxDoneQueryServerFn(),
+    ])
+    if (p.success) setPendingItems(p.data)
+    if (pr.success) setProcessingItems(pr.data)
+    if (d.success) setDoneItems(d.data)
   }
 
-  // Refresh items when modal closes (in case new item was added)
+  // Refresh when modal closes (in case new item was added)
   useEffect(() => {
     if (!isOpen) {
-      getInboxItemsServerFn().then((result) => {
-        if (result.success) {
-          setLocalItems(result.data)
-        }
-      })
+      refreshAll()
     }
   }, [isOpen])
-
-  const pendingItems = localItems.filter((i) => i.status === 'pending')
-  const processingItems = localItems.filter((i) => i.status === 'processing')
-  const doneItems = localItems.filter((i) => i.status === 'done')
 
   const handleCopyAndProcess = async (item: InboxItem) => {
     // Open the process modal instead of clipboard
@@ -79,16 +94,18 @@ function InboxPage() {
     })
 
     if (result.success && result.data) {
-      setLocalItems(
-        localItems.map((i) => (i.id === item.id ? result.data! : i)),
-      )
+      // Item moved from processing → done; refresh affected lists
+      await refreshAll()
     }
   }
 
   const handleDelete = async (id: string) => {
     const result = await deleteInboxItemServerFn({ data: { id } })
     if (result.success) {
-      setLocalItems(localItems.filter((i) => i.id !== id))
+      // Remove from whichever list contains the item
+      setPendingItems((prev) => prev.filter((i) => i.id !== id))
+      setProcessingItems((prev) => prev.filter((i) => i.id !== id))
+      setDoneItems((prev) => prev.filter((i) => i.id !== id))
     }
   }
 
@@ -197,14 +214,8 @@ function InboxPage() {
           item={editingItem}
           open={!!editingItem}
           onOpenChange={(open) => !open && setEditingItem(null)}
-          onSave={(updated) => {
-            setLocalItems(
-              localItems.map((i) => (i.id === updated.id ? updated : i)),
-            )
-          }}
-          onDelete={() => {
-            setLocalItems(localItems.filter((i) => i.id !== editingItem.id))
-          }}
+          onSave={() => refreshAll()}
+          onDelete={() => refreshAll()}
         />
       )}
 
@@ -214,7 +225,7 @@ function InboxPage() {
           item={processingItem}
           open={!!processingItem}
           onOpenChange={(open) => !open && setProcessingItem(null)}
-          onStart={() => refreshItems()}
+          onStart={() => refreshAll()}
         />
       )}
     </div>

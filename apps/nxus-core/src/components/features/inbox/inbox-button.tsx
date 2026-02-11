@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { TrayIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
-import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
+import { getInboxPendingQueryServerFn } from '@/services/inbox/inbox-reactive.server'
 
 /**
  * Inbox button with badge showing pending item count
@@ -11,7 +11,7 @@ export function InboxButton() {
   const { data: result, isLoading } = useQuery({
     queryKey: ['inbox-pending-count'],
     queryFn: async () => {
-      return await getPendingInboxItemsServerFn()
+      return await getInboxPendingQueryServerFn()
     },
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // 1 minute
