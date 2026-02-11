@@ -79,7 +79,8 @@ Build the "Terminal" visual component at `src/components/visuals/terminal-cards.
 - Uses `MiniApp` interface, existing `iconMap` pattern, theme CSS variables
 - Run `npx nx run nxus-gateway:build` to verify no TS errors
 
-### [ ] Step: Implement Orbital Cards visual
+### [x] Step: Implement Orbital Cards visual
+<!-- chat-id: d287d475-13a7-474a-9c99-4384075f79db -->
 
 Build the "Orbital" visual component at `src/components/visuals/orbital-cards.tsx`:
 - Central "nXus" hub element with subtle pulse/glow animation
