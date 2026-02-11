@@ -22,6 +22,16 @@ function miniAppProxy(): Plugin {
   return {
     name: 'mini-app-proxy',
     configureServer(server) {
+      // Health check endpoint — responds immediately without SSR
+      server.middlewares.use((req, res, next) => {
+        if (req.url === '/__health') {
+          res.writeHead(200, { 'Content-Type': 'text/plain' })
+          res.end('ok')
+          return
+        }
+        next()
+      })
+
       server.middlewares.use((req, res, next) => {
         const url = req.url || ''
         const match = Object.entries(routes).find(([prefix]) =>
