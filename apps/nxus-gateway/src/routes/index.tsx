@@ -7,6 +7,9 @@ import type { MiniApp } from '@/config/mini-apps'
 import { Glass3DCards } from '@/components/visuals/glass-3d-cards'
 import { TerminalCards } from '@/components/visuals/terminal-cards'
 import { OrbitalCards } from '@/components/visuals/orbital-cards'
+import { MinimalZenCards } from '@/components/visuals/minimal-zen-cards'
+import { NeonGridCards } from '@/components/visuals/neon-grid-cards'
+import { BlueprintCards } from '@/components/visuals/blueprint-cards'
 import {
   VisualSwitcher,
   getStoredVisual,
@@ -80,6 +83,9 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   'glass-3d': Glass3DCards,
   terminal: TerminalCards,
   orbital: OrbitalCards,
+  zen: MinimalZenCards,
+  neon: NeonGridCards,
+  blueprint: BlueprintCards,
 }
 
 function GatewayPage() {

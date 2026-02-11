@@ -1,6 +1,6 @@
-import { SquaresFour, Cube, Terminal, Planet } from '@phosphor-icons/react'
+import { SquaresFour, Cube, Terminal, Planet, Leaf, Lightning, Compass } from '@phosphor-icons/react'
 
-export type VisualStyle = 'default' | 'glass-3d' | 'terminal' | 'orbital'
+export type VisualStyle = 'default' | 'glass-3d' | 'terminal' | 'orbital' | 'zen' | 'neon' | 'blueprint'
 
 const STORAGE_KEY = 'nxus-gateway-visual'
 
@@ -9,6 +9,9 @@ const visuals: { id: VisualStyle; label: string; icon: typeof SquaresFour }[] = 
   { id: 'glass-3d', label: 'Glass 3D', icon: Cube },
   { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'orbital', label: 'Orbital', icon: Planet },
+  { id: 'zen', label: 'Zen', icon: Leaf },
+  { id: 'neon', label: 'Neon Grid', icon: Lightning },
+  { id: 'blueprint', label: 'Blueprint', icon: Compass },
 ]
 
 export function getStoredVisual(): VisualStyle {

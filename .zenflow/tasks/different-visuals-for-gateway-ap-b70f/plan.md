@@ -106,3 +106,14 @@ Build the "Orbital" visual component at `src/components/visuals/orbital-cards.ts
 - Run `npx nx run nxus-gateway:build` and `npx nx run nxus-gateway:test`
 - Verify all 4 visuals render, switcher works, links navigate correctly
 - Write implementation report to `{@artifacts_path}/report.md`
+
+### [x] Step: Enhance Glass 3D Cards and add 3 new visuals
+
+- Enhanced Glass 3D cards with 7 distinct depth layers (shadow, backdrop, accent strip, glass surface, content, icon, rim light), noise texture overlay, cursor-tracking radial glow, sweeping highlight, and refined border/shadow transitions
+- Created "Minimal Zen" visual (`src/components/visuals/minimal-zen-cards.tsx`): clean vertical list layout with generous whitespace, large faded index numbers, hairline dividers, ultra-light typography, and subtle hover washes
+- Created "Neon Grid" visual (`src/components/visuals/neon-grid-cards.tsx`): cyberpunk aesthetic with internal grid patterns, corner L-shaped accent marks, animated neon sweep border, status indicators, monospace data labels, and full-page background grid
+- Created "Blueprint" visual (`src/components/visuals/blueprint-cards.tsx`): technical drawing aesthetic with dashed borders, crosshair markers, circled icons with annotation lines, dimension markers, module numbering, specs rows, and page-level grid background
+- Updated visual switcher to support 7 visuals (default, glass-3d, terminal, orbital, zen, neon, blueprint) with appropriate Phosphor icons
+- Updated `src/routes/index.tsx` with imports and visual component map for all 7 visuals
+- Added `@keyframes neon-sweep` to `src/styles.css`
+- Build passes (`npx nx run @nxus/gateway:build`), tests pass (`npx nx run @nxus/gateway:test`)

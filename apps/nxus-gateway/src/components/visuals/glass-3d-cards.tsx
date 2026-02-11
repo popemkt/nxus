@@ -31,8 +31,8 @@ function Glass3DCard({ app }: { app: MiniApp }) {
     const x = (e.clientX - rect.left) / rect.width
     const y = (e.clientY - rect.top) / rect.height
 
-    const rotateX = (0.5 - y) * 15
-    const rotateY = (x - 0.5) * 15
+    const rotateX = (0.5 - y) * 18
+    const rotateY = (x - 0.5) * 18
 
     setTilt({ rotateX, rotateY, mouseX: x, mouseY: y })
   }, [])
@@ -50,7 +50,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
     <a
       href={app.path}
       className="group block no-underline"
-      style={{ perspective: '800px' }}
+      style={{ perspective: '900px' }}
     >
       <div
         ref={cardRef}
@@ -64,72 +64,123 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           willChange: isHovered ? 'transform' : 'auto',
         }}
       >
-        {/* Glow shadow beneath card */}
+        {/* Layer 1 (deepest): Soft diffused glow shadow */}
         <div
-          className="absolute -inset-1 rounded-2xl opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-60"
+          className="absolute -inset-3 rounded-3xl transition-opacity duration-500"
           style={{
-            background: 'var(--primary)',
-            transform: 'translateZ(-30px)',
-            zIndex: -1,
+            transform: 'translateZ(-50px)',
+            background: `radial-gradient(ellipse at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, var(--primary), transparent 70%)`,
+            opacity: isHovered ? 0.35 : 0,
+            filter: 'blur(30px)',
           }}
         />
 
-        {/* Background glow layer - deepest */}
+        {/* Layer 2: Noise/texture backdrop card */}
         <div
-          className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="absolute inset-0 rounded-2xl transition-all duration-300"
           style={{
-            transform: 'translateZ(-20px)',
-            background: `radial-gradient(circle at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, color-mix(in oklch, var(--primary) 15%, transparent), transparent 60%)`,
+            transform: 'translateZ(-25px) scale(1.04)',
+            background: 'color-mix(in oklch, var(--primary) 6%, var(--card))',
+            opacity: isHovered ? 1 : 0,
+            boxShadow: '0 25px 50px -12px color-mix(in oklch, var(--foreground) 15%, transparent)',
           }}
         />
 
-        {/* Main glass card surface */}
+        {/* Layer 3: Colored accent strip along bottom edge */}
         <div
-          className="relative overflow-hidden rounded-2xl border border-white/10 p-6"
+          className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full transition-all duration-300"
+          style={{
+            transform: 'translateZ(-15px)',
+            background: `linear-gradient(90deg, transparent, var(--primary), transparent)`,
+            opacity: isHovered ? 0.8 : 0,
+            filter: 'blur(1px)',
+          }}
+        />
+
+        {/* Layer 4: Main glass card surface */}
+        <div
+          className="relative overflow-hidden rounded-2xl border p-6 transition-all duration-300"
           style={{
             transform: 'translateZ(0px)',
-            background: 'color-mix(in oklch, var(--card) 60%, transparent)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
+            background: 'color-mix(in oklch, var(--card) 65%, transparent)',
+            backdropFilter: 'blur(24px) saturate(1.4)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
+            borderColor: isHovered
+              ? 'color-mix(in oklch, var(--primary) 25%, color-mix(in oklch, white 15%, transparent))'
+              : 'color-mix(in oklch, white 8%, transparent)',
+            boxShadow: isHovered
+              ? '0 8px 32px color-mix(in oklch, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in oklch, white 10%, transparent)'
+              : 'inset 0 1px 0 color-mix(in oklch, white 6%, transparent)',
           }}
         >
-          {/* Light reflection gradient */}
+          {/* Subtle noise texture overlay */}
           <div
-            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            className="pointer-events-none absolute inset-0 rounded-2xl opacity-[0.03]"
             style={{
-              background: `linear-gradient(${135 + (tilt.mouseX - 0.5) * 60}deg, color-mix(in oklch, white 8%, transparent) 0%, transparent 50%)`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+              backgroundSize: '128px 128px',
             }}
           />
 
-          {/* Content layer */}
-          <div style={{ transform: 'translateZ(10px)' }}>
+          {/* Light reflection — sweeping highlight that follows mouse */}
+          <div
+            className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+            style={{
+              background: `linear-gradient(${125 + (tilt.mouseX - 0.5) * 70}deg, color-mix(in oklch, white 12%, transparent) 0%, transparent 40%, transparent 60%, color-mix(in oklch, white 4%, transparent) 100%)`,
+              opacity: isHovered ? 1 : 0,
+            }}
+          />
+
+          {/* Radial glow that tracks cursor position */}
+          <div
+            className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+            style={{
+              background: `radial-gradient(circle at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 50%)`,
+              opacity: isHovered ? 1 : 0,
+            }}
+          />
+
+          {/* Layer 5: Content — sits above the glass surface */}
+          <div style={{ transform: 'translateZ(12px)', transformStyle: 'preserve-3d' }}>
             <div className="flex items-start justify-between">
-              {/* Icon layer - floats above */}
+              {/* Layer 6 (highest): Icon badge — pops out significantly */}
               <div
-                className="flex size-11 items-center justify-center rounded-xl border border-white/10 text-primary transition-transform duration-300"
+                className="relative flex size-12 items-center justify-center rounded-xl border text-primary transition-all duration-300"
                 style={{
-                  transform: isHovered ? 'translateZ(30px)' : 'translateZ(0px)',
-                  background: 'color-mix(in oklch, var(--primary) 12%, transparent)',
+                  transform: isHovered ? 'translateZ(35px)' : 'translateZ(0px)',
+                  background: isHovered
+                    ? 'color-mix(in oklch, var(--primary) 15%, color-mix(in oklch, var(--card) 80%, transparent))'
+                    : 'color-mix(in oklch, var(--primary) 10%, transparent)',
                   backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  borderColor: isHovered
+                    ? 'color-mix(in oklch, var(--primary) 30%, transparent)'
+                    : 'color-mix(in oklch, white 10%, transparent)',
+                  boxShadow: isHovered
+                    ? '0 4px 20px color-mix(in oklch, var(--primary) 20%, transparent), inset 0 1px 0 color-mix(in oklch, white 12%, transparent)'
+                    : 'none',
                 }}
               >
                 <Icon size={24} weight="duotone" />
               </div>
+
               <ArrowRight
                 size={16}
                 weight="bold"
-                className="text-muted-foreground opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0.5"
+                className="text-muted-foreground transition-all duration-300"
                 style={{
-                  transform: isHovered ? 'translateZ(20px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(25px) translateX(2px)' : 'translateZ(0px)',
+                  opacity: isHovered ? 1 : 0,
                 }}
               />
             </div>
 
+            {/* Text content floats at different depths for parallax */}
             <div className="mt-4">
               <h3
-                className="text-base font-medium text-card-foreground"
+                className="text-base font-semibold text-card-foreground"
                 style={{
-                  transform: isHovered ? 'translateZ(15px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(22px)' : 'translateZ(0px)',
                   transition: 'transform 0.3s ease-out',
                 }}
               >
@@ -138,7 +189,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               <p
                 className="mt-1.5 text-xs/relaxed text-muted-foreground"
                 style={{
-                  transform: isHovered ? 'translateZ(8px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(10px)' : 'translateZ(0px)',
                   transition: 'transform 0.3s ease-out',
                 }}
               >
@@ -147,6 +198,18 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             </div>
           </div>
         </div>
+
+        {/* Layer 7: Edge highlight on top of card — thin rim light */}
+        <div
+          className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
+          style={{
+            transform: 'translateZ(2px)',
+            boxShadow: isHovered
+              ? `inset 0 0 0 1px color-mix(in oklch, white 8%, transparent)`
+              : 'none',
+            opacity: isHovered ? 1 : 0,
+          }}
+        />
       </div>
     </a>
   )
