@@ -309,36 +309,53 @@ export function getInboxQueries() {
 // Server Functions
 // ============================================================================
 
+const EMPTY_METRICS: InboxMetrics = {
+  totalItems: 0,
+  pendingCount: 0,
+  processingCount: 0,
+  doneCount: 0,
+  updatedAt: new Date().toISOString(),
+}
+
 /**
  * Initialize reactive system and return computed field IDs + current metric values.
  */
 export const initInboxReactiveServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  const { initDatabaseWithBootstrap, computedFieldService } = await import(
-    '@nxus/db/server'
-  )
-  const db = await initDatabaseWithBootstrap()
+  try {
+    const { initDatabaseWithBootstrap, computedFieldService } = await import(
+      '@nxus/db/server'
+    )
+    const db = await initDatabaseWithBootstrap()
 
-  const ids = await ensureInboxReactiveInit()
+    const ids = await ensureInboxReactiveInit()
 
-  const metrics: InboxMetrics = {
-    totalItems: computedFieldService.getValue(db, ids[0]) ?? 0,
-    pendingCount: computedFieldService.getValue(db, ids[1]) ?? 0,
-    processingCount: computedFieldService.getValue(db, ids[2]) ?? 0,
-    doneCount: computedFieldService.getValue(db, ids[3]) ?? 0,
-    updatedAt: new Date().toISOString(),
-  }
+    const metrics: InboxMetrics = {
+      totalItems: computedFieldService.getValue(db, ids[0]) ?? 0,
+      pendingCount: computedFieldService.getValue(db, ids[1]) ?? 0,
+      processingCount: computedFieldService.getValue(db, ids[2]) ?? 0,
+      doneCount: computedFieldService.getValue(db, ids[3]) ?? 0,
+      updatedAt: new Date().toISOString(),
+    }
 
-  return {
-    success: true as const,
-    computedFieldIds: {
-      totalItems: ids[0],
-      pendingCount: ids[1],
-      processingCount: ids[2],
-      doneCount: ids[3],
-    },
-    metrics,
+    return {
+      success: true as const,
+      computedFieldIds: {
+        totalItems: ids[0],
+        pendingCount: ids[1],
+        processingCount: ids[2],
+        doneCount: ids[3],
+      },
+      metrics,
+    }
+  } catch (err) {
+    console.error('[initInboxReactiveServerFn] Failed to initialize reactive system:', err)
+    return {
+      success: false as const,
+      computedFieldIds: null,
+      metrics: EMPTY_METRICS,
+    }
   }
 })
 
@@ -348,24 +365,32 @@ export const initInboxReactiveServerFn = createServerFn({
 export const getInboxMetricsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  const { initDatabaseWithBootstrap, computedFieldService } = await import(
-    '@nxus/db/server'
-  )
-  const db = await initDatabaseWithBootstrap()
+  try {
+    const { initDatabaseWithBootstrap, computedFieldService } = await import(
+      '@nxus/db/server'
+    )
+    const db = await initDatabaseWithBootstrap()
 
-  const ids = await ensureInboxReactiveInit()
+    const ids = await ensureInboxReactiveInit()
 
-  const metrics: InboxMetrics = {
-    totalItems: computedFieldService.getValue(db, ids[0]) ?? 0,
-    pendingCount: computedFieldService.getValue(db, ids[1]) ?? 0,
-    processingCount: computedFieldService.getValue(db, ids[2]) ?? 0,
-    doneCount: computedFieldService.getValue(db, ids[3]) ?? 0,
-    updatedAt: new Date().toISOString(),
-  }
+    const metrics: InboxMetrics = {
+      totalItems: computedFieldService.getValue(db, ids[0]) ?? 0,
+      pendingCount: computedFieldService.getValue(db, ids[1]) ?? 0,
+      processingCount: computedFieldService.getValue(db, ids[2]) ?? 0,
+      doneCount: computedFieldService.getValue(db, ids[3]) ?? 0,
+      updatedAt: new Date().toISOString(),
+    }
 
-  return {
-    success: true as const,
-    metrics,
+    return {
+      success: true as const,
+      metrics,
+    }
+  } catch (err) {
+    console.error('[getInboxMetricsServerFn] Failed to fetch metrics:', err)
+    return {
+      success: false as const,
+      metrics: EMPTY_METRICS,
+    }
   }
 })
 
@@ -375,41 +400,49 @@ export const getInboxMetricsServerFn = createServerFn({
 export const getInboxAutomationsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  const { initDatabaseWithBootstrap, automationService } = await import(
-    '@nxus/db/server'
-  )
-  const db = await initDatabaseWithBootstrap()
+  try {
+    const { initDatabaseWithBootstrap, automationService } = await import(
+      '@nxus/db/server'
+    )
+    const db = await initDatabaseWithBootstrap()
 
-  await ensureInboxReactiveInit()
+    await ensureInboxReactiveInit()
 
-  const allAutomations = automationService.getAll(db)
+    const allAutomations = automationService.getAll(db)
 
-  // Filter to inbox-related automations by checking if trigger queries reference inbox supertag
-  const inboxAutomations = allAutomations.filter((auto) => {
-    const trigger = auto.definition.trigger
-    if (trigger.type === 'query_membership') {
-      return trigger.queryDefinition.filters?.some(
-        (f: Record<string, unknown>) =>
-          f.type === 'supertag' && f.supertagId === SYSTEM_SUPERTAGS.INBOX,
-      )
+    // Filter to inbox-related automations by checking if trigger queries reference inbox supertag
+    const inboxAutomations = allAutomations.filter((auto) => {
+      const trigger = auto.definition.trigger
+      if (trigger.type === 'query_membership') {
+        return trigger.queryDefinition.filters?.some(
+          (f: Record<string, unknown>) =>
+            f.type === 'supertag' && f.supertagId === SYSTEM_SUPERTAGS.INBOX,
+        )
+      }
+      if (trigger.type === 'threshold') {
+        // Threshold automations linked to inbox computed fields
+        return inboxComputedFieldIds?.includes(trigger.computedFieldId)
+      }
+      return false
+    })
+
+    return {
+      success: true as const,
+      automations: inboxAutomations.map((auto) => ({
+        id: auto.id,
+        name: auto.definition.name,
+        enabled: auto.definition.enabled,
+        trigger: auto.definition.trigger,
+        action: auto.definition.action,
+        lastTriggered: auto.state?.lastTriggeredAt ?? null,
+      })),
     }
-    if (trigger.type === 'threshold') {
-      // Threshold automations linked to inbox computed fields
-      return inboxComputedFieldIds?.includes(trigger.computedFieldId)
+  } catch (err) {
+    console.error('[getInboxAutomationsServerFn] Failed to fetch automations:', err)
+    return {
+      success: false as const,
+      automations: [],
     }
-    return false
-  })
-
-  return {
-    success: true as const,
-    automations: inboxAutomations.map((auto) => ({
-      id: auto.id,
-      name: auto.definition.name,
-      enabled: auto.definition.enabled,
-      trigger: auto.definition.trigger,
-      action: auto.definition.action,
-      lastTriggered: auto.state?.lastTriggeredAt ?? null,
-    })),
   }
 })
 
