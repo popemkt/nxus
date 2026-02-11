@@ -48,7 +48,7 @@ export const searchNodesServerFn = createServerFn({ method: 'GET' })
 
     // Use facade's evaluateQuery with content filter
     const result = await nodeFacade.evaluateQuery({
-      filters: [{ type: 'content', value: query }],
+      filters: [{ type: 'content', query }],
       limit,
     })
 
