@@ -1,10 +1,7 @@
 import { test, expect } from '../fixtures/base.fixture.js'
 import { APP_URLS } from '../helpers/navigation.js'
 
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
-
 test.describe('Core Gallery Page', () => {
-  test.skip(isGraphMode, 'Gallery tests require seed app data (not available in graph mode)')
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('core')
   })
