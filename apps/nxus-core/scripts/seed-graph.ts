@@ -35,27 +35,14 @@ export async function seedGraph() {
   // ============================================================================
   // Step 1: Connect to embedded SurrealDB
   // ============================================================================
-  console.log('[1/7] Connecting to embedded SurrealDB...')
+  console.log('[1/6] Connecting to embedded SurrealDB...')
   const db = await createEmbeddedFileGraphDatabase()
   console.log('  Connected (schema initialized)')
 
   // ============================================================================
-  // Step 2: Clear existing seeded data (makes re-seeding idempotent)
+  // Step 2: Seed tags from tags.json
   // ============================================================================
-  console.log('[2/7] Clearing existing seeded data...')
-  await db.query(`
-    DELETE has_supertag;
-    DELETE tagged_with;
-    DELETE part_of;
-    DELETE dependency_of;
-    DELETE node;
-  `)
-  console.log('  Cleared nodes and relations')
-
-  // ============================================================================
-  // Step 3: Seed tags from tags.json
-  // ============================================================================
-  console.log('[3/7] Seeding tags from tags.json...')
+  console.log('[2/6] Seeding tags from tags.json...')
   const tagsJsonPath = resolve(dataDir, 'tags.json')
   const tagsData = loadJsonFile<{
     tags: Array<{
@@ -138,9 +125,9 @@ export async function seedGraph() {
   console.log(`  Seeded ${tagsCount} tags`)
 
   // ============================================================================
-  // Step 4: Seed items from manifests
+  // Step 3: Seed items from manifests
   // ============================================================================
-  console.log('[4/7] Seeding items from manifests...')
+  console.log('[3/6] Seeding items from manifests...')
   const appDirs = readdirSync(appsDir).filter((name) => {
     const fullPath = join(appsDir, name)
     return (
@@ -352,9 +339,9 @@ export async function seedGraph() {
   console.log(`  Seeded ${itemsCount} items, ${commandsCount} commands`)
 
   // ============================================================================
-  // Step 5: Seed inbox items from inbox.json
+  // Step 4: Seed inbox items from inbox.json
   // ============================================================================
-  console.log('[5/7] Seeding inbox items from inbox.json...')
+  console.log('[4/6] Seeding inbox items from inbox.json...')
   const inboxJsonPath = resolve(dataDir, 'inbox.json')
   const inboxData = loadJsonFile<{
     items: Array<{
@@ -411,9 +398,9 @@ export async function seedGraph() {
   console.log(`  Seeded ${inboxCount} inbox items`)
 
   // ============================================================================
-  // Step 6: Resolve dependencies
+  // Step 5: Resolve dependencies
   // ============================================================================
-  console.log('[6/7] Resolving dependencies...')
+  console.log('[5/6] Resolving dependencies...')
   let depCount = 0
 
   for (const appDir of appDirs) {
@@ -461,7 +448,7 @@ export async function seedGraph() {
   console.log(`  Created ${depCount} dependency relationships`)
 
   // ============================================================================
-  // Step 7: Summary
+  // Step 6: Summary
   // ============================================================================
   const [allNodes] = await db.query<[Array<unknown>]>(
     `SELECT count() FROM node GROUP ALL`,
