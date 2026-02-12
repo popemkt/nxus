@@ -31,7 +31,6 @@ const visuals: { id: VisualStyle; label: string; icon: typeof SquaresFour }[] =
     { id: 'blueprint', label: 'Blueprint', icon: Compass },
   ]
 
-// Each button is 28px + 4px gap, plus 4px padding each side
 const BUTTON_SIZE = 28
 const GAP = 4
 const PADDING = 4
@@ -64,7 +63,11 @@ export function VisualSwitcher({
   const [expanded, setExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const activeIndex = visuals.findIndex((v) => v.id === current)
+  // Reorder: active first, rest in original order after it
+  const sorted = [
+    ...visuals.filter((v) => v.id === current),
+    ...visuals.filter((v) => v.id !== current),
+  ]
 
   return (
     <div
@@ -74,64 +77,49 @@ export function VisualSwitcher({
       onMouseLeave={() => setExpanded(false)}
     >
       <div
-        className="flex items-center rounded-full border border-border/50 bg-card/60 backdrop-blur-lg shadow-sm transition-all duration-300 ease-out"
+        className="flex items-center rounded-full border border-border/50 bg-card/60 backdrop-blur-lg shadow-sm"
         style={{
           width: expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH,
           padding: PADDING,
-          gap: expanded ? GAP : 0,
+          gap: GAP,
           opacity: expanded ? 1 : 0.6,
           overflow: 'hidden',
+          transition: 'width 0.3s ease-out, opacity 0.3s ease-out',
         }}
       >
-        {visuals.map((v, i) => {
+        {sorted.map((v) => {
           const Icon = v.icon
           const isActive = current === v.id
-
-          // When collapsed, shift all buttons so the active one is in view
-          const collapsedOffset = expanded
-            ? 0
-            : -(activeIndex * (BUTTON_SIZE + GAP))
 
           return (
             <button
               key={v.id}
               onClick={() => onChange(v.id)}
               title={v.label}
-              className="shrink-0 flex items-center justify-center rounded-full transition-all duration-200"
+              className="shrink-0 flex items-center justify-center rounded-full"
               style={{
                 width: BUTTON_SIZE,
                 height: BUTTON_SIZE,
-                transform: `translateX(${collapsedOffset}px)`,
-                transition:
-                  'transform 0.3s ease-out, background-color 0.2s, color 0.2s, opacity 0.2s',
-                opacity: expanded || isActive ? 1 : 0,
-                background: isActive
-                  ? 'var(--primary)'
-                  : undefined,
+                transition: 'background-color 0.2s, color 0.2s',
+                background: isActive ? 'var(--primary)' : undefined,
                 color: isActive
                   ? 'var(--primary-foreground)'
                   : 'var(--muted-foreground)',
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.background =
-                    'var(--accent)'
-                  e.currentTarget.style.color =
-                    'var(--accent-foreground)'
+                  e.currentTarget.style.background = 'var(--accent)'
+                  e.currentTarget.style.color = 'var(--accent-foreground)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color =
-                    'var(--muted-foreground)'
+                  e.currentTarget.style.color = 'var(--muted-foreground)'
                 }
               }}
             >
-              <Icon
-                size={14}
-                weight={isActive ? 'fill' : 'regular'}
-              />
+              <Icon size={14} weight={isActive ? 'fill' : 'regular'} />
             </button>
           )
         })}
