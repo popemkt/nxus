@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
@@ -8,24 +8,42 @@ const iconMap = {
   calendar: CalendarBlank,
 } as const
 
-// Bento layout: first card is hero-sized, rest are standard
+// Bento layout: Core (index 0) takes the large 2×2 hero slot,
+// remaining cards fill the right column as 1×1 each
 const spanMap: Record<number, string> = {
   0: 'md:col-span-2 md:row-span-2',
+}
+
+// Reorder so Core (id: nxus-core) is always first for bento prominence
+function reorderForBento(apps: MiniApp[]): MiniApp[] {
+  const coreIndex = apps.findIndex((a) => a.id === 'nxus-core')
+  if (coreIndex <= 0) return apps
+  const copy = [...apps]
+  const [core] = copy.splice(coreIndex, 1)
+  return [core, ...copy]
 }
 
 function SpotlightCard({
   app,
   className,
   isHero,
+  index,
 }: {
   app: MiniApp
   className?: string
   isHero?: boolean
+  index: number
 }) {
   const Icon = iconMap[app.icon]
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [opacity, setOpacity] = useState(0)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 80 * index)
+    return () => clearTimeout(timer)
+  }, [index])
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -44,7 +62,12 @@ function SpotlightCard({
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setOpacity(1)}
         onMouseLeave={() => setOpacity(0)}
-        className={`relative h-full overflow-hidden rounded-xl border bg-card/80 transition-colors duration-300 hover:border-primary/40 ${isHero ? 'p-8' : 'p-6'} ${className ?? ''}`}
+        className={`relative h-full overflow-hidden rounded-xl border bg-card/80 hover:border-primary/40 ${isHero ? 'p-8' : 'p-6'} ${className ?? ''}`}
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
+          transition: 'opacity 0.5s ease-out, transform 0.5s ease-out, border-color 0.3s',
+        }}
       >
         {/* Spotlight radial glow */}
         <div
@@ -93,6 +116,8 @@ function SpotlightCard({
 }
 
 export function BentoGridCards({ apps }: { apps: MiniApp[] }) {
+  const ordered = reorderForBento(apps)
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="w-full max-w-4xl space-y-8">
@@ -105,11 +130,12 @@ export function BentoGridCards({ apps }: { apps: MiniApp[] }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[160px]">
-          {apps.map((app, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[180px]">
+          {ordered.map((app, i) => (
             <SpotlightCard
               key={app.id}
               app={app}
+              index={i}
               isHero={i === 0}
               className={spanMap[i] ?? 'col-span-1 row-span-1'}
             />

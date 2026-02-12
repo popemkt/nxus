@@ -136,6 +136,16 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
+      <style>{`
+        @keyframes orbital-spin {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        @keyframes orbital-hub-pulse {
+          0%, 100% { box-shadow: 0 0 40px color-mix(in oklch, var(--primary) 12%, transparent), 0 0 80px color-mix(in oklch, var(--primary) 5%, transparent); }
+          50% { box-shadow: 0 0 50px color-mix(in oklch, var(--primary) 18%, transparent), 0 0 100px color-mix(in oklch, var(--primary) 8%, transparent); }
+        }
+      `}</style>
       {/* Orbital layout container */}
       <div className="relative max-sm:static max-sm:flex max-sm:flex-col max-sm:items-center max-sm:gap-4" style={{ width: '480px', height: '480px' }}>
         {/* Central hub */}
@@ -147,8 +157,7 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
                 'radial-gradient(circle, color-mix(in oklch, var(--primary) 12%, var(--card)), var(--card))',
               borderColor:
                 'color-mix(in oklch, var(--primary) 30%, transparent)',
-              boxShadow:
-                '0 0 40px color-mix(in oklch, var(--primary) 12%, transparent), 0 0 80px color-mix(in oklch, var(--primary) 5%, transparent)',
+              animation: 'orbital-hub-pulse 4s ease-in-out infinite',
             }}
           >
             {/* Pulse ring */}
@@ -172,7 +181,7 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
           </p>
         </div>
 
-        {/* Orbital ring - decorative */}
+        {/* Orbital ring - decorative, slowly rotating */}
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full max-sm:hidden"
           style={{
@@ -180,6 +189,18 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
             height: '360px',
             border:
               '1px dashed color-mix(in oklch, var(--primary) 10%, transparent)',
+            animation: 'orbital-spin 60s linear infinite',
+          }}
+        />
+        {/* Second ring — counter-rotating, slightly larger */}
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full max-sm:hidden"
+          style={{
+            width: '400px',
+            height: '400px',
+            border:
+              '1px solid color-mix(in oklch, var(--primary) 4%, transparent)',
+            animation: 'orbital-spin 90s linear infinite reverse',
           }}
         />
 

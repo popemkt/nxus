@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Cube, Graph, CalendarBlank } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
@@ -10,6 +10,24 @@ const iconMap = {
 
 export function SpatialCards({ apps }: { apps: MiniApp[] }) {
   const [activeIndex, setActiveIndex] = useState(0)
+
+  const goNext = useCallback(
+    () => setActiveIndex((p) => (p + 1) % apps.length),
+    [apps.length]
+  )
+  const goPrev = useCallback(
+    () => setActiveIndex((p) => (p - 1 + apps.length) % apps.length),
+    [apps.length]
+  )
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goNext()
+      if (e.key === 'ArrowLeft') goPrev()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [goNext, goPrev])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">

@@ -199,7 +199,7 @@ export function BlueprintCards({ apps }: { apps: MiniApp[] }) {
         }}
       />
 
-      {/* Hover crosshair highlight — horizontal line */}
+      {/* Hover crosshair highlight */}
       {mousePos && (
         <>
           <div
@@ -208,36 +208,32 @@ export function BlueprintCards({ apps }: { apps: MiniApp[] }) {
               top: snappedY,
               height: 1,
               background:
-                'color-mix(in oklch, var(--primary) 18%, transparent)',
+                'color-mix(in oklch, var(--primary) 8%, transparent)',
               transition: 'top 0.08s ease-out',
             }}
           />
-          {/* Vertical line */}
           <div
             className="pointer-events-none fixed top-0 bottom-0 z-10"
             style={{
               left: snappedX,
               width: 1,
               background:
-                'color-mix(in oklch, var(--primary) 18%, transparent)',
+                'color-mix(in oklch, var(--primary) 8%, transparent)',
               transition: 'left 0.08s ease-out',
             }}
           />
-          {/* Intersection glow */}
+          {/* Coordinate readout */}
           <div
-            className="pointer-events-none fixed z-10"
+            className="pointer-events-none fixed z-10 font-mono text-[9px] tracking-wider"
             style={{
-              left: snappedX - 3,
-              top: snappedY - 3,
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: 'color-mix(in oklch, var(--primary) 40%, transparent)',
-              boxShadow:
-                '0 0 8px color-mix(in oklch, var(--primary) 25%, transparent)',
+              left: snappedX + 8,
+              top: snappedY - 18,
+              color: 'color-mix(in oklch, var(--primary) 35%, var(--muted-foreground))',
               transition: 'left 0.08s ease-out, top 0.08s ease-out',
             }}
-          />
+          >
+            {Math.round(snappedX / GRID_SIZE)},{Math.round(snappedY / GRID_SIZE)}
+          </div>
         </>
       )}
 

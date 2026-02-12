@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Cube, Graph, CalendarBlank } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
@@ -137,7 +137,27 @@ function TerminalCard({ app, index }: { app: MiniApp; index: number }) {
   )
 }
 
+const BOOT_LINES = [
+  { text: 'nxus-gateway v2.4.1', delay: 0 },
+  { text: 'Initializing modules...', delay: 150 },
+  { text: 'Loading applications   [OK]', delay: 400 },
+]
+
 export function TerminalCards({ apps }: { apps: MiniApp[] }) {
+  const [bootDone, setBootDone] = useState(false)
+  const [visibleLines, setVisibleLines] = useState(0)
+
+  useEffect(() => {
+    const timers = BOOT_LINES.map((line, i) =>
+      setTimeout(() => setVisibleLines(i + 1), line.delay)
+    )
+    const doneTimer = setTimeout(() => setBootDone(true), 700)
+    return () => {
+      timers.forEach(clearTimeout)
+      clearTimeout(doneTimer)
+    }
+  }, [])
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="w-full max-w-2xl space-y-8">
@@ -151,7 +171,23 @@ export function TerminalCards({ apps }: { apps: MiniApp[] }) {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* Boot sequence */}
+        {!bootDone && (
+          <div className="font-mono text-xs text-muted-foreground space-y-1 pl-1">
+            {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
+              <p key={i}>{line.text}</p>
+            ))}
+          </div>
+        )}
+
+        <div
+          className="grid gap-4 sm:grid-cols-2"
+          style={{
+            opacity: bootDone ? 1 : 0,
+            transform: bootDone ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
+          }}
+        >
           {apps.map((app, index) => (
             <TerminalCard key={app.id} app={app} index={index} />
           ))}

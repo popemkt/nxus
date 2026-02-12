@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   Cube,
   Graph,
@@ -67,6 +67,34 @@ function Panel({
   )
 }
 
+/* Animated stat value — counts up from 0 */
+function AnimatedValue({ value, suffix }: { value: number; suffix: string }) {
+  const [display, setDisplay] = useState('0')
+  const hasDecimal = value % 1 !== 0
+
+  useEffect(() => {
+    const duration = 800
+    const start = performance.now()
+    let raf: number
+
+    const animate = (now: number) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - (1 - progress) * (1 - progress)
+      const current = eased * value
+      setDisplay(hasDecimal ? current.toFixed(1) : String(Math.round(current)))
+      if (progress < 1) raf = requestAnimationFrame(animate)
+    }
+
+    raf = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf)
+  }, [value, hasDecimal])
+
+  return (
+    <>{display}{suffix}</>
+  )
+}
+
 /* Status dot with ping animation */
 function StatusDot() {
   return (
@@ -126,9 +154,9 @@ export function DashboardCards({ apps }: { apps: MiniApp[] }) {
 
               <div className="mt-auto grid grid-cols-3 gap-2">
                 {[
-                  { label: 'CPU', value: '12%' },
-                  { label: 'MEM', value: '2.4GB' },
-                  { label: 'NET', value: '98ms' },
+                  { label: 'CPU', numValue: 12, suffix: '%' },
+                  { label: 'MEM', numValue: 2.4, suffix: 'GB' },
+                  { label: 'NET', numValue: 98, suffix: 'ms' },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -137,8 +165,8 @@ export function DashboardCards({ apps }: { apps: MiniApp[] }) {
                     <p className="text-[10px] font-mono uppercase text-muted-foreground">
                       {stat.label}
                     </p>
-                    <p className="text-base font-medium text-card-foreground mt-0.5">
-                      {stat.value}
+                    <p className="text-base font-medium text-card-foreground mt-0.5 tabular-nums">
+                      <AnimatedValue value={stat.numValue} suffix={stat.suffix} />
                     </p>
                   </div>
                 ))}

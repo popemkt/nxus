@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
@@ -11,6 +11,12 @@ const iconMap = {
 function ZenCard({ app, index }: { app: MiniApp; index: number }) {
   const Icon = iconMap[app.icon]
   const [isHovered, setIsHovered] = useState(false)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 120 * index)
+    return () => clearTimeout(timer)
+  }, [index])
 
   return (
     <a
@@ -19,7 +25,14 @@ function ZenCard({ app, index }: { app: MiniApp; index: number }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative py-8 px-2">
+      <div
+        className="relative py-8 px-2"
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(12px)',
+          transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
+        }}
+      >
         {/* Top hairline divider */}
         <div
           className="absolute top-0 left-0 right-0 h-px transition-all duration-700 ease-out"

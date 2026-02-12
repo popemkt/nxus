@@ -210,13 +210,25 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           </div>
         </div>
 
-        {/* Rim light on top of card */}
+        {/* Rim light on top of card — animated border shimmer */}
         <div
           className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
           style={{
             transform: 'translateZ(6px)',
             boxShadow: 'inset 0 0 0 1px color-mix(in oklch, white 6%, transparent)',
             opacity: isHovered ? 1 : 0.3,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute -inset-px rounded-2xl transition-opacity duration-500"
+          style={{
+            transform: 'translateZ(4px)',
+            opacity: isHovered ? 1 : 0,
+            background: `conic-gradient(from ${(tilt.mouseX * 360)}deg at 50% 50%, transparent 0%, color-mix(in oklch, var(--primary) 20%, transparent) 10%, transparent 20%)`,
+            maskImage: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
+            maskComposite: 'exclude',
+            WebkitMaskComposite: 'xor',
+            padding: '1px',
           }}
         />
       </div>
