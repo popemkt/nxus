@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
@@ -31,8 +31,8 @@ function Glass3DCard({ app }: { app: MiniApp }) {
     const x = (e.clientX - rect.left) / rect.width
     const y = (e.clientY - rect.top) / rect.height
 
-    const rotateX = (0.5 - y) * 25
-    const rotateY = (x - 0.5) * 25
+    const rotateX = (0.5 - y) * 30
+    const rotateY = (x - 0.5) * 30
 
     setTilt({ rotateX, rotateY, mouseX: x, mouseY: y })
   }, [])
@@ -50,49 +50,49 @@ function Glass3DCard({ app }: { app: MiniApp }) {
     <a
       href={app.path}
       className="group block no-underline"
-      style={{ perspective: '1000px' }}
+      style={{ perspective: '800px' }}
     >
       <div
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="relative h-full rounded-2xl transition-transform duration-300 ease-out"
+        className="relative h-full rounded-2xl transition-transform duration-200 ease-out"
         style={{
           transformStyle: 'preserve-3d',
           transform: `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`,
           willChange: isHovered ? 'transform' : 'auto',
         }}
       >
-        {/* Layer 1 (deepest): Soft diffused glow shadow — always visible, intensifies on hover */}
+        {/* Layer 1 (deepest): Soft diffused glow shadow */}
         <div
-          className="absolute -inset-3 rounded-3xl transition-opacity duration-500"
+          className="absolute -inset-4 rounded-3xl transition-opacity duration-500"
           style={{
-            transform: 'translateZ(-50px)',
+            transform: 'translateZ(-60px)',
             background: `radial-gradient(ellipse at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, var(--primary), transparent 70%)`,
-            opacity: isHovered ? 0.4 : 0.12,
+            opacity: isHovered ? 0.45 : 0.15,
             filter: 'blur(30px)',
           }}
         />
 
-        {/* Layer 2: Noise/texture backdrop card — always present for depth */}
+        {/* Layer 2: Backdrop shadow card */}
         <div
-          className="absolute inset-0 rounded-2xl transition-all duration-300"
+          className="absolute inset-0 rounded-2xl"
           style={{
-            transform: 'translateZ(-25px) scale(1.04)',
+            transform: 'translateZ(-35px) scale(1.05)',
             background: 'color-mix(in oklch, var(--primary) 6%, var(--card))',
-            opacity: isHovered ? 1 : 0.5,
+            opacity: 0.6,
             boxShadow: '0 25px 50px -12px color-mix(in oklch, var(--foreground) 15%, transparent)',
           }}
         />
 
         {/* Layer 3: Colored accent strip along bottom edge */}
         <div
-          className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full transition-all duration-300"
+          className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full"
           style={{
-            transform: 'translateZ(-15px)',
-            background: `linear-gradient(90deg, transparent, var(--primary), transparent)`,
-            opacity: isHovered ? 0.8 : 0.3,
+            transform: 'translateZ(-18px)',
+            background: 'linear-gradient(90deg, transparent, var(--primary), transparent)',
+            opacity: 0.5,
             filter: 'blur(1px)',
           }}
         />
@@ -102,6 +102,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           className="relative overflow-hidden rounded-2xl border p-6 transition-all duration-300"
           style={{
             transform: 'translateZ(0px)',
+            transformStyle: 'preserve-3d',
             background: 'color-mix(in oklch, var(--card) 65%, transparent)',
             backdropFilter: 'blur(24px) saturate(1.4)',
             WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
@@ -140,58 +141,48 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             }}
           />
 
-          {/* Layer 5: Content — sits above the glass surface */}
-          <div style={{ transform: 'translateZ(20px)', transformStyle: 'preserve-3d' }}>
+          {/* Content layers — all at fixed Z depths, no hover changes */}
+          <div style={{ transformStyle: 'preserve-3d' }}>
             <div className="flex items-start justify-between" style={{ transformStyle: 'preserve-3d' }}>
-              {/* Layer 6 (highest): Icon badge — always elevated, pops more on hover */}
+              {/* Icon — highest layer */}
               <div
-                className="relative flex size-12 items-center justify-center rounded-xl border text-primary transition-all duration-300"
+                className="relative flex size-12 items-center justify-center rounded-xl border text-primary"
                 style={{
-                  transform: isHovered ? 'translateZ(75px) scale(1.1)' : 'translateZ(50px)',
-                  background: isHovered
-                    ? 'color-mix(in oklch, var(--primary) 15%, color-mix(in oklch, var(--card) 80%, transparent))'
-                    : 'color-mix(in oklch, var(--primary) 10%, transparent)',
+                  transform: 'translateZ(80px)',
+                  background: 'color-mix(in oklch, var(--primary) 12%, color-mix(in oklch, var(--card) 80%, transparent))',
                   backdropFilter: 'blur(8px)',
                   WebkitBackdropFilter: 'blur(8px)',
-                  borderColor: isHovered
-                    ? 'color-mix(in oklch, var(--primary) 30%, transparent)'
-                    : 'color-mix(in oklch, white 10%, transparent)',
-                  boxShadow: isHovered
-                    ? '0 10px 35px color-mix(in oklch, var(--primary) 30%, transparent), inset 0 1px 0 color-mix(in oklch, white 12%, transparent)'
-                    : '0 4px 12px color-mix(in oklch, var(--primary) 10%, transparent)',
+                  borderColor: 'color-mix(in oklch, var(--primary) 20%, color-mix(in oklch, white 10%, transparent))',
+                  boxShadow: '0 6px 20px color-mix(in oklch, var(--primary) 15%, transparent)',
                 }}
               >
                 <Icon size={24} weight="duotone" />
               </div>
 
+              {/* Arrow */}
               <ArrowRight
                 size={16}
                 weight="bold"
-                className="text-muted-foreground transition-all duration-300"
+                className="text-muted-foreground"
                 style={{
-                  transform: isHovered ? 'translateZ(60px) translateX(4px)' : 'translateZ(35px)',
-                  opacity: isHovered ? 1 : 0.5,
+                  transform: 'translateZ(55px)',
+                  opacity: 0.6,
                 }}
               />
             </div>
 
-            {/* Text content always floats at different depths for parallax */}
+            {/* Title — mid-high layer */}
             <div className="mt-4" style={{ transformStyle: 'preserve-3d' }}>
               <h3
                 className="text-base font-semibold text-card-foreground"
-                style={{
-                  transform: isHovered ? 'translateZ(45px)' : 'translateZ(28px)',
-                  transition: 'transform 0.3s ease-out',
-                }}
+                style={{ transform: 'translateZ(45px)' }}
               >
                 {app.name}
               </h3>
+              {/* Description — lower layer */}
               <p
                 className="mt-1.5 text-xs/relaxed text-muted-foreground"
-                style={{
-                  transform: isHovered ? 'translateZ(25px)' : 'translateZ(12px)',
-                  transition: 'transform 0.3s ease-out',
-                }}
+                style={{ transform: 'translateZ(25px)' }}
               >
                 {app.description}
               </p>
@@ -199,15 +190,13 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           </div>
         </div>
 
-        {/* Layer 7: Edge highlight on top of card — thin rim light */}
+        {/* Rim light on top of card */}
         <div
           className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
           style={{
-            transform: 'translateZ(2px)',
-            boxShadow: isHovered
-              ? `inset 0 0 0 1px color-mix(in oklch, white 8%, transparent)`
-              : 'none',
-            opacity: isHovered ? 1 : 0,
+            transform: 'translateZ(3px)',
+            boxShadow: 'inset 0 0 0 1px color-mix(in oklch, white 6%, transparent)',
+            opacity: isHovered ? 1 : 0.3,
           }}
         />
       </div>
