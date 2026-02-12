@@ -97,12 +97,11 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           }}
         />
 
-        {/* Layer 4: Main glass card surface */}
+        {/* Layer 4: Main glass card surface (overflow-hidden for light effects only) */}
         <div
           className="relative overflow-hidden rounded-2xl border p-6 transition-all duration-300"
           style={{
             transform: 'translateZ(0px)',
-            transformStyle: 'preserve-3d',
             background: 'color-mix(in oklch, var(--card) 65%, transparent)',
             backdropFilter: 'blur(24px) saturate(1.4)',
             WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
@@ -141,52 +140,66 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             }}
           />
 
-          {/* Content layers — high base elevation, extra boost on hover */}
-          <div style={{ transformStyle: 'preserve-3d' }}>
-            <div className="flex items-start justify-between" style={{ transformStyle: 'preserve-3d' }}>
-              {/* Icon — highest layer */}
-              <div
-                className="relative flex size-12 items-center justify-center rounded-xl border text-primary transition-transform duration-200 ease-out"
-                style={{
-                  transform: isHovered ? 'translateZ(380px)' : 'translateZ(250px)',
-                  background: 'color-mix(in oklch, var(--primary) 12%, color-mix(in oklch, var(--card) 80%, transparent))',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  borderColor: 'color-mix(in oklch, var(--primary) 20%, color-mix(in oklch, white 10%, transparent))',
-                  boxShadow: '0 6px 20px color-mix(in oklch, var(--primary) 15%, transparent)',
-                }}
-              >
-                <Icon size={24} weight="duotone" />
-              </div>
+          {/* Invisible spacer to maintain card height for the content */}
+          <div className="invisible">
+            <div className="flex items-start justify-between">
+              <div className="size-12" />
+            </div>
+            <div className="mt-4">
+              <h3 className="text-base font-semibold">{app.name}</h3>
+              <p className="mt-1.5 text-xs/relaxed">{app.description}</p>
+            </div>
+          </div>
+        </div>
 
-              {/* Arrow */}
-              <ArrowRight
-                size={16}
-                weight="bold"
-                className="text-muted-foreground transition-transform duration-200 ease-out"
-                style={{
-                  transform: isHovered ? 'translateZ(280px)' : 'translateZ(180px)',
-                  opacity: 0.6,
-                }}
-              />
+        {/* Content layers — outside overflow-hidden, as siblings in the preserve-3d container */}
+        <div
+          className="pointer-events-none absolute inset-0 p-6"
+          style={{ transform: 'translateZ(0px)', transformStyle: 'preserve-3d' }}
+        >
+          <div className="flex items-start justify-between" style={{ transformStyle: 'preserve-3d' }}>
+            {/* Icon — highest layer */}
+            <div
+              className="pointer-events-auto relative flex size-12 items-center justify-center rounded-xl border text-primary transition-transform duration-200 ease-out"
+              style={{
+                transform: isHovered ? 'translateZ(100px)' : 'translateZ(60px)',
+                background: 'color-mix(in oklch, var(--primary) 12%, color-mix(in oklch, var(--card) 80%, transparent))',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                borderColor: 'color-mix(in oklch, var(--primary) 20%, color-mix(in oklch, white 10%, transparent))',
+                boxShadow: '0 6px 20px color-mix(in oklch, var(--primary) 15%, transparent)',
+              }}
+            >
+              <Icon size={24} weight="duotone" />
             </div>
 
-            {/* Title — mid-high layer */}
-            <div className="mt-4" style={{ transformStyle: 'preserve-3d' }}>
-              <h3
-                className="text-base font-semibold text-card-foreground transition-transform duration-200 ease-out"
-                style={{ transform: isHovered ? 'translateZ(200px)' : 'translateZ(130px)' }}
-              >
-                {app.name}
-              </h3>
-              {/* Description — lower layer */}
-              <p
-                className="mt-1.5 text-xs/relaxed text-muted-foreground transition-transform duration-200 ease-out"
-                style={{ transform: isHovered ? 'translateZ(120px)' : 'translateZ(70px)' }}
-              >
-                {app.description}
-              </p>
-            </div>
+            {/* Arrow */}
+            <ArrowRight
+              size={16}
+              weight="bold"
+              className="text-muted-foreground transition-transform duration-200 ease-out"
+              style={{
+                transform: isHovered ? 'translateZ(75px)' : 'translateZ(45px)',
+                opacity: 0.6,
+              }}
+            />
+          </div>
+
+          {/* Title — mid-high layer */}
+          <div className="mt-4" style={{ transformStyle: 'preserve-3d' }}>
+            <h3
+              className="text-base font-semibold text-card-foreground transition-transform duration-200 ease-out"
+              style={{ transform: isHovered ? 'translateZ(50px)' : 'translateZ(30px)' }}
+            >
+              {app.name}
+            </h3>
+            {/* Description — lower layer */}
+            <p
+              className="mt-1.5 text-xs/relaxed text-muted-foreground transition-transform duration-200 ease-out"
+              style={{ transform: isHovered ? 'translateZ(28px)' : 'translateZ(15px)' }}
+            >
+              {app.description}
+            </p>
           </div>
         </div>
 
