@@ -137,7 +137,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             style={{
               backgroundImage: `radial-gradient(
                 farthest-corner circle at ${(1 - tilt.mouseX) * 100}% ${(1 - tilt.mouseY) * 100}%,
-                color-mix(in oklch, var(--primary) 30%, var(--card)) 10%,
+                color-mix(in oklch, var(--primary) 30%, color-mix(in oklch, var(--card) 65%, transparent)) 10%,
                 color-mix(in oklch, var(--primary) 15%, transparent) 40%,
                 transparent 70%
               )`,
