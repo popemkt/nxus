@@ -10,6 +10,9 @@ import { OrbitalCards } from '@/components/visuals/orbital-cards'
 import { MinimalZenCards } from '@/components/visuals/minimal-zen-cards'
 import { NeonGridCards } from '@/components/visuals/neon-grid-cards'
 import { BlueprintCards } from '@/components/visuals/blueprint-cards'
+import { BentoGridCards } from '@/components/visuals/bento-grid-cards'
+import { SpatialCards } from '@/components/visuals/spatial-cards'
+import { DashboardCards } from '@/components/visuals/dashboard-cards'
 import {
   VisualSwitcher,
   getStoredVisual,
@@ -86,6 +89,9 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   zen: MinimalZenCards,
   neon: NeonGridCards,
   blueprint: BlueprintCards,
+  bento: BentoGridCards,
+  spatial: SpatialCards,
+  dashboard: DashboardCards,
 }
 
 function GatewayPage() {

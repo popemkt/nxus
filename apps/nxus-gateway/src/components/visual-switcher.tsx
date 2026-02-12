@@ -7,6 +7,9 @@ import {
   Leaf,
   Lightning,
   Compass,
+  GridFour,
+  Stack,
+  ChartBar,
 } from '@phosphor-icons/react'
 
 export type VisualStyle =
@@ -17,6 +20,9 @@ export type VisualStyle =
   | 'zen'
   | 'neon'
   | 'blueprint'
+  | 'bento'
+  | 'spatial'
+  | 'dashboard'
 
 const STORAGE_KEY = 'nxus-gateway-visual'
 
@@ -29,6 +35,9 @@ const visuals: { id: VisualStyle; label: string; icon: typeof SquaresFour }[] =
     { id: 'zen', label: 'Zen', icon: Leaf },
     { id: 'neon', label: 'Neon Grid', icon: Lightning },
     { id: 'blueprint', label: 'Blueprint', icon: Compass },
+    { id: 'bento', label: 'Bento Grid', icon: GridFour },
+    { id: 'spatial', label: 'Spatial', icon: Stack },
+    { id: 'dashboard', label: 'Dashboard', icon: ChartBar },
   ]
 
 const BUTTON_SIZE = 28
