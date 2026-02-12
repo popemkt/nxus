@@ -9,33 +9,31 @@ const iconMap = {
 } as const
 
 /*
- * Each card gets a unique aurora color set.
- * Colors are fully opaque — opacity is controlled via the gradient stops.
- *
- * The reference shows: deep purple center blob, bright blue fringe,
- * hot white/pink point near bottom-right.
+ * Two-blob aurora palettes.
+ * `left` = the smaller blob on the left (theme-colored).
+ * `right*` = the main large blob on the right (deep → bright → white).
  */
 const palettes = [
-  // Purple → blue → white (matches reference closest)
   {
-    deep: 'oklch(0.35 0.25 285)',     // deep violet
-    mid: 'oklch(0.50 0.28 270)',      // rich blue-purple
-    bright: 'oklch(0.70 0.22 290)',   // bright lavender
-    hot: 'oklch(0.92 0.08 300)',      // near-white pink
+    left: 'oklch(0.40 0.22 280)',
+    rightDeep: 'oklch(0.30 0.25 285)',
+    rightMid: 'oklch(0.48 0.30 270)',
+    rightBright: 'oklch(0.65 0.28 295)',
+    rightHot: 'oklch(0.80 0.15 310)',
   },
-  // Teal → cyan → white
   {
-    deep: 'oklch(0.35 0.15 195)',
-    mid: 'oklch(0.50 0.18 185)',
-    bright: 'oklch(0.70 0.16 180)',
-    hot: 'oklch(0.92 0.06 190)',
+    left: 'oklch(0.40 0.16 195)',
+    rightDeep: 'oklch(0.30 0.18 200)',
+    rightMid: 'oklch(0.48 0.22 185)',
+    rightBright: 'oklch(0.65 0.20 180)',
+    rightHot: 'oklch(0.80 0.10 190)',
   },
-  // Magenta → rose → white
   {
-    deep: 'oklch(0.35 0.22 340)',
-    mid: 'oklch(0.50 0.24 330)',
-    bright: 'oklch(0.70 0.18 345)',
-    hot: 'oklch(0.92 0.06 350)',
+    left: 'oklch(0.40 0.20 340)',
+    rightDeep: 'oklch(0.30 0.24 345)',
+    rightMid: 'oklch(0.48 0.26 330)',
+    rightBright: 'oklch(0.65 0.22 340)',
+    rightHot: 'oklch(0.80 0.12 350)',
   },
 ]
 
@@ -59,9 +57,9 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
     []
   )
 
-  // Aurora blob centers — shift with mouse, anchored in the bottom half
-  const bx = 35 + mouse.x * 30
-  const by = 65 + mouse.y * 15
+  // Right blob shifts with mouse
+  const rx = 60 + mouse.x * 15
+  const ry = 70 + mouse.y * 10
 
   return (
     <a href={app.path} className="group block no-underline">
@@ -73,61 +71,89 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
         className="relative overflow-hidden rounded-[20px] transition-all duration-500"
         style={{
           background: 'oklch(0.13 0.02 280)',
-          border: '1px solid oklch(0.24 0.02 280 / 0.5)',
+          border: '1px solid oklch(0.22 0.02 280 / 0.6)',
           boxShadow: isHovered
-            ? `0 30px 80px -20px oklch(0.3 0.2 280 / 0.4), 0 0 0 1px oklch(0.3 0.04 280 / 0.3)`
-            : `0 4px 32px -8px oklch(0 0 0 / 0.6)`,
+            ? '0 30px 80px -20px oklch(0.3 0.2 280 / 0.4), 0 0 0 1px oklch(0.28 0.04 280 / 0.3)'
+            : '0 4px 32px -8px oklch(0 0 0 / 0.6)',
         }}
       >
         {/*
-         * Aurora glow — layered blobs filling the bottom ~50% of the card.
-         * Wider, more saturated, more coverage than before.
+         * BLOB 1 (left): Smaller, theme-colored, positioned center-left.
+         * Visible in the reference as a separate blue-purple glow.
          */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             transition: 'opacity 0.7s ease',
-            opacity: isHovered ? 1 : 0.8,
+            opacity: isHovered ? 0.9 : 0.65,
           }}
         >
-          {/* Base: wide wash across the entire bottom */}
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(ellipse 120% 70% at ${bx}% ${by + 10}%, ${p.deep}, transparent 70%)`,
+              background: `radial-gradient(ellipse 55% 50% at 25% 65%, ${p.left}, transparent 70%)`,
+              filter: 'blur(28px)',
+            }}
+          />
+        </div>
+
+        {/*
+         * BLOB 2 (right): Main aurora — large, intense, goes to white.
+         * Deep purple base → blue → bright magenta → blazing white core.
+         */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            transition: 'opacity 0.7s ease',
+            opacity: isHovered ? 1 : 0.75,
+          }}
+        >
+          {/* Deep base — wide spread */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse 100% 70% at ${rx}% ${ry}%, ${p.rightDeep}, transparent 65%)`,
               filter: 'blur(24px)',
             }}
           />
-          {/* Mid layer: brighter, tighter */}
+          {/* Mid — richer, tighter */}
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(ellipse 85% 55% at ${bx + 12}% ${by + 8}%, ${p.mid}, transparent 65%)`,
-              filter: 'blur(20px)',
+              background: `radial-gradient(ellipse 70% 55% at ${rx + 5}% ${ry + 5}%, ${p.rightMid}, transparent 60%)`,
+              filter: 'blur(18px)',
             }}
           />
-          {/* Bright fringe — more saturated */}
+          {/* Bright fringe */}
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(ellipse 60% 45% at ${bx + 20}% ${by + 12}%, ${p.bright}, transparent 55%)`,
-              filter: 'blur(16px)',
+              background: `radial-gradient(ellipse 50% 40% at ${rx + 8}% ${ry + 10}%, ${p.rightBright}, transparent 55%)`,
+              filter: 'blur(14px)',
             }}
           />
-          {/* Hot core — near-white, bottom-right region */}
+          {/* Hot core — nearly white, concentrated */}
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(ellipse 40% 25% at ${bx + 25}% 95%, ${p.hot}, transparent 50%)`,
-              filter: 'blur(10px)',
+              background: `radial-gradient(ellipse 35% 22% at ${rx + 10}% 93%, ${p.rightHot}, transparent 50%)`,
+              filter: 'blur(8px)',
             }}
           />
-          {/* Extra: horizontal bright band at the very bottom edge */}
+          {/* White-hot center — pure white point */}
           <div
             className="absolute inset-0"
             style={{
-              background: `linear-gradient(to top, ${p.bright}, transparent 40%)`,
-              opacity: 0.25,
+              background: `radial-gradient(ellipse 18% 12% at ${rx + 8}% 96%, oklch(0.97 0 0), transparent 50%)`,
+              filter: 'blur(5px)',
+            }}
+          />
+          {/* Bottom band fill — ensures the very bottom edge is lit */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to top, ${p.rightBright}, transparent 35%)`,
+              opacity: 0.3,
             }}
           />
         </div>
@@ -153,23 +179,55 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
         {/* Card content */}
         <div className="relative z-10 p-6">
           <div className="flex items-start justify-between">
-            {/* Icon in frosted glass circle */}
-            <div
-              className="flex size-11 items-center justify-center rounded-full transition-all duration-300"
-              style={{
-                background: 'oklch(0.2 0.03 280 / 0.5)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid oklch(0.35 0.03 280 / 0.4)',
-                color: isHovered
-                  ? 'oklch(0.88 0.06 280)'
-                  : 'oklch(0.6 0.04 280)',
-                boxShadow: isHovered
-                  ? `0 0 20px oklch(0.4 0.2 280 / 0.3), inset 0 0 8px oklch(0.5 0.15 280 / 0.1)`
-                  : 'inset 0 1px 0 oklch(1 0 0 / 0.05)',
-              }}
-            >
-              <Icon size={22} weight="duotone" />
+            {/*
+             * 3D Go-piece icon — dome shape extruding from card.
+             * Multiple layers: shadow underneath, dark body, glossy rim at top.
+             */}
+            <div className="relative">
+              {/* Shadow underneath the dome */}
+              <div
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full"
+                style={{
+                  width: 40,
+                  height: 8,
+                  background: 'oklch(0 0 0 / 0.4)',
+                  filter: 'blur(6px)',
+                }}
+              />
+              {/* Icon dome body */}
+              <div
+                className="relative flex size-12 items-center justify-center rounded-full transition-all duration-300"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 100% 80% at 50% 60%, oklch(0.22 0.04 280), oklch(0.14 0.02 280) 80%)',
+                  border: '1px solid oklch(0.30 0.04 280 / 0.5)',
+                  boxShadow: `
+                    inset 0 -3px 6px oklch(0 0 0 / 0.4),
+                    0 4px 12px oklch(0 0 0 / 0.5)
+                  `,
+                  color: isHovered
+                    ? 'oklch(0.85 0.06 280)'
+                    : 'oklch(0.55 0.04 280)',
+                }}
+              >
+                {/* Glossy rim highlight at the top of the dome */}
+                <div
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      'radial-gradient(ellipse 70% 30% at 50% 15%, oklch(1 0 0 / 0.2), transparent 60%)',
+                  }}
+                />
+                {/* Subtle ring/rim */}
+                <div
+                  className="pointer-events-none absolute inset-[1px] rounded-full"
+                  style={{
+                    border: '1px solid oklch(1 0 0 / 0.08)',
+                    borderBottom: 'none',
+                  }}
+                />
+                <Icon size={22} weight="duotone" className="relative z-10" />
+              </div>
             </div>
 
             {/* Arrow — like other views */}
