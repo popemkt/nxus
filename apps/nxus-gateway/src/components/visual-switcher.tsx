@@ -5,7 +5,6 @@ import {
   Terminal,
   Planet,
   Leaf,
-  Lightning,
   Compass,
   GridFour,
   Stack,
@@ -18,7 +17,6 @@ export type VisualStyle =
   | 'terminal'
   | 'orbital'
   | 'zen'
-  | 'neon'
   | 'blueprint'
   | 'bento'
   | 'spatial'
@@ -33,7 +31,6 @@ const visuals: { id: VisualStyle; label: string; icon: typeof SquaresFour }[] =
     { id: 'terminal', label: 'Terminal', icon: Terminal },
     { id: 'orbital', label: 'Orbital', icon: Planet },
     { id: 'zen', label: 'Zen', icon: Leaf },
-    { id: 'neon', label: 'Neon Grid', icon: Lightning },
     { id: 'blueprint', label: 'Blueprint', icon: Compass },
     { id: 'bento', label: 'Bento Grid', icon: GridFour },
     { id: 'spatial', label: 'Spatial', icon: Stack },

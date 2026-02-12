@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
+
+const GRID_SIZE = 32
 
 const iconMap = {
   cube: Cube,
@@ -157,8 +159,32 @@ function BlueprintCard({ app, index }: { app: MiniApp; index: number }) {
 }
 
 export function BlueprintCards({ apps }: { apps: MiniApp[] }) {
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
+    null
+  )
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    setMousePos({ x: e.clientX, y: e.clientY })
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    setMousePos(null)
+  }, [])
+
+  // Snap to nearest grid line
+  const snappedX = mousePos
+    ? Math.round(mousePos.x / GRID_SIZE) * GRID_SIZE
+    : 0
+  const snappedY = mousePos
+    ? Math.round(mousePos.y / GRID_SIZE) * GRID_SIZE
+    : 0
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-8">
+    <div
+      className="flex min-h-screen flex-col items-center justify-center p-8"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Background — faint grid over entire page */}
       <div
         className="pointer-events-none fixed inset-0"
@@ -167,11 +193,53 @@ export function BlueprintCards({ apps }: { apps: MiniApp[] }) {
             linear-gradient(color-mix(in oklch, var(--primary) 3%, transparent) 1px, transparent 1px),
             linear-gradient(90deg, color-mix(in oklch, var(--primary) 3%, transparent) 1px, transparent 1px)
           `,
-          backgroundSize: '32px 32px',
+          backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
           maskImage: 'radial-gradient(ellipse at 50% 50%, black 20%, transparent 70%)',
           WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, black 20%, transparent 70%)',
         }}
       />
+
+      {/* Hover crosshair highlight — horizontal line */}
+      {mousePos && (
+        <>
+          <div
+            className="pointer-events-none fixed left-0 right-0 z-10"
+            style={{
+              top: snappedY,
+              height: 1,
+              background:
+                'color-mix(in oklch, var(--primary) 18%, transparent)',
+              transition: 'top 0.08s ease-out',
+            }}
+          />
+          {/* Vertical line */}
+          <div
+            className="pointer-events-none fixed top-0 bottom-0 z-10"
+            style={{
+              left: snappedX,
+              width: 1,
+              background:
+                'color-mix(in oklch, var(--primary) 18%, transparent)',
+              transition: 'left 0.08s ease-out',
+            }}
+          />
+          {/* Intersection glow */}
+          <div
+            className="pointer-events-none fixed z-10"
+            style={{
+              left: snappedX - 3,
+              top: snappedY - 3,
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'color-mix(in oklch, var(--primary) 40%, transparent)',
+              boxShadow:
+                '0 0 8px color-mix(in oklch, var(--primary) 25%, transparent)',
+              transition: 'left 0.08s ease-out, top 0.08s ease-out',
+            }}
+          />
+        </>
+      )}
 
       <div className="relative w-full max-w-2xl space-y-8">
         {/* Title block — styled like a title block on a technical drawing */}

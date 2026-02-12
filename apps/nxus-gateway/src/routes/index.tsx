@@ -8,7 +8,6 @@ import { Glass3DCards } from '@/components/visuals/glass-3d-cards'
 import { TerminalCards } from '@/components/visuals/terminal-cards'
 import { OrbitalCards } from '@/components/visuals/orbital-cards'
 import { MinimalZenCards } from '@/components/visuals/minimal-zen-cards'
-import { NeonGridCards } from '@/components/visuals/neon-grid-cards'
 import { BlueprintCards } from '@/components/visuals/blueprint-cards'
 import { BentoGridCards } from '@/components/visuals/bento-grid-cards'
 import { SpatialCards } from '@/components/visuals/spatial-cards'
@@ -87,7 +86,6 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   terminal: TerminalCards,
   orbital: OrbitalCards,
   zen: MinimalZenCards,
-  neon: NeonGridCards,
   blueprint: BlueprintCards,
   bento: BentoGridCards,
   spatial: SpatialCards,

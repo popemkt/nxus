@@ -1,11 +1,5 @@
 import { useState } from 'react'
-import {
-  Cube,
-  Graph,
-  CalendarBlank,
-  CaretLeft,
-  CaretRight,
-} from '@phosphor-icons/react'
+import { Cube, Graph, CalendarBlank } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
 const iconMap = {
@@ -17,11 +11,6 @@ const iconMap = {
 export function SpatialCards({ apps }: { apps: MiniApp[] }) {
   const [activeIndex, setActiveIndex] = useState(0)
 
-  const handlePrev = () =>
-    setActiveIndex((prev) => (prev - 1 + apps.length) % apps.length)
-  const handleNext = () =>
-    setActiveIndex((prev) => (prev + 1) % apps.length)
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="mb-12 text-center space-y-2">
@@ -29,14 +18,14 @@ export function SpatialCards({ apps }: { apps: MiniApp[] }) {
           <span className="text-primary">n</span>Xus
         </h1>
         <p className="text-sm text-muted-foreground">
-          Navigate to select an application.
+          Select a card to explore.
         </p>
       </div>
 
       {/* 3D carousel */}
       <div
         className="relative w-full max-w-4xl flex items-center justify-center"
-        style={{ height: 360, perspective: '1000px' }}
+        style={{ height: 380, perspective: '1200px' }}
       >
         {apps.map((app, index) => {
           const Icon = iconMap[app.icon]
@@ -46,10 +35,11 @@ export function SpatialCards({ apps }: { apps: MiniApp[] }) {
 
           const isActive = offset === 0
           const absOffset = Math.abs(offset)
-          const translateX = offset * 240
-          const translateZ = absOffset * -180
-          const rotateY = offset * -20
-          const opacity = absOffset > 2 ? 0 : 1 - absOffset * 0.3
+          const translateX = offset * 260
+          const translateZ = absOffset * -200
+          const rotateY = offset * -25
+          const scale = isActive ? 1 : 0.88
+          const opacity = absOffset > 2 ? 0 : 1 - absOffset * 0.35
           const zIndex = 50 - absOffset * 10
 
           return (
@@ -58,7 +48,7 @@ export function SpatialCards({ apps }: { apps: MiniApp[] }) {
               onClick={() => setActiveIndex(index)}
               className="absolute cursor-pointer"
               style={{
-                transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg)`,
+                transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
                 zIndex,
                 opacity,
                 pointerEvents: absOffset > 1 ? 'none' : 'auto',
@@ -66,20 +56,34 @@ export function SpatialCards({ apps }: { apps: MiniApp[] }) {
               }}
             >
               <div
-                className={`w-72 rounded-2xl border p-8 text-center transition-all duration-500 ${
-                  isActive
-                    ? 'border-primary bg-card shadow-lg shadow-primary/10'
-                    : 'border-border bg-card/60'
-                }`}
-                style={{ minHeight: 300 }}
+                className="w-72 rounded-2xl border p-8 text-center transition-all duration-500"
+                style={{
+                  minHeight: 320,
+                  borderColor: isActive
+                    ? 'color-mix(in oklch, var(--primary) 50%, transparent)'
+                    : undefined,
+                  background: isActive
+                    ? 'var(--card)'
+                    : 'color-mix(in oklch, var(--card) 60%, transparent)',
+                  boxShadow: isActive
+                    ? '0 20px 60px -12px color-mix(in oklch, var(--primary) 20%, transparent), 0 0 0 1px color-mix(in oklch, var(--primary) 10%, transparent)'
+                    : '0 4px 20px -4px color-mix(in oklch, var(--foreground) 5%, transparent)',
+                }}
               >
                 <div className="flex flex-col items-center">
                   <div
-                    className={`mb-6 flex size-16 items-center justify-center rounded-xl border transition-colors duration-300 ${
-                      isActive
-                        ? 'border-primary/30 bg-primary/10 text-primary'
-                        : 'border-border bg-muted text-muted-foreground'
-                    }`}
+                    className="mb-6 flex size-16 items-center justify-center rounded-xl border transition-all duration-300"
+                    style={{
+                      borderColor: isActive
+                        ? 'color-mix(in oklch, var(--primary) 30%, transparent)'
+                        : undefined,
+                      background: isActive
+                        ? 'color-mix(in oklch, var(--primary) 10%, transparent)'
+                        : 'var(--muted)',
+                      color: isActive
+                        ? 'var(--primary)'
+                        : 'var(--muted-foreground)',
+                    }}
                   >
                     <Icon
                       size={36}
@@ -122,32 +126,19 @@ export function SpatialCards({ apps }: { apps: MiniApp[] }) {
         })}
       </div>
 
-      {/* Navigation arrows */}
-      <div className="mt-8 flex items-center gap-3">
-        <button
-          onClick={handlePrev}
-          className="flex size-10 items-center justify-center rounded-full border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          <CaretLeft size={18} weight="bold" />
-        </button>
-        <div className="flex items-center gap-1.5">
-          {apps.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === activeIndex
-                  ? 'w-6 bg-primary'
-                  : 'w-1.5 bg-muted-foreground/30'
-              }`}
-            />
-          ))}
-        </div>
-        <button
-          onClick={handleNext}
-          className="flex size-10 items-center justify-center rounded-full border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          <CaretRight size={18} weight="bold" />
-        </button>
+      {/* Dot indicators */}
+      <div className="mt-8 flex items-center gap-1.5">
+        {apps.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveIndex(i)}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === activeIndex
+                ? 'w-6 bg-primary'
+                : 'w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+            }`}
+          />
+        ))}
       </div>
     </div>
   )

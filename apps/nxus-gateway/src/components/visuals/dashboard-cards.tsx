@@ -5,9 +5,8 @@ import {
   CalendarBlank,
   GearSix,
   Terminal,
-  CircleNotch,
   Clock,
-  Lightning,
+  HardHat,
 } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
@@ -82,6 +81,19 @@ export function DashboardCards({ apps }: { apps: MiniApp[] }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="w-full max-w-5xl space-y-6">
+        {/* Under construction banner */}
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
+          <HardHat
+            size={20}
+            weight="duotone"
+            className="shrink-0 text-yellow-500"
+          />
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">
+            <span className="font-medium">Under construction</span> — This
+            dashboard view is a preview. Data shown is illustrative only.
+          </p>
+        </div>
+
         {/* Header */}
         <div className="flex items-end justify-between">
           <div>
