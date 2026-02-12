@@ -160,9 +160,9 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           <div className="flex items-start justify-between" style={{ transformStyle: 'preserve-3d' }}>
             {/* Icon — highest layer */}
             <div
-              className="pointer-events-auto relative flex size-12 items-center justify-center rounded-xl border text-primary transition-transform duration-200 ease-out"
+              className="pointer-events-auto relative flex size-12 items-center justify-center rounded-xl border text-primary"
               style={{
-                transform: isHovered ? 'translateZ(100px)' : 'translateZ(60px)',
+                transform: 'translateZ(60px)',
                 background: 'color-mix(in oklch, var(--primary) 12%, color-mix(in oklch, var(--card) 80%, transparent))',
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
@@ -177,9 +177,9 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             <ArrowRight
               size={16}
               weight="bold"
-              className="text-muted-foreground transition-transform duration-200 ease-out"
+              className="text-muted-foreground"
               style={{
-                transform: isHovered ? 'translateZ(75px)' : 'translateZ(45px)',
+                transform: 'translateZ(45px)',
                 opacity: 0.6,
               }}
             />
@@ -188,15 +188,15 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           {/* Title — mid-high layer */}
           <div className="mt-4" style={{ transformStyle: 'preserve-3d' }}>
             <h3
-              className="text-base font-semibold text-card-foreground transition-transform duration-200 ease-out"
-              style={{ transform: isHovered ? 'translateZ(50px)' : 'translateZ(30px)' }}
+              className="text-base font-semibold text-card-foreground"
+              style={{ transform: 'translateZ(30px)' }}
             >
               {app.name}
             </h3>
             {/* Description — lower layer */}
             <p
-              className="mt-1.5 text-xs/relaxed text-muted-foreground transition-transform duration-200 ease-out"
-              style={{ transform: isHovered ? 'translateZ(28px)' : 'translateZ(15px)' }}
+              className="mt-1.5 text-xs/relaxed text-muted-foreground"
+              style={{ transform: 'translateZ(15px)' }}
             >
               {app.description}
             </p>
