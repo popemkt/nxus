@@ -56,13 +56,13 @@ function SpotlightCard({
   )
 
   return (
-    <a href={app.path} className="group block no-underline">
+    <a href={app.path} className={`group block no-underline ${className ?? ''}`}>
       <div
         ref={ref}
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setOpacity(1)}
         onMouseLeave={() => setOpacity(0)}
-        className={`relative h-full overflow-hidden rounded-xl border bg-card/80 hover:border-primary/40 ${isHero ? 'p-8' : 'p-6'} ${className ?? ''}`}
+        className={`relative h-full overflow-hidden rounded-xl border bg-card/80 hover:border-primary/40 ${isHero ? 'p-8' : 'p-6'}`}
         style={{
           opacity: visible ? 1 : 0,
           transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
