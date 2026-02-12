@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { SquaresFour, Cube, Terminal, Planet, Leaf, Lightning, Compass } from '@phosphor-icons/react'
 
 export type VisualStyle = 'default' | 'glass-3d' | 'terminal' | 'orbital' | 'zen' | 'neon' | 'blueprint'
@@ -34,26 +35,67 @@ export function VisualSwitcher({
   current: VisualStyle
   onChange: (visual: VisualStyle) => void
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const activeVisual = visuals.find((v) => v.id === current) ?? visuals[0]
+  const ActiveIcon = activeVisual.icon
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      setExpanded(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (expanded) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [expanded, handleClickOutside])
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-1 rounded-full border bg-card/80 p-1 shadow-lg backdrop-blur-md">
-      {visuals.map((v) => {
-        const Icon = v.icon
-        const isActive = current === v.id
-        return (
+    <div ref={containerRef} className="fixed bottom-4 right-4 z-50">
+      {/* Expanded pill with all options */}
+      <div
+        className="flex items-center gap-1 rounded-full border bg-card/80 p-1 shadow-lg backdrop-blur-md transition-all duration-300 ease-out origin-right"
+        style={{
+          width: expanded ? undefined : '2.5rem',
+          overflow: 'hidden',
+        }}
+      >
+        {expanded ? (
+          visuals.map((v) => {
+            const Icon = v.icon
+            const isActive = current === v.id
+            return (
+              <button
+                key={v.id}
+                onClick={() => {
+                  onChange(v.id)
+                  setExpanded(false)
+                }}
+                title={v.label}
+                className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                }`}
+              >
+                <Icon size={16} weight={isActive ? 'fill' : 'regular'} />
+              </button>
+            )
+          })
+        ) : (
           <button
-            key={v.id}
-            onClick={() => onChange(v.id)}
-            title={v.label}
-            className={`flex size-8 items-center justify-center rounded-full transition-all duration-200 ${
-              isActive
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-            }`}
+            onClick={() => setExpanded(true)}
+            title={`Theme: ${activeVisual.label}`}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-all duration-200 hover:opacity-80"
           >
-            <Icon size={16} weight={isActive ? 'fill' : 'regular'} />
+            <ActiveIcon size={16} weight="fill" />
           </button>
-        )
-      })}
+        )}
+      </div>
     </div>
   )
 }
