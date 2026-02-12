@@ -122,19 +122,28 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             }}
           />
 
-          {/* Shine/gleam overlay — radial gradient at inverted mouse position, overlay blend */}
+          {/* Theme-colored radial glow that follows cursor */}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
+            style={{
+              background: `radial-gradient(ellipse at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 65%)`,
+              opacity: isHovered ? 1 : 0,
+            }}
+          />
+
+          {/* Shine/gleam overlay — radial gradient at inverted mouse position */}
           <div
             className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
             style={{
               backgroundImage: `radial-gradient(
                 farthest-corner circle at ${(1 - tilt.mouseX) * 100}% ${(1 - tilt.mouseY) * 100}%,
-                hsla(0, 0%, 100%, 0.8) 10%,
-                hsla(0, 0%, 100%, 0.65) 20%,
-                hsla(0, 0%, 0%, 0.5) 90%
+                color-mix(in oklch, var(--primary) 30%, white) 10%,
+                color-mix(in oklch, var(--primary) 15%, transparent) 40%,
+                transparent 70%
               )`,
               mixBlendMode: 'overlay',
-              opacity: isHovered ? 1 : 0,
-              filter: 'brightness(0.7) contrast(1.5)',
+              opacity: isHovered ? 0.8 : 0,
+              filter: 'contrast(1.3)',
             }}
           />
 
