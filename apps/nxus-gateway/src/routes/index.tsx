@@ -12,6 +12,7 @@ import { BlueprintCards } from '@/components/visuals/blueprint-cards'
 import { BentoGridCards } from '@/components/visuals/bento-grid-cards'
 import { SpatialCards } from '@/components/visuals/spatial-cards'
 import { DashboardCards } from '@/components/visuals/dashboard-cards'
+import { AuroraCards } from '@/components/visuals/aurora-cards'
 import {
   VisualSwitcher,
   getStoredVisual,
@@ -90,6 +91,7 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   bento: BentoGridCards,
   spatial: SpatialCards,
   dashboard: DashboardCards,
+  aurora: AuroraCards,
 }
 
 function GatewayPage() {

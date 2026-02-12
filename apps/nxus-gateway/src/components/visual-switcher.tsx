@@ -9,6 +9,7 @@ import {
   GridFour,
   Stack,
   ChartBar,
+  Sparkle,
 } from '@phosphor-icons/react'
 
 export type VisualStyle =
@@ -21,6 +22,7 @@ export type VisualStyle =
   | 'bento'
   | 'spatial'
   | 'dashboard'
+  | 'aurora'
 
 const STORAGE_KEY = 'nxus-gateway-visual'
 
@@ -35,6 +37,7 @@ const visuals: { id: VisualStyle; label: string; icon: typeof SquaresFour }[] =
     { id: 'bento', label: 'Bento Grid', icon: GridFour },
     { id: 'spatial', label: 'Spatial', icon: Stack },
     { id: 'dashboard', label: 'Dashboard', icon: ChartBar },
+    { id: 'aurora', label: 'Aurora', icon: Sparkle },
   ]
 
 const BUTTON_SIZE = 28
