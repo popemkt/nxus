@@ -8,28 +8,34 @@ const iconMap = {
   calendar: CalendarBlank,
 } as const
 
-/* Each card gets a unique aurora color palette */
-const auroraPalettes = [
-  // Purple-blue-white — like the reference image
+/*
+ * Each card gets a unique aurora color set.
+ * Colors are fully opaque — opacity is controlled via the gradient stops.
+ *
+ * The reference shows: deep purple center blob, bright blue fringe,
+ * hot white/pink point near bottom-right.
+ */
+const palettes = [
+  // Purple → blue → white (matches reference closest)
   {
-    a: 'oklch(0.45 0.2 280)',
-    b: 'oklch(0.55 0.22 260)',
-    c: 'oklch(0.85 0.12 290)',
-    d: 'oklch(0.95 0.04 280)',
+    deep: 'oklch(0.35 0.25 285)',     // deep violet
+    mid: 'oklch(0.50 0.28 270)',      // rich blue-purple
+    bright: 'oklch(0.70 0.22 290)',   // bright lavender
+    hot: 'oklch(0.92 0.08 300)',      // near-white pink
   },
-  // Teal-cyan-white
+  // Teal → cyan → white
   {
-    a: 'oklch(0.45 0.14 190)',
-    b: 'oklch(0.55 0.16 175)',
-    c: 'oklch(0.8 0.1 185)',
-    d: 'oklch(0.95 0.04 190)',
+    deep: 'oklch(0.35 0.15 195)',
+    mid: 'oklch(0.50 0.18 185)',
+    bright: 'oklch(0.70 0.16 180)',
+    hot: 'oklch(0.92 0.06 190)',
   },
-  // Rose-magenta-white
+  // Magenta → rose → white
   {
-    a: 'oklch(0.45 0.18 350)',
-    b: 'oklch(0.55 0.2 330)',
-    c: 'oklch(0.8 0.12 340)',
-    d: 'oklch(0.95 0.04 350)',
+    deep: 'oklch(0.35 0.22 340)',
+    mid: 'oklch(0.50 0.24 330)',
+    bright: 'oklch(0.70 0.18 345)',
+    hot: 'oklch(0.92 0.06 350)',
   },
 ]
 
@@ -37,18 +43,25 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
   const Icon = iconMap[app.icon]
   const cardRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 })
-  const palette = auroraPalettes[index % auroraPalettes.length]
+  const [mouse, setMouse] = useState({ x: 0.5, y: 0.5 })
+  const p = palettes[index % palettes.length]
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const el = cardRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    setMousePos({
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
-    })
-  }, [])
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const el = cardRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      setMouse({
+        x: (e.clientX - r.left) / r.width,
+        y: (e.clientY - r.top) / r.height,
+      })
+    },
+    []
+  )
+
+  // Aurora blob positions shift slightly with mouse
+  const bx = 40 + mouse.x * 20
+  const by = 75 + mouse.y * 8
 
   return (
     <a href={app.path} className="group block no-underline">
@@ -57,115 +70,127 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative overflow-hidden rounded-2xl transition-all duration-500"
+        className="relative overflow-hidden rounded-[20px] transition-all duration-500"
         style={{
-          background: 'oklch(0.16 0.01 280)',
-          border: '1px solid oklch(0.28 0.02 280 / 0.6)',
+          background: 'oklch(0.13 0.02 280)',
+          border: '1px solid oklch(0.24 0.02 280 / 0.5)',
           boxShadow: isHovered
-            ? `0 24px 80px -16px ${palette.a}40, 0 0 0 1px oklch(0.3 0.02 280 / 0.4)`
-            : `0 4px 24px -8px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(0.25 0.02 280 / 0.3)`,
+            ? `0 30px 80px -20px oklch(0.3 0.2 280 / 0.4), 0 0 0 1px oklch(0.3 0.04 280 / 0.3)`
+            : `0 4px 32px -8px oklch(0 0 0 / 0.6)`,
         }}
       >
-        {/* Aurora glow — organic blob at bottom of card */}
+        {/*
+         * Aurora glow — multiple layered blobs.
+         * These are positioned in the bottom ~45% of the card
+         * and blurred heavily for that organic nebula look.
+         */}
         <div
-          className="pointer-events-none absolute inset-0 transition-opacity duration-700"
+          className="pointer-events-none absolute inset-0"
           style={{
-            opacity: isHovered ? 1 : 0.6,
-            background: `
-              radial-gradient(
-                ellipse 80% 50% at ${30 + mousePos.x * 40}% ${70 + mousePos.y * 15}%,
-                ${palette.a}60,
-                transparent
-              ),
-              radial-gradient(
-                ellipse 60% 40% at ${50 + mousePos.x * 20}% ${80 + mousePos.y * 10}%,
-                ${palette.b}50,
-                transparent
-              ),
-              radial-gradient(
-                ellipse 40% 30% at ${60 + mousePos.x * 15}% ${85 + mousePos.y * 8}%,
-                ${palette.c}50,
-                transparent
-              ),
-              radial-gradient(
-                ellipse 25% 15% at ${55 + mousePos.x * 10}% ${90}%,
-                ${palette.d}70,
-                transparent
-              )
-            `,
-            filter: 'blur(20px)',
+            transition: 'opacity 0.7s ease',
+            opacity: isHovered ? 1 : 0.75,
           }}
-        />
+        >
+          {/* Layer 1: Wide, deep-colored base glow */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse 90% 55% at ${bx}% ${by}%, ${p.deep}, transparent 70%)`,
+              filter: 'blur(30px)',
+            }}
+          />
+          {/* Layer 2: Mid-tone blue/purple, slightly offset */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse 65% 45% at ${bx + 15}% ${by + 5}%, ${p.mid}, transparent 65%)`,
+              filter: 'blur(25px)',
+            }}
+          />
+          {/* Layer 3: Brighter fringe */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse 50% 35% at ${bx + 20}% ${by + 10}%, ${p.bright}, transparent 60%)`,
+              filter: 'blur(20px)',
+            }}
+          />
+          {/* Layer 4: Hot white core near bottom-right */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse 30% 18% at ${bx + 22}% 92%, ${p.hot}, transparent 55%)`,
+              filter: 'blur(12px)',
+            }}
+          />
+        </div>
 
-        {/* Subtle top-edge light reflection */}
+        {/* Glass top-edge highlight — thin bright line at card top */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-px"
           style={{
             background:
-              'linear-gradient(90deg, transparent 10%, oklch(1 0 0 / 0.08) 50%, transparent 90%)',
+              'linear-gradient(90deg, transparent 5%, oklch(1 0 0 / 0.1) 30%, oklch(1 0 0 / 0.15) 50%, oklch(1 0 0 / 0.1) 70%, transparent 95%)',
           }}
         />
 
-        {/* Card content */}
-        <div className="relative z-10 p-7">
-          {/* Icon in frosted circle */}
+        {/* Glass inner sheen — very subtle gradient from top */}
+        <div
+          className="pointer-events-none absolute inset-0 rounded-[20px]"
+          style={{
+            background:
+              'linear-gradient(180deg, oklch(1 0 0 / 0.04) 0%, transparent 35%)',
+          }}
+        />
+
+        {/* Card content — positioned in the upper portion */}
+        <div className="relative z-10 flex flex-col p-8" style={{ minHeight: 340 }}>
+          {/* Icon in frosted glass circle */}
           <div
-            className="mb-6 flex size-11 items-center justify-center rounded-full transition-all duration-300"
+            className="mb-8 flex size-12 items-center justify-center rounded-full transition-all duration-400"
             style={{
-              background: 'oklch(0.25 0.02 280 / 0.6)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid oklch(0.4 0.02 280 / 0.3)',
+              background: 'oklch(0.2 0.03 280 / 0.5)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid oklch(0.35 0.03 280 / 0.4)',
               color: isHovered
-                ? 'oklch(0.9 0.04 280)'
-                : 'oklch(0.65 0.04 280)',
+                ? 'oklch(0.88 0.06 280)'
+                : 'oklch(0.6 0.04 280)',
               boxShadow: isHovered
-                ? `0 0 16px ${palette.a}30`
-                : 'none',
+                ? `0 0 20px oklch(0.4 0.2 280 / 0.3), inset 0 0 8px oklch(0.5 0.15 280 / 0.1)`
+                : 'inset 0 1px 0 oklch(1 0 0 / 0.05)',
             }}
           >
-            <Icon size={20} weight="duotone" />
+            <Icon size={22} weight="duotone" />
           </div>
 
-          {/* Title */}
+          {/* Title — large, bold, white */}
           <h3
-            className="text-xl font-semibold tracking-tight transition-colors duration-300"
-            style={{
-              color: isHovered
-                ? 'oklch(0.97 0 0)'
-                : 'oklch(0.9 0 0)',
-            }}
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: 'oklch(0.95 0 0)' }}
           >
             {app.name}
           </h3>
 
-          {/* Description */}
+          {/* Description — lighter gray */}
           <p
-            className="mt-2 text-sm/relaxed transition-colors duration-300"
-            style={{
-              color: isHovered
-                ? 'oklch(0.75 0 0)'
-                : 'oklch(0.58 0 0)',
-            }}
+            className="mt-2.5 text-sm/relaxed"
+            style={{ color: 'oklch(0.65 0 0)' }}
           >
             {app.description}
           </p>
 
-          {/* CTA link */}
-          <div
-            className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium transition-all duration-300"
-            style={{
-              color: isHovered
-                ? 'oklch(0.9 0 0)'
-                : 'oklch(0.65 0 0)',
-            }}
-          >
+          {/* "Learn more →" CTA — bold, with underline */}
+          <div className="mt-5 inline-flex items-center gap-1.5">
             <span
-              className="transition-all duration-300"
+              className="text-sm font-semibold transition-all duration-300"
               style={{
-                borderBottom: isHovered
-                  ? '1px solid oklch(0.7 0 0 / 0.5)'
-                  : '1px solid transparent',
+                color: 'oklch(0.9 0 0)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px',
+                textDecorationColor: isHovered
+                  ? 'oklch(0.9 0 0 / 0.6)'
+                  : 'oklch(0.9 0 0 / 0.3)',
               }}
             >
               Learn more
@@ -175,20 +200,15 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
               weight="bold"
               className="transition-transform duration-300"
               style={{
+                color: 'oklch(0.9 0 0)',
                 transform: isHovered ? 'translateX(3px)' : 'translateX(0)',
               }}
             />
           </div>
-        </div>
 
-        {/* Bottom aurora brighten on hover */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 transition-opacity duration-700"
-          style={{
-            background: `linear-gradient(to top, ${palette.b}18, transparent)`,
-            opacity: isHovered ? 1 : 0,
-          }}
-        />
+          {/* Spacer — pushes content up, aurora fills the bottom */}
+          <div className="flex-1" />
+        </div>
       </div>
     </a>
   )
@@ -199,16 +219,18 @@ export function AuroraCards({ apps }: { apps: MiniApp[] }) {
     <div
       className="flex min-h-screen flex-col items-center justify-center p-8"
       style={{
-        background:
-          'radial-gradient(ellipse 80% 60% at 50% 50%, oklch(0.18 0.04 280), oklch(0.1 0.01 280) 60%, oklch(0.06 0 0))',
+        background: 'oklch(0.08 0.01 280)',
       }}
     >
-      {/* Ambient background glow */}
+      {/* Ambient background glow — subtle purple radial */}
       <div
         className="pointer-events-none fixed inset-0"
         style={{
-          background:
-            'radial-gradient(ellipse 50% 40% at 30% 70%, oklch(0.25 0.12 280 / 0.15), transparent), radial-gradient(ellipse 40% 30% at 70% 30%, oklch(0.25 0.1 200 / 0.1), transparent)',
+          background: `
+            radial-gradient(ellipse 60% 50% at 50% 50%, oklch(0.15 0.08 280 / 0.6), transparent 70%),
+            radial-gradient(ellipse 40% 35% at 25% 65%, oklch(0.12 0.06 300 / 0.3), transparent),
+            radial-gradient(ellipse 35% 30% at 75% 35%, oklch(0.12 0.05 250 / 0.2), transparent)
+          `,
         }}
       />
 
@@ -218,12 +240,9 @@ export function AuroraCards({ apps }: { apps: MiniApp[] }) {
             className="text-3xl font-bold tracking-tight"
             style={{ color: 'oklch(0.95 0 0)' }}
           >
-            <span style={{ color: 'oklch(0.75 0.15 280)' }}>n</span>Xus
+            <span style={{ color: 'oklch(0.7 0.18 280)' }}>n</span>Xus
           </h1>
-          <p
-            className="text-sm"
-            style={{ color: 'oklch(0.55 0 0)' }}
-          >
+          <p className="text-sm" style={{ color: 'oklch(0.5 0 0)' }}>
             Select an application to get started.
           </p>
         </div>
