@@ -50,7 +50,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
     <a
       href={app.path}
       className="group block no-underline"
-      style={{ perspective: '800px' }}
+      style={{ perspective: '600px' }}
     >
       <div
         ref={cardRef}
@@ -68,7 +68,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
         <div
           className="absolute -inset-4 rounded-3xl transition-opacity duration-500"
           style={{
-            transform: 'translateZ(-60px)',
+            transform: 'translateZ(-120px)',
             background: `radial-gradient(ellipse at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, var(--primary), transparent 70%)`,
             opacity: isHovered ? 0.45 : 0.15,
             filter: 'blur(30px)',
@@ -79,7 +79,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
         <div
           className="absolute inset-0 rounded-2xl"
           style={{
-            transform: 'translateZ(-35px) scale(1.05)',
+            transform: 'translateZ(-70px) scale(1.05)',
             background: 'color-mix(in oklch, var(--primary) 6%, var(--card))',
             opacity: 0.6,
             boxShadow: '0 25px 50px -12px color-mix(in oklch, var(--foreground) 15%, transparent)',
@@ -90,7 +90,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
         <div
           className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full"
           style={{
-            transform: 'translateZ(-18px)',
+            transform: 'translateZ(-36px)',
             background: 'linear-gradient(90deg, transparent, var(--primary), transparent)',
             opacity: 0.5,
             filter: 'blur(1px)',
@@ -148,7 +148,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               <div
                 className="relative flex size-12 items-center justify-center rounded-xl border text-primary"
                 style={{
-                  transform: 'translateZ(80px)',
+                  transform: 'translateZ(160px)',
                   background: 'color-mix(in oklch, var(--primary) 12%, color-mix(in oklch, var(--card) 80%, transparent))',
                   backdropFilter: 'blur(8px)',
                   WebkitBackdropFilter: 'blur(8px)',
@@ -165,7 +165,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
                 weight="bold"
                 className="text-muted-foreground"
                 style={{
-                  transform: 'translateZ(55px)',
+                  transform: 'translateZ(110px)',
                   opacity: 0.6,
                 }}
               />
@@ -175,14 +175,14 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             <div className="mt-4" style={{ transformStyle: 'preserve-3d' }}>
               <h3
                 className="text-base font-semibold text-card-foreground"
-                style={{ transform: 'translateZ(45px)' }}
+                style={{ transform: 'translateZ(90px)' }}
               >
                 {app.name}
               </h3>
               {/* Description — lower layer */}
               <p
                 className="mt-1.5 text-xs/relaxed text-muted-foreground"
-                style={{ transform: 'translateZ(25px)' }}
+                style={{ transform: 'translateZ(50px)' }}
               >
                 {app.description}
               </p>
@@ -194,7 +194,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
         <div
           className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
           style={{
-            transform: 'translateZ(3px)',
+            transform: 'translateZ(6px)',
             boxShadow: 'inset 0 0 0 1px color-mix(in oklch, white 6%, transparent)',
             opacity: isHovered ? 1 : 0.3,
           }}
