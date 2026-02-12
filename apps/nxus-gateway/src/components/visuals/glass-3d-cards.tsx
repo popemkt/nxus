@@ -122,21 +122,19 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             }}
           />
 
-          {/* Light reflection — sweeping highlight that follows mouse */}
+          {/* Shine/gleam overlay — radial gradient at inverted mouse position, overlay blend */}
           <div
-            className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+            className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
             style={{
-              background: `linear-gradient(${125 + (tilt.mouseX - 0.5) * 70}deg, color-mix(in oklch, white 12%, transparent) 0%, transparent 40%, transparent 60%, color-mix(in oklch, white 4%, transparent) 100%)`,
+              backgroundImage: `radial-gradient(
+                farthest-corner circle at ${(1 - tilt.mouseX) * 100}% ${(1 - tilt.mouseY) * 100}%,
+                hsla(0, 0%, 100%, 0.8) 10%,
+                hsla(0, 0%, 100%, 0.65) 20%,
+                hsla(0, 0%, 0%, 0.5) 90%
+              )`,
+              mixBlendMode: 'overlay',
               opacity: isHovered ? 1 : 0,
-            }}
-          />
-
-          {/* Radial glow that tracks cursor position */}
-          <div
-            className="pointer-events-none absolute inset-0 transition-opacity duration-300"
-            style={{
-              background: `radial-gradient(circle at ${tilt.mouseX * 100}% ${tilt.mouseY * 100}%, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 50%)`,
-              opacity: isHovered ? 1 : 0,
+              filter: 'brightness(0.7) contrast(1.5)',
             }}
           />
 
@@ -217,18 +215,6 @@ function Glass3DCard({ app }: { app: MiniApp }) {
             transform: 'translateZ(6px)',
             boxShadow: 'inset 0 0 0 1px color-mix(in oklch, white 6%, transparent)',
             opacity: isHovered ? 1 : 0.3,
-          }}
-        />
-        <div
-          className="pointer-events-none absolute -inset-px rounded-2xl transition-opacity duration-500"
-          style={{
-            transform: 'translateZ(4px)',
-            opacity: isHovered ? 1 : 0,
-            background: `conic-gradient(from ${(tilt.mouseX * 360)}deg at 50% 50%, transparent 0%, color-mix(in oklch, var(--primary) 20%, transparent) 10%, transparent 20%)`,
-            maskImage: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
-            maskComposite: 'exclude',
-            WebkitMaskComposite: 'xor',
-            padding: '1px',
           }}
         />
       </div>
