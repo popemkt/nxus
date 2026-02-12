@@ -121,11 +121,20 @@ export function BentoGridCards({ apps }: { apps: MiniApp[] }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="w-full max-w-4xl space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="text-primary">n</span>Xus
+        <div className="relative text-center space-y-2">
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-32 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, color-mix(in oklch, var(--primary) 8%, transparent), transparent 70%)',
+            }}
+          />
+          <h1 className="relative text-3xl font-bold tracking-tight">
+            <span
+              className="text-primary"
+              style={{ textShadow: '0 0 20px color-mix(in oklch, var(--primary) 35%, transparent)' }}
+            >n</span>Xus
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="relative text-sm text-muted-foreground">
             Select an application to get started.
           </p>
         </div>

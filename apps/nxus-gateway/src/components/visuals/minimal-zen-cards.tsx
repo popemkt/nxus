@@ -114,11 +114,14 @@ export function MinimalZenCards({ apps }: { apps: MiniApp[] }) {
         {/* Header — extremely minimal */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-extralight tracking-[0.2em] text-foreground">
-            <span className="text-primary font-light">n</span>Xus
+            <span
+              className="text-primary font-light"
+              style={{ textShadow: '0 0 24px color-mix(in oklch, var(--primary) 30%, transparent)' }}
+            >n</span>Xus
           </h1>
           <div
-            className="mx-auto h-px w-12"
-            style={{ background: 'color-mix(in oklch, var(--foreground) 15%, transparent)' }}
+            className="mx-auto h-px w-12 transition-all duration-1000"
+            style={{ background: 'linear-gradient(90deg, transparent, color-mix(in oklch, var(--primary) 25%, var(--foreground) 15%), transparent)' }}
           />
           <p
             className="text-xs font-light tracking-[0.15em] uppercase"

@@ -140,7 +140,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
                 var(--card) 10%,
                 transparent 55%
               )`,
-              opacity: isHovered ? 0.65 : 0,
+              opacity: isHovered ? 0.75 : 0,
             }}
           />
 
@@ -234,7 +234,11 @@ export function Glass3DCards({ apps }: { apps: MiniApp[] }) {
       <div className="w-full max-w-2xl space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">
-            <span className="text-primary">n</span>Xus
+            <span
+              className="text-primary"
+              style={{ textShadow: '0 0 20px color-mix(in oklch, var(--primary) 40%, transparent)' }}
+            >n</span>
+            <span className="tracking-wide">Xus</span>
           </h1>
           <p className="text-sm text-muted-foreground">
             Select an application to get started.

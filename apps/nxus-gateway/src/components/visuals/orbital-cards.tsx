@@ -170,7 +170,10 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
 
             {/* Hub text */}
             <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-primary">n</span>
+              <span
+                className="text-primary"
+                style={{ textShadow: '0 0 16px color-mix(in oklch, var(--primary) 50%, transparent)' }}
+              >n</span>
               <span className="text-card-foreground">Xus</span>
             </h1>
           </div>
@@ -183,7 +186,7 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
 
         {/* Orbital ring - decorative, slowly rotating */}
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full max-sm:hidden"
+          className="absolute left-1/2 top-1/2 rounded-full max-sm:hidden"
           style={{
             width: '360px',
             height: '360px',
@@ -191,10 +194,14 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
               '1px dashed color-mix(in oklch, var(--primary) 10%, transparent)',
             animation: 'orbital-spin 60s linear infinite',
           }}
-        />
+        >
+          {/* Dot markers on the ring */}
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 size-2 rounded-full" style={{ background: 'color-mix(in oklch, var(--primary) 30%, transparent)' }} />
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 size-1.5 rounded-full" style={{ background: 'color-mix(in oklch, var(--primary) 20%, transparent)' }} />
+        </div>
         {/* Second ring — counter-rotating, slightly larger */}
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full max-sm:hidden"
+          className="absolute left-1/2 top-1/2 rounded-full max-sm:hidden"
           style={{
             width: '400px',
             height: '400px',
@@ -202,7 +209,9 @@ export function OrbitalCards({ apps }: { apps: MiniApp[] }) {
               '1px solid color-mix(in oklch, var(--primary) 4%, transparent)',
             animation: 'orbital-spin 90s linear infinite reverse',
           }}
-        />
+        >
+          <div className="absolute top-1/2 -right-1 -translate-y-1/2 size-1.5 rounded-full" style={{ background: 'color-mix(in oklch, var(--primary) 15%, transparent)' }} />
+        </div>
 
         {/* Cards in orbital arrangement */}
         <div className="max-sm:contents">

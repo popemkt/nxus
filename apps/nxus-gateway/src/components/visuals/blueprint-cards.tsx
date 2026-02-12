@@ -241,7 +241,7 @@ export function BlueprintCards({ apps }: { apps: MiniApp[] }) {
         {/* Title block — styled like a title block on a technical drawing */}
         <div className="text-center space-y-3">
           <div
-            className="inline-block border border-dashed px-6 py-3"
+            className="relative inline-block border border-dashed px-6 py-3"
             style={{
               borderColor: 'color-mix(in oklch, var(--primary) 30%, transparent)',
             }}
@@ -250,6 +250,17 @@ export function BlueprintCards({ apps }: { apps: MiniApp[] }) {
               <span className="text-primary">n</span>
               <span className="text-foreground">Xus</span>
             </h1>
+            {/* Revision stamp */}
+            <span
+              className="absolute -top-2 -right-3 text-[8px] font-mono uppercase px-1.5 py-0.5 border border-dashed rounded-sm"
+              style={{
+                color: 'color-mix(in oklch, var(--primary) 50%, var(--muted-foreground))',
+                borderColor: 'color-mix(in oklch, var(--primary) 25%, transparent)',
+                background: 'var(--background)',
+              }}
+            >
+              v2.4
+            </span>
           </div>
           <p
             className="text-[10px] font-mono uppercase tracking-[0.2em]"

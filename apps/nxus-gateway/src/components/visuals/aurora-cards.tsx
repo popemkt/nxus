@@ -289,7 +289,10 @@ export function AuroraCards({ apps }: { apps: MiniApp[] }) {
             className="text-3xl font-bold tracking-tight"
             style={{ color: 'oklch(0.95 0 0)' }}
           >
-            <span style={{ color: 'oklch(0.7 0.18 280)' }}>n</span>Xus
+            <span style={{
+              color: 'oklch(0.7 0.18 280)',
+              textShadow: '0 0 24px oklch(0.5 0.25 280 / 0.6), 0 0 48px oklch(0.4 0.2 300 / 0.3)',
+            }}>n</span>Xus
           </h1>
           <p className="text-sm" style={{ color: 'oklch(0.5 0 0)' }}>
             Select an application to get started.

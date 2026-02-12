@@ -33,10 +33,13 @@ export function SpatialCards({ apps }: { apps: MiniApp[] }) {
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="mb-12 text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
-          <span className="text-primary">n</span>Xus
+          <span
+            className="text-primary"
+            style={{ textShadow: '0 0 20px color-mix(in oklch, var(--primary) 40%, transparent)' }}
+          >n</span>Xus
         </h1>
         <p className="text-sm text-muted-foreground">
-          Select a card to explore.
+          Use <kbd className="px-1.5 py-0.5 text-xs rounded border bg-muted font-mono">←</kbd> <kbd className="px-1.5 py-0.5 text-xs rounded border bg-muted font-mono">→</kbd> to navigate
         </p>
       </div>
 

@@ -163,11 +163,15 @@ export function TerminalCards({ apps }: { apps: MiniApp[] }) {
       <div className="w-full max-w-2xl space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold tracking-tight font-mono">
-            <span className="text-primary">n</span>
+            <span
+              className="text-primary"
+              style={{ textShadow: '0 0 12px color-mix(in oklch, var(--primary) 35%, transparent)' }}
+            >n</span>
             <span className="text-foreground">Xus</span>
           </h1>
           <p className="text-sm font-mono text-muted-foreground">
-            $ select --application
+            <span className="text-primary">$</span> select --application
+            <span className="inline-block w-1.5 h-4 ml-1 bg-primary/70 animate-pulse rounded-[1px] align-middle" />
           </p>
         </div>
 

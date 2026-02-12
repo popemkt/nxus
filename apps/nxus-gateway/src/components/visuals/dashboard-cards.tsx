@@ -126,11 +126,18 @@ export function DashboardCards({ apps }: { apps: MiniApp[] }) {
         <div className="flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className="text-primary">n</span>Xus{' '}
+              <span
+                className="text-primary"
+                style={{ textShadow: '0 0 16px color-mix(in oklch, var(--primary) 30%, transparent)' }}
+              >n</span>Xus{' '}
               <span className="text-sm font-normal text-muted-foreground ml-1">
                 / overview
               </span>
             </h1>
+            <div
+              className="mt-2 h-px w-20"
+              style={{ background: 'linear-gradient(90deg, var(--primary), transparent)' }}
+            />
           </div>
           <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
             <span>SYS.STATUS:</span>
