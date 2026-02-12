@@ -50,7 +50,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
     <a
       href={app.path}
       className="group block no-underline"
-      style={{ perspective: '900px' }}
+      style={{ perspective: '1000px' }}
     >
       <div
         ref={cardRef}
@@ -141,13 +141,13 @@ function Glass3DCard({ app }: { app: MiniApp }) {
           />
 
           {/* Layer 5: Content — sits above the glass surface */}
-          <div style={{ transform: 'translateZ(12px)', transformStyle: 'preserve-3d' }}>
-            <div className="flex items-start justify-between">
-              {/* Layer 6 (highest): Icon badge — pops out significantly */}
+          <div style={{ transform: 'translateZ(15px)', transformStyle: 'preserve-3d' }}>
+            <div className="flex items-start justify-between" style={{ transformStyle: 'preserve-3d' }}>
+              {/* Layer 6 (highest): Icon badge — pops out dramatically */}
               <div
                 className="relative flex size-12 items-center justify-center rounded-xl border text-primary transition-all duration-300"
                 style={{
-                  transform: isHovered ? 'translateZ(35px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(65px) scale(1.08)' : 'translateZ(0px)',
                   background: isHovered
                     ? 'color-mix(in oklch, var(--primary) 15%, color-mix(in oklch, var(--card) 80%, transparent))'
                     : 'color-mix(in oklch, var(--primary) 10%, transparent)',
@@ -157,7 +157,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
                     ? 'color-mix(in oklch, var(--primary) 30%, transparent)'
                     : 'color-mix(in oklch, white 10%, transparent)',
                   boxShadow: isHovered
-                    ? '0 4px 20px color-mix(in oklch, var(--primary) 20%, transparent), inset 0 1px 0 color-mix(in oklch, white 12%, transparent)'
+                    ? '0 8px 30px color-mix(in oklch, var(--primary) 25%, transparent), inset 0 1px 0 color-mix(in oklch, white 12%, transparent)'
                     : 'none',
                 }}
               >
@@ -169,18 +169,18 @@ function Glass3DCard({ app }: { app: MiniApp }) {
                 weight="bold"
                 className="text-muted-foreground transition-all duration-300"
                 style={{
-                  transform: isHovered ? 'translateZ(25px) translateX(2px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(50px) translateX(4px)' : 'translateZ(0px)',
                   opacity: isHovered ? 1 : 0,
                 }}
               />
             </div>
 
-            {/* Text content floats at different depths for parallax */}
-            <div className="mt-4">
+            {/* Text content floats at distinctly different depths for strong parallax */}
+            <div className="mt-4" style={{ transformStyle: 'preserve-3d' }}>
               <h3
                 className="text-base font-semibold text-card-foreground"
                 style={{
-                  transform: isHovered ? 'translateZ(22px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(40px)' : 'translateZ(0px)',
                   transition: 'transform 0.3s ease-out',
                 }}
               >
@@ -189,7 +189,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               <p
                 className="mt-1.5 text-xs/relaxed text-muted-foreground"
                 style={{
-                  transform: isHovered ? 'translateZ(10px)' : 'translateZ(0px)',
+                  transform: isHovered ? 'translateZ(22px)' : 'translateZ(0px)',
                   transition: 'transform 0.3s ease-out',
                 }}
               >

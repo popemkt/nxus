@@ -108,6 +108,7 @@ Build the "Orbital" visual component at `src/components/visuals/orbital-cards.ts
 - Write implementation report to `{@artifacts_path}/report.md`
 
 ### [x] Step: Enhance Glass 3D Cards and add 3 new visuals
+<!-- chat-id: 814840a4-1509-45c6-85d0-eab5ff8240f6 -->
 
 - Enhanced Glass 3D cards with 7 distinct depth layers (shadow, backdrop, accent strip, glass surface, content, icon, rim light), noise texture overlay, cursor-tracking radial glow, sweeping highlight, and refined border/shadow transitions
 - Created "Minimal Zen" visual (`src/components/visuals/minimal-zen-cards.tsx`): clean vertical list layout with generous whitespace, large faded index numbers, hairline dividers, ultra-light typography, and subtle hover washes
