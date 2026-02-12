@@ -163,7 +163,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               className="pointer-events-auto relative flex size-12 items-center justify-center rounded-xl border text-primary"
               style={{
                 transform: isHovered ? 'translateZ(60px)' : 'translateZ(0px)',
-                transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
                 background: 'color-mix(in oklch, var(--primary) 12%, color-mix(in oklch, var(--card) 80%, transparent))',
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
@@ -181,7 +181,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               className="text-muted-foreground"
               style={{
                 transform: isHovered ? 'translateZ(45px)' : 'translateZ(0px)',
-                transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.03s',
+                transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 0.03s',
                 opacity: 0.6,
               }}
             />
@@ -193,7 +193,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               className="text-base font-semibold text-card-foreground"
               style={{
                 transform: isHovered ? 'translateZ(25px)' : 'translateZ(0px)',
-                transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s',
+                transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 0.05s',
               }}
             >
               {app.name}
@@ -202,7 +202,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
               className="mt-1.5 text-xs/relaxed text-muted-foreground"
               style={{
                 transform: isHovered ? 'translateZ(25px)' : 'translateZ(0px)',
-                transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.07s',
+                transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 0.07s',
               }}
             >
               {app.description}
