@@ -140,7 +140,7 @@ function Glass3DCard({ app }: { app: MiniApp }) {
                 var(--card) 10%,
                 transparent 55%
               )`,
-              opacity: isHovered ? 0.75 : 0,
+              opacity: isHovered ? 1 : 0,
             }}
           />
 
