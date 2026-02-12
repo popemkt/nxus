@@ -79,10 +79,10 @@ function Glass3DCard({ app }: { app: MiniApp }) {
         <div
           className="absolute inset-0 rounded-2xl transition-opacity duration-300"
           style={{
-            transform: 'translateZ(-70px) scale(1.05)',
-            background: 'color-mix(in oklch, var(--primary) 15%, var(--card))',
-            opacity: isHovered ? 0.9 : 0.6,
-            boxShadow: '0 25px 50px -12px color-mix(in oklch, var(--foreground) 25%, transparent)',
+            transform: 'translateZ(-120px) scale(1.05)',
+            background: 'color-mix(in oklch, var(--primary) 6%, var(--card))',
+            opacity: 0.6,
+            boxShadow: '0 25px 50px -12px color-mix(in oklch, var(--foreground) 15%, transparent)',
           }}
         />
 
