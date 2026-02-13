@@ -17,7 +17,7 @@ import {
 import { TagTree } from '@/components/features/gallery/tag-tree'
 import { useAppRegistry } from '@/hooks/use-app-registry'
 import { useBatchToolHealth } from '@/hooks/use-tool-health'
-import { getPendingInboxItemsServerFn } from '@/services/inbox/inbox.server'
+import { getInboxPendingQueryServerFn } from '@/services/inbox/inbox-reactive.server'
 import { useTagDataStore } from '@/stores/tag-data.store'
 import { useTagUIStore } from '@/stores/tag-ui.store'
 import {
@@ -72,7 +72,7 @@ function AppManager() {
   const { data: inboxResult } = useQuery({
     queryKey: ['inbox-pending-count'],
     queryFn: async () => {
-      return await getPendingInboxItemsServerFn()
+      return await getInboxPendingQueryServerFn()
     },
     staleTime: 30000,
     refetchInterval: 60000,

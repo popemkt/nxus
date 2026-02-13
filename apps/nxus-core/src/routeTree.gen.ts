@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InboxAutomationsRouteImport } from './routes/inbox_.automations'
 import { Route as AppsAppIdRouteImport } from './routes/apps.$appId'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InboxAutomationsRoute = InboxAutomationsRouteImport.update({
+  id: '/inbox_/automations',
+  path: '/inbox/automations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppsAppIdRoute = AppsAppIdRouteImport.update({
   id: '/apps/$appId',
   path: '/apps/$appId',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
+  '/inbox/automations': typeof InboxAutomationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
+  '/inbox/automations': typeof InboxAutomationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,25 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/settings': typeof SettingsRoute
   '/apps/$appId': typeof AppsAppIdRoute
+  '/inbox_/automations': typeof InboxAutomationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inbox' | '/settings' | '/apps/$appId'
+  fullPaths:
+    | '/'
+    | '/inbox'
+    | '/settings'
+    | '/apps/$appId'
+    | '/inbox/automations'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inbox' | '/settings' | '/apps/$appId'
-  id: '__root__' | '/' | '/inbox' | '/settings' | '/apps/$appId'
+  to: '/' | '/inbox' | '/settings' | '/apps/$appId' | '/inbox/automations'
+  id:
+    | '__root__'
+    | '/'
+    | '/inbox'
+    | '/settings'
+    | '/apps/$appId'
+    | '/inbox_/automations'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +87,7 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   SettingsRoute: typeof SettingsRoute
   AppsAppIdRoute: typeof AppsAppIdRoute
+  InboxAutomationsRoute: typeof InboxAutomationsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inbox_/automations': {
+      id: '/inbox_/automations'
+      path: '/inbox/automations'
+      fullPath: '/inbox/automations'
+      preLoaderRoute: typeof InboxAutomationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/apps/$appId': {
       id: '/apps/$appId'
       path: '/apps/$appId'
@@ -107,6 +135,7 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   SettingsRoute: SettingsRoute,
   AppsAppIdRoute: AppsAppIdRoute,
+  InboxAutomationsRoute: InboxAutomationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
