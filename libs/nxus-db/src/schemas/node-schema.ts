@@ -129,6 +129,17 @@ export const SYSTEM_SUPERTAGS = {
 } as const
 
 /**
+ * System query IDs — for persisted query nodes discoverable in the workbench.
+ * Each maps to a node with `#Query` supertag and a `field:query_definition` property.
+ */
+export const SYSTEM_QUERIES = {
+  INBOX_ALL: 'query:inbox-all',
+  INBOX_PENDING: 'query:inbox-pending',
+  INBOX_PROCESSING: 'query:inbox-processing',
+  INBOX_DONE: 'query:inbox-done',
+} as const
+
+/**
  * System field IDs — used for write operations (setProperty, addPropertyValue, etc.).
  * Values are typed as FieldSystemId to prevent accidental use with getProperty/node.properties.
  * For read operations, use FIELD_NAMES instead.

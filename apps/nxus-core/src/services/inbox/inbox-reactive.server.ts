@@ -18,6 +18,7 @@ import { z } from 'zod'
 import {
   FIELD_NAMES,
   SYSTEM_FIELDS,
+  SYSTEM_QUERIES,
   SYSTEM_SUPERTAGS,
   type FieldSystemId,
 } from '@nxus/db'
@@ -92,32 +93,34 @@ const INBOX_QUERIES = {
 } as const
 
 /**
- * Computed field definitions for inbox metrics
+ * Computed field definitions for inbox metrics.
+ * Each references a system query by its systemId; the actual QueryDefinition
+ * is loaded from the persisted query node at init time (with inline fallback).
  */
 const INBOX_COMPUTED_FIELD_DEFS: Array<{
   name: string
-  key: keyof typeof INBOX_QUERIES
-  definition: ComputedFieldDefinition
+  querySystemId: string
+  fallbackQuery: QueryDefinition
 }> = [
   {
     name: 'Inbox: Total Items',
-    key: 'allItems',
-    definition: { aggregation: 'COUNT', query: INBOX_QUERIES.allItems },
+    querySystemId: SYSTEM_QUERIES.INBOX_ALL,
+    fallbackQuery: INBOX_QUERIES.allItems,
   },
   {
     name: 'Inbox: Pending Count',
-    key: 'pendingItems',
-    definition: { aggregation: 'COUNT', query: INBOX_QUERIES.pendingItems },
+    querySystemId: SYSTEM_QUERIES.INBOX_PENDING,
+    fallbackQuery: INBOX_QUERIES.pendingItems,
   },
   {
     name: 'Inbox: Processing Count',
-    key: 'processingItems',
-    definition: { aggregation: 'COUNT', query: INBOX_QUERIES.processingItems },
+    querySystemId: SYSTEM_QUERIES.INBOX_PROCESSING,
+    fallbackQuery: INBOX_QUERIES.processingItems,
   },
   {
     name: 'Inbox: Done Count',
-    key: 'doneItems',
-    definition: { aggregation: 'COUNT', query: INBOX_QUERIES.doneItems },
+    querySystemId: SYSTEM_QUERIES.INBOX_DONE,
+    fallbackQuery: INBOX_QUERIES.doneItems,
   },
 ]
 
@@ -172,9 +175,14 @@ async function ensureInboxReactiveInit(): Promise<string[]> {
         if (found) {
           ids.push(found.id)
         } else {
+          // Load query definition from system query node (fallback to inline)
+          const query = await loadSystemQueryDefinition(
+            def.querySystemId,
+            def.fallbackQuery,
+          )
           const id = computedFieldService.create(db, {
             name: def.name,
-            definition: def.definition,
+            definition: { aggregation: 'COUNT', query },
           })
           ids.push(id)
         }
@@ -312,10 +320,15 @@ export function expandAutomationTemplate(
 
 /**
  * Get the computed field definitions used for inbox metrics.
- * Exported for testing.
+ * Exported for testing — returns the test-friendly format with
+ * the inline query definitions (not the system node references).
  */
 export function getInboxComputedFieldDefs() {
-  return INBOX_COMPUTED_FIELD_DEFS
+  return INBOX_COMPUTED_FIELD_DEFS.map((def) => ({
+    name: def.name,
+    querySystemId: def.querySystemId,
+    definition: { aggregation: 'COUNT' as const, query: def.fallbackQuery },
+  }))
 }
 
 /**
@@ -356,16 +369,42 @@ function nodeToInboxItem(node: AssembledNode): InboxItem {
 // ============================================================================
 
 /**
- * Get inbox items by status using the query evaluator.
- * Evaluates the appropriate INBOX_QUERY and converts results to InboxItem[].
+ * Load a QueryDefinition from a persisted system query node.
+ * Falls back to the inline INBOX_QUERIES if the system node doesn't exist yet.
  */
-async function queryInboxItemsByStatus(
-  queryDef: QueryDefinition,
+async function loadSystemQueryDefinition(
+  querySystemId: string,
+  fallback: QueryDefinition,
+): Promise<QueryDefinition> {
+  const { nodeFacade } = await import('@nxus/db/server')
+  await nodeFacade.init()
+
+  const node = await nodeFacade.findNodeBySystemId(querySystemId)
+  if (!node) return fallback
+
+  const defProp = node.properties[FIELD_NAMES.QUERY_DEFINITION]
+  if (!defProp?.[0]?.value) return fallback
+
+  try {
+    return JSON.parse(defProp[0].value as string) as QueryDefinition
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * Get inbox items by evaluating a persisted system query node.
+ * Loads the QueryDefinition from the node, evaluates it, and converts results to InboxItem[].
+ */
+async function queryInboxItemsBySystemQuery(
+  querySystemId: string,
+  fallback: QueryDefinition,
 ): Promise<InboxItem[]> {
   const { nodeFacade } = await import('@nxus/db/server')
   await nodeFacade.init()
 
-  const result = await nodeFacade.evaluateQuery(queryDef)
+  const definition = await loadSystemQueryDefinition(querySystemId, fallback)
+  const result = await nodeFacade.evaluateQuery(definition)
 
   return result.nodes
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -373,13 +412,16 @@ async function queryInboxItemsByStatus(
 }
 
 /**
- * Get pending inbox items via reactive query.
+ * Get pending inbox items via system query node.
  */
 export const getInboxPendingQueryServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   try {
-    const data = await queryInboxItemsByStatus(INBOX_QUERIES.pendingItems)
+    const data = await queryInboxItemsBySystemQuery(
+      SYSTEM_QUERIES.INBOX_PENDING,
+      INBOX_QUERIES.pendingItems,
+    )
     return { success: true as const, data }
   } catch (err) {
     console.error('[getInboxPendingQueryServerFn] Failed:', err)
@@ -388,13 +430,16 @@ export const getInboxPendingQueryServerFn = createServerFn({
 })
 
 /**
- * Get processing inbox items via reactive query.
+ * Get processing inbox items via system query node.
  */
 export const getInboxProcessingQueryServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   try {
-    const data = await queryInboxItemsByStatus(INBOX_QUERIES.processingItems)
+    const data = await queryInboxItemsBySystemQuery(
+      SYSTEM_QUERIES.INBOX_PROCESSING,
+      INBOX_QUERIES.processingItems,
+    )
     return { success: true as const, data }
   } catch (err) {
     console.error('[getInboxProcessingQueryServerFn] Failed:', err)
@@ -403,13 +448,16 @@ export const getInboxProcessingQueryServerFn = createServerFn({
 })
 
 /**
- * Get done inbox items via reactive query.
+ * Get done inbox items via system query node.
  */
 export const getInboxDoneQueryServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   try {
-    const data = await queryInboxItemsByStatus(INBOX_QUERIES.doneItems)
+    const data = await queryInboxItemsBySystemQuery(
+      SYSTEM_QUERIES.INBOX_DONE,
+      INBOX_QUERIES.doneItems,
+    )
     return { success: true as const, data }
   } catch (err) {
     console.error('[getInboxDoneQueryServerFn] Failed:', err)

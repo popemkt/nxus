@@ -15,6 +15,7 @@ import {
   nodeProperties,
   nodes,
   SYSTEM_FIELDS,
+  SYSTEM_QUERIES,
   SYSTEM_SUPERTAGS,
 } from '../schemas/node-schema.js';
 
@@ -528,6 +529,63 @@ export function bootstrapSystemNodesSync(
     assignSupertag(db, id, fieldId, supertagFieldId);
     assignSupertag(db, id, systemId, supertagFieldId, 1);
     setProperty(db, id, fieldTypeFieldId, JSON.stringify(field.fieldType));
+  }
+
+  // ============================================================================
+  // Step 5: Create system query nodes
+  // ============================================================================
+  if (verbose) console.log('\n[5/5] Creating system query nodes...');
+
+  const querySupertag = systemNodeIds.get(SYSTEM_SUPERTAGS.QUERY)!;
+  const queryDefFieldId = systemNodeIds.get(SYSTEM_FIELDS.QUERY_DEFINITION as string)!;
+
+  const systemQueries = [
+    {
+      systemId: SYSTEM_QUERIES.INBOX_ALL,
+      content: 'Inbox: All Items',
+      definition: {
+        filters: [
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.INBOX },
+        ],
+      },
+    },
+    {
+      systemId: SYSTEM_QUERIES.INBOX_PENDING,
+      content: 'Inbox: Pending Items',
+      definition: {
+        filters: [
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.INBOX },
+          { type: 'property', fieldId: SYSTEM_FIELDS.STATUS as string, op: 'eq', value: 'pending' },
+        ],
+      },
+    },
+    {
+      systemId: SYSTEM_QUERIES.INBOX_PROCESSING,
+      content: 'Inbox: Processing Items',
+      definition: {
+        filters: [
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.INBOX },
+          { type: 'property', fieldId: SYSTEM_FIELDS.STATUS as string, op: 'eq', value: 'processing' },
+        ],
+      },
+    },
+    {
+      systemId: SYSTEM_QUERIES.INBOX_DONE,
+      content: 'Inbox: Done Items',
+      definition: {
+        filters: [
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.INBOX },
+          { type: 'property', fieldId: SYSTEM_FIELDS.STATUS as string, op: 'eq', value: 'done' },
+        ],
+      },
+    },
+  ];
+
+  for (const q of systemQueries) {
+    const id = upsertSystemNode(db, q.systemId, q.content, verbose);
+    assignSupertag(db, id, querySupertag, supertagFieldId);
+    assignSupertag(db, id, systemId, supertagFieldId, 1);
+    setProperty(db, id, queryDefFieldId, JSON.stringify(q.definition));
   }
 
   // ============================================================================
