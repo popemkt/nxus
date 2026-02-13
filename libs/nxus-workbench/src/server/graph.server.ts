@@ -231,7 +231,7 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
             .where(eq(nodes.id, supertagId))
             .get()
           if (stNode) {
-            supertagNames[supertagId] = stNode.content || stNode.systemId || 'Unknown'
+            supertagNames[supertagId] = stNode.content ?? stNode.systemId ?? 'Unknown'
           }
         }
         supertagName = supertagId ? (supertagNames[supertagId] || null) : null
@@ -239,7 +239,7 @@ export const getGraphStructureServerFn = createServerFn({ method: 'GET' })
 
       graphNodes.push({
         id: node.id,
-        label: node.content || node.systemId || 'Untitled',
+        label: node.content ?? node.systemId ?? 'Untitled',
         systemId: node.systemId,
         supertagId,
         supertagName,
@@ -449,7 +449,7 @@ export const getBacklinksWithDepthServerFn = createServerFn({ method: 'GET' })
 
           backlinks.push({
             nodeId: refNodeId,
-            label: refNode.content || refNode.systemId || 'Untitled',
+            label: refNode.content ?? refNode.systemId ?? 'Untitled',
             supertagId,
             depth: currentDepth + 1,
           })

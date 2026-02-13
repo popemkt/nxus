@@ -210,7 +210,7 @@ export function createQuerySubscriptionService(
       .join(';')
 
     const supertagsSignature = node.supertags
-      .map((s) => s.systemId || s.id)
+      .map((s) => s.id)
       .sort()
       .join(',')
 

@@ -176,7 +176,7 @@ function assembledNodeToGraphNode(source: AssembledNode): GraphNode {
 
   return {
     id: source.id,
-    label: source.content || source.systemId || 'Untitled',
+    label: source.content ?? source.systemId ?? 'Untitled',
     type: 'node',
     isVirtual: false,
     supertag,

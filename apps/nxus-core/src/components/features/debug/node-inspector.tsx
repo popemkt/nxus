@@ -232,7 +232,7 @@ export function NodeInspector({ node, onNavigate }: NodeInspectorProps) {
                 >
                   <ArrowsLeftRight className="size-3 text-muted-foreground" />
                   <span className="truncate group-hover:underline">
-                    {bl.content || bl.systemId || bl.id.slice(0, 8)}
+                    {bl.content ?? bl.systemId ?? bl.id.slice(0, 8)}
                   </span>
                   {bl.supertags.length > 0 && (
                     <span className="text-muted-foreground ml-auto shrink-0">

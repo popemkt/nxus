@@ -115,12 +115,12 @@ export function SupertagFilterEditor({
           <SelectContent>
             {supertags.map((supertag: AssembledNode) => (
               <SelectItem
-                key={supertag.systemId || supertag.id}
-                value={supertag.systemId || supertag.id}
+                key={supertag.systemId ?? supertag.id}
+                value={supertag.systemId ?? supertag.id}
               >
                 <span className="flex items-center gap-2">
                   <span className="text-primary">#</span>
-                  {formatSupertagName(supertag.systemId || supertag.content || '')}
+                  {formatSupertagName(supertag.systemId ?? supertag.content ?? '')}
                 </span>
               </SelectItem>
             ))}
