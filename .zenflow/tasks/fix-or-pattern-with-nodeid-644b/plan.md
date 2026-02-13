@@ -18,7 +18,8 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
+<!-- chat-id: 94ffe80c-e674-4f58-a25c-fe3df650af68 -->
 
 Assess the task's difficulty, as underestimating it leads to poor outcomes.
 - easy: Straightforward implementation, trivial bug fix or feature
@@ -52,16 +53,17 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Fix critical OR pattern in query-subscription signature and all UI fallback patterns
 
-Implement the task according to the technical specification and general engineering best practices.
+Apply all fixes from `spec.md`:
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase
-3. If relevant, write unit tests alongside each change.
-4. Run relevant tests and linters in the end of each step.
-5. Perform basic manual verification if applicable.
-6. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+1. **Critical fix** — `query-subscription.service.ts:213`: Change `s.systemId || s.id` to `s.id` in `computeNodeSignature()`. This ensures stable, consistent signatures for change detection.
+2. **UI fixes** — Replace `||` with `??` (nullish coalescing) in all display fallback chains across:
+   - `supertag-filter.tsx` (lines 118, 119, 123)
+   - `graph.server.ts` (lines 234, 242, 452)
+   - `use-graph-data.ts` (line 179)
+   - `NodeInspector.tsx` (lines 211, 213, 370, 406, 551, 588)
+   - `apps/nxus-core/.../node-inspector.tsx` (line 235)
+   - `mini-app-example.ts` (line 49)
+3. Run `pnpm test:libs` to verify all tests pass.
+4. Write report to `{@artifacts_path}/report.md`.
