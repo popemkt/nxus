@@ -208,9 +208,9 @@ export function NodeInspector({
                 <button
                   onClick={() => onNavigate(item.id)}
                   className="hover:text-primary hover:underline truncate max-w-[120px]"
-                  title={item.content || item.systemId || item.id}
+                  title={item.content ?? item.systemId ?? item.id}
                 >
-                  {item.content || item.systemId || item.id.slice(0, 8)}
+                  {item.content ?? item.systemId ?? item.id.slice(0, 8)}
                 </button>
                 {idx < ownerChain.length - 2 && (
                   <CaretRight className="size-3 shrink-0" />
@@ -367,7 +367,7 @@ export function NodeInspector({
                 >
                   <Cube className="size-3 text-muted-foreground" />
                   <span className="truncate group-hover:underline">
-                    {child.content || child.systemId || child.id.slice(0, 8)}
+                    {child.content ?? child.systemId ?? child.id.slice(0, 8)}
                   </span>
                   {child.supertags.length > 0 && (
                     <span className="inline-flex items-center gap-0.5 text-primary/70 ml-auto shrink-0">
@@ -403,7 +403,7 @@ export function NodeInspector({
                 >
                   <Cube className="size-3 text-muted-foreground" />
                   <span className="truncate group-hover:underline">
-                    {bl.content || bl.systemId || bl.id.slice(0, 8)}
+                    {bl.content ?? bl.systemId ?? bl.id.slice(0, 8)}
                   </span>
                   {bl.supertags.length > 0 && (
                     <span className="inline-flex items-center gap-0.5 text-primary/70 ml-auto shrink-0">
@@ -548,7 +548,7 @@ function NodeLink({
 
   const linkedNode = nodeResult?.success ? nodeResult.node : null
   const displayName =
-    linkedNode?.content || linkedNode?.systemId || nodeId.slice(0, 8)
+    linkedNode?.content ?? linkedNode?.systemId ?? nodeId.slice(0, 8)
   const supertag = linkedNode?.supertags?.[0]
 
   return (
@@ -585,7 +585,7 @@ function OutgoingRefLink({
 
   const linkedNode = nodeResult?.success ? nodeResult.node : null
   const displayName =
-    linkedNode?.content || linkedNode?.systemId || nodeId.slice(0, 8)
+    linkedNode?.content ?? linkedNode?.systemId ?? nodeId.slice(0, 8)
   const supertag = linkedNode?.supertags?.[0]
 
   return (

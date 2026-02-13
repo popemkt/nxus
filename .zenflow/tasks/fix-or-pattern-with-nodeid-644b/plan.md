@@ -53,7 +53,8 @@ Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warra
 
 ---
 
-### [ ] Step: Fix critical OR pattern in query-subscription signature and all UI fallback patterns
+### [x] Step: Fix critical OR pattern in query-subscription signature and all UI fallback patterns
+<!-- chat-id: bb05188f-954d-49da-8dbc-a2ccf4aca636 -->
 
 Apply all fixes from `spec.md`:
 
