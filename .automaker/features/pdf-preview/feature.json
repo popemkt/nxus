@@ -1,0 +1,14 @@
+{
+  "id": "pdf-preview",
+  "category": "UI",
+  "title": "PDF Viewer Integration",
+  "description": "Inline PDF preview for attached documents with page navigation, zoom, and text selection.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "file-attachments"
+  ],
+  "createdAt": "2026-02-09T14:55:22.798Z",
+  "updatedAt": "2026-02-09T14:55:22.798Z"
+}

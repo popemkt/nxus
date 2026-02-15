@@ -1,0 +1,12 @@
+{
+  "id": "table-sorting",
+  "category": "UI",
+  "title": "Multi-Column Table Sorting",
+  "description": "Sort table view by multiple columns with ascending/descending order and custom sort functions for complex field types.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.791Z",
+  "updatedAt": "2026-02-09T14:55:22.791Z"
+}

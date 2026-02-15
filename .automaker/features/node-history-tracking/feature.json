@@ -1,0 +1,12 @@
+{
+  "id": "node-history-tracking",
+  "category": "Core",
+  "title": "Node History and Versioning",
+  "description": "Track all changes to nodes over time with full version history. Users can view previous versions, compare changes, and restore to earlier states.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.783Z",
+  "updatedAt": "2026-02-09T14:55:22.783Z"
+}

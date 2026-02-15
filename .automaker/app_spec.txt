@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project_specification>
+  <project_name>Nxus</project_name>
+
+  <overview>
+    Nxus is a local-first, node-based application ecosystem inspired by Tana. At its core is a unified node system where everything - apps, tools, commands, events, tasks - is represented as nodes with properties and supertags. The project follows an Nx monorepo architecture with mini-apps built around the central node data layer. The system provides a personal productivity and developer tooling platform that manages apps, repositories, commands, scripts, and schedules through an intuitive interface with multiple visualization modes (gallery, table, graph) and a powerful query system for organizing and discovering content.
+  </overview>
+
+  <technology_stack>
+    <technology>TypeScript 5.9</technology>
+    <technology>Nx 22.x Monorepo</technology>
+    <technology>pnpm Package Manager</technology>
+    <technology>TanStack Start (Full-Stack React Framework)</technology>
+    <technology>TanStack Router (File-based Routing)</technology>
+    <technology>TanStack Query (Server State Management)</technology>
+    <technology>React 19</technology>
+    <technology>Vite (Build Tool)</technology>
+    <technology>SQLite with better-sqlite3</technology>
+    <technology>Drizzle ORM</technology>
+    <technology>Zustand (Client State Management)</technology>
+    <technology>Zod (Schema Validation)</technology>
+    <technology>shadcn/ui Components</technology>
+    <technology>Tailwind CSS</technology>
+    <technology>React Flow (Graph Visualization)</technology>
+    <technology>Phosphor Icons</technology>
+    <technology>xterm.js (Terminal Emulation)</technology>
+    <technology>Playwright (E2E Testing)</technology>
+    <technology>Vitest (Unit Testing)</technology>
+    <technology>RRule (Recurrence Rules for Calendar)</technology>
+    <technology>node-pty (PTY for Shell Integration)</technology>
+  </technology_stack>
+
+  <core_capabilities>
+    <capability>Node-based data architecture where all entities (apps, tools, repos, commands, tags, events, tasks) are nodes with properties and supertags</capability>
+    <capability>Supertag system (similar to Tana) for typing nodes with inheritance support via field:extends</capability>
+    <capability>Reactive query system with real-time subscriptions for live data updates</capability>
+    <capability>Multi-view visualization: Gallery view with grid/list modes, Table view for data browsing, Graph view for relationship exploration</capability>
+    <capability>Command execution system with PTY-based interactive terminal support</capability>
+    <capability>Workflow engine for multi-step command orchestration with conditions, parallel execution, and branching</capability>
+    <capability>Computed fields with aggregations (SUM, COUNT, AVG, MIN, MAX)</capability>
+    <capability>Automation system with query membership triggers and threshold-based rules</capability>
+    <capability>Inbox system for capturing and processing new items</capability>
+    <capability>Tag hierarchy with drag-and-drop organization and filtering</capability>
+    <capability>Calendar integration with Google Calendar sync support and recurring events (RRule)</capability>
+    <capability>Local-first SQLite database with offline-first architecture</capability>
+  </core_capabilities>
+
+  <implemented_features>
+    <feature>
+      <name>Node System with Supertags</name>
+      <description>Core node-based data layer where all entities are nodes with dynamic properties and supertags. Includes supertag inheritance, field definitions, and system nodes for metadata.</description>
+      <file_locations>
+        <location>libs/nxus-db/src/schemas/node-schema.ts</location>
+        <location>libs/nxus-db/src/services/node.service.ts</location>
+        <location>libs/nxus-db/src/types/node.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Reactive Query System</name>
+      <description>Tana-like reactive queries with multiple filter types (supertag, property, content, relation, temporal, hasField) and logical operators (AND/OR/NOT). Supports saved queries and live subscriptions.</description>
+      <file_locations>
+        <location>libs/nxus-db/src/types/query.ts</location>
+        <location>libs/nxus-db/src/services/query-evaluator.service.ts</location>
+        <location>libs/nxus-db/src/reactive/query-subscription.service.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Event Bus and Reactive Infrastructure</name>
+      <description>In-memory pub/sub event bus for mutation events with filtered subscriptions, supporting real-time updates for queries and automations.</description>
+      <file_locations>
+        <location>libs/nxus-db/src/reactive/event-bus.ts</location>
+        <location>libs/nxus-db/src/reactive/types.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Automation Engine</name>
+      <description>Rule-based automation system with query membership triggers and threshold triggers, supporting actions like setting properties, managing supertags, creating nodes, and webhooks.</description>
+      <file_locations>
+        <location>libs/nxus-db/src/reactive/automation.service.ts</location>
+        <location>libs/nxus-db/src/reactive/types.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Computed Fields</name>
+      <description>Aggregation-based computed fields that automatically update based on query results, supporting SUM, COUNT, AVG, MIN, MAX operations.</description>
+      <file_locations>
+        <location>libs/nxus-db/src/reactive/computed-field.service.ts</location>
+        <location>libs/nxus-db/src/reactive/types.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>App Manager (Core App)</name>
+      <description>Main application interface with gallery/table/graph views for managing apps, tools, and repositories. Includes search, tag filtering, and multiple visualization modes.</description>
+      <file_locations>
+        <location>apps/nxus-core/src/routes/index.tsx</location>
+        <location>apps/nxus-core/src/components/features/gallery/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Interactive Terminal</name>
+      <description>PTY-based terminal integration for command execution with streaming output, supporting interactive shells and command workflows.</description>
+      <file_locations>
+        <location>apps/nxus-core/src/components/features/terminal/</location>
+        <location>apps/nxus-core/src/services/shell/pty.server.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Workflow Engine</name>
+      <description>Multi-step command orchestration supporting command steps, conditions, parallel execution, delays, notifications, and prompts with DAG-based visualization.</description>
+      <file_locations>
+        <location>libs/nxus-db/src/types/workflow.ts</location>
+        <location>apps/nxus-core/src/components/features/workflow/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Node Workbench</name>
+      <description>Tana-inspired three-panel interface for exploring and managing nodes with NodeBrowser, NodeInspector, SupertagSidebar, and QueryResultsView components.</description>
+      <file_locations>
+        <location>libs/nxus-workbench/src/index.ts</location>
+        <location>libs/nxus-workbench/src/route.tsx</location>
+        <location>apps/nxus-workbench/src/routes/index.tsx</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Visual Query Builder</name>
+      <description>Drag-and-drop query builder UI with filter chips, logical operators, and saved queries panel for building complex Tana-like queries.</description>
+      <file_locations>
+        <location>libs/nxus-workbench/src/features/query-builder/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Graph Visualization</name>
+      <description>2D and 3D graph renderers using React Flow for visualizing node relationships, dependencies, and hierarchies with interactive controls.</description>
+      <file_locations>
+        <location>libs/nxus-workbench/src/features/graph/</location>
+        <location>apps/nxus-core/src/components/features/gallery/item-views/graph-view/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Calendar System</name>
+      <description>Calendar mini-app with event management, recurring events (RRule), Google Calendar OAuth sync, and task checkbox support.</description>
+      <file_locations>
+        <location>libs/nxus-calendar/src/</location>
+        <location>apps/nxus-calendar/src/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Shared UI Component Library</name>
+      <description>shadcn/ui based component library with Button, Card, Input, Select, Combobox, Alert Dialog, Tabs, and more.</description>
+      <file_locations>
+        <location>libs/nxus-ui/src/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Tag Hierarchy System</name>
+      <description>Hierarchical tag management with drag-and-drop reorganization, sub-tag inclusion toggles, and tag-based filtering.</description>
+      <file_locations>
+        <location>apps/nxus-core/src/components/features/gallery/tag-tree/</location>
+        <location>apps/nxus-core/src/stores/tag-data.store.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Inbox Processing</name>
+      <description>Inbox feature for capturing new items with processing workflow to categorize and tag incoming content.</description>
+      <file_locations>
+        <location>apps/nxus-core/src/components/features/inbox/</location>
+        <location>apps/nxus-core/src/services/inbox/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Command Palette</name>
+      <description>Global command palette for quick access to commands, navigation, and app actions.</description>
+      <file_locations>
+        <location>apps/nxus-core/src/components/features/command-palette/</location>
+        <location>apps/nxus-core/src/services/command-palette/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Gateway Landing Page</name>
+      <description>Landing page application that provides navigation links to all mini-apps in the ecosystem.</description>
+      <file_locations>
+        <location>apps/nxus-gateway/src/</location>
+      </file_locations>
+    </feature>
+  </implemented_features>
+
+  <additional_requirements>
+    <requirement>Node.js 20.x or higher</requirement>
+    <requirement>pnpm 10.15.0+</requirement>
+    <requirement>SQLite (via better-sqlite3) for local-first data storage</requirement>
+    <requirement>Ports 3000 (Core), 3001 (Gateway), 3002 (Workbench) for development</requirement>
+    <requirement>Google OAuth credentials for Calendar sync functionality</requirement>
+  </additional_requirements>
+
+  <development_guidelines>
+    <guideline>Use named exports only, no default exports</guideline>
+    <guideline>Store files use *.store.ts naming convention</guideline>
+    <guideline>Hooks use use-*.ts naming convention</guideline>
+    <guideline>Server functions use *.server.ts naming with ServerFn suffix</guideline>
+    <guideline>Use dynamic imports for @nxus/db/server in app code to prevent bundling Node.js dependencies in client code</guideline>
+    <guideline>Return { success: true; data } | { success: false; error: string } from server functions</guideline>
+    <guideline>Use cn() from @nxus/ui for className merging, never string concatenation</guideline>
+    <guideline>Use CVA (Class Variance Authority) for component variants</guideline>
+    <guideline>Use Zod schemas for validation at data boundaries</guideline>
+    <guideline>Prefer discriminated unions for polymorphic types</guideline>
+    <guideline>Database operations must work across architecture modes (table, node, graph)</guideline>
+    <guideline>Use @/* path alias for src imports</guideline>
+  </development_guidelines>
+
+  <implementation_roadmap>
+    <phase>
+      <name>Core Node System</name>
+      <status>completed</status>
+      <description>Node-based data layer with supertags, properties, and CRUD operations using SQLite and Drizzle ORM</description>
+    </phase>
+    <phase>
+      <name>Reactive Query System</name>
+      <status>completed</status>
+      <description>Tana-like query builder with multiple filter types, saved queries, and live subscriptions</description>
+    </phase>
+    <phase>
+      <name>Event Bus and Automations</name>
+      <status>completed</status>
+      <description>Mutation event broadcasting with query subscription service, computed fields, and automation engine</description>
+    </phase>
+    <phase>
+      <name>Mini-Apps Architecture</name>
+      <status>completed</status>
+      <description>Gateway, Core, and Workbench applications with shared UI library and routing</description>
+    </phase>
+    <phase>
+      <name>Graph Visualization</name>
+      <status>completed</status>
+      <description>2D graph view with React Flow, including 3D graph rendering capabilities</description>
+    </phase>
+    <phase>
+      <name>Terminal and Command Execution</name>
+      <status>completed</status>
+      <description>PTY-based terminal with streaming output and workflow orchestration</description>
+    </phase>
+    <phase>
+      <name>Calendar Integration</name>
+      <status>in_progress</status>
+      <description>Calendar app with event management, recurring events, and Google Calendar OAuth sync</description>
+    </phase>
+    <phase>
+      <name>Multi-type Support</name>
+      <status>completed</status>
+      <description>Nodes can have multiple supertags with proper syncing to legacy itemTypes for backwards compatibility</description>
+    </phase>
+  </implementation_roadmap>
+</project_specification>

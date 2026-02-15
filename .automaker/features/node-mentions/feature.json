@@ -1,0 +1,14 @@
+{
+  "id": "node-mentions",
+  "category": "UI",
+  "title": "Node Mentions with Autocomplete",
+  "description": "Type @nodename in text fields to create links to other nodes with autocomplete suggestions. Automatically creates bidirectional references.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "node-linking"
+  ],
+  "createdAt": "2026-02-09T14:55:22.787Z",
+  "updatedAt": "2026-02-09T14:55:22.787Z"
+}

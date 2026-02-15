@@ -1,0 +1,103 @@
+{
+  "id": "advanced-search",
+  "category": "UI",
+  "title": "Advanced Full-Text Search",
+  "description": "Implement SQLite FTS5 full-text search across node content, properties, and metadata. Supports fuzzy matching, phrase search, and search result highlighting.",
+  "status": "in_progress",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.784Z",
+  "updatedAt": "2026-02-09T15:48:48.588Z",
+  "skipTests": false,
+  "model": "claude-opus",
+  "thinkingLevel": "high",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "feature/main-1770649897578-dx3o",
+  "planningMode": "spec",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "descriptionHistory": [],
+  "startedAt": "2026-02-09T15:42:01.820Z",
+  "planSpec": {
+    "status": "approved",
+    "version": 1,
+    "reviewedByUser": false,
+    "content": "I'll explore the codebase to understand the existing structure before generating the specification.\n\n🔧 Tool: Task\nInput: {\n  \"description\": \"Explore database and search structure\",\n  \"prompt\": \"I need to understand the codebase structure for implementing SQLite FTS5 full-text search. Please explore and find:\\n\\n1. Database schema and node structure - how are nodes stored? What tables exist?\\n2. Any existing search functionality\\n3. How queries are evaluated (look at evaluateQuery and related functions)\\n4. The architecture modes (table, node, graph) mentioned in codebase-rules.md\\n5. How the UI currently handles search or filtering\\n6. The @nxus/db package structure (both client-safe and server exports)\\n\\nFocus on libs/nxus-db and apps/nxus-core. Provide file paths and key code snippets.\",\n  \"subagent_type\": \"Explore\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o -type f -name \\\"*.ts\\\" -o -name \\\"*.tsx\\\" | head -20\",\n  \"description\": \"List sample files in the codebase\"\n}\n\n🔧 Tool: Glob\nInput: {\n  \"pattern\": \"libs/nxus-db/**/*.ts\",\n  \"path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o\"\n}\n\n🔧 Tool: Glob\nInput: {\n  \"pattern\": \"apps/nxus-core/**/*.ts\",\n  \"path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/index.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/server.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/schemas/node-schema.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/query-evaluator.service.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/types/query.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/apps/nxus-core/src/config/feature-flags.ts\"\n}\n\n🔧 Tool: Grep\nInput: {\n  \"pattern\": \"evaluateQuery|search|Search|FTS|fts\",\n  \"type\": \"ts\",\n  \"path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/apps/nxus-core/src\",\n  \"output_mode\": \"files_with_matches\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/node.service.ts\",\n  \"limit\": 200\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/client/master-client.ts\",\n  \"limit\": 100\n}\n\n🔧 Tool: Grep\nInput: {\n  \"pattern\": \"evaluateQuery\",\n  \"type\": \"ts\",\n  \"path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/apps/nxus-core/src\",\n  \"output_mode\": \"files_with_matches\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/apps/nxus-core/src -name \\\"*query*\\\" -type f\",\n  \"description\": \"Find query-related files in nxus-core\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services -name \\\"*query*\\\" -type f\",\n  \"description\": \"Find query service files\"\n}\n\n🔧 Tool: Grep\nInput: {\n  \"pattern\": \"createServerFn.*query|evaluateQuery|ContentFilter\",\n  \"type\": \"ts\",\n  \"path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o\",\n  \"output_mode\": \"files_with_matches\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-workbench/src/server/query.server.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-workbench/src/features/query-builder/filters/content-filter.tsx\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/apps/nxus-core/src/lib/query-client.ts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/apps/nxus-core/drizzle.config.ts\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/schemas/\",\n  \"description\": \"List schema files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/types/node.ts\",\n  \"limit\": 150\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/bootstrap.ts\",\n  \"limit\": 150\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/index.ts\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src -name \\\"*migration*\\\" -o -name \\\"*migrate*\\\"\",\n  \"description\": \"Find migration files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/query-evaluator.service.test.ts\",\n  \"limit\": 200\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o -type f -name \\\"*.db\\\" | head -5\",\n  \"description\": \"Find database files to understand structure\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"grep -r \\\"contentPlain\\\\|content_plain\\\" /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src --include=\\\"*.ts\\\" | head -20\",\n  \"description\": \"Find references to contentPlain field\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/node.service.ts\",\n  \"offset\": 200,\n  \"limit\": 200\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"grep -n \\\"CREATE TABLE\\\" /home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/client/master-client.ts\",\n  \"description\": \"Find table creation SQL\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/client/master-client.ts\",\n  \"offset\": 210,\n  \"limit\": 150\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/home/popemkt/repos/nxus/.worktrees/feature-main-1770649897578-dx3o/libs/nxus-db/src/services/node.service.ts\",\n  \"offset\": 400,\n  \"limit\": 200\n}\nNow I have a comprehensive understanding of the codebase. Let me generate the specification.\n\n---\n\n## 1. Problem\n\nUsers need to search across all node content and property values efficiently. The current substring matching is slow, doesn't support fuzzy matching or phrase search, and only searches node titles—not property values stored in the `node_properties` table.\n\n## 2. Solution\n\nImplement SQLite FTS5 full-text search by creating virtual tables that index both `nodes.content` and `node_properties.value`, with triggers to keep indexes synchronized. Extend the existing `ContentFilter` to support FTS5 query syntax including fuzzy matching, phrase search, and result highlighting.\n\n## 3. Acceptance Criteria\n\n- **GIVEN** a user searches for \"meeting notes\", **WHEN** they execute the search, **THEN** results include nodes where content OR any property value contains matching terms, ranked by relevance\n- **GIVEN** a user searches with a phrase like `\"project plan\"`, **WHEN** they execute the search, **THEN** only exact phrase matches are returned\n- **GIVEN** a user searches for \"configur*\", **WHEN** using wildcard/fuzzy mode, **THEN** results include \"configure\", \"configuration\", \"configured\", etc.\n- **GIVEN** search results are returned, **WHEN** displayed in the UI, **THEN** matching terms are highlighted with `<mark>` tags\n- **GIVEN** the FTS index exists, **WHEN** nodes or properties are created/updated/deleted, **THEN** the FTS index is automatically synchronized via triggers\n\n## 4. Files to Modify\n\n| File | Purpose | Action |\n|------|---------|--------|\n| `libs/nxus-db/src/schemas/fts-schema.ts` | FTS5 virtual table definitions and triggers | create |\n| `libs/nxus-db/src/schemas/index.ts` | Export FTS schema | modify |\n| `libs/nxus-db/src/client/master-client.ts` | Initialize FTS tables on database setup | modify |\n| `libs/nxus-db/src/types/query.ts` | Extend ContentFilter with FTS options | modify |\n| `libs/nxus-db/src/services/fts.service.ts` | FTS search and highlighting functions | create |\n| `libs/nxus-db/src/services/query-evaluator.service.ts` | Integrate FTS in content filter evaluation | modify |\n| `libs/nxus-db/src/services/index.ts` | Export FTS service | modify |\n| `libs/nxus-db/src/server.ts` | Export FTS service for server usage | modify |\n| `libs/nxus-workbench/src/features/query-builder/filters/content-filter.tsx` | Add FTS mode toggle and options | modify |\n| `libs/nxus-workbench/src/components/search-highlight.tsx` | Component to render highlighted search results | create |\n\n## 5. Implementation Tasks\n\n```tasks\n- [ ] T001: Create FTS5 virtual table schema with triggers | File: libs/nxus-db/src/schemas/fts-schema.ts\n- [ ] T002: Export FTS schema from schemas index | File: libs/nxus-db/src/schemas/index.ts\n- [ ] T003: Add FTS table initialization to master client | File: libs/nxus-db/src/client/master-client.ts\n- [ ] T004: Create initial FTS index population function | File: libs/nxus-db/src/services/fts.service.ts\n- [ ] T005: Extend ContentFilter schema with FTS options (fuzzy, phrase, highlight) | File: libs/nxus-db/src/types/query.ts\n- [ ] T006: Implement FTS search function with ranking and highlighting | File: libs/nxus-db/src/services/fts.service.ts\n- [ ] T007: Integrate FTS into evaluateContentFilter | File: libs/nxus-db/src/services/query-evaluator.service.ts\n- [ ] T008: Export FTS service from services index and server.ts | File: libs/nxus-db/src/services/index.ts\n- [ ] T009: Create SearchHighlight component for result rendering | File: libs/nxus-workbench/src/components/search-highlight.tsx\n- [ ] T010: Update ContentFilterEditor with FTS mode options | File: libs/nxus-workbench/src/features/query-builder/filters/content-filter.tsx\n- [ ] T011: Create Playwright verification test for FTS search | File: e2e/fts-search-verification.spec.ts\n```\n\n## 6. Verification\n\n1. **Manual Testing**: Create several nodes with various content and properties, then search using:\n   - Simple terms (e.g., \"meeting\")\n   - Phrase search (e.g., `\"project meeting\"`)\n   - Wildcard search (e.g., \"config*\")\n   - Verify highlighting in search results\n\n2. **Playwright E2E Test**: \n   - Create test nodes with known content\n   - Execute searches via the query builder UI\n   - Verify correct results appear with highlighting\n   - Test phrase and fuzzy search modes\n\n3. **Database Verification**:\n   - Confirm FTS tables are created on app startup\n   - Confirm triggers sync data on CRUD operations\n   - Run `SELECT * FROM nodes_fts WHERE nodes_fts MATCH 'test'` directly\n\n---",
+    "generatedAt": "2026-02-09T15:48:48.584Z",
+    "tasks": [
+      {
+        "id": "T001",
+        "description": "Create FTS5 virtual table schema with triggers",
+        "filePath": "libs/nxus-db/src/schemas/fts-schema.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T002",
+        "description": "Export FTS schema from schemas index",
+        "filePath": "libs/nxus-db/src/schemas/index.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T003",
+        "description": "Add FTS table initialization to master client",
+        "filePath": "libs/nxus-db/src/client/master-client.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T004",
+        "description": "Create initial FTS index population function",
+        "filePath": "libs/nxus-db/src/services/fts.service.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T005",
+        "description": "Extend ContentFilter schema with FTS options (fuzzy, phrase, highlight)",
+        "filePath": "libs/nxus-db/src/types/query.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T006",
+        "description": "Implement FTS search function with ranking and highlighting",
+        "filePath": "libs/nxus-db/src/services/fts.service.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T007",
+        "description": "Integrate FTS into evaluateContentFilter",
+        "filePath": "libs/nxus-db/src/services/query-evaluator.service.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T008",
+        "description": "Export FTS service from services index and server.ts",
+        "filePath": "libs/nxus-db/src/services/index.ts",
+        "status": "pending"
+      },
+      {
+        "id": "T009",
+        "description": "Create SearchHighlight component for result rendering",
+        "filePath": "libs/nxus-workbench/src/components/search-highlight.tsx",
+        "status": "pending"
+      },
+      {
+        "id": "T010",
+        "description": "Update ContentFilterEditor with FTS mode options",
+        "filePath": "libs/nxus-workbench/src/features/query-builder/filters/content-filter.tsx",
+        "status": "pending"
+      },
+      {
+        "id": "T011",
+        "description": "Create Playwright verification test for FTS search",
+        "filePath": "e2e/fts-search-verification.spec.ts",
+        "status": "pending"
+      }
+    ],
+    "tasksTotal": 11,
+    "tasksCompleted": 0,
+    "approvedAt": "2026-02-09T15:48:48.586Z",
+    "currentTaskId": "T001"
+  }
+}

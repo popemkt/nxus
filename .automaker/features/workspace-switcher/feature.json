@@ -1,0 +1,12 @@
+{
+  "id": "workspace-switcher",
+  "category": "Core",
+  "title": "Multiple Workspace Support",
+  "description": "Create and switch between separate workspaces with isolated databases for different projects or contexts.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.800Z",
+  "updatedAt": "2026-02-09T14:55:22.800Z"
+}

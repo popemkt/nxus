@@ -1,0 +1,12 @@
+{
+  "id": "rich-text-editor",
+  "category": "UI",
+  "title": "Rich Text Editor for Content",
+  "description": "Replace plain text content with rich text editor supporting markdown, formatting, images, code blocks, and embedded content.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.789Z",
+  "updatedAt": "2026-02-09T14:55:22.789Z"
+}

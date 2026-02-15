@@ -1,0 +1,12 @@
+{
+  "id": "query-sharing",
+  "category": "Core",
+  "title": "Query Sharing and Collaboration",
+  "description": "Share saved queries with other users via URLs or export. Includes query templates and community query library.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.793Z",
+  "updatedAt": "2026-02-09T14:55:22.793Z"
+}

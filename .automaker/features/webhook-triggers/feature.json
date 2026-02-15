@@ -1,0 +1,12 @@
+{
+  "id": "webhook-triggers",
+  "category": "API",
+  "title": "Incoming Webhook Receivers",
+  "description": "Accept incoming webhooks from external services to create nodes, trigger workflows, or update data based on external events.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.795Z",
+  "updatedAt": "2026-02-09T14:55:22.795Z"
+}

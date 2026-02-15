@@ -1,0 +1,12 @@
+{
+  "id": "user-profiles",
+  "category": "Authentication",
+  "title": "User Profile Management",
+  "description": "User profile system with customizable display names, avatars, and per-user preferences for multi-user scenarios.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.800Z",
+  "updatedAt": "2026-02-09T14:55:22.800Z"
+}

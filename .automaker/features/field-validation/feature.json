@@ -1,0 +1,12 @@
+{
+  "id": "field-validation",
+  "category": "Core",
+  "title": "Field Validation Rules",
+  "description": "Define validation rules for node fields including required fields, regex patterns, min/max values, and custom validation functions.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.788Z",
+  "updatedAt": "2026-02-09T14:55:22.788Z"
+}

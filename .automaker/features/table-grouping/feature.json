@@ -1,0 +1,12 @@
+{
+  "id": "table-grouping",
+  "category": "UI",
+  "title": "Table View Grouping",
+  "description": "Group table rows by property values with collapsible groups and aggregate statistics per group.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.791Z",
+  "updatedAt": "2026-02-09T14:55:22.791Z"
+}

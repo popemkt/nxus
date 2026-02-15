@@ -1,0 +1,12 @@
+{
+  "id": "dark-mode",
+  "category": "UI",
+  "title": "Dark Mode Theme",
+  "description": "Full dark mode theme implementation with automatic detection based on system preferences. Includes smooth transitions and theme persistence.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.785Z",
+  "updatedAt": "2026-02-09T14:55:22.785Z"
+}

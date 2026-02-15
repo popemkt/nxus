@@ -1,0 +1,14 @@
+{
+  "id": "api-documentation",
+  "category": "API",
+  "title": "Interactive API Documentation",
+  "description": "Auto-generated OpenAPI documentation with interactive playground for testing API endpoints and generating client code.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [
+    "api-endpoints"
+  ],
+  "createdAt": "2026-02-09T14:55:22.796Z",
+  "updatedAt": "2026-02-09T14:55:22.796Z"
+}

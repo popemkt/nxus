@@ -1,0 +1,12 @@
+{
+  "id": "timeline-view",
+  "category": "UI",
+  "title": "Timeline Visualization",
+  "description": "Display nodes on a timeline based on date properties. Supports zooming, filtering, and Gantt-style dependencies.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.792Z",
+  "updatedAt": "2026-02-09T14:55:22.792Z"
+}

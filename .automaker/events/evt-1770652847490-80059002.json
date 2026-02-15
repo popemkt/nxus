@@ -1,0 +1,11 @@
+{
+  "id": "evt-1770652847490-80059002",
+  "trigger": "feature_error",
+  "timestamp": "2026-02-09T16:00:47.491Z",
+  "projectPath": "/home/popemkt/repos/nxus",
+  "projectName": "nxus",
+  "featureId": "advanced-search",
+  "featureName": "Advanced Full-Text Search",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

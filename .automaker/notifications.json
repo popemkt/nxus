@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "notifications": [
+    {
+      "id": "2a8f2f4b-dfef-430a-8b48-51ffaf577dd2",
+      "type": "spec_regeneration_complete",
+      "title": "Spec Generation Complete",
+      "message": "Created 50 features from the project specification.",
+      "createdAt": "2026-02-09T14:55:22.805Z",
+      "read": false,
+      "dismissed": false,
+      "projectPath": "/home/popemkt/repos/nxus"
+    }
+  ]
+}

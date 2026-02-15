@@ -1,0 +1,12 @@
+{
+  "id": "node-linking",
+  "category": "Core",
+  "title": "Bidirectional Node Linking",
+  "description": "Create explicit typed relationships between nodes with bidirectional backlinks. Supports relationship types like references, depends-on, blocks, etc.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.786Z",
+  "updatedAt": "2026-02-09T14:55:22.786Z"
+}

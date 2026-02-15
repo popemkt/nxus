@@ -1,0 +1,12 @@
+{
+  "id": "scheduled-queries",
+  "category": "Core",
+  "title": "Scheduled Query Execution",
+  "description": "Run queries on a schedule and perform actions on results like notifications, exports, or automated tagging.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.794Z",
+  "updatedAt": "2026-02-09T14:55:22.794Z"
+}

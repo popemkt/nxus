@@ -1,0 +1,14 @@
+{
+  "id": "email-notifications",
+  "category": "API",
+  "title": "Email Notification Integration",
+  "description": "Send email notifications for automation triggers, scheduled query results, and important events via SMTP or email service APIs.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "notification-system"
+  ],
+  "createdAt": "2026-02-09T14:55:22.795Z",
+  "updatedAt": "2026-02-09T14:55:22.795Z"
+}

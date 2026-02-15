@@ -1,0 +1,12 @@
+{
+  "id": "split-view",
+  "category": "UI",
+  "title": "Split View Mode",
+  "description": "Open multiple nodes or views side-by-side in split panels with adjustable sizes and independent scrolling.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.802Z",
+  "updatedAt": "2026-02-09T14:55:22.802Z"
+}

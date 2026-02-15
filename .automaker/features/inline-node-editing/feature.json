@@ -1,0 +1,12 @@
+{
+  "id": "inline-node-editing",
+  "category": "UI",
+  "title": "Inline Node Editing",
+  "description": "Edit node properties and content directly in gallery and table views without opening inspector. Supports batch editing mode.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.790Z",
+  "updatedAt": "2026-02-09T14:55:22.790Z"
+}

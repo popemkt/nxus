@@ -1,0 +1,12 @@
+{
+  "id": "api-endpoints",
+  "category": "API",
+  "title": "REST API for External Access",
+  "description": "Expose REST API endpoints for CRUD operations on nodes, query execution, and workflow triggering with API key authentication.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.795Z",
+  "updatedAt": "2026-02-09T14:55:22.795Z"
+}

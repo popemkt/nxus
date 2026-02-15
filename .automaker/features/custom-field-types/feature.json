@@ -1,0 +1,12 @@
+{
+  "id": "custom-field-types",
+  "category": "Core",
+  "title": "Custom Field Type Definitions",
+  "description": "Allow users to define custom field types with specific validation, rendering, and editing behaviors beyond built-in types.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.797Z",
+  "updatedAt": "2026-02-09T14:55:22.797Z"
+}

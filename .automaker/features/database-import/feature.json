@@ -1,0 +1,12 @@
+{
+  "id": "database-import",
+  "category": "Database",
+  "title": "Data Import from External Sources",
+  "description": "Import data from JSON, CSV, Markdown, Notion exports, and other formats. Includes field mapping, duplicate detection, and import preview.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.788Z",
+  "updatedAt": "2026-02-09T14:55:22.788Z"
+}

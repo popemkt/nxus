@@ -1,0 +1,12 @@
+{
+  "id": "mobile-responsive",
+  "category": "UI",
+  "title": "Mobile-Responsive Interface",
+  "description": "Optimize UI for mobile devices with touch-friendly controls, responsive layouts, and mobile-specific navigation.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.802Z",
+  "updatedAt": "2026-02-09T14:55:22.802Z"
+}

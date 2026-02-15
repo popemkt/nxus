@@ -1,0 +1,12 @@
+{
+  "id": "breadcrumb-navigation",
+  "category": "UI",
+  "title": "Breadcrumb Navigation",
+  "description": "Display hierarchical breadcrumb trails showing current location in node hierarchy with click-to-navigate.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.801Z",
+  "updatedAt": "2026-02-09T14:55:22.801Z"
+}

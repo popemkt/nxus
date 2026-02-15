@@ -1,0 +1,12 @@
+{
+  "id": "node-duplication",
+  "category": "Core",
+  "title": "Node Duplication and Cloning",
+  "description": "Duplicate existing nodes with all properties, tags, and optionally relationships. Supports deep cloning of linked nodes.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.799Z",
+  "updatedAt": "2026-02-09T14:55:22.799Z"
+}

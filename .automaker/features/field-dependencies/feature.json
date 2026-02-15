@@ -1,0 +1,14 @@
+{
+  "id": "field-dependencies",
+  "category": "Core",
+  "title": "Conditional Field Visibility",
+  "description": "Show/hide fields based on other field values or node conditions. Enables dynamic forms that adapt based on user selections.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "field-validation"
+  ],
+  "createdAt": "2026-02-09T14:55:22.789Z",
+  "updatedAt": "2026-02-09T14:55:22.789Z"
+}
