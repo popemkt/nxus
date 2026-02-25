@@ -1,155 +1,156 @@
 {
-  "id": "surrealdb",
-  "name": "SurrealDB",
-  "description": "Multi-model database for modern applications. Used as the graph backend for nxus when ARCHITECTURE_TYPE=graph.",
-  "type": "tool",
-  "path": "https://surrealdb.com",
-  "homepage": "https://surrealdb.com",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "surreal version 2>/dev/null || $HOME/.surrealdb/surreal version",
-  "installInstructions": "Run: curl -sSf https://install.surrealdb.com | sh\nThen add to PATH: export PATH=$HOME/.surrealdb:$PATH",
-  "commands": [
-    {
-      "id": "install-surrealdb",
-      "name": "Install (curl)",
-      "description": "Install SurrealDB via the official install script",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "curl -sSf https://install.surrealdb.com | sh"
+    "id": "surrealdb",
+    "name": "SurrealDB",
+    "description": "Multi-model database for modern applications. Used as the graph backend for nxus when ARCHITECTURE_TYPE=graph.",
+    "type": "tool",
+    "path": "https://surrealdb.com",
+    "homepage": "https://surrealdb.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "surreal version 2>/dev/null || $HOME/.surrealdb/surreal version",
+    "installInstructions": "Run: curl -sSf https://install.surrealdb.com | sh\nThen add to PATH: export PATH=$HOME/.surrealdb:$PATH",
+    "commands": [
+        {
+            "id": "install-surrealdb",
+            "name": "Install (curl)",
+            "description": "Install SurrealDB via the official install script",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "curl -sSf https://install.surrealdb.com | sh"
+        },
+        {
+            "id": "install-surrealdb-homebrew",
+            "name": "Install (Homebrew)",
+            "description": "Install SurrealDB via Homebrew (macOS/Linux)",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "brew install surrealdb/tap/surreal"
+        },
+        {
+            "id": "install-surrealdb-windows",
+            "name": "Install (Windows)",
+            "description": "Install SurrealDB via Windows installer",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://surrealdb.com/install"
+        },
+        {
+            "id": "add-to-path",
+            "name": "Add to PATH",
+            "description": "Add SurrealDB to your shell PATH (after curl install)",
+            "icon": "Terminal",
+            "category": "Setup",
+            "target": "item",
+            "mode": "copy",
+            "command": "echo 'export PATH=$HOME/.surrealdb:$PATH' >> ~/.bashrc && source ~/.bashrc"
+        },
+        {
+            "id": "start-memory",
+            "name": "Start (In-Memory)",
+            "description": "Start SurrealDB with in-memory storage for development",
+            "icon": "Play",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "surreal start --user root --pass root memory"
+        },
+        {
+            "id": "start-file",
+            "name": "Start (File Storage)",
+            "description": "Start SurrealDB with persistent file storage",
+            "icon": "Play",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "surreal start --user root --pass root file://surrealdb-data"
+        },
+        {
+            "id": "start-nxus-graph",
+            "name": "Start nxus (Graph Mode)",
+            "description": "Run nxus with embedded SurrealDB (no server needed)",
+            "icon": "Play",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "cd apps/nxus-core && ARCHITECTURE_TYPE=graph pnpm dev"
+        },
+        {
+            "id": "seed-graph",
+            "name": "Seed Graph DB",
+            "description": "Seed the embedded SurrealDB from manifest files",
+            "icon": "Database",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "cd apps/nxus-core && ARCHITECTURE_TYPE=graph pnpm db:seed"
+        },
+        {
+            "id": "start-nxus-remote",
+            "name": "Start nxus (Remote Server)",
+            "description": "Run nxus with a remote SurrealDB server",
+            "icon": "Play",
+            "category": "Run",
+            "target": "item",
+            "mode": "terminal",
+            "command": "surreal start --user root --pass root memory & (until curl -s -f http://127.0.0.1:8000/health > /dev/null 2>&1; do sleep 0.5; done; cd apps/nxus-core && ARCHITECTURE_TYPE=graph SURREAL_EMBEDDED=false pnpm dev)"
+        },
+        {
+            "id": "sql-shell",
+            "name": "SQL Shell",
+            "description": "Open the SurrealDB SQL shell (connect to running instance)",
+            "icon": "Terminal",
+            "category": "Usage",
+            "target": "item",
+            "mode": "terminal",
+            "command": "surreal sql --endpoint http://127.0.0.1:8000 --username root --password root --namespace nxus --database main"
+        },
+        {
+            "id": "check-version",
+            "name": "Check Version",
+            "description": "Display installed SurrealDB version",
+            "icon": "Info",
+            "category": "Usage",
+            "target": "item",
+            "mode": "terminal",
+            "command": "surreal version"
+        },
+        {
+            "id": "docs-surrealdb",
+            "name": "Documentation",
+            "description": "Open SurrealDB documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://surrealdb.com/docs"
+        },
+        {
+            "id": "docs-surrealql",
+            "name": "SurrealQL Reference",
+            "description": "Open SurrealQL query language reference",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://surrealdb.com/docs/surrealql"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-07T00:00:00.000Z",
+        "updatedAt": "2026-02-07T00:00:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "install-surrealdb-homebrew",
-      "name": "Install (Homebrew)",
-      "description": "Install SurrealDB via Homebrew (macOS/Linux)",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "brew install surrealdb/tap/surreal"
-    },
-    {
-      "id": "install-surrealdb-windows",
-      "name": "Install (Windows)",
-      "description": "Install SurrealDB via Windows installer",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://surrealdb.com/install"
-    },
-    {
-      "id": "add-to-path",
-      "name": "Add to PATH",
-      "description": "Add SurrealDB to your shell PATH (after curl install)",
-      "icon": "Terminal",
-      "category": "Setup",
-      "target": "item",
-      "mode": "copy",
-      "command": "echo 'export PATH=$HOME/.surrealdb:$PATH' >> ~/.bashrc && source ~/.bashrc"
-    },
-    {
-      "id": "start-memory",
-      "name": "Start (In-Memory)",
-      "description": "Start SurrealDB with in-memory storage for development",
-      "icon": "Play",
-      "category": "Run",
-      "target": "item",
-      "mode": "terminal",
-      "command": "surreal start --user root --pass root memory"
-    },
-    {
-      "id": "start-file",
-      "name": "Start (File Storage)",
-      "description": "Start SurrealDB with persistent file storage",
-      "icon": "Play",
-      "category": "Run",
-      "target": "item",
-      "mode": "terminal",
-      "command": "surreal start --user root --pass root file://surrealdb-data"
-    },
-    {
-      "id": "start-nxus-graph",
-      "name": "Start nxus (Graph Mode)",
-      "description": "Run nxus with embedded SurrealDB (no server needed)",
-      "icon": "Play",
-      "category": "Run",
-      "target": "item",
-      "mode": "terminal",
-      "command": "cd apps/nxus-core && ARCHITECTURE_TYPE=graph pnpm dev"
-    },
-    {
-      "id": "seed-graph",
-      "name": "Seed Graph DB",
-      "description": "Seed the embedded SurrealDB from manifest files",
-      "icon": "Database",
-      "category": "Run",
-      "target": "item",
-      "mode": "terminal",
-      "command": "cd apps/nxus-core && ARCHITECTURE_TYPE=graph pnpm db:seed"
-    },
-    {
-      "id": "start-nxus-remote",
-      "name": "Start nxus (Remote Server)",
-      "description": "Run nxus with a remote SurrealDB server",
-      "icon": "Play",
-      "category": "Run",
-      "target": "item",
-      "mode": "terminal",
-      "command": "surreal start --user root --pass root memory & (until curl -s -f http://127.0.0.1:8000/health > /dev/null 2>&1; do sleep 0.5; done; cd apps/nxus-core && ARCHITECTURE_TYPE=graph SURREAL_EMBEDDED=false pnpm dev)"
-    },
-    {
-      "id": "sql-shell",
-      "name": "SQL Shell",
-      "description": "Open the SurrealDB SQL shell (connect to running instance)",
-      "icon": "Terminal",
-      "category": "Usage",
-      "target": "item",
-      "mode": "terminal",
-      "command": "surreal sql --endpoint http://127.0.0.1:8000 --username root --password root --namespace nxus --database main"
-    },
-    {
-      "id": "check-version",
-      "name": "Check Version",
-      "description": "Display installed SurrealDB version",
-      "icon": "Info",
-      "category": "Usage",
-      "target": "item",
-      "mode": "terminal",
-      "command": "surreal version"
-    },
-    {
-      "id": "docs-surrealdb",
-      "name": "Documentation",
-      "description": "Open SurrealDB documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://surrealdb.com/docs"
-    },
-    {
-      "id": "docs-surrealql",
-      "name": "SurrealQL Reference",
-      "description": "Open SurrealQL query language reference",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://surrealdb.com/docs/surrealql"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2026-02-07T00:00:00.000Z",
-    "updatedAt": "2026-02-07T00:00:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  }
+    "status": "not-installed"
 }

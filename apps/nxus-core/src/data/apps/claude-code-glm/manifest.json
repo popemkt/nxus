@@ -1,116 +1,117 @@
 {
-  "id": "claude-code-glm",
-  "name": "Z AI",
-  "description": "Z.AI integrations hub - Claude Code, Goose Desktop, and more",
-  "type": "tool",
-  "path": "https://z.ai",
-  "homepage": "https://z.ai",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "claude --version",
-  "installInstructions": "Set environment variables before running claude:\nexport ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"your_z_ai_key\"",
-  "commands": [
-    {
-      "id": "run-helper",
-      "name": "Run Z.AI Helper",
-      "description": "Automatically configure Claude Code for Z.AI",
-      "icon": "MagicWand",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "npx @z_ai/coding-helper"
+    "id": "claude-code-glm",
+    "name": "Z AI",
+    "description": "Z.AI integrations hub - Claude Code, Goose Desktop, and more",
+    "type": "tool",
+    "path": "https://z.ai",
+    "homepage": "https://z.ai",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "claude --version",
+    "installInstructions": "Set environment variables before running claude:\nexport ANTHROPIC_BASE_URL=\"https://open.bigmodel.cn/api/paas/v4/\"\nexport ANTHROPIC_API_KEY=\"your_z_ai_key\"",
+    "commands": [
+        {
+            "id": "run-helper",
+            "name": "Run Z.AI Helper",
+            "description": "Automatically configure Claude Code for Z.AI",
+            "icon": "MagicWand",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "npx @z_ai/coding-helper"
+        },
+        {
+            "id": "open-settings",
+            "name": "Open Settings",
+            "description": "Open the Claude Code settings directory",
+            "icon": "FolderSimple",
+            "category": "Setup",
+            "target": "item",
+            "mode": "script",
+            "command": "open-settings.ps1"
+        },
+        {
+            "id": "reset-settings",
+            "name": "Reset Claude Config",
+            "description": "Clear all Claude Code settings and onboarding state",
+            "icon": "ArrowCounterClockwise",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "rm -f ~/.claude/settings.json ~/.claude.json",
+            "requires": {
+                "tools": [
+                    "claude-code"
+                ]
+            }
+        },
+        {
+            "id": "docs-glm",
+            "name": "Z.AI Documentation",
+            "description": "Open Z.AI GLM docs",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.z.ai/devpack/tool/claude"
+        },
+        {
+            "id": "goose-desktop-docs",
+            "name": "Goose Desktop Docs",
+            "description": "Open Goose Desktop integration documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.z.ai/devpack/tool/goose#step-2:-creating-a-new-provider"
+        }
+    ],
+    "docs": [
+        {
+            "id": "setup",
+            "title": "Setup Guide",
+            "file": "setup.md",
+            "icon": "Book"
+        },
+        {
+            "id": "quirks",
+            "title": "Quirks & Tips",
+            "file": "quirks.md",
+            "icon": "Lightbulb"
+        }
+    ],
+    "dependencies": [
+        "claude-code"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-01-01T15:32:00.000Z",
+        "updatedAt": "2026-01-17T04:30:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "open-settings",
-      "name": "Open Settings",
-      "description": "Open the Claude Code settings directory",
-      "icon": "FolderSimple",
-      "category": "Setup",
-      "target": "item",
-      "mode": "script",
-      "command": "open-settings.ps1"
-    },
-    {
-      "id": "reset-settings",
-      "name": "Reset Claude Config",
-      "description": "Clear all Claude Code settings and onboarding state",
-      "icon": "ArrowCounterClockwise",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "rm -f ~/.claude/settings.json ~/.claude.json",
-      "requires": {
-        "tools": [
-          "claude-code"
+    "configSchema": {
+        "fields": [
+            {
+                "key": "ANTHROPIC_AUTH_TOKEN",
+                "label": "Z.AI Auth Token",
+                "type": "password",
+                "required": true,
+                "placeholder": "Enter your Z.AI API key/token"
+            },
+            {
+                "key": "ANTHROPIC_BASE_URL",
+                "label": "API Base URL",
+                "type": "url",
+                "required": false,
+                "defaultValue": "https://api.z.ai/api/anthropic",
+                "placeholder": "API endpoint URL"
+            }
         ]
-      }
     },
-    {
-      "id": "docs-glm",
-      "name": "Z.AI Documentation",
-      "description": "Open Z.AI GLM docs",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://docs.z.ai/devpack/tool/claude"
-    },
-    {
-      "id": "goose-desktop-docs",
-      "name": "Goose Desktop Docs",
-      "description": "Open Goose Desktop integration documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://docs.z.ai/devpack/tool/goose#step-2:-creating-a-new-provider"
-    }
-  ],
-  "docs": [
-    {
-      "id": "setup",
-      "title": "Setup Guide",
-      "file": "setup.md",
-      "icon": "Book"
-    },
-    {
-      "id": "quirks",
-      "title": "Quirks & Tips",
-      "file": "quirks.md",
-      "icon": "Lightbulb"
-    }
-  ],
-  "dependencies": [
-    "claude-code"
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2026-01-01T15:32:00.000Z",
-    "updatedAt": "2026-01-17T04:30:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  },
-  "configSchema": {
-    "fields": [
-      {
-        "key": "ANTHROPIC_AUTH_TOKEN",
-        "label": "Z.AI Auth Token",
-        "type": "password",
-        "required": true,
-        "placeholder": "Enter your Z.AI API key/token"
-      },
-      {
-        "key": "ANTHROPIC_BASE_URL",
-        "label": "API Base URL",
-        "type": "url",
-        "required": false,
-        "defaultValue": "https://api.z.ai/api/anthropic",
-        "placeholder": "API endpoint URL"
-      }
-    ]
-  }
+    "status": "not-installed"
 }

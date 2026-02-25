@@ -1,55 +1,56 @@
 {
-  "id": "python3",
-  "name": "Python 3",
-  "description": "Python programming language interpreter",
-  "type": "tool",
-  "path": "https://www.python.org",
-  "homepage": "https://www.python.org",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "python3 --version",
-  "installInstructions": "Visit https://www.python.org to download and install Python 3 for your platform",
-  "commands": [
-    {
-      "id": "install-python3-fedora",
-      "name": "Install (Fedora)",
-      "description": "Install Python 3 via dnf",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "sudo dnf install python3"
+    "id": "python3",
+    "name": "Python 3",
+    "description": "Python programming language interpreter",
+    "type": "tool",
+    "path": "https://www.python.org",
+    "homepage": "https://www.python.org",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "python3 --version",
+    "installInstructions": "Visit https://www.python.org to download and install Python 3 for your platform",
+    "commands": [
+        {
+            "id": "install-python3-fedora",
+            "name": "Install (Fedora)",
+            "description": "Install Python 3 via dnf",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "sudo dnf install python3"
+        },
+        {
+            "id": "install-python3-windows",
+            "name": "Install (Windows)",
+            "description": "Install Python 3 via winget",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "copy",
+            "command": "winget install Python.Python.3"
+        },
+        {
+            "id": "docs-python3",
+            "name": "Documentation",
+            "description": "Open Python documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.python.org/3/"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "install-python3-windows",
-      "name": "Install (Windows)",
-      "description": "Install Python 3 via winget",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "copy",
-      "command": "winget install Python.Python.3"
-    },
-    {
-      "id": "docs-python3",
-      "name": "Documentation",
-      "description": "Open Python documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://docs.python.org/3/"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2025-12-31T16:48:00.000Z",
-    "updatedAt": "2026-01-01T22:37:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  }
+    "status": "not-installed"
 }

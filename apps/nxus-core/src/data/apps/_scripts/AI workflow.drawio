@@ -1,11 +1,11 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" version="29.3.2">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.5.3">
   <diagram name="Page-1" id="_9WuSA7sj9l9ROBAU9qe">
-    <mxGraphModel dx="1922" dy="1018" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2603" dy="1650" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-2" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="CLI agents" vertex="1">
-          <mxGeometry height="200" width="380" x="500" y="350" as="geometry" />
+          <mxGeometry height="280" width="380" x="510" y="260" as="geometry" />
         </mxCell>
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-3" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="OpenCode" vertex="1">
           <mxGeometry height="60" width="100" x="5" y="30" as="geometry" />
@@ -22,6 +22,15 @@
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-9" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="Claude code" vertex="1">
           <mxGeometry height="60" width="100" x="130" y="120" as="geometry" />
         </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-15" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="KiloCLI" vertex="1">
+          <mxGeometry height="60" width="100" x="250" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-16" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="GitHub Copilot CLI" vertex="1">
+          <mxGeometry height="60" width="100" x="5" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="FyKMpnxZXmwK9bmFxZVq-1" parent="sqoQ5OMcbHbjpH_v5Ne7-2" style="rounded=0;whiteSpace=wrap;html=1;" value="Pi" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="200" as="geometry" />
+        </mxCell>
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-5" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fillColor=#fff2cc;strokeColor=#d6b656;" value="This could be dynamically visualized by graphs and tags using nxus" vertex="1">
           <mxGeometry height="100" width="220" x="390" y="30" as="geometry" />
         </mxCell>
@@ -37,11 +46,8 @@
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-14" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Specs" vertex="1">
           <mxGeometry height="60" width="100" x="250" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-15" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Crush" vertex="1">
-          <mxGeometry height="60" width="100" x="5" y="120" as="geometry" />
-        </mxCell>
         <mxCell id="4EwAGjiPpUD_7KEzPNB_-1" parent="sqoQ5OMcbHbjpH_v5Ne7-11" style="rounded=0;whiteSpace=wrap;html=1;" value="Techniques" vertex="1">
-          <mxGeometry height="60" width="100" x="130" y="120" as="geometry" />
+          <mxGeometry height="60" width="100" x="10" y="120" as="geometry" />
         </mxCell>
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-17" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Plugins" vertex="1">
           <mxGeometry height="180" width="230" x="50" y="600" as="geometry">
@@ -82,7 +88,7 @@
         <mxCell id="sqoQ5OMcbHbjpH_v5Ne7-34" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="PRDgen ???" vertex="1">
           <mxGeometry height="60" width="100" x="20" y="110" as="geometry" />
         </mxCell>
-        <mxCell id="UHHBi-n1ey-vMQDMS3ZG-1" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="Beads" vertex="1">
+        <mxCell id="UHHBi-n1ey-vMQDMS3ZG-1" parent="sqoQ5OMcbHbjpH_v5Ne7-28" style="rounded=0;whiteSpace=wrap;html=1;" value="BEADs" vertex="1">
           <mxGeometry height="60" width="100" x="130" y="110" as="geometry" />
         </mxCell>
         <mxCell id="4EwAGjiPpUD_7KEzPNB_-3" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Techniques" vertex="1">
@@ -113,9 +119,6 @@
         </mxCell>
         <mxCell id="4EwAGjiPpUD_7KEzPNB_-11" parent="4EwAGjiPpUD_7KEzPNB_-6" style="rounded=0;whiteSpace=wrap;html=1;" value="Github copilot" vertex="1">
           <mxGeometry height="60" width="100" x="130" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="4EwAGjiPpUD_7KEzPNB_-12" parent="4EwAGjiPpUD_7KEzPNB_-6" style="rounded=0;whiteSpace=wrap;html=1;" value="Github copilot" vertex="1">
-          <mxGeometry height="60" width="100" x="250" y="120" as="geometry" />
         </mxCell>
         <mxCell id="4EwAGjiPpUD_7KEzPNB_-13" parent="4EwAGjiPpUD_7KEzPNB_-6" style="rounded=0;whiteSpace=wrap;html=1;" value="Kilo code" vertex="1">
           <mxGeometry height="60" width="100" x="5" y="200" as="geometry" />
@@ -215,6 +218,46 @@
             <mxPoint x="420" y="1290" as="sourcePoint" />
             <mxPoint x="482" y="1220" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-1" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Memory Tools" vertex="1">
+          <mxGeometry height="180" width="360" x="1010" y="600" as="geometry">
+            <mxRectangle height="30" width="80" x="50" y="600" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-2" parent="5DBcCxlyvAMoQj_AC3vL-1" style="rounded=0;whiteSpace=wrap;html=1;" value="Mem0" vertex="1">
+          <mxGeometry height="60" width="100" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-3" parent="5DBcCxlyvAMoQj_AC3vL-1" style="rounded=0;whiteSpace=wrap;html=1;" value="MemU" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-4" parent="5DBcCxlyvAMoQj_AC3vL-1" style="rounded=0;whiteSpace=wrap;html=1;" value="Supermemory" vertex="1">
+          <mxGeometry height="60" width="100" x="240" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-7" parent="5DBcCxlyvAMoQj_AC3vL-1" style="rounded=0;whiteSpace=wrap;html=1;" value="AnythingLLM" vertex="1">
+          <mxGeometry height="60" width="100" x="20" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-8" parent="5DBcCxlyvAMoQj_AC3vL-1" style="rounded=0;whiteSpace=wrap;html=1;" value="Letta" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-9" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="GUI/Light orchestrations" vertex="1">
+          <mxGeometry height="180" width="360" x="1010" y="810" as="geometry">
+            <mxRectangle height="30" width="80" x="50" y="600" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-10" parent="5DBcCxlyvAMoQj_AC3vL-9" style="rounded=0;whiteSpace=wrap;html=1;" value="Codex app" vertex="1">
+          <mxGeometry height="60" width="100" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-11" parent="5DBcCxlyvAMoQj_AC3vL-9" style="rounded=0;whiteSpace=wrap;html=1;" value="Claude app" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-12" parent="5DBcCxlyvAMoQj_AC3vL-9" style="rounded=0;whiteSpace=wrap;html=1;" value="Sudocode" vertex="1">
+          <mxGeometry height="60" width="100" x="240" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-13" parent="5DBcCxlyvAMoQj_AC3vL-9" style="rounded=0;whiteSpace=wrap;html=1;" value="EmDash" vertex="1">
+          <mxGeometry height="60" width="100" x="20" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="5DBcCxlyvAMoQj_AC3vL-14" parent="5DBcCxlyvAMoQj_AC3vL-9" style="rounded=0;whiteSpace=wrap;html=1;" value="Zenflow" vertex="1">
+          <mxGeometry height="60" width="100" x="130" y="110" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
