@@ -1,0 +1,54 @@
+{
+    "id": "github-copilot-cli",
+    "name": "GitHub Copilot CLI",
+    "description": "AI-powered CLI assistant from GitHub. Get command suggestions, explanations, and shell completions powered by Copilot.",
+    "type": "tool",
+    "path": "https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line",
+    "homepage": "https://github.com/features/copilot",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "gh copilot --version",
+    "commands": [
+        {
+            "id": "install",
+            "name": "Install",
+            "description": "Install the GitHub Copilot CLI extension",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "gh extension install github/gh-copilot",
+            "requires": {
+                "tools": [
+                    "github-cli"
+                ],
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open GitHub Copilot CLI docs",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line"
+        }
+    ],
+    "dependencies": [
+        "github-cli"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "GitHub"
+    },
+    "status": "not-installed"
+}

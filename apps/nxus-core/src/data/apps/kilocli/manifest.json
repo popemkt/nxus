@@ -1,0 +1,45 @@
+{
+    "id": "kilocli",
+    "name": "KiloCLI",
+    "description": "A lightweight AI-powered CLI tool for quick terminal interactions and command execution.",
+    "type": "tool",
+    "path": "https://kilocli.com",
+    "homepage": "https://kilocli.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "kilo --version",
+    "commands": [
+        {
+            "id": "download",
+            "name": "Download",
+            "description": "Go to KiloCLI download page",
+            "icon": "Download",
+            "category": "Installation",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://kilocli.com"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open KiloCLI docs",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://kilocli.com"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "KiloCLI"
+    },
+    "status": "not-installed"
+}

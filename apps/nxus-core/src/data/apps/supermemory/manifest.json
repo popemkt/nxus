@@ -1,0 +1,42 @@
+{
+    "id": "supermemory",
+    "name": "Supermemory",
+    "description": "AI-powered bookmarking and knowledge management. Save, organize, and recall information using AI.",
+    "type": "remote-repo",
+    "path": "https://github.com/supermemory/supermemory.git",
+    "homepage": "https://supermemory.ai",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Supermemory repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/supermemory/supermemory.git"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Supermemory website",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://supermemory.ai"
+        }
+    ],
+    "dependencies": [
+        "git"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "supermemory"
+    },
+    "status": "not-installed"
+}

@@ -1,0 +1,45 @@
+{
+    "id": "spacetimedb",
+    "name": "SpacetimeDB",
+    "description": "A serverless database that lets you write server logic as database modules. Combines database, server, and pub/sub in one.",
+    "type": "tool",
+    "path": "https://spacetimedb.com",
+    "homepage": "https://spacetimedb.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "spacetime version",
+    "commands": [
+        {
+            "id": "download",
+            "name": "Download",
+            "description": "Go to SpacetimeDB install page",
+            "icon": "Download",
+            "category": "Installation",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://spacetimedb.com/install"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open SpacetimeDB docs",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://spacetimedb.com/docs"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "Clockwork Labs"
+    },
+    "status": "not-installed"
+}

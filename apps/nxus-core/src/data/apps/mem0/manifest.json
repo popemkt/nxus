@@ -1,0 +1,43 @@
+{
+    "id": "mem0",
+    "name": "Mem0",
+    "description": "The memory layer for AI agents. Add persistent, structured memory to LLM applications with simple APIs.",
+    "type": "remote-repo",
+    "path": "https://github.com/mem0ai/mem0.git",
+    "homepage": "https://mem0.ai",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Mem0 repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/mem0ai/mem0.git"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Mem0 documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.mem0.ai"
+        }
+    ],
+    "dependencies": [
+        "git",
+        "python3"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "mem0ai"
+    },
+    "status": "not-installed"
+}

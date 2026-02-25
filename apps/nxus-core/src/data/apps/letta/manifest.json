@@ -1,0 +1,43 @@
+{
+    "id": "letta",
+    "name": "Letta",
+    "description": "Framework for building stateful AI agents with long-term memory. Formerly MemGPT.",
+    "type": "remote-repo",
+    "path": "https://github.com/letta-ai/letta.git",
+    "homepage": "https://letta.com",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Letta repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/letta-ai/letta.git"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Letta documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.letta.com"
+        }
+    ],
+    "dependencies": [
+        "git",
+        "python3"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "letta-ai"
+    },
+    "status": "not-installed"
+}
