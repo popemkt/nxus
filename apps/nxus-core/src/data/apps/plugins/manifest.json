@@ -1,0 +1,21 @@
+{
+  "id": "plugins",
+  "name": "Plugins",
+  "description": "Extensible plugin architecture patterns and integration points",
+  "type": "concept",
+  "path": "",
+  "docs": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "overview.md",
+      "icon": "BookOpen"
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "concepts",
+    "createdAt": "2026-02-26T00:00:00.000Z",
+    "updatedAt": "2026-02-26T00:00:00.000Z"
+  }
+}

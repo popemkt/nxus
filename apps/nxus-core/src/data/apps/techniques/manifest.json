@@ -1,0 +1,21 @@
+{
+  "id": "techniques",
+  "name": "Techniques",
+  "description": "Repeatable methods and approaches for solving specific problems",
+  "type": "concept",
+  "path": "",
+  "docs": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "overview.md",
+      "icon": "BookOpen"
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "concepts",
+    "createdAt": "2026-02-26T00:00:00.000Z",
+    "updatedAt": "2026-02-26T00:00:00.000Z"
+  }
+}

@@ -2,7 +2,7 @@ import {
   CodeIcon,
   FileIcon,
   FolderOpenIcon,
-  
+  LightbulbIcon,
   WrenchIcon
 } from '@phosphor-icons/react'
 import type {Icon} from '@phosphor-icons/react';
@@ -17,6 +17,7 @@ export const APP_TYPE_ICONS = {
   typescript: CodeIcon,
   'remote-repo': FolderOpenIcon,
   tool: WrenchIcon,
+  concept: LightbulbIcon,
 } as const
 
 /**
@@ -28,6 +29,7 @@ export const APP_TYPE_LABELS_SHORT = {
   typescript: 'TypeScript',
   'remote-repo': 'Repository',
   tool: 'Tool',
+  concept: 'Concept',
 } as const
 
 /**
@@ -39,6 +41,7 @@ export const APP_TYPE_LABELS_LONG = {
   typescript: 'TypeScript Application',
   'remote-repo': 'Remote Repository',
   tool: 'Tool / Dependency',
+  concept: 'Concept',
 } as const
 
 /**
@@ -60,6 +63,7 @@ export const APP_TYPE_COLORS = {
   'remote-repo': '#a855f7', // purple
   typescript: '#3b82f6', // blue
   html: '#f97316', // orange
+  concept: '#eab308', // yellow
 } as const
 
 // Type exports for consumers

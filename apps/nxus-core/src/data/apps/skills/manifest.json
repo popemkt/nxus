@@ -1,0 +1,21 @@
+{
+  "id": "skills",
+  "name": "Skills",
+  "description": "Composable capabilities that agents and systems can acquire and apply",
+  "type": "concept",
+  "path": "",
+  "docs": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "overview.md",
+      "icon": "BookOpen"
+    }
+  ],
+  "metadata": {
+    "tags": [],
+    "category": "concepts",
+    "createdAt": "2026-02-26T00:00:00.000Z",
+    "updatedAt": "2026-02-26T00:00:00.000Z"
+  }
+}

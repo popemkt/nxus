@@ -1228,6 +1228,7 @@ export function getNodeIdsBySupertags(
 export const SUPERTAG_TO_ITEM_TYPE: Record<string, AppType> = {
   [SYSTEM_SUPERTAGS.TOOL]: 'tool',
   [SYSTEM_SUPERTAGS.REPO]: 'remote-repo',
+  [SYSTEM_SUPERTAGS.CONCEPT]: 'concept',
   // Generic item supertag maps to 'html' as default
   [SYSTEM_SUPERTAGS.ITEM]: 'html',
 }
@@ -1238,6 +1239,7 @@ export const SUPERTAG_TO_ITEM_TYPE: Record<string, AppType> = {
 export const ITEM_TYPE_TO_SUPERTAG: Record<AppType, string> = {
   tool: SYSTEM_SUPERTAGS.TOOL,
   'remote-repo': SYSTEM_SUPERTAGS.REPO,
+  concept: SYSTEM_SUPERTAGS.CONCEPT,
   html: SYSTEM_SUPERTAGS.ITEM,
   typescript: SYSTEM_SUPERTAGS.ITEM, // typescript items use generic item supertag
 }

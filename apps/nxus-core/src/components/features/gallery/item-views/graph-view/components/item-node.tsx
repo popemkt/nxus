@@ -44,9 +44,11 @@ export const ItemNode = memo(function ItemNode({
 
       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
         <ItemHealthBadge app={app} compact fallbackStatusBadge={
-          <Badge variant={STATUS_VARIANTS[status]} className="text-xs">
-            {status.replace('-', ' ')}
-          </Badge>
+          app.types[0] === 'concept' ? undefined : (
+            <Badge variant={STATUS_VARIANTS[status]} className="text-xs">
+              {status.replace('-', ' ')}
+            </Badge>
+          )
         } />
         {app.dependencies && app.dependencies.length > 0 && (
           <Badge variant="outline" className="text-xs">

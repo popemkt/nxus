@@ -114,6 +114,8 @@ export const SYSTEM_SUPERTAGS = {
   WORKSPACE: 'supertag:workspace',
   INBOX: 'supertag:inbox',
 
+  CONCEPT: 'supertag:concept',
+
   // Query supertag - for saved queries (Tana-like reactive queries)
   QUERY: 'supertag:query',
 
