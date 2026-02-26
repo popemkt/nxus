@@ -10,7 +10,7 @@
         "macos",
         "windows"
     ],
-    "checkCommand": "python3 --version",
+    "checkCommand": "python3 --version || python --version",
     "installInstructions": "Visit https://www.python.org to download and install Python 3 for your platform",
     "commands": [
         {
@@ -24,13 +24,23 @@
             "command": "sudo dnf install python3"
         },
         {
+            "id": "install-python3-macos",
+            "name": "Install (macOS)",
+            "description": "Install Python 3 via Homebrew",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "brew install python3"
+        },
+        {
             "id": "install-python3-windows",
             "name": "Install (Windows)",
             "description": "Install Python 3 via winget",
             "icon": "Download",
             "category": "Setup",
             "target": "item",
-            "mode": "copy",
+            "mode": "terminal",
             "command": "winget install Python.Python.3"
         },
         {

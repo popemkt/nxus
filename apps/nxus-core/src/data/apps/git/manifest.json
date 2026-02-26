@@ -25,6 +25,16 @@
             "command": "sudo dnf install git"
         },
         {
+            "id": "install-git-debian",
+            "name": "Install (Debian/Ubuntu)",
+            "description": "Install Git via apt",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "sudo apt update && sudo apt install -y git"
+        },
+        {
             "id": "install-git-windows",
             "name": "Install (Windows)",
             "description": "Install Git via winget",

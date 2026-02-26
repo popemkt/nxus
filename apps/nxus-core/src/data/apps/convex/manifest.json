@@ -10,7 +10,7 @@
         "macos",
         "windows"
     ],
-    "checkCommand": "npx convex --version",
+    "checkCommand": "npx --no convex --version",
     "commands": [
         {
             "id": "download",

@@ -10,8 +10,8 @@
         "macos",
         "windows"
     ],
-    "checkCommand": "opencode version",
-    "installInstructions": "OpenCode can be installed via:\n- Linux/macOS: curl -fsSL https://opencode.ai/install | bash\n- Homebrew: brew install opencode-ai/tap/opencode\n- Windows: winget install opencode\n- Go: go install github.com/opencode-ai/opencode@latest",
+    "checkCommand": "opencode --version",
+    "installInstructions": "OpenCode can be installed via:\n- Linux/macOS: curl -fsSL https://opencode.ai/install | bash\n- Homebrew: brew install anomalyco/tap/opencode",
     "commands": [
         {
             "id": "install-opencode",

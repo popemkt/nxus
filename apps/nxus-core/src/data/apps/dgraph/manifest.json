@@ -6,9 +6,7 @@
     "path": "https://dgraph.io",
     "homepage": "https://dgraph.io",
     "platform": [
-        "linux",
-        "macos",
-        "windows"
+        "linux"
     ],
     "checkCommand": "dgraph version",
     "commands": [
@@ -30,7 +28,7 @@
             "category": "Help",
             "target": "item",
             "mode": "docs",
-            "command": "https://dgraph.io/docs"
+            "command": "https://docs.dgraph.io"
         }
     ],
     "metadata": {
@@ -39,7 +37,7 @@
         "createdAt": "2026-02-25T14:00:00Z",
         "updatedAt": "2026-02-25T14:00:00Z",
         "version": "1.0.0",
-        "author": "Dgraph Labs"
+        "author": "dgraph-io"
     },
     "status": "not-installed"
 }

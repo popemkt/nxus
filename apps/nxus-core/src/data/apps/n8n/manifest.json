@@ -76,7 +76,7 @@
             "category": "Data",
             "target": "item",
             "mode": "terminal",
-            "command": "n8n import:workflow",
+            "command": "n8n import:workflow --input <path-to-file.json>",
             "requires": {
                 "selfInstalled": true
             }

@@ -3,8 +3,8 @@
     "name": "KiloCLI",
     "description": "A lightweight AI-powered CLI tool for quick terminal interactions and command execution.",
     "type": "tool",
-    "path": "https://kilocli.com",
-    "homepage": "https://kilocli.com",
+    "path": "https://kilo.ai/cli",
+    "homepage": "https://kilo.ai/cli",
     "platform": [
         "linux",
         "macos",
@@ -20,7 +20,7 @@
             "category": "Installation",
             "target": "item",
             "mode": "docs",
-            "command": "https://kilocli.com"
+            "command": "https://kilo.ai/cli"
         },
         {
             "id": "docs",
@@ -30,7 +30,7 @@
             "category": "Help",
             "target": "item",
             "mode": "docs",
-            "command": "https://kilocli.com"
+            "command": "https://kilo.ai/docs/cli"
         }
     ],
     "metadata": {

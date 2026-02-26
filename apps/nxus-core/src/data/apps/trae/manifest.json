@@ -6,7 +6,6 @@
     "path": "https://trae.ai",
     "homepage": "https://trae.ai",
     "platform": [
-        "linux",
         "macos",
         "windows"
     ],

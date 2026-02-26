@@ -16,12 +16,12 @@
         {
             "id": "install-pwsh-linux",
             "name": "Install (Linux)",
-            "description": "Install PowerShell on Linux",
+            "description": "Install PowerShell on Linux (snap, distro-agnostic)",
             "icon": "Download",
             "category": "Setup",
             "target": "item",
             "mode": "execute",
-            "command": "sudo dnf install powershell",
+            "command": "sudo snap install powershell --classic",
             "platforms": [
                 "linux"
             ],

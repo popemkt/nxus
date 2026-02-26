@@ -33,7 +33,7 @@
             "category": "Help",
             "target": "item",
             "mode": "docs",
-            "command": "https://tabby.sh/"
+            "command": "https://docs.tabby.sh/"
         }
     ],
     "metadata": {

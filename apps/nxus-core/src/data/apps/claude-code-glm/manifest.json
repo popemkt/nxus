@@ -73,13 +73,13 @@
         {
             "id": "setup",
             "title": "Setup Guide",
-            "file": "setup.md",
+            "file": "apps/nxus-core/src/data/apps/claude-code-glm/setup.md",
             "icon": "Book"
         },
         {
             "id": "quirks",
             "title": "Quirks & Tips",
-            "file": "quirks.md",
+            "file": "apps/nxus-core/src/data/apps/claude-code-glm/quirks.md",
             "icon": "Lightbulb"
         }
     ],
@@ -97,7 +97,7 @@
     "configSchema": {
         "fields": [
             {
-                "key": "ANTHROPIC_AUTH_TOKEN",
+                "key": "ANTHROPIC_API_KEY",
                 "label": "Z.AI Auth Token",
                 "type": "password",
                 "required": true,
@@ -108,7 +108,7 @@
                 "label": "API Base URL",
                 "type": "url",
                 "required": false,
-                "defaultValue": "https://api.z.ai/api/anthropic",
+                "defaultValue": "https://open.bigmodel.cn/api/paas/v4/",
                 "placeholder": "API endpoint URL"
             }
         ]

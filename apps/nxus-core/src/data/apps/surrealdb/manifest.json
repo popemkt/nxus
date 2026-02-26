@@ -51,7 +51,7 @@
             "category": "Setup",
             "target": "item",
             "mode": "copy",
-            "command": "echo 'export PATH=$HOME/.surrealdb:$PATH' >> ~/.bashrc && source ~/.bashrc"
+            "command": "echo 'export PATH=$HOME/.surrealdb:$PATH' >> ~/.bashrc; echo 'export PATH=$HOME/.surrealdb:$PATH' >> ~/.zshrc; [ -n \"$ZSH_VERSION\" ] && source ~/.zshrc || source ~/.bashrc"
         },
         {
             "id": "start-memory",
@@ -148,7 +148,7 @@
         "tags": [],
         "category": "development-tools",
         "createdAt": "2026-02-07T00:00:00.000Z",
-        "updatedAt": "2026-02-07T00:00:00.000Z",
+        "updatedAt": "2026-02-25T00:00:00.000Z",
         "version": "1.0.0",
         "author": "nxus"
     },

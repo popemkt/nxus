@@ -6,11 +6,10 @@
     "path": "https://claude.ai/download",
     "homepage": "https://claude.ai",
     "platform": [
-        "linux",
         "macos",
         "windows"
     ],
-    "checkCommand": "test -d '/Applications/Claude.app' && echo 'installed'",
+    "checkCommand": "test -d '/Applications/Claude.app' || test -d ~/Applications/Claude.app && echo 'installed'",
     "commands": [
         {
             "id": "download",

@@ -48,7 +48,10 @@
             "category": "Setup",
             "target": "item",
             "mode": "copy",
-            "command": "winget install curl.curl"
+            "command": "winget install curl.curl",
+            "requires": {
+                "selfNotInstalled": true
+            }
         },
         {
             "id": "docs-curl",

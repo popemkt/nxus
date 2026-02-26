@@ -64,7 +64,12 @@
             "target": "item",
             "mode": "execute",
             "command": "sqlite3 src/data/nxus.db 'DELETE FROM node_properties; DELETE FROM nodes;' && npx tsx scripts/bootstrap-nodes.ts && npx tsx scripts/db-seed-nodes.ts",
-            "cwd": "apps/nxus-core"
+            "cwd": "apps/nxus-core",
+            "requires": {
+                "tools": [
+                    "sqlite3"
+                ]
+            }
         },
         {
             "id": "inspect",
