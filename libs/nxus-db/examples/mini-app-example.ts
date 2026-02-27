@@ -46,7 +46,7 @@ async function main() {
   if (items.length > 0) {
     console.log('   First 3 items:')
     for (const item of items.slice(0, 3)) {
-      console.log(`     - ${item.content} (${item.systemId || item.id})`)
+      console.log(`     - ${item.content} (${item.systemId ?? item.id})`)
     }
   }
   console.log()
