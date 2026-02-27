@@ -1,0 +1,12 @@
+{
+  "id": "offline-mode",
+  "category": "Core",
+  "title": "Enhanced Offline Mode",
+  "description": "Improved offline support with conflict resolution for concurrent edits and sync status indicators.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.802Z",
+  "updatedAt": "2026-02-09T14:55:22.802Z"
+}

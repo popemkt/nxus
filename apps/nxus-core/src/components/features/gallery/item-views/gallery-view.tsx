@@ -166,12 +166,14 @@ function ItemCard({ app, compact }: { app: Item; compact: boolean }) {
           <CardContent className={compact ? 'p-3 pt-0' : undefined}>
             <div className="flex flex-wrap gap-1.5">
               <ItemHealthBadge app={app} compact={compact} fallbackStatusBadge={
-                <Badge
-                  variant={STATUS_VARIANTS[app.status]}
-                  className={compact ? 'text-xs' : undefined}
-                >
-                  {app.status.replace('-', ' ')}
-                </Badge>
+                app.types[0] === 'concept' ? undefined : (
+                  <Badge
+                    variant={STATUS_VARIANTS[app.status]}
+                    className={compact ? 'text-xs' : undefined}
+                  >
+                    {app.status.replace('-', ' ')}
+                  </Badge>
+                )
               } />
               <TypeBadgesList item={app} className={compact ? 'text-xs' : undefined} />
 

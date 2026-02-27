@@ -16,6 +16,7 @@ export const ItemTypeSchema = z.enum([
   'typescript',
   'remote-repo',
   'tool',
+  'concept',
 ])
 export type ItemType = z.infer<typeof ItemTypeSchema>
 

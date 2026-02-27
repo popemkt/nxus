@@ -60,6 +60,7 @@ export function nodeToItem(
     else if (st.systemId === 'supertag:repo') types.push('remote-repo')
     else if (st.systemId === 'supertag:typescript') types.push('typescript')
     else if (st.systemId === 'supertag:html') types.push('html')
+    else if (st.systemId === 'supertag:concept') types.push('concept')
     // Generic #Item supertag defaults to 'html' since ItemType has no 'item' variant
     else if (st.systemId === 'supertag:item') types.push('html')
   }

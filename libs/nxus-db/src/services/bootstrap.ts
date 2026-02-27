@@ -271,6 +271,11 @@ export function bootstrapSystemNodesSync(
       content: '#Repo',
       extends: SYSTEM_SUPERTAGS.ITEM,
     },
+    {
+      systemId: SYSTEM_SUPERTAGS.CONCEPT,
+      content: '#Concept',
+      extends: SYSTEM_SUPERTAGS.ITEM,
+    },
     { systemId: SYSTEM_SUPERTAGS.TAG, content: '#Tag', extends: null },
     { systemId: SYSTEM_SUPERTAGS.COMMAND, content: '#Command', extends: null },
     {

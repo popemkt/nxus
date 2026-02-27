@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Check, CheckSquare } from '@phosphor-icons/react'
 import {
   Button,
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from '@nxus/ui'
 import type { HasFieldFilter } from '@nxus/db'
-import { SYSTEM_FIELDS } from '@nxus/db'
+import { getQueryFieldsServerFn } from '../../../server/query.server.js'
 
 // ============================================================================
 // Types
@@ -33,27 +34,6 @@ export interface HasFieldFilterEditorProps {
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-/**
- * Common fields that users might want to check for existence
- */
-const COMMON_FIELDS = [
-  { systemId: SYSTEM_FIELDS.TYPE, label: 'Type' },
-  { systemId: SYSTEM_FIELDS.STATUS, label: 'Status' },
-  { systemId: SYSTEM_FIELDS.CATEGORY, label: 'Category' },
-  { systemId: SYSTEM_FIELDS.DESCRIPTION, label: 'Description' },
-  { systemId: SYSTEM_FIELDS.PATH, label: 'Path' },
-  { systemId: SYSTEM_FIELDS.HOMEPAGE, label: 'Homepage' },
-  { systemId: SYSTEM_FIELDS.TITLE, label: 'Title' },
-  { systemId: SYSTEM_FIELDS.COLOR, label: 'Color' },
-  { systemId: SYSTEM_FIELDS.ICON, label: 'Icon' },
-  { systemId: SYSTEM_FIELDS.PLATFORM, label: 'Platform' },
-  { systemId: SYSTEM_FIELDS.MODE, label: 'Mode' },
-] as const
-
-// ============================================================================
 // Component
 // ============================================================================
 
@@ -64,6 +44,17 @@ export function HasFieldFilterEditor({
 }: HasFieldFilterEditorProps) {
   const [fieldId, setFieldId] = useState(filter.fieldId || '')
   const [negate, setNegate] = useState(filter.negate ?? false)
+
+  // Fetch all available fields from the database
+  const {
+    data: fieldsData,
+    isLoading: fieldsLoading,
+    isError: fieldsError,
+  } = useQuery({
+    queryKey: ['query-fields'],
+    queryFn: () => getQueryFieldsServerFn(),
+  })
+  const allFields = fieldsData?.fields ?? []
 
   // Update local state when filter changes
   useEffect(() => {
@@ -96,7 +87,7 @@ export function HasFieldFilterEditor({
   }
 
   // Get selected field label
-  const selectedFieldLabel = COMMON_FIELDS.find((f) => f.systemId === fieldId)?.label
+  const selectedFieldLabel = allFields.find((f) => f.systemId === fieldId)?.label
 
   return (
     <div className="flex flex-col gap-3">
@@ -109,16 +100,26 @@ export function HasFieldFilterEditor({
       {/* Field selector */}
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs text-muted-foreground">Field</Label>
-        <Select value={fieldId || undefined} onValueChange={handleFieldChange}>
+        <Select
+          value={fieldId || undefined}
+          onValueChange={handleFieldChange}
+          disabled={fieldsLoading || fieldsError}
+        >
           <SelectTrigger className="w-full">
             <SelectValue>
               {selectedFieldLabel || (
-                <span className="text-muted-foreground">Select field</span>
+                <span className="text-muted-foreground">
+                  {fieldsLoading
+                    ? 'Loading...'
+                    : fieldsError
+                      ? 'Failed to load fields'
+                      : 'Select field'}
+                </span>
               )}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {COMMON_FIELDS.map((field) => (
+            {allFields.map((field) => (
               <SelectItem key={field.systemId} value={field.systemId}>
                 {field.label}
               </SelectItem>

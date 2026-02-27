@@ -1,0 +1,12 @@
+{
+  "id": "database-export",
+  "category": "Database",
+  "title": "Data Export Formats",
+  "description": "Export nodes and queries to multiple formats including JSON, CSV, Markdown, and HTML. Supports batch export and custom export templates.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.788Z",
+  "updatedAt": "2026-02-09T14:55:22.788Z"
+}
