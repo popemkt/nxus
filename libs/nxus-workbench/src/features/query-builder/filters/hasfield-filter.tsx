@@ -46,7 +46,11 @@ export function HasFieldFilterEditor({
   const [negate, setNegate] = useState(filter.negate ?? false)
 
   // Fetch all available fields from the database
-  const { data: fieldsData, isLoading: fieldsLoading } = useQuery({
+  const {
+    data: fieldsData,
+    isLoading: fieldsLoading,
+    isError: fieldsError,
+  } = useQuery({
     queryKey: ['query-fields'],
     queryFn: () => getQueryFieldsServerFn(),
   })
@@ -99,13 +103,17 @@ export function HasFieldFilterEditor({
         <Select
           value={fieldId || undefined}
           onValueChange={handleFieldChange}
-          disabled={fieldsLoading}
+          disabled={fieldsLoading || fieldsError}
         >
           <SelectTrigger className="w-full">
             <SelectValue>
               {selectedFieldLabel || (
                 <span className="text-muted-foreground">
-                  {fieldsLoading ? 'Loading...' : 'Select field'}
+                  {fieldsLoading
+                    ? 'Loading...'
+                    : fieldsError
+                      ? 'Failed to load fields'
+                      : 'Select field'}
                 </span>
               )}
             </SelectValue>
