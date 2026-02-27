@@ -1,0 +1,12 @@
+{
+  "id": "keyboard-shortcuts",
+  "category": "UI",
+  "title": "Global Keyboard Shortcuts",
+  "description": "Comprehensive keyboard shortcut system for all major actions including navigation, node creation, view switching, and command execution. Includes customizable keybindings.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.784Z",
+  "updatedAt": "2026-02-09T14:55:22.784Z"
+}

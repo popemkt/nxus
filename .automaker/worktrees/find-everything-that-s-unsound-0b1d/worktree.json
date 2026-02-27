@@ -1,0 +1,11 @@
+{
+  "branch": "find-everything-that-s-unsound-0b1d",
+  "createdAt": "2026-02-09T14:50:29.265Z",
+  "pr": {
+    "number": 43,
+    "url": "https://github.com/popemkt/nxus/pull/43",
+    "title": "Find everything that's unsound (zenflow)",
+    "state": "OPEN",
+    "createdAt": "2026-02-08T14:02:42Z"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "favorites",
+  "category": "UI",
+  "title": "Favorites and Bookmarks",
+  "description": "Mark nodes, queries, and views as favorites for quick access from a dedicated favorites panel.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.801Z",
+  "updatedAt": "2026-02-09T14:55:22.801Z"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "cloud-sync",
+  "category": "API",
+  "title": "Cloud Sync Service",
+  "description": "Optional cloud sync for database backup and cross-device synchronization with end-to-end encryption.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "complex",
+  "dependencies": [
+    "offline-mode"
+  ],
+  "createdAt": "2026-02-09T14:55:22.803Z",
+  "updatedAt": "2026-02-09T14:55:22.803Z"
+}

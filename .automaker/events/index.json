@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "id": "evt-1770652847490-80059002",
+      "trigger": "feature_error",
+      "timestamp": "2026-02-09T16:00:47.491Z",
+      "featureName": "Advanced Full-Text Search",
+      "featureId": "advanced-search"
+    }
+  ]
+}

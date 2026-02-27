@@ -1,0 +1,14 @@
+{
+  "id": "custom-themes",
+  "category": "UI",
+  "title": "Custom Theme Builder",
+  "description": "Allow users to create and apply custom color themes with live preview. Supports theme export/import and community theme sharing.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "dark-mode"
+  ],
+  "createdAt": "2026-02-09T14:55:22.786Z",
+  "updatedAt": "2026-02-09T14:55:22.786Z"
+}

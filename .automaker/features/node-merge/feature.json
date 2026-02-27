@@ -1,0 +1,12 @@
+{
+  "id": "node-merge",
+  "category": "Core",
+  "title": "Node Merging",
+  "description": "Merge duplicate or similar nodes by combining properties, tags, and relationships with conflict resolution.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.799Z",
+  "updatedAt": "2026-02-09T14:55:22.799Z"
+}

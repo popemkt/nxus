@@ -1,0 +1,12 @@
+{
+  "id": "bulk-node-operations",
+  "category": "Core",
+  "title": "Bulk Node Operations",
+  "description": "Enable batch operations on multiple selected nodes including bulk delete, bulk tag assignment, bulk property updates, and bulk export. Includes undo/redo support for bulk operations.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-02-09T14:55:22.783Z",
+  "updatedAt": "2026-02-09T14:55:22.783Z"
+}
