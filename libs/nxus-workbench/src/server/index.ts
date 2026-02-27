@@ -49,4 +49,5 @@ export {
   getSavedQueriesServerFn,
   executeSavedQueryServerFn,
   getQuerySupertagsServerFn,
+  getQueryFieldsServerFn,
 } from './query.server.js'

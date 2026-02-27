@@ -272,6 +272,33 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Get all fields (for filter editor)
+ */
+export const getQueryFieldsServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { nodeFacade, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
+
+    await nodeFacade.init()
+
+    const fieldNodes = await nodeFacade.getNodesBySupertagWithInheritance(
+      SYSTEM_SUPERTAGS.FIELD
+    )
+
+    const fields = fieldNodes
+      .map((node) => ({
+        systemId: node.systemId || node.id,
+        label: node.content || node.systemId || node.id,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+
+    return {
+      success: true as const,
+      fields,
+    }
+  }
+)
+
+/**
  * Get all supertags (for filter editor)
  */
 export const getQuerySupertagsServerFn = createServerFn({ method: 'GET' }).handler(
