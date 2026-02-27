@@ -55,11 +55,14 @@ export function TableView({ items }: TableViewProps) {
       }),
       columnHelper.accessor('status', {
         header: 'Status',
-        cell: (info) => (
-          <Badge variant={STATUS_VARIANTS[info.getValue()]}>
-            {info.getValue().replace('-', ' ')}
-          </Badge>
-        ),
+        cell: (info) => {
+          if (info.row.original.types[0] === 'concept') return null
+          return (
+            <Badge variant={STATUS_VARIANTS[info.getValue()]}>
+              {info.getValue().replace('-', ' ')}
+            </Badge>
+          )
+        },
       }),
       columnHelper.display({
         id: 'health',

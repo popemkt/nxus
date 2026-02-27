@@ -74,7 +74,7 @@ export type NewItemTag = typeof itemTags.$inferInsert
 /**
  * App types that Nxus can manage
  */
-export type AppType = 'html' | 'typescript' | 'remote-repo' | 'tool'
+export type AppType = 'html' | 'typescript' | 'remote-repo' | 'tool' | 'concept'
 
 /**
  * Apps - master registry of all apps and tools
