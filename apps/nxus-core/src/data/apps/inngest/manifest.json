@@ -1,99 +1,100 @@
 {
-  "id": "inngest",
-  "name": "Inngest",
-  "description": "Event-driven workflow engine for building reliable background jobs, scheduled tasks, and multi-step workflows",
-  "type": "tool",
-  "path": "https://www.inngest.com/",
-  "homepage": "https://www.inngest.com/",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "npx inngest-cli --version",
-  "installInstructions": "Install via npm: npm install -g inngest-cli",
-  "commands": [
-    {
-      "id": "install-inngest",
-      "name": "Install",
-      "description": "Install Inngest CLI globally",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm install -g inngest-cli",
-      "requires": {
-        "tools": [
-          "node"
-        ],
-        "selfNotInstalled": true
-      }
+    "id": "inngest",
+    "name": "Inngest",
+    "description": "Event-driven workflow engine for building reliable background jobs, scheduled tasks, and multi-step workflows",
+    "type": "tool",
+    "path": "https://www.inngest.com/",
+    "homepage": "https://www.inngest.com/",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "inngest-cli --version",
+    "installInstructions": "Install via npm: npm install -g inngest-cli",
+    "commands": [
+        {
+            "id": "install-inngest",
+            "name": "Install",
+            "description": "Install Inngest CLI globally",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm install -g inngest-cli",
+            "requires": {
+                "tools": [
+                    "node"
+                ],
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "inngest-dev",
+            "name": "Start Dev Server",
+            "description": "Start local Inngest dev server for testing workflows",
+            "icon": "Play",
+            "category": "Development",
+            "target": "item",
+            "mode": "terminal",
+            "command": "npx inngest-cli dev",
+            "requires": {
+                "tools": [
+                    "node"
+                ]
+            }
+        },
+        {
+            "id": "inngest-init",
+            "name": "Initialize Project",
+            "description": "Initialize Inngest in your project",
+            "icon": "Plus",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "npx inngest-cli init",
+            "requires": {
+                "tools": [
+                    "node"
+                ]
+            }
+        },
+        {
+            "id": "inngest-deploy",
+            "name": "Deploy",
+            "description": "Deploy functions to Inngest Cloud",
+            "icon": "CloudArrowUp",
+            "category": "Deployment",
+            "target": "item",
+            "mode": "terminal",
+            "command": "npx inngest-cli deploy",
+            "requires": {
+                "tools": [
+                    "node"
+                ]
+            }
+        },
+        {
+            "id": "inngest-docs",
+            "name": "Documentation",
+            "description": "Open Inngest documentation",
+            "icon": "Book",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://www.inngest.com/docs"
+        }
+    ],
+    "dependencies": [
+        "node"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "automation",
+        "createdAt": "2026-01-22T00:00:00Z",
+        "updatedAt": "2026-02-25T00:00:00Z",
+        "version": "1.0.0",
+        "author": "Inngest"
     },
-    {
-      "id": "inngest-dev",
-      "name": "Start Dev Server",
-      "description": "Start local Inngest dev server for testing workflows",
-      "icon": "Play",
-      "category": "Development",
-      "target": "item",
-      "mode": "terminal",
-      "command": "npx inngest-cli dev",
-      "requires": {
-        "tools": [
-          "node"
-        ]
-      }
-    },
-    {
-      "id": "inngest-init",
-      "name": "Initialize Project",
-      "description": "Initialize Inngest in your project",
-      "icon": "Plus",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "npx inngest-cli init",
-      "requires": {
-        "tools": [
-          "node"
-        ]
-      }
-    },
-    {
-      "id": "inngest-deploy",
-      "name": "Deploy",
-      "description": "Deploy functions to Inngest Cloud",
-      "icon": "CloudArrowUp",
-      "category": "Deployment",
-      "target": "item",
-      "mode": "terminal",
-      "command": "npx inngest-cli deploy",
-      "requires": {
-        "tools": [
-          "node"
-        ]
-      }
-    },
-    {
-      "id": "inngest-docs",
-      "name": "Documentation",
-      "description": "Open Inngest documentation",
-      "icon": "Book",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://www.inngest.com/docs"
-    }
-  ],
-  "dependencies": [
-    "node"
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "automation",
-    "createdAt": "2026-01-22T00:00:00Z",
-    "updatedAt": "2026-01-22T00:00:00Z",
-    "version": "1.0.0",
-    "author": "Inngest"
-  }
+    "status": "not-installed"
 }

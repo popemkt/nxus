@@ -1,0 +1,48 @@
+{
+    "id": "codex-cli",
+    "name": "Codex CLI",
+    "description": "OpenAI's open-source agentic coding assistant that runs in the terminal. Lightweight, fast, and built on OpenAI models.",
+    "type": "tool",
+    "path": "https://github.com/openai/codex",
+    "homepage": "https://github.com/openai/codex",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "codex --version",
+    "commands": [
+        {
+            "id": "install",
+            "name": "Install",
+            "description": "Install Codex CLI globally via npm",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm install -g @openai/codex",
+            "requires": {
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Codex CLI on GitHub",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/openai/codex"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "OpenAI"
+    },
+    "status": "not-installed"
+}

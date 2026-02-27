@@ -1,57 +1,58 @@
 {
-  "id": "drawio",
-  "name": "draw.io",
-  "description": "Security-first diagramming for teams (diagrams.net)",
-  "type": "tool",
-  "path": "https://www.drawio.com/",
-  "homepage": "https://www.drawio.com/",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "drawio --version",
-  "commands": [
-    {
-      "id": "open-web",
-      "name": "Open Web App",
-      "description": "Launch draw.io in browser",
-      "icon": "Browser",
-      "category": "General",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://app.diagrams.net/"
+    "id": "drawio",
+    "name": "draw.io",
+    "description": "Security-first diagramming for teams (diagrams.net)",
+    "type": "tool",
+    "path": "https://www.drawio.com/",
+    "homepage": "https://www.drawio.com/",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "drawio --version",
+    "commands": [
+        {
+            "id": "open-web",
+            "name": "Open Web App",
+            "description": "Launch draw.io in browser",
+            "icon": "Browser",
+            "category": "General",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://app.diagrams.net/"
+        },
+        {
+            "id": "open-desktop",
+            "name": "Open Desktop App",
+            "description": "Launch draw.io desktop application",
+            "icon": "Desktop",
+            "category": "General",
+            "target": "item",
+            "mode": "execute",
+            "command": "drawio",
+            "requires": {
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open draw.io documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://www.drawio.com/doc"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "utilities",
+        "createdAt": "2026-02-18T12:00:00Z",
+        "updatedAt": "2026-02-25T00:00:00Z",
+        "version": "1.0.0",
+        "author": "JGraph"
     },
-    {
-      "id": "open-desktop",
-      "name": "Open Desktop App",
-      "description": "Launch draw.io desktop application",
-      "icon": "Desktop",
-      "category": "General",
-      "target": "item",
-      "mode": "execute",
-      "command": "drawio",
-      "requires": {
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "docs",
-      "name": "Documentation",
-      "description": "Open draw.io documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://www.drawio.com/doc"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "utilities",
-    "version": "1.0.0",
-    "author": "JGraph",
-    "createdAt": "2026-02-18T12:00:00Z",
-    "updatedAt": "2026-02-18T12:00:00Z"
-  }
+    "status": "not-installed"
 }

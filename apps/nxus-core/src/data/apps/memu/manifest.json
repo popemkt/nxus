@@ -1,0 +1,42 @@
+{
+    "id": "memu",
+    "name": "MemU",
+    "description": "AI-powered memory and knowledge management tool by NevaMind AI. Organize, recall, and connect your information intelligently.",
+    "type": "remote-repo",
+    "path": "https://github.com/NevaMind-AI/memU.git",
+    "homepage": "https://github.com/NevaMind-AI/memU",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the MemU repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/NevaMind-AI/memU.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub Page",
+            "description": "Open MemU on GitHub",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/NevaMind-AI/memU"
+        }
+    ],
+    "dependencies": [
+        "git"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "NevaMind-AI"
+    },
+    "status": "not-installed"
+}

@@ -1,0 +1,45 @@
+{
+    "id": "convex",
+    "name": "Convex",
+    "description": "The fullstack TypeScript development platform. Reactive database, server functions, scheduling, and file storage — all in one.",
+    "type": "tool",
+    "path": "https://convex.dev",
+    "homepage": "https://convex.dev",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "npx --no convex --version",
+    "commands": [
+        {
+            "id": "download",
+            "name": "Get Started",
+            "description": "Open Convex quickstart guide",
+            "icon": "Download",
+            "category": "Installation",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.convex.dev/quickstart"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Convex documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.convex.dev"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "Convex"
+    },
+    "status": "not-installed"
+}

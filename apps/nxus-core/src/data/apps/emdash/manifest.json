@@ -1,0 +1,42 @@
+{
+    "id": "emdash",
+    "name": "EmDash",
+    "description": "An open-source reading and annotation tool for organizing highlights, notes, and knowledge from your reading.",
+    "type": "remote-repo",
+    "path": "https://github.com/generalaction/emdash.git",
+    "homepage": "https://github.com/generalaction/emdash",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the EmDash repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/generalaction/emdash.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub Page",
+            "description": "Open EmDash on GitHub",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/generalaction/emdash"
+        }
+    ],
+    "dependencies": [
+        "git"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "productivity",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "generalaction"
+    },
+    "status": "not-installed"
+}

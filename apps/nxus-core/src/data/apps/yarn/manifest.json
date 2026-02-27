@@ -1,76 +1,77 @@
 {
-  "id": "yarn",
-  "name": "Yarn",
-  "description": "Fast, reliable, and secure dependency management",
-  "type": "tool",
-  "path": "https://yarnpkg.com",
-  "homepage": "https://yarnpkg.com",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "yarn --version",
-  "installInstructions": "Run: npm install -g yarn",
-  "commands": [
-    {
-      "id": "install-yarn",
-      "name": "Install",
-      "description": "Install Yarn globally",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm install -g yarn",
-      "requires": {
-        "tools": [
-          "npm"
-        ],
-        "selfNotInstalled": true
-      }
+    "id": "yarn",
+    "name": "Yarn",
+    "description": "Fast, reliable, and secure dependency management",
+    "type": "tool",
+    "path": "https://yarnpkg.com",
+    "homepage": "https://yarnpkg.com",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "yarn --version",
+    "installInstructions": "Run: npm install -g yarn",
+    "commands": [
+        {
+            "id": "install-yarn",
+            "name": "Install",
+            "description": "Install Yarn globally",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm install -g yarn",
+            "requires": {
+                "tools": [
+                    "npm"
+                ],
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "update-yarn",
+            "name": "Update",
+            "description": "Update to latest version",
+            "icon": "ArrowsClockwise",
+            "category": "Maintenance",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm update -g yarn",
+            "requires": {
+                "tools": [
+                    "npm"
+                ],
+                "selfInstalled": true
+            }
+        },
+        {
+            "id": "uninstall-yarn",
+            "name": "Uninstall",
+            "description": "Remove Yarn",
+            "icon": "Trash",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "npm uninstall -g yarn",
+            "requires": {
+                "tools": [
+                    "npm"
+                ],
+                "selfInstalled": true
+            }
+        }
+    ],
+    "dependencies": [
+        "node"
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-01-01T01:09:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "update-yarn",
-      "name": "Update",
-      "description": "Update to latest version",
-      "icon": "ArrowsClockwise",
-      "category": "Maintenance",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm update -g yarn",
-      "requires": {
-        "tools": [
-          "npm"
-        ],
-        "selfInstalled": true
-      }
-    },
-    {
-      "id": "uninstall-yarn",
-      "name": "Uninstall",
-      "description": "Remove Yarn",
-      "icon": "Trash",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "npm uninstall -g yarn",
-      "requires": {
-        "tools": [
-          "npm"
-        ],
-        "selfInstalled": true
-      }
-    }
-  ],
-  "dependencies": [
-    "node"
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2026-01-01T01:09:00.000Z",
-    "updatedAt": "2026-01-01T22:37:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  }
+    "status": "not-installed"
 }

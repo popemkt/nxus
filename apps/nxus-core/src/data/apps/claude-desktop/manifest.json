@@ -1,0 +1,44 @@
+{
+    "id": "claude-desktop",
+    "name": "Claude Desktop",
+    "description": "Anthropic's desktop application for Claude AI. Chat, write, code, and reason with Claude directly from your desktop.",
+    "type": "tool",
+    "path": "https://claude.ai/download",
+    "homepage": "https://claude.ai",
+    "platform": [
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "test -d '/Applications/Claude.app' || test -d ~/Applications/Claude.app && echo 'installed'",
+    "commands": [
+        {
+            "id": "download",
+            "name": "Download",
+            "description": "Go to Claude Desktop download page",
+            "icon": "Download",
+            "category": "Installation",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://claude.ai/download"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Claude documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.anthropic.com/en/docs/claude-ai/claude-desktop"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "Anthropic"
+    },
+    "status": "not-installed"
+}

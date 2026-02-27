@@ -1,0 +1,44 @@
+{
+    "id": "trae",
+    "name": "Trae",
+    "description": "AI-powered IDE by ByteDance. A free, adaptive IDE with built-in AI agents for code generation, debugging, and refactoring.",
+    "type": "tool",
+    "path": "https://trae.ai",
+    "homepage": "https://trae.ai",
+    "platform": [
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "test -d '/Applications/Trae.app' && echo 'installed'",
+    "commands": [
+        {
+            "id": "download",
+            "name": "Download",
+            "description": "Go to Trae download page",
+            "icon": "Download",
+            "category": "Installation",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://trae.ai/download"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Trae documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.trae.ai"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "ByteDance"
+    },
+    "status": "not-installed"
+}

@@ -1,0 +1,43 @@
+{
+    "id": "dgraph",
+    "name": "Dgraph",
+    "description": "The only native GraphQL database with a graph backend. Distributed, horizontally scalable, and built for production.",
+    "type": "tool",
+    "path": "https://dgraph.io",
+    "homepage": "https://dgraph.io",
+    "platform": [
+        "linux"
+    ],
+    "checkCommand": "dgraph version",
+    "commands": [
+        {
+            "id": "download",
+            "name": "Download",
+            "description": "Go to Dgraph download page",
+            "icon": "Download",
+            "category": "Installation",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://dgraph.io/downloads"
+        },
+        {
+            "id": "docs",
+            "name": "Documentation",
+            "description": "Open Dgraph documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://docs.dgraph.io"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-02-25T14:00:00Z",
+        "updatedAt": "2026-02-25T14:00:00Z",
+        "version": "1.0.0",
+        "author": "dgraph-io"
+    },
+    "status": "not-installed"
+}

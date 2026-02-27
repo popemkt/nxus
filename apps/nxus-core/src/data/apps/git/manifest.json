@@ -1,56 +1,67 @@
 {
-  "id": "git",
-  "name": "Git",
-  "description": "Distributed version control system",
-  "type": "tool",
-  "path": "https://git-scm.com",
-  "homepage": "https://git-scm.com",
-  "thumbnail": "/thumbnails/git.svg",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "git --version",
-  "installInstructions": "Visit https://git-scm.com to download and install Git for your platform",
-  "commands": [
-    {
-      "id": "install-git-fedora",
-      "name": "Install (Fedora)",
-      "description": "Install Git via dnf",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "terminal",
-      "command": "sudo dnf install git"
+    "id": "git",
+    "name": "Git",
+    "description": "Distributed version control system",
+    "type": "tool",
+    "path": "https://git-scm.com",
+    "homepage": "https://git-scm.com",
+    "thumbnail": "/thumbnails/git.svg",
+    "platform": [
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "checkCommand": "git --version",
+    "installInstructions": "Visit https://git-scm.com to download and install Git for your platform",
+    "commands": [
+        {
+            "id": "install-git-fedora",
+            "name": "Install (Fedora)",
+            "description": "Install Git via dnf",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "sudo dnf install git"
+        },
+        {
+            "id": "install-git-debian",
+            "name": "Install (Debian/Ubuntu)",
+            "description": "Install Git via apt",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "terminal",
+            "command": "sudo apt update && sudo apt install -y git"
+        },
+        {
+            "id": "install-git-windows",
+            "name": "Install (Windows)",
+            "description": "Install Git via winget",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "copy",
+            "command": "winget install Git.Git"
+        },
+        {
+            "id": "docs-git",
+            "name": "Documentation",
+            "description": "Open Git documentation",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://git-scm.com/doc"
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2025-12-31T16:48:00.000Z",
+        "updatedAt": "2026-01-01T22:37:00.000Z",
+        "version": "1.0.0",
+        "author": "nxus"
     },
-    {
-      "id": "install-git-windows",
-      "name": "Install (Windows)",
-      "description": "Install Git via winget",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "copy",
-      "command": "winget install Git.Git"
-    },
-    {
-      "id": "docs-git",
-      "name": "Documentation",
-      "description": "Open Git documentation",
-      "icon": "BookOpen",
-      "category": "Help",
-      "target": "item",
-      "mode": "docs",
-      "command": "https://git-scm.com/doc"
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2025-12-31T16:48:00.000Z",
-    "updatedAt": "2026-01-01T22:37:00.000Z",
-    "version": "1.0.0",
-    "author": "nxus"
-  }
+    "status": "not-installed"
 }

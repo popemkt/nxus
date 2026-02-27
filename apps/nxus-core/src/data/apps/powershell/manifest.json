@@ -1,73 +1,74 @@
 {
-  "id": "powershell",
-  "name": "PowerShell Core",
-  "description": "Cross-platform task automation and configuration management framework.",
-  "type": "tool",
-  "path": "https://github.com/PowerShell/PowerShell",
-  "homepage": "https://github.com/PowerShell/PowerShell",
-  "platform": [
-    "linux",
-    "macos",
-    "windows"
-  ],
-  "checkCommand": "pwsh -v",
-  "installInstructions": "Visit https://github.com/PowerShell/PowerShell for installation instructions.",
-  "commands": [
-    {
-      "id": "install-pwsh-linux",
-      "name": "Install (Linux)",
-      "description": "Install PowerShell on Linux",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "sudo dnf install powershell",
-      "platforms": [
-        "linux"
-      ],
-      "requires": {
-        "selfNotInstalled": true
-      }
-    },
-    {
-      "id": "install-pwsh-mac",
-      "name": "Install (macOS)",
-      "description": "Install PowerShell on macOS",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "brew install --cask powershell",
-      "platforms": [
-        "macos"
-      ],
-      "requires": {
-        "selfNotInstalled": true
-      }
-    },
-    {
-      "id": "install-pwsh-win",
-      "name": "Install (Windows)",
-      "description": "Install PowerShell on Windows",
-      "icon": "Download",
-      "category": "Setup",
-      "target": "item",
-      "mode": "execute",
-      "command": "winget install --id Microsoft.Powershell --source winget",
-      "platforms": [
+    "id": "powershell",
+    "name": "PowerShell Core",
+    "description": "Cross-platform task automation and configuration management framework.",
+    "type": "tool",
+    "path": "https://github.com/PowerShell/PowerShell",
+    "homepage": "https://github.com/PowerShell/PowerShell",
+    "platform": [
+        "linux",
+        "macos",
         "windows"
-      ],
-      "requires": {
-        "selfNotInstalled": true
-      }
-    }
-  ],
-  "metadata": {
-    "tags": [],
-    "category": "development-tools",
-    "createdAt": "2026-01-03T09:15:00Z",
-    "updatedAt": "2026-01-03T09:15:00Z",
-    "version": "7.4.0",
-    "author": "Microsoft"
-  }
+    ],
+    "checkCommand": "pwsh -v",
+    "installInstructions": "Visit https://github.com/PowerShell/PowerShell for installation instructions.",
+    "commands": [
+        {
+            "id": "install-pwsh-linux",
+            "name": "Install (Linux)",
+            "description": "Install PowerShell on Linux (snap, distro-agnostic)",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "sudo snap install powershell --classic",
+            "platforms": [
+                "linux"
+            ],
+            "requires": {
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "install-pwsh-mac",
+            "name": "Install (macOS)",
+            "description": "Install PowerShell on macOS",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "brew install --cask powershell",
+            "platforms": [
+                "macos"
+            ],
+            "requires": {
+                "selfNotInstalled": true
+            }
+        },
+        {
+            "id": "install-pwsh-win",
+            "name": "Install (Windows)",
+            "description": "Install PowerShell on Windows",
+            "icon": "Download",
+            "category": "Setup",
+            "target": "item",
+            "mode": "execute",
+            "command": "winget install --id Microsoft.Powershell --source winget",
+            "platforms": [
+                "windows"
+            ],
+            "requires": {
+                "selfNotInstalled": true
+            }
+        }
+    ],
+    "metadata": {
+        "tags": [],
+        "category": "development-tools",
+        "createdAt": "2026-01-03T09:15:00Z",
+        "updatedAt": "2026-01-03T09:15:00Z",
+        "version": "7.4.0",
+        "author": "Microsoft"
+    },
+    "status": "not-installed"
 }
