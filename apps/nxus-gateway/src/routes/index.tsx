@@ -13,6 +13,7 @@ import { BentoGridCards } from '@/components/visuals/bento-grid-cards'
 import { SpatialCards } from '@/components/visuals/spatial-cards'
 import { DashboardCards } from '@/components/visuals/dashboard-cards'
 import { AuroraCards } from '@/components/visuals/aurora-cards'
+import { CosmicTarotCards } from '@/components/visuals/cosmic-tarot-cards'
 import {
   VisualSwitcher,
   getStoredVisual,
@@ -92,6 +93,7 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   spatial: SpatialCards,
   dashboard: DashboardCards,
   aurora: AuroraCards,
+  tarot: CosmicTarotCards,
 }
 
 function GatewayPage() {
