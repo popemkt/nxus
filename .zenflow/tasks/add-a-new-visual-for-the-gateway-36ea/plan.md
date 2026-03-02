@@ -20,50 +20,62 @@ If you are blocked and need user clarification, mark the current step with `[!]`
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
+<!-- chat-id: a0601f1a-3db1-4fed-9490-8ecea0b52781 -->
 
-Assess the task's difficulty, as underestimating it leads to poor outcomes.
-- easy: Straightforward implementation, trivial bug fix or feature
-- medium: Moderate complexity, some edge cases or caveats to consider
-- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
+Completed. Specification saved to `{@artifacts_path}/spec.md`.
 
-Create a technical specification for the task that is appropriate for the complexity level:
-- Review the existing codebase architecture and identify reusable components.
-- Define the implementation approach based on established patterns in the project.
-- Identify all source code files that will be created or modified.
-- Define any necessary data model, API, or interface changes.
-- Describe verification steps using the project's test and lint commands.
-
-Save the output to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach
-- Source code structure changes
-- Data model / API / interface changes
-- Verification approach
-
-If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
-- Break down the work into concrete tasks (incrementable, testable milestones)
-- Each task should reference relevant contracts and include verification steps
-- Replace the Implementation step below with the planned tasks
-
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
-
-Important: unit tests must be part of each implementation task, not separate tasks. Each task should implement the code and its tests together, if relevant.
-
-Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
+- **Difficulty**: Medium
+- **Concept**: "Neural Nexus" — transform the gateway into an immersive, atmospheric launch pad
+- **Key visuals**: Animated particle grid background, DecodeText hero, holographic card tiles with scan-line and glow effects, ambient corner accents
+- **Files to modify**: `routes/index.tsx`, `styles.css`
+- **Files to create**: `components/particle-grid.tsx`
+- **No new dependencies** — uses existing framer-motion, DecodeText, Phosphor Icons, CSS keyframes
+- **No data model changes** — purely visual/presentational
 
 ---
 
-### [ ] Step: Implementation
+### [ ] Step: Create Particle Grid Background Component
 
-Implement the task according to the technical specification and general engineering best practices.
+Create `apps/nxus-gateway/src/components/particle-grid.tsx`:
+- Canvas-based animated dot grid with floating particles
+- Reads `--primary` and `--background` from CSS custom properties for theme adaptation
+- Subtle mouse-reactive parallax effect
+- Handles resize, cleanup, `requestAnimationFrame` loop
+- Respects `prefers-reduced-motion` (static grid, no animation)
+- Positioned as `fixed` full-viewport background at `z-index: 0`
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase
-3. If relevant, write unit tests alongside each change.
-4. Run relevant tests and linters in the end of each step.
-5. Perform basic manual verification if applicable.
-6. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+---
+
+### [ ] Step: Add CSS Animations and Ambient Effects
+
+Update `apps/nxus-gateway/src/styles.css` with:
+- `@keyframes gateway-scan-line` — horizontal light sweep for card hover
+- `@keyframes gateway-glow-pulse` — breathing glow for status dots and corner accents
+- `@keyframes gateway-underline-shimmer` — gradient shift for title underline
+- Corner accent gradient styles (positioned absolute, using `--primary` at low opacity)
+- Holographic card border gradient styles (conic-gradient `::before`)
+- All animations use CSS custom properties for full theme compatibility
+
+---
+
+### [ ] Step: Rewrite Gateway Page with New Visual Design
+
+Rewrite `apps/nxus-gateway/src/routes/index.tsx`:
+- Import `DecodeText` from `@nxus/ui`, `motion` from `framer-motion`, `ParticleGrid`
+- Hero section: DecodeText title with glowing animated underline, fade-in subtitle
+- Redesigned holographic card tiles with scan-line hover, icon glow, status dot, gradient border
+- Staggered card entrance animation using framer-motion `staggerChildren`
+- Corner accent orbs and connection line decorations
+- Maintain all existing functionality (links, icon mapping, routing)
+
+---
+
+### [ ] Step: Verification and Testing
+
+- Run `pnpm test` to ensure no regressions in existing tests
+- Run type check (`npx tsc --noEmit`) on the gateway app
+- Verify visual rendering across dark/light modes and theme palettes
+- Confirm `prefers-reduced-motion` disables animations
+- Confirm all 3 mini-app links still navigate correctly
+- Write report to `{@artifacts_path}/report.md`
