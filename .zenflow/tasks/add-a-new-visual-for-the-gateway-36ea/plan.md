@@ -35,7 +35,8 @@ Completed. Specification saved to `{@artifacts_path}/spec.md`.
 
 ---
 
-### [ ] Step: Create Particle Grid Background Component
+### [x] Step: Create Particle Grid Background Component
+<!-- chat-id: 3b98bf72-6c52-4c65-8200-1b7e113b98c0 -->
 
 Create `apps/nxus-gateway/src/components/particle-grid.tsx`:
 - Canvas-based animated dot grid with floating particles
