@@ -61,7 +61,8 @@ Update `apps/nxus-gateway/src/styles.css` with:
 
 ---
 
-### [ ] Step: Rewrite Gateway Page with New Visual Design
+### [x] Step: Rewrite Gateway Page with New Visual Design
+<!-- chat-id: 612425c4-f47f-42fd-9d78-79315f5c82d3 -->
 
 Rewrite `apps/nxus-gateway/src/routes/index.tsx`:
 - Import `DecodeText` from `@nxus/ui`, `motion` from `framer-motion`, `ParticleGrid`
@@ -70,6 +71,8 @@ Rewrite `apps/nxus-gateway/src/routes/index.tsx`:
 - Staggered card entrance animation using framer-motion `staggerChildren`
 - Corner accent orbs and connection line decorations
 - Maintain all existing functionality (links, icon mapping, routing)
+- Added `framer-motion` as direct dependency in gateway `package.json`
+- Type check passes (no new errors introduced)
 
 ---
 

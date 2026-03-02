@@ -11,6 +11,7 @@
   "dependencies": {
     "@nxus/ui": "workspace:*",
     "@fontsource-variable/outfit": "^5.2.8",
+    "framer-motion": "^12.23.26",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-query": "^5.90.12",
