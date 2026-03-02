@@ -48,7 +48,8 @@ Create `apps/nxus-gateway/src/components/particle-grid.tsx`:
 
 ---
 
-### [ ] Step: Add CSS Animations and Ambient Effects
+### [x] Step: Add CSS Animations and Ambient Effects
+<!-- chat-id: e6e5af93-4f76-4aac-aa03-51d5952b0a05 -->
 
 Update `apps/nxus-gateway/src/styles.css` with:
 - `@keyframes gateway-scan-line` — horizontal light sweep for card hover
