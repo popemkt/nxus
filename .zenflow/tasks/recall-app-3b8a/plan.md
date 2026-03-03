@@ -213,7 +213,8 @@ Implement the AI integration layer and the Explore page for generating concepts.
 - AI returns structured concepts (requires `ANTHROPIC_API_KEY` env var)
 - Saving a concept creates topic + concept in DB, appears on Dashboard
 
-### [ ] Step 9: Topic Detail Page & Manual Concept Creation
+### [x] Step 9: Topic Detail Page & Manual Concept Creation
+<!-- chat-id: c2742fdc-c6e2-4fa6-a020-2f8b7b8b6bd0 -->
 
 Build the topic detail view with concept list and manual concept creation dialog.
 
