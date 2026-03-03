@@ -168,7 +168,8 @@ Each hook calls the corresponding server function and maps the response. Follow 
 **Verification:**
 - Type-check passes
 
-### [ ] Step 7: Dashboard & Topic Card Components
+### [x] Step 7: Dashboard & Topic Card Components
+<!-- chat-id: afd140a3-a469-4847-bd2e-e95b91a7fd89 -->
 
 Build the main landing page with topic grid and empty state.
 
