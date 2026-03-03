@@ -152,7 +152,8 @@ Implement the spaced repetition scheduling layer using `ts-fsrs`.
 - Type-check passes
 - Unit test (`apps/nxus-recall/src/server/fsrs.server.test.ts` or test the pure logic in `recall-logic.test.ts`): test that rateCard with Rating.Good on a New card transitions it to Learning/Review state with a future due date; test previewIntervals returns 4 entries with increasing intervals
 
-### [ ] Step 6: Data Hooks (TanStack Query)
+### [x] Step 6: Data Hooks (TanStack Query)
+<!-- chat-id: acba8c43-1994-40e5-8aa4-0b15982d3e0e -->
 
 Create the client-side data hooks that components will use to fetch and mutate data.
 
