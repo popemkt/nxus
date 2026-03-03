@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TopicsTopicIdRouteImport } from './routes/topics.$topicId'
+import { Route as ReviewSessionRouteImport } from './routes/review.session'
 
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
@@ -28,34 +29,43 @@ const TopicsTopicIdRoute = TopicsTopicIdRouteImport.update({
   path: '/topics/$topicId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewSessionRoute = ReviewSessionRouteImport.update({
+  id: '/review/session',
+  path: '/review/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/review/session': typeof ReviewSessionRoute
   '/topics/$topicId': typeof TopicsTopicIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/review/session': typeof ReviewSessionRoute
   '/topics/$topicId': typeof TopicsTopicIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/review/session': typeof ReviewSessionRoute
   '/topics/$topicId': typeof TopicsTopicIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explore' | '/topics/$topicId'
+  fullPaths: '/' | '/explore' | '/review/session' | '/topics/$topicId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explore' | '/topics/$topicId'
-  id: '__root__' | '/' | '/explore' | '/topics/$topicId'
+  to: '/' | '/explore' | '/review/session' | '/topics/$topicId'
+  id: '__root__' | '/' | '/explore' | '/review/session' | '/topics/$topicId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExploreRoute: typeof ExploreRoute
+  ReviewSessionRoute: typeof ReviewSessionRoute
   TopicsTopicIdRoute: typeof TopicsTopicIdRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicsTopicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/review/session': {
+      id: '/review/session'
+      path: '/review/session'
+      fullPath: '/review/session'
+      preLoaderRoute: typeof ReviewSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExploreRoute: ExploreRoute,
+  ReviewSessionRoute: ReviewSessionRoute,
   TopicsTopicIdRoute: TopicsTopicIdRoute,
 }
 export const routeTree = rootRouteImport

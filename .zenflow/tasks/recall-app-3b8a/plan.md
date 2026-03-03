@@ -234,7 +234,8 @@ Build the topic detail view with concept list and manual concept creation dialog
 - Manual concept creation via modal works
 - "Generate More" links to Explore with topic pre-filled
 
-### [ ] Step 10: Review Session
+### [x] Step 10: Review Session
+<!-- chat-id: a89c69a3-2e0a-482a-9228-1f0ec2760bd8 -->
 
 Implement the full review session flow — the core learning experience.
 
