@@ -17,6 +17,7 @@ function miniAppProxy(): Plugin {
     '/core': { target: 'localhost', port: 3000 },
     '/workbench': { target: 'localhost', port: 3002 },
     '/calendar': { target: 'localhost', port: 3003 },
+    '/recall': { target: 'localhost', port: 3004 },
   }
 
   return {

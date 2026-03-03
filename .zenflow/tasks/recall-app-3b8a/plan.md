@@ -51,7 +51,8 @@ Create a detailed implementation plan based on `{@artifacts_path}/spec.md`.
 2. Each task should reference relevant contracts and include verification steps
 3. Replace the Implementation step below with the planned tasks
 
-### [ ] Step 1: App Scaffold & Gateway Integration
+### [x] Step 1: App Scaffold & Gateway Integration
+<!-- chat-id: ec6af9b6-0f10-4a8a-b01f-47428fa12f04 -->
 
 Scaffold the `apps/nxus-recall/` app and register it in the gateway. This establishes the foundational project structure that all subsequent steps build on.
 

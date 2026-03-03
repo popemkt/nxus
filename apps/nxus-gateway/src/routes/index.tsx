@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
+import { Cube, Graph, CalendarBlank, Brain, ArrowRight } from '@phosphor-icons/react'
 import { Card, CardHeader, CardTitle, CardDescription } from '@nxus/ui'
 import { miniApps } from '@/config/mini-apps'
 import type { MiniApp } from '@/config/mini-apps'
@@ -28,6 +28,7 @@ const iconMap = {
   cube: Cube,
   graph: Graph,
   calendar: CalendarBlank,
+  brain: Brain,
 } as const
 
 function MiniAppCard({ app }: { app: MiniApp }) {
