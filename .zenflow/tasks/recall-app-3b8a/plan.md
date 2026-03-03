@@ -116,7 +116,8 @@ Create the TypeScript types, Zod validation schemas, and pure conversion functio
 - Type-check passes: `npx nx typecheck @nxus/recall-app`
 - Unit tests for conversion functions (create `apps/nxus-recall/src/server/recall-logic.test.ts`): test round-trip nodeToRecallConcept and fsrsCardToProperties, test createEmptyRecallCard produces valid defaults
 
-### [ ] Step 4: CRUD Server Functions
+### [x] Step 4: CRUD Server Functions
+<!-- chat-id: 41bc6de7-3863-4f12-9790-3678ace25ad5 -->
 
 Implement the core data access server functions for topics, concepts, and due cards.
 
