@@ -95,7 +95,8 @@ Add recall-specific system constants and bootstrap logic to `@nxus/db` so the da
 - `pnpm test:libs` passes (bootstrap tests still work)
 - App starts and bootstrap creates the recall system nodes (check console logs or DB inspection)
 
-### [ ] Step 3: Domain Types, Zod Schemas & Node Conversion
+### [x] Step 3: Domain Types, Zod Schemas & Node Conversion
+<!-- chat-id: c7f59ddc-57c3-4396-b56a-7ec9c7d71ccf -->
 
 Create the TypeScript types, Zod validation schemas, and pure conversion functions that form the data layer contract.
 
