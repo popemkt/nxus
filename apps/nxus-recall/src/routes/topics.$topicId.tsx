@@ -143,8 +143,9 @@ function TopicDetailSkeleton() {
 
 function TopicDetailPage() {
   const topic = Route.useLoaderData() as RecallTopic
-  const { concepts, isLoading } = useConcepts(topic.id)
-  const { count: dueCount } = useDueCards(topic.id)
+  const { concepts, isLoading, error: conceptsError } = useConcepts(topic.id)
+  const { count: dueCount, error: dueError } = useDueCards(topic.id)
+  const queryError = conceptsError || dueError
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -207,6 +208,16 @@ function TopicDetailPage() {
             </Button>
           </a>
         </div>
+
+        {/* Error banner */}
+        {queryError && !isLoading && (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 mb-6">
+            <p className="text-sm text-destructive mb-2">{queryError.message}</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        )}
 
         {/* Concept list */}
         {isLoading ? (

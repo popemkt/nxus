@@ -39,10 +39,16 @@ async function callAI<T>(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<T> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error(
+      'AI features require an Anthropic API key. Set ANTHROPIC_API_KEY in your environment variables.',
+    )
+  }
+
   const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const { zodOutputFormat } = await import('@anthropic-ai/sdk/helpers/zod')
 
-  const client = new Anthropic() // reads ANTHROPIC_API_KEY from env
+  const client = new Anthropic()
 
   const attempt = async (): Promise<T> => {
     const message = await client.messages.parse({

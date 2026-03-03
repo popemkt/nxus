@@ -21,8 +21,9 @@ function DashboardSkeleton() {
 }
 
 function RecallDashboard() {
-  const { topics, isLoading: topicsLoading } = useTopics()
-  const { count: globalDueCount, isLoading: dueLoading } = useDueCards()
+  const { topics, isLoading: topicsLoading, error: topicsError } = useTopics()
+  const { count: globalDueCount, isLoading: dueLoading, error: dueError } = useDueCards()
+  const error = topicsError || dueError
 
   const isLoading = topicsLoading || dueLoading
   const hasTopics = topics.length > 0
@@ -74,7 +75,14 @@ function RecallDashboard() {
         )}
 
         {/* Content */}
-        {isLoading ? (
+        {error && !isLoading ? (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-6 py-8 text-center">
+            <p className="text-sm text-destructive mb-4">{error.message}</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        ) : isLoading ? (
           <DashboardSkeleton />
         ) : hasTopics ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
