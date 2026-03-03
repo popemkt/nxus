@@ -187,7 +187,8 @@ Build the main landing page with topic grid and empty state.
 - Empty state shows when no topics exist
 - After creating topics (via later steps or direct DB), topic cards appear with correct counts
 
-### [ ] Step 8: AI Facade & Concept Generation
+### [x] Step 8: AI Facade & Concept Generation
+<!-- chat-id: 2bd7a228-560c-4e44-be0f-34676ef3dc60 -->
 
 Implement the AI integration layer and the Explore page for generating concepts.
 
