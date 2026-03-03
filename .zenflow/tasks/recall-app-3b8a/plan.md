@@ -77,7 +77,8 @@ Scaffold the `apps/nxus-recall/` app and register it in the gateway. This establ
 - Navigating to `http://localhost:3004/recall/` shows the placeholder page
 - Gateway proxy at `http://localhost:3001/recall/` routes to the app
 
-### [ ] Step 2: DB Schema — Recall Supertags & Fields
+### [x] Step 2: DB Schema — Recall Supertags & Fields
+<!-- chat-id: f85a04fe-d929-410e-ba48-8609a3047750 -->
 
 Add recall-specific system constants and bootstrap logic to `@nxus/db` so the database knows about topics, concepts, and review logs.
 

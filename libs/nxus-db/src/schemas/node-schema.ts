@@ -128,6 +128,11 @@ export const SYSTEM_SUPERTAGS = {
   // Calendar supertags - for schedule management
   TASK: 'supertag:task', // Nodes that are tasks (completable items)
   EVENT: 'supertag:event', // Nodes that are calendar events
+
+  // Recall supertags - for spaced repetition learning
+  RECALL_TOPIC: 'supertag:recall-topic', // Groups of related concepts
+  RECALL_CONCEPT: 'supertag:recall-concept', // Individual knowledge items with FSRS scheduling
+  RECALL_REVIEW_LOG: 'supertag:recall-review-log', // Review session log entries
 } as const
 
 /**
@@ -228,6 +233,31 @@ export const SYSTEM_FIELDS = {
   GCAL_TOKEN_EXPIRY: 'field:gcal_token_expiry' as FieldSystemId,
   GCAL_USER_EMAIL: 'field:gcal_user_email' as FieldSystemId,
   GCAL_CALENDAR_ID: 'field:gcal_calendar_id' as FieldSystemId,
+
+  // Recall concept fields
+  RECALL_SUMMARY: 'field:recall_summary' as FieldSystemId,
+  RECALL_WHY_IT_MATTERS: 'field:recall_why_it_matters' as FieldSystemId,
+  RECALL_BLOOMS_LEVEL: 'field:recall_blooms_level' as FieldSystemId,
+  RECALL_SOURCE: 'field:recall_source' as FieldSystemId,
+  RECALL_RELATED_CONCEPTS: 'field:recall_related_concepts' as FieldSystemId,
+
+  // Recall FSRS scheduling fields
+  RECALL_DUE: 'field:recall_due' as FieldSystemId,
+  RECALL_STABILITY: 'field:recall_stability' as FieldSystemId,
+  RECALL_DIFFICULTY: 'field:recall_difficulty' as FieldSystemId,
+  RECALL_ELAPSED_DAYS: 'field:recall_elapsed_days' as FieldSystemId,
+  RECALL_SCHEDULED_DAYS: 'field:recall_scheduled_days' as FieldSystemId,
+  RECALL_REPS: 'field:recall_reps' as FieldSystemId,
+  RECALL_LAPSES: 'field:recall_lapses' as FieldSystemId,
+  RECALL_STATE: 'field:recall_state' as FieldSystemId,
+  RECALL_LAST_REVIEW: 'field:recall_last_review' as FieldSystemId,
+
+  // Recall review log fields
+  RECALL_QUESTION_TEXT: 'field:recall_question_text' as FieldSystemId,
+  RECALL_QUESTION_TYPE: 'field:recall_question_type' as FieldSystemId,
+  RECALL_USER_ANSWER: 'field:recall_user_answer' as FieldSystemId,
+  RECALL_AI_FEEDBACK: 'field:recall_ai_feedback' as FieldSystemId,
+  RECALL_RATING: 'field:recall_rating' as FieldSystemId,
 } as const
 
 /**
@@ -320,6 +350,31 @@ export const FIELD_NAMES = {
   GCAL_TOKEN_EXPIRY: 'gcal_token_expiry' as FieldContentName,
   GCAL_USER_EMAIL: 'gcal_user_email' as FieldContentName,
   GCAL_CALENDAR_ID: 'gcal_calendar_id' as FieldContentName,
+
+  // Recall concept fields
+  RECALL_SUMMARY: 'recall_summary' as FieldContentName,
+  RECALL_WHY_IT_MATTERS: 'recall_why_it_matters' as FieldContentName,
+  RECALL_BLOOMS_LEVEL: 'recall_blooms_level' as FieldContentName,
+  RECALL_SOURCE: 'recall_source' as FieldContentName,
+  RECALL_RELATED_CONCEPTS: 'recall_related_concepts' as FieldContentName,
+
+  // Recall FSRS scheduling fields
+  RECALL_DUE: 'recall_due' as FieldContentName,
+  RECALL_STABILITY: 'recall_stability' as FieldContentName,
+  RECALL_DIFFICULTY: 'recall_difficulty' as FieldContentName,
+  RECALL_ELAPSED_DAYS: 'recall_elapsed_days' as FieldContentName,
+  RECALL_SCHEDULED_DAYS: 'recall_scheduled_days' as FieldContentName,
+  RECALL_REPS: 'recall_reps' as FieldContentName,
+  RECALL_LAPSES: 'recall_lapses' as FieldContentName,
+  RECALL_STATE: 'recall_state' as FieldContentName,
+  RECALL_LAST_REVIEW: 'recall_last_review' as FieldContentName,
+
+  // Recall review log fields
+  RECALL_QUESTION_TEXT: 'recall_question_text' as FieldContentName,
+  RECALL_QUESTION_TYPE: 'recall_question_type' as FieldContentName,
+  RECALL_USER_ANSWER: 'recall_user_answer' as FieldContentName,
+  RECALL_AI_FEEDBACK: 'recall_ai_feedback' as FieldContentName,
+  RECALL_RATING: 'recall_rating' as FieldContentName,
 } as const
 
 /**
