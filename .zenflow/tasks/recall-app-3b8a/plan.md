@@ -136,7 +136,8 @@ Implement the core data access server functions for topics, concepts, and due ca
 - Type-check passes
 - Manual testing: call server functions via the app's dev server to create a topic + concept, query them back
 
-### [ ] Step 5: FSRS Scheduling Server Functions
+### [x] Step 5: FSRS Scheduling Server Functions
+<!-- chat-id: 2af0a88d-715a-40a8-b609-dcb961bcbfab -->
 
 Implement the spaced repetition scheduling layer using `ts-fsrs`.
 
