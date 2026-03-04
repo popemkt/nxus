@@ -20,10 +20,11 @@ test.describe('Gateway Landing Page', () => {
       page.getByText('Select an application to get started')
     ).toBeVisible()
 
-    // Verify all 3 mini app cards are visible
+    // Verify all 4 mini app cards are visible
     await expect(page.getByText(APP_NAMES.core)).toBeVisible()
     await expect(page.getByText(APP_NAMES.workbench)).toBeVisible()
     await expect(page.getByText(APP_NAMES.calendar)).toBeVisible()
+    await expect(page.getByText(APP_NAMES.recall)).toBeVisible()
   })
 
   test('G2 — Navigation to nXus Core', async ({ page }) => {
@@ -43,6 +44,13 @@ test.describe('Gateway Landing Page', () => {
   test('G2 — Navigation to nXus Calendar', async ({ page }) => {
     await page.locator(`a[href="${APP_URLS.calendar}"]`).click()
     await page.waitForURL(`**${APP_URLS.calendar}`)
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('body')).not.toBeEmpty()
+  })
+
+  test('G2 — Navigation to nXus Recall', async ({ page }) => {
+    await page.locator(`a[href="${APP_URLS.recall}"]`).click()
+    await page.waitForURL(`**${APP_URLS.recall}`)
     await page.waitForLoadState('networkidle')
     await expect(page.locator('body')).not.toBeEmpty()
   })
