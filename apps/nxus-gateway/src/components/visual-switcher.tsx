@@ -10,6 +10,7 @@ import {
   Stack,
   ChartBar,
   Sparkle,
+  Cards,
 } from '@phosphor-icons/react'
 
 export type VisualStyle =
@@ -23,6 +24,7 @@ export type VisualStyle =
   | 'spatial'
   | 'dashboard'
   | 'aurora'
+  | 'tarot'
 
 const STORAGE_KEY = 'nxus-gateway-visual'
 
@@ -38,6 +40,7 @@ const visuals: { id: VisualStyle; label: string; icon: typeof SquaresFour }[] =
     { id: 'spatial', label: 'Spatial', icon: Stack },
     { id: 'dashboard', label: 'Dashboard', icon: ChartBar },
     { id: 'aurora', label: 'Aurora', icon: Sparkle },
+    { id: 'tarot', label: 'Cosmic Tarot', icon: Cards },
   ]
 
 const BUTTON_SIZE = 28
