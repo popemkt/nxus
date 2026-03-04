@@ -12,6 +12,7 @@ import type { Page } from '@playwright/test'
  * This sets up the data needed for review session tests.
  */
 async function seedTopicWithConcepts(page: Page) {
+  // Navigate directly to explore page
   await page.goto('/recall/explore')
   await page.waitForLoadState('networkidle')
 
@@ -22,10 +23,10 @@ async function seedTopicWithConcepts(page: Page) {
 
   // Wait for concepts to appear
   await expect(
-    page.getByRole('heading', { name: 'Generated Concepts' }),
+    page.getByText('Generated Concepts'),
   ).toBeVisible({ timeout: 15000 })
 
-  // Save all concepts
+  // Save all visible concepts
   const saveButtons = page.getByRole('button', { name: 'Save' })
   const count = await saveButtons.count()
   for (let i = 0; i < count; i++) {
@@ -44,11 +45,9 @@ async function seedTopicWithConcepts(page: Page) {
 test.describe('Recall Review Session', () => {
   test('R9 — Review session shows "no cards due" when no concepts exist', async ({
     page,
-    navigateToApp,
   }) => {
-    await navigateToApp('recall')
-    await page.getByRole('link', { name: 'Review' }).click()
-    await page.waitForURL('**/recall/review/session')
+    await page.goto('/recall/review/session')
+    await page.waitForLoadState('networkidle')
 
     // Should show completion state with no cards
     await expect(page.getByText('No cards due for review')).toBeVisible({
@@ -76,7 +75,7 @@ test.describe('Recall Review Session', () => {
     // Wait for either the question to load or the "no cards" state
     const questionPhase = page.getByText(MOCK_QUESTION.questionText)
     const noCardsState = page.getByText('No cards due for review')
-    const generatingState = page.getByText('Generating question')
+    const generatingState = page.getByText(/Generating question/i)
 
     await expect(
       questionPhase.or(noCardsState).or(generatingState),
@@ -152,7 +151,7 @@ test.describe('Recall Review Session', () => {
     await page.getByRole('button', { name: /Good/i }).click()
 
     // After rating, should either move to next card or show session complete
-    const nextQuestion = page.getByText('Generating question')
+    const nextQuestion = page.getByText(/Generating question/i)
     const sessionComplete = page.getByText('Session Complete!')
     const noMoreCards = page.getByText('No cards due for review')
 

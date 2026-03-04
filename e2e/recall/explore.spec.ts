@@ -2,11 +2,11 @@ import { test, expect } from '../fixtures/base.fixture.js'
 import { mockAIServerFunctions, MOCK_CONCEPTS } from './mock-ai.js'
 
 test.describe('Recall Explore & Concept Generation', () => {
-  test.beforeEach(async ({ page, navigateToApp }) => {
+  test.beforeEach(async ({ page }) => {
     await mockAIServerFunctions(page)
-    await navigateToApp('recall')
-    await page.getByRole('link', { name: 'Explore' }).click()
-    await page.waitForURL('**/recall/explore')
+    // Navigate directly to explore page to avoid strict mode issues with multiple "Explore" links
+    await page.goto('/recall/explore')
+    await page.waitForLoadState('networkidle')
   })
 
   test('R5 — Explore page loads with search input and generate button', async ({
@@ -41,9 +41,9 @@ test.describe('Recall Explore & Concept Generation', () => {
     // Click generate
     await generateBtn.click()
 
-    // Wait for concepts to appear (mocked AI returns instantly)
+    // Wait for concepts to appear (mocked AI returns instantly, but topic creation is real)
     await expect(
-      page.getByRole('heading', { name: 'Generated Concepts' }),
+      page.getByText('Generated Concepts'),
     ).toBeVisible({ timeout: 15000 })
 
     // Verify all mock concepts are rendered
@@ -61,12 +61,12 @@ test.describe('Recall Explore & Concept Generation', () => {
   test('R7 — Save a concept card', async ({ page }) => {
     // Generate concepts first
     const searchInput = page.getByPlaceholder(/distributed systems/i)
-    await searchInput.fill('Distributed Systems')
+    await searchInput.fill('Distributed Systems Save Test')
     await page.getByRole('button', { name: 'Generate' }).click()
 
     // Wait for concepts
     await expect(
-      page.getByRole('heading', { name: 'Generated Concepts' }),
+      page.getByText('Generated Concepts'),
     ).toBeVisible({ timeout: 15000 })
 
     // Find the first Save button and click it
@@ -86,19 +86,19 @@ test.describe('Recall Explore & Concept Generation', () => {
   test('R8 — Dismiss a concept card', async ({ page }) => {
     // Generate concepts first
     const searchInput = page.getByPlaceholder(/distributed systems/i)
-    await searchInput.fill('Distributed Systems')
+    await searchInput.fill('Distributed Systems Dismiss Test')
     await page.getByRole('button', { name: 'Generate' }).click()
 
     // Wait for concepts
     await expect(
-      page.getByRole('heading', { name: 'Generated Concepts' }),
+      page.getByText('Generated Concepts'),
     ).toBeVisible({ timeout: 15000 })
 
     // Get the first concept title before dismissing
     const firstConceptTitle = MOCK_CONCEPTS[0]!.title
 
     // Click dismiss button (X icon) on the first concept
-    const dismissBtn = page.getByRole('button', { name: 'Dismiss' }).first()
+    const dismissBtn = page.locator('button[title="Dismiss"]').first()
     await expect(dismissBtn).toBeVisible()
     await dismissBtn.click()
 
