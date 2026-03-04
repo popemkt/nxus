@@ -4,7 +4,7 @@ import type { MiniApp } from './mini-apps.js'
 
 describe('miniApps configuration', () => {
   it('has the expected number of mini apps', () => {
-    expect(miniApps).toHaveLength(3)
+    expect(miniApps).toHaveLength(4)
   })
 
   it('contains nxus-core', () => {
@@ -29,6 +29,14 @@ describe('miniApps configuration', () => {
     expect(calendar!.name).toBe('nXus Calendar')
     expect(calendar!.path).toBe('/calendar')
     expect(calendar!.icon).toBe('calendar')
+  })
+
+  it('contains nxus-recall', () => {
+    const recall = miniApps.find((app) => app.id === 'nxus-recall')
+    expect(recall).toBeDefined()
+    expect(recall!.name).toBe('nXus Recall')
+    expect(recall!.path).toBe('/recall')
+    expect(recall!.icon).toBe('cube')
   })
 
   it('all apps have unique IDs', () => {

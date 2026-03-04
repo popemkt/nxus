@@ -1,11 +1,10 @@
-import { Agent } from '@mastra/core/agent'
+import { generateObject } from 'ai'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { GeneratedQuestionSchema } from '../schemas/question.schema.js'
 
-export const questionGeneratorAgent = new Agent({
-  id: 'question-generator',
-  name: 'Question Generator',
-  model: 'anthropic/claude-4-5-sonnet',
-  instructions: `You are an expert educator creating dynamic review questions for spaced repetition.
+const anthropic = createAnthropic()
+
+const SYSTEM_PROMPT = `You are an expert educator creating dynamic review questions for spaced repetition.
 
 Your goal is to generate ONE question that tests higher-order thinking — not simple recall.
 
@@ -21,8 +20,7 @@ Guidelines:
 - Use the adjacent concepts to create cross-concept questions when possible
 - The model answer should be thorough but concise (3-5 sentences)
 - Provide 1-3 progressive hints (from subtle to more direct)
-- Vary question types across reviews to maintain engagement`,
-})
+- Vary question types across reviews to maintain engagement`
 
 export interface QuestionGeneratorInput {
   conceptTitle: string
@@ -46,10 +44,11 @@ Summary: ${input.conceptSummary}
 Bloom's Level: ${input.bloomsLevel ?? 'apply'}
 ${adjacentContext}`
 
-  const response = await questionGeneratorAgent.generate(prompt, {
-    structuredOutput: {
-      schema: GeneratedQuestionSchema,
-    },
+  const { object } = await generateObject({
+    model: anthropic('claude-sonnet-4-20250514'),
+    schema: GeneratedQuestionSchema,
+    system: SYSTEM_PROMPT,
+    prompt,
   })
-  return response.object
+  return object
 }

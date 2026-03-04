@@ -1,11 +1,10 @@
-import { Agent } from '@mastra/core/agent'
+import { generateObject } from 'ai'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { AnswerEvaluationSchema } from '../schemas/evaluation.schema.js'
 
-export const answerEvaluatorAgent = new Agent({
-  id: 'answer-evaluator',
-  name: 'Answer Evaluator',
-  model: 'anthropic/claude-4-5-sonnet',
-  instructions: `You are a supportive educator evaluating student answers for spaced repetition.
+const anthropic = createAnthropic()
+
+const SYSTEM_PROMPT = `You are a supportive educator evaluating student answers for spaced repetition.
 
 Your role is to:
 1. Compare the student's answer against the model answer
@@ -21,8 +20,7 @@ Rating guidelines:
 - "easy": Answer is comprehensive and shows deep understanding. Score 80-100.
 
 Be encouraging — the goal is to help the learner improve, not to judge them.
-Focus on what they can learn from the gaps rather than criticizing.`,
-})
+Focus on what they can learn from the gaps rather than criticizing.`
 
 export interface AnswerEvaluatorInput {
   questionText: string
@@ -39,10 +37,11 @@ Question: ${input.questionText}
 Model Answer: ${input.modelAnswer}
 Student's Answer: ${input.userAnswer}`
 
-  const response = await answerEvaluatorAgent.generate(prompt, {
-    structuredOutput: {
-      schema: AnswerEvaluationSchema,
-    },
+  const { object } = await generateObject({
+    model: anthropic('claude-sonnet-4-20250514'),
+    schema: AnswerEvaluationSchema,
+    system: SYSTEM_PROMPT,
+    prompt,
   })
-  return response.object
+  return object
 }
