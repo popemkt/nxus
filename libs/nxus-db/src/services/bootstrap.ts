@@ -291,6 +291,10 @@ export function bootstrapSystemNodesSync(
     // Calendar supertags (independent from Item - should NOT appear in gallery)
     { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null },
     { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null },
+    // Recall supertags (independent from Item)
+    { systemId: SYSTEM_SUPERTAGS.RECALL_TOPIC, content: '#RecallTopic', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.RECALL_CONCEPT, content: '#RecallConcept', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.RECALL_REVIEW_LOG, content: '#RecallReviewLog', extends: null },
   ];
 
   for (const st of entitySupertags) {
@@ -526,6 +530,104 @@ export function bootstrapSystemNodesSync(
       systemId: SYSTEM_FIELDS.GCAL_CALENDAR_ID,
       content: 'gcal_calendar_id',
       fieldType: 'text',
+    },
+    // Recall concept fields
+    {
+      systemId: SYSTEM_FIELDS.RECALL_SUMMARY,
+      content: 'recall_summary',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS,
+      content: 'recall_why_it_matters',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL,
+      content: 'recall_blooms_level',
+      fieldType: 'select',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_SOURCE,
+      content: 'recall_source',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS,
+      content: 'recall_related_concepts',
+      fieldType: 'nodes',
+    },
+    // Recall FSRS scheduling fields
+    {
+      systemId: SYSTEM_FIELDS.RECALL_DUE,
+      content: 'recall_due',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_STABILITY,
+      content: 'recall_stability',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_DIFFICULTY,
+      content: 'recall_difficulty',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_ELAPSED_DAYS,
+      content: 'recall_elapsed_days',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_SCHEDULED_DAYS,
+      content: 'recall_scheduled_days',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_REPS,
+      content: 'recall_reps',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_LAPSES,
+      content: 'recall_lapses',
+      fieldType: 'number',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_STATE,
+      content: 'recall_state',
+      fieldType: 'select',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_LAST_REVIEW,
+      content: 'recall_last_review',
+      fieldType: 'text',
+    },
+    // Recall review log fields
+    {
+      systemId: SYSTEM_FIELDS.RECALL_QUESTION_TEXT,
+      content: 'recall_question_text',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_QUESTION_TYPE,
+      content: 'recall_question_type',
+      fieldType: 'select',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_USER_ANSWER,
+      content: 'recall_user_answer',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_AI_FEEDBACK,
+      content: 'recall_ai_feedback',
+      fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.RECALL_RATING,
+      content: 'recall_rating',
+      fieldType: 'number',
     },
   ];
 

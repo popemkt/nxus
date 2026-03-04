@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
-import { Cube, Graph, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
+import { Cube, Graph, CalendarBlank, Brain, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
 const iconMap = {
   cube: Cube,
   graph: Graph,
   calendar: CalendarBlank,
+  brain: Brain,
 } as const
 
 interface CardTilt {

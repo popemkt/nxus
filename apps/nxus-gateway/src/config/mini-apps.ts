@@ -2,7 +2,7 @@ export interface MiniApp {
   id: string
   name: string
   description: string
-  icon: 'cube' | 'graph' | 'calendar'
+  icon: 'cube' | 'graph' | 'calendar' | 'brain'
   path: string
 }
 
@@ -30,5 +30,13 @@ export const miniApps: MiniApp[] = [
       'Calendar and schedule management with event tracking and Google Calendar sync.',
     icon: 'calendar',
     path: '/calendar',
+  },
+  {
+    id: 'nxus-recall',
+    name: 'nXus Recall',
+    description:
+      'Spaced repetition learning with AI-generated concepts and adaptive review sessions.',
+    icon: 'brain',
+    path: '/recall',
   },
 ]
