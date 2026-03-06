@@ -142,6 +142,21 @@ function identifyAIServerFn(
 }
 
 /**
+ * Wraps a server function return value in the TanStack Start response envelope.
+ *
+ * TanStack Start's `createServerFn` client wrapper expects the response to be
+ * `{ result: <handlerReturnValue>, context: {} }` — it extracts `.result` from
+ * the deserialized response. Without this wrapper, `d.result` is `undefined`.
+ *
+ * When the response does NOT include the `x-tss-serialized` header, the client
+ * falls back to plain JSON parsing (no seroval), so we can return plain JSON
+ * as long as the shape matches.
+ */
+function wrapServerFnResponse(data: unknown): string {
+  return JSON.stringify({ result: data, context: {} })
+}
+
+/**
  * Sets up route interception to mock AI server function responses.
  * DB-backed server functions (topics, concepts CRUD, review, stats) pass through normally.
  */
@@ -163,7 +178,7 @@ export async function mockAIServerFunctions(page: Page) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
+        body: wrapServerFnResponse({
           success: true,
           concepts: MOCK_CONCEPTS,
         }),
@@ -172,7 +187,7 @@ export async function mockAIServerFunctions(page: Page) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
+        body: wrapServerFnResponse({
           success: true,
           question: MOCK_QUESTION,
         }),
@@ -181,7 +196,7 @@ export async function mockAIServerFunctions(page: Page) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
+        body: wrapServerFnResponse({
           success: true,
           evaluation: MOCK_EVALUATION,
         }),

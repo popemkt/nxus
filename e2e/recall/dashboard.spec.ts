@@ -22,11 +22,12 @@ test.describe('Recall Dashboard', () => {
       header.getByRole('link', { name: 'Review' }),
     ).toBeVisible()
 
-    // Verify stats cards are present (use uppercase labels which are unique)
-    await expect(page.getByText('Topics', { exact: true })).toBeVisible()
-    await expect(page.getByText('Concepts', { exact: true })).toBeVisible()
-    await expect(page.getByText('Due Now')).toBeVisible()
-    await expect(page.getByText('Reviewed Today')).toBeVisible()
+    // Verify stats cards are present (scope to the stats grid to avoid matching section headings)
+    const statsGrid = page.locator('.grid').first()
+    await expect(statsGrid.getByText('Topics')).toBeVisible()
+    await expect(statsGrid.getByText('Concepts')).toBeVisible()
+    await expect(statsGrid.getByText('Due Now')).toBeVisible()
+    await expect(statsGrid.getByText('Reviewed Today')).toBeVisible()
   })
 
   test('R2 — Empty state shows explore CTA when no topics exist', async ({
