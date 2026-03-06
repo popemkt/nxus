@@ -23,6 +23,7 @@ npx tsx scripts/db-seed-nodes.ts
 | `db-seed.ts`          | ✅         | Legacy: seed items table from manifests     |
 | `db-export.ts`        | ✅         | Export DB changes back to manifest files    |
 | `inspect-node.ts`     | ✅         | Debug utility to view any node              |
+| `generate-thumbnails.mjs` | ✅     | Generate missing SVG thumbnails via Gemini  |
 | `migrate-to-nodes.ts` | ⚠️ One-off | Migrate legacy → nodes                      |
 | `db-sync-tags.ts`     | ⚠️ One-off | Sync tags from JSON                         |
 | Debug scripts         | 🔧         | Testing utilities                           |
@@ -48,6 +49,13 @@ npx tsx scripts/db-seed-nodes.ts
 
 ```bash
 npx tsx scripts/db-export.ts
+```
+
+### Generate Missing Thumbnails
+
+```bash
+node scripts/generate-thumbnails.mjs
+node scripts/generate-thumbnails.mjs --force
 ```
 
 ### Inspect a Node
