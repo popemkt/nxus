@@ -98,11 +98,106 @@ async function createWorkspace() {
   return workspaceDir;
 }
 
-function runSync(workspaceDir, extraArgs = []) {
+function runSync(workspaceDir, extraArgs = [], env = {}) {
   execFileSync('node', [syncScriptPath, ...extraArgs], {
     cwd: workspaceDir,
     stdio: 'pipe',
+    env: {
+      ...process.env,
+      ...env,
+    },
   });
+}
+
+async function installFakeCodex(workspaceDir, state) {
+  const binDir = path.join(workspaceDir, 'bin');
+  const statePath = path.join(workspaceDir, 'fake-codex-state.json');
+  const logPath = path.join(workspaceDir, 'fake-codex-log.json');
+  const scriptPath = path.join(binDir, 'codex');
+
+  await mkdir(binDir, { recursive: true });
+  await writeFile(`${statePath}`, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+  await writeFile(logPath, '[]\n', 'utf8');
+  await writeFile(
+    scriptPath,
+    `#!/usr/bin/env node
+const fs = require('node:fs');
+
+const statePath = ${JSON.stringify(statePath)};
+const logPath = ${JSON.stringify(logPath)};
+const args = process.argv.slice(2);
+const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+const log = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+
+function save() {
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2) + '\\n');
+  fs.writeFileSync(logPath, JSON.stringify(log, null, 2) + '\\n');
+}
+
+if (args[0] !== 'mcp') {
+  process.exit(1);
+}
+
+if (args[1] === 'list' && args[2] === '--json') {
+  process.stdout.write(JSON.stringify(state.servers));
+  process.exit(0);
+}
+
+if (args[1] === 'remove') {
+  const name = args[2];
+  log.push({ op: 'remove', name });
+  state.servers = state.servers.filter((server) => server.name !== name);
+  save();
+  process.exit(0);
+}
+
+if (args[1] === 'add') {
+  const name = args[2];
+  const urlIndex = args.indexOf('--url');
+  const separatorIndex = args.indexOf('--');
+  const envVars = [];
+
+  for (let index = 3; index < args.length; index += 2) {
+    if (args[index] !== '--env') {
+      continue;
+    }
+    envVars.push(args[index + 1].split('=')[0]);
+  }
+
+  let transport;
+  if (urlIndex !== -1) {
+    transport = {
+      type: 'http',
+      url: args[urlIndex + 1],
+    };
+  } else {
+    const commandArgs = args.slice(separatorIndex + 1);
+    transport = {
+      type: 'stdio',
+      command: commandArgs[0],
+      args: commandArgs.slice(1),
+      cwd: null,
+      env_vars: envVars,
+    };
+  }
+
+  log.push({ op: 'add', name, transport });
+  state.servers = state.servers.filter((server) => server.name !== name);
+  state.servers.push({ name, transport });
+  save();
+  process.exit(0);
+}
+
+process.exit(1);
+`,
+    { mode: 0o755 },
+  );
+
+  return {
+    logPath,
+    statePath,
+    pathEnv: `${binDir}:${process.env.PATH ?? ''}`,
+  };
 }
 
 test('sync copies managed skills, preserves manual skills, and removes stale managed skills', async () => {
@@ -197,6 +292,126 @@ test('sync renders Claude and Gemini MCP config from central servers.json', asyn
         },
       ],
     });
+  } finally {
+    await rm(workspaceDir, { recursive: true, force: true });
+  }
+});
+
+test('apply-codex-home removes stale managed servers using the previous manifest state', async () => {
+  const workspaceDir = await createWorkspace();
+
+  try {
+    await writeFile(
+      path.join(workspaceDir, 'agent-hub', 'mcp', 'servers.json'),
+      `${JSON.stringify({ schemaVersion: 1, servers: [] }, null, 2)}\n`,
+      'utf8',
+    );
+    await mkdir(path.join(workspaceDir, 'agent-hub', 'generated'), { recursive: true });
+    await writeFile(
+      path.join(workspaceDir, 'agent-hub', 'generated', 'codex-home-sync.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          managedServerNames: ['stale-server'],
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+
+    const fakeCodex = await installFakeCodex(workspaceDir, {
+      servers: [
+        {
+          name: 'stale-server',
+          transport: {
+            type: 'stdio',
+            command: 'npx',
+            args: ['old-server'],
+            cwd: null,
+            env_vars: [],
+          },
+        },
+      ],
+    });
+
+    runSync(workspaceDir, ['--apply-codex-home'], { PATH: fakeCodex.pathEnv });
+
+    const [logRaw, manifestRaw] = await Promise.all([
+      readFile(fakeCodex.logPath, 'utf8'),
+      readFile(path.join(workspaceDir, 'agent-hub', 'generated', 'codex-home-sync.json'), 'utf8'),
+    ]);
+
+    assert.deepEqual(JSON.parse(logRaw), [{ op: 'remove', name: 'stale-server' }]);
+    assert.deepEqual(JSON.parse(manifestRaw), {
+      schemaVersion: 1,
+      managedServerNames: [],
+    });
+  } finally {
+    await rm(workspaceDir, { recursive: true, force: true });
+  }
+});
+
+test('apply-codex-home does not churn stdio servers when env vars are not exposed by codex list', async () => {
+  const workspaceDir = await createWorkspace();
+
+  try {
+    await writeFile(
+      path.join(workspaceDir, 'agent-hub', 'mcp', 'servers.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          servers: [
+            {
+              name: 'env-server',
+              enabled: true,
+              targets: { claude: false, codex: true, gemini: false },
+              transport: {
+                type: 'stdio',
+                command: 'npx',
+                args: ['env-server'],
+                env: { API_TOKEN: 'secret' },
+              },
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+    await mkdir(path.join(workspaceDir, 'agent-hub', 'generated'), { recursive: true });
+    await writeFile(
+      path.join(workspaceDir, 'agent-hub', 'generated', 'codex-home-sync.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          managedServerNames: ['env-server'],
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+
+    const fakeCodex = await installFakeCodex(workspaceDir, {
+      servers: [
+        {
+          name: 'env-server',
+          transport: {
+            type: 'stdio',
+            command: 'npx',
+            args: ['env-server'],
+            cwd: null,
+          },
+        },
+      ],
+    });
+
+    runSync(workspaceDir, ['--apply-codex-home'], { PATH: fakeCodex.pathEnv });
+
+    const logRaw = await readFile(fakeCodex.logPath, 'utf8');
+    assert.deepEqual(JSON.parse(logRaw), []);
   } finally {
     await rm(workspaceDir, { recursive: true, force: true });
   }

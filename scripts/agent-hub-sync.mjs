@@ -97,6 +97,10 @@ async function main() {
   const claudeServers = filterServersForTarget(mcpConfig.servers, 'claude');
   const geminiServers = filterServersForTarget(mcpConfig.servers, 'gemini');
   const codexServers = filterServersForTarget(mcpConfig.servers, 'codex');
+  const previousCodexManifest = readGenericJsonFileSync(codexManifestPath, {
+    schemaVersion: 1,
+    managedServerNames: [],
+  });
 
   await writeManagedJson(
     path.join(rootDir, '.mcp.json'),
@@ -108,6 +112,12 @@ async function main() {
 
   await syncGeminiSettings(geminiServers, changes);
   await writeManagedJson(codexGeneratedConfigPath, { servers: codexServers }, changes);
+
+  if (applyCodexHome) {
+    const codexChanges = syncCodexHome(codexServers, previousCodexManifest);
+    changes.push(...codexChanges);
+  }
+
   await writeManagedJson(
     codexManifestPath,
     {
@@ -116,11 +126,6 @@ async function main() {
     },
     changes
   );
-
-  if (applyCodexHome) {
-    const codexChanges = syncCodexHome(codexServers);
-    changes.push(...codexChanges);
-  }
 
   if (checkOnly) {
     if (changes.length > 0) {
@@ -346,13 +351,9 @@ async function syncGeminiSettings(servers, changes) {
   await writeManagedJson(settingsPath, nextSettings, changes);
 }
 
-function syncCodexHome(servers) {
+function syncCodexHome(servers, previousManifest) {
   const changes = [];
   const desiredNames = new Set(servers.map((server) => server.name));
-  const previousManifest = readGenericJsonFileSync(codexManifestPath, {
-    schemaVersion: 1,
-    managedServerNames: [],
-  });
   const currentServers = readCodexServerMap();
 
   for (const staleName of previousManifest.managedServerNames) {
@@ -403,6 +404,7 @@ function readCodexServerMap() {
           args: z.array(z.string()).nullable().optional(),
           cwd: z.string().nullable().optional(),
           url: z.string().nullable().optional(),
+          env_vars: z.array(z.string()).nullable().optional(),
         }),
       })
     )
@@ -413,12 +415,15 @@ function readCodexServerMap() {
 
 function codexServerMatches(server, currentServer) {
   if (server.transport.type === 'stdio') {
+    const currentEnvVars = [...(currentServer.transport.env_vars ?? [])].sort();
+    const desiredEnvVars = Object.keys(server.transport.env).sort();
+
     return (
       currentServer.transport.type === 'stdio' &&
       currentServer.transport.command === server.transport.command &&
       JSON.stringify(currentServer.transport.args ?? []) === JSON.stringify(server.transport.args) &&
       (currentServer.transport.cwd ?? null) === (server.transport.cwd ?? null) &&
-      Object.keys(server.transport.env).length === 0
+      (currentEnvVars.length === 0 || JSON.stringify(currentEnvVars) === JSON.stringify(desiredEnvVars))
     );
   }
 
