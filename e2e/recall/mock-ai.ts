@@ -1,18 +1,36 @@
 /**
  * Mock AI responses for recall app E2E tests.
  *
- * The recall app has 3 server functions that call AI (Claude via AI SDK):
+ * ## Why mock at the network level?
+ *
+ * The recall app has 3 server functions that call AI (Claude via Mastra):
  * - generateConceptsServerFn — generates learning concepts for a topic
  * - generateQuestionServerFn — generates a review question for a concept
  * - evaluateAnswerServerFn — evaluates a student's answer
  *
- * These server functions are called via TanStack Start's RPC mechanism (POST to /_server).
- * We intercept at the browser network level and return mock responses for AI-related
- * calls, letting DB-backed calls (topics, concepts CRUD, review) pass through to the real server.
+ * We use Playwright's `page.route()` to intercept these at the browser network level,
+ * returning mock responses for AI calls while letting DB-backed calls (topics, concepts
+ * CRUD, review) pass through to the real server.
  *
- * Identification strategy:
- * - TanStack Start includes the function name in the URL query params (_serverFnName)
- * - As a fallback, we inspect the POST body for unique field patterns
+ * ## TanStack Start response envelope (IMPORTANT)
+ *
+ * TanStack Start's `createServerFn` wraps handler return values in an envelope:
+ *
+ *   Server sends:  { result: <handlerReturnValue>, context: {} }
+ *   Client extracts: .result  (see createServerFn.js line ~52: `.then(d => d.result)`)
+ *
+ * In normal usage this is transparent — both sides go through TanStack Start's middleware.
+ * But when mocking at the network level, we bypass the server middleware and must replicate
+ * the envelope ourselves via `wrapServerFnResponse()`. Without it, the client gets
+ * `undefined` because `d.result` doesn't exist on the raw response.
+ *
+ * The mock also omits the `x-tss-serialized` header, which makes the client skip seroval
+ * deserialization and fall back to plain JSON parsing (serverFnFetcher.js line ~157).
+ *
+ * ## How server functions are identified
+ *
+ * - Primary: URL contains the function name (TanStack Start includes it in the URL path)
+ * - Fallback: POST body field pattern matching (unique fields per function)
  */
 import type { Page } from '@playwright/test'
 
