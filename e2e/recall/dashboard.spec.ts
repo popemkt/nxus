@@ -36,14 +36,13 @@ test.describe('Recall Dashboard', () => {
     // Wait for data to load
     await page.waitForLoadState('networkidle')
 
-    // Check for empty state or topics grid heading
-    const emptyState = page.getByText('No topics yet')
-    const topicsHeading = page.getByRole('heading', { name: 'Topics' })
+    // The "Topics" heading is always visible on the dashboard
+    await expect(
+      page.getByRole('heading', { name: 'Topics' }),
+    ).toBeVisible({ timeout: 10000 })
 
-    await expect(emptyState.or(topicsHeading)).toBeVisible({ timeout: 10000 })
-
-    if (await emptyState.isVisible()) {
-      // Verify the empty state has an explore link
+    // If no topics exist, verify the empty state has an explore link
+    if (await page.getByText('No topics yet').isVisible()) {
       await expect(
         page.getByRole('link', { name: 'Explore Topics' }),
       ).toBeVisible()
