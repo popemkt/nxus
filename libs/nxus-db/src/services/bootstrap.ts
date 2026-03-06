@@ -291,6 +291,10 @@ export function bootstrapSystemNodesSync(
     // Calendar supertags (independent from Item - should NOT appear in gallery)
     { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null },
     { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null },
+    // Recall training supertags
+    { systemId: SYSTEM_SUPERTAGS.RECALL_TOPIC, content: '#RecallTopic', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.RECALL_CONCEPT, content: '#RecallConcept', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.RECALL_REVIEW_LOG, content: '#RecallReviewLog', extends: null },
   ];
 
   for (const st of entitySupertags) {
@@ -527,6 +531,26 @@ export function bootstrapSystemNodesSync(
       content: 'gcal_calendar_id',
       fieldType: 'text',
     },
+    // Recall training fields
+    { systemId: SYSTEM_FIELDS.RECALL_SUMMARY, content: 'recallSummary', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS, content: 'recallWhyItMatters', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL, content: 'recallBloomsLevel', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.RECALL_SOURCE, content: 'recallSource', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS, content: 'recallRelatedConcepts', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.RECALL_DUE, content: 'recallDue', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_STABILITY, content: 'recallStability', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_DIFFICULTY, content: 'recallDifficulty', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_ELAPSED_DAYS, content: 'recallElapsedDays', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_SCHEDULED_DAYS, content: 'recallScheduledDays', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REPS, content: 'recallReps', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_LAPSES, content: 'recallLapses', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_STATE, content: 'recallState', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_LAST_REVIEW, content: 'recallLastReview', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_QUESTION_TEXT, content: 'recallQuestionText', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_QUESTION_TYPE, content: 'recallQuestionType', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.RECALL_USER_ANSWER, content: 'recallUserAnswer', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_AI_FEEDBACK, content: 'recallAiFeedback', fieldType: 'text' },
+    { systemId: SYSTEM_FIELDS.RECALL_RATING, content: 'recallRating', fieldType: 'number' },
   ];
 
   for (const field of commonFields) {

@@ -5,6 +5,7 @@ export * from './command.js'
 export * from './command-params.js'
 export * from './query.js'
 export * from './node.js'
+export * from './recall.js'
 
 // Reactive system types (Zod schemas and TypeScript types)
 // These are safe for client use - no runtime database imports

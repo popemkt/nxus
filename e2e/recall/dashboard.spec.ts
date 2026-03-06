@@ -1,0 +1,68 @@
+import { test, expect } from '../fixtures/base.fixture.js'
+
+test.describe('Recall Dashboard', () => {
+  test.beforeEach(async ({ navigateToApp }) => {
+    await navigateToApp('recall')
+  })
+
+  test('R1 — Dashboard loads with header, stats, and navigation', async ({
+    page,
+  }) => {
+    // Verify header
+    await expect(
+      page.getByRole('heading', { name: 'nXus Recall', level: 1 }),
+    ).toBeVisible()
+
+    // Verify navigation links in header (use exact to avoid matching empty-state links)
+    const header = page.locator('header')
+    await expect(
+      header.getByRole('link', { name: 'Explore', exact: true }),
+    ).toBeVisible()
+    await expect(
+      header.getByRole('link', { name: 'Review' }),
+    ).toBeVisible()
+
+    // Verify stats cards are present (scope to the stats grid to avoid matching section headings)
+    const statsGrid = page.locator('.grid').first()
+    await expect(statsGrid.getByText('Topics')).toBeVisible()
+    await expect(statsGrid.getByText('Concepts')).toBeVisible()
+    await expect(statsGrid.getByText('Due Now')).toBeVisible()
+    await expect(statsGrid.getByText('Reviewed Today')).toBeVisible()
+  })
+
+  test('R2 — Empty state shows explore CTA when no topics exist', async ({
+    page,
+  }) => {
+    // Wait for data to load
+    await page.waitForLoadState('networkidle')
+
+    // The "Topics" heading is always visible on the dashboard
+    await expect(
+      page.getByRole('heading', { name: 'Topics' }),
+    ).toBeVisible({ timeout: 10000 })
+
+    // If no topics exist, verify the empty state has an explore link
+    if (await page.getByText('No topics yet').isVisible()) {
+      await expect(
+        page.getByRole('link', { name: 'Explore Topics' }),
+      ).toBeVisible()
+    }
+  })
+
+  test('R3 — Navigate to Explore page from dashboard', async ({ page }) => {
+    // Use header nav link to avoid strict mode violation with empty-state link
+    await page.locator('header').getByRole('link', { name: 'Explore', exact: true }).click()
+    await page.waitForURL('**/recall/explore')
+    await expect(
+      page.getByRole('heading', { name: 'Explore Topics' }),
+    ).toBeVisible()
+  })
+
+  test('R4 — Navigate to Review session from dashboard', async ({ page }) => {
+    await page.locator('header').getByRole('link', { name: 'Review' }).click()
+    await page.waitForURL('**/recall/review/session')
+    await expect(
+      page.getByRole('heading', { name: 'Review Session' }),
+    ).toBeVisible()
+  })
+})

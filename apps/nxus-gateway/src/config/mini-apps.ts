@@ -31,4 +31,12 @@ export const miniApps: MiniApp[] = [
     icon: 'calendar',
     path: '/calendar',
   },
+  {
+    id: 'nxus-recall',
+    name: 'nXus Recall',
+    description:
+      'AI-powered spaced repetition for higher-order learning with dynamic question generation.',
+    icon: 'cube',
+    path: '/recall',
+  },
 ]

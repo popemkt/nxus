@@ -3,10 +3,12 @@ export const APP_URLS = {
   core: '/core',
   workbench: '/workbench',
   calendar: '/calendar',
+  recall: '/recall',
 } as const
 
 export const APP_NAMES = {
   core: 'nXus Core',
   workbench: 'nXus Workbench',
   calendar: 'nXus Calendar',
+  recall: 'nXus Recall',
 } as const
