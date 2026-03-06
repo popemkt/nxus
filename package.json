@@ -3,11 +3,16 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "agent:sync": "node scripts/agent-hub-sync.mjs",
+    "agent:check": "node scripts/agent-hub-sync.mjs --check",
+    "agent:test": "node --test scripts/agent-hub-sync.test.mjs",
+    "agent:sync:codex-home": "node scripts/agent-hub-sync.mjs --apply-codex-home",
     "dev": "nx run-many --target=dev --projects=@nxus/gateway,@nxus/core-app,@nxus/workbench-app,@nxus/calendar-app --parallel=4",
     "dev:gateway": "nx run @nxus/gateway:dev",
     "dev:core": "nx run @nxus/core-app:dev",
     "dev:workbench": "nx run @nxus/workbench-app:dev",
     "dev:calendar": "nx run @nxus/calendar-app:dev",
+    "generate-thumbnails": "pnpm --filter @nxus/core-app generate-thumbnails",
     "test": "nx run-many --target=test --all",
     "test:libs": "nx run-many --target=test --projects=@nxus/db,@nxus/workbench,@nxus/calendar,@nxus/ui",
     "test:all": "pnpm test && pnpm e2e",
@@ -20,6 +25,7 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "^1.2.0",
     "@nx/devkit": "^22.3.3",
     "@nx/js": "22.3.3",
     "@nx/plugin": "22.3.3",
