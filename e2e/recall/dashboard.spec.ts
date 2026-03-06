@@ -36,9 +36,9 @@ test.describe('Recall Dashboard', () => {
     // Wait for data to load
     await page.waitForLoadState('networkidle')
 
-    // Check for empty state or topics grid
+    // Check for empty state or topics grid heading
     const emptyState = page.getByText('No topics yet')
-    const topicsHeading = page.getByText('Topics', { exact: true })
+    const topicsHeading = page.getByRole('heading', { name: 'Topics' })
 
     await expect(emptyState.or(topicsHeading)).toBeVisible({ timeout: 10000 })
 

@@ -46,9 +46,9 @@ test.describe('Recall Explore & Concept Generation', () => {
       page.getByText('Generated Concepts'),
     ).toBeVisible({ timeout: 15000 })
 
-    // Verify all mock concepts are rendered
+    // Verify all mock concepts are rendered (use heading role to avoid matching related concept tags)
     for (const concept of MOCK_CONCEPTS) {
-      await expect(page.getByText(concept.title)).toBeVisible()
+      await expect(page.getByRole('heading', { name: concept.title })).toBeVisible()
       await expect(page.getByText(concept.summary)).toBeVisible()
     }
 
@@ -102,7 +102,7 @@ test.describe('Recall Explore & Concept Generation', () => {
     await expect(dismissBtn).toBeVisible()
     await dismissBtn.click()
 
-    // The dismissed concept should no longer be visible
-    await expect(page.getByText(firstConceptTitle)).toBeHidden()
+    // The dismissed concept heading should no longer be visible
+    await expect(page.getByRole('heading', { name: firstConceptTitle })).toBeHidden()
   })
 })

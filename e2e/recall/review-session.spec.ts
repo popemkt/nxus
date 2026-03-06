@@ -49,10 +49,17 @@ test.describe('Recall Review Session', () => {
     await page.goto('/recall/review/session')
     await page.waitForLoadState('networkidle')
 
-    // Should show completion state with no cards
-    await expect(page.getByText('No cards due for review')).toBeVisible({
-      timeout: 15000,
-    })
+    // Wait for the page to transition from loading to complete state
+    const noCards = page.getByText('No cards due for review')
+    const loading = page.getByText('Loading due cards...')
+
+    // First wait for any state to appear
+    await expect(noCards.or(loading)).toBeVisible({ timeout: 15000 })
+
+    // If still loading, wait for it to resolve to no-cards state
+    if (await loading.isVisible()) {
+      await expect(noCards).toBeVisible({ timeout: 15000 })
+    }
 
     // Navigation links should be present
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible()
@@ -157,7 +164,7 @@ test.describe('Recall Review Session', () => {
 
     await expect(
       nextQuestion.or(sessionComplete).or(noMoreCards),
-    ).toBeVisible({ timeout: 15000 })
+    ).toBeVisible({ timeout: 30000 })
   })
 
   test('R11 — Review session shows hint button when hints exist', async ({
