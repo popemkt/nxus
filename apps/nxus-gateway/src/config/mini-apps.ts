@@ -2,7 +2,7 @@ export interface MiniApp {
   id: string
   name: string
   description: string
-  icon: 'cube' | 'graph' | 'calendar'
+  icon: 'cube' | 'graph' | 'calendar' | 'brain'
   path: string
 }
 
@@ -36,7 +36,7 @@ export const miniApps: MiniApp[] = [
     name: 'nXus Recall',
     description:
       'AI-powered spaced repetition for higher-order learning with dynamic question generation.',
-    icon: 'cube',
+    icon: 'brain',
     path: '/recall',
   },
 ]

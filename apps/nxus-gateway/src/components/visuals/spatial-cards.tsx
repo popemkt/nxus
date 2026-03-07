@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Cube, Graph, CalendarBlank } from '@phosphor-icons/react'
+import { Cube, Graph, CalendarBlank, Brain } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
 const iconMap = {
   cube: Cube,
   graph: Graph,
   calendar: CalendarBlank,
+  brain: Brain,
 } as const
 
 export function SpatialCards({ apps }: { apps: MiniApp[] }) {

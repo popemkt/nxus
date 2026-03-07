@@ -36,7 +36,7 @@ describe('miniApps configuration', () => {
     expect(recall).toBeDefined()
     expect(recall!.name).toBe('nXus Recall')
     expect(recall!.path).toBe('/recall')
-    expect(recall!.icon).toBe('cube')
+    expect(recall!.icon).toBe('brain')
   })
 
   it('all apps have unique IDs', () => {
@@ -63,7 +63,7 @@ describe('miniApps configuration', () => {
   })
 
   it('all icons are valid', () => {
-    const validIcons = ['cube', 'graph', 'calendar']
+    const validIcons = ['cube', 'graph', 'calendar', 'brain']
     for (const app of miniApps) {
       expect(validIcons).toContain(app.icon)
     }
