@@ -1,28 +1,30 @@
-import { generateObject } from 'ai'
-import { createAnthropic } from '@ai-sdk/anthropic'
+import { getAiClient } from '../lib/ai-client.js'
 import { ConceptGenerationResultSchema } from '../schemas/concept.schema.js'
-
-const anthropic = createAnthropic()
 
 const SYSTEM_PROMPT = `You are an expert educator who creates structured learning concepts for spaced repetition training.
 
 Given a topic, generate 5-8 well-structured concepts that cover the topic comprehensively.
 
 Guidelines:
-- Each concept should be a distinct, atomic piece of knowledge
-- Target higher-order Bloom's taxonomy levels (apply, analyze, evaluate, create) — not just "remember"
+- Each concept should be a distinct, atomic piece of knowledge that a beginner can grasp
+- Keep concepts focused and contained — avoid sprawling, multi-part ideas
 - Summaries should be 2-3 sentences, clear and precise
 - "Why it matters" should explain practical relevance
 - Related concepts should reference other concepts in the same batch by title
 - Concepts should progress from foundational to advanced
-- Avoid overlap between concepts — each should teach something unique`
+
+Bloom's level distribution — use a progressive mix:
+- Start with 2-3 concepts at "remember" or "understand" (foundational terms, definitions, key facts)
+- Include 2-3 at "apply" (practical use cases, how-to)
+- Include 1-2 at "analyze" or higher (comparisons, trade-offs, evaluation)
+The bloomsLevel represents the TARGET ceiling — learners will start at "remember" and work up to it.
+
+Avoid overlap between concepts — each should teach something unique.`
 
 export async function generateConcepts(topic: string) {
-  const { object } = await generateObject({
-    model: anthropic('claude-sonnet-4-20250514'),
+  return getAiClient().generateStructured({
     schema: ConceptGenerationResultSchema,
     system: SYSTEM_PROMPT,
     prompt: `Generate learning concepts for the topic: "${topic}"`,
   })
-  return object
 }

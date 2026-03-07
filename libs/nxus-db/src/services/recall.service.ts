@@ -30,10 +30,11 @@ import type {
   RecallConcept,
   ReviewLog,
   RecallStats,
+  BloomsLevel,
 } from '../types/recall.js'
 
 // Re-export types for convenience
-export type { RecallTopic, RecallCard, RecallConcept, ReviewLog, RecallStats }
+export type { RecallTopic, RecallCard, RecallConcept, ReviewLog, RecallStats, BloomsLevel }
 
 type DatabaseInstance = BetterSQLite3Database<typeof schema>
 
@@ -55,6 +56,7 @@ function assembleCard(node: AssembledNode): RecallCard | null {
     elapsedDays: getProperty<number>(node, FIELD_NAMES.RECALL_ELAPSED_DAYS) ?? 0,
     scheduledDays: getProperty<number>(node, FIELD_NAMES.RECALL_SCHEDULED_DAYS) ?? 0,
     lastReview: getProperty<string>(node, FIELD_NAMES.RECALL_LAST_REVIEW) ?? null,
+    currentBloomsLevel: (getProperty<string>(node, FIELD_NAMES.RECALL_CURRENT_BLOOMS_LEVEL) as BloomsLevel) ?? 'remember',
   }
 }
 
@@ -265,6 +267,7 @@ export function saveConcept(
   setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_DIFFICULTY, 0)
   setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_ELAPSED_DAYS, 0)
   setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_SCHEDULED_DAYS, 0)
+  setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, 'remember')
 
   return conceptId
 }
@@ -346,6 +349,7 @@ export interface UpdateCardFsrsInput {
   elapsedDays: number
   scheduledDays: number
   lastReview: string
+  currentBloomsLevel?: BloomsLevel
 }
 
 export function updateCardFsrs(
@@ -361,6 +365,9 @@ export function updateCardFsrs(
   setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_ELAPSED_DAYS, input.elapsedDays)
   setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_SCHEDULED_DAYS, input.scheduledDays)
   setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_LAST_REVIEW, input.lastReview)
+  if (input.currentBloomsLevel) {
+    setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, input.currentBloomsLevel)
+  }
 }
 
 // ============================================================================

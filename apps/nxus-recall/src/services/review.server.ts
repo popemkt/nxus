@@ -83,6 +83,12 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       return { success: false as const, error: 'FSRS scheduling failed' }
     }
 
+    // Compute Bloom's progression
+    const { nextBloomsLevel } = await import('@nxus/mastra/server')
+    const currentBlooms = concept.card.currentBloomsLevel ?? 'remember'
+    const ceiling = (concept.bloomsLevel as 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create') ?? 'apply'
+    const newBlooms = nextBloomsLevel(currentBlooms, ceiling, ratingKey)
+
     // Update card state
     updateCardFsrs(db, {
       conceptId: ctx.data.conceptId,
@@ -95,6 +101,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       elapsedDays: next.card.elapsed_days,
       scheduledDays: next.card.scheduled_days,
       lastReview: now.toISOString(),
+      currentBloomsLevel: newBlooms,
     })
 
     // Create review log

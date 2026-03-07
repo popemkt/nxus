@@ -7,6 +7,7 @@ export const generateQuestionServerFn = createServerFn({ method: 'POST' })
       conceptTitle: z.string(),
       conceptSummary: z.string(),
       bloomsLevel: z.string().nullable(),
+      currentBloomsLevel: z.string().nullable().optional(),
       adjacentConcepts: z.array(
         z.object({ title: z.string(), summary: z.string() }),
       ),

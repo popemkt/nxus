@@ -535,6 +535,7 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.RECALL_SUMMARY, content: 'recallSummary', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS, content: 'recallWhyItMatters', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL, content: 'recallBloomsLevel', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, content: 'recallCurrentBloomsLevel', fieldType: 'select' },
     { systemId: SYSTEM_FIELDS.RECALL_SOURCE, content: 'recallSource', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS, content: 'recallRelatedConcepts', fieldType: 'json' },
     { systemId: SYSTEM_FIELDS.RECALL_DUE, content: 'recallDue', fieldType: 'text' },

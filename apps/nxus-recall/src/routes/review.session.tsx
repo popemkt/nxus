@@ -87,6 +87,7 @@ function ReviewSessionPage() {
             conceptTitle: concept.title,
             conceptSummary: concept.summary,
             bloomsLevel: concept.bloomsLevel,
+            currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
             adjacentConcepts,
           },
         })
@@ -107,7 +108,7 @@ function ReviewSessionPage() {
         // Fallback: show concept as question
         setQuestion({
           questionText: `Explain the concept "${concept.title}" and why it matters.`,
-          questionType: 'application',
+          questionType: 'free-response',
           modelAnswer: concept.summary,
           hints: [],
         })
@@ -130,6 +131,10 @@ function ReviewSessionPage() {
           modelAnswer: question.modelAnswer,
           userAnswer,
           conceptTitle: currentConcept.title,
+          questionType: question.questionType,
+          ...('correctIndex' in question ? { correctIndex: question.correctIndex } : {}),
+          ...('correctAnswer' in question ? { correctAnswer: question.correctAnswer } : {}),
+          ...('blankAnswer' in question ? { blankAnswer: question.blankAnswer } : {}),
         },
       })
       if (result.success) {
@@ -257,16 +262,16 @@ function ReviewSessionPage() {
               <p className="text-lg font-medium leading-relaxed">
                 {question.questionText}
               </p>
+              {question.questionType === 'true-false' ? (
+                <p className="mt-2 text-xs text-muted-foreground">True or False?</p>
+              ) : null}
             </div>
 
             <div className="mb-4">
-              <textarea
+              <QuestionInput
+                question={question}
                 value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder="Type your answer..."
-                rows={6}
-                className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-                autoFocus
+                onChange={setUserAnswer}
               />
             </div>
 
@@ -440,6 +445,82 @@ function ReviewSessionPage() {
       </main>
     </div>
   )
+}
+
+function QuestionInput({
+  question,
+  value,
+  onChange,
+}: {
+  question: GeneratedQuestion
+  value: string
+  onChange: (v: string) => void
+}) {
+  switch (question.questionType) {
+    case 'multiple-choice':
+      return (
+        <div className="space-y-2">
+          {question.choices.map((choice, i) => (
+            <button
+              key={i}
+              onClick={() => onChange(String(i))}
+              className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${
+                value === String(i)
+                  ? 'border-primary bg-primary/5 text-foreground'
+                  : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              <span className="mr-2 font-medium">{String.fromCharCode(65 + i)}.</span>
+              {choice}
+            </button>
+          ))}
+        </div>
+      )
+
+    case 'true-false':
+      return (
+        <div className="flex gap-3">
+          {(['true', 'false'] as const).map((opt) => (
+            <button
+              key={opt}
+              onClick={() => onChange(opt)}
+              className={`flex-1 rounded-lg border p-4 text-center text-sm font-medium transition-colors ${
+                value === opt
+                  ? 'border-primary bg-primary/5 text-foreground'
+                  : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              {opt === 'true' ? 'True' : 'False'}
+            </button>
+          ))}
+        </div>
+      )
+
+    case 'fill-blank':
+      return (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Fill in the blank..."
+          className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          autoFocus
+        />
+      )
+
+    case 'free-response':
+    default:
+      return (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type your answer..."
+          rows={6}
+          className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+          autoFocus
+        />
+      )
+  }
 }
 
 function HintButton({ hints }: { hints: string[] }) {
