@@ -12,7 +12,7 @@ export const BloomsLevelSchema = z.enum([
 export type BloomsLevel = z.infer<typeof BloomsLevelSchema>
 
 export const GeneratedConceptSchema = z.object({
-  title: z.string().describe('Concept name, max 6 words'),
+  title: z.string().describe('Short, precise concept name'),
   summary: z.string().describe('1-2 sentence explanation, max 40 words'),
   whyItMatters: z.string().describe('1 sentence on practical relevance, max 20 words'),
   bloomsLevel: BloomsLevelSchema.describe('Bloom\'s taxonomy level this concept targets'),
