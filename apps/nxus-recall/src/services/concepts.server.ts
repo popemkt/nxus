@@ -109,3 +109,28 @@ export const deleteConceptServerFn = createServerFn({ method: 'POST' })
     deleteConcept(db, ctx.data.conceptId)
     return { success: true as const }
   })
+
+export const updateConceptServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      conceptId: z.string(),
+      title: z.string().optional(),
+      summary: z.string().optional(),
+      whyItMatters: z.string().optional(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { initDatabaseWithBootstrap, updateConcept } = await import('@nxus/db/server')
+    const db = await initDatabaseWithBootstrap()
+    updateConcept(db, ctx.data)
+    return { success: true as const }
+  })
+
+export const getReviewLogsServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ conceptId: z.string() }))
+  .handler(async (ctx) => {
+    const { initDatabaseWithBootstrap, getReviewLogsByConcept } = await import('@nxus/db/server')
+    const db = await initDatabaseWithBootstrap()
+    const logs = getReviewLogsByConcept(db, ctx.data.conceptId)
+    return { success: true as const, logs }
+  })

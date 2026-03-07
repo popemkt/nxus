@@ -48,3 +48,14 @@ export const deleteTopicServerFn = createServerFn({ method: 'POST' })
     deleteTopic(db, ctx.data.topicId)
     return { success: true as const }
   })
+
+export const mergeTopicsServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({ sourceTopicId: z.string(), targetTopicId: z.string() }),
+  )
+  .handler(async (ctx) => {
+    const { initDatabaseWithBootstrap, mergeTopics } = await import('@nxus/db/server')
+    const db = await initDatabaseWithBootstrap()
+    const movedCount = mergeTopics(db, ctx.data.sourceTopicId, ctx.data.targetTopicId)
+    return { success: true as const, movedCount }
+  })

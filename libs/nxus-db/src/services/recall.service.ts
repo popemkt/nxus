@@ -34,10 +34,11 @@ import type {
   ReviewLog,
   RecallStats,
   BloomsLevel,
+  LearningPathItem,
 } from '../types/recall.js'
 
 // Re-export types for convenience
-export type { RecallTopic, RecallCard, RecallConcept, ReviewLog, RecallStats, BloomsLevel }
+export type { RecallTopic, RecallCard, RecallConcept, ReviewLog, RecallStats, BloomsLevel, LearningPathItem }
 
 type DatabaseInstance = BetterSQLite3Database<typeof schema>
 
@@ -155,6 +156,13 @@ function assembleReviewLog(node: AssembledNode): ReviewLog {
     aiFeedback: getProperty<string>(node, FIELD_NAMES.RECALL_AI_FEEDBACK) ?? '',
     rating: getProperty<number>(node, FIELD_NAMES.RECALL_RATING) ?? 0,
     reviewedAt: node.createdAt,
+    reviewState: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_STATE) ?? undefined,
+    reviewScore: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_SCORE) ?? undefined,
+    timeSpentMs: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_TIME_SPENT_MS) ?? undefined,
+    stabilityBefore: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_STABILITY_BEFORE) ?? undefined,
+    difficultyBefore: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_DIFFICULTY_BEFORE) ?? undefined,
+    scheduledDays: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_SCHEDULED_DAYS) ?? undefined,
+    hintsUsed: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_HINTS_USED) ?? undefined,
   }
 }
 
@@ -472,6 +480,13 @@ export interface CreateReviewLogInput {
   userAnswer: string
   aiFeedback: string
   rating: number
+  reviewState?: number
+  reviewScore?: number
+  timeSpentMs?: number
+  stabilityBefore?: number
+  difficultyBefore?: number
+  scheduledDays?: number
+  hintsUsed?: number
 }
 
 export function createReviewLog(
@@ -489,6 +504,28 @@ export function createReviewLog(
   setProperty(db, logId, SYSTEM_FIELDS.RECALL_USER_ANSWER, input.userAnswer)
   setProperty(db, logId, SYSTEM_FIELDS.RECALL_AI_FEEDBACK, input.aiFeedback)
   setProperty(db, logId, SYSTEM_FIELDS.RECALL_RATING, input.rating)
+
+  if (input.reviewState !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_STATE, input.reviewState)
+  }
+  if (input.reviewScore !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_SCORE, input.reviewScore)
+  }
+  if (input.timeSpentMs !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_TIME_SPENT_MS, input.timeSpentMs)
+  }
+  if (input.stabilityBefore !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_STABILITY_BEFORE, input.stabilityBefore)
+  }
+  if (input.difficultyBefore !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_DIFFICULTY_BEFORE, input.difficultyBefore)
+  }
+  if (input.scheduledDays !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_SCHEDULED_DAYS, input.scheduledDays)
+  }
+  if (input.hintsUsed !== undefined) {
+    setProperty(db, logId, SYSTEM_FIELDS.RECALL_REVIEW_HINTS_USED, input.hintsUsed)
+  }
 
   return logId
 }
@@ -560,10 +597,153 @@ export function getRecallStats(db: DatabaseInstance): RecallStats {
     (n) => n.createdAt >= todayStart,
   ).length
 
+  // Compute streaks from review log dates
+  const reviewDates = new Set<string>()
+  for (const log of allLogs) {
+    reviewDates.add(log.createdAt.toISOString().slice(0, 10))
+  }
+  const sortedDates = Array.from(reviewDates).sort().reverse()
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  let currentStreak = 0
+  let longestStreak = 0
+  let runLength = 0
+
+  // Walk sorted dates (newest first) for current streak
+  for (let i = 0; i < sortedDates.length; i++) {
+    const expected = new Date()
+    expected.setDate(expected.getDate() - i)
+    const expectedStr = expected.toISOString().slice(0, 10)
+    if (sortedDates[i] === expectedStr) {
+      currentStreak++
+    } else if (i === 0 && sortedDates[0] === new Date(Date.now() - 86400000).toISOString().slice(0, 10)) {
+      // Allow yesterday as the start if today has no reviews yet
+      currentStreak = 0
+      break
+    } else {
+      break
+    }
+  }
+
+  // Longest streak: walk all dates chronologically
+  const chronological = Array.from(reviewDates).sort()
+  for (let i = 0; i < chronological.length; i++) {
+    if (i === 0) {
+      runLength = 1
+    } else {
+      const prev = new Date(chronological[i - 1]!)
+      const curr = new Date(chronological[i]!)
+      const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000)
+      runLength = diffDays === 1 ? runLength + 1 : 1
+    }
+    if (runLength > longestStreak) longestStreak = runLength
+  }
+
   return {
     totalTopics: topics.length,
     totalConcepts: concepts.length,
     dueNow,
     reviewedToday,
+    currentStreak,
+    longestStreak,
   }
+}
+
+// ============================================================================
+// Update Concept
+// ============================================================================
+
+export interface UpdateConceptInput {
+  conceptId: string
+  title?: string
+  summary?: string
+  whyItMatters?: string
+}
+
+export function updateConcept(db: DatabaseInstance, input: UpdateConceptInput): void {
+  if (input.title) {
+    db.update(nodes)
+      .set({ content: input.title, contentPlain: input.title.toLowerCase(), updatedAt: new Date() })
+      .where(eq(nodes.id, input.conceptId))
+      .run()
+  }
+  if (input.summary !== undefined) {
+    setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_SUMMARY, input.summary)
+  }
+  if (input.whyItMatters !== undefined) {
+    setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS, input.whyItMatters)
+  }
+}
+
+// ============================================================================
+// Merge Topics
+// ============================================================================
+
+export function mergeTopics(db: DatabaseInstance, sourceTopicId: string, targetTopicId: string): number {
+  const conceptNodes = getConceptNodesByTopic(db, sourceTopicId)
+  for (const node of conceptNodes) {
+    setProperty(db, node.id, SYSTEM_FIELDS.PARENT, targetTopicId)
+  }
+  deleteTopic(db, sourceTopicId)
+  return conceptNodes.length
+}
+
+// ============================================================================
+// All Cards by Topic (for cram mode)
+// ============================================================================
+
+export function getAllCardsByTopic(
+  db: DatabaseInstance,
+  topicId: string,
+): RecallConcept[] {
+  const topicNode = assembleNode(db, topicId)
+  if (!topicNode) return []
+
+  const conceptNodes = getConceptNodesByTopic(db, topicId)
+  return conceptNodes.map((node) =>
+    assembleConcept(db, node, topicId, topicNode.content || ''),
+  )
+}
+
+// ============================================================================
+// Learning Path Suggestions
+// ============================================================================
+
+export function getLearningPathSuggestions(
+  db: DatabaseInstance,
+  limit: number = 5,
+): LearningPathItem[] {
+  const allConcepts = getNodesBySupertags(db, [SYSTEM_SUPERTAGS.RECALL_CONCEPT])
+    .filter((n) => !n.deletedAt)
+
+  const now = Date.now()
+  const items: LearningPathItem[] = []
+
+  for (const node of allConcepts) {
+    const topicId = getProperty<string>(node, FIELD_NAMES.PARENT) ?? ''
+    const topicNode = topicId ? assembleNode(db, topicId) : null
+    const concept = assembleConcept(db, node, topicId, topicNode?.content ?? '')
+
+    if (!concept.card) {
+      // New card — never reviewed
+      items.push({ concept, retrievability: 0, priority: 'new' })
+      continue
+    }
+
+    const { stability, lastReview } = concept.card
+    if (stability <= 0 || !lastReview) {
+      items.push({ concept, retrievability: 0, priority: 'new' })
+      continue
+    }
+
+    const elapsedDays = (now - new Date(lastReview).getTime()) / 86400000
+    const retrievability = Math.pow(1 + (19 / 81) * (elapsedDays / stability), -0.5)
+
+    const priority = retrievability < 0.5 ? 'overdue' : retrievability < 0.85 ? 'due-soon' : 'new'
+    items.push({ concept, retrievability, priority })
+  }
+
+  // Sort: overdue first (lowest retrievability), then due-soon, then new
+  items.sort((a, b) => a.retrievability - b.retrievability)
+  return items.slice(0, limit)
 }

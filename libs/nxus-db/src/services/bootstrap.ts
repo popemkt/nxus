@@ -556,6 +556,13 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.RECALL_AI_FEEDBACK, content: 'recallAiFeedback', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_RATING, content: 'recallRating', fieldType: 'number' },
     { systemId: SYSTEM_FIELDS.RECALL_CACHED_QUESTION, content: 'recallCachedQuestion', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_STATE, content: 'recallReviewState', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_SCORE, content: 'recallReviewScore', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_TIME_SPENT_MS, content: 'recallReviewTimeSpentMs', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_STABILITY_BEFORE, content: 'recallReviewStabilityBefore', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_DIFFICULTY_BEFORE, content: 'recallReviewDifficultyBefore', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_SCHEDULED_DAYS, content: 'recallReviewScheduledDays', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_HINTS_USED, content: 'recallReviewHintsUsed', fieldType: 'number' },
   ];
 
   for (const field of commonFields) {

@@ -38,6 +38,10 @@ const SubmitReviewSchema = z.object({
   userAnswer: z.string(),
   aiFeedback: z.string(),
   rating: z.number().min(1).max(4),
+  timeSpentMs: z.number().optional(),
+  reviewScore: z.number().optional(),
+  hintsUsed: z.number().optional(),
+  reschedule: z.boolean().optional().default(true),
 })
 
 export const submitReviewServerFn = createServerFn({ method: 'POST' })
@@ -84,31 +88,37 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       return { success: false as const, error: 'FSRS scheduling failed' }
     }
 
-    // Compute Bloom's progression
-    const { nextBloomsLevel } = await import('@nxus/mastra/server')
-    const currentBlooms = concept.card.currentBloomsLevel ?? 'remember'
-    const ceiling = (concept.bloomsLevel as 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create') ?? 'apply'
-    const newBlooms = nextBloomsLevel(currentBlooms, ceiling, ratingKey)
+    // Capture card state before update for the review log
+    const stabilityBefore = concept.card.stability
+    const difficultyBefore = concept.card.difficulty
 
-    // Update card state
-    updateCardFsrs(db, {
-      conceptId: ctx.data.conceptId,
-      due: next.card.due.toISOString(),
-      state: next.card.state,
-      reps: next.card.reps,
-      lapses: next.card.lapses,
-      stability: next.card.stability,
-      difficulty: next.card.difficulty,
-      elapsedDays: next.card.elapsed_days,
-      scheduledDays: next.card.scheduled_days,
-      lastReview: now.toISOString(),
-      currentBloomsLevel: newBlooms,
-    })
+    if (ctx.data.reschedule !== false) {
+      // Compute Bloom's progression
+      const { nextBloomsLevel } = await import('@nxus/mastra/server')
+      const currentBlooms = concept.card.currentBloomsLevel ?? 'remember'
+      const ceiling = (concept.bloomsLevel as 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create') ?? 'apply'
+      const newBlooms = nextBloomsLevel(currentBlooms, ceiling, ratingKey)
+
+      // Update card state
+      updateCardFsrs(db, {
+        conceptId: ctx.data.conceptId,
+        due: next.card.due.toISOString(),
+        state: next.card.state,
+        reps: next.card.reps,
+        lapses: next.card.lapses,
+        stability: next.card.stability,
+        difficulty: next.card.difficulty,
+        elapsedDays: next.card.elapsed_days,
+        scheduledDays: next.card.scheduled_days,
+        lastReview: now.toISOString(),
+        currentBloomsLevel: newBlooms,
+      })
+    }
 
     // Clear cached question (it's been used)
     clearCachedQuestion(db, ctx.data.conceptId)
 
-    // Create review log
+    // Create review log with enriched data
     createReviewLog(db, {
       conceptId: ctx.data.conceptId,
       questionText: ctx.data.questionText,
@@ -116,6 +126,13 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       userAnswer: ctx.data.userAnswer,
       aiFeedback: ctx.data.aiFeedback,
       rating: ctx.data.rating,
+      reviewState: concept.card.state,
+      reviewScore: ctx.data.reviewScore,
+      timeSpentMs: ctx.data.timeSpentMs,
+      stabilityBefore,
+      difficultyBefore,
+      scheduledDays: next.card.scheduled_days,
+      hintsUsed: ctx.data.hintsUsed,
     })
 
     // Return interval info for all ratings
@@ -175,4 +192,22 @@ export const previewIntervalsServerFn = createServerFn({ method: 'POST' })
     )
 
     return { success: true as const, intervals }
+  })
+
+export const getAllCardsByTopicServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ topicId: z.string() }))
+  .handler(async (ctx) => {
+    const { initDatabaseWithBootstrap, getAllCardsByTopic } = await import('@nxus/db/server')
+    const db = await initDatabaseWithBootstrap()
+    const cards = getAllCardsByTopic(db, ctx.data.topicId)
+    return { success: true as const, cards }
+  })
+
+export const getLearningPathServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ limit: z.number().optional() }))
+  .handler(async (ctx) => {
+    const { initDatabaseWithBootstrap, getLearningPathSuggestions } = await import('@nxus/db/server')
+    const db = await initDatabaseWithBootstrap()
+    const suggestions = getLearningPathSuggestions(db, ctx.data.limit ?? 5)
+    return { success: true as const, suggestions }
   })

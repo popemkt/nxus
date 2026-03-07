@@ -281,6 +281,13 @@ export const SYSTEM_FIELDS = {
   RECALL_AI_FEEDBACK: 'field:recall_ai_feedback' as FieldSystemId,
   RECALL_RATING: 'field:recall_rating' as FieldSystemId,
   RECALL_CACHED_QUESTION: 'field:recall_cached_question' as FieldSystemId,
+  RECALL_REVIEW_STATE: 'field:recall_review_state' as FieldSystemId,
+  RECALL_REVIEW_SCORE: 'field:recall_review_score' as FieldSystemId,
+  RECALL_REVIEW_TIME_SPENT_MS: 'field:recall_review_time_spent_ms' as FieldSystemId,
+  RECALL_REVIEW_STABILITY_BEFORE: 'field:recall_review_stability_before' as FieldSystemId,
+  RECALL_REVIEW_DIFFICULTY_BEFORE: 'field:recall_review_difficulty_before' as FieldSystemId,
+  RECALL_REVIEW_SCHEDULED_DAYS: 'field:recall_review_scheduled_days' as FieldSystemId,
+  RECALL_REVIEW_HINTS_USED: 'field:recall_review_hints_used' as FieldSystemId,
 } as const
 
 /**
@@ -396,6 +403,13 @@ export const FIELD_NAMES = {
   RECALL_AI_FEEDBACK: 'recallAiFeedback' as FieldContentName,
   RECALL_RATING: 'recallRating' as FieldContentName,
   RECALL_CACHED_QUESTION: 'recallCachedQuestion' as FieldContentName,
+  RECALL_REVIEW_STATE: 'recallReviewState' as FieldContentName,
+  RECALL_REVIEW_SCORE: 'recallReviewScore' as FieldContentName,
+  RECALL_REVIEW_TIME_SPENT_MS: 'recallReviewTimeSpentMs' as FieldContentName,
+  RECALL_REVIEW_STABILITY_BEFORE: 'recallReviewStabilityBefore' as FieldContentName,
+  RECALL_REVIEW_DIFFICULTY_BEFORE: 'recallReviewDifficultyBefore' as FieldContentName,
+  RECALL_REVIEW_SCHEDULED_DAYS: 'recallReviewScheduledDays' as FieldContentName,
+  RECALL_REVIEW_HINTS_USED: 'recallReviewHintsUsed' as FieldContentName,
 } as const
 
 /**
