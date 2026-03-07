@@ -127,7 +127,10 @@ test.describe('Workbench Node Browser', () => {
       return
     }
 
-    // Capture initial node count AFTER supertags have loaded (ensures nodes are loaded too)
+    // Wait for a non-zero node count to ensure data has fully loaded
+    await expect(nodeCount).not.toHaveText('0 nodes', { timeout: 10000 })
+
+    // Capture initial node count AFTER data is fully loaded
     const initialCountText = await nodeCount.textContent()
 
     // Get all buttons in the sidebar container
