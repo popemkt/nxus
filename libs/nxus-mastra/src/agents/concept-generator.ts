@@ -8,8 +8,9 @@ Given a topic, generate 5-8 well-structured concepts that cover the topic compre
 Guidelines:
 - Each concept should be a distinct, atomic piece of knowledge that a beginner can grasp
 - Keep concepts focused and contained — avoid sprawling, multi-part ideas
-- Summaries should be 2-3 sentences, clear and precise
-- "Why it matters" should explain practical relevance
+- Title: max 6 words — a precise label, not a sentence
+- Summary: 1-2 sentences ONLY, max 40 words — concise and direct, no filler
+- "Why it matters": 1 sentence, max 20 words — practical relevance only
 - Related concepts should reference other concepts in the same batch by title
 - Concepts should progress from foundational to advanced
 

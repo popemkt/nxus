@@ -45,7 +45,8 @@ function ReviewSessionPage() {
   const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null)
   const [intervals, setIntervals] = useState<Record<1 | 2 | 3 | 4, number> | null>(null)
   const [reviewedCount, setReviewedCount] = useState(0)
-  const prefetchedRef = useRef<Map<string, GeneratedQuestion>>(new Map())
+  /** Tracks in-flight prefetch promises so generateQuestionForConcept can await them */
+  const prefetchInFlightRef = useRef<Map<string, Promise<void>>>(new Map())
 
   // Load due cards
   useQuery({
@@ -58,9 +59,9 @@ function ReviewSessionPage() {
         setQueue(result.cards)
         setPhase('question')
         generateQuestionForConcept(result.cards[0]!)
-        // Prefetch question for card #2
-        if (result.cards[1]) {
-          triggerPrefetch(result.cards[1], result.cards)
+        // Prefetch questions for cards #2 and #3 immediately
+        for (let i = 1; i <= 2 && i < result.cards.length; i++) {
+          triggerPrefetch(result.cards[i]!, result.cards)
         }
       } else {
         setPhase('complete')
@@ -95,26 +96,28 @@ function ReviewSessionPage() {
     [queue],
   )
 
-  /** Fire-and-forget prefetch for next concept */
+  /** Fire-and-forget prefetch for next concept — tracks in-flight promises */
   const triggerPrefetch = useCallback(
-    async (concept: RecallConcept, allCards?: RecallConcept[]) => {
-      if (prefetchedRef.current.has(concept.id)) return
-      try {
-        const adjacentConcepts = await getAdjacentConcepts(concept, allCards)
-        // This generates + caches to DB on the server side
-        prefetchQuestionServerFn({
-          data: {
-            conceptId: concept.id,
-            conceptTitle: concept.title,
-            conceptSummary: concept.summary,
-            bloomsLevel: concept.bloomsLevel,
-            currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
-            adjacentConcepts,
-          },
-        }).catch(() => {}) // non-critical
-      } catch {
-        // non-critical
-      }
+    (concept: RecallConcept, allCards?: RecallConcept[]) => {
+      if (prefetchInFlightRef.current.has(concept.id)) return
+      const promise = (async () => {
+        try {
+          const adjacentConcepts = await getAdjacentConcepts(concept, allCards)
+          await prefetchQuestionServerFn({
+            data: {
+              conceptId: concept.id,
+              conceptTitle: concept.title,
+              conceptSummary: concept.summary,
+              bloomsLevel: concept.bloomsLevel,
+              currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
+              adjacentConcepts,
+            },
+          })
+        } catch {
+          // non-critical
+        }
+      })()
+      prefetchInFlightRef.current.set(concept.id, promise)
     },
     [getAdjacentConcepts],
   )
@@ -128,6 +131,10 @@ function ReviewSessionPage() {
       setIntervals(null)
 
       try {
+        // Wait for any in-flight prefetch to finish so we hit the DB cache
+        const inFlight = prefetchInFlightRef.current.get(concept.id)
+        if (inFlight) await inFlight
+
         const adjacentConcepts = await getAdjacentConcepts(concept)
 
         const result = await generateQuestionServerFn({
@@ -266,9 +273,10 @@ function ReviewSessionPage() {
       if (nextIndex < queue.length) {
         setCurrentIndex(nextIndex)
         generateQuestionForConcept(queue[nextIndex]!)
-        // Prefetch for card after next
-        if (queue[nextIndex + 1]) {
-          triggerPrefetch(queue[nextIndex + 1]!)
+        // Prefetch 2 cards ahead
+        for (let i = 1; i <= 2; i++) {
+          const futureCard = queue[nextIndex + i]
+          if (futureCard) triggerPrefetch(futureCard)
         }
       } else {
         setPhase('complete')
