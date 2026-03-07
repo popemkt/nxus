@@ -21,24 +21,12 @@ async function seedTopicWithConcepts(page: Page) {
   await searchInput.fill('E2E Test Topic')
   await page.getByRole('button', { name: 'Generate' }).click()
 
-  // Wait for concepts to appear
+  // Wait for concepts to appear — they are auto-saved after generation
   await expect(
     page.getByText('Generated Concepts'),
   ).toBeVisible({ timeout: 15000 })
 
-  // Save all visible concepts
-  const saveButtons = page.getByRole('button', { name: 'Save' })
-  const count = await saveButtons.count()
-  for (let i = 0; i < count; i++) {
-    const btn = saveButtons.nth(i)
-    if (await btn.isVisible()) {
-      await btn.click()
-      // Wait for the save to complete before clicking next
-      await page.waitForTimeout(500)
-    }
-  }
-
-  // Wait for at least one "Saved" indicator
+  // Concepts are auto-saved — wait for the saved indicator
   await expect(page.getByText('Saved').first()).toBeVisible({ timeout: 10000 })
 }
 
