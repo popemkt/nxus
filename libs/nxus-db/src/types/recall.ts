@@ -14,6 +14,8 @@ export interface RecallTopic {
   createdAt: Date
 }
 
+export type BloomsLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
+
 export interface RecallCard {
   due: string
   state: number
@@ -24,6 +26,7 @@ export interface RecallCard {
   elapsedDays: number
   scheduledDays: number
   lastReview: string | null
+  currentBloomsLevel: BloomsLevel
 }
 
 export interface RecallConcept {
@@ -36,6 +39,7 @@ export interface RecallConcept {
   bloomsLevel: string | null
   source: string | null
   relatedConceptTitles: string[]
+  relatedConceptIds: string[]
   card: RecallCard | null
 }
 

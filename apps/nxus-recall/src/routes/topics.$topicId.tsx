@@ -6,10 +6,13 @@ import {
   Lightning,
   Trash,
   BookOpen,
+  SpinnerGap,
+  Plus,
 } from '@phosphor-icons/react'
 import { getTopicByIdServerFn } from '@/services/topics.server'
-import { getConceptsByTopicServerFn, deleteConceptServerFn } from '@/services/concepts.server'
-import { getDueCardsServerFn } from '@/services/review.server'
+import { getConceptsByTopicServerFn, deleteConceptServerFn, saveConceptsBatchServerFn } from '@/services/concepts.server'
+import { generateConceptsServerFn } from '@/services/generate-concepts.server'
+import type { GeneratedConcept } from '@nxus/mastra'
 
 export const Route = createFileRoute('/topics/$topicId')({
   component: TopicDetailPage,
@@ -36,6 +39,33 @@ function TopicDetailPage() {
       queryClient.invalidateQueries({
         queryKey: ['recall-concepts', topicId],
       })
+      queryClient.invalidateQueries({ queryKey: ['recall-topic', topicId] })
+      queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
+    },
+  })
+
+  const generateMoreMutation = useMutation({
+    mutationFn: async (topicName: string) => {
+      const result = await generateConceptsServerFn({ data: { topic: topicName } })
+      if (!result.success) throw new Error(result.error)
+
+      const saveResult = await saveConceptsBatchServerFn({
+        data: {
+          topicId,
+          concepts: result.concepts.map((c: GeneratedConcept) => ({
+            title: c.title,
+            summary: c.summary,
+            whyItMatters: c.whyItMatters,
+            bloomsLevel: c.bloomsLevel,
+            relatedConceptTitles: c.relatedConceptTitles,
+          })),
+        },
+      })
+      if (!saveResult.success) throw new Error('Failed to save concepts')
+      return saveResult
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recall-concepts', topicId] })
       queryClient.invalidateQueries({ queryKey: ['recall-topic', topicId] })
       queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
     },
@@ -81,20 +111,47 @@ function TopicDetailPage() {
               </p>
             ) : null}
           </div>
-          {topic && topic.dueCount > 0 ? (
-            <Link
-              to="/review/session"
-              search={{ topicId }}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Lightning size={16} weight="fill" />
-              Review {topic.dueCount} Due
-            </Link>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {topic ? (
+              <button
+                onClick={() => generateMoreMutation.mutate(topic.name)}
+                disabled={generateMoreMutation.isPending}
+                className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                {generateMoreMutation.isPending ? (
+                  <>
+                    <SpinnerGap size={16} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} weight="bold" />
+                    Generate More
+                  </>
+                )}
+              </button>
+            ) : null}
+            {topic && topic.dueCount > 0 ? (
+              <Link
+                to="/review/session"
+                search={{ topicId }}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Lightning size={16} weight="fill" />
+                Review {topic.dueCount} Due
+              </Link>
+            ) : null}
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-8">
+        {generateMoreMutation.isError ? (
+          <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            {generateMoreMutation.error?.message ?? 'Failed to generate concepts'}
+          </div>
+        ) : null}
+
         {concepts.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16">
             <BookOpen
@@ -103,16 +160,37 @@ function TopicDetailPage() {
               className="mb-4 text-muted-foreground"
             />
             <p className="mb-2 text-lg font-medium">No concepts yet</p>
-            <p className="text-sm text-muted-foreground">
-              Generate concepts from the Explore page
-            </p>
+            {topic ? (
+              <button
+                onClick={() => generateMoreMutation.mutate(topic.name)}
+                disabled={generateMoreMutation.isPending}
+                className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {generateMoreMutation.isPending ? (
+                  <>
+                    <SpinnerGap size={16} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Brain size={16} weight="duotone" />
+                    Generate Concepts
+                  </>
+                )}
+              </button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Generate concepts from the Explore page
+              </p>
+            )}
           </div>
         ) : (
           <div className="grid gap-4">
             {concepts.map((concept) => (
               <div
                 key={concept.id}
-                className="rounded-xl border border-border bg-card p-5"
+                id={`concept-${concept.id}`}
+                className="rounded-xl border border-border bg-card p-5 scroll-mt-24"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -163,16 +241,25 @@ function TopicDetailPage() {
                   </div>
                 </div>
 
-                {concept.relatedConceptTitles.length > 0 ? (
+                {concept.relatedConceptIds.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {concept.relatedConceptTitles.map((title) => (
-                      <span
-                        key={title}
-                        className="rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
-                      >
-                        {title}
-                      </span>
-                    ))}
+                    {concept.relatedConceptIds.map((relatedId, i) => {
+                      const title = concept.relatedConceptTitles[i] ?? relatedId
+                      return (
+                        <button
+                          key={relatedId}
+                          onClick={() => {
+                            document.getElementById(`concept-${relatedId}`)?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                            })
+                          }}
+                          className="rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                        >
+                          {title}
+                        </button>
+                      )
+                    })}
                   </div>
                 ) : null}
               </div>

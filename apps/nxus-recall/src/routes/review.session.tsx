@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   ArrowLeft,
   Brain,
@@ -13,7 +13,7 @@ import {
 } from '@phosphor-icons/react'
 import { getDueCardsServerFn } from '@/services/review.server'
 import { submitReviewServerFn, previewIntervalsServerFn } from '@/services/review.server'
-import { generateQuestionServerFn } from '@/services/generate-question.server'
+import { generateQuestionServerFn, prefetchQuestionServerFn } from '@/services/generate-question.server'
 import { evaluateAnswerServerFn } from '@/services/evaluate-answer.server'
 import { getConceptsByTopicServerFn } from '@/services/concepts.server'
 import type { RecallConcept } from '@nxus/db'
@@ -36,13 +36,20 @@ function ReviewSessionPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [phase, setPhase] = useState<SessionPhase>('loading')
   const [question, setQuestion] = useState<GeneratedQuestion | null>(null)
-  const [userAnswer, setUserAnswer] = useState('')
+  const [userAnswer, _setUserAnswer] = useState('')
+  const userAnswerRef = useRef('')
+  const setUserAnswer = useCallback((v: string) => {
+    userAnswerRef.current = v
+    _setUserAnswer(v)
+  }, [])
   const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null)
   const [intervals, setIntervals] = useState<Record<1 | 2 | 3 | 4, number> | null>(null)
   const [reviewedCount, setReviewedCount] = useState(0)
+  /** Tracks in-flight prefetch promises so generateQuestionForConcept can await them */
+  const prefetchInFlightRef = useRef<Map<string, Promise<void>>>(new Map())
 
   // Load due cards
-  const dueCardsQuery = useQuery({
+  useQuery({
     queryKey: ['due-cards', topicId],
     queryFn: async () => {
       const result = await getDueCardsServerFn({
@@ -52,12 +59,68 @@ function ReviewSessionPage() {
         setQueue(result.cards)
         setPhase('question')
         generateQuestionForConcept(result.cards[0]!)
+        // Prefetch questions for cards #2 and #3 immediately
+        for (let i = 1; i <= 2 && i < result.cards.length; i++) {
+          triggerPrefetch(result.cards[i]!, result.cards)
+        }
       } else {
         setPhase('complete')
       }
       return result
     },
   })
+
+  /** Get adjacent concepts for a concept */
+  const getAdjacentConcepts = useCallback(
+    async (concept: RecallConcept, allCards?: RecallConcept[]) => {
+      if (!concept.topicId) return []
+      // Use queue cards as adjacent if available to avoid extra server call
+      const pool = allCards ?? queue
+      if (pool.length > 1) {
+        return pool
+          .filter((c) => c.id !== concept.id)
+          .slice(0, 3)
+          .map((c) => ({ title: c.title, summary: c.summary }))
+      }
+      const conceptsResult = await getConceptsByTopicServerFn({
+        data: { topicId: concept.topicId },
+      })
+      if (conceptsResult.success) {
+        return conceptsResult.concepts
+          .filter((c: RecallConcept) => c.id !== concept.id)
+          .slice(0, 3)
+          .map((c: RecallConcept) => ({ title: c.title, summary: c.summary }))
+      }
+      return []
+    },
+    [queue],
+  )
+
+  /** Fire-and-forget prefetch for next concept — tracks in-flight promises */
+  const triggerPrefetch = useCallback(
+    (concept: RecallConcept, allCards?: RecallConcept[]) => {
+      if (prefetchInFlightRef.current.has(concept.id)) return
+      const promise = (async () => {
+        try {
+          const adjacentConcepts = await getAdjacentConcepts(concept, allCards)
+          await prefetchQuestionServerFn({
+            data: {
+              conceptId: concept.id,
+              conceptTitle: concept.title,
+              conceptSummary: concept.summary,
+              bloomsLevel: concept.bloomsLevel,
+              currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
+              adjacentConcepts,
+            },
+          })
+        } catch {
+          // non-critical
+        }
+      })()
+      prefetchInFlightRef.current.set(concept.id, promise)
+    },
+    [getAdjacentConcepts],
+  )
 
   const generateQuestionForConcept = useCallback(
     async (concept: RecallConcept) => {
@@ -68,53 +131,46 @@ function ReviewSessionPage() {
       setIntervals(null)
 
       try {
-        // Get adjacent concepts for cross-referencing
-        let adjacentConcepts: { title: string; summary: string }[] = []
-        if (concept.topicId) {
-          const conceptsResult = await getConceptsByTopicServerFn({
-            data: { topicId: concept.topicId },
-          })
-          if (conceptsResult.success) {
-            adjacentConcepts = conceptsResult.concepts
-              .filter((c) => c.id !== concept.id)
-              .slice(0, 3)
-              .map((c) => ({ title: c.title, summary: c.summary }))
-          }
-        }
+        // Wait for any in-flight prefetch to finish so we hit the DB cache
+        const inFlight = prefetchInFlightRef.current.get(concept.id)
+        if (inFlight) await inFlight
+
+        const adjacentConcepts = await getAdjacentConcepts(concept)
 
         const result = await generateQuestionServerFn({
           data: {
+            conceptId: concept.id,
             conceptTitle: concept.title,
             conceptSummary: concept.summary,
             bloomsLevel: concept.bloomsLevel,
+            currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
             adjacentConcepts,
           },
         })
 
         if (result.success) {
-          setQuestion(result.question)
+          setQuestion(result.question as GeneratedQuestion)
           setPhase('answering')
 
-          // Preview intervals
-          const intervalsResult = await previewIntervalsServerFn({
+          // Preview intervals (fire-and-forget, non-blocking)
+          previewIntervalsServerFn({
             data: { conceptId: concept.id },
-          })
-          if (intervalsResult.success) {
-            setIntervals(intervalsResult.intervals)
-          }
+          }).then((r) => {
+            if (r.success) setIntervals(r.intervals)
+          }).catch(() => {})
         }
       } catch {
         // Fallback: show concept as question
         setQuestion({
           questionText: `Explain the concept "${concept.title}" and why it matters.`,
-          questionType: 'application',
+          questionType: 'free-response',
           modelAnswer: concept.summary,
           hints: [],
         })
         setPhase('answering')
       }
     },
-    [],
+    [getAdjacentConcepts],
   )
 
   const evaluateMutation = useMutation({
@@ -122,14 +178,59 @@ function ReviewSessionPage() {
       if (!question) return null
       const currentConcept = queue[currentIndex]
       if (!currentConcept) return null
+      const answer = userAnswerRef.current
 
+      // Deterministic question types: evaluate client-side instantly
+      if (question.questionType === 'multiple-choice' && 'correctIndex' in question) {
+        const isCorrect = answer === String(question.correctIndex)
+        return {
+          rating: isCorrect ? ('good' as const) : ('again' as const),
+          score: isCorrect ? 80 : 10,
+          feedback: isCorrect
+            ? 'Correct! ' + question.modelAnswer
+            : 'Incorrect. ' + question.modelAnswer,
+          keyInsightsMissed: isCorrect ? [] : ['Review the correct answer above'],
+          strongPoints: isCorrect ? ['Selected the correct answer'] : [],
+        }
+      }
+
+      if (question.questionType === 'true-false' && 'correctAnswer' in question) {
+        const isCorrect = answer === String(question.correctAnswer)
+        return {
+          rating: isCorrect ? ('good' as const) : ('again' as const),
+          score: isCorrect ? 80 : 10,
+          feedback: isCorrect
+            ? 'Correct! ' + question.modelAnswer
+            : 'Incorrect. ' + question.modelAnswer,
+          keyInsightsMissed: isCorrect ? [] : ['Review the correct answer above'],
+          strongPoints: isCorrect ? ['Correctly identified the statement'] : [],
+        }
+      }
+
+      if (question.questionType === 'fill-blank' && 'blankAnswer' in question) {
+        const normalize = (s: string) => s.trim().toLowerCase()
+        const isCorrect = normalize(answer) === normalize(question.blankAnswer)
+        const isClose = !isCorrect && normalize(question.blankAnswer).includes(normalize(answer))
+        return {
+          rating: isCorrect ? ('good' as const) : isClose ? ('hard' as const) : ('again' as const),
+          score: isCorrect ? 80 : isClose ? 40 : 10,
+          feedback: isCorrect
+            ? 'Correct! ' + question.modelAnswer
+            : `The answer is "${question.blankAnswer}". ${question.modelAnswer}`,
+          keyInsightsMissed: isCorrect ? [] : [`The blank should be filled with "${question.blankAnswer}"`],
+          strongPoints: isCorrect ? ['Filled in the correct answer'] : isClose ? ['Close, but not exact'] : [],
+        }
+      }
+
+      // Free-response: server-side AI evaluation
       setPhase('evaluating')
       const result = await evaluateAnswerServerFn({
         data: {
           questionText: question.questionText,
           modelAnswer: question.modelAnswer,
-          userAnswer,
+          userAnswer: answer,
           conceptTitle: currentConcept.title,
+          questionType: question.questionType,
         },
       })
       if (result.success) {
@@ -155,7 +256,7 @@ function ReviewSessionPage() {
           conceptId: currentConcept.id,
           questionText: question.questionText,
           questionType: question.questionType,
-          userAnswer,
+          userAnswer: userAnswerRef.current,
           aiFeedback: evaluation.feedback,
           rating,
         },
@@ -172,11 +273,48 @@ function ReviewSessionPage() {
       if (nextIndex < queue.length) {
         setCurrentIndex(nextIndex)
         generateQuestionForConcept(queue[nextIndex]!)
+        // Prefetch 2 cards ahead
+        for (let i = 1; i <= 2; i++) {
+          const futureCard = queue[nextIndex + i]
+          if (futureCard) triggerPrefetch(futureCard)
+        }
       } else {
         setPhase('complete')
       }
     },
   })
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't capture when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        // Only handle Enter in inputs to submit
+        if (e.key === 'Enter' && !e.shiftKey && phase === 'answering' && userAnswerRef.current.trim()) {
+          e.preventDefault()
+          evaluateMutation.mutate()
+        }
+        return
+      }
+
+      if (phase === 'answering' && userAnswerRef.current.trim() && e.key === 'Enter') {
+        e.preventDefault()
+        evaluateMutation.mutate()
+      }
+
+      if (phase === 'feedback' && !submitRatingMutation.isPending) {
+        const ratingKey = Number(e.key)
+        if (ratingKey >= 1 && ratingKey <= 4) {
+          e.preventDefault()
+          submitRatingMutation.mutate(ratingKey as 1 | 2 | 3 | 4)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [phase, evaluateMutation, submitRatingMutation])
 
   const currentConcept = queue[currentIndex]
 
@@ -257,16 +395,25 @@ function ReviewSessionPage() {
               <p className="text-lg font-medium leading-relaxed">
                 {question.questionText}
               </p>
+              {question.questionType === 'true-false' ? (
+                <p className="mt-2 text-xs text-muted-foreground">True or False?</p>
+              ) : null}
             </div>
 
             <div className="mb-4">
-              <textarea
+              <QuestionInput
+                question={question}
                 value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder="Type your answer..."
-                rows={6}
-                className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-                autoFocus
+                onChange={(v) => {
+                  setUserAnswer(v)
+                  // Auto-submit for deterministic question types (MC, T/F)
+                  const isAutoSubmit =
+                    question.questionType === 'multiple-choice' ||
+                    question.questionType === 'true-false'
+                  if (isAutoSubmit && v.trim()) {
+                    setTimeout(() => evaluateMutation.mutate(), 150)
+                  }
+                }}
               />
             </div>
 
@@ -276,14 +423,19 @@ function ReviewSessionPage() {
               ) : (
                 <div />
               )}
-              <button
-                onClick={() => evaluateMutation.mutate()}
-                disabled={!userAnswer.trim() || evaluateMutation.isPending}
-                className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <PaperPlaneRight size={16} />
-                Submit Answer
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-muted-foreground">
+                  <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">Enter</kbd> to submit
+                </span>
+                <button
+                  onClick={() => evaluateMutation.mutate()}
+                  disabled={!userAnswer.trim() || evaluateMutation.isPending}
+                  className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PaperPlaneRight size={16} />
+                  Submit Answer
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
@@ -338,7 +490,7 @@ function ReviewSessionPage() {
                     Strong Points
                   </p>
                   <ul className="space-y-1">
-                    {evaluation.strongPoints.map((point, i) => (
+                    {evaluation.strongPoints.map((point: string, i: number) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                         <Check size={14} className="mt-0.5 text-success flex-shrink-0" />
                         {point}
@@ -354,7 +506,7 @@ function ReviewSessionPage() {
                     Key Insights Missed
                   </p>
                   <ul className="space-y-1">
-                    {evaluation.keyInsightsMissed.map((point, i) => (
+                    {evaluation.keyInsightsMissed.map((point: string, i: number) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                         <ArrowRight size={14} className="mt-0.5 text-warning flex-shrink-0" />
                         {point}
@@ -377,7 +529,12 @@ function ReviewSessionPage() {
 
             {/* Rating buttons */}
             <div>
-              <p className="mb-3 text-sm font-medium">How well did you know this?</p>
+              <p className="mb-3 text-sm font-medium flex items-center gap-2">
+                How well did you know this?
+                <span className="text-[10px] text-muted-foreground">
+                  Press <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">1</kbd>-<kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">4</kbd>
+                </span>
+              </p>
               <div className="grid grid-cols-4 gap-3">
                 {([1, 2, 3, 4] as const).map((rating) => {
                   const info = ratingLabels[rating]
@@ -390,6 +547,7 @@ function ReviewSessionPage() {
                       className={`rounded-xl border border-border p-4 text-center transition-all ${info.color} disabled:opacity-50`}
                     >
                       <div className="text-sm font-semibold">{info.label}</div>
+                      <div className="mt-0.5 text-[10px] opacity-50">{rating}</div>
                       {interval !== undefined ? (
                         <div className="mt-1 text-[10px] opacity-70">
                           {formatInterval(interval)}
@@ -440,6 +598,82 @@ function ReviewSessionPage() {
       </main>
     </div>
   )
+}
+
+function QuestionInput({
+  question,
+  value,
+  onChange,
+}: {
+  question: GeneratedQuestion
+  value: string
+  onChange: (v: string) => void
+}) {
+  switch (question.questionType) {
+    case 'multiple-choice':
+      return (
+        <div className="space-y-2">
+          {question.choices.map((choice: string, i: number) => (
+            <button
+              key={i}
+              onClick={() => onChange(String(i))}
+              className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${
+                value === String(i)
+                  ? 'border-primary bg-primary/5 text-foreground'
+                  : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              <span className="mr-2 font-medium">{String.fromCharCode(65 + i)}.</span>
+              {choice}
+            </button>
+          ))}
+        </div>
+      )
+
+    case 'true-false':
+      return (
+        <div className="flex gap-3">
+          {(['true', 'false'] as const).map((opt) => (
+            <button
+              key={opt}
+              onClick={() => onChange(opt)}
+              className={`flex-1 rounded-lg border p-4 text-center text-sm font-medium transition-colors ${
+                value === opt
+                  ? 'border-primary bg-primary/5 text-foreground'
+                  : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              {opt === 'true' ? 'True' : 'False'}
+            </button>
+          ))}
+        </div>
+      )
+
+    case 'fill-blank':
+      return (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Fill in the blank..."
+          className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          autoFocus
+        />
+      )
+
+    case 'free-response':
+    default:
+      return (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type your answer..."
+          rows={6}
+          className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+          autoFocus
+        />
+      )
+  }
 }
 
 function HintButton({ hints }: { hints: string[] }) {
