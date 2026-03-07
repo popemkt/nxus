@@ -14,6 +14,7 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   FIELD_NAMES,
+  BLOOM_LEVEL_NODES,
 } from '../schemas/node-schema.js'
 import type * as schema from '../schemas/item-schema.js'
 import {
@@ -21,7 +22,9 @@ import {
   createNode,
   setProperty,
   getProperty,
+  getPropertyValues,
   getNodesBySupertags,
+  getSystemNode,
 } from './node.service.js'
 import type { AssembledNode } from '../types/node.js'
 import type {
@@ -39,12 +42,62 @@ export type { RecallTopic, RecallCard, RecallConcept, ReviewLog, RecallStats, Bl
 type DatabaseInstance = BetterSQLite3Database<typeof schema>
 
 // ============================================================================
+// Bloom's Level Helpers (string ↔ node ID mapping)
+// ============================================================================
+
+const BLOOMS_STRING_TO_SYSTEM_ID: Record<string, string> = {
+  remember: BLOOM_LEVEL_NODES.REMEMBER,
+  understand: BLOOM_LEVEL_NODES.UNDERSTAND,
+  apply: BLOOM_LEVEL_NODES.APPLY,
+  analyze: BLOOM_LEVEL_NODES.ANALYZE,
+  evaluate: BLOOM_LEVEL_NODES.EVALUATE,
+  create: BLOOM_LEVEL_NODES.CREATE,
+}
+
+const BLOOMS_SYSTEM_ID_TO_STRING: Record<string, BloomsLevel> = {
+  [BLOOM_LEVEL_NODES.REMEMBER]: 'remember',
+  [BLOOM_LEVEL_NODES.UNDERSTAND]: 'understand',
+  [BLOOM_LEVEL_NODES.APPLY]: 'apply',
+  [BLOOM_LEVEL_NODES.ANALYZE]: 'analyze',
+  [BLOOM_LEVEL_NODES.EVALUATE]: 'evaluate',
+  [BLOOM_LEVEL_NODES.CREATE]: 'create',
+}
+
+/** Resolve a Bloom's node ID to its string label, or null */
+function resolveBloomsNodeId(db: DatabaseInstance, nodeId: string): BloomsLevel | null {
+  // Fast path: check if the stored value is a system ID (e.g. 'bloom:remember')
+  if (BLOOMS_SYSTEM_ID_TO_STRING[nodeId]) {
+    return BLOOMS_SYSTEM_ID_TO_STRING[nodeId]
+  }
+  // Slow path: look up the node by UUID and check its systemId
+  const node = getSystemNode(db, nodeId)
+  if (node) return null // getSystemNode looks up by systemId, not useful here
+  // Fallback: it might be a plain string from before migration
+  if (nodeId in BLOOMS_STRING_TO_SYSTEM_ID) return nodeId as BloomsLevel
+  return null
+}
+
+/** Get the UUID of a Bloom's level node from its string name */
+function getBloomsNodeId(db: DatabaseInstance, level: string): string {
+  const systemId = BLOOMS_STRING_TO_SYSTEM_ID[level]
+  if (!systemId) return level // fallback: return as-is
+  const node = getSystemNode(db, systemId)
+  return node?.id ?? level
+}
+
+// ============================================================================
 // Assembly Helpers
 // ============================================================================
 
-function assembleCard(node: AssembledNode): RecallCard | null {
+function assembleCard(db: DatabaseInstance, node: AssembledNode): RecallCard | null {
   const due = getProperty<string>(node, FIELD_NAMES.RECALL_DUE)
   if (!due) return null
+
+  // Resolve currentBloomsLevel — stored as Bloom's node ID, return as string
+  const rawBlooms = getProperty<string>(node, FIELD_NAMES.RECALL_CURRENT_BLOOMS_LEVEL)
+  const currentBloomsLevel = rawBlooms
+    ? (resolveBloomsNodeId(db, rawBlooms) ?? 'remember')
+    : 'remember'
 
   return {
     due,
@@ -56,15 +109,27 @@ function assembleCard(node: AssembledNode): RecallCard | null {
     elapsedDays: getProperty<number>(node, FIELD_NAMES.RECALL_ELAPSED_DAYS) ?? 0,
     scheduledDays: getProperty<number>(node, FIELD_NAMES.RECALL_SCHEDULED_DAYS) ?? 0,
     lastReview: getProperty<string>(node, FIELD_NAMES.RECALL_LAST_REVIEW) ?? null,
-    currentBloomsLevel: (getProperty<string>(node, FIELD_NAMES.RECALL_CURRENT_BLOOMS_LEVEL) as BloomsLevel) ?? 'remember',
+    currentBloomsLevel,
   }
 }
 
 function assembleConcept(
+  db: DatabaseInstance,
   node: AssembledNode,
   topicId: string,
   topicName: string,
 ): RecallConcept {
+  // Resolve bloomsLevel — stored as Bloom's node ID, return as string
+  const rawBlooms = getProperty<string>(node, FIELD_NAMES.RECALL_BLOOMS_LEVEL)
+  const bloomsLevel = rawBlooms ? (resolveBloomsNodeId(db, rawBlooms) ?? rawBlooms) : null
+
+  // Resolve related concepts — stored as node IDs, return both IDs and titles
+  const relatedIds = getPropertyValues<string>(node, FIELD_NAMES.RECALL_RELATED_CONCEPTS)
+  const relatedConceptTitles = relatedIds.map((id) => {
+    const relatedNode = assembleNode(db, id)
+    return relatedNode?.content ?? id
+  })
+
   return {
     id: node.id,
     topicId,
@@ -72,10 +137,11 @@ function assembleConcept(
     title: node.content || '',
     summary: getProperty<string>(node, FIELD_NAMES.RECALL_SUMMARY) ?? '',
     whyItMatters: getProperty<string>(node, FIELD_NAMES.RECALL_WHY_IT_MATTERS) ?? null,
-    bloomsLevel: getProperty<string>(node, FIELD_NAMES.RECALL_BLOOMS_LEVEL) ?? null,
+    bloomsLevel,
     source: getProperty<string>(node, FIELD_NAMES.RECALL_SOURCE) ?? null,
-    relatedConceptTitles: getProperty<string[]>(node, FIELD_NAMES.RECALL_RELATED_CONCEPTS) ?? [],
-    card: assembleCard(node),
+    relatedConceptTitles,
+    relatedConceptIds: relatedIds,
+    card: assembleCard(db, node),
   }
 }
 
@@ -196,7 +262,7 @@ export function getConceptsByTopic(
 
   const conceptNodes = getConceptNodesByTopic(db, topicId)
   return conceptNodes.map((node) =>
-    assembleConcept(node, topicId, topicNode.content || ''),
+    assembleConcept(db, node, topicId, topicNode.content || ''),
   )
 }
 
@@ -216,7 +282,7 @@ export function getConceptById(
   const topicNode = topicId ? assembleNode(db, topicId) : null
   const topicName = topicNode?.content ?? ''
 
-  return assembleConcept(node, topicId, topicName)
+  return assembleConcept(db, node, topicId, topicName)
 }
 
 export interface SaveConceptInput {
@@ -248,14 +314,14 @@ export function saveConcept(
     setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS, input.whyItMatters)
   }
   if (input.bloomsLevel) {
-    setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL, input.bloomsLevel)
+    // Store as Bloom's level node ID
+    const bloomsNodeId = getBloomsNodeId(db, input.bloomsLevel)
+    setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL, bloomsNodeId)
   }
   if (input.source) {
     setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_SOURCE, input.source)
   }
-  if (input.relatedConceptTitles && input.relatedConceptTitles.length > 0) {
-    setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS, input.relatedConceptTitles)
-  }
+  // relatedConceptTitles are resolved to node IDs via linkRelatedConcepts() after all concepts are saved
 
   // Initialize FSRS card state (New card, due now)
   const now = new Date().toISOString()
@@ -267,9 +333,33 @@ export function saveConcept(
   setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_DIFFICULTY, 0)
   setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_ELAPSED_DAYS, 0)
   setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_SCHEDULED_DAYS, 0)
-  setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, 'remember')
+  // Initialize currentBloomsLevel as Bloom's node ID for 'remember'
+  const rememberNodeId = getBloomsNodeId(db, 'remember')
+  setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, rememberNodeId)
 
   return conceptId
+}
+
+/**
+ * Resolve related concept titles to node IDs and store as node references.
+ * Call this after all concepts in a batch have been saved.
+ *
+ * @param titleToId - Map of concept title → saved concept node ID
+ */
+export function linkRelatedConcepts(
+  db: DatabaseInstance,
+  titleToId: Map<string, string>,
+  conceptsToLink: Array<{ conceptId: string; relatedTitles: string[] }>,
+): void {
+  for (const { conceptId, relatedTitles } of conceptsToLink) {
+    const relatedIds = relatedTitles
+      .map((title) => titleToId.get(title))
+      .filter((id): id is string => id !== undefined)
+
+    for (let i = 0; i < relatedIds.length; i++) {
+      setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS, relatedIds[i]!, i)
+    }
+  }
 }
 
 export function deleteConcept(db: DatabaseInstance, conceptId: string): void {
@@ -307,7 +397,7 @@ export function getDueCards(
   return dueConcepts.map((node) => {
     const topicId = getProperty<string>(node, FIELD_NAMES.PARENT) ?? ''
     const topicNode = topicId ? assembleNode(db, topicId) : null
-    return assembleConcept(node, topicId, topicNode?.content ?? '')
+    return assembleConcept(db, node, topicId, topicNode?.content ?? '')
   })
 }
 
@@ -334,7 +424,7 @@ export function getDueCardsByTopic(
     .slice(0, limit)
 
   return dueConcepts.map((node) =>
-    assembleConcept(node, topicId, topicNode.content || ''),
+    assembleConcept(db, node, topicId, topicNode.content || ''),
   )
 }
 
@@ -366,7 +456,8 @@ export function updateCardFsrs(
   setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_SCHEDULED_DAYS, input.scheduledDays)
   setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_LAST_REVIEW, input.lastReview)
   if (input.currentBloomsLevel) {
-    setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, input.currentBloomsLevel)
+    const bloomsNodeId = getBloomsNodeId(db, input.currentBloomsLevel)
+    setProperty(db, input.conceptId, SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, bloomsNodeId)
   }
 }
 

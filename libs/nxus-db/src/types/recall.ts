@@ -39,6 +39,7 @@ export interface RecallConcept {
   bloomsLevel: string | null
   source: string | null
   relatedConceptTitles: string[]
+  relatedConceptIds: string[]
   card: RecallCard | null
 }
 

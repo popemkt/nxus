@@ -11,7 +11,7 @@ import {
   Sparkle,
 } from '@phosphor-icons/react'
 import { generateConceptsServerFn } from '@/services/generate-concepts.server'
-import { saveConceptServerFn } from '@/services/concepts.server'
+import { saveConceptServerFn, saveConceptsBatchServerFn } from '@/services/concepts.server'
 import { createTopicServerFn } from '@/services/topics.server'
 import type { GeneratedConcept } from '@nxus/mastra'
 
@@ -72,6 +72,35 @@ function ExplorePage() {
     },
   })
 
+  const saveAllMutation = useMutation({
+    mutationFn: async () => {
+      if (!topicId) throw new Error('No topic created')
+      const unsaved = generatedConcepts.filter((c) => !c.saved && !c.dismissed)
+      if (unsaved.length === 0) throw new Error('No concepts to save')
+      const result = await saveConceptsBatchServerFn({
+        data: {
+          topicId,
+          concepts: unsaved.map((c) => ({
+            title: c.title,
+            summary: c.summary,
+            whyItMatters: c.whyItMatters,
+            bloomsLevel: c.bloomsLevel,
+            relatedConceptTitles: c.relatedConceptTitles,
+          })),
+        },
+      })
+      if (!result.success) throw new Error('Failed to save concepts')
+      return result
+    },
+    onSuccess: () => {
+      setGeneratedConcepts((prev) =>
+        prev.map((c) => (c.dismissed ? c : { ...c, saved: true })),
+      )
+      queryClient.invalidateQueries({ queryKey: ['recall-topics'] })
+      queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
+    },
+  })
+
   const handleGenerate = () => {
     if (!topicInput.trim()) return
     setGeneratedConcepts([])
@@ -86,6 +115,7 @@ function ExplorePage() {
   }
 
   const savedCount = generatedConcepts.filter((c) => c.saved).length
+  const unsavedCount = generatedConcepts.filter((c) => !c.saved && !c.dismissed).length
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,22 +192,38 @@ function ExplorePage() {
               <h2 className="text-lg font-semibold">
                 Generated Concepts
               </h2>
-              {savedCount > 0 ? (
-                <button
-                  onClick={() => {
-                    if (topicId) {
-                      navigate({
-                        to: '/topics/$topicId',
-                        params: { topicId },
-                      })
-                    }
-                  }}
-                  className="flex items-center gap-2 text-sm text-primary hover:underline"
-                >
-                  View Topic ({savedCount} saved)
-                  <ArrowLeft size={14} className="rotate-180" />
-                </button>
-              ) : null}
+              <div className="flex items-center gap-3">
+                {unsavedCount > 0 ? (
+                  <button
+                    onClick={() => saveAllMutation.mutate()}
+                    disabled={saveAllMutation.isPending}
+                    className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {saveAllMutation.isPending ? (
+                      <SpinnerGap size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} weight="bold" />
+                    )}
+                    Save All ({unsavedCount})
+                  </button>
+                ) : null}
+                {savedCount > 0 ? (
+                  <button
+                    onClick={() => {
+                      if (topicId) {
+                        navigate({
+                          to: '/topics/$topicId',
+                          params: { topicId },
+                        })
+                      }
+                    }}
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    View Topic ({savedCount} saved)
+                    <ArrowLeft size={14} className="rotate-180" />
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid gap-4">

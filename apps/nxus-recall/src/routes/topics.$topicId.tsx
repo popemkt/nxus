@@ -112,7 +112,8 @@ function TopicDetailPage() {
             {concepts.map((concept) => (
               <div
                 key={concept.id}
-                className="rounded-xl border border-border bg-card p-5"
+                id={`concept-${concept.id}`}
+                className="rounded-xl border border-border bg-card p-5 scroll-mt-24"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -163,16 +164,25 @@ function TopicDetailPage() {
                   </div>
                 </div>
 
-                {concept.relatedConceptTitles.length > 0 ? (
+                {concept.relatedConceptIds.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {concept.relatedConceptTitles.map((title) => (
-                      <span
-                        key={title}
-                        className="rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
-                      >
-                        {title}
-                      </span>
-                    ))}
+                    {concept.relatedConceptIds.map((relatedId, i) => {
+                      const title = concept.relatedConceptTitles[i] ?? relatedId
+                      return (
+                        <button
+                          key={relatedId}
+                          onClick={() => {
+                            document.getElementById(`concept-${relatedId}`)?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                            })
+                          }}
+                          className="rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                        >
+                          {title}
+                        </button>
+                      )
+                    })}
                   </div>
                 ) : null}
               </div>
