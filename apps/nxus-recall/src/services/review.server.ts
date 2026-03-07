@@ -48,6 +48,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       getConceptById,
       updateCardFsrs,
       createReviewLog,
+      clearCachedQuestion,
     } = await import('@nxus/db/server')
     const db = await initDatabaseWithBootstrap()
 
@@ -103,6 +104,9 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       lastReview: now.toISOString(),
       currentBloomsLevel: newBlooms,
     })
+
+    // Clear cached question (it's been used)
+    clearCachedQuestion(db, ctx.data.conceptId)
 
     // Create review log
     createReviewLog(db, {

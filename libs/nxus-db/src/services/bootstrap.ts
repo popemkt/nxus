@@ -555,6 +555,7 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.RECALL_USER_ANSWER, content: 'recallUserAnswer', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_AI_FEEDBACK, content: 'recallAiFeedback', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_RATING, content: 'recallRating', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_CACHED_QUESTION, content: 'recallCachedQuestion', fieldType: 'json' },
   ];
 
   for (const field of commonFields) {

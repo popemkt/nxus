@@ -509,6 +509,33 @@ export function getReviewLogsByConcept(
 }
 
 // ============================================================================
+// Question Cache Operations
+// ============================================================================
+
+/** Get a cached (pre-generated) question for a concept, or null */
+export function getCachedQuestion(db: DatabaseInstance, conceptId: string): unknown | null {
+  const node = assembleNode(db, conceptId)
+  if (!node) return null
+  const raw = getProperty<string>(node, FIELD_NAMES.RECALL_CACHED_QUESTION)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+/** Cache a pre-generated question on a concept node */
+export function setCachedQuestion(db: DatabaseInstance, conceptId: string, question: unknown): void {
+  setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_CACHED_QUESTION, JSON.stringify(question))
+}
+
+/** Clear the cached question after it has been used */
+export function clearCachedQuestion(db: DatabaseInstance, conceptId: string): void {
+  setProperty(db, conceptId, SYSTEM_FIELDS.RECALL_CACHED_QUESTION, '')
+}
+
+// ============================================================================
 // Stats
 // ============================================================================
 

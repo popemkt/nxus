@@ -280,6 +280,7 @@ export const SYSTEM_FIELDS = {
   RECALL_USER_ANSWER: 'field:recall_user_answer' as FieldSystemId,
   RECALL_AI_FEEDBACK: 'field:recall_ai_feedback' as FieldSystemId,
   RECALL_RATING: 'field:recall_rating' as FieldSystemId,
+  RECALL_CACHED_QUESTION: 'field:recall_cached_question' as FieldSystemId,
 } as const
 
 /**
@@ -394,6 +395,7 @@ export const FIELD_NAMES = {
   RECALL_USER_ANSWER: 'recallUserAnswer' as FieldContentName,
   RECALL_AI_FEEDBACK: 'recallAiFeedback' as FieldContentName,
   RECALL_RATING: 'recallRating' as FieldContentName,
+  RECALL_CACHED_QUESTION: 'recallCachedQuestion' as FieldContentName,
 } as const
 
 /**

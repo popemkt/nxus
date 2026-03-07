@@ -73,6 +73,20 @@ function buildCleanEnv(): Record<string, string | undefined> {
   return env
 }
 
+const MAX_RETRIES = 3
+const BASE_DELAY_MS = 1000
+
+/** Exponential backoff with jitter */
+function backoffDelay(attempt: number): number {
+  const delay = BASE_DELAY_MS * Math.pow(2, attempt)
+  const jitter = delay * 0.2 * Math.random()
+  return delay + jitter
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function createClaudeAgentSdkClient(): AiClient {
   return {
     async generateStructured<S extends z.ZodType>(
@@ -85,57 +99,66 @@ function createClaudeAgentSdkClient(): AiClient {
         $refStrategy: 'none',
       })
 
-      // Build a clean env with only system vars + auth (like AutoMaker pattern).
-      // This avoids leaking CLAUDECODE and other unwanted vars into the subprocess.
       const env = buildCleanEnv()
 
-      for await (const message of query({
-        prompt: options.prompt,
-        options: {
-          systemPrompt: options.system,
-          model: options.model ?? 'claude-haiku-4-5-20251001',
-          effort: options.effort ?? 'low',
-          outputFormat: {
-            type: 'json_schema',
-            schema: jsonSchema,
-          },
-          maxTurns: 3,
-          // No tools needed — pure structured generation
-          disallowedTools: [
-            'Bash',
-            'Read',
-            'Write',
-            'Edit',
-            'Glob',
-            'Grep',
-            'Agent',
-            'WebFetch',
-            'WebSearch',
-            'NotebookEdit',
-          ],
-          permissionMode: 'bypassPermissions' as const,
-          allowDangerouslySkipPermissions: true,
-          env,
-        },
-      })) {
-        if (message.type === 'result') {
-          const result = message as Record<string, unknown>
-          if (result.subtype !== 'success') {
-            throw new Error(
-              `AI provider returned error: ${String(result.subtype)}`,
-            )
+      let lastError: Error | null = null
+
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          for await (const message of query({
+            prompt: options.prompt,
+            options: {
+              systemPrompt: options.system,
+              model: options.model ?? 'claude-haiku-4-5-20251001',
+              effort: options.effort ?? 'low',
+              outputFormat: {
+                type: 'json_schema',
+                schema: jsonSchema,
+              },
+              maxTurns: 3,
+              disallowedTools: [
+                'Bash',
+                'Read',
+                'Write',
+                'Edit',
+                'Glob',
+                'Grep',
+                'Agent',
+                'WebFetch',
+                'WebSearch',
+                'NotebookEdit',
+              ],
+              permissionMode: 'bypassPermissions' as const,
+              allowDangerouslySkipPermissions: true,
+              env,
+            },
+          })) {
+            if (message.type === 'result') {
+              const result = message as Record<string, unknown>
+              if (result.subtype !== 'success') {
+                throw new Error(
+                  `AI provider returned error: ${String(result.subtype)}`,
+                )
+              }
+              if (result.structured_output) {
+                return options.schema.parse(result.structured_output)
+              }
+              if (typeof result.result === 'string') {
+                return options.schema.parse(JSON.parse(result.result))
+              }
+            }
           }
-          if (result.structured_output) {
-            return options.schema.parse(result.structured_output)
-          }
-          // Fallback: try parsing the text result as JSON
-          if (typeof result.result === 'string') {
-            return options.schema.parse(JSON.parse(result.result))
+
+          throw new Error('No structured output received from AI provider')
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error))
+          if (attempt < MAX_RETRIES - 1) {
+            await sleep(backoffDelay(attempt))
           }
         }
       }
 
-      throw new Error('No structured output received from AI provider')
+      throw lastError ?? new Error('AI generation failed after retries')
     },
   }
 }

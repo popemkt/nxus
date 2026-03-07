@@ -26,5 +26,7 @@ export async function generateConcepts(topic: string) {
     schema: ConceptGenerationResultSchema,
     system: SYSTEM_PROMPT,
     prompt: `Generate learning concepts for the topic: "${topic}"`,
+    model: 'claude-sonnet-4-5-20250514',
+    effort: 'low',
   })
 }
