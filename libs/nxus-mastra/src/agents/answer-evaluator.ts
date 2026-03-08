@@ -1,8 +1,5 @@
-import { generateObject } from 'ai'
-import { createAnthropic } from '@ai-sdk/anthropic'
+import { getAiClient } from '../lib/ai-client.js'
 import { AnswerEvaluationSchema } from '../schemas/evaluation.schema.js'
-
-const anthropic = createAnthropic()
 
 const SYSTEM_PROMPT = `You are a supportive educator evaluating student answers for spaced repetition.
 
@@ -37,11 +34,9 @@ Question: ${input.questionText}
 Model Answer: ${input.modelAnswer}
 Student's Answer: ${input.userAnswer}`
 
-  const { object } = await generateObject({
-    model: anthropic('claude-sonnet-4-20250514'),
+  return getAiClient().generateStructured({
     schema: AnswerEvaluationSchema,
     system: SYSTEM_PROMPT,
     prompt,
   })
-  return object
 }

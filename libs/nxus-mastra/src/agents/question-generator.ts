@@ -1,35 +1,76 @@
-import { generateObject } from 'ai'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { GeneratedQuestionSchema } from '../schemas/question.schema.js'
+import { getAiClient } from '../lib/ai-client.js'
+import {
+  FreeResponseQuestionSchema,
+  MultipleChoiceQuestionSchema,
+  TrueFalseQuestionSchema,
+  FillBlankQuestionSchema,
+  BLOOMS_QUESTION_TYPES,
+  type QuestionType,
+} from '../schemas/question.schema.js'
+import type { BloomsLevel } from '../schemas/concept.schema.js'
 
-const anthropic = createAnthropic()
+const SYSTEM_PROMPTS: Record<QuestionType, string> = {
+  'free-response': `You are an expert educator creating a free-response review question for spaced repetition.
 
-const SYSTEM_PROMPT = `You are an expert educator creating dynamic review questions for spaced repetition.
-
-Your goal is to generate ONE question that tests higher-order thinking — not simple recall.
-
-Question types:
-- Application: "How would you use [concept] to solve [scenario]?"
-- Analysis: "What are the key differences between [concept] and [related concept]?"
-- Comparison: "Compare and contrast [concept A] with [concept B]"
-- Synthesis: "How does [concept] relate to [adjacent concept] in practice?"
-- Evaluation: "When would [concept] be the wrong choice, and why?"
+Generate ONE question that tests the learner's understanding at the specified Bloom's level.
 
 Guidelines:
-- Questions should require understanding, not just memorization
-- Use the adjacent concepts to create cross-concept questions when possible
+- The question should require the learner to explain, apply, or analyze — not just recall a fact
+- Use adjacent concepts for cross-referencing when available
 - The model answer should be thorough but concise (3-5 sentences)
-- Provide 1-3 progressive hints (from subtle to more direct)
-- Vary question types across reviews to maintain engagement`
+- Provide 1-3 progressive hints (from subtle to more direct)`,
+
+  'multiple-choice': `You are an expert educator creating a multiple-choice review question for spaced repetition.
+
+Generate ONE multiple-choice question with 4 answer choices.
+
+Guidelines:
+- One choice must be clearly correct (matching the modelAnswer)
+- Distractors should be plausible but wrong — avoid trick questions
+- The correctIndex must be the zero-based index of the correct choice
+- Provide 1-3 progressive hints
+- The modelAnswer should explain WHY the correct answer is right`,
+
+  'true-false': `You are an expert educator creating a true/false review question for spaced repetition.
+
+Generate ONE true/false statement about the concept.
+
+Guidelines:
+- The statement should test a specific fact or relationship, not a trivial detail
+- correctAnswer must be a boolean (true or false)
+- The modelAnswer should explain why the statement is true or false
+- Provide 1-3 progressive hints`,
+
+  'fill-blank': `You are an expert educator creating a fill-in-the-blank review question for spaced repetition.
+
+Generate ONE fill-in-the-blank question.
+
+Guidelines:
+- The questionText should contain "___" (triple underscore) where the blank goes
+- blankAnswer is the exact word or short phrase that fills the blank
+- The modelAnswer should explain the answer in context
+- Provide 1-3 progressive hints`,
+}
+
+const QUESTION_TYPE_SCHEMAS = {
+  'free-response': FreeResponseQuestionSchema,
+  'multiple-choice': MultipleChoiceQuestionSchema,
+  'true-false': TrueFalseQuestionSchema,
+  'fill-blank': FillBlankQuestionSchema,
+} as const
 
 export interface QuestionGeneratorInput {
   conceptTitle: string
   conceptSummary: string
   bloomsLevel: string | null
+  currentBloomsLevel?: string | null
   adjacentConcepts: Array<{ title: string; summary: string }>
 }
 
 export async function generateQuestion(input: QuestionGeneratorInput) {
+  const effectiveBlooms = (input.currentBloomsLevel ?? input.bloomsLevel ?? 'remember') as BloomsLevel
+  const questionType = pickQuestionType(effectiveBlooms)
+
   const adjacentContext =
     input.adjacentConcepts.length > 0
       ? `\n\nAdjacent concepts for cross-referencing:\n${input.adjacentConcepts
@@ -41,14 +82,17 @@ export async function generateQuestion(input: QuestionGeneratorInput) {
 
 Title: ${input.conceptTitle}
 Summary: ${input.conceptSummary}
-Bloom's Level: ${input.bloomsLevel ?? 'apply'}
+Bloom's Level: ${effectiveBlooms}
 ${adjacentContext}`
 
-  const { object } = await generateObject({
-    model: anthropic('claude-sonnet-4-20250514'),
-    schema: GeneratedQuestionSchema,
-    system: SYSTEM_PROMPT,
+  return getAiClient().generateStructured({
+    schema: QUESTION_TYPE_SCHEMAS[questionType],
+    system: SYSTEM_PROMPTS[questionType],
     prompt,
   })
-  return object
+}
+
+function pickQuestionType(blooms: BloomsLevel): QuestionType {
+  const allowed = BLOOMS_QUESTION_TYPES[blooms]
+  return allowed[Math.floor(Math.random() * allowed.length)]!
 }

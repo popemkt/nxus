@@ -4,6 +4,15 @@ import type { Item, ItemCommand } from '@nxus/db'
 import { getDocContentServerFn } from '@/services/apps/docs.server'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { CommandButton } from '@/components/features/app-detail/commands/command-button'
+import { ItemMentionCard } from '@/components/features/app-detail/mentions/item-mention-card'
+
+function UnknownMentionBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-block px-2 py-1 text-xs bg-destructive/10 text-destructive rounded">
+      {label}
+    </span>
+  )
+}
 
 interface DocViewerProps {
   appId: string
@@ -48,7 +57,7 @@ export function DocViewer({
         }
       } catch (err) {
         if (!cancelled) {
-          setError((err as Error).message)
+          setError(err instanceof Error ? err.message : String(err))
         }
       } finally {
         if (!cancelled) {
@@ -77,7 +86,9 @@ export function DocViewer({
     // Split content by command syntax - supports both formats:
     // {{command:command-id}} - looks up in current app
     // {{command:app-id:command-id}} - looks up in specified app
-    const parts = content.split(/(\{\{command:[\w-]+(?::[\w-]+)?\}\})/g)
+    const parts = content.split(
+      /(\{\{command:[\w-]+(?::[\w-]+)?\}\}|\{\{item:[\w-]+\}\})/g,
+    )
 
     return parts.map((part, index) => {
       // Try cross-app format first: {{command:app-id:command-id}}
@@ -91,7 +102,7 @@ export function DocViewer({
         if (targetAppResult.success) {
           const targetApp = targetAppResult.data
           const command = targetApp.commands?.find(
-            (c: ItemCommand) => c.id === commandId,
+            (c) => c.id === commandId,
           )
           if (command) {
             return (
@@ -108,12 +119,10 @@ export function DocViewer({
         }
 
         return (
-          <span
+          <UnknownMentionBadge
             key={index}
-            className="inline-block px-2 py-1 text-xs bg-destructive/10 text-destructive rounded"
-          >
-            Unknown command: {targetAppId}:{commandId}
-          </span>
+            label={`Unknown command: ${targetAppId}:${commandId}`}
+          />
         )
       }
 
@@ -138,12 +147,32 @@ export function DocViewer({
 
         // Command not found - show placeholder
         return (
-          <span
+          <UnknownMentionBadge
             key={index}
-            className="inline-block px-2 py-1 text-xs bg-destructive/10 text-destructive rounded"
-          >
-            Unknown command: {commandId}
-          </span>
+            label={`Unknown command: ${commandId}`}
+          />
+        )
+      }
+
+      // Item mention: {{item:item-id}}
+      const itemMatch = part.match(/^\{\{item:([\w-]+)\}\}$/)
+      if (itemMatch) {
+        const itemId = itemMatch[1]
+        const itemResult = appRegistryService.getAppById(itemId)
+
+        if (itemResult.success) {
+          return (
+            <div key={index} className="my-3">
+              <ItemMentionCard item={itemResult.data} />
+            </div>
+          )
+        }
+
+        return (
+          <UnknownMentionBadge
+            key={index}
+            label={`Unknown item: ${itemId}`}
+          />
         )
       }
 
@@ -217,7 +246,7 @@ export function DocViewer({
         </Markdown>
       )
     })
-  }, [content, commandsById, app, onExecuteCommand])
+  }, [content, commandsById, app.id, onExecuteCommand])
 
   if (loading) {
     return (

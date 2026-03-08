@@ -3,6 +3,7 @@ import {
   Cube,
   Graph,
   CalendarBlank,
+  Brain,
   GearSix,
   Terminal,
   Clock,
@@ -14,6 +15,7 @@ const iconMap = {
   cube: Cube,
   graph: Graph,
   calendar: CalendarBlank,
+  brain: Brain,
 } as const
 
 /* Reusable spotlight panel */

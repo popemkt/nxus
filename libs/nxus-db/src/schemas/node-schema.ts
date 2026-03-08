@@ -133,7 +133,32 @@ export const SYSTEM_SUPERTAGS = {
   RECALL_TOPIC: 'supertag:recall-topic',
   RECALL_CONCEPT: 'supertag:recall-concept',
   RECALL_REVIEW_LOG: 'supertag:recall-review-log',
+  RECALL_BLOOM_LEVEL: 'supertag:recall-bloom-level',
+  RECALL_SESSION: 'supertag:recall-session',
 } as const
+
+/**
+ * System node IDs for seeded Bloom's level nodes.
+ * These are well-known IDs that code can reference directly.
+ */
+export const BLOOM_LEVEL_NODES = {
+  REMEMBER: 'bloom:remember',
+  UNDERSTAND: 'bloom:understand',
+  APPLY: 'bloom:apply',
+  ANALYZE: 'bloom:analyze',
+  EVALUATE: 'bloom:evaluate',
+  CREATE: 'bloom:create',
+} as const
+
+/** Ordered Bloom's level system IDs (lowest → highest) */
+export const BLOOM_LEVEL_ORDER = [
+  BLOOM_LEVEL_NODES.REMEMBER,
+  BLOOM_LEVEL_NODES.UNDERSTAND,
+  BLOOM_LEVEL_NODES.APPLY,
+  BLOOM_LEVEL_NODES.ANALYZE,
+  BLOOM_LEVEL_NODES.EVALUATE,
+  BLOOM_LEVEL_NODES.CREATE,
+] as const
 
 /**
  * System query IDs — for persisted query nodes discoverable in the workbench.
@@ -238,6 +263,7 @@ export const SYSTEM_FIELDS = {
   RECALL_SUMMARY: 'field:recall_summary' as FieldSystemId,
   RECALL_WHY_IT_MATTERS: 'field:recall_why_it_matters' as FieldSystemId,
   RECALL_BLOOMS_LEVEL: 'field:recall_blooms_level' as FieldSystemId,
+  RECALL_CURRENT_BLOOMS_LEVEL: 'field:recall_current_blooms_level' as FieldSystemId,
   RECALL_SOURCE: 'field:recall_source' as FieldSystemId,
   RECALL_RELATED_CONCEPTS: 'field:recall_related_concepts' as FieldSystemId,
   RECALL_DUE: 'field:recall_due' as FieldSystemId,
@@ -254,6 +280,14 @@ export const SYSTEM_FIELDS = {
   RECALL_USER_ANSWER: 'field:recall_user_answer' as FieldSystemId,
   RECALL_AI_FEEDBACK: 'field:recall_ai_feedback' as FieldSystemId,
   RECALL_RATING: 'field:recall_rating' as FieldSystemId,
+  RECALL_CACHED_QUESTION: 'field:recall_cached_question' as FieldSystemId,
+  RECALL_REVIEW_STATE: 'field:recall_review_state' as FieldSystemId,
+  RECALL_REVIEW_SCORE: 'field:recall_review_score' as FieldSystemId,
+  RECALL_REVIEW_TIME_SPENT_MS: 'field:recall_review_time_spent_ms' as FieldSystemId,
+  RECALL_REVIEW_STABILITY_BEFORE: 'field:recall_review_stability_before' as FieldSystemId,
+  RECALL_REVIEW_DIFFICULTY_BEFORE: 'field:recall_review_difficulty_before' as FieldSystemId,
+  RECALL_REVIEW_SCHEDULED_DAYS: 'field:recall_review_scheduled_days' as FieldSystemId,
+  RECALL_REVIEW_HINTS_USED: 'field:recall_review_hints_used' as FieldSystemId,
 } as const
 
 /**
@@ -351,6 +385,7 @@ export const FIELD_NAMES = {
   RECALL_SUMMARY: 'recallSummary' as FieldContentName,
   RECALL_WHY_IT_MATTERS: 'recallWhyItMatters' as FieldContentName,
   RECALL_BLOOMS_LEVEL: 'recallBloomsLevel' as FieldContentName,
+  RECALL_CURRENT_BLOOMS_LEVEL: 'recallCurrentBloomsLevel' as FieldContentName,
   RECALL_SOURCE: 'recallSource' as FieldContentName,
   RECALL_RELATED_CONCEPTS: 'recallRelatedConcepts' as FieldContentName,
   RECALL_DUE: 'recallDue' as FieldContentName,
@@ -367,6 +402,14 @@ export const FIELD_NAMES = {
   RECALL_USER_ANSWER: 'recallUserAnswer' as FieldContentName,
   RECALL_AI_FEEDBACK: 'recallAiFeedback' as FieldContentName,
   RECALL_RATING: 'recallRating' as FieldContentName,
+  RECALL_CACHED_QUESTION: 'recallCachedQuestion' as FieldContentName,
+  RECALL_REVIEW_STATE: 'recallReviewState' as FieldContentName,
+  RECALL_REVIEW_SCORE: 'recallReviewScore' as FieldContentName,
+  RECALL_REVIEW_TIME_SPENT_MS: 'recallReviewTimeSpentMs' as FieldContentName,
+  RECALL_REVIEW_STABILITY_BEFORE: 'recallReviewStabilityBefore' as FieldContentName,
+  RECALL_REVIEW_DIFFICULTY_BEFORE: 'recallReviewDifficultyBefore' as FieldContentName,
+  RECALL_REVIEW_SCHEDULED_DAYS: 'recallReviewScheduledDays' as FieldContentName,
+  RECALL_REVIEW_HINTS_USED: 'recallReviewHintsUsed' as FieldContentName,
 } as const
 
 /**

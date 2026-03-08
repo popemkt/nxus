@@ -57,8 +57,10 @@ function miniAppProxy(): Plugin {
         )
 
         proxyReq.on('error', () => {
-          // Upstream app not running yet — let the gateway handle it
-          next()
+          if (!res.headersSent) {
+            res.writeHead(502, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Upstream app not reachable' }))
+          }
         })
 
         req.pipe(proxyReq, { end: true })
