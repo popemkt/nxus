@@ -16,8 +16,7 @@ test.describe('Workbench Graph View', () => {
     // Click the Graph View button in the sidebar
     await page.getByRole('button', { name: 'Graph View' }).click()
 
-    // Wait for graph to render — look for ReactFlow container or canvas
-    const reactFlowContainer = page.locator('.react-flow')
+    // Wait for graph to render — look for canvas element
     const canvasElement = page.locator('canvas').first()
     const emptyGraph = page.getByText('No nodes to display')
     const loadingGraph = page.getByText('Loading graph data...')
@@ -29,7 +28,7 @@ test.describe('Workbench Graph View', () => {
 
     // Either graph canvas renders or empty state shows
     await expect(
-      reactFlowContainer.or(canvasElement).or(emptyGraph)
+      canvasElement.or(emptyGraph)
     ).toBeVisible({ timeout: 15000 })
 
     // Verify the search input from list view is no longer visible
@@ -46,14 +45,14 @@ test.describe('Workbench Graph View', () => {
     await page.getByRole('button', { name: 'Graph View' }).click()
 
     // Wait for graph to render
-    const reactFlowContainer = page.locator('.react-flow')
+    const canvasElement = page.locator('canvas').first()
     const emptyGraph = page.getByText('No nodes to display')
     const loadingGraph = page.getByText('Loading graph data...')
 
     if (await loadingGraph.isVisible({ timeout: 1000 }).catch(() => false)) {
       await expect(loadingGraph).toBeHidden({ timeout: 15000 })
     }
-    await expect(reactFlowContainer.or(emptyGraph)).toBeVisible({ timeout: 15000 })
+    await expect(canvasElement.or(emptyGraph)).toBeVisible({ timeout: 15000 })
 
     if (await emptyGraph.isVisible().catch(() => false)) {
       test.skip(true, 'No nodes in graph')
@@ -64,14 +63,13 @@ test.describe('Workbench Graph View', () => {
     const inspector = page.getByTestId('node-inspector-panel')
     await expect(inspector).toBeHidden()
 
-    // The graph (ReactFlow) container should take the full available width
+    // The graph canvas should take the full available width
     // (no inspector panel eating into the space)
     const viewportWidth = page.viewportSize()?.width ?? 1280
-    const rfBox = await reactFlowContainer.boundingBox()
-    expect(rfBox).toBeTruthy()
+    const canvasBox = await canvasElement.boundingBox()
+    expect(canvasBox).toBeTruthy()
 
-    // The ReactFlow container should span most of the viewport
-    // (minus the sidebar ~60px)
-    expect(rfBox!.width).toBeGreaterThan(viewportWidth * 0.8)
+    // The canvas should span most of the viewport (minus the sidebar ~60px)
+    expect(canvasBox!.width).toBeGreaterThan(viewportWidth * 0.8)
   })
 })
