@@ -16,6 +16,31 @@ import { GlobalCommandParamsModal } from '@/components/features/command-params/g
 
 import { queryClient } from '@/lib/query-client'
 
+// ---------------------------------------------------------------------------
+// Module-scope theme application — runs synchronously before React renders.
+// The inline <script> in <head> handles the very first paint; this catches
+// any case where the module loads after the script has already run (e.g. SPA
+// navigation) and keeps classes in sync with localStorage.
+// ---------------------------------------------------------------------------
+function applyStoredTheme(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const stored = localStorage.getItem('nxus-theme')
+    if (!stored) return
+    const state = JSON.parse(stored).state
+    const colorMode = state?.colorMode || 'dark'
+    const palette = state?.palette || 'default'
+    const root = document.documentElement
+
+    themeOptions.forEach((t) => root.classList.remove(t.value))
+    root.classList.remove('dark')
+
+    if (colorMode === 'dark') root.classList.add('dark')
+    if (palette !== 'default') root.classList.add(palette)
+  } catch { /* ignore */ }
+}
+applyStoredTheme()
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
