@@ -17,6 +17,8 @@ const config = defineConfig({
     viteReact(),
   ],
   server: {
+    port: 3003,
+    strictPort: true,
     watch: {
       ignored: [
         '**/packages/repos/**',

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -57,3 +58,18 @@ export const useThemeStore = create<ThemeState>()(
     },
   ),
 )
+
+/**
+ * Hook to track whether Zustand persist has finished hydrating from localStorage.
+ * Use this to prevent components from acting on stale default values before
+ * the store has loaded the real persisted state.
+ */
+export function useThemeHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(useThemeStore.persist.hasHydrated())
+  useEffect(() => {
+    if (!hydrated) {
+      return useThemeStore.persist.onFinishHydration(() => setHydrated(true))
+    }
+  }, [hydrated])
+  return hydrated
+}
