@@ -86,6 +86,8 @@ export class SurrealBackend implements NodeBackend {
 
   // Cache: field system_id → field RecordId string
   private fieldIdCache = new Map<string, string>()
+  // Cache: supertag system_id → supertag RecordId string
+  private supertagIdCache = new Map<string, string | null>()
 
   async init(): Promise<void> {
     if (this.initialized) return
@@ -144,14 +146,19 @@ export class SurrealBackend implements NodeBackend {
    * Resolve a supertag system_id (e.g., 'supertag:item') to its SurrealDB record ID string.
    */
   private async resolveSupertagId(supertagSystemId: string): Promise<string | null> {
+    if (this.supertagIdCache.has(supertagSystemId)) {
+      return this.supertagIdCache.get(supertagSystemId)!
+    }
+
     const db = this.ensureInitialized()
     const [results] = await db.query<[Array<{ id: RecordId }>]>(
       `SELECT id FROM supertag WHERE system_id = $systemId LIMIT 1`,
       { systemId: supertagSystemId },
     )
 
-    if (!results || results.length === 0) return null
-    return rid(results[0].id)
+    const resolved = (!results || results.length === 0) ? null : rid(results[0].id)
+    this.supertagIdCache.set(supertagSystemId, resolved)
+    return resolved
   }
 
   // ---------------------------------------------------------------------------

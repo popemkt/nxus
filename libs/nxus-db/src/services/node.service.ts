@@ -7,7 +7,7 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
 import {
@@ -139,9 +139,11 @@ export function getAncestorSupertags(
     const extendsProp = db
       .select()
       .from(nodeProperties)
-      .where(eq(nodeProperties.nodeId, currentId))
-      .all()
-      .find((p) => p.fieldNodeId === extendsField.id)
+      .where(and(
+        eq(nodeProperties.nodeId, currentId),
+        eq(nodeProperties.fieldNodeId, extendsField.id),
+      ))
+      .get()
 
     if (!extendsProp) break
 
@@ -385,6 +387,144 @@ export function assembleNode(
 }
 
 /**
+ * Batch-assemble multiple nodes in minimal queries.
+ * Uses 4 queries total instead of N * (2 + M + K) queries.
+ */
+export function assembleNodes(
+  db: ReturnType<typeof getDatabase>,
+  nodeIds: string[],
+): AssembledNode[] {
+  if (nodeIds.length === 0) return []
+
+  // 1. Batch fetch all nodes
+  const allNodeRows = db.select().from(nodes).where(inArray(nodes.id, nodeIds)).all()
+  const nodeMap = new Map(allNodeRows.map((n) => [n.id, n]))
+
+  // 2. Batch fetch all properties for these nodes
+  const allProps = db
+    .select()
+    .from(nodeProperties)
+    .where(inArray(nodeProperties.nodeId, nodeIds))
+    .all()
+
+  // 3. Collect unique field node IDs and batch fetch them
+  const fieldNodeIdSet = new Set<string>()
+  for (const prop of allProps) {
+    fieldNodeIdSet.add(prop.fieldNodeId)
+  }
+  const fieldNodeIds = [...fieldNodeIdSet]
+  const fieldRows =
+    fieldNodeIds.length > 0
+      ? db.select().from(nodes).where(inArray(nodes.id, fieldNodeIds)).all()
+      : []
+  const fieldCache = new Map<string, { content: string; systemId: string | null }>()
+  for (const fn of fieldRows) {
+    fieldCache.set(fn.id, { content: fn.content || '', systemId: fn.systemId })
+  }
+
+  // 4. Identify supertag property values and batch fetch supertag nodes
+  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+  const supertagFieldId = supertagField?.id
+
+  const supertagNodeIdSet = new Set<string>()
+  for (const prop of allProps) {
+    if (prop.fieldNodeId === supertagFieldId) {
+      try {
+        const value = JSON.parse(prop.value || 'null')
+        if (typeof value === 'string') supertagNodeIdSet.add(value)
+      } catch {
+        // skip malformed
+      }
+    }
+  }
+  const supertagNodeIds = [...supertagNodeIdSet]
+  const supertagRows =
+    supertagNodeIds.length > 0
+      ? db.select().from(nodes).where(inArray(nodes.id, supertagNodeIds)).all()
+      : []
+  const supertagCache = new Map<
+    string,
+    { id: string; content: string; systemId: string | null }
+  >()
+  for (const sn of supertagRows) {
+    supertagCache.set(sn.id, {
+      id: sn.id,
+      content: sn.content || '',
+      systemId: sn.systemId,
+    })
+  }
+
+  // 5. Group properties by nodeId
+  const propsByNode = new Map<string, typeof allProps>()
+  for (const prop of allProps) {
+    if (!propsByNode.has(prop.nodeId)) propsByNode.set(prop.nodeId, [])
+    propsByNode.get(prop.nodeId)!.push(prop)
+  }
+
+  // 6. Assemble each node
+  const results: AssembledNode[] = []
+  for (const nodeId of nodeIds) {
+    const node = nodeMap.get(nodeId)
+    if (!node) continue
+
+    const props = propsByNode.get(nodeId) || []
+    const assembled: AssembledNode = {
+      id: node.id,
+      content: node.content,
+      systemId: node.systemId,
+      ownerId: node.ownerId,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt,
+      deletedAt: node.deletedAt,
+      properties: {},
+      supertags: [],
+    }
+
+    for (const prop of props) {
+      const fieldInfo = fieldCache.get(prop.fieldNodeId)
+      const fieldName = (fieldInfo?.content || prop.fieldNodeId) as FieldContentName
+
+      let parsedValue: unknown = prop.value
+      try {
+        parsedValue = JSON.parse(prop.value || 'null')
+      } catch {
+        // Keep as string
+      }
+
+      const pv: PropertyValue = {
+        value: parsedValue,
+        rawValue: prop.value || '',
+        fieldNodeId: prop.fieldNodeId,
+        fieldName,
+        fieldSystemId: fieldInfo?.systemId || null,
+        order: prop.order || 0,
+      }
+
+      if (!assembled.properties[fieldName]) {
+        assembled.properties[fieldName] = []
+      }
+      assembled.properties[fieldName].push(pv)
+
+      // Resolve supertags
+      if (prop.fieldNodeId === supertagFieldId && typeof parsedValue === 'string') {
+        const stNode = supertagCache.get(parsedValue)
+        if (stNode) {
+          assembled.supertags.push({
+            id: stNode.id,
+            content: stNode.content,
+            systemId: stNode.systemId,
+          })
+        }
+      }
+    }
+
+    results.push(assembled)
+  }
+
+  return results
+}
+
+/**
  * Assemble a node with inherited properties from supertag chain
  *
  * This walks the supertag inheritance chain (field:extends) and merges
@@ -586,9 +726,12 @@ export function setProperty(
   const existing = db
     .select()
     .from(nodeProperties)
-    .where(eq(nodeProperties.nodeId, nodeId))
-    .all()
-    .find((p) => p.fieldNodeId === field.id && p.order === order)
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, field.id),
+      eq(nodeProperties.order, order),
+    ))
+    .get()
 
   let beforeValue: unknown = undefined
   if (existing) {
@@ -642,11 +785,13 @@ export function addPropertyValue(
 
   // Get current max order
   const existing = db
-    .select()
+    .select({ order: nodeProperties.order })
     .from(nodeProperties)
-    .where(eq(nodeProperties.nodeId, nodeId))
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, field.id),
+    ))
     .all()
-    .filter((p) => p.fieldNodeId === field.id)
 
   const maxOrder = existing.reduce((max, p) => Math.max(max, p.order || 0), -1)
 
@@ -689,9 +834,11 @@ export function clearProperty(
   const props = db
     .select()
     .from(nodeProperties)
-    .where(eq(nodeProperties.nodeId, nodeId))
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, field.id),
+    ))
     .all()
-    .filter((p) => p.fieldNodeId === field.id)
 
   // Collect beforeValues for event emission
   const beforeValues: unknown[] = []
@@ -704,8 +851,14 @@ export function clearProperty(
   }
 
   const now = new Date()
-  for (const prop of props) {
-    db.delete(nodeProperties).where(eq(nodeProperties.id, prop.id)).run()
+  // Batch delete all properties for this field
+  if (props.length > 0) {
+    db.delete(nodeProperties)
+      .where(and(
+        eq(nodeProperties.nodeId, nodeId),
+        eq(nodeProperties.fieldNodeId, field.id),
+      ))
+      .run()
   }
 
   // Emit property:removed event for each removed value
@@ -759,19 +912,15 @@ export function getNodeIdsBySupertagWithInheritance(
 
   const allSupertagIds = new Set<string>([targetSupertag.id])
 
-  // Find child supertags (single level for now)
+  // Find child supertags that extend the target (single level)
   const childSupertags = db
     .select()
     .from(nodeProperties)
-    .where(eq(nodeProperties.fieldNodeId, extendsField.id))
+    .where(and(
+      eq(nodeProperties.fieldNodeId, extendsField.id),
+      eq(nodeProperties.value, JSON.stringify(targetSupertag.id)),
+    ))
     .all()
-    .filter((p) => {
-      try {
-        return JSON.parse(p.value || '') === targetSupertag.id
-      } catch {
-        return false
-      }
-    })
 
   for (const child of childSupertags) {
     allSupertagIds.add(child.nodeId)
@@ -780,27 +929,26 @@ export function getNodeIdsBySupertagWithInheritance(
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   if (!supertagField) return []
 
-  const nodeIds: string[] = []
-  for (const stId of allSupertagIds) {
-    const withSupertag = db
-      .select()
-      .from(nodeProperties)
-      .where(eq(nodeProperties.fieldNodeId, supertagField.id))
-      .all()
-      .filter((p) => {
-        try {
-          return JSON.parse(p.value || '') === stId
-        } catch {
-          return false
-        }
-      })
+  // Single query: get all supertag property assignments, then filter in memory
+  const allSupertagProps = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
+    .all()
 
-    for (const p of withSupertag) {
-      if (!nodeIds.includes(p.nodeId)) nodeIds.push(p.nodeId)
+  const nodeIdSet = new Set<string>()
+  for (const p of allSupertagProps) {
+    try {
+      const value = JSON.parse(p.value || '')
+      if (allSupertagIds.has(value)) {
+        nodeIdSet.add(p.nodeId)
+      }
+    } catch {
+      // skip malformed
     }
   }
 
-  return nodeIds
+  return [...nodeIdSet]
 }
 
 /**
@@ -811,9 +959,7 @@ export function getNodesBySupertagWithInheritance(
   supertagId: string,
 ): AssembledNode[] {
   const nodeIds = getNodeIdsBySupertagWithInheritance(db, supertagId)
-  return nodeIds
-    .map((id) => assembleNode(db, id))
-    .filter((n): n is AssembledNode => n !== null)
+  return assembleNodes(db, nodeIds)
 }
 
 // ============================================================================
@@ -877,9 +1023,11 @@ export function getNodeSupertags(
   const supertagProps = db
     .select()
     .from(nodeProperties)
-    .where(eq(nodeProperties.nodeId, nodeId))
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, supertagField.id),
+    ))
     .all()
-    .filter((p) => p.fieldNodeId === supertagField.id)
 
   const supertags: SupertagInfo[] = []
   for (const prop of supertagProps) {
@@ -1051,16 +1199,12 @@ export function removeNodeSupertag(
   const props = db
     .select()
     .from(nodeProperties)
-    .where(eq(nodeProperties.nodeId, nodeId))
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, supertagField.id),
+      eq(nodeProperties.value, JSON.stringify(supertagNode.id)),
+    ))
     .all()
-    .filter((p) => {
-      if (p.fieldNodeId !== supertagField.id) return false
-      try {
-        return JSON.parse(p.value || '') === supertagNode.id
-      } catch {
-        return false
-      }
-    })
 
   if (props.length === 0) return false
 
@@ -1148,10 +1292,8 @@ export function getNodesBySupertags(
     }
   }
 
-  // Assemble and return nodes
-  return matchingNodeIds
-    .map((id) => assembleNode(db, id))
-    .filter((n): n is AssembledNode => n !== null)
+  // Assemble and return nodes (batch)
+  return assembleNodes(db, matchingNodeIds)
 }
 
 /**

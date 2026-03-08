@@ -68,6 +68,7 @@ export const nodeProperties = sqliteTable(
     index('idx_node_properties_node').on(t.nodeId),
     index('idx_node_properties_field').on(t.fieldNodeId),
     index('idx_node_properties_value').on(t.value), // For backlink queries!
+    index('idx_node_properties_node_field').on(t.nodeId, t.fieldNodeId), // Compound for property lookups
   ],
 )
 
