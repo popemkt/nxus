@@ -9,11 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ImportRouteImport } from './routes/import'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TopicsTopicIdRouteImport } from './routes/topics.$topicId'
 import { Route as ReviewSessionRouteImport } from './routes/review.session'
+import { Route as ReviewCramRouteImport } from './routes/review.cram'
+import { Route as ConceptsConceptIdHistoryRouteImport } from './routes/concepts.$conceptId.history'
 
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
@@ -34,43 +42,95 @@ const ReviewSessionRoute = ReviewSessionRouteImport.update({
   path: '/review/session',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewCramRoute = ReviewCramRouteImport.update({
+  id: '/review/cram',
+  path: '/review/cram',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConceptsConceptIdHistoryRoute =
+  ConceptsConceptIdHistoryRouteImport.update({
+    id: '/concepts/$conceptId/history',
+    path: '/concepts/$conceptId/history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/import': typeof ImportRoute
+  '/review/cram': typeof ReviewCramRoute
   '/review/session': typeof ReviewSessionRoute
   '/topics/$topicId': typeof TopicsTopicIdRoute
+  '/concepts/$conceptId/history': typeof ConceptsConceptIdHistoryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/import': typeof ImportRoute
+  '/review/cram': typeof ReviewCramRoute
   '/review/session': typeof ReviewSessionRoute
   '/topics/$topicId': typeof TopicsTopicIdRoute
+  '/concepts/$conceptId/history': typeof ConceptsConceptIdHistoryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/import': typeof ImportRoute
+  '/review/cram': typeof ReviewCramRoute
   '/review/session': typeof ReviewSessionRoute
   '/topics/$topicId': typeof TopicsTopicIdRoute
+  '/concepts/$conceptId/history': typeof ConceptsConceptIdHistoryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explore' | '/review/session' | '/topics/$topicId'
+  fullPaths:
+    | '/'
+    | '/explore'
+    | '/import'
+    | '/review/cram'
+    | '/review/session'
+    | '/topics/$topicId'
+    | '/concepts/$conceptId/history'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explore' | '/review/session' | '/topics/$topicId'
-  id: '__root__' | '/' | '/explore' | '/review/session' | '/topics/$topicId'
+  to:
+    | '/'
+    | '/explore'
+    | '/import'
+    | '/review/cram'
+    | '/review/session'
+    | '/topics/$topicId'
+    | '/concepts/$conceptId/history'
+  id:
+    | '__root__'
+    | '/'
+    | '/explore'
+    | '/import'
+    | '/review/cram'
+    | '/review/session'
+    | '/topics/$topicId'
+    | '/concepts/$conceptId/history'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExploreRoute: typeof ExploreRoute
+  ImportRoute: typeof ImportRoute
+  ReviewCramRoute: typeof ReviewCramRoute
   ReviewSessionRoute: typeof ReviewSessionRoute
   TopicsTopicIdRoute: typeof TopicsTopicIdRoute
+  ConceptsConceptIdHistoryRoute: typeof ConceptsConceptIdHistoryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explore': {
       id: '/explore'
       path: '/explore'
@@ -99,14 +159,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewSessionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/review/cram': {
+      id: '/review/cram'
+      path: '/review/cram'
+      fullPath: '/review/cram'
+      preLoaderRoute: typeof ReviewCramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/concepts/$conceptId/history': {
+      id: '/concepts/$conceptId/history'
+      path: '/concepts/$conceptId/history'
+      fullPath: '/concepts/$conceptId/history'
+      preLoaderRoute: typeof ConceptsConceptIdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExploreRoute: ExploreRoute,
+  ImportRoute: ImportRoute,
+  ReviewCramRoute: ReviewCramRoute,
   ReviewSessionRoute: ReviewSessionRoute,
   TopicsTopicIdRoute: TopicsTopicIdRoute,
+  ConceptsConceptIdHistoryRoute: ConceptsConceptIdHistoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

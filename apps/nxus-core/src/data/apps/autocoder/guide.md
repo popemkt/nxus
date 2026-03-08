@@ -45,6 +45,14 @@ The start script will:
 - Each feature can be started, paused, or stopped
 - Real-time progress updates via WebSocket
 
+## Related Items
+
+{{item:claude-code}}
+
+{{item:node}}
+
+{{item:nonexistent-item}}
+
 ## Troubleshooting
 
 - Ensure Claude Code is authenticated: `claude login`

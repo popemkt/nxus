@@ -58,8 +58,8 @@ test.describe('Recall Explore & Concept Generation', () => {
     await expect(page.getByText('apply')).toBeVisible()
   })
 
-  test('R7 — Save a concept card', async ({ page }) => {
-    // Generate concepts first
+  test('R7 — Concepts are auto-saved after generation', async ({ page }) => {
+    // Generate concepts
     const searchInput = page.getByPlaceholder(/distributed systems/i)
     await searchInput.fill('Distributed Systems Save Test')
     await page.getByRole('button', { name: 'Generate' }).click()
@@ -69,21 +69,19 @@ test.describe('Recall Explore & Concept Generation', () => {
       page.getByText('Generated Concepts'),
     ).toBeVisible({ timeout: 15000 })
 
-    // Find the first Save button and click it
-    const saveButtons = page.getByRole('button', { name: 'Save' })
-    await expect(saveButtons.first()).toBeVisible()
-    await saveButtons.first().click()
-
-    // The saved concept should show "Saved" badge
+    // All concepts should be auto-saved — "Saved" badges should be visible
     await expect(page.getByText('Saved').first()).toBeVisible({
       timeout: 10000,
     })
 
-    // "View Topic" link should appear after saving
+    // Auto-saved indicator should show count
+    await expect(page.getByText(/Auto-saved \d+ concepts/)).toBeVisible()
+
+    // "View Topic" link should appear after auto-save
     await expect(page.getByText(/View Topic/)).toBeVisible()
   })
 
-  test('R8 — Dismiss a concept card', async ({ page }) => {
+  test('R8 — Remove a concept card', async ({ page }) => {
     // Generate concepts first
     const searchInput = page.getByPlaceholder(/distributed systems/i)
     await searchInput.fill('Distributed Systems Dismiss Test')
@@ -94,15 +92,15 @@ test.describe('Recall Explore & Concept Generation', () => {
       page.getByText('Generated Concepts'),
     ).toBeVisible({ timeout: 15000 })
 
-    // Get the first concept title before dismissing
+    // Get the first concept title before removing
     const firstConceptTitle = MOCK_CONCEPTS[0]!.title
 
-    // Click dismiss button (X icon) on the first concept
-    const dismissBtn = page.locator('button[title="Dismiss"]').first()
-    await expect(dismissBtn).toBeVisible()
-    await dismissBtn.click()
+    // Click remove button (trash icon) on the first concept
+    const removeBtn = page.locator('button[title="Remove concept"]').first()
+    await expect(removeBtn).toBeVisible()
+    await removeBtn.click()
 
-    // The dismissed concept heading should no longer be visible
+    // The removed concept heading should no longer be visible
     await expect(page.getByRole('heading', { name: firstConceptTitle })).toBeHidden()
   })
 })

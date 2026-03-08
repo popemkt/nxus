@@ -280,17 +280,31 @@ export async function seedNodes() {
         ? rawPrimaryType
         : types[0]
 
-    // Merge normalized types into manifest for validation
+    // Normalize tag IDs to strings (some manifests have numeric IDs)
+    const rawMetadata = rawManifest.metadata as Record<string, unknown> | undefined
+    const rawTags = (rawMetadata?.tags ?? []) as Array<unknown>
+    const normalizedTags = rawTags.map((tag) => {
+      if (typeof tag === 'string') return { id: tag, name: tag }
+      if (typeof tag === 'object' && tag !== null) {
+        const t = tag as Record<string, unknown>
+        return { ...t, id: String(t.id ?? t.name ?? '') }
+      }
+      return tag
+    })
+
+    // Merge normalized types and tags into manifest for validation
     const manifest = {
       ...rawManifest,
       types,
       primaryType,
       type: primaryType,
+      metadata: { ...rawMetadata, tags: normalizedTags },
     }
 
     const validationResult = ItemSchema.safeParse(manifest)
     if (!validationResult.success) {
       console.error(`❌ Validation failed for ${appDir}, skipping...`)
+      console.error(`   ${validationResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`)
       continue
     }
 

@@ -20,7 +20,8 @@
     "test:all": "pnpm test && pnpm e2e",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "e2e:headed": "playwright test --headed"
+    "e2e:headed": "playwright test --headed",
+    "lint": "oxlint"
   },
   "private": true,
   "dependencies": {
@@ -39,6 +40,7 @@
     "@swc/helpers": "~0.5.11",
     "@types/node": "20.19.9",
     "nx": "22.3.3",
+    "oxlint": "^1.51.0",
     "prettier": "~3.6.2",
     "tslib": "^2.3.0",
     "typescript": "~5.9.2"

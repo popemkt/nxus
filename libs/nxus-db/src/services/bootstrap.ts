@@ -17,6 +17,7 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_QUERIES,
   SYSTEM_SUPERTAGS,
+  BLOOM_LEVEL_NODES,
 } from '../schemas/node-schema.js';
 
 type DatabaseInstance = BetterSQLite3Database<typeof schema>;
@@ -299,6 +300,8 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_SUPERTAGS.RECALL_TOPIC, content: '#RecallTopic', extends: null },
     { systemId: SYSTEM_SUPERTAGS.RECALL_CONCEPT, content: '#RecallConcept', extends: null },
     { systemId: SYSTEM_SUPERTAGS.RECALL_REVIEW_LOG, content: '#RecallReviewLog', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.RECALL_BLOOM_LEVEL, content: '#BloomLevel', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.RECALL_SESSION, content: '#RecallSession', extends: null },
   ];
 
   for (const st of entitySupertags) {
@@ -538,9 +541,10 @@ export function bootstrapSystemNodesSync(
     // Recall training fields
     { systemId: SYSTEM_FIELDS.RECALL_SUMMARY, content: 'recallSummary', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS, content: 'recallWhyItMatters', fieldType: 'text' },
-    { systemId: SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL, content: 'recallBloomsLevel', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL, content: 'recallBloomsLevel', fieldType: 'node' },
+    { systemId: SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL, content: 'recallCurrentBloomsLevel', fieldType: 'node' },
     { systemId: SYSTEM_FIELDS.RECALL_SOURCE, content: 'recallSource', fieldType: 'text' },
-    { systemId: SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS, content: 'recallRelatedConcepts', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS, content: 'recallRelatedConcepts', fieldType: 'nodes' },
     { systemId: SYSTEM_FIELDS.RECALL_DUE, content: 'recallDue', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_STABILITY, content: 'recallStability', fieldType: 'number' },
     { systemId: SYSTEM_FIELDS.RECALL_DIFFICULTY, content: 'recallDifficulty', fieldType: 'number' },
@@ -555,6 +559,14 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.RECALL_USER_ANSWER, content: 'recallUserAnswer', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_AI_FEEDBACK, content: 'recallAiFeedback', fieldType: 'text' },
     { systemId: SYSTEM_FIELDS.RECALL_RATING, content: 'recallRating', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_CACHED_QUESTION, content: 'recallCachedQuestion', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_STATE, content: 'recallReviewState', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_SCORE, content: 'recallReviewScore', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_TIME_SPENT_MS, content: 'recallReviewTimeSpentMs', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_STABILITY_BEFORE, content: 'recallReviewStabilityBefore', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_DIFFICULTY_BEFORE, content: 'recallReviewDifficultyBefore', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_SCHEDULED_DAYS, content: 'recallReviewScheduledDays', fieldType: 'number' },
+    { systemId: SYSTEM_FIELDS.RECALL_REVIEW_HINTS_USED, content: 'recallReviewHintsUsed', fieldType: 'number' },
   ];
 
   for (const field of commonFields) {
@@ -619,6 +631,29 @@ export function bootstrapSystemNodesSync(
     assignSupertag(db, id, querySupertag, supertagFieldId);
     assignSupertag(db, id, systemId, supertagFieldId, 1);
     setProperty(db, id, queryDefFieldId, JSON.stringify(q.definition));
+  }
+
+  // ============================================================================
+  // Step 6: Seed Bloom's level nodes
+  // ============================================================================
+  if (verbose) console.log('\n[6/6] Creating Bloom\'s level nodes...');
+
+  const bloomLevelSupertag = systemNodeIds.get(SYSTEM_SUPERTAGS.RECALL_BLOOM_LEVEL)!;
+  const bloomLevels = [
+    { systemId: BLOOM_LEVEL_NODES.REMEMBER, content: 'Remember', order: 0 },
+    { systemId: BLOOM_LEVEL_NODES.UNDERSTAND, content: 'Understand', order: 1 },
+    { systemId: BLOOM_LEVEL_NODES.APPLY, content: 'Apply', order: 2 },
+    { systemId: BLOOM_LEVEL_NODES.ANALYZE, content: 'Analyze', order: 3 },
+    { systemId: BLOOM_LEVEL_NODES.EVALUATE, content: 'Evaluate', order: 4 },
+    { systemId: BLOOM_LEVEL_NODES.CREATE, content: 'Create', order: 5 },
+  ];
+
+  const orderFieldId = systemNodeIds.get(SYSTEM_FIELDS.ORDER as string)!;
+  for (const bl of bloomLevels) {
+    const id = upsertSystemNode(db, bl.systemId, bl.content, verbose);
+    assignSupertag(db, id, bloomLevelSupertag, supertagFieldId);
+    assignSupertag(db, id, systemId, supertagFieldId, 1);
+    setProperty(db, id, orderFieldId, JSON.stringify(bl.order));
   }
 
   // ============================================================================

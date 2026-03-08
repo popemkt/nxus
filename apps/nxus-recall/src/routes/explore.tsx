@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { bloomsColors } from '@/lib/blooms-colors'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
@@ -7,11 +8,11 @@ import {
   MagnifyingGlass,
   SpinnerGap,
   Check,
-  X,
   Sparkle,
+  Trash,
 } from '@phosphor-icons/react'
 import { generateConceptsServerFn } from '@/services/generate-concepts.server'
-import { saveConceptServerFn } from '@/services/concepts.server'
+import { saveConceptsBatchServerFn, deleteConceptServerFn } from '@/services/concepts.server'
 import { createTopicServerFn } from '@/services/topics.server'
 import type { GeneratedConcept } from '@nxus/mastra'
 
@@ -25,6 +26,7 @@ function ExplorePage() {
     (GeneratedConcept & { saved?: boolean; dismissed?: boolean })[]
   >([])
   const [topicId, setTopicId] = useState<string | null>(null)
+  const [savedConceptIds, setSavedConceptIds] = useState<string[]>([])
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -33,39 +35,47 @@ function ExplorePage() {
       // Create topic first
       const topicResult = await createTopicServerFn({ data: { name: topic } })
       if (!topicResult.success) throw new Error('Failed to create topic')
-      setTopicId(topicResult.topicId)
+      const newTopicId = topicResult.topicId
+      setTopicId(newTopicId)
 
       // Generate concepts
       const result = await generateConceptsServerFn({ data: { topic } })
       if (!result.success) throw new Error(result.error)
-      return result.concepts
+
+      // Auto-save all concepts immediately
+      const saveResult = await saveConceptsBatchServerFn({
+        data: {
+          topicId: newTopicId,
+          concepts: result.concepts.map((c: GeneratedConcept) => ({
+            title: c.title,
+            summary: c.summary,
+            whyItMatters: c.whyItMatters,
+            bloomsLevel: c.bloomsLevel,
+            relatedConceptTitles: c.relatedConceptTitles,
+          })),
+        },
+      })
+
+      if (!saveResult.success) throw new Error('Failed to save concepts')
+
+      return { concepts: result.concepts, conceptIds: saveResult.conceptIds }
     },
-    onSuccess: (concepts) => {
-      setGeneratedConcepts(concepts.map((c) => ({ ...c })))
+    onSuccess: ({ concepts, conceptIds }) => {
+      setGeneratedConcepts(concepts.map((c: GeneratedConcept) => ({ ...c, saved: true })))
+      setSavedConceptIds(conceptIds)
+      queryClient.invalidateQueries({ queryKey: ['recall-topics'] })
+      queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
     },
   })
 
-  const saveMutation = useMutation({
-    mutationFn: async (concept: GeneratedConcept) => {
-      if (!topicId) throw new Error('No topic created')
-      const result = await saveConceptServerFn({
-        data: {
-          topicId,
-          title: concept.title,
-          summary: concept.summary,
-          whyItMatters: concept.whyItMatters,
-          bloomsLevel: concept.bloomsLevel,
-          relatedConceptTitles: concept.relatedConceptTitles,
-        },
-      })
-      if (!result.success) throw new Error('Failed to save concept')
-      return result.conceptId
+  const deleteConceptMutation = useMutation({
+    mutationFn: async ({ conceptId, title }: { conceptId: string; title: string }) => {
+      await deleteConceptServerFn({ data: { conceptId } })
+      return { conceptId, title }
     },
-    onSuccess: (_conceptId, concept) => {
+    onSuccess: ({ title }) => {
       setGeneratedConcepts((prev) =>
-        prev.map((c) =>
-          c.title === concept.title ? { ...c, saved: true } : c,
-        ),
+        prev.map((c) => (c.title === title ? { ...c, dismissed: true } : c)),
       )
       queryClient.invalidateQueries({ queryKey: ['recall-topics'] })
       queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
@@ -76,16 +86,24 @@ function ExplorePage() {
     if (!topicInput.trim()) return
     setGeneratedConcepts([])
     setTopicId(null)
+    setSavedConceptIds([])
     generateMutation.mutate(topicInput.trim())
   }
 
   const handleDismiss = (title: string) => {
-    setGeneratedConcepts((prev) =>
-      prev.map((c) => (c.title === title ? { ...c, dismissed: true } : c)),
-    )
+    const idx = generatedConcepts.findIndex((c) => c.title === title)
+    if (idx === -1) return
+    const conceptId = savedConceptIds[idx]
+    if (conceptId) {
+      deleteConceptMutation.mutate({ conceptId, title })
+    } else {
+      setGeneratedConcepts((prev) =>
+        prev.map((c) => (c.title === title ? { ...c, dismissed: true } : c)),
+      )
+    }
   }
 
-  const savedCount = generatedConcepts.filter((c) => c.saved).length
+  const savedCount = generatedConcepts.filter((c) => c.saved && !c.dismissed).length
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,22 +180,26 @@ function ExplorePage() {
               <h2 className="text-lg font-semibold">
                 Generated Concepts
               </h2>
-              {savedCount > 0 ? (
-                <button
-                  onClick={() => {
-                    if (topicId) {
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Check size={14} weight="bold" className="text-success" />
+                  Auto-saved {savedCount} concepts
+                </span>
+                {topicId ? (
+                  <button
+                    onClick={() => {
                       navigate({
                         to: '/topics/$topicId',
                         params: { topicId },
                       })
-                    }
-                  }}
-                  className="flex items-center gap-2 text-sm text-primary hover:underline"
-                >
-                  View Topic ({savedCount} saved)
-                  <ArrowLeft size={14} className="rotate-180" />
-                </button>
-              ) : null}
+                    }}
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    View Topic
+                    <ArrowLeft size={14} className="rotate-180" />
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid gap-4">
@@ -185,12 +207,7 @@ function ExplorePage() {
                 <ConceptCard
                   key={concept.title}
                   concept={concept}
-                  onSave={() => saveMutation.mutate(concept)}
                   onDismiss={() => handleDismiss(concept.title)}
-                  isSaving={
-                    saveMutation.isPending &&
-                    saveMutation.variables?.title === concept.title
-                  }
                 />
               ))}
             </div>
@@ -203,34 +220,15 @@ function ExplorePage() {
 
 function ConceptCard({
   concept,
-  onSave,
   onDismiss,
-  isSaving,
 }: {
   concept: GeneratedConcept & { saved?: boolean; dismissed?: boolean }
-  onSave: () => void
   onDismiss: () => void
-  isSaving: boolean
 }) {
   if (concept.dismissed) return null
 
-  const bloomsColors: Record<string, string> = {
-    remember: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    understand: 'bg-green-500/10 text-green-600 dark:text-green-400',
-    apply: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
-    analyze: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-    evaluate: 'bg-red-500/10 text-red-600 dark:text-red-400',
-    create: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  }
-
   return (
-    <div
-      className={`rounded-xl border p-5 transition-all ${
-        concept.saved
-          ? 'border-success/30 bg-success/5'
-          : 'border-border bg-card'
-      }`}
-    >
+    <div className="rounded-xl border border-success/30 bg-success/5 p-5 transition-all">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="mb-1 flex items-center gap-2">
@@ -246,34 +244,19 @@ function ConceptCard({
           <p className="text-sm text-muted-foreground">{concept.summary}</p>
         </div>
 
-        {concept.saved ? (
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-lg bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
             <Check size={14} weight="bold" />
             Saved
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onDismiss}
-              className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              title="Dismiss"
-            >
-              <X size={16} />
-            </button>
-            <button
-              onClick={onSave}
-              disabled={isSaving}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isSaving ? (
-                <SpinnerGap size={14} className="animate-spin" />
-              ) : (
-                <Check size={14} weight="bold" />
-              )}
-              Save
-            </button>
-          </div>
-        )}
+          <button
+            onClick={onDismiss}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            title="Remove concept"
+          >
+            <Trash size={14} />
+          </button>
+        </div>
       </div>
 
       {concept.whyItMatters ? (
@@ -284,7 +267,7 @@ function ConceptCard({
 
       {concept.relatedConceptTitles.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {concept.relatedConceptTitles.map((title) => (
+          {concept.relatedConceptTitles.map((title: string) => (
             <span
               key={title}
               className="rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
