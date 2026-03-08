@@ -24,6 +24,8 @@ const config = defineConfig({
     viteReact(),
   ],
   server: {
+    port: 3000,
+    strictPort: true,
     watch: {
       // Exclude unnecessary folders from file watching to prevent "too many open files" error
       ignored: [

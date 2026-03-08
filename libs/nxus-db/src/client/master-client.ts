@@ -54,6 +54,11 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   // Enable WAL mode for better concurrency
   masterDb.pragma('journal_mode = WAL')
+  // Performance PRAGMAs (safe with WAL mode)
+  masterDb.pragma('synchronous = NORMAL')
+  masterDb.pragma('cache_size = -64000') // 64MB page cache
+  masterDb.pragma('mmap_size = 268435456') // 256MB mmap
+  masterDb.pragma('temp_store = MEMORY')
 
   masterDrizzleDb = drizzle(masterDb, { schema })
 
@@ -253,6 +258,14 @@ export function initDatabase(): BetterSQLite3Database<typeof schema> {
 
   masterDb.exec(`
     CREATE INDEX IF NOT EXISTS idx_node_properties_value ON node_properties(value)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_node_properties_node_field ON node_properties(node_id, field_node_id)
+  `)
+
+  masterDb.exec(`
+    CREATE INDEX IF NOT EXISTS idx_nodes_not_deleted ON nodes(id) WHERE deleted_at IS NULL
   `)
 
   // No need to manually save - better-sqlite3 persists automatically

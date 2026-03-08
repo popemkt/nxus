@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Cube, Graph, CalendarBlank, Brain, ArrowRight } from '@phosphor-icons/react'
 import { Card, CardHeader, CardTitle, CardDescription } from '@nxus/ui'
@@ -97,8 +97,16 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   tarot: CosmicTarotCards,
 }
 
+// Module-scope — resolved before component renders on client, avoids visual flash
+const initialVisual: VisualStyle = typeof window !== 'undefined' ? getStoredVisual() : 'default'
+
 function GatewayPage() {
-  const [visual, setVisual] = useState<VisualStyle>(getStoredVisual)
+  const [visual, setVisual] = useState<VisualStyle>(initialVisual)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleVisualChange = (v: VisualStyle) => {
     setVisual(v)
@@ -110,7 +118,7 @@ function GatewayPage() {
   return (
     <>
       <VisualComponent apps={miniApps} />
-      <VisualSwitcher current={visual} onChange={handleVisualChange} />
+      {mounted && <VisualSwitcher current={visual} onChange={handleVisualChange} />}
     </>
   )
 }
