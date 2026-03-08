@@ -15,3 +15,10 @@ export interface SupertagBadge {
 }
 
 export type NodeMap = Map<string, OutlineNode>
+
+/**
+ * Virtual root node ID for the workspace level.
+ * This node doesn't exist in the DB — it's a local-only container
+ * whose children are the top-level nodes (ownerId = null in DB).
+ */
+export const WORKSPACE_ROOT_ID = '__workspace__'

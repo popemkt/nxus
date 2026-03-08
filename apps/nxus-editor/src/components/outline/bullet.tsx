@@ -5,7 +5,7 @@ interface BulletProps {
   collapsed: boolean
   childCount: number
   tagColor: string | null
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
 }
 
 export function Bullet({
@@ -23,10 +23,10 @@ export function Bullet({
         'bullet-container group/bullet relative flex shrink-0 items-center justify-center',
         'w-6 h-6 rounded-sm',
         'hover:bg-foreground/5 transition-colors duration-100',
-        hasChildren && 'cursor-pointer',
-        !hasChildren && 'cursor-default',
+        'cursor-pointer',
       )}
       tabIndex={-1}
+      title={hasChildren ? 'Click to toggle, Cmd+click to focus' : 'Cmd+click to focus'}
       aria-label={
         hasChildren
           ? collapsed

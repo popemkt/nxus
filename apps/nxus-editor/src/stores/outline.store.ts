@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { NodeMap, OutlineNode } from '@/types/outline'
+import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 interface OutlineState {
   nodes: NodeMap
@@ -65,7 +66,7 @@ function getVisibleNodesRecursive(
 
 export const useOutlineStore = create<OutlineState>((set, get) => ({
   nodes: new Map(),
-  rootNodeId: 'root',
+  rootNodeId: WORKSPACE_ROOT_ID,
   activeNodeId: null,
   selectedNodeId: null,
   cursorPosition: 0,

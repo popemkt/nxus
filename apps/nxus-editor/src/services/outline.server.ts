@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { getSupertagColor } from '@/lib/supertag-colors'
 
 /**
  * Get a node and its children (one level deep), assembled with properties/supertags.
@@ -40,10 +41,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       const assembled = assembleNode(db, nodeId)
       if (!assembled || assembled.deletedAt) return
 
-      const orderValue = getProperty<number>(assembled, FIELD_NAMES.ORDER)
-      const colorValue = assembled.supertags.length > 0
-        ? getProperty<string>(assembled, FIELD_NAMES.COLOR) ?? null
-        : null
+      const orderValue = getProperty(assembled, FIELD_NAMES.ORDER) as number | undefined
 
       const outlineNode: OutlineNode = {
         id: assembled.id,
@@ -52,11 +50,14 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         children: [],
         order: String(orderValue ?? 0).padStart(8, '0'),
         collapsed: false,
-        supertags: assembled.supertags.map((st) => ({
-          id: st.id,
-          name: st.content,
-          color: null,
-        })),
+        supertags: assembled.supertags.map((st: { id: string; content: string }) => {
+          // Color lives on the supertag definition node; fall back to deterministic hash
+          const stNode = assembleNode(db, st.id)
+          const dbColor = stNode
+            ? (getProperty(stNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+            : null
+          return { id: st.id, name: st.content, color: dbColor ?? getSupertagColor(st.id) }
+        }),
       }
 
       nodeMap.set(nodeId, outlineNode)
@@ -88,10 +89,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     loadNode(ctx.data.nodeId, 0)
 
     // Serialize Map to array for JSON transport
-    const nodesArray = Array.from(nodeMap.entries()).map(([id, node]) => ({
-      id,
-      ...node,
-    }))
+    const nodesArray = Array.from(nodeMap.values())
 
     return { success: true as const, nodes: nodesArray, rootId: ctx.data.nodeId }
   })
@@ -128,7 +126,7 @@ export const getWorkspaceRootServerFn = createServerFn({ method: 'GET' }).handle
 
     return {
       success: true as const,
-      rootIds: rootNodes.map((n) => n.id),
+      rootIds: rootNodes.map((n: { id: string }) => n.id as string),
     }
   },
 )
@@ -140,7 +138,7 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       content: z.string(),
-      parentId: z.string(),
+      parentId: z.string().nullable(),
       order: z.number().optional(),
     }),
   )
@@ -155,7 +153,7 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
 
     const nodeId = createNode(db, {
       content: ctx.data.content,
-      ownerId: ctx.data.parentId,
+      ...(ctx.data.parentId ? { ownerId: ctx.data.parentId } : {}),
     })
 
     if (ctx.data.order !== undefined) {
@@ -200,7 +198,7 @@ export const reparentNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       nodeId: z.string(),
-      newParentId: z.string(),
+      newParentId: z.string().nullable(),
       order: z.number().optional(),
     }),
   )

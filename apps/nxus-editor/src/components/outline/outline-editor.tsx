@@ -1,31 +1,119 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useOutlineStore } from '@/stores/outline.store'
+import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
 import { NodeBlock } from './node-block'
-import { seedDemoData } from '@/lib/seed-data'
+import {
+  getWorkspaceRootServerFn,
+  getNodeTreeServerFn,
+} from '@/services/outline.server'
+import type { OutlineNode } from '@/types/outline'
+import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 export function OutlineEditor() {
   const nodes = useOutlineStore((s) => s.nodes)
   const rootNodeId = useOutlineStore((s) => s.rootNodeId)
   const setNodes = useOutlineStore((s) => s.setNodes)
+  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
   const deactivateNode = useOutlineStore((s) => s.deactivateNode)
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
   const activateNode = useOutlineStore((s) => s.activateNode)
   const selectNode = useOutlineStore((s) => s.selectNode)
   const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
-  const deleteNode = useOutlineStore((s) => s.deleteNode)
-  const createNodeAfter = useOutlineStore((s) => s.createNodeAfter)
   const getNextVisibleNode = useOutlineStore((s) => s.getNextVisibleNode)
   const getPreviousVisibleNode = useOutlineStore(
     (s) => s.getPreviousVisibleNode,
   )
 
+  const { createNodeAfter, deleteNode } = useOutlineSync()
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load real data from DB on mount
   useEffect(() => {
-    if (nodes.size === 0) {
-      setNodes(seedDemoData())
+    let cancelled = false
+
+    async function loadData() {
+      try {
+        const rootResult = await getWorkspaceRootServerFn()
+        if (cancelled) return
+
+        if (!rootResult.success || rootResult.rootIds.length === 0) {
+          setLoading(false)
+          return
+        }
+
+        const nodeMap = new Map<string, OutlineNode>()
+        const topLevelIds: string[] = []
+
+        // Fetch tree for each root in parallel
+        const rootIds: string[] = rootResult.rootIds
+        const treeResults = await Promise.all(
+          rootIds.map((rootId: string) =>
+            getNodeTreeServerFn({ data: { nodeId: rootId } }),
+          ),
+        )
+        if (cancelled) return
+
+        for (let i = 0; i < rootIds.length; i++) {
+          const treeResult = treeResults[i]!
+          const rootId = rootIds[i]!
+
+          if (treeResult.success) {
+            for (const n of treeResult.nodes) {
+              nodeMap.set(n.id, {
+                id: n.id,
+                content: n.content,
+                parentId: n.parentId,
+                children: n.children,
+                order: n.order,
+                collapsed: n.collapsed,
+                supertags: n.supertags,
+              })
+            }
+            topLevelIds.push(rootId)
+          }
+        }
+
+        // Create virtual workspace root to hold top-level nodes
+        const workspaceRoot: OutlineNode = {
+          id: WORKSPACE_ROOT_ID,
+          content: 'Workspace',
+          parentId: null,
+          children: topLevelIds,
+          order: '00000000',
+          collapsed: false,
+          supertags: [],
+        }
+        nodeMap.set(WORKSPACE_ROOT_ID, workspaceRoot)
+
+        // Remap top-level nodes to point to workspace root
+        for (const id of topLevelIds) {
+          const node = nodeMap.get(id)
+          if (node && !node.parentId) {
+            nodeMap.set(id, { ...node, parentId: WORKSPACE_ROOT_ID })
+          }
+        }
+
+        setNodes(nodeMap)
+        setRootNodeId(WORKSPACE_ROOT_ID)
+        setLoading(false)
+      } catch (err) {
+        if (!cancelled) {
+          console.error('[outline] Failed to load data:', err)
+          setError('Failed to load outline data')
+          setLoading(false)
+        }
+      }
     }
-  }, [nodes.size, setNodes])
+
+    loadData()
+    return () => {
+      cancelled = true
+    }
+  }, [setNodes, setRootNodeId])
 
   const handleBackgroundClick = useCallback(() => {
     deactivateNode()
@@ -106,8 +194,32 @@ export function OutlineEditor() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [handleGlobalKeyDown])
 
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <span className="text-sm text-foreground/30">Loading…</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <span className="text-sm text-red-400">{error}</span>
+      </div>
+    )
+  }
+
   const rootNode = nodes.get(rootNodeId)
-  if (!rootNode) return null
+  if (!rootNode) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <span className="text-sm text-foreground/30">
+          No nodes found. Import data to get started.
+        </span>
+      </div>
+    )
+  }
 
   const sortedChildren = [...rootNode.children].sort((a, b) => {
     const na = nodes.get(a)
@@ -122,8 +234,8 @@ export function OutlineEditor() {
     >
       <Breadcrumbs />
 
-      {/* Root node title */}
-      {rootNodeId !== 'root' && (
+      {/* Root node title (only when zoomed into a specific node) */}
+      {rootNodeId !== WORKSPACE_ROOT_ID && (
         <div className="px-3 pb-3">
           <h1 className="text-xl font-semibold text-foreground/90">
             {rootNode.content || 'Untitled'}

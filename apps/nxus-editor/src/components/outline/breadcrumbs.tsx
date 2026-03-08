@@ -1,6 +1,7 @@
 import { CaretRight, House } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
+import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 interface BreadcrumbItem {
   id: string
@@ -45,7 +46,7 @@ export function Breadcrumbs() {
           'transition-colors duration-100',
           isAtRoot && 'text-foreground/60',
         )}
-        onClick={() => setRootNodeId('root')}
+        onClick={() => setRootNodeId(WORKSPACE_ROOT_ID)}
       >
         <House size={14} weight="bold" />
         <span>Home</span>

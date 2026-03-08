@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
+import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 
@@ -17,24 +18,39 @@ export const NodeBlock = memo(function NodeBlock({
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
   const cursorPosition = useOutlineStore((s) => s.cursorPosition)
+  const nodes = useOutlineStore((s) => s.nodes)
+
+  // UI-only store actions (no server persistence needed)
   const activateNode = useOutlineStore((s) => s.activateNode)
   const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
-  const updateNodeContent = useOutlineStore((s) => s.updateNodeContent)
-  const createNodeAfter = useOutlineStore((s) => s.createNodeAfter)
-  const deleteNode = useOutlineStore((s) => s.deleteNode)
-  const indentNode = useOutlineStore((s) => s.indentNode)
-  const outdentNode = useOutlineStore((s) => s.outdentNode)
-  const moveNodeUp = useOutlineStore((s) => s.moveNodeUp)
-  const moveNodeDown = useOutlineStore((s) => s.moveNodeDown)
+  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
   const getPreviousVisibleNode = useOutlineStore(
     (s) => s.getPreviousVisibleNode,
   )
   const getNextVisibleNode = useOutlineStore((s) => s.getNextVisibleNode)
-  const nodes = useOutlineStore((s) => s.nodes)
 
-  const handleBulletClick = useCallback(() => {
-    toggleCollapse(nodeId)
-  }, [toggleCollapse, nodeId])
+  // Persisted mutations via sync hook
+  const {
+    updateNodeContent,
+    createNodeAfter,
+    deleteNode,
+    indentNode,
+    outdentNode,
+    moveNodeUp,
+    moveNodeDown,
+  } = useOutlineSync()
+
+  const handleBulletClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        // Cmd/Ctrl+click → zoom into this node
+        setRootNodeId(nodeId)
+      } else {
+        toggleCollapse(nodeId)
+      }
+    },
+    [toggleCollapse, setRootNodeId, nodeId],
+  )
 
   const handleActivate = useCallback(
     (cursorPos?: number) => {
