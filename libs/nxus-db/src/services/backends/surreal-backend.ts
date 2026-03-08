@@ -739,30 +739,33 @@ export class SurrealBackend implements NodeBackend {
 
     const db = this.ensureInitialized()
 
-    // Resolve supertag system IDs to record IDs
-    const supertagRecordIds: string[] = []
-    for (const sysId of supertagSystemIds) {
-      const resolvedId = await this.resolveSupertagId(sysId)
-      if (resolvedId) supertagRecordIds.push(resolvedId)
-    }
-
+    // Resolve all supertag system IDs in parallel
+    const resolveResults = await Promise.all(
+      supertagSystemIds.map((sysId) => this.resolveSupertagId(sysId)),
+    )
+    const supertagRecordIds = resolveResults.filter((id): id is string => id !== null)
     if (supertagRecordIds.length === 0) return []
 
-    // Find nodes with these supertags
-    const nodeIdSet = new Map<string, Set<string>>() // nodeId → set of matching supertag IDs
+    // Query all supertag edges in parallel
+    const edgeResults = await Promise.all(
+      supertagRecordIds.map((stId) =>
+        db.query<[Array<{ node_ref: RecordId }>]>(
+          'SELECT in AS node_ref FROM has_supertag WHERE out = $stId',
+          { stId: new StringRecordId(stId) },
+        ),
+      ),
+    )
 
-    for (const stId of supertagRecordIds) {
-      const [edges] = await db.query<[Array<{ node_ref: RecordId }>]>(
-        'SELECT in AS node_ref FROM has_supertag WHERE out = $stId',
-        { stId: new StringRecordId(stId) },
-      )
-
+    // Build nodeId → set of matching supertag IDs
+    const nodeIdSet = new Map<string, Set<string>>()
+    for (let i = 0; i < supertagRecordIds.length; i++) {
+      const [edges] = edgeResults[i]
       for (const edge of (edges || [])) {
         const nodeRefId = rid(edge.node_ref)
         if (!nodeIdSet.has(nodeRefId)) {
           nodeIdSet.set(nodeRefId, new Set())
         }
-        nodeIdSet.get(nodeRefId)!.add(stId)
+        nodeIdSet.get(nodeRefId)!.add(supertagRecordIds[i])
       }
     }
 
@@ -778,14 +781,11 @@ export class SurrealBackend implements NodeBackend {
       }
     }
 
-    // Assemble nodes (filter out deleted)
-    const nodes: AssembledNode[] = []
-    for (const nid of matchingNodeIds) {
-      const assembled = await this.assembleNode(nid)
-      if (assembled) nodes.push(assembled)
-    }
-
-    return nodes
+    // Assemble nodes in parallel (filter out deleted)
+    const assembleResults = await Promise.all(
+      matchingNodeIds.map((nid) => this.assembleNode(nid)),
+    )
+    return assembleResults.filter((n): n is AssembledNode => n !== null)
   }
 
   // ---------------------------------------------------------------------------
@@ -795,45 +795,14 @@ export class SurrealBackend implements NodeBackend {
   async getNodesBySupertagWithInheritance(
     supertagId: string,
   ): Promise<AssembledNode[]> {
-    const db = this.ensureInitialized()
+    // Reuse the ID-only method, then assemble in parallel
+    const nodeIdSet = await this.getNodeIdsBySupertagWithInheritance(supertagId)
+    if (nodeIdSet.size === 0) return []
 
-    const targetRecordId = await this.resolveSupertagId(supertagId)
-    if (!targetRecordId) return []
-
-    // Collect all supertag IDs in the hierarchy (target + descendants)
-    const allSupertagIds = new Set<string>([targetRecordId])
-
-    // Find child supertags (those that extend the target)
-    const [children] = await db.query<[Array<{ child_ref: RecordId }>]>(
-      'SELECT in AS child_ref FROM extends WHERE out = $stId',
-      { stId: new StringRecordId(targetRecordId) },
+    const assembleResults = await Promise.all(
+      [...nodeIdSet].map((nid) => this.assembleNode(nid)),
     )
-
-    for (const child of (children || [])) {
-      allSupertagIds.add(rid(child.child_ref))
-    }
-
-    // Find all nodes with any of these supertags
-    const nodeIdSet = new Set<string>()
-    for (const stId of allSupertagIds) {
-      const [edges] = await db.query<[Array<{ node_ref: RecordId }>]>(
-        'SELECT in AS node_ref FROM has_supertag WHERE out = $stId',
-        { stId: new StringRecordId(stId) },
-      )
-
-      for (const edge of (edges || [])) {
-        nodeIdSet.add(rid(edge.node_ref))
-      }
-    }
-
-    // Assemble nodes
-    const nodes: AssembledNode[] = []
-    for (const nid of nodeIdSet) {
-      const assembled = await this.assembleNode(nid)
-      if (assembled) nodes.push(assembled)
-    }
-
-    return nodes
+    return assembleResults.filter((n): n is AssembledNode => n !== null)
   }
 
   async getAncestorSupertags(
@@ -980,12 +949,11 @@ export class SurrealBackend implements NodeBackend {
 
     const totalCount = candidateIds.size
 
-    // Assemble nodes
-    let assembledNodes: AssembledNode[] = []
-    for (const nid of candidateIds) {
-      const assembled = await this.assembleNode(nid)
-      if (assembled) assembledNodes.push(assembled)
-    }
+    // Assemble nodes in parallel
+    const assembleResults = await Promise.all(
+      [...candidateIds].map((nid) => this.assembleNode(nid)),
+    )
+    let assembledNodes = assembleResults.filter((n): n is AssembledNode => n !== null)
 
     // Apply sorting
     if (definition.sort) {
@@ -1035,6 +1003,47 @@ export class SurrealBackend implements NodeBackend {
     }
   }
 
+  /**
+   * Get node IDs (not assembled) with a supertag, including inherited.
+   * Avoids full assembly when only IDs are needed (e.g., for filter intersection).
+   */
+  private async getNodeIdsBySupertagWithInheritance(
+    supertagId: string,
+  ): Promise<Set<string>> {
+    const db = this.ensureInitialized()
+
+    const targetRecordId = await this.resolveSupertagId(supertagId)
+    if (!targetRecordId) return new Set()
+
+    const allSupertagIds = new Set<string>([targetRecordId])
+
+    const [children] = await db.query<[Array<{ child_ref: RecordId }>]>(
+      'SELECT in AS child_ref FROM extends WHERE out = $stId',
+      { stId: new StringRecordId(targetRecordId) },
+    )
+    for (const child of (children || [])) {
+      allSupertagIds.add(rid(child.child_ref))
+    }
+
+    // Parallel edge queries for all supertag variants
+    const edgePromises = [...allSupertagIds].map((stId) =>
+      db.query<[Array<{ node_ref: RecordId }>]>(
+        'SELECT in AS node_ref FROM has_supertag WHERE out = $stId',
+        { stId: new StringRecordId(stId) },
+      ),
+    )
+    const edgeResults = await Promise.all(edgePromises)
+
+    const nodeIdSet = new Set<string>()
+    for (const [edges] of edgeResults) {
+      for (const edge of (edges || [])) {
+        nodeIdSet.add(rid(edge.node_ref))
+      }
+    }
+
+    return nodeIdSet
+  }
+
   private async evaluateSupertagFilter(
     filter: { supertagId: string; includeInherited?: boolean },
     candidateIds: Set<string>,
@@ -1042,10 +1051,11 @@ export class SurrealBackend implements NodeBackend {
     const { supertagId, includeInherited = true } = filter
 
     if (includeInherited) {
-      const matchedNodes = await this.getNodesBySupertagWithInheritance(supertagId)
+      // Get just IDs — avoids assembling every matching node
+      const matchedIds = await this.getNodeIdsBySupertagWithInheritance(supertagId)
       const result = new Set<string>()
-      for (const node of matchedNodes) {
-        if (candidateIds.has(node.id)) result.add(node.id)
+      for (const id of matchedIds) {
+        if (candidateIds.has(id)) result.add(id)
       }
       return result
     } else {
@@ -1140,18 +1150,17 @@ export class SurrealBackend implements NodeBackend {
     const db = this.ensureInitialized()
     const searchTerm = caseSensitive ? query : query.toLowerCase()
 
-    const result = new Set<string>()
-    for (const id of candidateIds) {
-      const [nodes] = await db.query<[SurrealNode[]]>(
-        'SELECT content, content_plain FROM $nodeId',
-        { nodeId: new StringRecordId(id) },
-      )
-      if (!nodes || nodes.length === 0) continue
+    // Batch fetch: use SurQL string::contains for server-side filtering
+    const field = caseSensitive ? 'content' : 'content_plain'
+    const [matchingNodes] = await db.query<[Array<{ id: RecordId }>]>(
+      `SELECT id FROM node WHERE deleted_at IS NONE AND string::contains(${field} ?? '', $searchTerm)`,
+      { searchTerm },
+    )
 
-      const content = caseSensitive ? nodes[0].content : nodes[0].content_plain
-      if (content && content.includes(searchTerm)) {
-        result.add(id)
-      }
+    const result = new Set<string>()
+    for (const node of (matchingNodes || [])) {
+      const nodeId = rid(node.id)
+      if (candidateIds.has(nodeId)) result.add(nodeId)
     }
 
     return result
@@ -1213,32 +1222,18 @@ export class SurrealBackend implements NodeBackend {
         return candidateIds
     }
 
+    // Build SurQL temporal filter to push filtering to the server
+    const surrealField = field === 'createdAt' ? 'created_at' : 'updated_at'
+    const surrealOp = op === 'within' || op === 'after' ? '>=' : '<'
+    const [matchingNodes] = await db.query<[Array<{ id: RecordId }>]>(
+      `SELECT id FROM node WHERE deleted_at IS NONE AND ${surrealField} ${surrealOp} $targetDate`,
+      { targetDate: targetDate.toISOString() },
+    )
+
     const result = new Set<string>()
-    for (const id of candidateIds) {
-      const [nodes] = await db.query<[SurrealNode[]]>(
-        'SELECT created_at, updated_at FROM $nodeId',
-        { nodeId: new StringRecordId(id) },
-      )
-      if (!nodes || nodes.length === 0) continue
-
-      const nodeDate = field === 'createdAt'
-        ? toDate(nodes[0].created_at)
-        : toDate(nodes[0].updated_at)
-
-      let matches = false
-      switch (op) {
-        case 'within':
-          matches = nodeDate >= targetDate
-          break
-        case 'before':
-          matches = nodeDate < targetDate
-          break
-        case 'after':
-          matches = nodeDate > targetDate
-          break
-      }
-
-      if (matches) result.add(id)
+    for (const node of (matchingNodes || [])) {
+      const nodeId = rid(node.id)
+      if (candidateIds.has(nodeId)) result.add(nodeId)
     }
 
     return result
@@ -1254,19 +1249,23 @@ export class SurrealBackend implements NodeBackend {
     switch (relationType) {
       case 'childOf':
       case 'ownedBy': {
-        const result = new Set<string>()
-        for (const id of candidateIds) {
-          const [nodes] = await db.query<[Array<{ owner_id: string | null }>]>(
-            'SELECT owner_id FROM $nodeId',
-            { nodeId: new StringRecordId(id) },
-          )
-          if (!nodes || nodes.length === 0) continue
+        // Batch fetch: push owner_id filter to the server
+        let query: string
+        const params: Record<string, unknown> = {}
 
-          if (targetNodeId) {
-            if (nodes[0].owner_id === targetNodeId) result.add(id)
-          } else {
-            if (nodes[0].owner_id) result.add(id)
-          }
+        if (targetNodeId) {
+          query = 'SELECT id FROM node WHERE deleted_at IS NONE AND owner_id = $targetNodeId'
+          params.targetNodeId = targetNodeId
+        } else {
+          query = 'SELECT id FROM node WHERE deleted_at IS NONE AND owner_id IS NOT NONE'
+        }
+
+        const [matchingNodes] = await db.query<[Array<{ id: RecordId }>]>(query, params)
+
+        const result = new Set<string>()
+        for (const node of (matchingNodes || [])) {
+          const nodeId = rid(node.id)
+          if (candidateIds.has(nodeId)) result.add(nodeId)
         }
         return result
       }
