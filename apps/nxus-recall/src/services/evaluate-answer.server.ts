@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { QUESTION_TYPES } from '@nxus/mastra'
 
 export const evaluateAnswerServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
@@ -8,7 +9,7 @@ export const evaluateAnswerServerFn = createServerFn({ method: 'POST' })
       modelAnswer: z.string(),
       userAnswer: z.string(),
       conceptTitle: z.string(),
-      questionType: z.string().optional(),
+      questionType: z.enum(QUESTION_TYPES).optional(),
     }),
   )
   .handler(async (ctx) => {

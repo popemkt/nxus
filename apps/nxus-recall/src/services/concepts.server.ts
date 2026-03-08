@@ -1,5 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { BLOOMS_LEVELS } from '@nxus/db'
+
+const BloomsLevelSchema = z.enum(BLOOMS_LEVELS)
 
 export const getConceptsByTopicServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ topicId: z.string() }))
@@ -31,7 +34,7 @@ const SaveConceptInputSchema = z.object({
   title: z.string().min(1),
   summary: z.string().min(1),
   whyItMatters: z.string().optional(),
-  bloomsLevel: z.string().optional(),
+  bloomsLevel: BloomsLevelSchema.optional(),
   source: z.string().optional(),
   relatedConceptTitles: z.array(z.string()).optional(),
 })
@@ -57,7 +60,7 @@ const SaveConceptsBatchInputSchema = z.object({
     title: z.string().min(1),
     summary: z.string().min(1),
     whyItMatters: z.string().optional(),
-    bloomsLevel: z.string().optional(),
+    bloomsLevel: BloomsLevelSchema.optional(),
     source: z.string().optional(),
     relatedConceptTitles: z.array(z.string()).optional(),
   })),

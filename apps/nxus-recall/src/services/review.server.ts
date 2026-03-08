@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { QUESTION_TYPES } from '@nxus/mastra'
 
 export const getDueCardsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(
@@ -34,7 +35,7 @@ export const getRecallStatsServerFn = createServerFn({ method: 'GET' }).handler(
 const SubmitReviewSchema = z.object({
   conceptId: z.string(),
   questionText: z.string(),
-  questionType: z.string(),
+  questionType: z.enum(QUESTION_TYPES),
   userAnswer: z.string(),
   aiFeedback: z.string(),
   rating: z.number().min(1).max(4),
@@ -62,7 +63,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
     }
 
     // Use ts-fsrs to compute next card state
-    const { fsrs, createEmptyCard, Rating, State } = await import('ts-fsrs')
+    const { fsrs } = await import('ts-fsrs')
 
     const f = fsrs()
     const card = {
@@ -73,7 +74,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       scheduled_days: concept.card.scheduledDays,
       reps: concept.card.reps,
       lapses: concept.card.lapses,
-      state: concept.card.state as 0 | 1 | 2 | 3,
+      state: concept.card.state,
       last_review: concept.card.lastReview
         ? new Date(concept.card.lastReview)
         : undefined,
@@ -96,7 +97,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
       // Compute Bloom's progression
       const { nextBloomsLevel } = await import('@nxus/mastra/server')
       const currentBlooms = concept.card.currentBloomsLevel ?? 'remember'
-      const ceiling = (concept.bloomsLevel as 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create') ?? 'apply'
+      const ceiling = concept.bloomsLevel ?? 'apply'
       const newBlooms = nextBloomsLevel(currentBlooms, ceiling, ratingKey)
 
       // Update card state
@@ -175,7 +176,7 @@ export const previewIntervalsServerFn = createServerFn({ method: 'POST' })
       scheduled_days: concept.card.scheduledDays,
       reps: concept.card.reps,
       lapses: concept.card.lapses,
-      state: concept.card.state as 0 | 1 | 2 | 3,
+      state: concept.card.state,
       last_review: concept.card.lastReview
         ? new Date(concept.card.lastReview)
         : undefined,

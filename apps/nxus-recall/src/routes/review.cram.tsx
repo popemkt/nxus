@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
@@ -24,9 +25,9 @@ type SessionPhase = 'loading' | 'question' | 'answering' | 'evaluating' | 'feedb
 
 export const Route = createFileRoute('/review/cram')({
   component: CramSessionPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    topicId: (search['topicId'] as string) || '',
-    reschedule: search['reschedule'] === false ? false : true,
+  validateSearch: z.object({
+    topicId: z.string().default(''),
+    reschedule: z.boolean().default(true),
   }),
 })
 
@@ -155,7 +156,7 @@ function CramSessionPage() {
         })
 
         if (result.success) {
-          setQuestion(result.question as GeneratedQuestion)
+          setQuestion(result.question)
           setPhase('answering')
 
           previewIntervalsServerFn({

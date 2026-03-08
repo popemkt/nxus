@@ -19,6 +19,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@nxus/db": "workspace:*",
     "@anthropic-ai/claude-agent-sdk": "^0.2.70",
     "zod": "^3.23.0",
     "zod-to-json-schema": "^3.25.1"

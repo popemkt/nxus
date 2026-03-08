@@ -14,11 +14,15 @@ export interface RecallTopic {
   createdAt: Date
 }
 
-export type BloomsLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
+export const BLOOMS_LEVELS = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'] as const
+export type BloomsLevel = (typeof BLOOMS_LEVELS)[number]
+
+/** FSRS card state: 0=New, 1=Learning, 2=Review, 3=Relearning */
+export type FsrsCardState = 0 | 1 | 2 | 3
 
 export interface RecallCard {
   due: string
-  state: number
+  state: FsrsCardState
   reps: number
   lapses: number
   stability: number
@@ -36,7 +40,7 @@ export interface RecallConcept {
   title: string
   summary: string
   whyItMatters: string | null
-  bloomsLevel: string | null
+  bloomsLevel: BloomsLevel | null
   source: string | null
   relatedConceptTitles: string[]
   relatedConceptIds: string[]
@@ -53,7 +57,7 @@ export interface ReviewLog {
   rating: number
   reviewedAt: Date
   /** Card state at time of review (0-3) */
-  reviewState?: number
+  reviewState?: FsrsCardState
   /** AI evaluation score (0-100) */
   reviewScore?: number
   /** Milliseconds from question shown to answer submitted */

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
@@ -31,8 +32,8 @@ type SessionPhase = 'loading' | 'question' | 'answering' | 'evaluating' | 'feedb
 
 export const Route = createFileRoute('/review/session')({
   component: ReviewSessionPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    topicId: (search['topicId'] as string) || undefined,
+  validateSearch: z.object({
+    topicId: z.string().optional(),
   }),
 })
 
@@ -170,7 +171,7 @@ function ReviewSessionPage() {
         })
 
         if (result.success) {
-          setQuestion(result.question as GeneratedQuestion)
+          setQuestion(result.question)
           setPhase('answering')
 
           // Preview intervals (fire-and-forget, non-blocking)

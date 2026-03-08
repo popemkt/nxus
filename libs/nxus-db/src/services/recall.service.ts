@@ -34,6 +34,7 @@ import type {
   ReviewLog,
   RecallStats,
   BloomsLevel,
+  FsrsCardState,
   LearningPathItem,
 } from '../types/recall.js'
 
@@ -102,7 +103,7 @@ function assembleCard(db: DatabaseInstance, node: AssembledNode): RecallCard | n
 
   return {
     due,
-    state: getProperty<number>(node, FIELD_NAMES.RECALL_STATE) ?? 0,
+    state: (getProperty<number>(node, FIELD_NAMES.RECALL_STATE) ?? 0) as FsrsCardState,
     reps: getProperty<number>(node, FIELD_NAMES.RECALL_REPS) ?? 0,
     lapses: getProperty<number>(node, FIELD_NAMES.RECALL_LAPSES) ?? 0,
     stability: getProperty<number>(node, FIELD_NAMES.RECALL_STABILITY) ?? 0,

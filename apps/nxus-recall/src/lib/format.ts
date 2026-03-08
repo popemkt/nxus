@@ -24,9 +24,15 @@ export function formatRelativeDate(date: Date): string {
   return date.toLocaleDateString()
 }
 
-export const cardStateLabels: Record<number, string> = {
+import type { FsrsCardState } from '@nxus/db'
+
+// Exhaustiveness checked at definition — all FsrsCardState keys required
+const _cardStateLabels: Record<FsrsCardState, string> = {
   0: 'New',
   1: 'Learning',
   2: 'Review',
   3: 'Relearning',
 }
+
+// Widened for runtime indexing (server function types lose precision through serialization)
+export const cardStateLabels: Record<number, string> = _cardStateLabels

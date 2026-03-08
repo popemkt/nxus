@@ -1,15 +1,8 @@
 import { z } from 'zod'
+import { BLOOMS_LEVELS } from '@nxus/db'
+export type { BloomsLevel } from '@nxus/db'
 
-export const BloomsLevelSchema = z.enum([
-  'remember',
-  'understand',
-  'apply',
-  'analyze',
-  'evaluate',
-  'create',
-])
-
-export type BloomsLevel = z.infer<typeof BloomsLevelSchema>
+export const BloomsLevelSchema = z.enum(BLOOMS_LEVELS)
 
 export const GeneratedConceptSchema = z.object({
   title: z.string().describe('Short, precise concept name'),

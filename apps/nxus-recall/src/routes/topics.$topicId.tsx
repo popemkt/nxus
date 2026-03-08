@@ -26,7 +26,9 @@ import {
 } from '@/services/concepts.server'
 import { generateConceptsServerFn } from '@/services/generate-concepts.server'
 import type { GeneratedConcept } from '@nxus/mastra'
-import type { RecallTopic, RecallConcept } from '@nxus/db'
+import type { BloomsLevel, RecallConcept, RecallTopic } from '@nxus/db'
+import { bloomsColors } from '@/lib/blooms-colors'
+import { cardStateLabels } from '@/lib/format'
 
 export const Route = createFileRoute('/topics/$topicId')({
   component: TopicDetailPage,
@@ -42,7 +44,7 @@ function TopicDetailPage() {
   const [addTitle, setAddTitle] = useState('')
   const [addSummary, setAddSummary] = useState('')
   const [addWhyItMatters, setAddWhyItMatters] = useState('')
-  const [addBloomsLevel, setAddBloomsLevel] = useState('')
+  const [addBloomsLevel, setAddBloomsLevel] = useState<BloomsLevel | ''>('')
 
   // Task 3: Merge modal state
   const [showMergeModal, setShowMergeModal] = useState(false)
@@ -182,22 +184,6 @@ function TopicDetailPage() {
     ? conceptsQuery.data.concepts
     : []
 
-  const bloomsColors: Record<string, string> = {
-    remember: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    understand: 'bg-green-500/10 text-green-600 dark:text-green-400',
-    apply: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
-    analyze: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-    evaluate: 'bg-red-500/10 text-red-600 dark:text-red-400',
-    create: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  }
-
-  const cardStateLabels: Record<number, string> = {
-    0: 'New',
-    1: 'Learning',
-    2: 'Review',
-    3: 'Relearning',
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -284,9 +270,9 @@ function TopicDetailPage() {
               All concepts from &quot;{topic?.name}&quot; will be moved to the selected topic. This topic will be deleted.
             </p>
             <div className="max-h-64 space-y-2 overflow-y-auto">
-              {((allTopicsQuery.data?.topics ?? []) as RecallTopic[])
-                .filter((t: RecallTopic) => t.id !== topicId)
-                .map((t: RecallTopic) => (
+              {(allTopicsQuery.data?.topics ?? ([] as RecallTopic[]))
+                .filter((t) => t.id !== topicId)
+                .map((t) => (
                   <button
                     key={t.id}
                     onClick={() => mergeMutation.mutate(t.id)}
@@ -308,7 +294,7 @@ function TopicDetailPage() {
                 <p className="py-4 text-center text-sm text-muted-foreground">Loading topics...</p>
               ) : null}
               {allTopicsQuery.data?.topics &&
-              (allTopicsQuery.data.topics as RecallTopic[]).filter((t: RecallTopic) => t.id !== topicId).length === 0 ? (
+              (allTopicsQuery.data.topics as RecallTopic[]).filter((t) => t.id !== topicId).length === 0 ? (
                 <p className="py-4 text-center text-sm text-muted-foreground">No other topics to merge into</p>
               ) : null}
             </div>
@@ -362,7 +348,7 @@ function TopicDetailPage() {
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Bloom&apos;s Level</label>
                 <select
                   value={addBloomsLevel}
-                  onChange={(e) => setAddBloomsLevel(e.target.value)}
+                  onChange={(e) => setAddBloomsLevel(e.target.value as BloomsLevel | '')}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="">Select level (optional)</option>
