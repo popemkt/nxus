@@ -294,7 +294,7 @@ function TopicDetailPage() {
                 <p className="py-4 text-center text-sm text-muted-foreground">Loading topics...</p>
               ) : null}
               {allTopicsQuery.data?.topics &&
-              (allTopicsQuery.data.topics as RecallTopic[]).filter((t) => t.id !== topicId).length === 0 ? (
+              allTopicsQuery.data.topics.filter((t: RecallTopic) => t.id !== topicId).length === 0 ? (
                 <p className="py-4 text-center text-sm text-muted-foreground">No other topics to merge into</p>
               ) : null}
             </div>

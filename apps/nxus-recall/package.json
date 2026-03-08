@@ -5,13 +5,14 @@
   "scripts": {
     "dev": "vite dev --port 3004",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src/"
   },
   "dependencies": {
+    "@fontsource-variable/outfit": "^5.2.8",
     "@nxus/db": "workspace:*",
     "@nxus/mastra": "workspace:*",
     "@nxus/ui": "workspace:*",
-    "@fontsource-variable/outfit": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-query": "^5.90.12",
@@ -38,8 +39,12 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^10.0.3",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.56.1",
     "vite": "^7.1.7"
   }
 }
