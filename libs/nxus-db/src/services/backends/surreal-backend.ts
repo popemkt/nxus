@@ -756,6 +756,10 @@ export class SurrealBackend implements NodeBackend {
     const resolveResults = await Promise.all(
       supertagSystemIds.map((sysId) => this.resolveSupertagId(sysId)),
     )
+    // If matchAll and any supertag is missing, no node can match all — return early
+    if (matchAll && resolveResults.some((id) => id === null)) {
+      return []
+    }
     const supertagRecordIds = resolveResults.filter((id): id is string => id !== null)
     if (supertagRecordIds.length === 0) return []
 
@@ -962,21 +966,19 @@ export class SurrealBackend implements NodeBackend {
 
     const totalCount = candidateIds.size
 
-    // Assemble nodes in parallel
+    // Apply limit before assembly to avoid assembling thousands of nodes
+    const limit = definition.limit ?? 500
+    const idsToAssemble = [...candidateIds].slice(0, limit)
+
+    // Assemble nodes in parallel (capped by limit)
     const assembleResults = await Promise.all(
-      [...candidateIds].map((nid) => this.assembleNode(nid)),
+      idsToAssemble.map((nid) => this.assembleNode(nid)),
     )
     let assembledNodes = assembleResults.filter((n): n is AssembledNode => n !== null)
 
     // Apply sorting
     if (definition.sort) {
       assembledNodes = this.sortNodes(assembledNodes, definition.sort)
-    }
-
-    // Apply limit
-    const limit = definition.limit ?? 500
-    if (assembledNodes.length > limit) {
-      assembledNodes = assembledNodes.slice(0, limit)
     }
 
     return {
@@ -1030,12 +1032,21 @@ export class SurrealBackend implements NodeBackend {
 
     const allSupertagIds = new Set<string>([targetRecordId])
 
-    const [children] = await db.query<[Array<{ child_ref: RecordId }>]>(
-      'SELECT in AS child_ref FROM extends WHERE out = $stId',
-      { stId: new StringRecordId(targetRecordId) },
-    )
-    for (const child of (children || [])) {
-      allSupertagIds.add(rid(child.child_ref))
+    // BFS walk to collect all transitive children (grandchildren, etc.)
+    const queue = [targetRecordId]
+    while (queue.length > 0) {
+      const currentId = queue.shift()!
+      const [children] = await db.query<[Array<{ child_ref: RecordId }>]>(
+        'SELECT in AS child_ref FROM extends WHERE out = $stId',
+        { stId: new StringRecordId(currentId) },
+      )
+      for (const child of (children || [])) {
+        const childId = rid(child.child_ref)
+        if (!allSupertagIds.has(childId)) {
+          allSupertagIds.add(childId)
+          queue.push(childId)
+        }
+      }
     }
 
     // Parallel edge queries for all supertag variants
@@ -1241,7 +1252,7 @@ export class SurrealBackend implements NodeBackend {
     const surrealField = field === 'createdAt' ? 'created_at' : 'updated_at'
     const surrealOp = op === 'within' ? '>=' : op === 'after' ? '>' : '<'
     const [matchingNodes] = await db.query<[Array<{ id: RecordId }>]>(
-      `SELECT id FROM node WHERE deleted_at IS NONE AND ${surrealField} ${surrealOp} $targetDate`,
+      `SELECT id FROM node WHERE deleted_at IS NONE AND ${surrealField} ${surrealOp} <datetime>$targetDate`,
       { targetDate: targetDate.toISOString() },
     )
 
