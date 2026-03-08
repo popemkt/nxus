@@ -156,7 +156,10 @@ export class SurrealBackend implements NodeBackend {
       { systemId: supertagSystemId },
     )
 
-    const resolved = (!results || results.length === 0) ? null : rid(results[0].id)
+    if (!results || results.length === 0) {
+      return null
+    }
+    const resolved = rid(results[0].id)
     this.supertagIdCache.set(supertagSystemId, resolved)
     return resolved
   }
@@ -1224,7 +1227,7 @@ export class SurrealBackend implements NodeBackend {
 
     // Build SurQL temporal filter to push filtering to the server
     const surrealField = field === 'createdAt' ? 'created_at' : 'updated_at'
-    const surrealOp = op === 'within' || op === 'after' ? '>=' : '<'
+    const surrealOp = op === 'within' ? '>=' : op === 'after' ? '>' : '<'
     const [matchingNodes] = await db.query<[Array<{ id: RecordId }>]>(
       `SELECT id FROM node WHERE deleted_at IS NONE AND ${surrealField} ${surrealOp} $targetDate`,
       { targetDate: targetDate.toISOString() },
