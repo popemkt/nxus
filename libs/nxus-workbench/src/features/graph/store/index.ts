@@ -15,6 +15,7 @@ export type {
   GraphStoreActions,
   GraphStoreState,
   GraphViewOptions,
+  GroupingDimensionId,
   LabelVisibility,
   LayoutType,
   NodeSizeOption,

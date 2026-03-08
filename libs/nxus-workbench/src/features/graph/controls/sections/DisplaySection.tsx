@@ -13,6 +13,7 @@ import { useGraphDisplay, useGraphStore } from '../../store'
 import type {
   ColorByOption,
   EdgeStyleOption,
+  GroupingDimensionId,
   LabelVisibility,
   NodeSizeOption,
 } from '../../store/types'
@@ -75,6 +76,12 @@ const EDGE_STYLE_OPTIONS: Array<{ value: EdgeStyleOption; label: string }> = [
   { value: 'solid', label: 'Static' },
 ]
 
+const GROUPING_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'none', label: 'None' },
+  { value: 'supertag', label: 'Supertag' },
+  { value: 'type', label: 'Node Type' },
+]
+
 /**
  * Display control section with dropdowns for visual styling options.
  * Updates the graph store which affects rendering.
@@ -115,6 +122,17 @@ export function DisplaySection() {
         value={display.edgeStyle}
         options={EDGE_STYLE_OPTIONS}
         onChange={(value) => setDisplay({ edgeStyle: value })}
+      />
+
+      <SelectControl
+        label="Group By (Hull Overlay)"
+        value={display.groupingDimension ?? 'none'}
+        options={GROUPING_OPTIONS}
+        onChange={(value) =>
+          setDisplay({
+            groupingDimension: (value === 'none' ? null : value) as GroupingDimensionId,
+          })
+        }
       />
     </CollapsibleSection>
   )

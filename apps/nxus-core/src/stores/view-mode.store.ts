@@ -3,17 +3,13 @@ import { persist } from 'zustand/middleware'
 
 export type ViewMode = 'gallery' | 'table' | 'graph'
 export type GalleryMode = 'default' | 'compact'
-export type GraphLayout = 'hierarchical' | 'force'
 export type GraphFilterMode = 'highlight' | 'show-only'
-export type GraphNodeStyle = 'detailed' | 'simple'
 
 export interface GraphOptions {
-  showCommands: boolean
   filterMode: GraphFilterMode
-  layout: GraphLayout
-  nodeStyle: GraphNodeStyle
   nodesLocked: boolean
   showLabels: boolean
+  groupingDimension: string | null
 }
 
 interface ViewModeState {
@@ -51,12 +47,10 @@ export const useViewModeStore = create<ViewModeState>()(
 
       // Graph options
       graphOptions: {
-        showCommands: false,
         filterMode: 'highlight',
-        layout: 'hierarchical',
-        nodeStyle: 'detailed',
         nodesLocked: false,
         showLabels: true,
+        groupingDimension: 'supertag',
       },
       setGraphOptions: (options) =>
         set((state) => ({

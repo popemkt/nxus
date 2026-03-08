@@ -16,7 +16,7 @@
 import { useMemo } from 'react'
 import type { AssembledNode } from '@nxus/db'
 
-import { Graph2D } from './renderers/graph-2d'
+import { GraphCanvas } from './renderers/graph-canvas'
 import { Graph3D } from './renderers/graph-3d'
 import { GraphControls, RendererSwitcher, GraphLegend } from './controls'
 import {
@@ -251,7 +251,7 @@ export function GraphView({
           className="h-full w-full"
         />
       ) : (
-        <Graph2D
+        <GraphCanvas
           data={graphData}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
