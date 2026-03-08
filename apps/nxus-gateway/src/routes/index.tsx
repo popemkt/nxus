@@ -96,14 +96,14 @@ const visualComponents: Record<VisualStyle, React.ComponentType<{ apps: MiniApp[
   tarot: CosmicTarotCards,
 }
 
+// Module-scope — resolved before component renders on client, avoids visual flash
+const initialVisual: VisualStyle = typeof window !== 'undefined' ? getStoredVisual() : 'default'
+
 function GatewayPage() {
-  // Start with 'default' for SSR, then read localStorage after mount
-  // to avoid hydration mismatch (localStorage isn't available during SSR)
-  const [visual, setVisual] = useState<VisualStyle>('default')
+  const [visual, setVisual] = useState<VisualStyle>(initialVisual)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setVisual(getStoredVisual())
     setMounted(true)
   }, [])
 
