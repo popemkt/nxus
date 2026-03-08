@@ -457,8 +457,12 @@ export function assembleNodes(
   // 5. Group properties by nodeId
   const propsByNode = new Map<string, typeof allProps>()
   for (const prop of allProps) {
-    if (!propsByNode.has(prop.nodeId)) propsByNode.set(prop.nodeId, [])
-    propsByNode.get(prop.nodeId)!.push(prop)
+    const existing = propsByNode.get(prop.nodeId)
+    if (existing) {
+      existing.push(prop)
+    } else {
+      propsByNode.set(prop.nodeId, [prop])
+    }
   }
 
   // 6. Assemble each node
@@ -763,7 +767,7 @@ export function setProperty(
     timestamp: now,
     nodeId,
     fieldId: field.id,
-    fieldSystemId: fieldId as string,
+    fieldSystemId: fieldId,
     beforeValue,
     afterValue: value,
   })
@@ -813,7 +817,7 @@ export function addPropertyValue(
     timestamp: now,
     nodeId,
     fieldId: field.id,
-    fieldSystemId: fieldId as string,
+    fieldSystemId: fieldId,
     afterValue: value,
   })
 }
@@ -868,7 +872,7 @@ export function clearProperty(
       timestamp: now,
       nodeId,
       fieldId: field.id,
-      fieldSystemId: fieldId as string,
+      fieldSystemId: fieldId,
       beforeValue,
     })
   }
@@ -1070,8 +1074,8 @@ export function getNodeSupertagSystemIds(
 ): string[] {
   const supertags = getNodeSupertags(db, nodeId)
   return supertags
-    .filter((st) => st.systemId !== null)
-    .map((st) => st.systemId as string)
+    .filter((st): st is SupertagInfo & { systemId: string } => st.systemId !== null)
+    .map((st) => st.systemId)
 }
 
 /**

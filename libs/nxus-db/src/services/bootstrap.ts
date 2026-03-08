@@ -28,10 +28,11 @@ const systemNodeIds = new Map<string, string>();
  * Get or create UUID for a system node
  */
 function getSystemNodeId(systemId: string): string {
-  if (!systemNodeIds.has(systemId)) {
-    systemNodeIds.set(systemId, uuidv7());
-  }
-  return systemNodeIds.get(systemId)!;
+  const existing = systemNodeIds.get(systemId);
+  if (existing) return existing;
+  const id = uuidv7();
+  systemNodeIds.set(systemId, id);
+  return id;
 }
 
 /**

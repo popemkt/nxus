@@ -20,7 +20,17 @@ import { StringRecordId } from 'surrealdb'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
 import { SYSTEM_FIELDS } from '../../schemas/node-schema.js'
 import type { AssembledNode, CreateNodeOptions, PropertyValue } from '../../types/node.js'
-import type { QueryDefinition } from '../../types/query.js'
+import type {
+  QueryDefinition,
+  SupertagFilter,
+  PropertyFilter,
+  ContentFilter,
+  HasFieldFilter,
+  TemporalFilter,
+  RelationFilter,
+  LogicalFilter,
+  FilterOp,
+} from '../../types/query.js'
 import type { NodeBackend } from './types.js'
 import type { SupertagInfo } from '../node.service.js'
 import type { QueryEvaluationResult } from '../query-evaluator.service.js'
@@ -123,7 +133,7 @@ export class SurrealBackend implements NodeBackend {
    * Resolve a FieldSystemId (e.g., 'field:path') to its SurrealDB field record ID string.
    * Results are cached for performance.
    */
-  private async resolveFieldId(fieldSystemId: FieldSystemId): Promise<string> {
+  private async resolveFieldId(fieldSystemId: string): Promise<string> {
     const cached = this.fieldIdCache.get(fieldSystemId)
     if (cached) return cached
 
@@ -1048,7 +1058,7 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluateSupertagFilter(
-    filter: { supertagId: string; includeInherited?: boolean },
+    filter: SupertagFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const { supertagId, includeInherited = true } = filter
@@ -1081,13 +1091,13 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluatePropertyFilter(
-    filter: { fieldId: string; op: string; value?: unknown },
+    filter: PropertyFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const db = this.ensureInitialized()
     let fieldRecordId: string
     try {
-      fieldRecordId = await this.resolveFieldId(filter.fieldId as FieldSystemId)
+      fieldRecordId = await this.resolveFieldId(filter.fieldId)
     } catch {
       return new Set()
     }
@@ -1103,10 +1113,12 @@ export class SurrealBackend implements NodeBackend {
     for (const edge of (edges || [])) {
       const nodeRefId = rid(edge.node_ref)
       if (!candidateIds.has(nodeRefId)) continue
-      if (!nodePropsMap.has(nodeRefId)) {
-        nodePropsMap.set(nodeRefId, [])
+      const existing = nodePropsMap.get(nodeRefId)
+      if (existing) {
+        existing.push(edge.value)
+      } else {
+        nodePropsMap.set(nodeRefId, [edge.value])
       }
-      nodePropsMap.get(nodeRefId)!.push(edge.value)
     }
 
     const { op, value: target } = filter
@@ -1144,7 +1156,7 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluateContentFilter(
-    filter: { query: string; caseSensitive?: boolean },
+    filter: ContentFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const { query, caseSensitive = false } = filter
@@ -1170,7 +1182,7 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluateHasFieldFilter(
-    filter: { fieldId: string; negate?: boolean },
+    filter: HasFieldFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const { fieldId, negate = false } = filter
@@ -1178,7 +1190,7 @@ export class SurrealBackend implements NodeBackend {
 
     let fieldRecordId: string
     try {
-      fieldRecordId = await this.resolveFieldId(fieldId as FieldSystemId)
+      fieldRecordId = await this.resolveFieldId(fieldId)
     } catch {
       return negate ? candidateIds : new Set()
     }
@@ -1202,7 +1214,7 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluateTemporalFilter(
-    filter: { field: string; op: string; days?: number; date?: string },
+    filter: TemporalFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const db = this.ensureInitialized()
@@ -1243,7 +1255,7 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluateRelationFilter(
-    filter: { relationType: string; targetNodeId?: string; fieldId?: string },
+    filter: RelationFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const db = this.ensureInitialized()
@@ -1277,7 +1289,7 @@ export class SurrealBackend implements NodeBackend {
         let fieldRecordId: string | undefined
         if (fieldId) {
           try {
-            fieldRecordId = await this.resolveFieldId(fieldId as FieldSystemId)
+            fieldRecordId = await this.resolveFieldId(fieldId)
           } catch {
             return new Set()
           }
@@ -1318,7 +1330,7 @@ export class SurrealBackend implements NodeBackend {
         let fieldRecordId: string | undefined
         if (fieldId) {
           try {
-            fieldRecordId = await this.resolveFieldId(fieldId as FieldSystemId)
+            fieldRecordId = await this.resolveFieldId(fieldId)
           } catch {
             return new Set()
           }
@@ -1357,7 +1369,7 @@ export class SurrealBackend implements NodeBackend {
   }
 
   private async evaluateLogicalFilter(
-    filter: { type: string; filters: QueryDefinition['filters'] },
+    filter: LogicalFilter,
     candidateIds: Set<string>,
   ): Promise<Set<string>> {
     const { type, filters } = filter
@@ -1458,7 +1470,7 @@ function isEmptyValue(value: unknown): boolean {
   return false
 }
 
-function compareValues(actual: unknown, op: string, target: unknown): boolean {
+function compareValues(actual: unknown, op: FilterOp, target: unknown): boolean {
   switch (op) {
     case 'eq':
       return actual === target

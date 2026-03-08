@@ -30,8 +30,7 @@ export interface AssembledNode {
  * A single property value attached to a node
  */
 export interface PropertyValue {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: any
+  value: unknown
   rawValue: string
   fieldNodeId: string
   fieldName: string
