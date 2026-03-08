@@ -61,8 +61,8 @@ export function OutlineEditor() {
           const treeResult = treeResults[i]!
           const rootId = rootIds[i]!
 
-          if (treeResult.success) {
-            for (const n of treeResult.nodes) {
+          if ('success' in treeResult && treeResult.success) {
+            for (const n of (treeResult as { success: true; nodes: OutlineNode[]; rootId: string }).nodes) {
               nodeMap.set(n.id, {
                 id: n.id,
                 content: n.content,
@@ -71,6 +71,7 @@ export function OutlineEditor() {
                 order: n.order,
                 collapsed: n.collapsed,
                 supertags: n.supertags,
+                fields: n.fields ?? [],
               })
             }
             topLevelIds.push(rootId)
@@ -86,6 +87,7 @@ export function OutlineEditor() {
           order: '00000000',
           collapsed: false,
           supertags: [],
+          fields: [],
         }
         nodeMap.set(WORKSPACE_ROOT_ID, workspaceRoot)
 

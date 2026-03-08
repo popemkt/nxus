@@ -1,3 +1,22 @@
+export type FieldType =
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'select'
+  | 'url'
+  | 'email'
+  | 'node'
+  | 'nodes'
+  | 'json'
+
+export interface OutlineField {
+  fieldName: string
+  fieldSystemId: string | null
+  fieldType: FieldType
+  values: { value: unknown; order: number }[]
+}
+
 export interface OutlineNode {
   id: string
   content: string
@@ -6,6 +25,7 @@ export interface OutlineNode {
   order: string
   collapsed: boolean
   supertags: SupertagBadge[]
+  fields: OutlineField[]
 }
 
 export interface SupertagBadge {
@@ -22,3 +42,21 @@ export type NodeMap = Map<string, OutlineNode>
  * whose children are the top-level nodes (ownerId = null in DB).
  */
 export const WORKSPACE_ROOT_ID = '__workspace__'
+
+/**
+ * System field IDs hidden from the outline field display.
+ * These are engine-internal properties, not user-facing data.
+ */
+export const HIDDEN_FIELD_SYSTEM_IDS = new Set([
+  'field:supertag',
+  'field:extends',
+  'field:field_type',
+  'field:order',
+  'field:parent',
+  'field:query_result_cache',
+  'field:query_evaluated_at',
+  'field:recall_cached_question',
+  'field:gcal_access_token',
+  'field:gcal_refresh_token',
+  'field:gcal_token_expiry',
+])

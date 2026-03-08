@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { getSupertagColor } from '@/lib/supertag-colors'
+import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
+import type { FieldType } from '@/types/outline'
 
 /**
  * Get a node and its children (one level deep), assembled with properties/supertags.
@@ -23,7 +25,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     const maxDepth = ctx.data.depth ?? 10
 
-    type OutlineNode = {
+    type OutlineNodeResult = {
       id: string
       content: string
       parentId: string | null
@@ -31,9 +33,54 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       order: string
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null }[]
+      fields: { fieldName: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: {} | null; order: number }[] }[]
     }
 
-    const nodeMap = new Map<string, OutlineNode>()
+    const nodeMap = new Map<string, OutlineNodeResult>()
+    // Cache field types to avoid redundant lookups
+    const fieldTypeCache = new Map<string, FieldType>()
+
+    function resolveFieldType(fieldNodeId: string): FieldType {
+      const cached = fieldTypeCache.get(fieldNodeId)
+      if (cached) return cached
+
+      const fieldNode = assembleNode(db, fieldNodeId)
+      const ft = fieldNode
+        ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
+        : 'text'
+      const result = ft as FieldType
+      fieldTypeCache.set(fieldNodeId, result)
+      return result
+    }
+
+    function extractFields(assembled: {
+      properties: Record<string, { value: unknown; rawValue: string; fieldNodeId: string; fieldName: string; fieldSystemId: string | null; order: number }[]>
+    }): OutlineNodeResult['fields'] {
+      const fields: OutlineNodeResult['fields'] = []
+
+      for (const [, propValues] of Object.entries(assembled.properties)) {
+        if (!propValues || propValues.length === 0) continue
+
+        const first = propValues[0]!
+        // Skip hidden system fields
+        if (first.fieldSystemId && HIDDEN_FIELD_SYSTEM_IDS.has(first.fieldSystemId)) continue
+
+        const fieldType = resolveFieldType(first.fieldNodeId)
+
+        fields.push({
+          fieldName: first.fieldName,
+          fieldSystemId: first.fieldSystemId,
+          fieldType,
+          values: propValues
+            .sort((a, b) => a.order - b.order)
+            .map((pv) => ({ value: (pv.value ?? null) as {} | null, order: pv.order })),
+        })
+      }
+
+      // Sort fields alphabetically by name for consistent display
+      fields.sort((a, b) => a.fieldName.localeCompare(b.fieldName))
+      return fields
+    }
 
     function loadNode(nodeId: string, currentDepth: number): void {
       if (nodeMap.has(nodeId)) return
@@ -43,7 +90,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
       const orderValue = getProperty(assembled, FIELD_NAMES.ORDER) as number | undefined
 
-      const outlineNode: OutlineNode = {
+      const outlineNode: OutlineNodeResult = {
         id: assembled.id,
         content: assembled.content ?? '',
         parentId: assembled.ownerId,
@@ -51,13 +98,13 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         order: String(orderValue ?? 0).padStart(8, '0'),
         collapsed: false,
         supertags: assembled.supertags.map((st: { id: string; content: string }) => {
-          // Color lives on the supertag definition node; fall back to deterministic hash
           const stNode = assembleNode(db, st.id)
           const dbColor = stNode
             ? (getProperty(stNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
             : null
           return { id: st.id, name: st.content, color: dbColor ?? getSupertagColor(st.id) }
         }),
+        fields: extractFields(assembled),
       }
 
       nodeMap.set(nodeId, outlineNode)
@@ -75,7 +122,6 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
           loadNode(child.id, currentDepth + 1)
         }
 
-        // Sort by order
         childIds.sort((a, b) => {
           const na = nodeMap.get(a)
           const nb = nodeMap.get(b)
@@ -88,9 +134,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     loadNode(ctx.data.nodeId, 0)
 
-    // Serialize Map to array for JSON transport
     const nodesArray = Array.from(nodeMap.values())
-
     return { success: true as const, nodes: nodesArray, rootId: ctx.data.nodeId }
   })
 
@@ -108,14 +152,12 @@ export const getWorkspaceRootServerFn = createServerFn({ method: 'GET' }).handle
     } = await import('@nxus/db/server')
     const db = await initDatabaseWithBootstrap()
 
-    // Find nodes with no owner (top-level workspace nodes)
     const rootNodes = db
       .select()
       .from(nodes)
       .where(and(isNull(nodes.ownerId), isNull(nodes.deletedAt)))
       .all()
 
-    // If no roots exist, find any node to start from
     if (rootNodes.length === 0) {
       const anyNode = db.select().from(nodes).where(isNull(nodes.deletedAt)).limit(1).get()
       return {
@@ -212,7 +254,6 @@ export const reparentNodeServerFn = createServerFn({ method: 'POST' })
     } = await import('@nxus/db/server')
     const db = await initDatabaseWithBootstrap()
 
-    // Update ownerId directly
     db.update(nodes)
       .set({
         ownerId: ctx.data.newParentId,
@@ -238,5 +279,30 @@ export const reorderNodeServerFn = createServerFn({ method: 'POST' })
       await import('@nxus/db/server')
     const db = await initDatabaseWithBootstrap()
     setProperty(db, ctx.data.nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
+    return { success: true as const }
+  })
+
+/**
+ * Set a field value on a node.
+ */
+export const setFieldValueServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      nodeId: z.string(),
+      fieldSystemId: z.string(),
+      value: z.unknown(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { initDatabaseWithBootstrap, setProperty } = await import(
+      '@nxus/db/server'
+    )
+    const db = await initDatabaseWithBootstrap()
+    setProperty(
+      db,
+      ctx.data.nodeId,
+      ctx.data.fieldSystemId as import('@nxus/db/server').FieldSystemId,
+      ctx.data.value,
+    )
     return { success: true as const }
   })

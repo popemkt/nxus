@@ -5,6 +5,7 @@ interface BulletProps {
   collapsed: boolean
   childCount: number
   tagColor: string | null
+  hasSupertag: boolean
   onClick: (e: React.MouseEvent) => void
 }
 
@@ -13,6 +14,7 @@ export function Bullet({
   collapsed,
   childCount,
   tagColor,
+  hasSupertag,
   onClick,
 }: BulletProps) {
   return (
@@ -38,24 +40,43 @@ export function Bullet({
       {/* Outer halo ring — only visible when collapsed with children */}
       {hasChildren && collapsed && (
         <span
-          className="absolute inset-[3px] rounded-full border border-foreground/20"
+          className={cn(
+            'absolute inset-[3px] border border-foreground/20',
+            hasSupertag ? 'rounded-[3px]' : 'rounded-full',
+          )}
           style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
         />
       )}
 
-      {/* Inner bullet dot */}
-      <span
-        className={cn(
-          'block rounded-full transition-all duration-100',
-          hasChildren ? 'h-[5px] w-[5px]' : 'h-1 w-1',
-          !tagColor && 'bg-foreground/40',
-          !tagColor && hasChildren && 'bg-foreground/50',
-          hasChildren &&
-            !collapsed &&
-            'group-hover/bullet:bg-foreground/60',
-        )}
-        style={tagColor ? { backgroundColor: tagColor } : undefined}
-      />
+      {/* Inner bullet dot — diamond for supertag nodes, circle for plain */}
+      {hasSupertag ? (
+        <span
+          className={cn(
+            'block transition-all duration-100',
+            hasChildren ? 'h-[7px] w-[7px]' : 'h-[5px] w-[5px]',
+            'rotate-45 rounded-[1px]',
+            !tagColor && 'bg-foreground/40',
+            !tagColor && hasChildren && 'bg-foreground/50',
+            hasChildren &&
+              !collapsed &&
+              'group-hover/bullet:bg-foreground/60',
+          )}
+          style={tagColor ? { backgroundColor: tagColor } : undefined}
+        />
+      ) : (
+        <span
+          className={cn(
+            'block rounded-full transition-all duration-100',
+            hasChildren ? 'h-[5px] w-[5px]' : 'h-1 w-1',
+            !tagColor && 'bg-foreground/40',
+            !tagColor && hasChildren && 'bg-foreground/50',
+            hasChildren &&
+              !collapsed &&
+              'group-hover/bullet:bg-foreground/60',
+          )}
+          style={tagColor ? { backgroundColor: tagColor } : undefined}
+        />
+      )}
 
       {/* Collapsed children count badge */}
       {hasChildren && collapsed && childCount > 0 && (

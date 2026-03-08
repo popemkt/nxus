@@ -4,6 +4,7 @@ import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
+import { FieldsSection } from './fields-section'
 
 interface NodeBlockProps {
   nodeId: string
@@ -214,6 +215,7 @@ export const NodeBlock = memo(function NodeBlock({
           collapsed={node.collapsed}
           childCount={node.children.length}
           tagColor={primaryTagColor}
+          hasSupertag={node.supertags.length > 0}
           onClick={handleBulletClick}
         />
         <NodeContent
@@ -228,6 +230,11 @@ export const NodeBlock = memo(function NodeBlock({
           onKeyDown={handleKeyDown}
         />
       </div>
+
+      {/* Fields (properties) — shown before children */}
+      {node.fields.length > 0 && !node.collapsed && (
+        <FieldsSection nodeId={nodeId} fields={node.fields} depth={depth} />
+      )}
 
       {/* Children */}
       {hasChildren && !node.collapsed && (

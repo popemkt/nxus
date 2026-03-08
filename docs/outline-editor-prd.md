@@ -57,163 +57,161 @@ Fields are visually separated from regular children by:
 
 The foundation. A fully keyboard-driven outliner with proper tree operations.
 
-#### 1.1 Block Rendering
+#### 1.1 Block Rendering ✅
 
-- Recursive `<NodeBlock>` component renders each node and its children
-- Each node shows: bullet (collapsible), content text, supertag badges
-- Indentation via left padding (depth × indent-width)
-- Collapsed nodes show a filled/highlighted bullet; expanded show hollow/open
-- Children count indicator on collapsed nodes with children
+- [x] Recursive `<NodeBlock>` component renders each node and its children
+- [x] Each node shows: bullet (collapsible), content text, supertag badges
+- [x] Indentation via left padding (depth × indent-width)
+- [x] Collapsed nodes show a filled/highlighted bullet; expanded show hollow/open
+- [x] Children count indicator on collapsed nodes with children
+- [x] Supertag nodes show diamond bullet; plain nodes show circle bullet
 
-#### 1.2 Editing Model
+#### 1.2 Editing Model ✅ (partial)
 
-- **Single active editor**: Only one node is editable at a time
-- Active node shows a text input/contentEditable; inactive nodes render as static text
-- Click on a node to activate it; cursor placed at click position
-- Clicking outside any node deactivates the current editor (saves content)
-- Undo/redo per editing session (Cmd+Z / Cmd+Shift+Z)
+- [x] **Single active editor**: Only one node is editable at a time
+- [x] Active node shows contentEditable; inactive nodes render as static text
+- [x] Click on a node to activate it; cursor placed at click position
+- [x] Clicking outside any node deactivates the current editor (saves content)
+- [ ] Undo/redo per editing session (Cmd+Z / Cmd+Shift+Z)
 
-#### 1.3 Keyboard Operations
+#### 1.3 Keyboard Operations ✅ (partial)
 
-| Key | Context | Action |
-|-----|---------|--------|
-| **Enter** | On active node | Create new sibling below. If cursor mid-text, split: current node keeps text before cursor, new node gets text after |
-| **Tab** | On active node | Indent: become last child of previous sibling. No-op if no previous sibling |
-| **Shift+Tab** | On active node | Outdent: become sibling of parent, positioned after parent. Children follow |
-| **Backspace** | On empty active node | Delete node, focus previous visible node. If node has children, merge them into parent |
-| **Backspace** | At start of non-empty node | Merge content with previous sibling (append to end) |
-| **Arrow Up** | At top of node text | Focus previous visible node, cursor at end |
-| **Arrow Down** | At bottom of node text | Focus next visible node, cursor at start |
-| **Cmd+Shift+Up** | On active node | Move node up among siblings |
-| **Cmd+Shift+Down** | On active node | Move node down among siblings |
-| **Cmd+Up** | On active node | Collapse children |
-| **Cmd+Down** | On active node | Expand children |
-| **Escape** | On active node | Deactivate editor, blur to node selection mode |
+| Key | Context | Action | Status |
+|-----|---------|--------|--------|
+| **Enter** | On active node | Create new sibling below | ✅ (no mid-text split yet) |
+| **Tab** | On active node | Indent | ✅ |
+| **Shift+Tab** | On active node | Outdent | ✅ |
+| **Backspace** | On empty active node | Delete + focus previous | ✅ |
+| **Backspace** | At start of non-empty node | Merge with previous | ✅ |
+| **Arrow Up** | At top of node text | Focus previous | ✅ |
+| **Arrow Down** | At bottom of node text | Focus next | ✅ |
+| **Cmd+Shift+Up** | On active node | Move node up | ✅ |
+| **Cmd+Shift+Down** | On active node | Move node down | ✅ |
+| **Cmd+Up** | On active node | Collapse children | ✅ |
+| **Cmd+Down** | On active node | Expand children | ✅ |
+| **Escape** | On active node | Deactivate | ✅ |
 
-#### 1.4 Node Selection Mode
+#### 1.4 Node Selection Mode ✅
 
-When no node is actively being edited (after Escape):
-- Arrow Up/Down navigates between visible nodes (highlighted, not editing)
-- Enter activates editing on the selected node
-- Tab/Shift+Tab indent/outdent the selected node
-- Delete/Backspace deletes the selected node (with confirmation if it has children)
-- Space toggles collapse/expand
+- [x] Arrow Up/Down navigates between visible nodes
+- [x] Enter activates editing on the selected node
+- [ ] Tab/Shift+Tab indent/outdent the selected node
+- [x] Delete/Backspace deletes the selected node
+- [x] Space toggles collapse/expand
 
-#### 1.5 Collapse/Expand
+#### 1.5 Collapse/Expand ✅
 
-- Click the bullet icon to toggle
-- Collapsed state stored per node (property or local UI state)
-- Collapsed nodes show children count badge
-- Recursive collapse: collapsing a node hides all descendants
+- [x] Click the bullet icon to toggle
+- [x] Collapsed state stored per node (local UI state)
+- [x] Collapsed nodes show children count badge
+- [x] Recursive collapse: collapsing a node hides all descendants
 
-#### 1.6 Zoom (Focus Mode)
+#### 1.6 Zoom (Focus Mode) ✅ (partial)
 
-- **Cmd+.** or click node title in breadcrumb: Zoom into a node — it becomes the root of the visible tree
-- **Cmd+,** or click breadcrumb ancestor: Zoom out to parent
-- Breadcrumb trail shows: Home > Grandparent > Parent > Current Node
-- Zoomed-in view shows the node's content as a heading, with its children as the outline below
+- [x] Cmd+click bullet: Zoom into a node — becomes root of visible tree
+- [x] Click breadcrumb Home: Zoom out to workspace root
+- [x] Breadcrumb trail shows ancestor chain
+- [x] Zoomed-in view shows node content as heading
+- [ ] Keyboard shortcuts (Cmd+. / Cmd+,) for zoom
 
-#### 1.7 Drag and Drop
+#### 1.7 Drag and Drop ❌
 
-- Click and hold bullet to initiate drag
-- Drop indicator shows valid positions (before/after/child-of)
-- Drop zones: between nodes (sibling), indented from a node (child), at root level
-- Multi-node drag when selection spans multiple nodes
+- [ ] Click and hold bullet to initiate drag
+- [ ] Drop indicator shows valid positions
+- [ ] Drop zones: between nodes, indented, at root level
+- [ ] Multi-node drag
 
-#### 1.8 Ordering
+#### 1.8 Ordering ✅
 
-Use **fractional indexing** for sibling order:
-- No renumbering when inserting between siblings
-- Use `fractional-indexing` npm package or equivalent
-- Store as `field:order` property on each node
+- [x] Fractional indexing for sibling order (padded integer strings)
+- [x] No renumbering when inserting between siblings
+- [x] Store as `field:order` property on each node
 
-### Phase 2: Fields & Structured Data
+#### 1.9 Database Integration ✅
 
-#### 2.1 Field Display
+- [x] Real node tree fetching from DB on mount
+- [x] Optimistic updates with fire-and-forget server persistence
+- [x] Debounced content saves (500ms)
+- [x] Temp-to-real ID replacement on node creation
+- [x] Deterministic hash-based supertag color fallback
+
+### Phase 2: Fields & Structured Data ✅ (partial)
+
+#### 2.1 Field Display ✅
 
 When a node is expanded, its fields render in a dedicated section before regular children:
 
 - Fields section has a subtle visual treatment (slightly lighter background or left border)
-- Each field shows: field icon (type-specific), field name (label), field value (type-specific control)
-- Empty fields for required supertag template fields show as ghost/placeholder entries
-- Optional fields hidden by default, accessible via `+` button or `>` entry
+- [x] Each field shows: field name (label), field value (type-specific control)
+- [ ] Empty fields for required supertag template fields show as ghost/placeholder entries
+- [ ] Optional fields hidden by default, accessible via `+` button or `>` entry
 
-#### 2.2 Plain Scalar Field Editors
+#### 2.2 Plain Scalar Field Editors ✅ (basic)
 
 Each field type gets a specialized inline editor:
 
-| Field Type | Display | Edit Control | Behavior |
-|------------|---------|-------------|----------|
-| **text** | Inline text | Text input | Single-line, auto-focus on click |
-| **number** | Formatted number | Number input | Up/down arrow keys increment, optional min/max |
-| **boolean** | Toggle switch | Checkbox/toggle | Click to toggle, immediate save |
-| **date** | Formatted date (e.g., "Mar 15, 2024") | Date picker popover | Click opens picker, natural language entry ("tomorrow", "next Friday") |
-| **select** | Selected value as badge | Dropdown | Options from field definition, auto-open on click |
-| **url** | Clickable link (truncated) | Text input with url validation | Click opens URL, edit icon shows input |
-| **email** | Clickable mailto (truncated) | Text input with email validation | Click opens email client, edit icon shows input |
-| **json** | Collapsed `{...}` indicator | Code editor popover | Click opens modal with syntax-highlighted JSON editor |
+| Field Type | Display | Edit Control | Status |
+|------------|---------|-------------|--------|
+| **text** | Inline text | Text input, click-to-edit | ✅ |
+| **number** | Formatted number | Number input, click-to-edit | ✅ |
+| **boolean** | Toggle switch | Toggle, instant save | ✅ |
+| **date** | Formatted date | Native date picker | ✅ |
+| **select** | Value as badge | Read-only badge (no dropdown yet) | ✅ partial |
+| **url** | Clickable link | Text input + edit button | ✅ |
+| **email** | Clickable mailto | Text input, click-to-edit | ✅ |
+| **json** | Collapsed `{…}` | Read-only indicator | ✅ partial |
 
-#### 2.3 Node Reference Field Editor
+#### 2.3 Node Reference Field Editor ❌
 
-- Display: Node name as a pill/chip with the node's supertag color
-- Click chip: Navigate to (zoom into) the referenced node
-- Edit: `@`-mention autocomplete — type `@` then node name to search
-- Multi-value (`nodes` type): Multiple chips, `@` to add more, `x` on chip to remove
-- Empty reference: Shows `@` placeholder, click to activate autocomplete
+- [ ] Display: Node name as a pill/chip with the node's supertag color
+- [ ] Click chip: Navigate to (zoom into) the referenced node
+- [ ] Edit: `@`-mention autocomplete — type `@` then node name to search
+- [ ] Multi-value (`nodes` type): Multiple chips, `@` to add more, `x` on chip to remove
+- [ ] Empty reference: Shows `@` placeholder, click to activate autocomplete
 
-#### 2.4 Field Entry Flow
+#### 2.4 Field Entry Flow ❌
 
-1. User types `>` on an empty child node
-2. Autocomplete dropdown shows available fields:
-   - Fields defined by parent's supertag templates (prioritized)
-   - Recently used fields
-   - "Create new field..." option at bottom
-3. User selects a field → the node transforms into a field row
-4. Cursor moves to the value editor (type-appropriate control)
-5. Creating a new field prompts for: name, type (dropdown of field types)
+- [ ] User types `>` on an empty child node → autocomplete for fields
+- [ ] Field selection transforms node into field row
+- [ ] "Create new field..." option
 
-#### 2.5 Field Visibility Options
+#### 2.5 Field Visibility Options ❌
 
-Per-field configuration (stored on supertag template):
-- **Always show**: Field row always visible when node is expanded
-- **Hide when empty**: Only show if field has a value (default)
-- **Always hide**: Only accessible via `+` button or command palette
+- [ ] Always show / Hide when empty / Always hide per-field config
 
-### Phase 3: Supertags in the Outline
+### Phase 3: Supertags in the Outline ✅ (partial — display only)
 
-#### 3.1 Applying Supertags
+#### 3.1 Applying Supertags ❌
 
-- Type `#` anywhere in node content → autocomplete for existing supertags
-- Supertag appears as a colored badge after the node content
-- Applying a supertag auto-populates template fields (from the supertag definition)
-- Multiple supertags supported — all their fields merge
+- [ ] Type `#` anywhere in node content → autocomplete for existing supertags
+- [x] Supertag appears as a colored badge after the node content
+- [ ] Applying a supertag auto-populates template fields
+- [x] Multiple supertags supported — all displayed as badges
 
-#### 3.2 Supertag Badges
+#### 3.2 Supertag Badges ✅ (partial)
 
-- Compact colored badge showing supertag name
-- Click badge to navigate to supertag page (all instances)
-- Right-click badge for options: remove, configure
+- [x] Compact colored badge showing supertag name
+- [ ] Click badge to navigate to supertag page
+- [ ] Right-click badge for options: remove, configure
 
-#### 3.3 Template Auto-Population
+#### 3.3 Template Auto-Population ❌
 
-When a supertag is applied:
-1. Fetch template fields from supertag definition
-2. Create property entries for each required field (with default values if defined)
-3. Field section appears under the node with the template fields
+- [ ] Fetch template fields from supertag definition
+- [ ] Create property entries for each required field
+- [ ] Field section appears under the node with template fields
 
-### Phase 4: References & Links
+### Phase 4: References & Links ❌
 
 #### 4.1 Inline References
 
-- Type `@` mid-text → autocomplete for existing nodes
-- Selected node appears as inline chip within the text
-- Cmd+click chip to navigate to referenced node
-- Display shows referenced node's content as chip text
+- [ ] Type `@` mid-text → autocomplete for existing nodes
+- [ ] Selected node appears as inline chip within the text
+- [ ] Cmd+click chip to navigate to referenced node
 
 #### 4.2 Node References (Full)
 
-- On an empty node, `@` creates a full reference (mirror)
-- The referenced node's content displays in-place
+- [ ] On an empty node, `@` creates a full reference (mirror)
+- [ ] The referenced node's content displays in-place
 - Editing edits the original (all references update)
 - Visual indicator that this is a reference (reference icon, slight transparency)
 
@@ -225,20 +223,19 @@ When a supertag is applied:
 
 ### Phase 5: Views & Search
 
-#### 5.1 View Switching
+#### 5.1 View Switching ❌
 
-From any node, switch between view modes for its children:
-- **Outline** (default): Standard outline view
-- **Table**: Children as rows, fields as columns
-- **Cards**: Children as cards in columns (grouped by a field)
-- **List**: Dual-panel navigation view
+- [ ] **Outline** (default): Standard outline view
+- [ ] **Table**: Children as rows, fields as columns
+- [ ] **Cards**: Children as cards in columns (grouped by a field)
+- [ ] **List**: Dual-panel navigation view
 
-#### 5.2 Search Nodes (Live Queries)
+#### 5.2 Search Nodes (Live Queries) ❌
 
-- Type `?` on empty node → "Create search node"
-- Configure query using existing `QueryDefinition` system
-- Results display as virtual children (read-only, links to originals)
-- Auto-refresh on data changes via existing reactive event bus
+- [ ] Type `?` on empty node → "Create search node"
+- [ ] Configure query using existing `QueryDefinition` system
+- [ ] Results display as virtual children
+- [ ] Auto-refresh on data changes
 
 ## Architecture
 

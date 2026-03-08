@@ -135,6 +135,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       order: generateOrderBetween(afterOrder, nextOrder),
       collapsed: false,
       supertags: [],
+      fields: [],
     }
 
     const next = new Map(nodes)

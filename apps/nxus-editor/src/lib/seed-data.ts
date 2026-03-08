@@ -9,7 +9,7 @@ function node(
   supertags: OutlineNode['supertags'] = [],
   collapsed = false,
 ): OutlineNode {
-  return { id, content, parentId, order, children, collapsed, supertags }
+  return { id, content, parentId, order, children, collapsed, supertags, fields: [] }
 }
 
 export function seedDemoData(): NodeMap {
