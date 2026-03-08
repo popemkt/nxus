@@ -4,40 +4,34 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   ArrowLeft,
   Brain,
-  Bug,
-  Lightning,
-  Lightbulb,
-  SkipForward,
   SpinnerGap,
   PaperPlaneRight,
   ArrowRight,
   Check,
   Trophy,
-  Warning,
+  Barbell,
 } from '@phosphor-icons/react'
-import { getDueCardsServerFn } from '@/services/review.server'
+import { getAllCardsByTopicServerFn } from '@/services/review.server'
 import { submitReviewServerFn, previewIntervalsServerFn } from '@/services/review.server'
 import { generateQuestionServerFn, prefetchQuestionServerFn } from '@/services/generate-question.server'
 import { evaluateAnswerServerFn } from '@/services/evaluate-answer.server'
-import { explainFurtherServerFn } from '@/services/explain-further.server'
 import { getConceptsByTopicServerFn } from '@/services/concepts.server'
-import { useSessionTimer } from '@/lib/use-session-timer'
-import { formatElapsed } from '@/lib/format'
-import { SessionSummaryCard } from '@/components/session/session-summary'
+import { getTopicByIdServerFn } from '@/services/topics.server'
 import type { RecallConcept } from '@nxus/db'
 import type { GeneratedQuestion, AnswerEvaluation } from '@nxus/mastra'
 
 type SessionPhase = 'loading' | 'question' | 'answering' | 'evaluating' | 'feedback' | 'complete'
 
-export const Route = createFileRoute('/review/session')({
-  component: ReviewSessionPage,
+export const Route = createFileRoute('/review/cram')({
+  component: CramSessionPage,
   validateSearch: (search: Record<string, unknown>) => ({
-    topicId: (search['topicId'] as string) || undefined,
+    topicId: (search['topicId'] as string) || '',
+    reschedule: search['reschedule'] === false ? false : true,
   }),
 })
 
-function ReviewSessionPage() {
-  const { topicId } = Route.useSearch()
+function CramSessionPage() {
+  const { topicId, reschedule } = Route.useSearch()
   const queryClient = useQueryClient()
 
   const [queue, setQueue] = useState<RecallConcept[]>([])
@@ -53,32 +47,28 @@ function ReviewSessionPage() {
   const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null)
   const [intervals, setIntervals] = useState<Record<1 | 2 | 3 | 4, number> | null>(null)
   const [reviewedCount, setReviewedCount] = useState(0)
-  const [sessionStats, setSessionStats] = useState({
-    ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<1 | 2 | 3 | 4, number>,
-    newCount: 0,
-    learningCount: 0,
-    reviewCount: 0,
-    timeSpentMs: 0,
-  })
-  const hintsUsedRef = useRef(0)
-  const { elapsedMs, resetCardTimer, getCardElapsedMs } = useSessionTimer(
-    phase !== 'loading' && phase !== 'complete',
-  )
-  /** Tracks in-flight prefetch promises so generateQuestionForConcept can await them */
   const prefetchInFlightRef = useRef<Map<string, Promise<void>>>(new Map())
 
-  // Load due cards
+  // Fetch topic name
+  const topicQuery = useQuery({
+    queryKey: ['recall-topic', topicId],
+    queryFn: () => getTopicByIdServerFn({ data: { topicId } }),
+    enabled: !!topicId,
+  })
+
+  const topicName = topicQuery.data?.success ? topicQuery.data.topic.name : '...'
+
+  // Load ALL cards for the topic (not just due)
   useQuery({
-    queryKey: ['due-cards', topicId],
+    queryKey: ['cram-cards', topicId],
     queryFn: async () => {
-      const result = await getDueCardsServerFn({
-        data: { topicId, limit: 50 },
+      const result = await getAllCardsByTopicServerFn({
+        data: { topicId },
       })
       if (result.success && result.cards.length > 0) {
         setQueue(result.cards)
         setPhase('question')
         generateQuestionForConcept(result.cards[0]!)
-        // Prefetch questions for cards #2 and #3 immediately
         for (let i = 1; i <= 2 && i < result.cards.length; i++) {
           triggerPrefetch(result.cards[i]!, result.cards)
         }
@@ -87,13 +77,12 @@ function ReviewSessionPage() {
       }
       return result
     },
+    enabled: !!topicId,
   })
 
-  /** Get adjacent concepts for a concept */
   const getAdjacentConcepts = useCallback(
     async (concept: RecallConcept, allCards?: RecallConcept[]) => {
       if (!concept.topicId) return []
-      // Use queue cards as adjacent if available to avoid extra server call
       const pool = allCards ?? queue
       if (pool.length > 1) {
         return pool
@@ -115,7 +104,6 @@ function ReviewSessionPage() {
     [queue],
   )
 
-  /** Fire-and-forget prefetch for next concept — tracks in-flight promises */
   const triggerPrefetch = useCallback(
     (concept: RecallConcept, allCards?: RecallConcept[]) => {
       if (prefetchInFlightRef.current.has(concept.id)) return
@@ -148,11 +136,8 @@ function ReviewSessionPage() {
       setUserAnswer('')
       setEvaluation(null)
       setIntervals(null)
-      resetCardTimer()
-      hintsUsedRef.current = 0
 
       try {
-        // Wait for any in-flight prefetch to finish so we hit the DB cache
         const inFlight = prefetchInFlightRef.current.get(concept.id)
         if (inFlight) await inFlight
 
@@ -173,7 +158,6 @@ function ReviewSessionPage() {
           setQuestion(result.question as GeneratedQuestion)
           setPhase('answering')
 
-          // Preview intervals (fire-and-forget, non-blocking)
           previewIntervalsServerFn({
             data: { conceptId: concept.id },
           }).then((r) => {
@@ -181,7 +165,6 @@ function ReviewSessionPage() {
           }).catch(() => {})
         }
       } catch {
-        // Fallback: show concept as question
         setQuestion({
           questionText: `Explain the concept "${concept.title}" and why it matters.`,
           questionType: 'free-response',
@@ -191,23 +174,8 @@ function ReviewSessionPage() {
         setPhase('answering')
       }
     },
-    [getAdjacentConcepts, resetCardTimer],
+    [getAdjacentConcepts],
   )
-
-  const handleSkip = useCallback(() => {
-    // Capture the card that will be at currentIndex after splice
-    // (i.e. the card that was at currentIndex + 1)
-    const nextCard =
-      currentIndex + 1 < queue.length ? queue[currentIndex + 1]! : queue[0]!
-    setQueue((prev) => {
-      const next = [...prev]
-      const skipped = next.splice(currentIndex, 1)[0]!
-      next.push(skipped)
-      return next
-    })
-    // Index stays the same since array shifted left
-    generateQuestionForConcept(nextCard)
-  }, [currentIndex, queue, generateQuestionForConcept])
 
   const evaluateMutation = useMutation({
     mutationFn: async () => {
@@ -216,7 +184,6 @@ function ReviewSessionPage() {
       if (!currentConcept) return null
       const answer = userAnswerRef.current
 
-      // Deterministic question types: evaluate client-side instantly
       if (question.questionType === 'multiple-choice' && 'correctIndex' in question) {
         const isCorrect = answer === String(question.correctIndex)
         return {
@@ -258,7 +225,6 @@ function ReviewSessionPage() {
         }
       }
 
-      // Free-response: server-side AI evaluation
       setPhase('evaluating')
       const result = await evaluateAnswerServerFn({
         data: {
@@ -295,38 +261,20 @@ function ReviewSessionPage() {
           userAnswer: userAnswerRef.current,
           aiFeedback: evaluation.feedback,
           rating,
-          timeSpentMs: getCardElapsedMs(),
-          hintsUsed: hintsUsedRef.current,
+          reschedule,
         },
       })
       return result
     },
-    onSuccess: (_data, rating) => {
+    onSuccess: () => {
       setReviewedCount((c) => c + 1)
-
-      // Accumulate session stats
-      const cardState = currentConcept?.card?.state
-      setSessionStats((prev) => ({
-        ...prev,
-        ratingDistribution: {
-          ...prev.ratingDistribution,
-          [rating]: prev.ratingDistribution[rating] + 1,
-        },
-        newCount: prev.newCount + (cardState === 0 ? 1 : 0),
-        learningCount: prev.learningCount + (cardState === 1 || cardState === 3 ? 1 : 0),
-        reviewCount: prev.reviewCount + (cardState === 2 ? 1 : 0),
-        timeSpentMs: prev.timeSpentMs + getCardElapsedMs(),
-      }))
-
       queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
       queryClient.invalidateQueries({ queryKey: ['recall-topics'] })
 
-      // Move to next card
       const nextIndex = currentIndex + 1
       if (nextIndex < queue.length) {
         setCurrentIndex(nextIndex)
         generateQuestionForConcept(queue[nextIndex]!)
-        // Prefetch 2 cards ahead
         for (let i = 1; i <= 2; i++) {
           const futureCard = queue[nextIndex + i]
           if (futureCard) triggerPrefetch(futureCard)
@@ -340,10 +288,8 @@ function ReviewSessionPage() {
   // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Don't capture when typing in inputs
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') {
-        // Only handle Enter in inputs to submit
         if (e.key === 'Enter' && !e.shiftKey && phase === 'answering' && userAnswerRef.current.trim()) {
           e.preventDefault()
           evaluateMutation.mutate()
@@ -398,21 +344,33 @@ function ReviewSessionPage() {
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-semibold flex items-center gap-2">
-              <Lightning size={20} weight="duotone" className="text-primary" />
-              Review Session
+              <Barbell size={20} weight="duotone" className="text-orange-500" />
+              Cram Mode
+              <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                Cram
+              </span>
             </h1>
+            <p className="text-xs text-muted-foreground">{topicName}</p>
           </div>
           {queue.length > 0 ? (
             <span className="text-xs text-muted-foreground">
-              {currentIndex + 1} / {queue.length} · {reviewedCount} reviewed · {formatElapsed(elapsedMs)}
+              {currentIndex + 1} / {queue.length} · {reviewedCount} reviewed
             </span>
           ) : null}
         </div>
+        {/* Practice mode notice */}
+        {!reschedule ? (
+          <div className="border-t border-orange-500/20 bg-orange-500/5 px-6 py-2">
+            <p className="mx-auto max-w-3xl text-xs text-orange-600 dark:text-orange-400">
+              Practice mode - not affecting SRS schedule
+            </p>
+          </div>
+        ) : null}
         {/* Progress bar */}
         {queue.length > 0 ? (
           <div className="h-1 bg-muted">
             <div
-              className="h-full bg-primary transition-all duration-300"
+              className="h-full bg-orange-500 transition-all duration-300"
               style={{
                 width: `${((currentIndex + (phase === 'feedback' || phase === 'complete' ? 1 : 0)) / queue.length) * 100}%`,
               }}
@@ -425,15 +383,15 @@ function ReviewSessionPage() {
         {/* Loading */}
         {phase === 'loading' ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <SpinnerGap size={32} className="animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Loading due cards...</p>
+            <SpinnerGap size={32} className="animate-spin text-orange-500 mb-4" />
+            <p className="text-muted-foreground">Loading all cards for cram...</p>
           </div>
         ) : null}
 
         {/* Generating question */}
         {phase === 'question' ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <Brain size={32} weight="duotone" className="text-primary mb-4 animate-pulse" />
+            <Brain size={32} weight="duotone" className="text-orange-500 mb-4 animate-pulse" />
             <p className="text-muted-foreground">Generating question for: {currentConcept?.title}</p>
           </div>
         ) : null}
@@ -441,17 +399,8 @@ function ReviewSessionPage() {
         {/* Answering */}
         {phase === 'answering' && question && currentConcept ? (
           <div>
-            <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">
+            <div className="mb-2 text-xs text-muted-foreground uppercase tracking-wider">
               {currentConcept.topicName} · {currentConcept.title}
-              {currentConcept.card?.lapses != null && currentConcept.card.lapses >= 8 ? (
-                <span className="inline-flex items-center gap-1 text-[10px] rounded-full px-2 py-0.5 bg-red-500/10 text-red-600 dark:text-red-400 normal-case">
-                  <Bug size={12} /> Leech
-                </span>
-              ) : currentConcept.card?.lapses != null && currentConcept.card.lapses >= 5 ? (
-                <span className="inline-flex items-center gap-1 text-[10px] rounded-full px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 normal-case">
-                  <Warning size={12} /> Difficult
-                </span>
-              ) : null}
             </div>
             <div className="mb-6 rounded-xl border border-border bg-card p-6">
               <p className="text-lg font-medium leading-relaxed">
@@ -463,12 +412,11 @@ function ReviewSessionPage() {
             </div>
 
             <div className="mb-4">
-              <QuestionInput
+              <CramQuestionInput
                 question={question}
                 value={userAnswer}
                 onChange={(v) => {
                   setUserAnswer(v)
-                  // Auto-submit for deterministic question types (MC, T/F)
                   const isAutoSubmit =
                     question.questionType === 'multiple-choice' ||
                     question.questionType === 'true-false'
@@ -480,25 +428,11 @@ function ReviewSessionPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {queue.length > 1 ? (
-                  <button
-                    onClick={handleSkip}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <SkipForward size={16} />
-                    Skip
-                  </button>
-                ) : null}
-                {question.hints.length > 0 ? (
-                  <HintButton
-                    hints={question.hints}
-                    onReveal={() => {
-                      hintsUsedRef.current++
-                    }}
-                  />
-                ) : null}
-              </div>
+              {question.hints.length > 0 ? (
+                <CramHintButton hints={question.hints} />
+              ) : (
+                <div />
+              )}
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-muted-foreground">
                   <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">Enter</kbd> to submit
@@ -531,12 +465,10 @@ function ReviewSessionPage() {
               {currentConcept?.topicName} · {currentConcept?.title}
             </div>
 
-            {/* Question recap */}
             <div className="mb-4 rounded-xl border border-border bg-card p-4">
               <p className="text-sm font-medium">{question.questionText}</p>
             </div>
 
-            {/* Score */}
             <div className="mb-6 flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div
@@ -556,7 +488,6 @@ function ReviewSessionPage() {
               </div>
             </div>
 
-            {/* Feedback */}
             <div className="mb-6 rounded-xl border border-border bg-card p-5 space-y-4">
               <p className="text-sm">{evaluation.feedback}</p>
 
@@ -592,7 +523,6 @@ function ReviewSessionPage() {
                 </div>
               ) : null}
 
-              {/* Model answer */}
               <div className="border-t border-border pt-4">
                 <p className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Model Answer
@@ -603,18 +533,6 @@ function ReviewSessionPage() {
               </div>
             </div>
 
-            {/* Explain Further */}
-            {evaluation.keyInsightsMissed.length > 0 && currentConcept ? (
-              <ExplainFurtherSection
-                conceptTitle={currentConcept.title}
-                questionText={question.questionText}
-                modelAnswer={question.modelAnswer}
-                keyInsightsMissed={evaluation.keyInsightsMissed}
-                userAnswer={userAnswerRef.current}
-              />
-            ) : null}
-
-            {/* Rating buttons */}
             <div>
               <p className="mb-3 text-sm font-medium flex items-center gap-2">
                 How well did you know this?
@@ -649,46 +567,22 @@ function ReviewSessionPage() {
         ) : null}
 
         {/* Complete */}
-        {phase === 'complete' && reviewedCount > 0 ? (
-          <div>
-            <SessionSummaryCard
-              reviewedCount={reviewedCount}
-              ratingDistribution={sessionStats.ratingDistribution}
-              timeSpentMs={sessionStats.timeSpentMs}
-              stateBreakdown={{
-                newCount: sessionStats.newCount,
-                learningCount: sessionStats.learningCount,
-                reviewCount: sessionStats.reviewCount,
-              }}
-            />
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <Link
-                to="/"
-                className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/explore"
-                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Explore More
-              </Link>
-            </div>
-          </div>
-        ) : null}
-
-        {/* No cards due */}
-        {phase === 'complete' && reviewedCount === 0 ? (
+        {phase === 'complete' ? (
           <div className="flex flex-col items-center justify-center py-24">
             <Trophy
               size={48}
               weight="duotone"
-              className="mb-4 text-primary"
+              className="mb-4 text-orange-500"
             />
-            <h2 className="mb-2 text-xl font-semibold">No cards due for review</h2>
+            <h2 className="mb-2 text-xl font-semibold">
+              {reviewedCount > 0
+                ? 'Cram Session Complete!'
+                : 'No cards in this topic'}
+            </h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              All caught up! Check back later or explore new topics.
+              {reviewedCount > 0
+                ? `You crammed ${reviewedCount} card${reviewedCount !== 1 ? 's' : ''}. Great work!`
+                : 'Add some concepts first, then come back to cram.'}
             </p>
             <div className="flex items-center gap-3">
               <Link
@@ -698,10 +592,11 @@ function ReviewSessionPage() {
                 Dashboard
               </Link>
               <Link
-                to="/explore"
+                to="/topics/$topicId"
+                params={{ topicId }}
                 className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                Explore More
+                Back to Topic
               </Link>
             </div>
           </div>
@@ -711,7 +606,7 @@ function ReviewSessionPage() {
   )
 }
 
-function QuestionInput({
+function CramQuestionInput({
   question,
   value,
   onChange,
@@ -787,13 +682,7 @@ function QuestionInput({
   }
 }
 
-function HintButton({
-  hints,
-  onReveal,
-}: {
-  hints: string[]
-  onReveal?: () => void
-}) {
+function CramHintButton({ hints }: { hints: string[] }) {
   const [revealedCount, setRevealedCount] = useState(0)
 
   return (
@@ -809,75 +698,11 @@ function HintButton({
       ) : null}
       {revealedCount < hints.length ? (
         <button
-          onClick={() => {
-            setRevealedCount((c) => c + 1)
-            onReveal?.()
-          }}
+          onClick={() => setRevealedCount((c) => c + 1)}
           className="text-xs text-primary hover:underline"
         >
           Show hint ({revealedCount + 1}/{hints.length})
         </button>
-      ) : null}
-    </div>
-  )
-}
-
-function ExplainFurtherSection({
-  conceptTitle,
-  questionText,
-  modelAnswer,
-  keyInsightsMissed,
-  userAnswer,
-}: {
-  conceptTitle: string
-  questionText: string
-  modelAnswer: string
-  keyInsightsMissed: string[]
-  userAnswer: string
-}) {
-  const explainMutation = useMutation({
-    mutationFn: async () => {
-      const result = await explainFurtherServerFn({
-        data: {
-          conceptTitle,
-          questionText,
-          modelAnswer,
-          keyInsightsMissed,
-          userAnswer,
-        },
-      })
-      if (result.success) {
-        return result.explanation
-      }
-      throw new Error(result.error)
-    },
-  })
-
-  return (
-    <div className="mb-6">
-      <button
-        onClick={() => explainMutation.mutate()}
-        disabled={explainMutation.isPending || explainMutation.isSuccess}
-        className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
-      >
-        {explainMutation.isPending ? (
-          <SpinnerGap size={16} className="animate-spin" />
-        ) : (
-          <Lightbulb size={16} />
-        )}
-        Explain Further
-      </button>
-      {explainMutation.isSuccess && explainMutation.data ? (
-        <div className="mt-3 rounded-xl border border-border bg-muted/50 p-4">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {explainMutation.data}
-          </p>
-        </div>
-      ) : null}
-      {explainMutation.isError ? (
-        <p className="mt-2 text-xs text-red-500">
-          Failed to generate explanation. Try again.
-        </p>
       ) : null}
     </div>
   )

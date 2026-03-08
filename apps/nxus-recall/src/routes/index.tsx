@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -7,15 +8,27 @@ import {
   ArrowRight,
   Plus,
   MagnifyingGlass,
+  Fire,
+  FileText,
 } from '@phosphor-icons/react'
+import { cn } from '@nxus/ui'
 import { getTopicsServerFn } from '@/services/topics.server'
-import { getRecallStatsServerFn } from '@/services/review.server'
+import {
+  getRecallStatsServerFn,
+  getLearningPathServerFn,
+} from '@/services/review.server'
+import {
+  StatCardSkeleton,
+  TopicCardSkeleton,
+} from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/')({
   component: DashboardPage,
 })
 
 function DashboardPage() {
+  const [searchQuery, setSearchQuery] = useState<string>('')
+
   const statsQuery = useQuery({
     queryKey: ['recall-stats'],
     queryFn: () => getRecallStatsServerFn(),
@@ -26,8 +39,20 @@ function DashboardPage() {
     queryFn: () => getTopicsServerFn(),
   })
 
+  const learningPathQuery = useQuery({
+    queryKey: ['learning-path'],
+    queryFn: () => getLearningPathServerFn({ data: { limit: 5 } }),
+  })
+
   const stats = statsQuery.data?.stats
   const topics = topicsQuery.data?.topics ?? []
+  const filteredTopics = topics.filter(
+    (t: (typeof topics)[number]) =>
+      t.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+  const suggestions = (learningPathQuery.data?.suggestions ?? []).filter(
+    (s: { priority: string }) => s.priority !== 'new',
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,7 +71,15 @@ function DashboardPage() {
               Explore
             </Link>
             <Link
+              to="/import"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <FileText size={16} />
+              Import
+            </Link>
+            <Link
               to="/review/session"
+              search={{ topicId: undefined }}
               className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <Lightning size={16} weight="fill" />
@@ -58,34 +91,56 @@ function DashboardPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-8">
         {/* Stats Cards */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard
-            label="Topics"
-            value={stats?.totalTopics ?? 0}
-            icon={<Books size={20} weight="duotone" />}
-          />
-          <StatCard
-            label="Concepts"
-            value={stats?.totalConcepts ?? 0}
-            icon={<Brain size={20} weight="duotone" />}
-          />
-          <StatCard
-            label="Due Now"
-            value={stats?.dueNow ?? 0}
-            icon={<Lightning size={20} weight="duotone" />}
-            highlight={!!stats?.dueNow && stats.dueNow > 0}
-          />
-          <StatCard
-            label="Reviewed Today"
-            value={stats?.reviewedToday ?? 0}
-            icon={<ArrowRight size={20} weight="duotone" />}
-          />
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
+          {statsQuery.isLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard
+                label="Topics"
+                value={stats?.totalTopics ?? 0}
+                icon={<Books size={20} weight="duotone" />}
+              />
+              <StatCard
+                label="Concepts"
+                value={stats?.totalConcepts ?? 0}
+                icon={<Brain size={20} weight="duotone" />}
+              />
+              <StatCard
+                label="Due Now"
+                value={stats?.dueNow ?? 0}
+                icon={<Lightning size={20} weight="duotone" />}
+                highlight={!!stats?.dueNow && stats.dueNow > 0}
+              />
+              <StatCard
+                label="Reviewed Today"
+                value={stats?.reviewedToday ?? 0}
+                icon={<ArrowRight size={20} weight="duotone" />}
+              />
+              <StatCard
+                label="Streak"
+                value={stats?.currentStreak ?? 0}
+                icon={<Fire size={20} weight="duotone" />}
+                subtext={
+                  (stats?.longestStreak ?? 0) > (stats?.currentStreak ?? 0)
+                    ? `Best: ${stats?.longestStreak}`
+                    : undefined
+                }
+              />
+            </>
+          )}
         </div>
 
         {/* Due Cards CTA */}
         {stats?.dueNow && stats.dueNow > 0 ? (
           <Link
             to="/review/session"
+            search={{ topicId: undefined }}
             className="mb-8 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-6 transition-colors hover:bg-primary/10"
           >
             <div>
@@ -104,19 +159,82 @@ function DashboardPage() {
           </Link>
         ) : null}
 
+        {/* Suggested Next */}
+        {suggestions.length > 0 ? (
+          <div className="mb-8">
+            <h2 className="mb-3 text-lg font-semibold">Suggested Next</h2>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {suggestions.map((item: (typeof suggestions)[number]) => {
+                const pct = Math.round(item.retrievability * 100)
+                return (
+                  <Link
+                    key={item.concept.id}
+                    to="/topics/$topicId"
+                    params={{ topicId: item.concept.topicId }}
+                    className="flex min-w-[200px] shrink-0 flex-col gap-1.5 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium">
+                        {item.concept.title}
+                      </span>
+                      <span
+                        className={cn(
+                          'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium',
+                          pct < 50
+                            ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                            : pct < 85
+                              ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                              : 'bg-green-500/10 text-green-600 dark:text-green-400',
+                        )}
+                      >
+                        {pct}%
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {item.concept.topicName}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
+
         {/* Topics Grid */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Topics</h2>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h2 className="text-lg font-semibold shrink-0">Topics</h2>
+          <div className="relative flex-1 max-w-xs">
+            <MagnifyingGlass
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              type="text"
+              placeholder="Search topics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background py-1.5 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
           <Link
             to="/explore"
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <Plus size={14} />
             Add Topic
           </Link>
         </div>
 
-        {topics.length === 0 ? (
+        {topicsQuery.isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <TopicCardSkeleton />
+            <TopicCardSkeleton />
+            <TopicCardSkeleton />
+            <TopicCardSkeleton />
+            <TopicCardSkeleton />
+            <TopicCardSkeleton />
+          </div>
+        ) : filteredTopics.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16">
             <Books
               size={48}
@@ -137,7 +255,7 @@ function DashboardPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {topics.map((topic) => (
+            {filteredTopics.map((topic: (typeof filteredTopics)[number]) => (
               <Link
                 key={topic.id}
                 to="/topics/$topicId"
@@ -175,29 +293,35 @@ function StatCard({
   value,
   icon,
   highlight,
+  subtext,
 }: {
   label: string
   value: number
   icon: React.ReactNode
   highlight?: boolean
+  subtext?: string
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 ${
+      className={cn(
+        'rounded-xl border p-4',
         highlight
           ? 'border-primary/30 bg-primary/5'
-          : 'border-border bg-card'
-      }`}
+          : 'border-border bg-card',
+      )}
     >
       <div className="mb-2 flex items-center gap-2 text-muted-foreground">
         {icon}
         <span className="text-xs uppercase tracking-wider">{label}</span>
       </div>
       <div
-        className={`text-2xl font-semibold ${highlight ? 'text-primary' : ''}`}
+        className={cn('text-2xl font-semibold', highlight && 'text-primary')}
       >
         {value}
       </div>
+      {subtext ? (
+        <div className="mt-1 text-xs text-muted-foreground">{subtext}</div>
+      ) : null}
     </div>
   )
 }
