@@ -75,6 +75,7 @@ function buildCleanEnv(): Record<string, string | undefined> {
 
 const MAX_RETRIES = 3
 const BASE_DELAY_MS = 1000
+const REQUEST_TIMEOUT_MS = 120_000 // 2 minutes per attempt
 
 /** Exponential backoff with jitter */
 function backoffDelay(attempt: number): number {
@@ -104,6 +105,11 @@ function createClaudeAgentSdkClient(): AiClient {
       let lastError: Error | null = null
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const abortController = new AbortController()
+        const timeout = setTimeout(
+          () => abortController.abort(),
+          REQUEST_TIMEOUT_MS,
+        )
         try {
           for await (const message of query({
             prompt: options.prompt,
@@ -130,6 +136,7 @@ function createClaudeAgentSdkClient(): AiClient {
               ],
               permissionMode: 'bypassPermissions' as const,
               allowDangerouslySkipPermissions: true,
+              abortController,
               env,
             },
           })) {
@@ -155,6 +162,8 @@ function createClaudeAgentSdkClient(): AiClient {
           if (attempt < MAX_RETRIES - 1) {
             await sleep(backoffDelay(attempt))
           }
+        } finally {
+          clearTimeout(timeout)
         }
       }
 
