@@ -1,0 +1,232 @@
+import { memo, useCallback } from 'react'
+import { cn } from '@nxus/ui'
+import { useOutlineStore } from '@/stores/outline.store'
+import { Bullet } from './bullet'
+import { NodeContent } from './node-content'
+
+interface NodeBlockProps {
+  nodeId: string
+  depth: number
+}
+
+export const NodeBlock = memo(function NodeBlock({
+  nodeId,
+  depth,
+}: NodeBlockProps) {
+  const node = useOutlineStore((s) => s.nodes.get(nodeId))
+  const activeNodeId = useOutlineStore((s) => s.activeNodeId)
+  const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
+  const cursorPosition = useOutlineStore((s) => s.cursorPosition)
+  const activateNode = useOutlineStore((s) => s.activateNode)
+  const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
+  const updateNodeContent = useOutlineStore((s) => s.updateNodeContent)
+  const createNodeAfter = useOutlineStore((s) => s.createNodeAfter)
+  const deleteNode = useOutlineStore((s) => s.deleteNode)
+  const indentNode = useOutlineStore((s) => s.indentNode)
+  const outdentNode = useOutlineStore((s) => s.outdentNode)
+  const moveNodeUp = useOutlineStore((s) => s.moveNodeUp)
+  const moveNodeDown = useOutlineStore((s) => s.moveNodeDown)
+  const getPreviousVisibleNode = useOutlineStore(
+    (s) => s.getPreviousVisibleNode,
+  )
+  const getNextVisibleNode = useOutlineStore((s) => s.getNextVisibleNode)
+  const nodes = useOutlineStore((s) => s.nodes)
+
+  const handleBulletClick = useCallback(() => {
+    toggleCollapse(nodeId)
+  }, [toggleCollapse, nodeId])
+
+  const handleActivate = useCallback(
+    (cursorPos?: number) => {
+      activateNode(nodeId, cursorPos)
+    },
+    [activateNode, nodeId],
+  )
+
+  const handleContentChange = useCallback(
+    (content: string) => {
+      updateNodeContent(nodeId, content)
+    },
+    [updateNodeContent, nodeId],
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const sel = window.getSelection()
+
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        createNodeAfter(nodeId)
+        return
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          outdentNode(nodeId)
+        } else {
+          indentNode(nodeId)
+        }
+        return
+      }
+
+      if (
+        e.key === 'Backspace' &&
+        node?.content === '' &&
+        !e.metaKey &&
+        !e.ctrlKey
+      ) {
+        e.preventDefault()
+        const prevId = getPreviousVisibleNode(nodeId)
+        deleteNode(nodeId)
+        if (prevId) {
+          const prevNode = nodes.get(prevId)
+          activateNode(prevId, prevNode?.content.length ?? 0)
+        }
+        return
+      }
+
+      if (e.key === 'Backspace' && sel?.focusOffset === 0 && node?.content) {
+        e.preventDefault()
+        const prevId = getPreviousVisibleNode(nodeId)
+        if (prevId) {
+          const prevNode = nodes.get(prevId)
+          if (prevNode) {
+            const mergePos = prevNode.content.length
+            updateNodeContent(prevId, prevNode.content + node.content)
+            deleteNode(nodeId)
+            activateNode(prevId, mergePos)
+          }
+        }
+        return
+      }
+
+      if (e.key === 'ArrowUp') {
+        if (e.metaKey && e.shiftKey) {
+          e.preventDefault()
+          moveNodeUp(nodeId)
+          return
+        }
+        if (e.metaKey) {
+          e.preventDefault()
+          if (node?.children.length && !node.collapsed) {
+            toggleCollapse(nodeId)
+          }
+          return
+        }
+        const isAtStart = sel?.focusOffset === 0
+        if (isAtStart) {
+          e.preventDefault()
+          const prevId = getPreviousVisibleNode(nodeId)
+          if (prevId) {
+            const prevNode = nodes.get(prevId)
+            activateNode(prevId, prevNode?.content.length ?? 0)
+          }
+        }
+        return
+      }
+
+      if (e.key === 'ArrowDown') {
+        if (e.metaKey && e.shiftKey) {
+          e.preventDefault()
+          moveNodeDown(nodeId)
+          return
+        }
+        if (e.metaKey) {
+          e.preventDefault()
+          if (node?.children.length && node.collapsed) {
+            toggleCollapse(nodeId)
+          }
+          return
+        }
+        const isAtEnd =
+          sel?.focusOffset === (node?.content.length ?? 0)
+        if (isAtEnd) {
+          e.preventDefault()
+          const nextId = getNextVisibleNode(nodeId)
+          if (nextId) {
+            activateNode(nextId, 0)
+          }
+        }
+        return
+      }
+    },
+    [
+      nodeId,
+      node,
+      nodes,
+      createNodeAfter,
+      indentNode,
+      outdentNode,
+      deleteNode,
+      moveNodeUp,
+      moveNodeDown,
+      toggleCollapse,
+      activateNode,
+      getPreviousVisibleNode,
+      getNextVisibleNode,
+      updateNodeContent,
+    ],
+  )
+
+  if (!node) return null
+
+  const isActive = activeNodeId === nodeId
+  const isSelected = selectedNodeId === nodeId
+  const hasChildren = node.children.length > 0
+  const primaryTagColor = node.supertags[0]?.color ?? null
+
+  const sortedChildren = [...node.children].sort((a, b) => {
+    const na = nodes.get(a)
+    const nb = nodes.get(b)
+    return (na?.order ?? '').localeCompare(nb?.order ?? '')
+  })
+
+  return (
+    <div className="node-block relative" data-node-id={nodeId}>
+      {/* The node row */}
+      <div
+        className={cn(
+          'node-row group/node flex items-start',
+          'rounded-sm transition-colors duration-75',
+          isSelected && !isActive && 'bg-primary/5',
+        )}
+        style={{ paddingLeft: `${depth * 24}px` }}
+      >
+        <Bullet
+          hasChildren={hasChildren}
+          collapsed={node.collapsed}
+          childCount={node.children.length}
+          tagColor={primaryTagColor}
+          onClick={handleBulletClick}
+        />
+        <NodeContent
+          nodeId={nodeId}
+          content={node.content}
+          isActive={isActive}
+          isSelected={isSelected}
+          supertags={node.supertags}
+          cursorPosition={cursorPosition}
+          onActivate={handleActivate}
+          onChange={handleContentChange}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+
+      {/* Children */}
+      {hasChildren && !node.collapsed && (
+        <div className="children-container relative">
+          {/* Vertical tree line */}
+          <div
+            className="absolute top-0 bottom-2 w-px bg-foreground/[0.06] hover:bg-foreground/15 transition-colors duration-200 cursor-pointer"
+            style={{ left: `${depth * 24 + 11}px` }}
+            onClick={handleBulletClick}
+          />
+          {sortedChildren.map((childId) => (
+            <NodeBlock key={childId} nodeId={childId} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})

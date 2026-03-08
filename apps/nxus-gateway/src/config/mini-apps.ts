@@ -2,7 +2,7 @@ export interface MiniApp {
   id: string
   name: string
   description: string
-  icon: 'cube' | 'graph' | 'calendar' | 'brain'
+  icon: 'cube' | 'graph' | 'calendar' | 'brain' | 'notepad'
   path: string
 }
 
@@ -38,5 +38,13 @@ export const miniApps: MiniApp[] = [
       'AI-powered spaced repetition for higher-order learning with dynamic question generation.',
     icon: 'brain',
     path: '/recall',
+  },
+  {
+    id: 'nxus-editor',
+    name: 'nXus Editor',
+    description:
+      'Outline editor for creating, organizing, and navigating nodes as an infinitely nested document.',
+    icon: 'notepad',
+    path: '/editor',
   },
 ]
