@@ -221,7 +221,6 @@ export const NodeBlock = memo(function NodeBlock({
           collapsed={node.collapsed}
           childCount={node.children.length}
           tagColor={primaryTagColor}
-          hasSupertag={node.supertags.length > 0}
           onClick={handleBulletClick}
         />
         <NodeContent

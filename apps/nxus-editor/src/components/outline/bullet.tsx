@@ -5,7 +5,6 @@ interface BulletProps {
   collapsed: boolean
   childCount: number
   tagColor: string | null
-  hasSupertag: boolean
   onClick: (e: React.MouseEvent) => void
 }
 
@@ -14,7 +13,6 @@ export function Bullet({
   collapsed,
   childCount,
   tagColor,
-  hasSupertag,
   onClick,
 }: BulletProps) {
   return (
@@ -45,35 +43,19 @@ export function Bullet({
         />
       )}
 
-      {/* Supertag nodes use # hashtag, plain nodes use round dot */}
-      {hasSupertag ? (
-        <span
-          className={cn(
-            'block text-[11px] font-bold leading-none select-none',
-            !tagColor && 'text-foreground/45',
-            hasChildren && !tagColor && 'text-foreground/55',
-            hasChildren &&
-              !collapsed &&
-              'group-hover/bullet:text-foreground/70',
-          )}
-          style={tagColor ? { color: tagColor } : undefined}
-        >
-          #
-        </span>
-      ) : (
-        <span
-          className={cn(
-            'block rounded-full transition-all duration-100',
-            hasChildren ? 'h-[5px] w-[5px]' : 'h-[4px] w-[4px]',
-            !tagColor && 'bg-foreground/40',
-            !tagColor && hasChildren && 'bg-foreground/50',
-            hasChildren &&
-              !collapsed &&
-              'group-hover/bullet:bg-foreground/60',
-          )}
-          style={tagColor ? { backgroundColor: tagColor } : undefined}
-        />
-      )}
+      {/* Round dot — colored by primary supertag if present */}
+      <span
+        className={cn(
+          'block rounded-full transition-all duration-100',
+          hasChildren ? 'h-[5px] w-[5px]' : 'h-[4px] w-[4px]',
+          !tagColor && 'bg-foreground/40',
+          !tagColor && hasChildren && 'bg-foreground/50',
+          hasChildren &&
+            !collapsed &&
+            'group-hover/bullet:bg-foreground/60',
+        )}
+        style={tagColor ? { backgroundColor: tagColor } : undefined}
+      />
 
       {/* Collapsed children count badge */}
       {hasChildren && collapsed && childCount > 0 && (
