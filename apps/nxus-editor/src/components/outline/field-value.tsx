@@ -9,28 +9,33 @@ interface FieldValueProps {
 }
 
 export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
+  // Safety: if value is an object/array and not a primitive type, render as JSON
+  if (value !== null && value !== undefined && typeof value === 'object' && fieldType !== 'nodes') {
+    return <JsonField value={value} />
+  }
+
   switch (fieldType) {
     case 'boolean':
-      return <BooleanField value={value as boolean} onChange={onChange} />
+      return <BooleanField value={Boolean(value)} onChange={onChange} />
     case 'number':
-      return <NumberField value={value as number} onChange={onChange} />
+      return <NumberField value={Number(value ?? 0)} onChange={onChange} />
     case 'date':
-      return <DateField value={value as string} onChange={onChange} />
+      return <DateField value={String(value ?? '')} onChange={onChange} />
     case 'url':
-      return <UrlField value={value as string} onChange={onChange} />
+      return <UrlField value={String(value ?? '')} onChange={onChange} />
     case 'email':
-      return <EmailField value={value as string} onChange={onChange} />
+      return <EmailField value={String(value ?? '')} onChange={onChange} />
     case 'select':
-      return <SelectField value={value as string} />
+      return <SelectField value={String(value ?? '')} />
     case 'node':
-      return <NodeRefField value={value as string} />
+      return <NodeRefField value={String(value ?? '')} />
     case 'nodes':
-      return <NodeRefsField values={value as string[]} />
+      return <NodeRefsField values={Array.isArray(value) ? value : []} />
     case 'json':
       return <JsonField value={value} />
     case 'text':
     default:
-      return <TextField value={value as string} onChange={onChange} />
+      return <TextField value={String(value ?? '')} onChange={onChange} />
   }
 }
 
@@ -459,16 +464,26 @@ function NodeRefsField({ values }: { values: string[] }) {
   )
 }
 
-function JsonField(_props: { value: unknown }) {
+function JsonField({ value }: { value: unknown }) {
+  const preview = (() => {
+    try {
+      const str = JSON.stringify(value)
+      return str.length > 40 ? `${str.slice(0, 40)}…` : str
+    } catch {
+      return '{…}'
+    }
+  })()
+
   return (
     <span
+      title={JSON.stringify(value, null, 2)}
       className={cn(
         'inline-flex items-center rounded-sm px-1.5 py-px',
         'text-[12px] font-mono',
         'bg-foreground/5 text-foreground/40',
       )}
     >
-      {'{…}'}
+      {preview}
     </span>
   )
 }
