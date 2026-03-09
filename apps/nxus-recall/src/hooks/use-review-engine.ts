@@ -275,10 +275,12 @@ export function useReviewEngine(options: UseReviewEngineOptions = {}) {
   const submitRatingMutation = useMutation({
     mutationFn: async (rating: 1 | 2 | 3 | 4) => {
       const concept = queue[currentIndex]
-      if (!concept || !question || !evaluation) return
+      if (!concept || !question || !evaluation) {
+        throw new Error('Review state is incomplete')
+      }
 
       const extraData = getExtraSubmitData?.() ?? {}
-      await submitReviewServerFn({
+      const result = await submitReviewServerFn({
         data: {
           conceptId: concept.id,
           questionText: question.questionText,
@@ -289,6 +291,10 @@ export function useReviewEngine(options: UseReviewEngineOptions = {}) {
           ...extraData,
         },
       })
+      if (!result.success) {
+        throw new Error(result.error ?? 'Failed to submit review')
+      }
+      return result
     },
     onSuccess: (_data, rating) => {
       const concept = queue[currentIndex]

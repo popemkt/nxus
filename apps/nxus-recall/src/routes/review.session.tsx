@@ -84,7 +84,7 @@ function ReviewSessionPage() {
       if (result.success) {
         engine.initSession(result.cards)
       } else {
-        engine.initSession([])
+        throw new Error(result.error ?? 'Failed to load due cards')
       }
       return result
     },
