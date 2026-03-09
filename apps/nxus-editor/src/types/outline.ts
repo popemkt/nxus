@@ -12,6 +12,7 @@ export type FieldType =
 
 export interface OutlineField {
   fieldName: string
+  fieldNodeId: string
   fieldSystemId: string | null
   fieldType: FieldType
   values: { value: unknown; order: number }[]

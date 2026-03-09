@@ -6,6 +6,11 @@ import { FieldBullet } from './bullet'
 import { setFieldValueServerFn } from '@/services/outline.server'
 import { useOutlineStore } from '@/stores/outline.store'
 
+function useNavigateToNode() {
+  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+  return setRootNodeId
+}
+
 /** Fixed label width so all field values start at the same horizontal position */
 const FIELD_LABEL_WIDTH = 120
 
@@ -49,6 +54,7 @@ function FieldRow({
   field: OutlineField
   depth: number
 }) {
+  const navigateToNode = useNavigateToNode()
   const value = field.values.length > 0 ? field.values[0]!.value : undefined
 
   const handleChange = useCallback(
@@ -79,8 +85,17 @@ function FieldRow({
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Field icon — pinned to first line via matching height */}
-      <FieldBullet />
+      {/* Field icon — clickable to navigate to field definition node */}
+      <span
+        className="cursor-pointer hover:opacity-70 transition-opacity"
+        onClick={(e) => {
+          e.stopPropagation()
+          navigateToNode(field.fieldNodeId)
+        }}
+        title={`Go to field: ${field.fieldName}`}
+      >
+        <FieldBullet />
+      </span>
 
       {/* Field label — fixed width, pinned to first line */}
       <span

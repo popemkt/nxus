@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
+import { useOutlineStore } from '@/stores/outline.store'
 
 interface NodeContentProps {
   nodeId: string
@@ -146,31 +147,43 @@ export function NodeContent({
         </div>
       )}
 
-      {supertags.length > 0 && (
-        <div className="flex items-center gap-0.5">
-          {supertags.map((tag) => (
-            <span
-              key={tag.id}
-              className={cn(
-                'inline-flex items-center rounded-sm px-1.5 py-px',
-                'text-[11px] font-medium leading-[1.8]',
-                'select-none whitespace-nowrap',
-                !tag.color && 'bg-foreground/8 text-foreground/50',
-              )}
-              style={
-                tag.color
-                  ? {
-                      backgroundColor: `${tag.color}18`,
-                      color: tag.color,
-                    }
-                  : undefined
-              }
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      )}
+      {supertags.length > 0 && <SupertagBadges supertags={supertags} />}
+    </div>
+  )
+}
+
+function SupertagBadges({ supertags }: { supertags: SupertagBadge[] }) {
+  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {supertags.map((tag) => (
+        <span
+          key={tag.id}
+          className={cn(
+            'inline-flex items-center rounded-sm px-1.5 py-px',
+            'text-[11px] font-medium leading-[1.8]',
+            'select-none whitespace-nowrap',
+            'cursor-pointer transition-opacity hover:opacity-70',
+            !tag.color && 'bg-foreground/8 text-foreground/50',
+          )}
+          style={
+            tag.color
+              ? {
+                  backgroundColor: `${tag.color}18`,
+                  color: tag.color,
+                }
+              : undefined
+          }
+          onClick={(e) => {
+            e.stopPropagation()
+            setRootNodeId(tag.id)
+          }}
+          title={`Go to: ${tag.name}`}
+        >
+          {tag.name}
+        </span>
+      ))}
     </div>
   )
 }
