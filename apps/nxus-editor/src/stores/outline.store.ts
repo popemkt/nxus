@@ -37,11 +37,17 @@ function generateOrder(index: number): string {
 }
 
 function generateOrderBetween(a: string | null, b: string | null): string {
-  if (!a && !b) return generateOrder(500)
+  if (!a && !b) return generateOrder(500_000)
   if (!a) return generateOrder(Math.floor(parseInt(b!, 10) / 2))
   if (!b) return generateOrder(parseInt(a, 10) + 1000)
-  const mid = Math.floor((parseInt(a, 10) + parseInt(b, 10)) / 2)
-  return generateOrder(mid)
+  const aNum = parseInt(a, 10)
+  const bNum = parseInt(b, 10)
+  const gap = bNum - aNum
+  if (gap > 1) {
+    return generateOrder(aNum + Math.floor(gap / 2))
+  }
+  // Gap exhausted — extend by appending fractional digits
+  return a + '5'.padStart(4, '0')
 }
 
 function getVisibleNodesRecursive(

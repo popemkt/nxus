@@ -160,10 +160,9 @@ export function OutlineEditor() {
           selectNode(nextId ?? prevId ?? null)
           break
         }
-        case 'Tab': {
-          e.preventDefault()
+        case 'Tab':
+          // Don't prevent default — allow native focus movement
           break
-        }
         case 'o': {
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault()
@@ -232,7 +231,9 @@ export function OutlineEditor() {
   return (
     <div
       className="outline-editor flex h-full flex-col"
-      onClick={handleBackgroundClick}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleBackgroundClick()
+      }}
     >
       <Breadcrumbs />
 

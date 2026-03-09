@@ -73,35 +73,35 @@ export function useOutlineSync() {
         })
           .then((result) => {
             if (result.success && result.nodeId !== newId) {
-              // Replace temp ID with server ID in the store
-              const { nodes: currentNodes } = useOutlineStore.getState()
-              const tempNode = currentNodes.get(newId)
-              if (!tempNode) return
+              // Atomic state update to replace temp ID with server ID
+              useOutlineStore.setState((state) => {
+                const tempNode = state.nodes.get(newId)
+                if (!tempNode) return state
 
-              const next = new Map(currentNodes)
-              next.delete(newId)
-              next.set(result.nodeId, { ...tempNode, id: result.nodeId })
+                const next = new Map(state.nodes)
+                next.delete(newId)
+                next.set(result.nodeId, { ...tempNode, id: result.nodeId })
 
-              // Update parent's children array
-              const parent = next.get(tempNode.parentId!)
-              if (parent) {
-                next.set(tempNode.parentId!, {
-                  ...parent,
-                  children: parent.children.map((c) =>
-                    c === newId ? result.nodeId : c,
-                  ),
-                })
-              }
+                // Update parent's children array
+                const parent = tempNode.parentId ? next.get(tempNode.parentId) : null
+                if (parent && tempNode.parentId) {
+                  next.set(tempNode.parentId, {
+                    ...parent,
+                    children: parent.children.map((c) =>
+                      c === newId ? result.nodeId : c,
+                    ),
+                  })
+                }
 
-              const state = useOutlineStore.getState()
-              useOutlineStore.setState({
-                nodes: next,
-                activeNodeId:
-                  state.activeNodeId === newId ? result.nodeId : state.activeNodeId,
-                selectedNodeId:
-                  state.selectedNodeId === newId
-                    ? result.nodeId
-                    : state.selectedNodeId,
+                return {
+                  nodes: next,
+                  activeNodeId:
+                    state.activeNodeId === newId ? result.nodeId : state.activeNodeId,
+                  selectedNodeId:
+                    state.selectedNodeId === newId
+                      ? result.nodeId
+                      : state.selectedNodeId,
+                }
               })
             }
           })
@@ -176,31 +176,80 @@ export function useOutlineSync() {
   }, [])
 
   /**
-   * Move up/down — optimistic + persist reorder.
+   * Move up/down — optimistic + persist both sides of order swap.
    */
   const moveNodeUp = useCallback((nodeId: string) => {
+    // Snapshot the pre-swap siblings to identify the swapped one
+    const { nodes: preNodes } = useOutlineStore.getState()
+    const preNode = preNodes.get(nodeId)
+    const preOrder = preNode?.order
+
     useOutlineStore.getState().moveNodeUp(nodeId)
+
     const { nodes } = useOutlineStore.getState()
     const node = nodes.get(nodeId)
-    if (node) {
-      reorderNodeServerFn({
-        data: { nodeId, order: parseInt(node.order, 10) },
-      }).catch((err) => {
-        console.error('[sync] Failed to reorder node:', err)
-      })
+    if (!node || node.order === preOrder) return // no-op
+
+    // Persist both the moved node and the swapped sibling
+    reorderNodeServerFn({
+      data: { nodeId, order: parseInt(node.order, 10) },
+    }).catch((err) => {
+      console.error('[sync] Failed to reorder node:', err)
+    })
+
+    // The sibling that was swapped now has our old order
+    if (node.parentId) {
+      const parent = nodes.get(node.parentId)
+      if (parent) {
+        for (const sibId of parent.children) {
+          if (sibId === nodeId) continue
+          const sib = nodes.get(sibId)
+          if (sib && sib.order === preOrder) {
+            reorderNodeServerFn({
+              data: { nodeId: sibId, order: parseInt(sib.order, 10) },
+            }).catch((err) => {
+              console.error('[sync] Failed to reorder swapped sibling:', err)
+            })
+            break
+          }
+        }
+      }
     }
   }, [])
 
   const moveNodeDown = useCallback((nodeId: string) => {
+    const { nodes: preNodes } = useOutlineStore.getState()
+    const preNode = preNodes.get(nodeId)
+    const preOrder = preNode?.order
+
     useOutlineStore.getState().moveNodeDown(nodeId)
+
     const { nodes } = useOutlineStore.getState()
     const node = nodes.get(nodeId)
-    if (node) {
-      reorderNodeServerFn({
-        data: { nodeId, order: parseInt(node.order, 10) },
-      }).catch((err) => {
-        console.error('[sync] Failed to reorder node:', err)
-      })
+    if (!node || node.order === preOrder) return
+
+    reorderNodeServerFn({
+      data: { nodeId, order: parseInt(node.order, 10) },
+    }).catch((err) => {
+      console.error('[sync] Failed to reorder node:', err)
+    })
+
+    if (node.parentId) {
+      const parent = nodes.get(node.parentId)
+      if (parent) {
+        for (const sibId of parent.children) {
+          if (sibId === nodeId) continue
+          const sib = nodes.get(sibId)
+          if (sib && sib.order === preOrder) {
+            reorderNodeServerFn({
+              data: { nodeId: sibId, order: parseInt(sib.order, 10) },
+            }).catch((err) => {
+              console.error('[sync] Failed to reorder swapped sibling:', err)
+            })
+            break
+          }
+        }
+      }
     }
   }, [])
 
