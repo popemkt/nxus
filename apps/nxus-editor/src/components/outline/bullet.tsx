@@ -40,34 +40,31 @@ export function Bullet({
       {/* Outer halo ring — only visible when collapsed with children */}
       {hasChildren && collapsed && (
         <span
-          className={cn(
-            'absolute inset-[3px] border border-foreground/20',
-            hasSupertag ? 'rounded-[3px]' : 'rounded-full',
-          )}
+          className="absolute inset-[3px] rounded-full border border-foreground/20"
           style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
         />
       )}
 
-      {/* Inner bullet dot — diamond for supertag nodes, circle for plain */}
+      {/* Supertag nodes use # hashtag, plain nodes use round dot */}
       {hasSupertag ? (
         <span
           className={cn(
-            'block transition-all duration-100',
-            hasChildren ? 'h-[7px] w-[7px]' : 'h-[5px] w-[5px]',
-            'rotate-45 rounded-[1px]',
-            !tagColor && 'bg-foreground/40',
-            !tagColor && hasChildren && 'bg-foreground/50',
+            'block text-[11px] font-bold leading-none select-none',
+            !tagColor && 'text-foreground/45',
+            hasChildren && !tagColor && 'text-foreground/55',
             hasChildren &&
               !collapsed &&
-              'group-hover/bullet:bg-foreground/60',
+              'group-hover/bullet:text-foreground/70',
           )}
-          style={tagColor ? { backgroundColor: tagColor } : undefined}
-        />
+          style={tagColor ? { color: tagColor } : undefined}
+        >
+          #
+        </span>
       ) : (
         <span
           className={cn(
             'block rounded-full transition-all duration-100',
-            hasChildren ? 'h-[5px] w-[5px]' : 'h-1 w-1',
+            hasChildren ? 'h-[5px] w-[5px]' : 'h-[4px] w-[4px]',
             !tagColor && 'bg-foreground/40',
             !tagColor && hasChildren && 'bg-foreground/50',
             hasChildren &&
@@ -85,6 +82,36 @@ export function Bullet({
         </span>
       )}
     </button>
+  )
+}
+
+/**
+ * Field icon — small square with lines, used as the "bullet" for field rows.
+ * Matches Tana's field indicator that sits in the same column as child bullets.
+ */
+export function FieldBullet() {
+  return (
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 12 12"
+        fill="none"
+        className="text-foreground/25"
+      >
+        <rect
+          x="1"
+          y="1"
+          width="10"
+          height="10"
+          rx="1.5"
+          stroke="currentColor"
+          strokeWidth="1"
+        />
+        <line x1="3.5" y1="4" x2="8.5" y2="4" stroke="currentColor" strokeWidth="0.8" />
+        <line x1="3.5" y1="6.5" x2="7" y2="6.5" stroke="currentColor" strokeWidth="0.8" />
+      </svg>
+    </span>
   )
 }
 

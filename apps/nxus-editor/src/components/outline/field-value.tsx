@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
+import { useOutlineStore } from '@/stores/outline.store'
 
 interface FieldValueProps {
   fieldType: FieldType
@@ -39,6 +40,26 @@ export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
   }
 }
 
+/* ─── Shared inline editing styles ─── */
+
+const displayTextClass = cn(
+  'cursor-text rounded-sm px-1 text-[13px] leading-[28px]',
+  'text-foreground/70 hover:bg-foreground/5',
+)
+
+const emptyTextClass = cn(
+  'cursor-text rounded-sm px-1 text-[13px] leading-[28px]',
+  'text-foreground/25 italic hover:bg-foreground/5',
+)
+
+const inputClass = cn(
+  'h-[28px] flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
+  'text-[13px] text-foreground/80 outline-none leading-[28px]',
+  'focus:border-primary/40',
+)
+
+/* ─── Text field ─── */
+
 function TextField({
   value,
   onChange,
@@ -64,11 +85,7 @@ function TextField({
       <input
         ref={inputRef}
         type="text"
-        className={cn(
-          'h-6 flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-          'text-[13px] text-foreground/80 outline-none',
-          'focus:border-primary/40',
-        )}
+        className={inputClass}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -83,20 +100,18 @@ function TextField({
 
   return (
     <span
-      className={cn(
-        'cursor-text rounded-sm px-1 text-[13px]',
-        'text-foreground/70 hover:bg-foreground/5',
-        !value && 'text-foreground/25 italic',
-      )}
+      className={value ? displayTextClass : emptyTextClass}
       onClick={() => {
         setDraft(String(value ?? ''))
         setEditing(true)
       }}
     >
-      {value || 'empty'}
+      {value || 'Empty'}
     </span>
   )
 }
+
+/* ─── Number field ─── */
 
 function NumberField({
   value,
@@ -124,11 +139,7 @@ function NumberField({
       <input
         ref={inputRef}
         type="number"
-        className={cn(
-          'h-6 w-24 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-          'text-[13px] text-foreground/80 outline-none tabular-nums',
-          'focus:border-primary/40',
-        )}
+        className={cn(inputClass, 'w-24 tabular-nums')}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -143,20 +154,18 @@ function NumberField({
 
   return (
     <span
-      className={cn(
-        'cursor-text rounded-sm px-1 text-[13px] tabular-nums',
-        'text-amber-500/80 hover:bg-foreground/5',
-        value === undefined && 'text-foreground/25 italic',
-      )}
+      className={cn(displayTextClass, 'tabular-nums text-amber-500/80')}
       onClick={() => {
         setDraft(String(value ?? ''))
         setEditing(true)
       }}
     >
-      {value ?? 'empty'}
+      {value ?? 'Empty'}
     </span>
   )
 }
+
+/* ─── Boolean field ─── */
 
 function BooleanField({
   value,
@@ -188,6 +197,8 @@ function BooleanField({
   )
 }
 
+/* ─── Date field ─── */
+
 function DateField({
   value,
   onChange,
@@ -207,11 +218,7 @@ function DateField({
       <input
         ref={inputRef}
         type="date"
-        className={cn(
-          'h-6 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-          'text-[13px] text-foreground/80 outline-none',
-          'focus:border-primary/40',
-        )}
+        className={inputClass}
         defaultValue={value ? String(value).slice(0, 10) : ''}
         onChange={(e) => {
           onChange(e.target.value)
@@ -233,17 +240,15 @@ function DateField({
 
   return (
     <span
-      className={cn(
-        'cursor-text rounded-sm px-1 text-[13px]',
-        'text-foreground/70 hover:bg-foreground/5',
-        !value && 'text-foreground/25 italic',
-      )}
+      className={displayDate ? displayTextClass : emptyTextClass}
       onClick={() => setEditing(true)}
     >
-      {displayDate || 'empty'}
+      {displayDate || 'Empty'}
     </span>
   )
 }
+
+/* ─── URL field ─── */
 
 function UrlField({
   value,
@@ -270,11 +275,7 @@ function UrlField({
       <input
         ref={inputRef}
         type="url"
-        className={cn(
-          'h-6 flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-          'text-[13px] text-foreground/80 outline-none',
-          'focus:border-primary/40',
-        )}
+        className={inputClass}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -294,7 +295,7 @@ function UrlField({
           href={String(value)}
           target="_blank"
           rel="noopener noreferrer"
-          className="truncate rounded-sm px-1 text-[13px] text-primary/70 underline decoration-primary/30 hover:text-primary"
+          className="truncate rounded-sm px-1 text-[13px] leading-[28px] text-primary/70 underline decoration-primary/30 hover:text-primary"
           onClick={(e) => e.stopPropagation()}
         >
           {String(value).replace(/^https?:\/\//, '').slice(0, 40)}
@@ -316,16 +317,18 @@ function UrlField({
 
   return (
     <span
-      className="cursor-text rounded-sm px-1 text-[13px] text-foreground/25 italic hover:bg-foreground/5"
+      className={emptyTextClass}
       onClick={() => {
         setDraft('')
         setEditing(true)
       }}
     >
-      empty
+      Empty
     </span>
   )
 }
+
+/* ─── Email field ─── */
 
 function EmailField({
   value,
@@ -352,11 +355,7 @@ function EmailField({
       <input
         ref={inputRef}
         type="email"
-        className={cn(
-          'h-6 flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-          'text-[13px] text-foreground/80 outline-none',
-          'focus:border-primary/40',
-        )}
+        className={inputClass}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -373,7 +372,7 @@ function EmailField({
     return (
       <a
         href={`mailto:${value}`}
-        className="truncate rounded-sm px-1 text-[13px] text-primary/70 underline decoration-primary/30 hover:text-primary"
+        className="truncate rounded-sm px-1 text-[13px] leading-[28px] text-primary/70 underline decoration-primary/30 hover:text-primary"
         onClick={(e) => e.stopPropagation()}
       >
         {String(value)}
@@ -383,30 +382,28 @@ function EmailField({
 
   return (
     <span
-      className="cursor-text rounded-sm px-1 text-[13px] text-foreground/25 italic hover:bg-foreground/5"
+      className={emptyTextClass}
       onClick={() => {
         setDraft('')
         setEditing(true)
       }}
     >
-      empty
+      Empty
     </span>
   )
 }
 
+/* ─── Select field ─── */
+
 function SelectField({ value }: { value: string }) {
   if (!value) {
-    return (
-      <span className="rounded-sm px-1 text-[13px] text-foreground/25 italic">
-        empty
-      </span>
-    )
+    return <span className={emptyTextClass}>Empty</span>
   }
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[12px] font-medium',
+        'text-[12px] font-medium leading-[28px]',
         'bg-foreground/8 text-foreground/60',
       )}
     >
@@ -415,62 +412,72 @@ function SelectField({ value }: { value: string }) {
   )
 }
 
-function NodeRefField({ value }: { value: string }) {
-  if (!value) {
-    return (
-      <span className="rounded-sm px-1 text-[13px] text-foreground/25 italic">
-        empty
-      </span>
-    )
+/* ─── Node reference fields ─── */
+
+/**
+ * Renders a single node reference as an inline pill with a bullet dot
+ * and the referenced node's content — similar to Tana's @-mention pills.
+ */
+function NodeRefPill({ nodeId }: { nodeId: string }) {
+  const node = useOutlineStore((s) => s.nodes.get(nodeId))
+  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+
+  if (!nodeId) {
+    return <span className={emptyTextClass}>Empty</span>
   }
+
+  const displayContent = node?.content || nodeId.slice(0, 8)
+
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[12px] font-medium',
-        'bg-primary/10 text-primary/70',
-        'cursor-pointer hover:bg-primary/15',
+        'inline-flex items-center gap-1 rounded-sm px-1.5 py-px',
+        'text-[13px] leading-[28px]',
+        'bg-primary/8 text-foreground/70',
+        'cursor-pointer hover:bg-primary/12 transition-colors duration-100',
       )}
+      onClick={(e) => {
+        e.stopPropagation()
+        setRootNodeId(nodeId)
+      }}
+      title={node ? `Go to: ${node.content}` : `Node: ${nodeId}`}
     >
-      {String(value).slice(0, 8)}…
+      {/* Inline bullet dot */}
+      <span className="h-[4px] w-[4px] shrink-0 rounded-full bg-foreground/35" />
+      <span className="truncate max-w-[200px]">{displayContent}</span>
     </span>
   )
 }
 
+function NodeRefField({ value }: { value: string }) {
+  if (!value) {
+    return <span className={emptyTextClass}>Empty</span>
+  }
+  return <NodeRefPill nodeId={String(value)} />
+}
+
 function NodeRefsField({ values }: { values: string[] }) {
   if (!values || values.length === 0) {
-    return (
-      <span className="rounded-sm px-1 text-[13px] text-foreground/25 italic">
-        empty
-      </span>
-    )
+    return <span className={emptyTextClass}>Empty</span>
   }
   return (
     <div className="flex flex-wrap items-center gap-1">
-      {(Array.isArray(values) ? values : [values]).map((v, i) => (
-        <span
-          key={i}
-          className={cn(
-            'inline-flex items-center rounded-sm px-1.5 py-px',
-            'text-[12px] font-medium',
-            'bg-primary/10 text-primary/70',
-            'cursor-pointer hover:bg-primary/15',
-          )}
-        >
-          {String(v).slice(0, 8)}…
-        </span>
+      {(Array.isArray(values) ? values : [values]).map((v) => (
+        <NodeRefPill key={String(v)} nodeId={String(v)} />
       ))}
     </div>
   )
 }
 
+/* ─── JSON field ─── */
+
 function JsonField({ value }: { value: unknown }) {
   const preview = (() => {
     try {
       const str = JSON.stringify(value)
-      return str.length > 40 ? `${str.slice(0, 40)}…` : str
+      return str.length > 40 ? `${str.slice(0, 40)}...` : str
     } catch {
-      return '{…}'
+      return '{...}'
     }
   })()
 
@@ -479,7 +486,7 @@ function JsonField({ value }: { value: unknown }) {
       title={JSON.stringify(value, null, 2)}
       className={cn(
         'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[12px] font-mono',
+        'text-[12px] font-mono leading-[28px]',
         'bg-foreground/5 text-foreground/40',
       )}
     >
