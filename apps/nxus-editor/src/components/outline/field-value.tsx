@@ -32,9 +32,11 @@ export function FieldValue({ fieldType, value, onChange, depth }: FieldValueProp
       return <NodeRefsField values={Array.isArray(value) ? value : []} depth={depth} />
     case 'json':
       return <JsonField value={value} />
-    case 'number':
     case 'url':
+      return <UrlField value={String(value ?? '')} onChange={onChange} />
     case 'email':
+      return <EmailField value={String(value ?? '')} onChange={onChange} />
+    case 'number':
     case 'text':
     default:
       return <EditableField value={String(value ?? '')} onChange={onChange} />
@@ -234,6 +236,198 @@ function SelectField({ value }: { value: string }) {
     >
       {String(value)}
     </span>
+  )
+}
+
+/* ─── URL field — editable with clickable link ─── */
+
+function UrlField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: unknown) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isEditing = useRef(false)
+
+  const handleClick = useCallback(() => {
+    if (!isEditing.current && ref.current) {
+      isEditing.current = true
+      ref.current.contentEditable = 'true'
+      ref.current.focus()
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }, [])
+
+  const commit = useCallback(() => {
+    if (!ref.current) return
+    isEditing.current = false
+    ref.current.contentEditable = 'false'
+    const newValue = ref.current.textContent ?? ''
+    if (newValue !== value) onChange(newValue)
+  }, [value, onChange])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        ref.current?.blur()
+      }
+      if (e.key === 'Escape') {
+        if (ref.current) ref.current.textContent = value
+        ref.current?.blur()
+      }
+      e.stopPropagation()
+    },
+    [value],
+  )
+
+  if (!value) {
+    return (
+      <div
+        ref={ref}
+        className={cn(editableClass, 'text-foreground/25 italic cursor-text hover:bg-foreground/5')}
+        onClick={handleClick}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        Empty
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <div
+        ref={ref}
+        className={cn(
+          editableClass,
+          'text-primary/70 underline underline-offset-2 decoration-primary/20',
+          'cursor-text hover:bg-foreground/5 truncate',
+        )}
+        onClick={handleClick}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        {value}
+      </div>
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 text-foreground/25 hover:text-foreground/50 transition-colors"
+        onClick={(e) => e.stopPropagation()}
+        title="Open URL"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M4.5 2H2.5C2.22 2 2 2.22 2 2.5v7c0 .28.22.5.5.5h7c.28 0 .5-.22.5-.5V7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          <path d="M7 2h3v3M10 2L5.5 6.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </a>
+    </div>
+  )
+}
+
+/* ─── Email field — editable with clickable mailto ─── */
+
+function EmailField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: unknown) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isEditing = useRef(false)
+
+  const handleClick = useCallback(() => {
+    if (!isEditing.current && ref.current) {
+      isEditing.current = true
+      ref.current.contentEditable = 'true'
+      ref.current.focus()
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }, [])
+
+  const commit = useCallback(() => {
+    if (!ref.current) return
+    isEditing.current = false
+    ref.current.contentEditable = 'false'
+    const newValue = ref.current.textContent ?? ''
+    if (newValue !== value) onChange(newValue)
+  }, [value, onChange])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        ref.current?.blur()
+      }
+      if (e.key === 'Escape') {
+        if (ref.current) ref.current.textContent = value
+        ref.current?.blur()
+      }
+      e.stopPropagation()
+    },
+    [value],
+  )
+
+  if (!value) {
+    return (
+      <div
+        ref={ref}
+        className={cn(editableClass, 'text-foreground/25 italic cursor-text hover:bg-foreground/5')}
+        onClick={handleClick}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        Empty
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <div
+        ref={ref}
+        className={cn(
+          editableClass,
+          'text-primary/70 underline underline-offset-2 decoration-primary/20',
+          'cursor-text hover:bg-foreground/5 truncate',
+        )}
+        onClick={handleClick}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        {value}
+      </div>
+      <a
+        href={`mailto:${value}`}
+        className="shrink-0 text-foreground/25 hover:text-foreground/50 transition-colors"
+        onClick={(e) => e.stopPropagation()}
+        title="Send email"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="2.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+          <path d="M1.5 3L6 6.5L10.5 3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </a>
+    </div>
   )
 }
 

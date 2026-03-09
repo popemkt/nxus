@@ -90,7 +90,7 @@ function FieldRow({
         }}
         title={`Go to field: ${field.fieldName}`}
       >
-        <FieldBullet />
+        <FieldBullet fieldType={field.fieldType} />
       </span>
 
       {/* Field label — fixed width, pinned to first line */}

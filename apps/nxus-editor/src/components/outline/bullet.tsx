@@ -1,4 +1,17 @@
 import { cn } from '@nxus/ui'
+import {
+  TextT,
+  Hash,
+  ToggleRight,
+  CalendarBlank,
+  CaretCircleDown,
+  LinkSimple,
+  At,
+  ArrowSquareOut,
+  TreeStructure,
+  BracketsAngle,
+} from '@phosphor-icons/react'
+import type { FieldType } from '@/types/outline'
 
 interface BulletProps {
   hasChildren: boolean
@@ -85,32 +98,28 @@ export function Bullet({
   )
 }
 
+const fieldIconMap: Record<FieldType, React.ComponentType<{ size: number; weight?: 'regular' | 'bold' }>> = {
+  text: TextT,
+  number: Hash,
+  boolean: ToggleRight,
+  date: CalendarBlank,
+  select: CaretCircleDown,
+  url: LinkSimple,
+  email: At,
+  node: ArrowSquareOut,
+  nodes: TreeStructure,
+  json: BracketsAngle,
+}
+
 /**
- * Field icon — small square with lines, used as the "bullet" for field rows.
- * Matches Tana's field indicator that sits in the same column as child bullets.
+ * Field icon — type-specific Phosphor icon used as the "bullet" for field rows.
+ * Sits in the same column as child bullets.
  */
-export function FieldBullet() {
+export function FieldBullet({ fieldType }: { fieldType?: FieldType }) {
+  const Icon = fieldType ? fieldIconMap[fieldType] : TextT
   return (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 12 12"
-        fill="none"
-        className="text-foreground/25"
-      >
-        <rect
-          x="1"
-          y="1"
-          width="10"
-          height="10"
-          rx="1.5"
-          stroke="currentColor"
-          strokeWidth="1"
-        />
-        <line x1="3.5" y1="4" x2="8.5" y2="4" stroke="currentColor" strokeWidth="0.8" />
-        <line x1="3.5" y1="6.5" x2="7" y2="6.5" stroke="currentColor" strokeWidth="0.8" />
-      </svg>
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center text-foreground/25">
+      <Icon size={13} />
     </span>
   )
 }
