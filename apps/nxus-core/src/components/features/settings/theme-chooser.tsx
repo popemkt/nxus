@@ -1,6 +1,6 @@
 import { cn } from '@nxus/ui'
 import { Moon, Sun } from '@phosphor-icons/react'
-import { useThemeStore } from '@/stores/theme.store'
+import { useThemeStore, useThemeHydrated } from '@/stores/theme.store'
 import { themeOptions } from '@/config/theme-options'
 
 /**
@@ -12,6 +12,9 @@ export function ThemeChooser() {
   const setPalette = useThemeStore((s) => s.setPalette)
   const colorMode = useThemeStore((s) => s.colorMode)
   const setColorMode = useThemeStore((s) => s.setColorMode)
+  const hydrated = useThemeHydrated()
+
+  if (!hydrated) return null
 
   return (
     <div className="space-y-6">

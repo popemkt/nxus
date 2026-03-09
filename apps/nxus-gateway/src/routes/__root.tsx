@@ -47,6 +47,26 @@ const ALL_PALETTES: ThemePalette[] = [
   'brutalism',
 ]
 
+// Module-scope theme application — runs before React renders
+function applyStoredTheme(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const stored = localStorage.getItem('nxus-theme')
+    if (!stored) return
+    const state = JSON.parse(stored).state
+    const colorMode = state?.colorMode || 'dark'
+    const palette = state?.palette || 'default'
+    const root = document.documentElement
+
+    ALL_PALETTES.forEach((p) => root.classList.remove(p))
+    root.classList.remove('dark')
+
+    if (colorMode === 'dark') root.classList.add('dark')
+    if (palette !== 'default') root.classList.add(palette)
+  } catch { /* ignore */ }
+}
+applyStoredTheme()
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -59,37 +79,11 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+/** Handles cross-tab theme sync only — initial application is done at module scope */
 function ThemeProvider() {
   useEffect(() => {
-    const applyTheme = () => {
-      try {
-        const stored = localStorage.getItem('nxus-theme')
-        if (!stored) return
-
-        const state = JSON.parse(stored).state
-        const colorMode = state?.colorMode || 'dark'
-        const palette = state?.palette || 'default'
-        const root = document.documentElement
-
-        ALL_PALETTES.forEach((p) => root.classList.remove(p))
-        root.classList.remove('dark')
-
-        if (colorMode === 'dark') {
-          root.classList.add('dark')
-        }
-
-        if (palette !== 'default') {
-          root.classList.add(palette)
-        }
-      } catch {
-        // ignore parse errors
-      }
-    }
-
-    applyTheme()
-
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'nxus-theme') applyTheme()
+      if (e.key === 'nxus-theme') applyStoredTheme()
     }
     window.addEventListener('storage', handleStorage)
     return () => window.removeEventListener('storage', handleStorage)
