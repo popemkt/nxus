@@ -6,7 +6,9 @@
     "dev": "vite dev --port 3005",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "oxlint src/"
+    "lint": "oxlint src/",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fontsource-variable/outfit": "^5.2.8",
@@ -39,6 +41,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
     "typescript": "^5.7.2",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vitest": "^3.0.5"
   }
 }
