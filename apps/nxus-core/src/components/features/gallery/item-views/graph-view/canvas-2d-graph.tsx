@@ -167,9 +167,11 @@ function drawSmoothCurve(
 }
 
 function hexToRgba(hex: string, alpha: number): string {
+  if (!hex.startsWith('#') || hex.length < 7) return `rgba(128,128,128,${alpha})`
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(128,128,128,${alpha})`
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
@@ -189,10 +191,14 @@ export function Canvas2DGraph({
   const [ForceGraph2D, setForceGraph2D] = useState<ForceGraphComponent | null>(
     null,
   )
+  const [loadError, setLoadError] = useState(false)
   useEffect(() => {
-    import('react-force-graph-2d').then((mod) => {
-      setForceGraph2D(() => mod.default)
-    })
+    import('react-force-graph-2d')
+      .then((mod) => setForceGraph2D(() => mod.default))
+      .catch((err) => {
+        console.error('Failed to load graph renderer', err)
+        setLoadError(true)
+      })
   }, [])
 
   // Ego network state
@@ -403,7 +409,7 @@ export function Canvas2DGraph({
     (link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const source = link.source
       const target = link.target
-      if (!source?.x || !target?.x) return
+      if (source?.x == null || source?.y == null || target?.x == null || target?.y == null) return
 
       const isDimmed =
         hasActiveFilter &&
@@ -605,7 +611,9 @@ export function Canvas2DGraph({
           className,
         )}
       >
-        <span className="text-muted-foreground text-sm">Loading graph...</span>
+        <span className="text-muted-foreground text-sm">
+          {loadError ? 'Failed to load graph renderer' : 'Loading graph...'}
+        </span>
       </div>
     )
   }
