@@ -36,6 +36,7 @@ function ReviewSessionPage() {
   const { topicId } = Route.useSearch()
 
   const hintsUsedRef = useRef(0)
+  const timerRef = useRef<{ resetCardTimer: () => void; getCardElapsedMs: () => number }>({ resetCardTimer: () => {}, getCardElapsedMs: () => 0 })
   const [sessionStats, setSessionStats] = useState({
     ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<1 | 2 | 3 | 4, number>,
     newCount: 0,
@@ -44,15 +45,13 @@ function ReviewSessionPage() {
     timeSpentMs: 0,
   })
 
-  const { elapsedMs, resetCardTimer, getCardElapsedMs } = useSessionTimer(true)
-
   const engine = useReviewEngine({
     getExtraSubmitData: () => ({
-      timeSpentMs: getCardElapsedMs(),
+      timeSpentMs: timerRef.current.getCardElapsedMs(),
       hintsUsed: hintsUsedRef.current,
     }),
     onNewCard: () => {
-      resetCardTimer()
+      timerRef.current.resetCardTimer()
       hintsUsedRef.current = 0
     },
     onCardReviewed: (rating: 1 | 2 | 3 | 4, concept: RecallConcept) => {
@@ -66,10 +65,15 @@ function ReviewSessionPage() {
         newCount: prev.newCount + (cardState === 0 ? 1 : 0),
         learningCount: prev.learningCount + (cardState === 1 || cardState === 3 ? 1 : 0),
         reviewCount: prev.reviewCount + (cardState === 2 ? 1 : 0),
-        timeSpentMs: prev.timeSpentMs + getCardElapsedMs(),
+        timeSpentMs: prev.timeSpentMs + timerRef.current.getCardElapsedMs(),
       }))
     },
   })
+
+  const { elapsedMs, resetCardTimer, getCardElapsedMs } = useSessionTimer(
+    engine.phase !== 'loading' && engine.phase !== 'complete',
+  )
+  timerRef.current = { resetCardTimer, getCardElapsedMs }
 
   useQuery({
     queryKey: ['due-cards', topicId],
