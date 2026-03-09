@@ -4,7 +4,7 @@ import type { MiniApp } from './mini-apps.js'
 
 describe('miniApps configuration', () => {
   it('has the expected number of mini apps', () => {
-    expect(miniApps).toHaveLength(4)
+    expect(miniApps).toHaveLength(5)
   })
 
   it('contains nxus-core', () => {
@@ -39,6 +39,14 @@ describe('miniApps configuration', () => {
     expect(recall!.icon).toBe('brain')
   })
 
+  it('contains nxus-editor', () => {
+    const editor = miniApps.find((app) => app.id === 'nxus-editor')
+    expect(editor).toBeDefined()
+    expect(editor!.name).toBe('nXus Editor')
+    expect(editor!.path).toBe('/editor')
+    expect(editor!.icon).toBe('notepad')
+  })
+
   it('all apps have unique IDs', () => {
     const ids = miniApps.map((app) => app.id)
     expect(new Set(ids).size).toBe(ids.length)
@@ -63,7 +71,7 @@ describe('miniApps configuration', () => {
   })
 
   it('all icons are valid', () => {
-    const validIcons = ['cube', 'graph', 'calendar', 'brain']
+    const validIcons = ['cube', 'graph', 'calendar', 'brain', 'notepad']
     for (const app of miniApps) {
       expect(validIcons).toContain(app.icon)
     }
