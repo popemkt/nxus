@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Cube, Graph, CalendarBlank, Brain, ArrowRight } from '@phosphor-icons/react'
+import { Cube, Graph, CalendarBlank, Brain, Notepad, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
 const iconMap = {
@@ -7,6 +7,7 @@ const iconMap = {
   graph: Graph,
   calendar: CalendarBlank,
   brain: Brain,
+  notepad: Notepad,
 } as const
 
 function ZenCard({ app, index }: { app: MiniApp; index: number }) {

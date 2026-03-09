@@ -4,6 +4,7 @@ import {
   Graph,
   CalendarBlank,
   Brain,
+  Notepad,
   GearSix,
   Terminal,
   Clock,
@@ -16,6 +17,7 @@ const iconMap = {
   graph: Graph,
   calendar: CalendarBlank,
   brain: Brain,
+  notepad: Notepad,
 } as const
 
 /* Reusable spotlight panel */

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Cube, Graph, CalendarBlank, Brain, ArrowRight } from '@phosphor-icons/react'
+import { Cube, Graph, CalendarBlank, Brain, Notepad, ArrowRight } from '@phosphor-icons/react'
 import type { MiniApp } from '@/config/mini-apps'
 
 const GRID_SIZE = 32
@@ -9,6 +9,7 @@ const iconMap = {
   graph: Graph,
   calendar: CalendarBlank,
   brain: Brain,
+  notepad: Notepad,
 } as const
 
 function BlueprintCard({ app, index }: { app: MiniApp; index: number }) {

@@ -11,7 +11,7 @@ test.describe('Outline Editor', () => {
     })
 
     test('shows breadcrumbs with Home button', async ({ page }) => {
-      await expect(page.getByText('Home')).toBeVisible({ timeout: 10_000 })
+      await expect(page.locator('.breadcrumbs').getByText('Home')).toBeVisible({ timeout: 10_000 })
     })
 
     test('renders outline body area', async ({ page }) => {
@@ -234,7 +234,7 @@ test.describe('Outline Editor', () => {
         await page.waitForTimeout(500)
 
         // Click Home to go back
-        await page.getByText('Home').click()
+        await page.locator('.breadcrumbs').getByText('Home').click()
         await page.waitForTimeout(500)
 
         // Should no longer show the heading (back at workspace root)
