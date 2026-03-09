@@ -1,34 +1,29 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { z } from 'zod'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useState, useRef } from 'react'
 import {
   ArrowLeft,
   Brain,
   Bug,
   Lightning,
-  Lightbulb,
   SkipForward,
   SpinnerGap,
   PaperPlaneRight,
-  ArrowRight,
-  Check,
   Trophy,
   Warning,
 } from '@phosphor-icons/react'
 import { getDueCardsServerFn } from '@/services/review.server'
-import { submitReviewServerFn, previewIntervalsServerFn } from '@/services/review.server'
-import { generateQuestionServerFn, prefetchQuestionServerFn } from '@/services/generate-question.server'
-import { evaluateAnswerServerFn } from '@/services/evaluate-answer.server'
-import { explainFurtherServerFn } from '@/services/explain-further.server'
-import { getConceptsByTopicServerFn } from '@/services/concepts.server'
 import { useSessionTimer } from '@/lib/use-session-timer'
 import { formatElapsed } from '@/lib/format'
+import { useReviewEngine } from '@/hooks/use-review-engine'
+import { QuestionInput } from '@/components/review/question-input'
+import { HintButton } from '@/components/review/hint-button'
+import { RatingButtons } from '@/components/review/rating-buttons'
+import { FeedbackCard } from '@/components/review/feedback-card'
+import { ExplainFurther } from '@/components/review/explain-further'
 import { SessionSummaryCard } from '@/components/session/session-summary'
 import type { RecallConcept } from '@nxus/db'
-import type { GeneratedQuestion, AnswerEvaluation } from '@nxus/mastra'
-
-type SessionPhase = 'loading' | 'question' | 'answering' | 'evaluating' | 'feedback' | 'complete'
 
 export const Route = createFileRoute('/review/session')({
   component: ReviewSessionPage,
@@ -39,21 +34,9 @@ export const Route = createFileRoute('/review/session')({
 
 function ReviewSessionPage() {
   const { topicId } = Route.useSearch()
-  const queryClient = useQueryClient()
 
-  const [queue, setQueue] = useState<RecallConcept[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [phase, setPhase] = useState<SessionPhase>('loading')
-  const [question, setQuestion] = useState<GeneratedQuestion | null>(null)
-  const [userAnswer, _setUserAnswer] = useState('')
-  const userAnswerRef = useRef('')
-  const setUserAnswer = useCallback((v: string) => {
-    userAnswerRef.current = v
-    _setUserAnswer(v)
-  }, [])
-  const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null)
-  const [intervals, setIntervals] = useState<Record<1 | 2 | 3 | 4, number> | null>(null)
-  const [reviewedCount, setReviewedCount] = useState(0)
+  const hintsUsedRef = useRef(0)
+  const timerRef = useRef<{ resetCardTimer: () => void; getCardElapsedMs: () => number }>({ resetCardTimer: () => {}, getCardElapsedMs: () => 0 })
   const [sessionStats, setSessionStats] = useState({
     ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<1 | 2 | 3 | 4, number>,
     newCount: 0,
@@ -61,252 +44,18 @@ function ReviewSessionPage() {
     reviewCount: 0,
     timeSpentMs: 0,
   })
-  const hintsUsedRef = useRef(0)
-  const { elapsedMs, resetCardTimer, getCardElapsedMs } = useSessionTimer(
-    phase !== 'loading' && phase !== 'complete',
-  )
-  /** Tracks in-flight prefetch promises so generateQuestionForConcept can await them */
-  const prefetchInFlightRef = useRef<Map<string, Promise<void>>>(new Map())
 
-  // Load due cards
-  useQuery({
-    queryKey: ['due-cards', topicId],
-    queryFn: async () => {
-      const result = await getDueCardsServerFn({
-        data: { topicId, limit: 50 },
-      })
-      if (result.success && result.cards.length > 0) {
-        setQueue(result.cards)
-        setPhase('question')
-        generateQuestionForConcept(result.cards[0]!)
-        // Prefetch questions for cards #2 and #3 immediately
-        for (let i = 1; i <= 2 && i < result.cards.length; i++) {
-          triggerPrefetch(result.cards[i]!, result.cards)
-        }
-      } else {
-        setPhase('complete')
-      }
-      return result
-    },
-  })
-
-  /** Get adjacent concepts for a concept */
-  const getAdjacentConcepts = useCallback(
-    async (concept: RecallConcept, allCards?: RecallConcept[]) => {
-      if (!concept.topicId) return []
-      // Use queue cards as adjacent if available to avoid extra server call
-      const pool = allCards ?? queue
-      if (pool.length > 1) {
-        return pool
-          .filter((c) => c.id !== concept.id)
-          .slice(0, 3)
-          .map((c) => ({ title: c.title, summary: c.summary }))
-      }
-      const conceptsResult = await getConceptsByTopicServerFn({
-        data: { topicId: concept.topicId },
-      })
-      if (conceptsResult.success) {
-        return conceptsResult.concepts
-          .filter((c: RecallConcept) => c.id !== concept.id)
-          .slice(0, 3)
-          .map((c: RecallConcept) => ({ title: c.title, summary: c.summary }))
-      }
-      return []
-    },
-    [queue],
-  )
-
-  /** Fire-and-forget prefetch for next concept — tracks in-flight promises */
-  const triggerPrefetch = useCallback(
-    (concept: RecallConcept, allCards?: RecallConcept[]) => {
-      if (prefetchInFlightRef.current.has(concept.id)) return
-      const promise = (async () => {
-        try {
-          const adjacentConcepts = await getAdjacentConcepts(concept, allCards)
-          await prefetchQuestionServerFn({
-            data: {
-              conceptId: concept.id,
-              conceptTitle: concept.title,
-              conceptSummary: concept.summary,
-              bloomsLevel: concept.bloomsLevel,
-              currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
-              adjacentConcepts,
-            },
-          })
-        } catch {
-          // non-critical
-        }
-      })()
-      prefetchInFlightRef.current.set(concept.id, promise)
-    },
-    [getAdjacentConcepts],
-  )
-
-  const generateQuestionForConcept = useCallback(
-    async (concept: RecallConcept) => {
-      setPhase('question')
-      setQuestion(null)
-      setUserAnswer('')
-      setEvaluation(null)
-      setIntervals(null)
-      resetCardTimer()
+  const engine = useReviewEngine({
+    getExtraSubmitData: () => ({
+      timeSpentMs: timerRef.current.getCardElapsedMs(),
+      hintsUsed: hintsUsedRef.current,
+    }),
+    onNewCard: () => {
+      timerRef.current.resetCardTimer()
       hintsUsedRef.current = 0
-
-      try {
-        // Wait for any in-flight prefetch to finish so we hit the DB cache
-        const inFlight = prefetchInFlightRef.current.get(concept.id)
-        if (inFlight) await inFlight
-
-        const adjacentConcepts = await getAdjacentConcepts(concept)
-
-        const result = await generateQuestionServerFn({
-          data: {
-            conceptId: concept.id,
-            conceptTitle: concept.title,
-            conceptSummary: concept.summary,
-            bloomsLevel: concept.bloomsLevel,
-            currentBloomsLevel: concept.card?.currentBloomsLevel ?? null,
-            adjacentConcepts,
-          },
-        })
-
-        if (result.success) {
-          setQuestion(result.question)
-          setPhase('answering')
-
-          // Preview intervals (fire-and-forget, non-blocking)
-          previewIntervalsServerFn({
-            data: { conceptId: concept.id },
-          }).then((r) => {
-            if (r.success) setIntervals(r.intervals)
-          }).catch(() => {})
-        }
-      } catch {
-        // Fallback: show concept as question
-        setQuestion({
-          questionText: `Explain the concept "${concept.title}" and why it matters.`,
-          questionType: 'free-response',
-          modelAnswer: concept.summary,
-          hints: [],
-        })
-        setPhase('answering')
-      }
     },
-    [getAdjacentConcepts, resetCardTimer],
-  )
-
-  const handleSkip = useCallback(() => {
-    // Capture the card that will be at currentIndex after splice
-    // (i.e. the card that was at currentIndex + 1)
-    const nextCard =
-      currentIndex + 1 < queue.length ? queue[currentIndex + 1]! : queue[0]!
-    setQueue((prev) => {
-      const next = [...prev]
-      const skipped = next.splice(currentIndex, 1)[0]!
-      next.push(skipped)
-      return next
-    })
-    // Index stays the same since array shifted left
-    generateQuestionForConcept(nextCard)
-  }, [currentIndex, queue, generateQuestionForConcept])
-
-  const evaluateMutation = useMutation({
-    mutationFn: async () => {
-      if (!question) return null
-      const currentConcept = queue[currentIndex]
-      if (!currentConcept) return null
-      const answer = userAnswerRef.current
-
-      // Deterministic question types: evaluate client-side instantly
-      if (question.questionType === 'multiple-choice' && 'correctIndex' in question) {
-        const isCorrect = answer === String(question.correctIndex)
-        return {
-          rating: isCorrect ? ('good' as const) : ('again' as const),
-          score: isCorrect ? 80 : 10,
-          feedback: isCorrect
-            ? 'Correct! ' + question.modelAnswer
-            : 'Incorrect. ' + question.modelAnswer,
-          keyInsightsMissed: isCorrect ? [] : ['Review the correct answer above'],
-          strongPoints: isCorrect ? ['Selected the correct answer'] : [],
-        }
-      }
-
-      if (question.questionType === 'true-false' && 'correctAnswer' in question) {
-        const isCorrect = answer === String(question.correctAnswer)
-        return {
-          rating: isCorrect ? ('good' as const) : ('again' as const),
-          score: isCorrect ? 80 : 10,
-          feedback: isCorrect
-            ? 'Correct! ' + question.modelAnswer
-            : 'Incorrect. ' + question.modelAnswer,
-          keyInsightsMissed: isCorrect ? [] : ['Review the correct answer above'],
-          strongPoints: isCorrect ? ['Correctly identified the statement'] : [],
-        }
-      }
-
-      if (question.questionType === 'fill-blank' && 'blankAnswer' in question) {
-        const normalize = (s: string) => s.trim().toLowerCase()
-        const isCorrect = normalize(answer) === normalize(question.blankAnswer)
-        const isClose = !isCorrect && normalize(question.blankAnswer).includes(normalize(answer))
-        return {
-          rating: isCorrect ? ('good' as const) : isClose ? ('hard' as const) : ('again' as const),
-          score: isCorrect ? 80 : isClose ? 40 : 10,
-          feedback: isCorrect
-            ? 'Correct! ' + question.modelAnswer
-            : `The answer is "${question.blankAnswer}". ${question.modelAnswer}`,
-          keyInsightsMissed: isCorrect ? [] : [`The blank should be filled with "${question.blankAnswer}"`],
-          strongPoints: isCorrect ? ['Filled in the correct answer'] : isClose ? ['Close, but not exact'] : [],
-        }
-      }
-
-      // Free-response: server-side AI evaluation
-      setPhase('evaluating')
-      const result = await evaluateAnswerServerFn({
-        data: {
-          questionText: question.questionText,
-          modelAnswer: question.modelAnswer,
-          userAnswer: answer,
-          conceptTitle: currentConcept.title,
-          questionType: question.questionType,
-        },
-      })
-      if (result.success) {
-        return result.evaluation
-      }
-      return null
-    },
-    onSuccess: (eval_) => {
-      if (eval_) {
-        setEvaluation(eval_)
-        setPhase('feedback')
-      }
-    },
-  })
-
-  const submitRatingMutation = useMutation({
-    mutationFn: async (rating: 1 | 2 | 3 | 4) => {
-      const currentConcept = queue[currentIndex]
-      if (!currentConcept || !question || !evaluation) return
-
-      const result = await submitReviewServerFn({
-        data: {
-          conceptId: currentConcept.id,
-          questionText: question.questionText,
-          questionType: question.questionType,
-          userAnswer: userAnswerRef.current,
-          aiFeedback: evaluation.feedback,
-          rating,
-          timeSpentMs: getCardElapsedMs(),
-          hintsUsed: hintsUsedRef.current,
-        },
-      })
-      return result
-    },
-    onSuccess: (_data, rating) => {
-      setReviewedCount((c) => c + 1)
-
-      // Accumulate session stats
-      const cardState = currentConcept?.card?.state
+    onCardReviewed: (rating: 1 | 2 | 3 | 4, concept: RecallConcept) => {
+      const cardState = concept.card?.state
       setSessionStats((prev) => ({
         ...prev,
         ratingDistribution: {
@@ -316,75 +65,32 @@ function ReviewSessionPage() {
         newCount: prev.newCount + (cardState === 0 ? 1 : 0),
         learningCount: prev.learningCount + (cardState === 1 || cardState === 3 ? 1 : 0),
         reviewCount: prev.reviewCount + (cardState === 2 ? 1 : 0),
-        timeSpentMs: prev.timeSpentMs + getCardElapsedMs(),
+        timeSpentMs: prev.timeSpentMs + timerRef.current.getCardElapsedMs(),
       }))
-
-      queryClient.invalidateQueries({ queryKey: ['recall-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['recall-topics'] })
-
-      // Move to next card
-      const nextIndex = currentIndex + 1
-      if (nextIndex < queue.length) {
-        setCurrentIndex(nextIndex)
-        generateQuestionForConcept(queue[nextIndex]!)
-        // Prefetch 2 cards ahead
-        for (let i = 1; i <= 2; i++) {
-          const futureCard = queue[nextIndex + i]
-          if (futureCard) triggerPrefetch(futureCard)
-        }
-      } else {
-        setPhase('complete')
-      }
     },
   })
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      // Don't capture when typing in inputs
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') {
-        // Only handle Enter in inputs to submit
-        if (e.key === 'Enter' && !e.shiftKey && phase === 'answering' && userAnswerRef.current.trim()) {
-          e.preventDefault()
-          evaluateMutation.mutate()
-        }
-        return
+  const { elapsedMs, resetCardTimer, getCardElapsedMs } = useSessionTimer(
+    engine.phase !== 'loading' && engine.phase !== 'complete',
+  )
+  timerRef.current = { resetCardTimer, getCardElapsedMs }
+
+  useQuery({
+    queryKey: ['due-cards', topicId],
+    queryFn: async () => {
+      const result = await getDueCardsServerFn({
+        data: { topicId, limit: 50 },
+      })
+      if (result.success) {
+        engine.initSession(result.cards)
+      } else {
+        throw new Error(result.error ?? 'Failed to load due cards')
       }
+      return result
+    },
+  })
 
-      if (phase === 'answering' && userAnswerRef.current.trim() && e.key === 'Enter') {
-        e.preventDefault()
-        evaluateMutation.mutate()
-      }
-
-      if (phase === 'feedback' && !submitRatingMutation.isPending) {
-        const ratingKey = Number(e.key)
-        if (ratingKey >= 1 && ratingKey <= 4) {
-          e.preventDefault()
-          submitRatingMutation.mutate(ratingKey as 1 | 2 | 3 | 4)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [phase, evaluateMutation, submitRatingMutation])
-
-  const currentConcept = queue[currentIndex]
-
-  const ratingLabels: Record<1 | 2 | 3 | 4, { label: string; color: string }> = {
-    1: { label: 'Again', color: 'bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20' },
-    2: { label: 'Hard', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500/20' },
-    3: { label: 'Good', color: 'bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20' },
-    4: { label: 'Easy', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20' },
-  }
-
-  function formatInterval(days: number): string {
-    if (days === 0) return '<1d'
-    if (days < 30) return `${days}d`
-    if (days < 365) return `${Math.round(days / 30)}mo`
-    return `${(days / 365).toFixed(1)}y`
-  }
+  const { phase, question, evaluation, intervals, userAnswer, currentConcept, queue, currentIndex, reviewedCount } = engine
 
   return (
     <div className="min-h-screen bg-background">
@@ -409,7 +115,6 @@ function ReviewSessionPage() {
             </span>
           ) : null}
         </div>
-        {/* Progress bar */}
         {queue.length > 0 ? (
           <div className="h-1 bg-muted">
             <div
@@ -467,16 +172,8 @@ function ReviewSessionPage() {
               <QuestionInput
                 question={question}
                 value={userAnswer}
-                onChange={(v) => {
-                  setUserAnswer(v)
-                  // Auto-submit for deterministic question types (MC, T/F)
-                  const isAutoSubmit =
-                    question.questionType === 'multiple-choice' ||
-                    question.questionType === 'true-false'
-                  if (isAutoSubmit && v.trim()) {
-                    setTimeout(() => evaluateMutation.mutate(), 150)
-                  }
-                }}
+                onChange={engine.setUserAnswer}
+                onAutoSubmit={() => engine.evaluateMutation.mutate()}
               />
             </div>
 
@@ -484,7 +181,7 @@ function ReviewSessionPage() {
               <div className="flex items-center gap-3">
                 {queue.length > 1 ? (
                   <button
-                    onClick={handleSkip}
+                    onClick={engine.handleSkip}
                     className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <SkipForward size={16} />
@@ -505,8 +202,8 @@ function ReviewSessionPage() {
                   <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">Enter</kbd> to submit
                 </span>
                 <button
-                  onClick={() => evaluateMutation.mutate()}
-                  disabled={!userAnswer.trim() || evaluateMutation.isPending}
+                  onClick={() => engine.evaluateMutation.mutate()}
+                  disabled={!userAnswer.trim() || engine.evaluateMutation.isPending}
                   className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PaperPlaneRight size={16} />
@@ -528,124 +225,27 @@ function ReviewSessionPage() {
         {/* Feedback */}
         {phase === 'feedback' && evaluation && question ? (
           <div>
-            <div className="mb-2 text-xs text-muted-foreground uppercase tracking-wider">
-              {currentConcept?.topicName} · {currentConcept?.title}
-            </div>
-
-            {/* Question recap */}
-            <div className="mb-4 rounded-xl border border-border bg-card p-4">
-              <p className="text-sm font-medium">{question.questionText}</p>
-            </div>
-
-            {/* Score */}
-            <div className="mb-6 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                    evaluation.score >= 80
-                      ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                      : evaluation.score >= 50
-                        ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                        : 'bg-red-500/10 text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {evaluation.score}/100
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  Suggested: {evaluation.rating}
-                </span>
-              </div>
-            </div>
-
-            {/* Feedback */}
-            <div className="mb-6 rounded-xl border border-border bg-card p-5 space-y-4">
-              <p className="text-sm">{evaluation.feedback}</p>
-
-              {evaluation.strongPoints.length > 0 ? (
-                <div>
-                  <p className="mb-1 text-xs font-medium text-success uppercase tracking-wider">
-                    Strong Points
-                  </p>
-                  <ul className="space-y-1">
-                    {evaluation.strongPoints.map((point: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <Check size={14} className="mt-0.5 text-success flex-shrink-0" />
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <FeedbackCard
+              question={question}
+              evaluation={evaluation}
+              conceptMeta={currentConcept ? { topicName: currentConcept.topicName, title: currentConcept.title } : undefined}
+            >
+              {evaluation.keyInsightsMissed.length > 0 && currentConcept ? (
+                <ExplainFurther
+                  conceptTitle={currentConcept.title}
+                  questionText={question.questionText}
+                  modelAnswer={question.modelAnswer}
+                  keyInsightsMissed={evaluation.keyInsightsMissed}
+                  userAnswer={engine.userAnswerRef.current}
+                />
               ) : null}
+            </FeedbackCard>
 
-              {evaluation.keyInsightsMissed.length > 0 ? (
-                <div>
-                  <p className="mb-1 text-xs font-medium text-warning uppercase tracking-wider">
-                    Key Insights Missed
-                  </p>
-                  <ul className="space-y-1">
-                    {evaluation.keyInsightsMissed.map((point: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <ArrowRight size={14} className="mt-0.5 text-warning flex-shrink-0" />
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              {/* Model answer */}
-              <div className="border-t border-border pt-4">
-                <p className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Model Answer
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {question.modelAnswer}
-                </p>
-              </div>
-            </div>
-
-            {/* Explain Further */}
-            {evaluation.keyInsightsMissed.length > 0 && currentConcept ? (
-              <ExplainFurtherSection
-                conceptTitle={currentConcept.title}
-                questionText={question.questionText}
-                modelAnswer={question.modelAnswer}
-                keyInsightsMissed={evaluation.keyInsightsMissed}
-                userAnswer={userAnswerRef.current}
-              />
-            ) : null}
-
-            {/* Rating buttons */}
-            <div>
-              <p className="mb-3 text-sm font-medium flex items-center gap-2">
-                How well did you know this?
-                <span className="text-[10px] text-muted-foreground">
-                  Press <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">1</kbd>-<kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">4</kbd>
-                </span>
-              </p>
-              <div className="grid grid-cols-4 gap-3">
-                {([1, 2, 3, 4] as const).map((rating) => {
-                  const info = ratingLabels[rating]
-                  const interval = intervals?.[rating]
-                  return (
-                    <button
-                      key={rating}
-                      onClick={() => submitRatingMutation.mutate(rating)}
-                      disabled={submitRatingMutation.isPending}
-                      className={`rounded-xl border border-border p-4 text-center transition-all ${info.color} disabled:opacity-50`}
-                    >
-                      <div className="text-sm font-semibold">{info.label}</div>
-                      <div className="mt-0.5 text-[10px] opacity-50">{rating}</div>
-                      {interval !== undefined ? (
-                        <div className="mt-1 text-[10px] opacity-70">
-                          {formatInterval(interval)}
-                        </div>
-                      ) : null}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            <RatingButtons
+              intervals={intervals}
+              onRate={(rating) => engine.submitRatingMutation.mutate(rating)}
+              disabled={engine.submitRatingMutation.isPending}
+            />
           </div>
         ) : null}
 
@@ -708,178 +308,6 @@ function ReviewSessionPage() {
           </div>
         ) : null}
       </main>
-    </div>
-  )
-}
-
-function QuestionInput({
-  question,
-  value,
-  onChange,
-}: {
-  question: GeneratedQuestion
-  value: string
-  onChange: (v: string) => void
-}) {
-  switch (question.questionType) {
-    case 'multiple-choice':
-      return (
-        <div className="space-y-2">
-          {question.choices.map((choice: string, i: number) => (
-            <button
-              key={i}
-              onClick={() => onChange(String(i))}
-              className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${
-                value === String(i)
-                  ? 'border-primary bg-primary/5 text-foreground'
-                  : 'border-border bg-background text-muted-foreground hover:border-primary/50'
-              }`}
-            >
-              <span className="mr-2 font-medium">{String.fromCharCode(65 + i)}.</span>
-              {choice}
-            </button>
-          ))}
-        </div>
-      )
-
-    case 'true-false':
-      return (
-        <div className="flex gap-3">
-          {(['true', 'false'] as const).map((opt) => (
-            <button
-              key={opt}
-              onClick={() => onChange(opt)}
-              className={`flex-1 rounded-lg border p-4 text-center text-sm font-medium transition-colors ${
-                value === opt
-                  ? 'border-primary bg-primary/5 text-foreground'
-                  : 'border-border bg-background text-muted-foreground hover:border-primary/50'
-              }`}
-            >
-              {opt === 'true' ? 'True' : 'False'}
-            </button>
-          ))}
-        </div>
-      )
-
-    case 'fill-blank':
-      return (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Fill in the blank..."
-          className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          autoFocus
-        />
-      )
-
-    case 'free-response':
-    default:
-      return (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Type your answer..."
-          rows={6}
-          className="w-full rounded-lg border border-input bg-background p-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-          autoFocus
-        />
-      )
-  }
-}
-
-function HintButton({
-  hints,
-  onReveal,
-}: {
-  hints: string[]
-  onReveal?: () => void
-}) {
-  const [revealedCount, setRevealedCount] = useState(0)
-
-  return (
-    <div>
-      {revealedCount > 0 ? (
-        <div className="mb-2 space-y-1">
-          {hints.slice(0, revealedCount).map((hint, i) => (
-            <p key={i} className="text-xs text-muted-foreground italic">
-              Hint {i + 1}: {hint}
-            </p>
-          ))}
-        </div>
-      ) : null}
-      {revealedCount < hints.length ? (
-        <button
-          onClick={() => {
-            setRevealedCount((c) => c + 1)
-            onReveal?.()
-          }}
-          className="text-xs text-primary hover:underline"
-        >
-          Show hint ({revealedCount + 1}/{hints.length})
-        </button>
-      ) : null}
-    </div>
-  )
-}
-
-function ExplainFurtherSection({
-  conceptTitle,
-  questionText,
-  modelAnswer,
-  keyInsightsMissed,
-  userAnswer,
-}: {
-  conceptTitle: string
-  questionText: string
-  modelAnswer: string
-  keyInsightsMissed: string[]
-  userAnswer: string
-}) {
-  const explainMutation = useMutation({
-    mutationFn: async () => {
-      const result = await explainFurtherServerFn({
-        data: {
-          conceptTitle,
-          questionText,
-          modelAnswer,
-          keyInsightsMissed,
-          userAnswer,
-        },
-      })
-      if (result.success) {
-        return result.explanation
-      }
-      throw new Error(result.error)
-    },
-  })
-
-  return (
-    <div className="mb-6">
-      <button
-        onClick={() => explainMutation.mutate()}
-        disabled={explainMutation.isPending || explainMutation.isSuccess}
-        className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
-      >
-        {explainMutation.isPending ? (
-          <SpinnerGap size={16} className="animate-spin" />
-        ) : (
-          <Lightbulb size={16} />
-        )}
-        Explain Further
-      </button>
-      {explainMutation.isSuccess && explainMutation.data ? (
-        <div className="mt-3 rounded-xl border border-border bg-muted/50 p-4">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {explainMutation.data}
-          </p>
-        </div>
-      ) : null}
-      {explainMutation.isError ? (
-        <p className="mt-2 text-xs text-red-500">
-          Failed to generate explanation. Try again.
-        </p>
-      ) : null}
     </div>
   )
 }
