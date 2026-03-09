@@ -9,6 +9,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+  # TODO: Enable typecheck step once @nxus/db test type errors are fixed
+  # (stale test types in libs/nxus-db/src/reactive/__tests__/automation.test.ts)
+  # typecheck:
+  #   name: Typecheck
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: pnpm/action-setup@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22
+  #         cache: pnpm
+  #     - run: pnpm install --frozen-lockfile
+  #     - run: pnpm typecheck
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -24,7 +56,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm test
+      - run: pnpm test:coverage
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            libs/*/coverage/
+            apps/*/coverage/
+          retention-days: 7
 
   e2e-tests:
     name: E2E Tests (${{ matrix.architecture }})
