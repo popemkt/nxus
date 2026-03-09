@@ -42,6 +42,9 @@ export type NodeSizeOption = 'uniform' | 'connections'
 /** Edge rendering style */
 export type EdgeStyleOption = 'solid' | 'animated'
 
+/** Grouping dimension for hull overlays (2D canvas renderer) */
+export type GroupingDimensionId = 'supertag' | 'type' | null
+
 /**
  * Visual display options for the graph.
  */
@@ -56,6 +59,8 @@ export interface GraphDisplayOptions {
   nodeSize: NodeSizeOption
   /** Edge rendering style (animated = directional particles) */
   edgeStyle: EdgeStyleOption
+  /** Grouping dimension for convex hull overlays (null = no grouping) */
+  groupingDimension: GroupingDimensionId
 }
 
 // ============================================================================

@@ -21,7 +21,9 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "typecheck": "nx run-many --target=typecheck --all",
+    "test:coverage": "nx run-many --target=test --all -- --coverage"
   },
   "private": true,
   "dependencies": {
@@ -39,6 +41,7 @@
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/node": "20.19.9",
+    "@vitest/coverage-v8": "^3.2.4",
     "nx": "22.3.3",
     "oxlint": "^1.51.0",
     "prettier": "~3.6.2",

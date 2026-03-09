@@ -52,6 +52,7 @@ export const DEFAULT_DISPLAY: GraphDisplayOptions = {
   edgeLabels: 'never', // Edge labels are usually noisy
   nodeSize: 'connections', // Size by connection count for importance visualization
   edgeStyle: 'solid', // Solid edges for clean, minimalist look (like Obsidian)
+  groupingDimension: 'supertag', // Group nodes by supertag with hull overlays
 }
 
 // ============================================================================

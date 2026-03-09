@@ -21,9 +21,9 @@ import { Badge, Button ,
   CardDescription,
   CardHeader,
   CardTitle, Skeleton, Tabs, TabsContent, TabsList , TabsTrigger  } from '@nxus/ui'
+import type { Item } from '@nxus/db'
 import type {InstalledAppRecord} from '@/services/state/app-state';
 import { useAppRegistry } from '@/hooks/use-app-registry'
-import { appRegistryService } from '@/services/apps/registry.service'
 import { DependencyList } from '@/components/features/app-detail/dependency-list'
 import {
   useToolHealthInvalidation,
@@ -252,6 +252,7 @@ function GenerateThumbnailButton({ appId }: { appId: string }) {
 function OverviewContent({
   app,
   appId,
+  allApps,
   effectiveStatus,
   selectedInstance,
   setSelectedInstance,
@@ -262,6 +263,7 @@ function OverviewContent({
 }: {
   app: ReturnType<typeof useAppRegistry>['apps'][0]
   appId: string
+  allApps: Array<Item>
   effectiveStatus: string
   selectedInstance: InstalledAppRecord | null
   setSelectedInstance: (instance: InstalledAppRecord | null) => void
@@ -490,10 +492,9 @@ function OverviewContent({
 
             {/* Dependencies List */}
             <DependencyList
-              dependencies={(() => {
-                const result = appRegistryService.getDependencies(app.id)
-                return result.success ? result.data : []
-              })()}
+              dependencies={(app.dependencies ?? [])
+                .map((depId) => allApps.find((a) => a.id === depId))
+                .filter((dep): dep is Item => !!dep)}
             />
           </div>
         </CardContent>
@@ -508,8 +509,8 @@ export const Route = createFileRoute('/apps/$appId')({
 
 function AppDetailPage() {
   const { appId } = Route.useParams()
-  const { apps, loading } = useAppRegistry({})
-  const app = apps.find((a) => a.id === appId)
+  const { allApps, loading } = useAppRegistry({})
+  const app = allApps.find((a) => a.id === appId)
   const { isInstalled } = useAppCheck(appId)
 
   const canCheckHealth = app ? hasCheckCommand(app) : false
@@ -680,6 +681,7 @@ function AppDetailPage() {
                 <OverviewContent
                   app={app}
                   appId={app.id}
+                  allApps={allApps}
                   effectiveStatus={effectiveStatus}
                   selectedInstance={selectedInstance}
                   setSelectedInstance={setSelectedInstance}
@@ -722,6 +724,7 @@ function AppDetailPage() {
               <OverviewContent
                 app={app}
                 appId={app.id}
+                allApps={allApps}
                 effectiveStatus={effectiveStatus}
                 selectedInstance={selectedInstance}
                 setSelectedInstance={setSelectedInstance}
