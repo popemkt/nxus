@@ -43,18 +43,20 @@ export const GROUPING_DIMENSIONS: Array<GroupingDimension> = [
   {
     id: 'supertag',
     label: 'Type',
-    getGroups: (item) =>
-      (item.types ?? [item.type]).map((t) => ({
+    getGroups: (item) => {
+      const types = item.types?.length ? item.types : item.type ? [item.type] : []
+      return types.map((t) => ({
         key: t,
         label: t,
         color: TYPE_COLORS[t] ?? '#888',
-      })),
+      }))
+    },
   },
   {
     id: 'tag',
     label: 'Tag',
     getGroups: (item) =>
-      item.metadata.tags.map((t) => ({
+      (item.metadata.tags ?? []).map((t) => ({
         key: t.id,
         label: t.name,
         color: paletteColor(t.id),
@@ -63,12 +65,15 @@ export const GROUPING_DIMENSIONS: Array<GroupingDimension> = [
   {
     id: 'category',
     label: 'Category',
-    getGroups: (item) => [
-      {
-        key: item.metadata.category,
-        label: item.metadata.category,
-        color: paletteColor(item.metadata.category),
-      },
-    ],
+    getGroups: (item) =>
+      item.metadata.category
+        ? [
+            {
+              key: item.metadata.category,
+              label: item.metadata.category,
+              color: paletteColor(item.metadata.category),
+            },
+          ]
+        : [],
   },
 ]
