@@ -73,6 +73,13 @@ export function useOutlineSync() {
         })
           .then((result) => {
             if (result.success && result.nodeId !== newId) {
+              // Cancel any pending content debounce for the temp ID
+              const pendingTimer = contentTimers.current.get(newId)
+              if (pendingTimer) {
+                clearTimeout(pendingTimer)
+                contentTimers.current.delete(newId)
+              }
+
               // Atomic state update to replace temp ID with server ID
               useOutlineStore.setState((state) => {
                 const tempNode = state.nodes.get(newId)

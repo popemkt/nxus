@@ -33,7 +33,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       order: string
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null }[]
-      fields: { fieldName: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: {} | null; order: number }[] }[]
+      fields: { fieldName: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
     }
 
     const nodeMap = new Map<string, OutlineNodeResult>()
@@ -73,7 +73,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
           fieldType,
           values: propValues
             .sort((a, b) => a.order - b.order)
-            .map((pv) => ({ value: (pv.value ?? null) as {} | null, order: pv.order })),
+            .map((pv) => ({ value: pv.value ?? null, order: pv.order })),
         })
       }
 

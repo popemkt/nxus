@@ -3,6 +3,7 @@ import { cn } from '@nxus/ui'
 import type { OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
 import { setFieldValueServerFn } from '@/services/outline.server'
+import { useOutlineStore } from '@/stores/outline.store'
 
 interface FieldsSectionProps {
   nodeId: string
@@ -46,6 +47,9 @@ function FieldRow({
   const handleChange = useCallback(
     (newValue: unknown) => {
       if (!field.fieldSystemId) return
+      // Optimistic update in store
+      useOutlineStore.getState().updateFieldValue(nodeId, field.fieldSystemId, newValue)
+      // Persist to server
       setFieldValueServerFn({
         data: {
           nodeId,

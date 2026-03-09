@@ -16,6 +16,7 @@ interface OutlineState {
   selectNode: (id: string | null) => void
   toggleCollapse: (id: string) => void
   updateNodeContent: (id: string, content: string) => void
+  updateFieldValue: (nodeId: string, fieldSystemId: string, value: unknown) => void
   createNodeAfter: (afterId: string) => string
   deleteNode: (id: string) => void
   indentNode: (id: string) => void
@@ -109,6 +110,22 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set({ nodes: next })
   },
 
+  updateFieldValue: (nodeId, fieldSystemId, value) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      fields: node.fields.map((f) =>
+        f.fieldSystemId === fieldSystemId
+          ? { ...f, values: [{ value, order: f.values[0]?.order ?? 0 }] }
+          : f,
+      ),
+    })
+    set({ nodes: next })
+  },
+
   createNodeAfter: (afterId) => {
     const { nodes } = get()
     const afterNode = nodes.get(afterId)
@@ -155,17 +172,12 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
   },
 
   deleteNode: (id) => {
-    const { nodes, activeNodeId } = get()
+    const { nodes } = get()
     const node = nodes.get(id)
     if (!node || !node.parentId) return
 
     const parent = nodes.get(node.parentId)
     if (!parent) return
-
-    const visibleNodes = get().getVisibleNodes()
-    const currentIndex = visibleNodes.indexOf(id)
-    const prevId =
-      currentIndex > 0 ? visibleNodes[currentIndex - 1] : null
 
     const next = new Map(nodes)
 
@@ -184,9 +196,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       children: parent.children.filter((c) => c !== id),
     })
 
-    const newActive =
-      activeNodeId === id ? (prevId !== node.parentId ? prevId : null) : activeNodeId
-    set({ nodes: next, activeNodeId: newActive, selectedNodeId: newActive })
+    set({ nodes: next })
   },
 
   indentNode: (id) => {
