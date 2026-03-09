@@ -125,6 +125,9 @@ export function useReviewEngine(options: UseReviewEngineOptions = {}) {
           }).then((r) => {
             if (r.success) setIntervals(r.intervals)
           }).catch(() => {})
+        } else {
+          // Generation returned an error — fall back to generic question
+          throw new Error('Question generation failed')
         }
       } catch {
         setQuestion({
@@ -143,7 +146,15 @@ export function useReviewEngine(options: UseReviewEngineOptions = {}) {
 
   const initSession = useCallback(
     (cards: RecallConcept[]) => {
+      setReviewedCount(0)
+      setQuestion(null)
+      setEvaluation(null)
+      setIntervals(null)
+      setUserAnswer('')
+      prefetchInFlightRef.current.clear()
+
       if (cards.length === 0) {
+        setQueue([])
         setPhase('complete')
         return
       }
@@ -155,18 +166,25 @@ export function useReviewEngine(options: UseReviewEngineOptions = {}) {
         triggerPrefetch(cards[i]!, cards)
       }
     },
-    [generateQuestionForConcept, triggerPrefetch],
+    [generateQuestionForConcept, triggerPrefetch, setUserAnswer],
   )
 
   const handleSkip = useCallback(() => {
-    const nextCard =
-      currentIndex + 1 < queue.length ? queue[currentIndex + 1]! : queue[0]!
+    // After splice, the card at currentIndex is the next card to show
+    // (unless we're at the end, in which case the spliced array is shorter)
+    const isLastCard = currentIndex >= queue.length - 1
+    const nextCard = isLastCard ? queue[0]! : queue[currentIndex + 1]!
     setQueue((prev) => {
       const next = [...prev]
       const skipped = next.splice(currentIndex, 1)[0]!
       next.push(skipped)
       return next
     })
+    // When skipping the last card, the new queue has the skipped card at end
+    // and currentIndex would be out of bounds, so reset to 0
+    if (isLastCard) {
+      setCurrentIndex(0)
+    }
     generateQuestionForConcept(nextCard)
   }, [currentIndex, queue, generateQuestionForConcept])
 
@@ -233,13 +251,24 @@ export function useReviewEngine(options: UseReviewEngineOptions = {}) {
       if (result.success) {
         return result.evaluation
       }
-      return null
+      throw new Error('Evaluation failed')
     },
     onSuccess: (eval_) => {
       if (eval_) {
         setEvaluation(eval_)
         setPhase('feedback')
       }
+    },
+    onError: () => {
+      // Evaluation failed — fall back to a generous self-assessment prompt
+      setEvaluation({
+        rating: 'good',
+        score: 50,
+        feedback: 'Could not evaluate your answer automatically. Please self-assess using the rating buttons below.',
+        keyInsightsMissed: [],
+        strongPoints: [],
+      })
+      setPhase('feedback')
     },
   })
 
