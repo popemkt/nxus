@@ -15,7 +15,7 @@
  * All filters are pure functions with no side effects.
  */
 
-import { eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { getDatabase } from '../client/master-client.js'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
 
@@ -36,6 +36,7 @@ import type {
 } from '../types/query.js'
 import {
   assembleNode,
+  assembleNodes,
   getFieldOrSupertagNode,
   getNodeIdsBySupertagWithInheritance,
   getSystemNode,
@@ -91,10 +92,8 @@ export function evaluateQuery(
 
   const totalCount = candidateIds.size
 
-  // 3. Assemble nodes
-  let assembledNodes = Array.from(candidateIds)
-    .map((id) => assembleNode(db, id))
-    .filter((n): n is AssembledNode => n !== null)
+  // 3. Assemble nodes (batch — 4 queries instead of N * (2+M+K))
+  let assembledNodes = assembleNodes(db, Array.from(candidateIds))
 
   // 4. Apply sorting
   if (definition.sort) {
@@ -205,28 +204,17 @@ function getNodeIdsByDirectSupertag(
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   if (!supertagField) return []
 
+  // Direct match using compound WHERE + value index
   const props = db
-    .select()
+    .select({ nodeId: nodeProperties.nodeId })
     .from(nodeProperties)
-    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
+    .where(and(
+      eq(nodeProperties.fieldNodeId, supertagField.id),
+      eq(nodeProperties.value, JSON.stringify(targetSupertag.id)),
+    ))
     .all()
 
-  const nodeIds: string[] = []
-  for (const prop of props) {
-    try {
-      const value = JSON.parse(prop.value || '')
-      if (value === targetSupertag.id) {
-        nodeIds.push(prop.nodeId)
-      }
-    } catch (error) {
-      // Log warning for malformed supertag property values (potential data corruption)
-      console.warn(
-        `[QueryEvaluator] Malformed supertag property value for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
-      )
-    }
-  }
-
-  return nodeIds
+  return props.map((p) => p.nodeId)
 }
 
 // ============================================================================
@@ -409,14 +397,20 @@ export function evaluateContentFilter(
 
   const searchTerm = caseSensitive ? query : query.toLowerCase()
 
-  const result = new Set<string>()
-  for (const id of candidateIds) {
-    const node = db.select().from(nodes).where(eq(nodes.id, id)).get()
-    if (!node) continue
+  // Batch fetch all candidate nodes instead of N+1 queries
+  const candidateArray = [...candidateIds]
+  const candidateNodes = candidateArray.length > 0
+    ? db.select({ id: nodes.id, content: nodes.content, contentPlain: nodes.contentPlain })
+        .from(nodes)
+        .where(inArray(nodes.id, candidateArray))
+        .all()
+    : []
 
+  const result = new Set<string>()
+  for (const node of candidateNodes) {
     const content = caseSensitive ? node.content : node.contentPlain
     if (content && content.includes(searchTerm)) {
-      result.add(id)
+      result.add(node.id)
     }
   }
 
@@ -503,11 +497,17 @@ export function evaluateTemporalFilter(
       return candidateIds
   }
 
-  const result = new Set<string>()
-  for (const id of candidateIds) {
-    const node = db.select().from(nodes).where(eq(nodes.id, id)).get()
-    if (!node) continue
+  // Batch fetch all candidate nodes instead of N+1 queries
+  const candidateArray = [...candidateIds]
+  const candidateNodes = candidateArray.length > 0
+    ? db.select({ id: nodes.id, createdAt: nodes.createdAt, updatedAt: nodes.updatedAt })
+        .from(nodes)
+        .where(inArray(nodes.id, candidateArray))
+        .all()
+    : []
 
+  const result = new Set<string>()
+  for (const node of candidateNodes) {
     const nodeDate = field === 'createdAt' ? node.createdAt : node.updatedAt
 
     let matches = false
@@ -524,7 +524,7 @@ export function evaluateTemporalFilter(
     }
 
     if (matches) {
-      result.add(id)
+      result.add(node.id)
     }
   }
 
@@ -574,21 +574,24 @@ function evaluateChildOfRelation(
   candidateIds: Set<string>,
   targetNodeId?: string,
 ): Set<string> {
+  // Batch fetch all candidate nodes instead of N+1 queries
+  const candidateArray = [...candidateIds]
+  const candidateNodes = candidateArray.length > 0
+    ? db.select({ id: nodes.id, ownerId: nodes.ownerId })
+        .from(nodes)
+        .where(inArray(nodes.id, candidateArray))
+        .all()
+    : []
+
   const result = new Set<string>()
-
-  for (const id of candidateIds) {
-    const node = db.select().from(nodes).where(eq(nodes.id, id)).get()
-    if (!node) continue
-
+  for (const node of candidateNodes) {
     if (targetNodeId) {
-      // Match specific parent
       if (node.ownerId === targetNodeId) {
-        result.add(id)
+        result.add(node.id)
       }
     } else {
-      // Match any node with an owner
       if (node.ownerId) {
-        result.add(id)
+        result.add(node.id)
       }
     }
   }

@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import appCss from '../styles.css?url'
 import { useSystemInfo } from '@/hooks/use-system-info'
-import { useThemeStore } from '@/stores/theme.store'
+import { useThemeStore, useThemeHydrated } from '@/stores/theme.store'
 import { themeOptions } from '@/config/theme-options'
 import { CommandPalette } from '@/components/features/command-palette/command-palette'
 import { TerminalPanel } from '@/components/features/terminal/terminal-panel'
@@ -15,6 +15,31 @@ import { GlobalCommandParamsModal } from '@/components/features/command-params/g
 
 
 import { queryClient } from '@/lib/query-client'
+
+// ---------------------------------------------------------------------------
+// Module-scope theme application — runs synchronously before React renders.
+// The inline <script> in <head> handles the very first paint; this catches
+// any case where the module loads after the script has already run (e.g. SPA
+// navigation) and keeps classes in sync with localStorage.
+// ---------------------------------------------------------------------------
+function applyStoredTheme(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const stored = localStorage.getItem('nxus-theme')
+    if (!stored) return
+    const state = JSON.parse(stored).state
+    const colorMode = state?.colorMode || 'dark'
+    const palette = state?.palette || 'default'
+    const root = document.documentElement
+
+    themeOptions.forEach((t) => root.classList.remove(t.value))
+    root.classList.remove('dark')
+
+    if (colorMode === 'dark') root.classList.add('dark')
+    if (palette !== 'default') root.classList.add(palette)
+  } catch { /* ignore */ }
+}
+applyStoredTheme()
 
 export const Route = createRootRoute({
   head: () => ({
@@ -55,8 +80,14 @@ function SystemInfoLoader() {
 function ThemeProvider() {
   const palette = useThemeStore((s) => s.palette)
   const colorMode = useThemeStore((s) => s.colorMode)
+  const hydrated = useThemeHydrated()
 
   useEffect(() => {
+    // Don't touch classes until Zustand has hydrated from localStorage.
+    // The inline <script> in <head> already applied the correct classes
+    // on initial load — acting on default store values would strip them.
+    if (!hydrated) return
+
     const root = document.documentElement
 
     // Remove all palette classes
@@ -72,7 +103,7 @@ function ThemeProvider() {
     if (palette !== 'default') {
       root.classList.add(palette)
     }
-  }, [palette, colorMode])
+  }, [palette, colorMode, hydrated])
 
   return null
 }

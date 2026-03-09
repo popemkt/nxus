@@ -7,7 +7,7 @@
  * This should be called BEFORE any app-specific seeding.
  */
 
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { uuidv7 } from 'uuidv7';
 import type * as schema from '../schemas/item-schema.js';
@@ -29,10 +29,11 @@ const systemNodeIds = new Map<string, string>();
  * Get or create UUID for a system node
  */
 function getSystemNodeId(systemId: string): string {
-  if (!systemNodeIds.has(systemId)) {
-    systemNodeIds.set(systemId, uuidv7());
-  }
-  return systemNodeIds.get(systemId)!;
+  const existing = systemNodeIds.get(systemId);
+  if (existing) return existing;
+  const id = uuidv7();
+  systemNodeIds.set(systemId, id);
+  return id;
 }
 
 /**
@@ -84,9 +85,12 @@ function setProperty(
   const existing = db
     .select()
     .from(nodeProperties)
-    .where(eq(nodeProperties.nodeId, nodeId))
-    .all()
-    .find((p) => p.fieldNodeId === fieldNodeId && p.value === value);
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, fieldNodeId),
+      eq(nodeProperties.value, value),
+    ))
+    .get();
 
   if (!existing) {
     db.insert(nodeProperties)
@@ -655,8 +659,8 @@ export function bootstrapSystemNodesSync(
   // ============================================================================
   // Summary
   // ============================================================================
-  const nodeCount = db.select().from(nodes).all().length;
-  const propertyCount = db.select().from(nodeProperties).all().length;
+  const [{ count: nodeCount }] = db.select({ count: sql<number>`count(*)` }).from(nodes).all();
+  const [{ count: propertyCount }] = db.select({ count: sql<number>`count(*)` }).from(nodeProperties).all();
 
   if (verbose) {
     console.log('\n' + '='.repeat(50));
