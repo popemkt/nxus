@@ -51,7 +51,14 @@ function FieldRow({
   depth: number
 }) {
   const navigateToNode = useNavigateToNode()
-  const value = field.values.length > 0 ? field.values[0]!.value : undefined
+
+  // For multi-reference fields, collect all values into an array
+  const value =
+    field.fieldType === 'nodes'
+      ? field.values.flatMap((v) => (Array.isArray(v.value) ? v.value : [v.value])).filter(Boolean)
+      : field.values.length > 0
+        ? field.values[0]!.value
+        : undefined
 
   const handleChange = useCallback(
     (newValue: unknown) => {

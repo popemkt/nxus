@@ -40,6 +40,8 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     // Cache field types to avoid redundant lookups
     const fieldTypeCache = new Map<string, FieldType>()
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
     function resolveFieldType(fieldNodeId: string): FieldType {
       const cached = fieldTypeCache.get(fieldNodeId)
       if (cached) return cached
@@ -51,6 +53,27 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       const result = ft as FieldType
       fieldTypeCache.set(fieldNodeId, result)
       return result
+    }
+
+    /**
+     * When field_type isn't explicitly set (defaults to 'text'), infer
+     * from the actual values — UUIDs are almost certainly node references.
+     */
+    function inferFieldType(
+      declared: FieldType,
+      values: { value: unknown }[],
+    ): FieldType {
+      if (declared !== 'text' || values.length === 0) return declared
+      const first = values[0]?.value
+      if (Array.isArray(first)) {
+        if (first.length > 0 && first.every((v) => typeof v === 'string' && UUID_RE.test(v))) {
+          return 'nodes'
+        }
+      }
+      if (typeof first === 'string' && UUID_RE.test(first)) {
+        return values.length > 1 ? 'nodes' : 'node'
+      }
+      return declared
     }
 
     function extractFields(assembled: {
@@ -65,16 +88,19 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         // Skip hidden system fields
         if (first.fieldSystemId && HIDDEN_FIELD_SYSTEM_IDS.has(first.fieldSystemId)) continue
 
-        const fieldType = resolveFieldType(first.fieldNodeId)
+        const sortedValues = propValues
+          .sort((a, b) => a.order - b.order)
+          .map((pv) => ({ value: pv.value ?? null, order: pv.order }))
+
+        const declaredType = resolveFieldType(first.fieldNodeId)
+        const fieldType = inferFieldType(declaredType, sortedValues)
 
         fields.push({
           fieldName: first.fieldName,
           fieldNodeId: first.fieldNodeId,
           fieldSystemId: first.fieldSystemId,
           fieldType,
-          values: propValues
-            .sort((a, b) => a.order - b.order)
-            .map((pv) => ({ value: pv.value ?? null, order: pv.order })),
+          values: sortedValues,
         })
       }
 
