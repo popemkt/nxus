@@ -239,20 +239,22 @@ export const NodeBlock = memo(function NodeBlock({
         />
       </div>
 
-      {/* Fields (properties) — shown before children */}
-      {node.fields.length > 0 && !node.collapsed && (
-        <FieldsSection nodeId={nodeId} fields={node.fields} depth={depth} />
-      )}
-
-      {/* Children */}
-      {hasChildren && !node.collapsed && (
+      {/* Fields + Children — wrapped in a single container with tree line */}
+      {(node.fields.length > 0 || hasChildren) && !node.collapsed && (
         <div className="children-container relative">
-          {/* Vertical tree line */}
+          {/* Vertical tree line spanning fields and children */}
           <div
             className="absolute top-0 bottom-2 w-px bg-foreground/[0.06] hover:bg-foreground/15 transition-colors duration-200 cursor-pointer"
             style={{ left: `${depth * 24 + 11}px` }}
             onClick={handleBulletClick}
           />
+
+          {/* Fields (properties) — rendered before children */}
+          {node.fields.length > 0 && (
+            <FieldsSection nodeId={nodeId} fields={node.fields} depth={depth} />
+          )}
+
+          {/* Children */}
           {sortedChildren.map((childId) => (
             <NodeBlock key={childId} nodeId={childId} depth={depth + 1} />
           ))}

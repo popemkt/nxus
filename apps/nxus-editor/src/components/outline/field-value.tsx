@@ -43,18 +43,18 @@ export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
 /* ─── Shared inline editing styles ─── */
 
 const displayTextClass = cn(
-  'cursor-text rounded-sm px-1 text-[13px] leading-[28px]',
+  'cursor-text rounded-sm px-1 text-[14.5px] leading-[1.6]',
   'text-foreground/70 hover:bg-foreground/5',
 )
 
 const emptyTextClass = cn(
-  'cursor-text rounded-sm px-1 text-[13px] leading-[28px]',
+  'cursor-text rounded-sm px-1 text-[14.5px] leading-[1.6]',
   'text-foreground/25 italic hover:bg-foreground/5',
 )
 
 const inputClass = cn(
-  'h-[28px] flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-  'text-[13px] text-foreground/80 outline-none leading-[28px]',
+  'min-h-[28px] flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
+  'text-[14.5px] text-foreground/80 outline-none leading-[1.6]',
   'focus:border-primary/40',
 )
 
@@ -295,7 +295,7 @@ function UrlField({
           href={String(value)}
           target="_blank"
           rel="noopener noreferrer"
-          className="truncate rounded-sm px-1 text-[13px] leading-[28px] text-primary/70 underline decoration-primary/30 hover:text-primary"
+          className="truncate rounded-sm px-1 text-[14.5px] leading-[1.6] text-primary/70 underline decoration-primary/30 hover:text-primary"
           onClick={(e) => e.stopPropagation()}
         >
           {String(value).replace(/^https?:\/\//, '').slice(0, 40)}
@@ -372,7 +372,7 @@ function EmailField({
     return (
       <a
         href={`mailto:${value}`}
-        className="truncate rounded-sm px-1 text-[13px] leading-[28px] text-primary/70 underline decoration-primary/30 hover:text-primary"
+        className="truncate rounded-sm px-1 text-[14.5px] leading-[1.6] text-primary/70 underline decoration-primary/30 hover:text-primary"
         onClick={(e) => e.stopPropagation()}
       >
         {String(value)}
@@ -403,7 +403,7 @@ function SelectField({ value }: { value: string }) {
     <span
       className={cn(
         'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[12px] font-medium leading-[28px]',
+        'text-[14.5px] font-medium leading-[1.6]',
         'bg-foreground/8 text-foreground/60',
       )}
     >
@@ -432,7 +432,7 @@ function NodeRefPill({ nodeId }: { nodeId: string }) {
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-sm px-1.5 py-px',
-        'text-[13px] leading-[28px]',
+        'text-[14.5px] leading-[1.6]',
         'bg-primary/8 text-foreground/70',
         'cursor-pointer hover:bg-primary/12 transition-colors duration-100',
       )}
@@ -486,7 +486,7 @@ function JsonField({ value }: { value: unknown }) {
       title={JSON.stringify(value, null, 2)}
       className={cn(
         'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[12px] font-mono leading-[28px]',
+        'text-[14.5px] font-mono leading-[1.6]',
         'bg-foreground/5 text-foreground/40',
       )}
     >
