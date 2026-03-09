@@ -90,6 +90,7 @@ export const NodeBlock = memo(function NodeBlock({
       if (
         e.key === 'Backspace' &&
         node?.content === '' &&
+        node?.children.length === 0 &&
         !e.metaKey &&
         !e.ctrlKey
       ) {
@@ -103,7 +104,12 @@ export const NodeBlock = memo(function NodeBlock({
         return
       }
 
-      if (e.key === 'Backspace' && sel?.focusOffset === 0 && node?.content) {
+      if (
+        e.key === 'Backspace' &&
+        sel?.focusOffset === 0 &&
+        node?.content &&
+        node?.children.length === 0
+      ) {
         e.preventDefault()
         const prevId = getPreviousVisibleNode(nodeId)
         if (prevId) {
