@@ -73,20 +73,20 @@ function FieldRow({
   return (
     <div
       className={cn(
-        'field-row flex items-center',
+        'field-row flex items-start',
         'min-h-[28px]',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Field icon — same column as child bullets */}
+      {/* Field icon — pinned to first line via matching height */}
       <FieldBullet />
 
-      {/* Field label — fixed width for alignment */}
+      {/* Field label — fixed width, pinned to first line */}
       <span
         className={cn(
           'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
-          'select-none',
+          'select-none h-6 flex items-center',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
       >
