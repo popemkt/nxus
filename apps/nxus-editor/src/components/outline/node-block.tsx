@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
+import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 import { FieldsSection } from './fields-section'
@@ -198,6 +199,7 @@ export const NodeBlock = memo(function NodeBlock({
   const isSelected = selectedNodeId === nodeId
   const hasChildren = node.children.length > 0
   const primaryTagColor = node.supertags[0]?.color ?? null
+  const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
 
   const sortedChildren = [...node.children].sort((a, b) => {
     const na = nodes.get(a)
@@ -221,6 +223,7 @@ export const NodeBlock = memo(function NodeBlock({
           collapsed={node.collapsed}
           childCount={node.children.length}
           tagColor={primaryTagColor}
+          isSupertag={isSupertag}
           onClick={handleBulletClick}
         />
         <NodeContent

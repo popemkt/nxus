@@ -32,7 +32,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       children: string[]
       order: string
       collapsed: boolean
-      supertags: { id: string; name: string; color: string | null }[]
+      supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
       fields: { fieldName: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
     }
 
@@ -97,12 +97,12 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         children: [],
         order: String(orderValue ?? 0).padStart(8, '0'),
         collapsed: false,
-        supertags: assembled.supertags.map((st: { id: string; content: string }) => {
+        supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => {
           const stNode = assembleNode(db, st.id)
           const dbColor = stNode
             ? (getProperty(stNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
             : null
-          return { id: st.id, name: st.content, color: dbColor ?? getSupertagColor(st.id) }
+          return { id: st.id, name: st.content, color: dbColor ?? getSupertagColor(st.id), systemId: st.systemId }
         }),
         fields: extractFields(assembled),
       }

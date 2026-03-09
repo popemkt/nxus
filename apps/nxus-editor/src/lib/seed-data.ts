@@ -30,7 +30,7 @@ export function seedDemoData(): NodeMap {
   nodes.set(
     'n1',
     node('n1', 'Project Alpha', 'root', '00001000', ['n1a', 'n1b', 'n1c'], [
-      { id: 'tag-project', name: 'project', color: '#6366f1' },
+      { id: 'tag-project', name: 'project', color: '#6366f1', systemId: null },
     ]),
   )
   nodes.set(
@@ -41,7 +41,7 @@ export function seedDemoData(): NodeMap {
       'root',
       '00002000',
       ['n2a', 'n2b'],
-      [{ id: 'tag-meeting', name: 'meeting', color: '#f59e0b' }],
+      [{ id: 'tag-meeting', name: 'meeting', color: '#f59e0b', systemId: null }],
     ),
   )
   nodes.set(
@@ -58,19 +58,19 @@ export function seedDemoData(): NodeMap {
   nodes.set(
     'n1a',
     node('n1a', 'Set up CI/CD pipeline', 'n1', '00001000', ['n1a1', 'n1a2'], [
-      { id: 'tag-task', name: 'task', color: '#10b981' },
+      { id: 'tag-task', name: 'task', color: '#10b981', systemId: null },
     ]),
   )
   nodes.set(
     'n1b',
     node('n1b', 'Design the API schema', 'n1', '00002000', [], [
-      { id: 'tag-task', name: 'task', color: '#10b981' },
+      { id: 'tag-task', name: 'task', color: '#10b981', systemId: null },
     ]),
   )
   nodes.set(
     'n1c',
     node('n1c', 'Write unit tests for auth module', 'n1', '00003000', [], [
-      { id: 'tag-task', name: 'task', color: '#10b981' },
+      { id: 'tag-task', name: 'task', color: '#10b981', systemId: null },
     ]),
   )
 
@@ -109,13 +109,13 @@ export function seedDemoData(): NodeMap {
   nodes.set(
     'n2b1',
     node('n2b1', 'Follow up with backend team on API versioning', 'n2b', '00001000', [], [
-      { id: 'tag-task', name: 'task', color: '#10b981' },
+      { id: 'tag-task', name: 'task', color: '#10b981', systemId: null },
     ]),
   )
   nodes.set(
     'n2b2',
     node('n2b2', 'Schedule design review for new dashboard', 'n2b', '00002000', [], [
-      { id: 'tag-task', name: 'task', color: '#10b981' },
+      { id: 'tag-task', name: 'task', color: '#10b981', systemId: null },
     ]),
   )
 

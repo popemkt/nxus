@@ -32,7 +32,13 @@ export interface SupertagBadge {
   id: string
   name: string
   color: string | null
+  systemId: string | null
 }
+
+/**
+ * A node IS a supertag definition if it's tagged with the meta-supertag.
+ */
+export const SUPERTAG_DEFINITION_SYSTEM_ID = 'supertag:supertag'
 
 export type NodeMap = Map<string, OutlineNode>
 
