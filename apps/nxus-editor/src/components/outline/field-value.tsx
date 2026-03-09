@@ -2,15 +2,18 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
 import { useOutlineStore } from '@/stores/outline.store'
+import { NodeBlock } from './node-block'
 
 interface FieldValueProps {
   fieldType: FieldType
   value: unknown
   onChange: (value: unknown) => void
+  /** Depth of the parent node — used to indent reference NodeBlocks */
+  depth: number
 }
 
-export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
-  // Safety: if value is an object/array and not a primitive type, render as JSON
+export function FieldValue({ fieldType, value, onChange, depth }: FieldValueProps) {
+  // Safety: if value is an object/array and not a reference type, render as JSON
   if (value !== null && value !== undefined && typeof value === 'object' && fieldType !== 'nodes') {
     return <JsonField value={value} />
   }
@@ -18,150 +21,107 @@ export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
   switch (fieldType) {
     case 'boolean':
       return <BooleanField value={Boolean(value)} onChange={onChange} />
-    case 'number':
-      return <NumberField value={Number(value ?? 0)} onChange={onChange} />
     case 'date':
       return <DateField value={String(value ?? '')} onChange={onChange} />
-    case 'url':
-      return <UrlField value={String(value ?? '')} onChange={onChange} />
-    case 'email':
-      return <EmailField value={String(value ?? '')} onChange={onChange} />
     case 'select':
       return <SelectField value={String(value ?? '')} />
     case 'node':
-      return <NodeRefField value={String(value ?? '')} />
+      return <NodeRefField value={String(value ?? '')} depth={depth} />
     case 'nodes':
-      return <NodeRefsField values={Array.isArray(value) ? value : []} />
+      return <NodeRefsField values={Array.isArray(value) ? value : []} depth={depth} />
     case 'json':
       return <JsonField value={value} />
+    case 'number':
+    case 'url':
+    case 'email':
     case 'text':
     default:
-      return <TextField value={String(value ?? '')} onChange={onChange} />
+      return <EditableField value={String(value ?? '')} onChange={onChange} />
   }
 }
 
-/* ─── Shared inline editing styles ─── */
+/* ─── Shared styles ─── */
 
-const displayTextClass = cn(
-  'cursor-text rounded-sm px-1 text-[14.5px] leading-[1.6]',
-  'text-foreground/70 hover:bg-foreground/5',
+const editableClass = cn(
+  'flex-1 outline-none rounded-sm px-1',
+  'text-[14.5px] leading-[1.6]',
 )
 
 const emptyTextClass = cn(
-  'cursor-text rounded-sm px-1 text-[14.5px] leading-[1.6]',
-  'text-foreground/25 italic hover:bg-foreground/5',
+  'rounded-sm px-1 text-[14.5px] leading-[1.6]',
+  'text-foreground/25 italic',
 )
 
-const inputClass = cn(
-  'min-h-[28px] flex-1 rounded-sm border border-foreground/10 bg-transparent px-1.5',
-  'text-[14.5px] text-foreground/80 outline-none leading-[1.6]',
-  'focus:border-primary/40',
-)
+/* ─── ContentEditable field (text, number, url, email) ─── */
 
-/* ─── Text field ─── */
-
-function TextField({
+/**
+ * Uses contentEditable like NodeContent — same element in both states,
+ * no layout shift between display and edit mode.
+ */
+function EditableField({
   value,
   onChange,
 }: {
   value: string
   onChange: (v: unknown) => void
 }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(value ?? ''))
-  const inputRef = useRef<HTMLInputElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
+  const isEditing = useRef(false)
 
-  useEffect(() => {
-    if (editing) inputRef.current?.focus()
-  }, [editing])
+  const handleClick = useCallback(() => {
+    if (!isEditing.current && ref.current) {
+      isEditing.current = true
+      ref.current.contentEditable = 'true'
+      ref.current.focus()
+      // Place cursor at end
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }, [])
 
   const commit = useCallback(() => {
-    setEditing(false)
-    if (draft !== String(value ?? '')) onChange(draft)
-  }, [draft, value, onChange])
+    if (!ref.current) return
+    isEditing.current = false
+    ref.current.contentEditable = 'false'
+    const newValue = ref.current.textContent ?? ''
+    if (newValue !== value) onChange(newValue)
+  }, [value, onChange])
 
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="text"
-        className={inputClass}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') setEditing(false)
-          e.stopPropagation()
-        }}
-      />
-    )
-  }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        ref.current?.blur()
+      }
+      if (e.key === 'Escape') {
+        // Revert content
+        if (ref.current) ref.current.textContent = value
+        ref.current?.blur()
+      }
+      e.stopPropagation()
+    },
+    [value],
+  )
 
   return (
-    <span
-      className={value ? displayTextClass : emptyTextClass}
-      onClick={() => {
-        setDraft(String(value ?? ''))
-        setEditing(true)
-      }}
+    <div
+      ref={ref}
+      className={cn(
+        editableClass,
+        value ? 'text-foreground/70' : 'text-foreground/25 italic',
+        'cursor-text hover:bg-foreground/5',
+      )}
+      onClick={handleClick}
+      onBlur={commit}
+      onKeyDown={handleKeyDown}
+      suppressContentEditableWarning
     >
       {value || 'Empty'}
-    </span>
-  )
-}
-
-/* ─── Number field ─── */
-
-function NumberField({
-  value,
-  onChange,
-}: {
-  value: number
-  onChange: (v: unknown) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(value ?? ''))
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus()
-  }, [editing])
-
-  const commit = useCallback(() => {
-    setEditing(false)
-    const num = Number(draft)
-    if (!isNaN(num) && num !== value) onChange(num)
-  }, [draft, value, onChange])
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="number"
-        className={cn(inputClass, 'w-24 tabular-nums')}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') setEditing(false)
-          e.stopPropagation()
-        }}
-      />
-    )
-  }
-
-  return (
-    <span
-      className={cn(displayTextClass, 'tabular-nums text-amber-500/80')}
-      onClick={() => {
-        setDraft(String(value ?? ''))
-        setEditing(true)
-      }}
-    >
-      {value ?? 'Empty'}
-    </span>
+    </div>
   )
 }
 
@@ -218,7 +178,12 @@ function DateField({
       <input
         ref={inputRef}
         type="date"
-        className={inputClass}
+        className={cn(
+          editableClass,
+          'text-foreground/80',
+          'border border-foreground/10 bg-transparent',
+          'focus:border-primary/40',
+        )}
         defaultValue={value ? String(value).slice(0, 10) : ''}
         onChange={(e) => {
           onChange(e.target.value)
@@ -240,155 +205,14 @@ function DateField({
 
   return (
     <span
-      className={displayDate ? displayTextClass : emptyTextClass}
+      className={cn(
+        editableClass,
+        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic',
+        'cursor-text hover:bg-foreground/5',
+      )}
       onClick={() => setEditing(true)}
     >
       {displayDate || 'Empty'}
-    </span>
-  )
-}
-
-/* ─── URL field ─── */
-
-function UrlField({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (v: unknown) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(value ?? ''))
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus()
-  }, [editing])
-
-  const commit = useCallback(() => {
-    setEditing(false)
-    if (draft !== String(value ?? '')) onChange(draft)
-  }, [draft, value, onChange])
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="url"
-        className={inputClass}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') setEditing(false)
-          e.stopPropagation()
-        }}
-      />
-    )
-  }
-
-  if (value) {
-    return (
-      <span className="flex items-center gap-1">
-        <a
-          href={String(value)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="truncate rounded-sm px-1 text-[14.5px] leading-[1.6] text-primary/70 underline decoration-primary/30 hover:text-primary"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {String(value).replace(/^https?:\/\//, '').slice(0, 40)}
-        </a>
-        <button
-          type="button"
-          className="text-[11px] text-foreground/30 hover:text-foreground/60"
-          onClick={(e) => {
-            e.stopPropagation()
-            setDraft(String(value))
-            setEditing(true)
-          }}
-        >
-          edit
-        </button>
-      </span>
-    )
-  }
-
-  return (
-    <span
-      className={emptyTextClass}
-      onClick={() => {
-        setDraft('')
-        setEditing(true)
-      }}
-    >
-      Empty
-    </span>
-  )
-}
-
-/* ─── Email field ─── */
-
-function EmailField({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (v: unknown) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(value ?? ''))
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus()
-  }, [editing])
-
-  const commit = useCallback(() => {
-    setEditing(false)
-    if (draft !== String(value ?? '')) onChange(draft)
-  }, [draft, value, onChange])
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="email"
-        className={inputClass}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') setEditing(false)
-          e.stopPropagation()
-        }}
-      />
-    )
-  }
-
-  if (value) {
-    return (
-      <a
-        href={`mailto:${value}`}
-        className="truncate rounded-sm px-1 text-[14.5px] leading-[1.6] text-primary/70 underline decoration-primary/30 hover:text-primary"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {String(value)}
-      </a>
-    )
-  }
-
-  return (
-    <span
-      className={emptyTextClass}
-      onClick={() => {
-        setDraft('')
-        setEditing(true)
-      }}
-    >
-      Empty
     </span>
   )
 }
@@ -412,60 +236,56 @@ function SelectField({ value }: { value: string }) {
   )
 }
 
-/* ─── Node reference fields ─── */
+/* ─── Node reference fields — render as recursive NodeBlock tree ─── */
 
-/**
- * Renders a single node reference as an inline pill with a bullet dot
- * and the referenced node's content — similar to Tana's @-mention pills.
- */
-function NodeRefPill({ nodeId }: { nodeId: string }) {
-  const node = useOutlineStore((s) => s.nodes.get(nodeId))
-  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+function NodeRefField({ value, depth }: { value: string; depth: number }) {
+  const exists = useOutlineStore((s) => s.nodes.has(value))
 
-  if (!nodeId) {
+  if (!value) {
     return <span className={emptyTextClass}>Empty</span>
   }
 
-  const displayContent = node?.content || nodeId.slice(0, 8)
+  if (exists) {
+    return <NodeBlock nodeId={value} depth={depth + 2} />
+  }
 
+  // Node not in store — show ID as a reference pill
+  return <UnresolvedRef nodeId={value} />
+}
+
+function NodeRefsField({ values, depth }: { values: string[]; depth: number }) {
+  if (!values || values.length === 0) {
+    return <span className={emptyTextClass}>Empty</span>
+  }
+
+  return (
+    <div>
+      {(Array.isArray(values) ? values : [values]).map((v) => (
+        <NodeRefField key={String(v)} value={String(v)} depth={depth} />
+      ))}
+    </div>
+  )
+}
+
+function UnresolvedRef({ nodeId }: { nodeId: string }) {
+  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-sm px-1.5 py-px',
         'text-[14.5px] leading-[1.6]',
-        'bg-primary/8 text-foreground/70',
+        'bg-primary/8 text-foreground/50',
         'cursor-pointer hover:bg-primary/12 transition-colors duration-100',
       )}
       onClick={(e) => {
         e.stopPropagation()
         setRootNodeId(nodeId)
       }}
-      title={node ? `Go to: ${node.content}` : `Node: ${nodeId}`}
+      title={`Node: ${nodeId}`}
     >
-      {/* Inline bullet dot */}
       <span className="h-[4px] w-[4px] shrink-0 rounded-full bg-foreground/35" />
-      <span className="truncate max-w-[200px]">{displayContent}</span>
+      <span className="truncate max-w-[200px]">{nodeId.slice(0, 12)}</span>
     </span>
-  )
-}
-
-function NodeRefField({ value }: { value: string }) {
-  if (!value) {
-    return <span className={emptyTextClass}>Empty</span>
-  }
-  return <NodeRefPill nodeId={String(value)} />
-}
-
-function NodeRefsField({ values }: { values: string[] }) {
-  if (!values || values.length === 0) {
-    return <span className={emptyTextClass}>Empty</span>
-  }
-  return (
-    <div className="flex flex-wrap items-center gap-1">
-      {(Array.isArray(values) ? values : [values]).map((v) => (
-        <NodeRefPill key={String(v)} nodeId={String(v)} />
-      ))}
-    </div>
   )
 }
 

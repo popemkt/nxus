@@ -198,6 +198,8 @@ export const NodeBlock = memo(function NodeBlock({
   const isActive = activeNodeId === nodeId
   const isSelected = selectedNodeId === nodeId
   const hasChildren = node.children.length > 0
+  const hasFields = node.fields.length > 0
+  const isExpandable = hasChildren || hasFields
   const primaryTagColor = node.supertags[0]?.color ?? null
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
 
@@ -212,14 +214,14 @@ export const NodeBlock = memo(function NodeBlock({
       {/* The node row */}
       <div
         className={cn(
-          'node-row group/node flex items-start',
+          'node-row group/node flex items-center',
           'rounded-sm transition-colors duration-75',
           isSelected && !isActive && 'bg-primary/5',
         )}
         style={{ paddingLeft: `${depth * 24}px` }}
       >
         <Bullet
-          hasChildren={hasChildren}
+          hasChildren={isExpandable}
           collapsed={node.collapsed}
           childCount={node.children.length}
           tagColor={primaryTagColor}
@@ -240,7 +242,7 @@ export const NodeBlock = memo(function NodeBlock({
       </div>
 
       {/* Fields + Children — wrapped in a single container with tree line */}
-      {(node.fields.length > 0 || hasChildren) && !node.collapsed && (
+      {isExpandable && !node.collapsed && (
         <div className="children-container relative">
           {/* Vertical tree line spanning fields and children */}
           <div

@@ -73,7 +73,7 @@ function FieldRow({
   return (
     <div
       className={cn(
-        'field-row flex items-start',
+        'field-row flex items-center',
         'min-h-[28px]',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
@@ -82,11 +82,11 @@ function FieldRow({
       {/* Field icon — same column as child bullets */}
       <FieldBullet />
 
-      {/* Field label — fixed width for alignment, top-aligned */}
+      {/* Field label — fixed width for alignment */}
       <span
         className={cn(
           'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
-          'select-none min-h-[28px] flex items-center',
+          'select-none',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
       >
@@ -99,6 +99,7 @@ function FieldRow({
           fieldType={field.fieldType}
           value={value}
           onChange={handleChange}
+          depth={depth}
         />
       </div>
     </div>
