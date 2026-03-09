@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
@@ -25,7 +26,7 @@ export const NodeBlock = memo(function NodeBlock({
   // UI-only store actions (no server persistence needed)
   const activateNode = useOutlineStore((s) => s.activateNode)
   const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
-  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+  const navigateToNode = useNavigateToNode()
   const getPreviousVisibleNode = useOutlineStore(
     (s) => s.getPreviousVisibleNode,
   )
@@ -46,12 +47,12 @@ export const NodeBlock = memo(function NodeBlock({
     (e: React.MouseEvent) => {
       if (e.metaKey || e.ctrlKey) {
         // Cmd/Ctrl+click → zoom into this node
-        setRootNodeId(nodeId)
+        navigateToNode(nodeId)
       } else {
         toggleCollapse(nodeId)
       }
     },
-    [toggleCollapse, setRootNodeId, nodeId],
+    [toggleCollapse, navigateToNode, nodeId],
   )
 
   const handleActivate = useCallback(

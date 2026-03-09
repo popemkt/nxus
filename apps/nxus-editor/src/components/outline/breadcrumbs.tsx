@@ -2,6 +2,7 @@ import { CaretRight, House } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 
 interface BreadcrumbItem {
   id: string
@@ -28,7 +29,7 @@ function getAncestorChain(
 export function Breadcrumbs() {
   const rootNodeId = useOutlineStore((s) => s.rootNodeId)
   const nodes = useOutlineStore((s) => s.nodes)
-  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+  const navigateToNode = useNavigateToNode()
   const rootNode = nodes.get(rootNodeId)
 
   if (!rootNode) return null
@@ -46,7 +47,7 @@ export function Breadcrumbs() {
           'transition-colors duration-100',
           isAtRoot && 'text-foreground/60',
         )}
-        onClick={() => setRootNodeId(WORKSPACE_ROOT_ID)}
+        onClick={() => navigateToNode(WORKSPACE_ROOT_ID)}
       >
         <House size={14} weight="bold" />
         <span>Home</span>
@@ -67,7 +68,7 @@ export function Breadcrumbs() {
               'transition-colors duration-100',
               item.id === rootNodeId && 'text-foreground/70 font-medium',
             )}
-            onClick={() => setRootNodeId(item.id)}
+            onClick={() => navigateToNode(item.id)}
           >
             {item.content}
           </button>

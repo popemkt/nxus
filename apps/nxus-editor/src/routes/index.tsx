@@ -3,6 +3,9 @@ import { OutlineEditor } from '@/components/outline/outline-editor'
 
 export const Route = createFileRoute('/')({
   component: EditorPage,
+  validateSearch: (search: Record<string, unknown>): { node?: string } => ({
+    node: typeof search.node === 'string' ? search.node : undefined,
+  }),
 })
 
 function EditorPage() {

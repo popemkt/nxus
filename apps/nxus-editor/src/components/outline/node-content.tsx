@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
-import { useOutlineStore } from '@/stores/outline.store'
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 
 interface NodeContentProps {
   nodeId: string
@@ -153,7 +153,7 @@ export function NodeContent({
 }
 
 function SupertagBadges({ supertags }: { supertags: SupertagBadge[] }) {
-  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+  const navigateToNode = useNavigateToNode()
 
   return (
     <div className="flex items-center gap-0.5">
@@ -177,7 +177,7 @@ function SupertagBadges({ supertags }: { supertags: SupertagBadge[] }) {
           }
           onClick={(e) => {
             e.stopPropagation()
-            setRootNodeId(tag.id)
+            navigateToNode(tag.id)
           }}
           title={`Go to: ${tag.name}`}
         >

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
 import { useOutlineStore } from '@/stores/outline.store'
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { NodeBlock } from './node-block'
 
 interface FieldValueProps {
@@ -268,7 +269,7 @@ function NodeRefsField({ values, depth }: { values: string[]; depth: number }) {
 }
 
 function UnresolvedRef({ nodeId }: { nodeId: string }) {
-  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
+  const navigateToNode = useNavigateToNode()
   return (
     <span
       className={cn(
@@ -279,7 +280,7 @@ function UnresolvedRef({ nodeId }: { nodeId: string }) {
       )}
       onClick={(e) => {
         e.stopPropagation()
-        setRootNodeId(nodeId)
+        navigateToNode(nodeId)
       }}
       title={`Node: ${nodeId}`}
     >

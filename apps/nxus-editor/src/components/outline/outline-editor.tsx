@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearch } from '@tanstack/react-router'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
@@ -11,6 +12,7 @@ import type { OutlineNode } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 export function OutlineEditor() {
+  const { node: urlNodeId } = useSearch({ from: '/' })
   const nodes = useOutlineStore((s) => s.nodes)
   const rootNodeId = useOutlineStore((s) => s.rootNodeId)
   const setNodes = useOutlineStore((s) => s.setNodes)
@@ -30,6 +32,14 @@ export function OutlineEditor() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Sync URL search param → store rootNodeId (handles back/forward + bookmarks)
+  useEffect(() => {
+    const targetId = urlNodeId ?? WORKSPACE_ROOT_ID
+    if (targetId !== useOutlineStore.getState().rootNodeId) {
+      setRootNodeId(targetId)
+    }
+  }, [urlNodeId, setRootNodeId])
 
   // Load real data from DB on mount
   useEffect(() => {
@@ -100,7 +110,8 @@ export function OutlineEditor() {
         }
 
         setNodes(nodeMap)
-        setRootNodeId(WORKSPACE_ROOT_ID)
+        // Set initial root from URL param (or workspace root if no param)
+        setRootNodeId(urlNodeId ?? WORKSPACE_ROOT_ID)
         setLoading(false)
       } catch (err) {
         if (!cancelled) {
@@ -115,7 +126,7 @@ export function OutlineEditor() {
     return () => {
       cancelled = true
     }
-  }, [setNodes, setRootNodeId])
+  }, [setNodes, setRootNodeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBackgroundClick = useCallback(() => {
     deactivateNode()

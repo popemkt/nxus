@@ -5,11 +5,7 @@ import { FieldValue } from './field-value'
 import { FieldBullet } from './bullet'
 import { setFieldValueServerFn } from '@/services/outline.server'
 import { useOutlineStore } from '@/stores/outline.store'
-
-function useNavigateToNode() {
-  const setRootNodeId = useOutlineStore((s) => s.setRootNodeId)
-  return setRootNodeId
-}
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 
 /** Fixed label width so all field values start at the same horizontal position */
 const FIELD_LABEL_WIDTH = 120
