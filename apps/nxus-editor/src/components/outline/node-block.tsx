@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react'
 import { cn } from '@nxus/ui'
+import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
@@ -21,7 +22,6 @@ export const NodeBlock = memo(function NodeBlock({
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
   const cursorPosition = useOutlineStore((s) => s.cursorPosition)
-  const nodes = useOutlineStore((s) => s.nodes)
 
   // UI-only store actions (no server persistence needed)
   const activateNode = useOutlineStore((s) => s.activateNode)
@@ -100,7 +100,7 @@ export const NodeBlock = memo(function NodeBlock({
         const prevId = getPreviousVisibleNode(nodeId)
         deleteNode(nodeId)
         if (prevId) {
-          const prevNode = nodes.get(prevId)
+          const prevNode = useOutlineStore.getState().nodes.get(prevId)
           activateNode(prevId, prevNode?.content.length ?? 0)
         }
         return
@@ -115,7 +115,7 @@ export const NodeBlock = memo(function NodeBlock({
         e.preventDefault()
         const prevId = getPreviousVisibleNode(nodeId)
         if (prevId) {
-          const prevNode = nodes.get(prevId)
+          const prevNode = useOutlineStore.getState().nodes.get(prevId)
           if (prevNode) {
             const mergePos = prevNode.content.length
             updateNodeContent(prevId, prevNode.content + node.content)
@@ -144,7 +144,7 @@ export const NodeBlock = memo(function NodeBlock({
           e.preventDefault()
           const prevId = getPreviousVisibleNode(nodeId)
           if (prevId) {
-            const prevNode = nodes.get(prevId)
+            const prevNode = useOutlineStore.getState().nodes.get(prevId)
             activateNode(prevId, prevNode?.content.length ?? 0)
           }
         }
@@ -179,7 +179,6 @@ export const NodeBlock = memo(function NodeBlock({
     [
       nodeId,
       node,
-      nodes,
       createNodeAfter,
       indentNode,
       outdentNode,
@@ -204,18 +203,26 @@ export const NodeBlock = memo(function NodeBlock({
   const primaryTagColor = node.supertags[0]?.color ?? null
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
 
-  const sortedChildren = [...node.children].sort((a, b) => {
-    const na = nodes.get(a)
-    const nb = nodes.get(b)
-    return (na?.order ?? '').localeCompare(nb?.order ?? '')
-  })
+  // Shallow-compared selector: only re-renders when the sorted order actually changes.
+  // Content-only edits in children don't change order → parent skips re-render.
+  const sortedChildren = useOutlineStore(
+    useShallow((s) => {
+      const n = s.nodes.get(nodeId)
+      if (!n) return []
+      return [...n.children].sort((a, b) => {
+        const na = s.nodes.get(a)
+        const nb = s.nodes.get(b)
+        return (na?.order ?? '').localeCompare(nb?.order ?? '')
+      })
+    }),
+  )
 
   return (
     <div className="node-block relative" data-node-id={nodeId}>
       {/* The node row */}
       <div
         className={cn(
-          'node-row group/node flex items-center',
+          'node-row group/node flex items-start',
           'rounded-sm transition-colors duration-75',
           isSelected && !isActive && 'bg-primary/5',
         )}

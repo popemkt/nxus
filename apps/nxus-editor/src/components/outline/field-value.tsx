@@ -114,7 +114,7 @@ function EditableField({
       className={cn(
         editableClass,
         value ? 'text-foreground/70' : 'text-foreground/25 italic',
-        'cursor-text hover:bg-foreground/5',
+        'cursor-text',
       )}
       onClick={handleClick}
       onBlur={commit}
@@ -209,7 +209,7 @@ function DateField({
       className={cn(
         editableClass,
         displayDate ? 'text-foreground/70' : 'text-foreground/25 italic',
-        'cursor-text hover:bg-foreground/5',
+        'cursor-text',
       )}
       onClick={() => setEditing(true)}
     >
@@ -290,7 +290,7 @@ function UrlField({
     return (
       <div
         ref={ref}
-        className={cn(editableClass, 'text-foreground/25 italic cursor-text hover:bg-foreground/5')}
+        className={cn(editableClass, 'text-foreground/25 italic cursor-text')}
         onClick={handleClick}
         onBlur={commit}
         onKeyDown={handleKeyDown}
@@ -387,7 +387,7 @@ function EmailField({
     return (
       <div
         ref={ref}
-        className={cn(editableClass, 'text-foreground/25 italic cursor-text hover:bg-foreground/5')}
+        className={cn(editableClass, 'text-foreground/25 italic cursor-text')}
         onClick={handleClick}
         onBlur={commit}
         onKeyDown={handleKeyDown}
@@ -448,9 +448,8 @@ function NodeRefField({ value }: { value: string }) {
   return (
     <div
       className={cn(
-        'flex items-center min-h-[28px] group/ref',
-        'rounded-sm hover:bg-foreground/[0.03] transition-colors duration-75',
-        'cursor-pointer',
+        'flex items-start group/ref',
+        'rounded-sm cursor-pointer',
       )}
       onClick={(e) => {
         e.stopPropagation()

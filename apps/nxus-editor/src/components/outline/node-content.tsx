@@ -32,12 +32,14 @@ export function NodeContent({
   // When becoming active: set DOM content and focus with cursor position.
   // When becoming inactive: clear editing state.
   // NEVER set DOM content during active editing — the DOM is the source of truth.
+  // `content` is intentionally excluded from deps: during active editing the DOM
+  // owns the text; re-running on content changes would reset the cursor.
   useEffect(() => {
     if (isActive && editorRef.current) {
       const el = editorRef.current
 
-      // Only set text content when first becoming active
       if (!wasActive.current) {
+        // First becoming active — set DOM content from store
         el.textContent = content
       }
       wasActive.current = true
@@ -55,14 +57,14 @@ export function NodeContent({
         range.collapse(true)
         sel?.removeAllRanges()
         sel?.addRange(range)
-      } else if (!textNode && content === '') {
-        // Empty node — just focus
+      } else if (!textNode) {
         el.focus()
       }
     } else {
       wasActive.current = false
     }
-  }, [isActive, cursorPosition, content])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, cursorPosition])
 
   const handleInput = useCallback(() => {
     if (editorRef.current && !isComposing.current) {
@@ -108,7 +110,7 @@ export function NodeContent({
   return (
     <div
       className={cn(
-        'node-content flex min-h-[28px] flex-1 items-center gap-1.5',
+        'node-content flex min-h-6 flex-1 items-start gap-1.5',
         'rounded-sm px-1',
         isSelected && !isActive && 'bg-primary/8',
       )}
@@ -156,7 +158,7 @@ function SupertagBadges({ supertags }: { supertags: SupertagBadge[] }) {
   const navigateToNode = useNavigateToNode()
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex h-6 items-center gap-0.5">
       {supertags.map((tag) => (
         <span
           key={tag.id}

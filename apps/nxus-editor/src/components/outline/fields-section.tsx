@@ -82,8 +82,7 @@ function FieldRow({
   return (
     <div
       className={cn(
-        'field-row flex items-start',
-        'min-h-[28px]',
+        'field-row flex items-start py-1',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
       onClick={(e) => e.stopPropagation()}
@@ -111,7 +110,7 @@ function FieldRow({
         {field.fieldName}
       </span>
 
-      {/* Field value — aligned across all fields */}
+      {/* Field value — same plane as node content, flows naturally */}
       <div className="flex-1 min-w-0">
         <FieldValue
           fieldType={field.fieldType}

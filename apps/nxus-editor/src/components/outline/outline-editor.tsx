@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
+import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
 import { NodeBlock } from './node-block'
+import { FieldsSection } from './fields-section'
 import {
   getWorkspaceRootServerFn,
   getNodeTreeServerFn,
 } from '@/services/outline.server'
 import type { OutlineNode } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 
 export function OutlineEditor() {
   const { node: urlNodeId } = useSearch({ from: '/' })
@@ -248,13 +251,9 @@ export function OutlineEditor() {
     >
       <Breadcrumbs />
 
-      {/* Root node title (only when zoomed into a specific node) */}
+      {/* Root node title + fields (only when zoomed into a specific node) */}
       {rootNodeId !== WORKSPACE_ROOT_ID && (
-        <div className="px-3 pb-3">
-          <h1 className="text-xl font-semibold text-foreground/90">
-            {rootNode.content || 'Untitled'}
-          </h1>
-        </div>
+        <RootNodeHeader rootNode={rootNode} rootNodeId={rootNodeId} />
       )}
 
       {/* Outline body */}
@@ -276,6 +275,49 @@ export function OutlineEditor() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootNodeId: string }) {
+  const navigateToNode = useNavigateToNode()
+
+  return (
+    <div className="px-2 pb-2">
+      {/* Title row — same layout as a node line: content + tags inline */}
+      <div className="flex items-baseline gap-1.5 min-h-[36px]">
+        <h1 className="text-xl font-semibold text-foreground/90 leading-[1.4]">
+          {rootNode.content || 'Untitled'}
+        </h1>
+        {rootNode.supertags.length > 0 && (
+          <div className="flex items-center gap-0.5">
+            {rootNode.supertags.map((tag) => (
+              <span
+                key={tag.id}
+                className={cn(
+                  'inline-flex items-center rounded-sm px-1.5 py-px',
+                  'text-[11px] font-medium leading-[1.8]',
+                  'select-none whitespace-nowrap',
+                  'cursor-pointer transition-opacity hover:opacity-70',
+                  !tag.color && 'bg-foreground/8 text-foreground/50',
+                )}
+                style={
+                  tag.color
+                    ? { backgroundColor: `${tag.color}18`, color: tag.color }
+                    : undefined
+                }
+                onClick={() => navigateToNode(tag.id)}
+                title={`Go to: ${tag.name}`}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      {rootNode.fields.length > 0 && (
+        <FieldsSection nodeId={rootNodeId} fields={rootNode.fields} depth={-1} />
+      )}
     </div>
   )
 }
