@@ -117,7 +117,6 @@ function FieldRow({
           fieldType={field.fieldType}
           value={value}
           onChange={handleChange}
-          depth={depth}
         />
       </div>
     </div>

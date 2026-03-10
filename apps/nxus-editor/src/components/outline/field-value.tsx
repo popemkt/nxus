@@ -3,17 +3,15 @@ import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
-import { NodeBlock } from './node-block'
+import { Bullet } from './bullet'
 
 interface FieldValueProps {
   fieldType: FieldType
   value: unknown
   onChange: (value: unknown) => void
-  /** Depth of the parent node — used to indent reference NodeBlocks */
-  depth: number
 }
 
-export function FieldValue({ fieldType, value, onChange, depth }: FieldValueProps) {
+export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
   // Safety: if value is an object/array and not a reference type, render as JSON
   if (value !== null && value !== undefined && typeof value === 'object' && fieldType !== 'nodes') {
     return <JsonField value={value} />
@@ -27,9 +25,9 @@ export function FieldValue({ fieldType, value, onChange, depth }: FieldValueProp
     case 'select':
       return <SelectField value={String(value ?? '')} />
     case 'node':
-      return <NodeRefField value={String(value ?? '')} depth={depth} />
+      return <NodeRefField value={String(value ?? '')} />
     case 'nodes':
-      return <NodeRefsField values={Array.isArray(value) ? value : []} depth={depth} />
+      return <NodeRefsField values={Array.isArray(value) ? value : []} />
     case 'json':
       return <JsonField value={value} />
     case 'url':
@@ -431,24 +429,72 @@ function EmailField({
   )
 }
 
-/* ─── Node reference fields — render as recursive NodeBlock tree ─── */
+/* ─── Node reference fields — inline content-only (no recursive fields/children) ─── */
 
-function NodeRefField({ value, depth }: { value: string; depth: number }) {
-  const exists = useOutlineStore((s) => s.nodes.has(value))
+function NodeRefField({ value }: { value: string }) {
+  const node = useOutlineStore((s) => s.nodes.get(value))
+  const navigateToNode = useNavigateToNode()
 
   if (!value) {
     return <span className={emptyTextClass}>Empty</span>
   }
 
-  if (exists) {
-    return <NodeBlock nodeId={value} depth={depth + 2} />
+  if (!node) {
+    return <UnresolvedRef nodeId={value} />
   }
 
-  // Node not in store — show ID as a reference pill
-  return <UnresolvedRef nodeId={value} />
+  const primaryTagColor = node.supertags[0]?.color ?? null
+
+  return (
+    <div
+      className={cn(
+        'flex items-center min-h-[28px] group/ref',
+        'rounded-sm hover:bg-foreground/[0.03] transition-colors duration-75',
+        'cursor-pointer',
+      )}
+      onClick={(e) => {
+        e.stopPropagation()
+        navigateToNode(value)
+      }}
+      title={`Go to: ${node.content || 'Untitled'}`}
+    >
+      <Bullet
+        hasChildren={node.children.length > 0}
+        collapsed={false}
+        childCount={node.children.length}
+        tagColor={primaryTagColor}
+        isSupertag={false}
+        onClick={(e) => {
+          e.stopPropagation()
+          navigateToNode(value)
+        }}
+      />
+      <span className={cn('text-[14.5px] leading-[1.6] text-foreground/70 truncate')}>
+        {node.content || '\u200B'}
+      </span>
+      {node.supertags.length > 0 && (
+        <div className="flex items-center gap-0.5 ml-1.5">
+          {node.supertags.map((tag) => (
+            <span
+              key={tag.id}
+              className={cn(
+                'inline-flex items-center rounded-sm px-1.5 py-px',
+                'text-[11px] font-medium leading-[1.8]',
+                'select-none whitespace-nowrap',
+                !tag.color && 'bg-foreground/8 text-foreground/50',
+              )}
+              style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
-function NodeRefsField({ values, depth }: { values: string[]; depth: number }) {
+function NodeRefsField({ values }: { values: string[] }) {
   if (!values || values.length === 0) {
     return <span className={emptyTextClass}>Empty</span>
   }
@@ -456,7 +502,7 @@ function NodeRefsField({ values, depth }: { values: string[]; depth: number }) {
   return (
     <div>
       {(Array.isArray(values) ? values : [values]).map((v) => (
-        <NodeRefField key={String(v)} value={String(v)} depth={depth} />
+        <NodeRefField key={String(v)} value={String(v)} />
       ))}
     </div>
   )
