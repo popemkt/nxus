@@ -31,7 +31,10 @@
         "git"
     ],
     "metadata": {
-        "tags": [],
+        "tags": [
+            { "id": "to-check-out", "name": "To-check-out" },
+            { "id": "memory-layer", "name": "Memory Layer" }
+        ],
         "category": "ai-tools",
         "createdAt": "2026-02-25T14:00:00Z",
         "updatedAt": "2026-02-25T14:00:00Z",

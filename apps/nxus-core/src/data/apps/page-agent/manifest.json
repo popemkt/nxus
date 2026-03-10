@@ -1,0 +1,43 @@
+{
+    "id": "page-agent",
+    "name": "Page Agent",
+    "description": "An AI-powered web page generation agent by Alibaba. Automatically create and iterate on web pages using natural language instructions.",
+    "type": "remote-repo",
+    "path": "https://github.com/alibaba/page-agent.git",
+    "homepage": "https://github.com/alibaba/page-agent",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Page Agent repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/alibaba/page-agent.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open Page Agent on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/alibaba/page-agent"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "to-check-out", "name": "To-check-out" },
+            { "id": "reference", "name": "Reference" },
+            { "id": "agent-ide", "name": "Agent IDE" }
+        ],
+        "category": "ai-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "alibaba"
+    }
+}

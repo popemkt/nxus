@@ -38,6 +38,21 @@ let masterDrizzleDb: BetterSQLite3Database<typeof schema> | null = null
 // Track if bootstrap has been attempted this session to avoid repeated checks
 let bootstrapAttempted = false
 
+// Seed callback registration — allows the app layer to register a seeder
+// that runs automatically on first init when the db has no item data.
+type SeedCallback = () => Promise<void>
+let seedCallback: SeedCallback | null = null
+let seedAttempted = false
+
+/**
+ * Register a callback to seed the database with app data (items from manifests).
+ * The callback runs once automatically after bootstrap when the db has no item nodes.
+ * Called by the app layer (nxus-core) to provide manifest-based seeding.
+ */
+export function registerSeedCallback(callback: SeedCallback): void {
+  seedCallback = callback
+}
+
 /**
  * Initialize the master database connection (synchronous).
  *
@@ -325,6 +340,20 @@ export async function initDatabaseWithBootstrap(): Promise<
     bootstrapAttempted = true
     const { bootstrapSystemNodesSync } = await import('../services/bootstrap.js')
     bootstrapSystemNodesSync(db, { verbose: false })
+  }
+
+  // Auto-seed from manifests if callback registered and db has no item data
+  if (!seedAttempted && seedCallback) {
+    seedAttempted = true
+    // Check for non-system nodes (system nodes have system_id set)
+    const result = masterDb!
+      .prepare('SELECT COUNT(*) as count FROM nodes WHERE system_id IS NULL')
+      .get() as { count: number } | undefined
+    if (!result || result.count === 0) {
+      console.log('[nxus-db] Empty database detected, auto-seeding from manifests...')
+      await seedCallback()
+      console.log('[nxus-db] Auto-seed complete.')
+    }
   }
 
   return db

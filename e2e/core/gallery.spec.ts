@@ -84,8 +84,8 @@ test.describe('Core Gallery Page', () => {
 
     // Switch to Graph view
     await graphBtn.click()
-    // Graph view should render ReactFlow container
-    await expect(page.locator('.react-flow')).toBeVisible({ timeout: 5000 })
+    // Graph view should render canvas element
+    await expect(page.locator('canvas').first()).toBeVisible({ timeout: 5000 })
 
     // Switch back to Gallery view
     await galleryBtn.click()

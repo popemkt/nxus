@@ -1,0 +1,47 @@
+{
+    "id": "jean",
+    "name": "Jean",
+    "description": "An open-source AI-native IDE by Coolify. Build, debug, and deploy with AI agents integrated directly into the development workflow.",
+    "type": "remote-repo",
+    "path": "https://github.com/coollabsio/jean.git",
+    "homepage": "https://github.com/coollabsio/jean",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Jean repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/coollabsio/jean.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open Jean on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/coollabsio/jean"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "reference", "name": "Reference" },
+            { "id": "agent-ide", "name": "Agent IDE" },
+            { "id": "to-check-out", "name": "To-check-out" }
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "coollabsio"
+    },
+    "installConfig": {
+        "script": "npm install",
+        "platform": ["linux", "macos", "windows"]
+    }
+}

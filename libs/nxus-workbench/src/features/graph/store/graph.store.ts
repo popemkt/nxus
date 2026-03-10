@@ -9,7 +9,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { DEFAULT_GRAPH_STORE_STATE } from './defaults'
-import type { WorkbenchGraphStore } from './types'
+import type { GraphStoreState, WorkbenchGraphStore } from './types'
 
 /**
  * Main graph store hook.
@@ -60,7 +60,18 @@ export const useGraphStore = create<WorkbenchGraphStore>()(
     }),
     {
       name: 'nxus-graph-options',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = persisted as GraphStoreState
+        if (version < 2) {
+          // v2: added display.groupingDimension
+          state.display = {
+            ...DEFAULT_GRAPH_STORE_STATE.display,
+            ...state.display,
+          }
+        }
+        return state as WorkbenchGraphStore
+      },
     },
   ),
 )
