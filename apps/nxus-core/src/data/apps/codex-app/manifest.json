@@ -1,0 +1,30 @@
+{
+    "id": "codex-app",
+    "name": "Codex App",
+    "description": "OpenAI's cloud-based software engineering agent. Codex can handle many tasks in parallel, each in its own sandboxed environment.",
+    "type": "concept",
+    "path": "https://openai.com/index/introducing-the-codex-app/",
+    "homepage": "https://openai.com/index/introducing-the-codex-app/",
+    "commands": [
+        {
+            "id": "docs",
+            "name": "Learn More",
+            "description": "Open OpenAI Codex App announcement",
+            "icon": "BookOpen",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://openai.com/index/introducing-the-codex-app/"
+        }
+    ],
+    "metadata": {
+        "tags": [
+            { "id": "agent-ide", "name": "Agent IDE" }
+        ],
+        "category": "ai-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "OpenAI"
+    }
+}

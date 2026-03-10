@@ -1,0 +1,43 @@
+{
+    "id": "hermes-agent",
+    "name": "Hermes Agent",
+    "description": "A self-learning AI agent by Nous Research. An autonomous agent that improves through experience, leveraging the Hermes model family.",
+    "type": "remote-repo",
+    "path": "https://github.com/nousresearch/hermes-agent.git",
+    "homepage": "https://github.com/nousresearch/hermes-agent",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Hermes Agent repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/nousresearch/hermes-agent.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open Hermes Agent on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/nousresearch/hermes-agent"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "self-learning", "name": "Self-learning" },
+            { "id": "reference", "name": "Reference" },
+            { "id": "to-check-out", "name": "To-check-out" }
+        ],
+        "category": "ai-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "nousresearch"
+    }
+}

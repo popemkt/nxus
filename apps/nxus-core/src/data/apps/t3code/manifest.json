@@ -1,0 +1,47 @@
+{
+    "id": "t3code",
+    "name": "T3 Code",
+    "description": "An AI-powered code editor by Ping. A modern agent IDE built for speed and developer experience.",
+    "type": "remote-repo",
+    "path": "https://github.com/pingdotgg/t3code.git",
+    "homepage": "https://github.com/pingdotgg/t3code",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the T3 Code repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/pingdotgg/t3code.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open T3 Code on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/pingdotgg/t3code"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "reference", "name": "Reference" },
+            { "id": "agent-ide", "name": "Agent IDE" },
+            { "id": "to-check-out", "name": "To-check-out" }
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "pingdotgg"
+    },
+    "installConfig": {
+        "script": "npm install",
+        "platform": ["linux", "macos", "windows"]
+    }
+}
