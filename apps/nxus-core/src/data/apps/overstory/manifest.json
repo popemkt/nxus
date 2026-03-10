@@ -1,0 +1,48 @@
+{
+    "id": "overstory",
+    "name": "Overstory",
+    "description": "An AI-powered agent IDE and orchestrator. Build and manage autonomous coding agents with visual workflow orchestration.",
+    "type": "remote-repo",
+    "path": "https://github.com/jayminwest/overstory.git",
+    "homepage": "https://github.com/jayminwest/overstory",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Overstory repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/jayminwest/overstory.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open Overstory on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/jayminwest/overstory"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "to-check-out", "name": "To-check-out" },
+            { "id": "reference", "name": "Reference" },
+            { "id": "agent-ide", "name": "Agent IDE" },
+            { "id": "agent-orchestrator", "name": "Agent Orchestrator" }
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "jayminwest"
+    },
+    "installConfig": {
+        "script": "npm install",
+        "platform": ["linux", "macos", "windows"]
+    }
+}

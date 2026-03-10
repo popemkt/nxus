@@ -156,6 +156,9 @@ export function nodeToCommand(node: AssembledNode): ItemCommand {
 export const getAllItemsFromNodesServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
+  const { ensureDatabaseReady } = await import('../db/ensure-seeded.server.js')
+  await ensureDatabaseReady()
+
   const {
     nodeFacade,
     getProperty: dbGetProperty,
@@ -222,6 +225,9 @@ export const getAllItemsFromNodesServerFn = createServerFn({
 export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async (ctx) => {
+    const { ensureDatabaseReady } = await import('../db/ensure-seeded.server.js')
+    await ensureDatabaseReady()
+
     const {
       nodeFacade,
       getProperty: dbGetProperty,

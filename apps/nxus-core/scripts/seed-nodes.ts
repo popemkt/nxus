@@ -647,5 +647,8 @@ export async function seedNodes() {
   console.log('='.repeat(50) + '\n')
 }
 
-// Run if executed directly
-seedNodes().catch(console.error)
+// Only auto-run when executed directly (e.g. tsx scripts/seed-nodes.ts),
+// not when dynamically imported as a module (from db-seed.ts or auto-seed).
+if (process.argv[1]?.replace(/\\/g, '/').endsWith('seed-nodes.ts')) {
+  seedNodes().catch(console.error)
+}

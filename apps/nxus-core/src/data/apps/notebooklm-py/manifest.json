@@ -1,0 +1,41 @@
+{
+    "id": "notebooklm-py",
+    "name": "NotebookLM Python",
+    "description": "A Python client for Google's NotebookLM. Interact with NotebookLM programmatically for AI-powered research and note-taking.",
+    "type": "remote-repo",
+    "path": "https://github.com/teng-lin/notebooklm-py.git",
+    "homepage": "https://github.com/teng-lin/notebooklm-py",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the notebooklm-py repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/teng-lin/notebooklm-py.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open notebooklm-py on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/teng-lin/notebooklm-py"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "to-check-out", "name": "To-check-out" }
+        ],
+        "category": "ai-tools",
+        "createdAt": "2026-03-10T00:00:00Z",
+        "updatedAt": "2026-03-10T00:00:00Z",
+        "version": "1.0.0",
+        "author": "teng-lin"
+    }
+}

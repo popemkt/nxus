@@ -152,6 +152,9 @@ async function ensureInboxReactiveInit(): Promise<string[]> {
   }
 
   try {
+    const { ensureDatabaseReady } = await import('../db/ensure-seeded.server.js')
+    await ensureDatabaseReady()
+
     const { initDatabaseWithBootstrap, computedFieldService, automationService } =
       await import('@nxus/db/server')
 

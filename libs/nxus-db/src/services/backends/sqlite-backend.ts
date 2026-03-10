@@ -17,8 +17,7 @@ import type { SupertagInfo } from '../node.service.js'
 
 import * as nodeService from '../node.service.js'
 import { evaluateQuery as evaluateQueryService } from '../query-evaluator.service.js'
-import { initDatabase } from '../../client/master-client.js'
-import { bootstrapSystemNodesSync } from '../bootstrap.js'
+import { initDatabaseWithBootstrap } from '../../client/master-client.js'
 
 type DatabaseInstance = BetterSQLite3Database<typeof itemSchema>
 
@@ -29,8 +28,7 @@ export class SqliteBackend implements NodeBackend {
   async init(): Promise<void> {
     if (this.initialized) return
 
-    this.db = initDatabase()
-    bootstrapSystemNodesSync(this.db, { verbose: false })
+    this.db = await initDatabaseWithBootstrap()
     this.initialized = true
   }
 
