@@ -110,6 +110,11 @@ export function useOutlineSync() {
                       : state.selectedNodeId,
                 }
               })
+
+              const persistedNode = useOutlineStore.getState().nodes.get(result.nodeId)
+              if (persistedNode?.content) {
+                syncContent(result.nodeId, persistedNode.content)
+              }
             }
           })
           .catch((err) => {
@@ -118,7 +123,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [],
+    [syncContent],
   )
 
   /**

@@ -23,7 +23,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     } = await import('@nxus/db/server')
     const db = await initDatabaseWithBootstrap()
 
-    const maxDepth = ctx.data.depth ?? 10
+    const maxDepth = ctx.data.depth ?? Number.MAX_SAFE_INTEGER
 
     type OutlineNodeResult = {
       id: string
@@ -33,7 +33,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       order: string
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
-      fields: { fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
+      fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
     }
 
     const nodeMap = new Map<string, OutlineNodeResult>()
@@ -96,6 +96,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         const fieldType = inferFieldType(declaredType, sortedValues)
 
         fields.push({
+          fieldId: first.fieldSystemId ?? first.fieldNodeId,
           fieldName: first.fieldName,
           fieldNodeId: first.fieldNodeId,
           fieldSystemId: first.fieldSystemId,
@@ -316,7 +317,7 @@ export const setFieldValueServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       nodeId: z.string(),
-      fieldSystemId: z.string(),
+      fieldId: z.string(),
       value: z.unknown(),
     }),
   )
@@ -328,7 +329,7 @@ export const setFieldValueServerFn = createServerFn({ method: 'POST' })
     setProperty(
       db,
       ctx.data.nodeId,
-      ctx.data.fieldSystemId as import('@nxus/db/server').FieldSystemId,
+      ctx.data.fieldId as import('@nxus/db/server').FieldSystemId,
       ctx.data.value,
     )
     return { success: true as const }

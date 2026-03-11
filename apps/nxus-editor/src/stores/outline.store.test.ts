@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useOutlineStore } from './outline.store'
-import type { OutlineNode } from '@/types/outline'
+import type { OutlineField, OutlineNode } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 function makeNode(
@@ -9,8 +9,9 @@ function makeNode(
   parentId: string | null,
   order: string,
   children: string[] = [],
+  fields: OutlineField[] = [],
 ): OutlineNode {
-  return { id, content, parentId, order, children, collapsed: false, supertags: [], fields: [] }
+  return { id, content, parentId, order, children, collapsed: false, supertags: [], fields }
 }
 
 function seedStore() {
@@ -112,6 +113,30 @@ describe('outline store', () => {
     })
   })
 
+  describe('updateFieldValue', () => {
+    it('updates a field by field id', () => {
+      const customField: OutlineField = {
+        fieldId: 'field-node-1',
+        fieldName: 'Priority',
+        fieldNodeId: 'field-node-1',
+        fieldSystemId: null,
+        fieldType: 'text',
+        values: [{ value: 'Low', order: 0 }],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set(
+        'a',
+        makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [customField]),
+      )
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      useOutlineStore.getState().updateFieldValue('a', 'field-node-1', 'High')
+
+      expect(useOutlineStore.getState().nodes.get('a')?.fields[0]?.values[0]?.value).toBe('High')
+    })
+  })
+
   describe('createNodeAfter', () => {
     it('creates a new sibling after the given node', () => {
       seedStore()
@@ -151,6 +176,23 @@ describe('outline store', () => {
       seedStore()
       const result = useOutlineStore.getState().createNodeAfter(WORKSPACE_ROOT_ID)
       expect(result).toBe(WORKSPACE_ROOT_ID) // root has no parent
+    })
+
+    it('rebalances sibling orders when there is no numeric gap', () => {
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set(
+        WORKSPACE_ROOT_ID,
+        makeNode(WORKSPACE_ROOT_ID, 'Workspace', null, '00000000', ['a', 'b']),
+      )
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000'))
+      nodes.set('b', makeNode('b', 'Beta', WORKSPACE_ROOT_ID, '00001001'))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      const newId = useOutlineStore.getState().createNodeAfter('a')
+      const state = useOutlineStore.getState()
+
+      expect(state.nodes.get(newId)?.order).toBe('00001500')
+      expect(state.nodes.get('b')?.order).toBe('00002000')
     })
   })
 

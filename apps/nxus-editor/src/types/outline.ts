@@ -11,6 +11,7 @@ export type FieldType =
   | 'json'
 
 export interface OutlineField {
+  fieldId: string
   fieldName: string
   fieldNodeId: string
   fieldSystemId: string | null

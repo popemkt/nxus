@@ -16,7 +16,7 @@ interface OutlineState {
   selectNode: (id: string | null) => void
   toggleCollapse: (id: string) => void
   updateNodeContent: (id: string, content: string) => void
-  updateFieldValue: (nodeId: string, fieldSystemId: string, value: unknown) => void
+  updateFieldValue: (nodeId: string, fieldId: string, value: unknown) => void
   createNodeAfter: (afterId: string) => string
   deleteNode: (id: string) => void
   indentNode: (id: string) => void
@@ -29,6 +29,8 @@ interface OutlineState {
 }
 
 let nextId = 1
+const ORDER_STEP = 1000
+
 function generateId(): string {
   return `node-${Date.now()}-${nextId++}`
 }
@@ -37,18 +39,59 @@ function generateOrder(index: number): string {
   return String(index).padStart(8, '0')
 }
 
-function generateOrderBetween(a: string | null, b: string | null): string {
-  if (!a && !b) return generateOrder(500_000)
-  if (!a) return generateOrder(Math.floor(parseInt(b!, 10) / 2))
-  if (!b) return generateOrder(parseInt(a, 10) + 1000)
-  const aNum = parseInt(a, 10)
-  const bNum = parseInt(b, 10)
+function parseOrder(order: string | null): number | null {
+  if (!order) return null
+  const parsed = Number.parseInt(order, 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function generateOrderBetween(a: string | null, b: string | null): string | null {
+  const aNum = parseOrder(a)
+  const bNum = parseOrder(b)
+  if (aNum === null && bNum === null) return generateOrder(500_000)
+  if (aNum === null && bNum !== null) {
+    return generateOrder(Math.max(0, Math.floor(bNum / 2)))
+  }
+  if (aNum !== null && bNum === null) return generateOrder(aNum + ORDER_STEP)
+  if (aNum === null || bNum === null) return null
   const gap = bNum - aNum
   if (gap > 1) {
     return generateOrder(aNum + Math.floor(gap / 2))
   }
-  // Gap exhausted — extend by appending fractional digits
-  return a + '5'.padStart(4, '0')
+  return null
+}
+
+function sortNodeIds(nodeIds: string[], nodes: NodeMap): string[] {
+  return [...nodeIds].sort((a, b) => {
+    const na = nodes.get(a)
+    const nb = nodes.get(b)
+    return (na?.order ?? '').localeCompare(nb?.order ?? '')
+  })
+}
+
+function rebalanceChildren(nodes: NodeMap, parentId: string): NodeMap {
+  const parent = nodes.get(parentId)
+  if (!parent) return nodes
+
+  const sortedChildren = sortNodeIds(parent.children, nodes)
+  if (sortedChildren.length === 0) return nodes
+
+  const next = new Map(nodes)
+  for (const [index, childId] of sortedChildren.entries()) {
+    const child = next.get(childId)
+    if (!child) continue
+    next.set(childId, {
+      ...child,
+      order: generateOrder((index + 1) * ORDER_STEP),
+    })
+  }
+
+  next.set(parentId, {
+    ...parent,
+    children: sortedChildren,
+  })
+
+  return next
 }
 
 function getVisibleNodesRecursive(
@@ -60,11 +103,7 @@ function getVisibleNodesRecursive(
   if (!node) return
   result.push(nodeId)
   if (!node.collapsed) {
-    const sortedChildren = [...node.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
+    const sortedChildren = sortNodeIds(node.children, nodes)
     for (const childId of sortedChildren) {
       getVisibleNodesRecursive(childId, nodes, result)
     }
@@ -110,7 +149,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set({ nodes: next })
   },
 
-  updateFieldValue: (nodeId, fieldSystemId, value) => {
+  updateFieldValue: (nodeId, fieldId, value) => {
     const { nodes } = get()
     const node = nodes.get(nodeId)
     if (!node) return
@@ -118,7 +157,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     next.set(nodeId, {
       ...node,
       fields: node.fields.map((f) =>
-        f.fieldSystemId === fieldSystemId
+        f.fieldId === fieldId
           ? { ...f, values: [{ value, order: f.values[0]?.order ?? 0 }] }
           : f,
       ),
@@ -128,40 +167,53 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
 
   createNodeAfter: (afterId) => {
     const { nodes } = get()
-    const afterNode = nodes.get(afterId)
+    let workingNodes = nodes
+    const afterNode = workingNodes.get(afterId)
     if (!afterNode) return afterId
 
     const parentId = afterNode.parentId
     if (!parentId) return afterId
 
-    const parent = nodes.get(parentId)
+    let parent = workingNodes.get(parentId)
     if (!parent) return afterId
 
     const newId = generateId()
-    const sortedSiblings = [...parent.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
-    const afterIndex = sortedSiblings.indexOf(afterId)
-    const afterOrder = afterNode.order
-    const nextSiblingId = sortedSiblings[afterIndex + 1]
-    const nextOrder = nextSiblingId
-      ? nodes.get(nextSiblingId)?.order ?? null
-      : null
+    let sortedSiblings = sortNodeIds(parent.children, workingNodes)
+    let afterIndex = sortedSiblings.indexOf(afterId)
+    let nextSiblingId = sortedSiblings[afterIndex + 1]
+    let newOrder = generateOrderBetween(
+      afterNode.order,
+      nextSiblingId ? workingNodes.get(nextSiblingId)?.order ?? null : null,
+    )
+
+    if (!newOrder) {
+      workingNodes = rebalanceChildren(workingNodes, parentId)
+      parent = workingNodes.get(parentId)
+      if (!parent) return afterId
+      sortedSiblings = sortNodeIds(parent.children, workingNodes)
+      afterIndex = sortedSiblings.indexOf(afterId)
+      nextSiblingId = sortedSiblings[afterIndex + 1]
+      const rebalancedAfterNode = workingNodes.get(afterId)
+      newOrder = generateOrderBetween(
+        rebalancedAfterNode?.order ?? null,
+        nextSiblingId ? workingNodes.get(nextSiblingId)?.order ?? null : null,
+      )
+    }
+
+    if (!newOrder) return afterId
 
     const newNode: OutlineNode = {
       id: newId,
       content: '',
       parentId,
       children: [],
-      order: generateOrderBetween(afterOrder, nextOrder),
+      order: newOrder,
       collapsed: false,
       supertags: [],
       fields: [],
     }
 
-    const next = new Map(nodes)
+    const next = new Map(workingNodes)
     next.set(newId, newNode)
     next.set(parentId, {
       ...parent,
@@ -207,11 +259,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     const parent = nodes.get(node.parentId)
     if (!parent) return
 
-    const sortedSiblings = [...parent.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
+    const sortedSiblings = sortNodeIds(parent.children, nodes)
     const myIndex = sortedSiblings.indexOf(id)
     if (myIndex <= 0) return
 
@@ -221,9 +269,8 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
 
     const lastChildOrder =
       newParent.children.length > 0
-        ? [...newParent.children]
+        ? sortNodeIds(newParent.children, nodes)
             .map((c) => nodes.get(c)?.order ?? '0')
-            .sort()
             .pop() ?? null
         : null
 
@@ -240,7 +287,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     next.set(id, {
       ...node,
       parentId: newParentId,
-      order: generateOrderBetween(lastChildOrder, null),
+      order: generateOrderBetween(lastChildOrder, null) ?? generateOrder(ORDER_STEP),
     })
     set({ nodes: next })
   },
@@ -262,28 +309,42 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       children: parent.children.filter((c) => c !== id),
     })
 
-    const gpSortedChildren = [...grandparent.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
-    const parentIndex = gpSortedChildren.indexOf(node.parentId)
-    const parentOrder = parent.order
-    const nextUncleId = gpSortedChildren[parentIndex + 1]
-    const nextUncleOrder = nextUncleId
-      ? nodes.get(nextUncleId)?.order ?? null
-      : null
+    let workingNodes = next
+    let gpSortedChildren = sortNodeIds(grandparent.children, workingNodes)
+    let parentIndex = gpSortedChildren.indexOf(node.parentId)
+    let nextUncleId = gpSortedChildren[parentIndex + 1]
+    let newOrder = generateOrderBetween(
+      parent.order,
+      nextUncleId ? workingNodes.get(nextUncleId)?.order ?? null : null,
+    )
 
-    next.set(parent.parentId, {
-      ...grandparent,
-      children: [...grandparent.children, id],
+    if (!newOrder) {
+      workingNodes = rebalanceChildren(workingNodes, parent.parentId)
+      gpSortedChildren = sortNodeIds(grandparent.children, workingNodes)
+      parentIndex = gpSortedChildren.indexOf(node.parentId)
+      nextUncleId = gpSortedChildren[parentIndex + 1]
+      const rebalancedParent = workingNodes.get(node.parentId)
+      newOrder = generateOrderBetween(
+        rebalancedParent?.order ?? null,
+        nextUncleId ? workingNodes.get(nextUncleId)?.order ?? null : null,
+      )
+    }
+
+    if (!newOrder) return
+
+    const updatedGrandparent = workingNodes.get(parent.parentId)
+    if (!updatedGrandparent) return
+
+    workingNodes.set(parent.parentId, {
+      ...updatedGrandparent,
+      children: [...updatedGrandparent.children, id],
     })
-    next.set(id, {
+    workingNodes.set(id, {
       ...node,
       parentId: parent.parentId,
-      order: generateOrderBetween(parentOrder, nextUncleOrder),
+      order: newOrder,
     })
-    set({ nodes: next })
+    set({ nodes: workingNodes })
   },
 
   moveNodeUp: (id) => {
@@ -294,11 +355,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     const parent = nodes.get(node.parentId)
     if (!parent) return
 
-    const sortedSiblings = [...parent.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
+    const sortedSiblings = sortNodeIds(parent.children, nodes)
     const myIndex = sortedSiblings.indexOf(id)
     if (myIndex <= 0) return
 
@@ -321,11 +378,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     const parent = nodes.get(node.parentId)
     if (!parent) return
 
-    const sortedSiblings = [...parent.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
+    const sortedSiblings = sortNodeIds(parent.children, nodes)
     const myIndex = sortedSiblings.indexOf(id)
     if (myIndex >= sortedSiblings.length - 1) return
 
@@ -345,11 +398,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     const root = nodes.get(rootNodeId)
     if (!root) return []
     const result: string[] = []
-    const sortedChildren = [...root.children].sort((a, b) => {
-      const na = nodes.get(a)
-      const nb = nodes.get(b)
-      return (na?.order ?? '').localeCompare(nb?.order ?? '')
-    })
+    const sortedChildren = sortNodeIds(root.children, nodes)
     for (const childId of sortedChildren) {
       getVisibleNodesRecursive(childId, nodes, result)
     }
