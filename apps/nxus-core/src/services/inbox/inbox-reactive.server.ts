@@ -403,6 +403,12 @@ async function queryInboxItemsBySystemQuery(
   querySystemId: string,
   fallback: QueryDefinition,
 ): Promise<InboxItem[]> {
+  // Ensure seed callback is registered before any db access to avoid the race
+  // where nodeFacade.init() → initDatabaseWithBootstrap() sets seedAttempted=true
+  // before the seed callback is registered, preventing auto-seeding.
+  const { ensureDatabaseReady } = await import('../db/ensure-seeded.server.js')
+  await ensureDatabaseReady()
+
   const { nodeFacade } = await import('@nxus/db/server')
   await nodeFacade.init()
 
