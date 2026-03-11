@@ -1,0 +1,122 @@
+import { useCallback } from 'react'
+import { cn } from '@nxus/ui'
+import type { OutlineField } from '@/types/outline'
+import { FieldValue } from './field-value'
+import { FieldBullet } from './bullet'
+import { setFieldValueServerFn } from '@/services/outline.server'
+import { useOutlineStore } from '@/stores/outline.store'
+import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+
+/** Fixed label width so all field values start at the same horizontal position */
+const FIELD_LABEL_WIDTH = 120
+
+interface FieldsSectionProps {
+  nodeId: string
+  fields: OutlineField[]
+  depth: number
+}
+
+/**
+ * Renders the field/property rows for a node, displayed between
+ * the node content and its children.
+ *
+ * Layout: fields sit at (depth+1) indent — the same level as children —
+ * with a field icon in the bullet column, a fixed-width label, and
+ * the value area aligned across all fields.
+ */
+export function FieldsSection({ nodeId, fields, depth }: FieldsSectionProps) {
+  if (fields.length === 0) return null
+
+  return (
+    <div className="fields-section">
+      {fields.map((field) => (
+        <FieldRow
+          key={field.fieldId}
+          nodeId={nodeId}
+          field={field}
+          depth={depth}
+        />
+      ))}
+    </div>
+  )
+}
+
+function FieldRow({
+  nodeId,
+  field,
+  depth,
+}: {
+  nodeId: string
+  field: OutlineField
+  depth: number
+}) {
+  const navigateToNode = useNavigateToNode()
+
+  // For multi-reference fields, collect all values into an array
+  const value =
+    field.fieldType === 'nodes'
+      ? field.values.flatMap((v) => (Array.isArray(v.value) ? v.value : [v.value])).filter(Boolean)
+      : field.values.length > 0
+        ? field.values[0]!.value
+        : undefined
+
+  const handleChange = useCallback(
+    (newValue: unknown) => {
+      // Optimistic update in store
+      useOutlineStore.getState().updateFieldValue(nodeId, field.fieldId, newValue)
+      // Persist to server
+      setFieldValueServerFn({
+        data: {
+          nodeId,
+          fieldId: field.fieldId,
+          value: newValue,
+        },
+      }).catch((err) => {
+        console.error('[fields] Failed to update field:', err)
+      })
+    },
+    [nodeId, field.fieldId],
+  )
+
+  return (
+    <div
+      className={cn(
+        'field-row flex items-start py-1',
+      )}
+      style={{ paddingLeft: `${(depth + 1) * 24}px` }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Field icon — clickable to navigate to field definition node */}
+      <span
+        className="cursor-pointer hover:opacity-70 transition-opacity"
+        onClick={(e) => {
+          e.stopPropagation()
+          navigateToNode(field.fieldNodeId)
+        }}
+        title={`Go to field: ${field.fieldName}`}
+      >
+        <FieldBullet fieldType={field.fieldType} />
+      </span>
+
+      {/* Field label — fixed width, pinned to first line, pl-1 matches node-content px-1 */}
+      <span
+        className={cn(
+          'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
+          'select-none h-6 flex items-center pl-1',
+        )}
+        style={{ width: `${FIELD_LABEL_WIDTH}px` }}
+      >
+        {field.fieldName}
+      </span>
+
+      {/* Field value — same plane as node content, flows naturally */}
+      <div className="flex-1 min-w-0">
+        <FieldValue
+          fieldType={field.fieldType}
+          value={value}
+          onChange={handleChange}
+        />
+      </div>
+    </div>
+  )
+}

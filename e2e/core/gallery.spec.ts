@@ -21,11 +21,10 @@ test.describe('Core Gallery Page', () => {
     // Verify app cards or empty state renders (wait for content to load)
     const viewDetailsLink = page.getByRole('link', { name: 'View Details' }).first()
     const noAppsText = page.getByText('No apps found')
-    const addAppsText = page.getByText('Add apps to get started')
 
     // Wait for either cards or empty state to appear
     await expect(
-      viewDetailsLink.or(noAppsText).or(addAppsText)
+      viewDetailsLink.or(noAppsText)
     ).toBeVisible({ timeout: 15000 })
   })
 

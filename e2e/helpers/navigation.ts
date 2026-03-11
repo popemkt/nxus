@@ -4,6 +4,7 @@ export const APP_URLS = {
   workbench: '/workbench',
   calendar: '/calendar',
   recall: '/recall',
+  editor: '/editor',
 } as const
 
 export const APP_NAMES = {
@@ -11,4 +12,5 @@ export const APP_NAMES = {
   workbench: 'nXus Workbench',
   calendar: 'nXus Calendar',
   recall: 'nXus Recall',
+  editor: 'nXus Editor',
 } as const
