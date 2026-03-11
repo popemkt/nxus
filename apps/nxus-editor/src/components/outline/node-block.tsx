@@ -259,12 +259,14 @@ export const NodeBlock = memo(function NodeBlock({
       {/* Fields + Children — wrapped in a single container with tree line */}
       {isExpandable && !node.collapsed && (
         <div className="children-container relative">
-          {/* Vertical tree line spanning fields and children */}
+          {/* Vertical tree line — wide invisible hit area, thin visible line */}
           <div
-            className="absolute top-0 bottom-2 w-px bg-foreground/[0.06] hover:bg-foreground/15 transition-colors duration-200 cursor-pointer"
-            style={{ left: `${depth * 24 + 11}px` }}
+            className="absolute top-0 bottom-2 w-5 cursor-pointer group/line"
+            style={{ left: `${depth * 24 + 2}px` }}
             onClick={handleBulletClick}
-          />
+          >
+            <div className="absolute left-[9px] top-0 bottom-0 w-px bg-foreground/[0.06] group-hover/line:bg-foreground/15 transition-colors duration-200" />
+          </div>
 
           {/* Fields (properties) — rendered before children */}
           {node.fields.length > 0 && (

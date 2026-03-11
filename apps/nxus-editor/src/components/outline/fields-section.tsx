@@ -98,15 +98,14 @@ function FieldRow({
         <FieldBullet fieldType={field.fieldType} />
       </span>
 
-      {/* Field label — fixed width, pinned to first line */}
+      {/* Field label — fixed width, pinned to first line, pl-1 matches node-content px-1 */}
       <span
         className={cn(
           'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
-          'select-none h-6 flex items-center',
+          'select-none h-6 flex items-center pl-1',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
       >
-        <span className="mr-1 text-foreground/25">›</span>
         {field.fieldName}
       </span>
 

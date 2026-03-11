@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
+import { Hash } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
@@ -163,7 +164,7 @@ function SupertagBadges({ supertags }: { supertags: SupertagBadge[] }) {
         <span
           key={tag.id}
           className={cn(
-            'inline-flex items-center rounded-sm px-1.5 py-px',
+            'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
             'text-[11px] font-medium leading-[1.8]',
             'select-none whitespace-nowrap',
             'cursor-pointer transition-opacity hover:opacity-70',
@@ -183,6 +184,7 @@ function SupertagBadges({ supertags }: { supertags: SupertagBadge[] }) {
           }}
           title={`Go to: ${tag.name}`}
         >
+          <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
           {tag.name}
         </span>
       ))}

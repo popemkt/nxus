@@ -19,6 +19,7 @@ interface BulletProps {
   childCount: number
   tagColor: string | null
   isSupertag: boolean
+  isReference?: boolean
   onClick: (e: React.MouseEvent) => void
 }
 
@@ -28,6 +29,7 @@ export function Bullet({
   childCount,
   tagColor,
   isSupertag,
+  isReference,
   onClick,
 }: BulletProps) {
   return (
@@ -50,11 +52,11 @@ export function Bullet({
           : undefined
       }
     >
-      {/* Outer halo ring — only visible when collapsed with children */}
+      {/* Filled halo — only visible when collapsed with children */}
       {hasChildren && collapsed && (
         <span
-          className="absolute inset-[3px] rounded-full border border-foreground/20"
-          style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
+          className="absolute inset-[3px] rounded-full bg-foreground/8"
+          style={tagColor ? { backgroundColor: `${tagColor}20` } : undefined}
         />
       )}
 
@@ -72,6 +74,24 @@ export function Bullet({
           style={tagColor ? { color: tagColor } : undefined}
         >
           #
+        </span>
+      ) : isReference ? (
+        /* Referenced node — dashed circle matches collapsed halo size (inset-[3px] → 18px) */
+        <span
+          className={cn(
+            'flex items-center justify-center rounded-full',
+            'h-[18px] w-[18px] border border-dashed',
+            !tagColor && 'border-foreground/20',
+          )}
+          style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
+        >
+          <span
+            className={cn(
+              'block h-[4px] w-[4px] rounded-full',
+              !tagColor && 'bg-foreground/40',
+            )}
+            style={tagColor ? { backgroundColor: tagColor } : undefined}
+          />
         </span>
       ) : (
         <span

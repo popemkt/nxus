@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { Hash } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
 import { useOutlineStore } from '@/stores/outline.store'
@@ -463,6 +464,7 @@ function NodeRefField({ value }: { value: string }) {
         childCount={node.children.length}
         tagColor={primaryTagColor}
         isSupertag={false}
+        isReference
         onClick={(e) => {
           e.stopPropagation()
           navigateToNode(value)
@@ -477,13 +479,14 @@ function NodeRefField({ value }: { value: string }) {
             <span
               key={tag.id}
               className={cn(
-                'inline-flex items-center rounded-sm px-1.5 py-px',
+                'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
                 'text-[11px] font-medium leading-[1.8]',
                 'select-none whitespace-nowrap',
                 !tag.color && 'bg-foreground/8 text-foreground/50',
               )}
               style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
             >
+              <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
               {tag.name}
             </span>
           ))}

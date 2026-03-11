@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
+import { Hash } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
@@ -282,20 +283,41 @@ export function OutlineEditor() {
 function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootNodeId: string }) {
   const navigateToNode = useNavigateToNode()
 
+  // Use last supertag's color for the background gradient
+  const gradientColor = rootNode.supertags.length > 0
+    ? rootNode.supertags[rootNode.supertags.length - 1]!.color
+    : null
+
   return (
     <div className="px-2 pb-2">
-      {/* Title row — same layout as a node line: content + tags inline */}
-      <div className="flex items-baseline gap-1.5 min-h-[36px]">
-        <h1 className="text-xl font-semibold text-foreground/90 leading-[1.4]">
+      {/* Title + tags area with radial gradient — oversized so it fades to zero before any edge */}
+      <div className="relative pl-7">
+        {gradientColor && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: '-40px',
+              left: '-60px',
+              right: '-60px',
+              bottom: '-30px',
+              background: `radial-gradient(ellipse 60% 70% at 50% 35%, ${gradientColor}0c 0%, ${gradientColor}05 40%, transparent 80%)`,
+            }}
+          />
+        )}
+
+        {/* Title */}
+        <h1 className="relative text-xl font-semibold text-foreground/90 leading-[1.4] min-h-[36px] flex items-center">
           {rootNode.content || 'Untitled'}
         </h1>
+
+        {/* Supertag badges — below title */}
         {rootNode.supertags.length > 0 && (
-          <div className="flex items-center gap-0.5">
+          <div className="relative flex items-center gap-1 pb-2">
             {rootNode.supertags.map((tag) => (
               <span
                 key={tag.id}
                 className={cn(
-                  'inline-flex items-center rounded-sm px-1.5 py-px',
+                  'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
                   'text-[11px] font-medium leading-[1.8]',
                   'select-none whitespace-nowrap',
                   'cursor-pointer transition-opacity hover:opacity-70',
@@ -309,12 +331,14 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
                 onClick={() => navigateToNode(tag.id)}
                 title={`Go to: ${tag.name}`}
               >
+                <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
                 {tag.name}
               </span>
             ))}
           </div>
         )}
       </div>
+
       {rootNode.fields.length > 0 && (
         <FieldsSection nodeId={rootNodeId} fields={rootNode.fields} depth={-1} />
       )}
