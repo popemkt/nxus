@@ -151,6 +151,13 @@ export const NodeBlock = memo(function NodeBlock({
         return
       }
 
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        const { selectNode } = useOutlineStore.getState()
+        selectNode(nodeId)
+        return
+      }
+
       if (e.key === 'ArrowDown') {
         if (e.metaKey && e.shiftKey) {
           e.preventDefault()

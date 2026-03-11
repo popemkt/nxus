@@ -168,7 +168,10 @@ test.describe('Outline Editor', () => {
       const count = await nodesWithChildren.count()
 
       if (count > 0) {
-        const parentNode = nodesWithChildren.first()
+        // Pin to a specific node via data-node-id so the locator doesn't
+        // re-evaluate to a different node after collapse removes the container.
+        const nodeId = await nodesWithChildren.first().getAttribute('data-node-id')
+        const parentNode = page.locator(`.node-block[data-node-id="${nodeId}"]`)
         const bullet = parentNode.locator('.bullet-container').first()
         const childrenContainer = parentNode.locator('.children-container').first()
 

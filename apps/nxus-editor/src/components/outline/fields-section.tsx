@@ -107,6 +107,7 @@ function FieldRow({
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
       >
+        <span className="mr-1 text-foreground/25">›</span>
         {field.fieldName}
       </span>
 
