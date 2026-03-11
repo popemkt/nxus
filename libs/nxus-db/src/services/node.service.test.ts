@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../schemas/item-schema.js'
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, FIELD_NAMES, type FieldSystemId, type FieldContentName } from '../schemas/node-schema.js'
 import {
+  addNodeSupertag,
   assembleNode,
   clearSystemNodeCache,
   createNode,
@@ -20,6 +21,7 @@ import {
   getPropertyValues,
   getSystemNode,
   setProperty,
+  setPropertyByIdOrSystemId,
   updateNodeContent,
   type AssembledNode,
 } from './node.service.js'
@@ -252,6 +254,20 @@ describe('node.service', () => {
         setProperty(db, nodeId, 'non-existent:field' as FieldSystemId, 'value')
       }).toThrow('Field not found')
     })
+
+    it('should set a property by field UUID', () => {
+      const nodeId = createNode(db, { content: 'Custom Field Node' })
+
+      sqlite.exec(`
+        INSERT INTO nodes (id, content, content_plain, created_at, updated_at)
+        VALUES ('field-custom', 'customField', 'customfield', 1, 1)
+      `)
+
+      setPropertyByIdOrSystemId(db, nodeId, 'field-custom', 'custom value')
+
+      const node = findNodeById(db, nodeId)
+      expect(node?.properties['customField' as FieldContentName]?.[0]?.value).toBe('custom value')
+    })
   })
 
   describe('assembleNode', () => {
@@ -305,6 +321,17 @@ describe('node.service', () => {
       expect(items.length).toBe(2)
       expect(items.map((n) => n.content)).toContain('Direct Item')
       expect(items.map((n) => n.content)).toContain('Tool (inherits Item)')
+    })
+
+    it('should add a supertag by UUID', () => {
+      const nodeId = createNode(db, { content: 'UUID tag target' })
+
+      const added = addNodeSupertag(db, nodeId, 'supertag-item')
+
+      expect(added).toBe(true)
+      const node = findNodeById(db, nodeId)
+      expect(node?.supertags[0]?.id).toBe('supertag-item')
+      expect(node?.supertags[0]?.systemId).toBe(SYSTEM_SUPERTAGS.ITEM)
     })
   })
 

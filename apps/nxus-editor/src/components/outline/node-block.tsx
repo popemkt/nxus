@@ -1,10 +1,14 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useMemo } from 'react'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@nxus/ui'
 import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import type { OutlineCommandCatalog } from '@/types/outline'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
+import type { OutlineKeyboardCallbacks } from './tiptap-node-editor'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 import { FieldsSection } from './fields-section'
@@ -12,16 +16,21 @@ import { FieldsSection } from './fields-section'
 interface NodeBlockProps {
   nodeId: string
   depth: number
+  commandCatalog: OutlineCommandCatalog
 }
 
 export const NodeBlock = memo(function NodeBlock({
   nodeId,
   depth,
+  commandCatalog,
 }: NodeBlockProps) {
   const node = useOutlineStore((s) => s.nodes.get(nodeId))
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
   const cursorPosition = useOutlineStore((s) => s.cursorPosition)
+  const dropPosition = useOutlineStore((s) =>
+    s.dropTargetId === nodeId ? s.dropPosition : null,
+  )
 
   // UI-only store actions (no server persistence needed)
   const activateNode = useOutlineStore((s) => s.activateNode)
@@ -34,6 +43,9 @@ export const NodeBlock = memo(function NodeBlock({
 
   // Persisted mutations via sync hook
   const {
+    addFieldToNode,
+    applySupertagToNode,
+    createSupertag,
     updateNodeContent,
     createNodeAfter,
     deleteNode,
@@ -41,7 +53,26 @@ export const NodeBlock = memo(function NodeBlock({
     outdentNode,
     moveNodeUp,
     moveNodeDown,
+    undo,
+    redo,
   } = useOutlineSync()
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({ id: nodeId })
+  const { setNodeRef: setDropNodeRef } = useDroppable({ id: nodeId })
+
+  const dragStyle = isDragging
+    ? {
+        transform: CSS.Translate.toString(transform),
+        opacity: 0.58,
+        zIndex: 30,
+      }
+    : undefined
 
   const handleBulletClick = useCallback(
     (e: React.MouseEvent) => {
@@ -69,127 +100,108 @@ export const NodeBlock = memo(function NodeBlock({
     [updateNodeContent, nodeId],
   )
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const sel = window.getSelection()
-
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        createNodeAfter(nodeId)
-        return
-      }
-
-      if (e.key === 'Tab') {
-        e.preventDefault()
-        if (e.shiftKey) {
-          outdentNode(nodeId)
-        } else {
-          indentNode(nodeId)
+  /**
+   * Outline keyboard callbacks for the Tiptap editor.
+   * These map Tiptap keymap events to outline store actions.
+   */
+  const outlineCallbacks: OutlineKeyboardCallbacks = useMemo(
+    () => ({
+      onEnter: (contentBefore: string, contentAfter: string) => {
+        // Split node at cursor: keep content before, create new node with content after
+        updateNodeContent(nodeId, contentBefore)
+        const newId = createNodeAfter(nodeId)
+        if (contentAfter) {
+          updateNodeContent(newId, contentAfter)
         }
-        return
-      }
+      },
 
-      if (
-        e.key === 'Backspace' &&
-        node?.content === '' &&
-        node?.children.length === 0 &&
-        !e.metaKey &&
-        !e.ctrlKey
-      ) {
-        e.preventDefault()
+      onBackspaceAtStart: (currentContent: string) => {
+        const prevId = getPreviousVisibleNode(nodeId)
+        if (prevId) {
+          const prevNode = useOutlineStore.getState().nodes.get(prevId)
+          if (prevNode) {
+            const mergePos = prevNode.content.length
+            updateNodeContent(prevId, prevNode.content + currentContent)
+            deleteNode(nodeId)
+            activateNode(prevId, mergePos)
+          }
+        }
+      },
+
+      onBackspaceEmpty: () => {
         const prevId = getPreviousVisibleNode(nodeId)
         deleteNode(nodeId)
         if (prevId) {
           const prevNode = useOutlineStore.getState().nodes.get(prevId)
           activateNode(prevId, prevNode?.content.length ?? 0)
         }
-        return
-      }
+      },
 
-      if (
-        e.key === 'Backspace' &&
-        sel?.focusOffset === 0 &&
-        node?.content &&
-        node?.children.length === 0
-      ) {
-        e.preventDefault()
+      onTab: () => {
+        indentNode(nodeId)
+      },
+
+      onShiftTab: () => {
+        outdentNode(nodeId)
+      },
+
+      onArrowUpAtStart: () => {
         const prevId = getPreviousVisibleNode(nodeId)
         if (prevId) {
           const prevNode = useOutlineStore.getState().nodes.get(prevId)
-          if (prevNode) {
-            const mergePos = prevNode.content.length
-            updateNodeContent(prevId, prevNode.content + node.content)
-            deleteNode(nodeId)
-            activateNode(prevId, mergePos)
-          }
+          activateNode(prevId, prevNode?.content.length ?? 0)
         }
-        return
-      }
+      },
 
-      if (e.key === 'ArrowUp') {
-        if (e.metaKey && e.shiftKey) {
-          e.preventDefault()
-          moveNodeUp(nodeId)
-          return
+      onArrowDownAtEnd: () => {
+        const nextId = getNextVisibleNode(nodeId)
+        if (nextId) {
+          activateNode(nextId, 0)
         }
-        if (e.metaKey) {
-          e.preventDefault()
-          if (node?.children.length && !node.collapsed) {
-            toggleCollapse(nodeId)
-          }
-          return
-        }
-        const isAtStart = sel?.focusOffset === 0
-        if (isAtStart) {
-          e.preventDefault()
-          const prevId = getPreviousVisibleNode(nodeId)
-          if (prevId) {
-            const prevNode = useOutlineStore.getState().nodes.get(prevId)
-            activateNode(prevId, prevNode?.content.length ?? 0)
-          }
-        }
-        return
-      }
+      },
 
-      if (e.key === 'ArrowDown') {
-        if (e.metaKey && e.shiftKey) {
-          e.preventDefault()
-          moveNodeDown(nodeId)
-          return
+      onMoveUp: () => {
+        moveNodeUp(nodeId)
+      },
+
+      onMoveDown: () => {
+        moveNodeDown(nodeId)
+      },
+
+      onCollapseToggle: (direction: 'up' | 'down') => {
+        const n = useOutlineStore.getState().nodes.get(nodeId)
+        if (!n) return
+        if (direction === 'up' && n.children.length > 0 && !n.collapsed) {
+          toggleCollapse(nodeId)
         }
-        if (e.metaKey) {
-          e.preventDefault()
-          if (node?.children.length && node.collapsed) {
-            toggleCollapse(nodeId)
-          }
-          return
+        if (direction === 'down' && n.children.length > 0 && n.collapsed) {
+          toggleCollapse(nodeId)
         }
-        const isAtEnd =
-          sel?.focusOffset === (node?.content.length ?? 0)
-        if (isAtEnd) {
-          e.preventDefault()
-          const nextId = getNextVisibleNode(nodeId)
-          if (nextId) {
-            activateNode(nextId, 0)
-          }
-        }
-        return
-      }
-    },
+      },
+
+      onUndo: () => {
+        undo()
+      },
+
+      onRedo: () => {
+        redo()
+      },
+    }),
     [
       nodeId,
-      node,
       createNodeAfter,
+      updateNodeContent,
+      deleteNode,
       indentNode,
       outdentNode,
-      deleteNode,
       moveNodeUp,
       moveNodeDown,
       toggleCollapse,
       activateNode,
       getPreviousVisibleNode,
       getNextVisibleNode,
-      updateNodeContent,
+      undo,
+      redo,
     ],
   )
 
@@ -218,13 +230,29 @@ export const NodeBlock = memo(function NodeBlock({
   )
 
   return (
-    <div className="node-block relative" data-node-id={nodeId}>
+    <div
+      ref={setDragNodeRef}
+      className="node-block relative transition-[transform,opacity] duration-150"
+      style={dragStyle}
+      data-node-id={nodeId}
+    >
+      {dropPosition === 'before' && (
+        <div
+          className="absolute -top-1 right-0 h-1 rounded-full bg-primary z-20"
+          style={{ left: `${depth * 24 + 10}px` }}
+        />
+      )}
+
       {/* The node row */}
       <div
+        ref={setDropNodeRef}
         className={cn(
           'node-row group/node flex items-start',
           'rounded-sm transition-colors duration-75',
           isSelected && !isActive && 'bg-primary/5',
+          dropPosition === 'inside' &&
+            'bg-primary/8 ring-1 ring-primary/35 ring-inset',
+          isDragging && 'cursor-grabbing',
         )}
         style={{ paddingLeft: `${depth * 24}px` }}
       >
@@ -234,6 +262,7 @@ export const NodeBlock = memo(function NodeBlock({
           childCount={node.children.length}
           tagColor={primaryTagColor}
           isSupertag={isSupertag}
+          dragHandleProps={{ ...attributes, ...listeners }}
           onClick={handleBulletClick}
         />
         <NodeContent
@@ -242,10 +271,14 @@ export const NodeBlock = memo(function NodeBlock({
           isActive={isActive}
           isSelected={isSelected}
           supertags={node.supertags}
+          commandCatalog={commandCatalog}
           cursorPosition={cursorPosition}
           onActivate={handleActivate}
+          onAddField={addFieldToNode}
+          onApplySupertag={applySupertagToNode}
           onChange={handleContentChange}
-          onKeyDown={handleKeyDown}
+          onCreateSupertag={createSupertag}
+          outlineCallbacks={outlineCallbacks}
         />
       </div>
 
@@ -266,9 +299,21 @@ export const NodeBlock = memo(function NodeBlock({
 
           {/* Children */}
           {sortedChildren.map((childId) => (
-            <NodeBlock key={childId} nodeId={childId} depth={depth + 1} />
+            <NodeBlock
+              key={childId}
+              nodeId={childId}
+              depth={depth + 1}
+              commandCatalog={commandCatalog}
+            />
           ))}
         </div>
+      )}
+
+      {dropPosition === 'after' && (
+        <div
+          className="absolute -bottom-1 right-0 h-1 rounded-full bg-primary z-20"
+          style={{ left: `${depth * 24 + 10}px` }}
+        />
       )}
     </div>
   )

@@ -5,12 +5,14 @@ import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
 import { NodeBlock } from './node-block'
+import { OutlineDndProvider } from './outline-dnd'
 import { FieldsSection } from './fields-section'
 import {
+  getOutlineCommandCatalogServerFn,
   getWorkspaceRootServerFn,
   getNodeTreeServerFn,
 } from '@/services/outline.server'
-import type { OutlineNode } from '@/types/outline'
+import type { OutlineCommandCatalog, OutlineNode } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 
@@ -31,16 +33,21 @@ export function OutlineEditor() {
     (s) => s.getPreviousVisibleNode,
   )
 
-  const { createNodeAfter, deleteNode } = useOutlineSync()
+  const { createNodeAfter, deleteNode, undo, redo } = useOutlineSync()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [commandCatalog, setCommandCatalog] = useState<OutlineCommandCatalog>({
+    supertags: [],
+    fields: [],
+  })
 
   // Sync URL search param → store rootNodeId (handles back/forward + bookmarks)
   useEffect(() => {
     const targetId = urlNodeId ?? WORKSPACE_ROOT_ID
     if (targetId !== useOutlineStore.getState().rootNodeId) {
       setRootNodeId(targetId)
+      useOutlineStore.getState().clearUndoHistory()
     }
   }, [urlNodeId, setRootNodeId])
 
@@ -50,8 +57,13 @@ export function OutlineEditor() {
 
     async function loadData() {
       try {
-        const rootResult = await getWorkspaceRootServerFn()
+        const [rootResult, catalog] = await Promise.all([
+          getWorkspaceRootServerFn(),
+          getOutlineCommandCatalogServerFn(),
+        ])
         if (cancelled) return
+
+        setCommandCatalog(catalog)
 
         if (!rootResult.success || rootResult.rootIds.length === 0) {
           setLoading(false)
@@ -137,6 +149,17 @@ export function OutlineEditor() {
 
   const handleGlobalKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Undo/redo works globally when no editor is active
+      if (!activeNodeId && e.key === 'z' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        if (e.shiftKey) {
+          redo()
+        } else {
+          undo()
+        }
+        return
+      }
+
       if (activeNodeId) return
 
       if (!selectedNodeId) return
@@ -201,6 +224,8 @@ export function OutlineEditor() {
       createNodeAfter,
       getPreviousVisibleNode,
       getNextVisibleNode,
+      undo,
+      redo,
     ],
   )
 
@@ -265,9 +290,16 @@ export function OutlineEditor() {
           }
         }}
       >
-        {sortedChildren.map((childId) => (
-          <NodeBlock key={childId} nodeId={childId} depth={0} />
-        ))}
+        <OutlineDndProvider>
+          {sortedChildren.map((childId) => (
+            <NodeBlock
+              key={childId}
+              nodeId={childId}
+              depth={0}
+              commandCatalog={commandCatalog}
+            />
+          ))}
+        </OutlineDndProvider>
 
         {sortedChildren.length === 0 && (
           <div className="px-8 py-4 text-sm text-foreground/25">

@@ -708,6 +708,19 @@ export function deleteNode(
 }
 
 /**
+ * Restore a soft-deleted node (set deletedAt back to null).
+ */
+export function restoreNode(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): void {
+  db.update(nodes)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(eq(nodes.id, nodeId))
+    .run()
+}
+
+/**
  * Set a property value (creates or updates).
  *
  * @param fieldId A FieldSystemId (e.g., SYSTEM_FIELDS.STATUS).
@@ -723,6 +736,44 @@ export function setProperty(
   const field = getFieldOrSupertagNode(db, fieldId)
   if (!field) throw new Error(`Field not found: ${fieldId}`)
 
+  setPropertyByResolvedField(db, nodeId, field.id, fieldId, value, order)
+}
+
+/**
+ * Set a property value using either a field UUID or systemId.
+ */
+export function setPropertyByIdOrSystemId(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  fieldIdOrSystemId: string,
+  value: unknown,
+  order: number = 0,
+): void {
+  const field = getFieldOrSupertagNode(db, fieldIdOrSystemId)
+  if (!field) throw new Error(`Field not found: ${fieldIdOrSystemId}`)
+
+  setPropertyByResolvedField(
+    db,
+    nodeId,
+    field.id,
+    isSystemId(fieldIdOrSystemId)
+      ? fieldIdOrSystemId as FieldSystemId
+      : null,
+    value,
+    order,
+  )
+}
+
+function setPropertyByResolvedField(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  resolvedFieldNodeId: string,
+  fieldSystemId: FieldSystemId | null,
+  value: unknown,
+  order: number = 0,
+): void {
+  const fieldIdForEvent = fieldSystemId ?? (resolvedFieldNodeId as FieldSystemId)
+
   const jsonValue = JSON.stringify(value)
   const now = new Date()
 
@@ -732,7 +783,7 @@ export function setProperty(
     .from(nodeProperties)
     .where(and(
       eq(nodeProperties.nodeId, nodeId),
-      eq(nodeProperties.fieldNodeId, field.id),
+      eq(nodeProperties.fieldNodeId, resolvedFieldNodeId),
       eq(nodeProperties.order, order),
     ))
     .get()
@@ -752,7 +803,7 @@ export function setProperty(
     db.insert(nodeProperties)
       .values({
         nodeId,
-        fieldNodeId: field.id,
+        fieldNodeId: resolvedFieldNodeId,
         value: jsonValue,
         order,
         createdAt: now,
@@ -766,8 +817,8 @@ export function setProperty(
     type: 'property:set',
     timestamp: now,
     nodeId,
-    fieldId: field.id,
-    fieldSystemId: fieldId,
+    fieldId: resolvedFieldNodeId,
+    fieldSystemId: fieldIdForEvent,
     beforeValue,
     afterValue: value,
   })
@@ -1149,7 +1200,7 @@ export function setNodeSupertags(
  * Add a supertag to a node (if not already present)
  * @param db Database instance
  * @param nodeId Node UUID to update
- * @param supertagSystemId Supertag systemId (e.g., 'supertag:tool')
+ * @param supertagSystemId Supertag UUID or systemId (e.g., 'supertag:tool')
  * @returns true if added, false if already present
  */
 export function addNodeSupertag(
@@ -1157,14 +1208,13 @@ export function addNodeSupertag(
   nodeId: string,
   supertagSystemId: string,
 ): boolean {
-  // Check if already has this supertag
-  const currentSupertags = getNodeSupertagSystemIds(db, nodeId)
-  if (currentSupertags.includes(supertagSystemId)) {
+  const supertagNode = getFieldOrSupertagNode(db, supertagSystemId)
+  if (!supertagNode) throw new Error(`Supertag not found: ${supertagSystemId}`)
+
+  const currentSupertags = getNodeSupertags(db, nodeId)
+  if (currentSupertags.some((tag) => tag.id === supertagNode.id)) {
     return false
   }
-
-  const supertagNode = getSystemNode(db, supertagSystemId)
-  if (!supertagNode) throw new Error(`Supertag not found: ${supertagSystemId}`)
 
   addPropertyValue(db, nodeId, SYSTEM_FIELDS.SUPERTAG, supertagNode.id)
 
@@ -1187,7 +1237,7 @@ export function addNodeSupertag(
  * Remove a supertag from a node
  * @param db Database instance
  * @param nodeId Node UUID to update
- * @param supertagSystemId Supertag systemId to remove
+ * @param supertagSystemId Supertag UUID or systemId to remove
  * @returns true if removed, false if not found
  */
 export function removeNodeSupertag(
@@ -1196,7 +1246,7 @@ export function removeNodeSupertag(
   supertagSystemId: string,
 ): boolean {
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
-  const supertagNode = getSystemNode(db, supertagSystemId)
+  const supertagNode = getFieldOrSupertagNode(db, supertagSystemId)
   if (!supertagField || !supertagNode) return false
 
   // Find and delete the specific supertag property

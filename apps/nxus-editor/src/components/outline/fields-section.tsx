@@ -62,21 +62,21 @@ function FieldRow({
 
   const handleChange = useCallback(
     (newValue: unknown) => {
-      if (!field.fieldSystemId) return
+      const fieldId = field.fieldSystemId ?? field.fieldNodeId
       // Optimistic update in store
-      useOutlineStore.getState().updateFieldValue(nodeId, field.fieldSystemId, newValue)
+      useOutlineStore.getState().updateFieldValue(nodeId, fieldId, newValue)
       // Persist to server
       setFieldValueServerFn({
         data: {
           nodeId,
-          fieldSystemId: field.fieldSystemId,
+          fieldId,
           value: newValue,
         },
       }).catch((err) => {
         console.error('[fields] Failed to update field:', err)
       })
     },
-    [nodeId, field.fieldSystemId],
+    [field.fieldNodeId, field.fieldSystemId, nodeId],
   )
 
   return (

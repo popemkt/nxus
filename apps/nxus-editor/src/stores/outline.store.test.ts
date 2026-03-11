@@ -32,6 +32,9 @@ describe('outline store', () => {
       activeNodeId: null,
       selectedNodeId: null,
       cursorPosition: 0,
+      draggedNodeId: null,
+      dropTargetId: null,
+      dropPosition: null,
     })
   })
 
@@ -42,6 +45,17 @@ describe('outline store', () => {
       useOutlineStore.getState().setNodes(nodes)
       expect(useOutlineStore.getState().nodes.size).toBe(1)
       expect(useOutlineStore.getState().nodes.get('x')?.content).toBe('test')
+    })
+
+    it('merges incoming nodes into the existing map', () => {
+      seedStore()
+      useOutlineStore.getState().mergeNodes([
+        makeNode('b', 'Beta updated', WORKSPACE_ROOT_ID, '00002000'),
+        makeNode('z', 'Zulu', WORKSPACE_ROOT_ID, '00004000'),
+      ])
+
+      expect(useOutlineStore.getState().nodes.get('b')?.content).toBe('Beta updated')
+      expect(useOutlineStore.getState().nodes.get('z')?.content).toBe('Zulu')
     })
   })
 
@@ -109,6 +123,31 @@ describe('outline store', () => {
       useOutlineStore.getState().updateNodeContent('nonexistent', 'x')
       // Map reference should not change
       expect(useOutlineStore.getState().nodes).toBe(before)
+    })
+  })
+
+  describe('updateFieldValue', () => {
+    it('updates a field by field node id when no system id exists', () => {
+      seedStore()
+      const state = useOutlineStore.getState()
+      const node = state.nodes.get('a')!
+      useOutlineStore.setState({
+        nodes: new Map(state.nodes).set('a', {
+          ...node,
+          fields: [
+            {
+              fieldName: 'customField',
+              fieldNodeId: 'field-custom',
+              fieldSystemId: null,
+              fieldType: 'text',
+              values: [{ value: 'before', order: 0 }],
+            },
+          ],
+        }),
+      })
+
+      useOutlineStore.getState().updateFieldValue('a', 'field-custom', 'after')
+      expect(useOutlineStore.getState().nodes.get('a')?.fields[0]?.values[0]?.value).toBe('after')
     })
   })
 
@@ -264,6 +303,55 @@ describe('outline store', () => {
       const orderC = useOutlineStore.getState().nodes.get('c')!.order
       useOutlineStore.getState().moveNodeDown('c')
       expect(useOutlineStore.getState().nodes.get('c')!.order).toBe(orderC)
+    })
+  })
+
+  describe('moveNode', () => {
+    it('moves a node before a sibling in the same parent', () => {
+      seedStore()
+
+      const moved = useOutlineStore.getState().moveNode('c', 'a', 'before')
+      const state = useOutlineStore.getState()
+
+      expect(moved).toBe(true)
+      expect(state.nodes.get('c')?.parentId).toBe(WORKSPACE_ROOT_ID)
+
+      const visible = state.getVisibleNodes()
+      expect(visible.slice(0, 3)).toEqual(['c', 'a', 'a1'])
+    })
+
+    it('moves a node into another node and expands the new parent', () => {
+      seedStore()
+      useOutlineStore.getState().toggleCollapse('b')
+
+      const moved = useOutlineStore.getState().moveNode('c', 'b', 'inside')
+      const state = useOutlineStore.getState()
+
+      expect(moved).toBe(true)
+      expect(state.nodes.get('c')?.parentId).toBe('b')
+      expect(state.nodes.get('b')?.children).toContain('c')
+      expect(state.nodes.get('b')?.collapsed).toBe(false)
+    })
+
+    it('moves a child out to become a sibling after its parent', () => {
+      seedStore()
+
+      const moved = useOutlineStore.getState().moveNode('a1', 'a', 'after')
+      const state = useOutlineStore.getState()
+
+      expect(moved).toBe(true)
+      expect(state.nodes.get('a1')?.parentId).toBe(WORKSPACE_ROOT_ID)
+      expect(state.getVisibleNodes()).toEqual(['a', 'a2', 'a1', 'b', 'c'])
+    })
+
+    it('prevents moving a node into its own descendant', () => {
+      seedStore()
+      const originalParentId = useOutlineStore.getState().nodes.get('a')?.parentId
+
+      const moved = useOutlineStore.getState().moveNode('a', 'a1', 'inside')
+
+      expect(moved).toBe(false)
+      expect(useOutlineStore.getState().nodes.get('a')?.parentId).toBe(originalParentId)
     })
   })
 

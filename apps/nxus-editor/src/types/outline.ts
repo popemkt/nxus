@@ -36,6 +36,28 @@ export interface SupertagBadge {
   systemId: string | null
 }
 
+export interface OutlineSupertagDefinition {
+  id: string
+  name: string
+  color: string | null
+  icon: string | null
+  systemId: string | null
+}
+
+export interface OutlineFieldDefinition {
+  id: string
+  name: string
+  systemId: string | null
+  fieldType: FieldType
+}
+
+export interface OutlineCommandCatalog {
+  supertags: OutlineSupertagDefinition[]
+  fields: OutlineFieldDefinition[]
+}
+
+export type OutlineDropPosition = 'before' | 'after' | 'inside'
+
 /**
  * A node IS a supertag definition if it's tagged with the meta-supertag.
  */

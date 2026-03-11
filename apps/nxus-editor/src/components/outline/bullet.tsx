@@ -5,6 +5,7 @@ import {
   ToggleRight,
   CalendarBlank,
   CaretCircleDown,
+  DotsSixVertical,
   LinkSimple,
   At,
   ArrowSquareOut,
@@ -19,6 +20,7 @@ interface BulletProps {
   childCount: number
   tagColor: string | null
   isSupertag: boolean
+  dragHandleProps?: React.ButtonHTMLAttributes<HTMLButtonElement>
   onClick: (e: React.MouseEvent) => void
 }
 
@@ -28,73 +30,91 @@ export function Bullet({
   childCount,
   tagColor,
   isSupertag,
+  dragHandleProps,
   onClick,
 }: BulletProps) {
+  const { className: dragHandleClassName, ...dragHandleRest } = dragHandleProps ?? {}
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'bullet-container group/bullet relative flex shrink-0 items-center justify-center',
-        'w-6 h-6 rounded-sm',
-        'hover:bg-foreground/5 transition-colors duration-100',
-        'cursor-pointer',
-      )}
-      tabIndex={-1}
-      title={hasChildren ? 'Click to toggle, Cmd+click to focus' : 'Cmd+click to focus'}
-      aria-label={
-        hasChildren
-          ? collapsed
-            ? `Expand (${childCount} children)`
-            : 'Collapse'
-          : undefined
-      }
-    >
-      {/* Outer halo ring — only visible when collapsed with children */}
-      {hasChildren && collapsed && (
-        <span
-          className="absolute inset-[3px] rounded-full border border-foreground/20"
-          style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
-        />
-      )}
+    <div className="flex shrink-0 items-center">
+      <button
+        type="button"
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          'drag-handle flex h-6 w-4 items-center justify-center rounded-sm',
+          'cursor-grab text-foreground/18 transition-colors duration-100',
+          'hover:bg-foreground/5 hover:text-foreground/40',
+          'active:cursor-grabbing',
+          dragHandleClassName,
+        )}
+        tabIndex={-1}
+        title="Drag to reorder"
+        aria-label="Drag to reorder"
+        {...dragHandleRest}
+      >
+        <DotsSixVertical size={12} weight="bold" />
+      </button>
 
-      {/* Supertag definitions get # hashtag, regular nodes get round dot */}
-      {isSupertag ? (
-        <span
-          className={cn(
-            'block text-[11px] font-bold leading-none select-none',
-            !tagColor && 'text-foreground/45',
-            hasChildren && !tagColor && 'text-foreground/55',
-            hasChildren &&
-              !collapsed &&
-              'group-hover/bullet:text-foreground/70',
-          )}
-          style={tagColor ? { color: tagColor } : undefined}
-        >
-          #
-        </span>
-      ) : (
-        <span
-          className={cn(
-            'block rounded-full transition-all duration-100',
-            hasChildren ? 'h-[5px] w-[5px]' : 'h-[4px] w-[4px]',
-            !tagColor && 'bg-foreground/40',
-            !tagColor && hasChildren && 'bg-foreground/50',
-            hasChildren &&
-              !collapsed &&
-              'group-hover/bullet:bg-foreground/60',
-          )}
-          style={tagColor ? { backgroundColor: tagColor } : undefined}
-        />
-      )}
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'bullet-container group/bullet relative flex shrink-0 items-center justify-center',
+          'h-6 w-6 rounded-sm',
+          'cursor-pointer transition-colors duration-100 hover:bg-foreground/5',
+        )}
+        tabIndex={-1}
+        title={hasChildren ? 'Click to toggle, Cmd+click to focus' : 'Cmd+click to focus'}
+        aria-label={
+          hasChildren
+            ? collapsed
+              ? `Expand (${childCount} children)`
+              : 'Collapse'
+            : undefined
+        }
+      >
+        {/* Outer halo ring — only visible when collapsed with children */}
+        {hasChildren && collapsed && (
+          <span
+            className="absolute inset-[3px] rounded-full border border-foreground/20"
+            style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
+          />
+        )}
 
-      {/* Collapsed children count badge */}
-      {hasChildren && collapsed && childCount > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-foreground/10 px-0.5 text-[9px] font-medium text-foreground/50">
-          {childCount}
-        </span>
-      )}
-    </button>
+        {/* Supertag definitions get # hashtag, regular nodes get round dot */}
+        {isSupertag ? (
+          <span
+            className={cn(
+              'block select-none text-[11px] font-bold leading-none',
+              !tagColor && 'text-foreground/45',
+              hasChildren && !tagColor && 'text-foreground/55',
+              hasChildren && !collapsed && 'group-hover/bullet:text-foreground/70',
+            )}
+            style={tagColor ? { color: tagColor } : undefined}
+          >
+            #
+          </span>
+        ) : (
+          <span
+            className={cn(
+              'block rounded-full transition-all duration-100',
+              hasChildren ? 'h-[5px] w-[5px]' : 'h-[4px] w-[4px]',
+              !tagColor && 'bg-foreground/40',
+              !tagColor && hasChildren && 'bg-foreground/50',
+              hasChildren && !collapsed && 'group-hover/bullet:bg-foreground/60',
+            )}
+            style={tagColor ? { backgroundColor: tagColor } : undefined}
+          />
+        )}
+
+        {/* Collapsed children count badge */}
+        {hasChildren && collapsed && childCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-foreground/10 px-0.5 text-[9px] font-medium text-foreground/50">
+            {childCount}
+          </span>
+        )}
+      </button>
+    </div>
   )
 }
 
