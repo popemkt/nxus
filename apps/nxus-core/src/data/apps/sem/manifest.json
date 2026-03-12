@@ -1,0 +1,45 @@
+{
+    "id": "sem",
+    "name": "Sem",
+    "description": "Semantic version control CLI. Entity-level diff, blame, graph, and impact analysis for code. 16 languages via tree-sitter.",
+    "type": "remote-repo",
+    "path": "https://github.com/Ataraxy-Labs/sem.git",
+    "homepage": "https://github.com/Ataraxy-Labs/sem",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the Sem repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/Ataraxy-Labs/sem.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open Sem on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/Ataraxy-Labs/sem"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [
+            { "id": "useful", "name": "Useful" }
+        ],
+        "category": "development-tools",
+        "createdAt": "2026-03-12T00:00:00Z",
+        "updatedAt": "2026-03-12T00:00:00Z",
+        "version": "1.0.0",
+        "author": "Ataraxy-Labs"
+    },
+    "installConfig": {
+        "script": "cargo install --path .",
+        "platform": ["linux", "macos", "windows"]
+    }
+}

@@ -37,7 +37,9 @@
         }
     ],
     "metadata": {
-        "tags": [],
+        "tags": [
+            { "id": "reference", "name": "Reference" }
+        ],
         "category": "development-tools",
         "createdAt": "2026-02-25T14:00:00Z",
         "updatedAt": "2026-02-25T14:00:00Z",
