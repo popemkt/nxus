@@ -1,13 +1,16 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useState } from 'react'
+import { Sliders } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
+import { isQueryNode, extractQueryDefinition, getVisibleFields } from './query-helpers'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 import { FieldsSection } from './fields-section'
+import { QueryResults } from './query-results'
 
 interface NodeBlockProps {
   nodeId: string
@@ -205,10 +208,16 @@ export const NodeBlock = memo(function NodeBlock({
   const isActive = activeNodeId === nodeId
   const isSelected = selectedNodeId === nodeId
   const hasChildren = node.children.length > 0
-  const hasFields = node.fields.length > 0
-  const isExpandable = hasChildren || hasFields
   const primaryTagColor = node.supertags[0]?.color ?? null
+  const [workbenchOpen, setWorkbenchOpen] = useState(false)
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
+  const isQuery = isQueryNode(node)
+
+  // For query nodes: extract definition and filter out query-internal fields
+  const queryDefinition = isQuery ? extractQueryDefinition(node) : undefined
+  const visibleFields = getVisibleFields(node.fields, isQuery)
+  const hasFields = visibleFields.length > 0
+  const isExpandable = hasChildren || hasFields || isQuery
 
   // Shallow-compared selector: only re-renders when the sorted order actually changes.
   // Content-only edits in children don't change order → parent skips re-render.
@@ -241,6 +250,7 @@ export const NodeBlock = memo(function NodeBlock({
           childCount={node.children.length}
           tagColor={primaryTagColor}
           isSupertag={isSupertag}
+          isQuery={isQuery}
           onClick={handleBulletClick}
         />
         <NodeContent
@@ -254,6 +264,26 @@ export const NodeBlock = memo(function NodeBlock({
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
         />
+        {isQuery && !node.collapsed && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setWorkbenchOpen((o) => !o)
+            }}
+            className={cn(
+              'inline-flex items-center justify-center rounded-sm shrink-0',
+              'h-6 w-6',
+              'select-none cursor-pointer transition-colors',
+              workbenchOpen
+                ? 'bg-foreground/12 text-foreground/60'
+                : 'text-foreground/25 hover:bg-foreground/8 hover:text-foreground/50',
+            )}
+            title="Configure query"
+          >
+            <Sliders size={12} weight="bold" />
+          </button>
+        )}
       </div>
 
       {/* Fields + Children — wrapped in a single container with tree line */}
@@ -269,8 +299,13 @@ export const NodeBlock = memo(function NodeBlock({
           </div>
 
           {/* Fields (properties) — rendered before children */}
-          {node.fields.length > 0 && (
-            <FieldsSection nodeId={nodeId} fields={node.fields} depth={depth} />
+          {visibleFields.length > 0 && (
+            <FieldsSection nodeId={nodeId} fields={visibleFields} depth={depth} />
+          )}
+
+          {/* Query results — rendered between fields and children */}
+          {isQuery && queryDefinition != null && (
+            <QueryResults nodeId={nodeId} definition={queryDefinition} depth={depth} workbenchOpen={workbenchOpen} />
           )}
 
           {/* Children */}

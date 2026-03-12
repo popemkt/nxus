@@ -42,6 +42,21 @@ export interface SupertagBadge {
  */
 export const SUPERTAG_DEFINITION_SYSTEM_ID = 'supertag:supertag'
 
+/**
+ * A node IS a query if it's tagged with the query supertag.
+ */
+export const QUERY_SYSTEM_ID = 'supertag:query'
+
+/**
+ * Query-internal field system IDs — hidden from field display on query nodes
+ * because their content is rendered as live query results instead.
+ */
+export const QUERY_FIELD_SYSTEM_IDS = new Set([
+  'field:query_definition',
+  'field:query_sort',
+  'field:query_limit',
+])
+
 export type NodeMap = Map<string, OutlineNode>
 
 /**
