@@ -1,9 +1,18 @@
-import { Button, DropdownMenu ,
+import {
+  Button,
+  DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  cn } from '@nxus/ui'
-import { Graph, GridFour, SquaresFour, Table } from '@phosphor-icons/react'
+  cn,
+} from '@nxus/ui'
+import {
+  Graph,
+  GridFour,
+  GridNine,
+  SquaresFour,
+  Table,
+} from '@phosphor-icons/react'
 import { useViewModeStore } from '@/stores/view-mode.store'
 
 export function ViewModeSwitcher() {
@@ -11,6 +20,8 @@ export function ViewModeSwitcher() {
   const setViewMode = useViewModeStore((s) => s.setViewMode)
   const galleryMode = useViewModeStore((s) => s.galleryMode)
   const setGalleryMode = useViewModeStore((s) => s.setGalleryMode)
+  const graphRenderer = useViewModeStore((s) => s.graphRenderer)
+  const setGraphRenderer = useViewModeStore((s) => s.setGraphRenderer)
 
   return (
     <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border">
@@ -67,21 +78,44 @@ export function ViewModeSwitcher() {
         <span className="text-xs">Table</span>
       </Button>
 
-      {/* Graph - simple button, options are in the graph view */}
+      {/* Graph (canvas) */}
       <Button
         variant="ghost"
         size="sm"
         className={cn(
           'gap-1.5 px-2.5',
-          viewMode === 'graph' && 'bg-background shadow-sm',
+          viewMode === 'graph' && graphRenderer === 'canvas' && 'bg-background shadow-sm',
         )}
-        onClick={() => setViewMode('graph')}
+        onClick={() => {
+          setGraphRenderer('canvas')
+          setViewMode('graph')
+        }}
       >
         <Graph
           className="h-4 w-4"
-          weight={viewMode === 'graph' ? 'fill' : 'regular'}
+          weight={viewMode === 'graph' && graphRenderer === 'canvas' ? 'fill' : 'regular'}
         />
         <span className="text-xs">Graph</span>
+      </Button>
+
+      {/* Graph (blocks / React Flow) */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          'gap-1.5 px-2.5',
+          viewMode === 'graph' && graphRenderer === 'blocks' && 'bg-background shadow-sm',
+        )}
+        onClick={() => {
+          setGraphRenderer('blocks')
+          setViewMode('graph')
+        }}
+      >
+        <GridNine
+          className="h-4 w-4"
+          weight={viewMode === 'graph' && graphRenderer === 'blocks' ? 'fill' : 'regular'}
+        />
+        <span className="text-xs">Blocks</span>
       </Button>
     </div>
   )

@@ -4,12 +4,26 @@ import { persist } from 'zustand/middleware'
 export type ViewMode = 'gallery' | 'table' | 'graph'
 export type GalleryMode = 'default' | 'compact'
 export type GraphFilterMode = 'highlight' | 'show-only'
+export type GraphRenderer = 'canvas' | 'blocks'
+export type GraphLayout = 'hierarchical' | 'force'
+export type GraphNodeStyle = 'detailed' | 'simple'
 
+/** Options for the canvas-based graph (react-force-graph-2d) */
 export interface GraphOptions {
   filterMode: GraphFilterMode
   nodesLocked: boolean
   showLabels: boolean
   groupingDimension: string | null
+}
+
+/** Options for the React Flow blocks graph */
+export interface ReactFlowGraphOptions {
+  showCommands: boolean
+  filterMode: GraphFilterMode
+  layout: GraphLayout
+  nodeStyle: GraphNodeStyle
+  nodesLocked: boolean
+  showLabels: boolean
 }
 
 interface ViewModeState {
@@ -25,9 +39,17 @@ interface ViewModeState {
   galleryMode: GalleryMode
   setGalleryMode: (mode: GalleryMode) => void
 
-  // Graph options
+  // Graph renderer toggle
+  graphRenderer: GraphRenderer
+  setGraphRenderer: (renderer: GraphRenderer) => void
+
+  // Canvas graph options
   graphOptions: GraphOptions
   setGraphOptions: (options: Partial<GraphOptions>) => void
+
+  // React Flow graph options
+  reactFlowOptions: ReactFlowGraphOptions
+  setReactFlowOptions: (options: Partial<ReactFlowGraphOptions>) => void
 }
 
 export const useViewModeStore = create<ViewModeState>()(
@@ -45,7 +67,11 @@ export const useViewModeStore = create<ViewModeState>()(
       galleryMode: 'default',
       setGalleryMode: (mode) => set({ galleryMode: mode }),
 
-      // Graph options
+      // Graph renderer
+      graphRenderer: 'canvas',
+      setGraphRenderer: (renderer) => set({ graphRenderer: renderer }),
+
+      // Canvas graph options
       graphOptions: {
         filterMode: 'highlight',
         nodesLocked: false,
@@ -56,13 +82,29 @@ export const useViewModeStore = create<ViewModeState>()(
         set((state) => ({
           graphOptions: { ...state.graphOptions, ...options },
         })),
+
+      // React Flow graph options
+      reactFlowOptions: {
+        showCommands: false,
+        filterMode: 'highlight',
+        layout: 'hierarchical',
+        nodeStyle: 'detailed',
+        nodesLocked: false,
+        showLabels: true,
+      },
+      setReactFlowOptions: (options) =>
+        set((state) => ({
+          reactFlowOptions: { ...state.reactFlowOptions, ...options },
+        })),
     }),
     {
       name: 'nxus-view-mode',
       partialize: (state) => ({
         viewMode: state.viewMode,
         galleryMode: state.galleryMode,
+        graphRenderer: state.graphRenderer,
         graphOptions: state.graphOptions,
+        reactFlowOptions: state.reactFlowOptions,
       }),
       onRehydrateStorage: () => (state) => {
         state?._setHasHydrated(true)
