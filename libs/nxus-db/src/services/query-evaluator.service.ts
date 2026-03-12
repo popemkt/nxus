@@ -18,9 +18,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { getDatabase } from '../client/master-client.js'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
-
-// UUID regex pattern (supports both v4 and v7 UUIDs)
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 import type {
   ContentFilter,
   FilterOp,
@@ -34,8 +31,8 @@ import type {
   SupertagFilter,
   TemporalFilter,
 } from '../types/query.js'
+import { UUID_REGEX } from '../types/common.js'
 import {
-  assembleNode,
   assembleNodes,
   getFieldOrSupertagNode,
   getNodeIdsBySupertagWithInheritance,
@@ -270,7 +267,7 @@ export function evaluatePropertyFilter(
     const result = new Set<string>()
     for (const id of candidateIds) {
       const values = nodePropsMap.get(id)
-      if (!values || values.length === 0 || values.every(isEmptyValue)) {
+      if (!values || values.every(isEmptyValue)) {
         result.add(id)
       }
     }
@@ -281,7 +278,7 @@ export function evaluatePropertyFilter(
     const result = new Set<string>()
     for (const id of candidateIds) {
       const values = nodePropsMap.get(id)
-      if (values && values.length > 0 && values.some((v) => !isEmptyValue(v))) {
+      if (values?.some((v) => !isEmptyValue(v))) {
         result.add(id)
       }
     }
@@ -635,7 +632,7 @@ function evaluateLinksToRelation(
       if (isMatch) {
         result.add(prop.nodeId)
       }
-    } catch (error) {
+    } catch {
       // Log warning for malformed property values in relation queries
       console.warn(
         `[QueryEvaluator] Malformed property value in linksTo query for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,
@@ -688,7 +685,7 @@ function evaluateLinkedFromRelation(
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Log warning for malformed property values in backlink queries
       console.warn(
         `[QueryEvaluator] Malformed property value in linkedFrom query for node ${prop.nodeId}: ${prop.value?.slice(0, 50)}`,

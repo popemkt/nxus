@@ -10,7 +10,12 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { QueryDefinition, SavedQuery, AssembledNode } from '@nxus/db'
+import {
+  SavedQuerySchema,
+  type AssembledNode,
+  type QueryDefinition,
+  type SavedQuery,
+} from '@nxus/db'
 import {
   evaluateQueryServerFn,
   createQueryServerFn,
@@ -202,25 +207,7 @@ export function useSavedQueries(
       if (!result.success) {
         throw new Error('Failed to load saved queries')
       }
-      // Convert response to SavedQuery type
-      return result.queries.map(
-        (q: {
-          id: string
-          content: string
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          definition: any
-          resultCache?: string[]
-          evaluatedAt?: Date | string
-          createdAt: Date | string
-          updatedAt: Date | string
-        }) =>
-          ({
-            ...q,
-            evaluatedAt: q.evaluatedAt ? new Date(q.evaluatedAt) : undefined,
-            createdAt: new Date(q.createdAt),
-            updatedAt: new Date(q.updatedAt),
-          }) as SavedQuery
-      )
+      return result.queries.map((query) => SavedQuerySchema.parse(query))
     },
     enabled,
     staleTime: 60 * 1000, // 1 minute
@@ -278,14 +265,7 @@ export function useSavedQuery(
         throw new Error('Failed to execute saved query')
       }
       return {
-        query: {
-          ...result.query,
-          evaluatedAt: result.query.evaluatedAt
-            ? new Date(result.query.evaluatedAt)
-            : undefined,
-          createdAt: new Date(result.query.createdAt),
-          updatedAt: new Date(result.query.updatedAt),
-        } as SavedQuery,
+        query: SavedQuerySchema.parse(result.query),
         nodes: result.nodes as AssembledNode[],
         totalCount: result.totalCount,
         evaluatedAt: new Date(result.evaluatedAt),

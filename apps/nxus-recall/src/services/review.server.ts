@@ -1,6 +1,35 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { QUESTION_TYPES } from '@nxus/mastra'
+import type { RecallConcept } from '@nxus/db'
+
+function toFsrsCard(concept: RecallConcept & { card: NonNullable<RecallConcept['card']> }) {
+  return {
+    due: new Date(concept.card.due),
+    stability: concept.card.stability,
+    difficulty: concept.card.difficulty,
+    elapsed_days: concept.card.elapsedDays,
+    scheduled_days: concept.card.scheduledDays,
+    reps: concept.card.reps,
+    lapses: concept.card.lapses,
+    state: concept.card.state,
+    last_review: concept.card.lastReview
+      ? new Date(concept.card.lastReview)
+      : undefined,
+  }
+}
+
+function computeIntervals(
+  scheduling: Record<1 | 2 | 3 | 4, { card: { scheduled_days: number } }>,
+) {
+  return Object.entries(scheduling).reduce(
+    (acc, [key, val]) => {
+      acc[Number(key) as 1 | 2 | 3 | 4] = Math.round(val.card.scheduled_days)
+      return acc
+    },
+    {} as Record<1 | 2 | 3 | 4, number>,
+  )
+}
 
 export const getDueCardsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(
@@ -66,19 +95,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
     const { fsrs } = await import('ts-fsrs')
 
     const f = fsrs()
-    const card = {
-      due: new Date(concept.card.due),
-      stability: concept.card.stability,
-      difficulty: concept.card.difficulty,
-      elapsed_days: concept.card.elapsedDays,
-      scheduled_days: concept.card.scheduledDays,
-      reps: concept.card.reps,
-      lapses: concept.card.lapses,
-      state: concept.card.state,
-      last_review: concept.card.lastReview
-        ? new Date(concept.card.lastReview)
-        : undefined,
-    }
+    const card = toFsrsCard(concept)
 
     const now = new Date()
     const scheduling = f.repeat(card, now)
@@ -137,14 +154,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
     })
 
     // Return interval info for all ratings
-    const intervals = Object.entries(scheduling).reduce(
-      (acc, [key, val]) => {
-        const days = Math.round(val.card.scheduled_days)
-        acc[Number(key) as 1 | 2 | 3 | 4] = days
-        return acc
-      },
-      {} as Record<1 | 2 | 3 | 4, number>,
-    )
+    const intervals = computeIntervals(scheduling)
 
     return {
       success: true as const,
@@ -168,29 +178,10 @@ export const previewIntervalsServerFn = createServerFn({ method: 'POST' })
 
     const { fsrs } = await import('ts-fsrs')
     const f = fsrs()
-    const card = {
-      due: new Date(concept.card.due),
-      stability: concept.card.stability,
-      difficulty: concept.card.difficulty,
-      elapsed_days: concept.card.elapsedDays,
-      scheduled_days: concept.card.scheduledDays,
-      reps: concept.card.reps,
-      lapses: concept.card.lapses,
-      state: concept.card.state,
-      last_review: concept.card.lastReview
-        ? new Date(concept.card.lastReview)
-        : undefined,
-    }
+    const card = toFsrsCard(concept)
 
     const scheduling = f.repeat(card, new Date())
-    const intervals = Object.entries(scheduling).reduce(
-      (acc, [key, val]) => {
-        const days = Math.round(val.card.scheduled_days)
-        acc[Number(key) as 1 | 2 | 3 | 4] = days
-        return acc
-      },
-      {} as Record<1 | 2 | 3 | 4, number>,
-    )
+    const intervals = computeIntervals(scheduling)
 
     return { success: true as const, intervals }
   })

@@ -8,7 +8,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
-  
   addRelation,
   componentsRec,
   createNode,
@@ -16,10 +15,23 @@ import {
   getNodesBySupertag,
   removeRelation,
   searchNodes,
-  updateNode
+  updateNode,
 } from './graph.service'
-import type {GraphNode} from './graph.service';
-import type { Item, ItemCommand, ItemMetadata, TagRef } from '@nxus/db'
+import type { GraphNode } from './graph.service'
+import {
+  ConfigSchemaSchema,
+  DocEntrySchema,
+  InstallConfigSchema,
+  ItemCommandSchema,
+  ItemSchema,
+  ItemTypeSchema,
+  JsonObjectSchema,
+  PartialItemSchema,
+  PlatformSchema,
+  type Item,
+  type JsonObject,
+  type TagRef,
+} from '@nxus/db'
 
 // ============================================================================
 // Serializable types for server functions
@@ -30,7 +42,7 @@ interface SerializableGraphNode {
   content?: string
   content_plain?: string
   system_id?: string
-  props?: Record<string, {}>
+  props?: JsonObject
   created_at: string
   updated_at: string
   deleted_at?: string
@@ -42,7 +54,7 @@ function serializeGraphNode(node: GraphNode): SerializableGraphNode {
     content: node.content,
     content_plain: node.content_plain,
     system_id: node.system_id,
-    props: node.props as Record<string, {}> | undefined,
+    props: JsonObjectSchema.optional().parse(node.props),
     created_at: node.created_at?.toISOString() || new Date().toISOString(),
     updated_at: node.updated_at?.toISOString() || new Date().toISOString(),
     deleted_at: node.deleted_at?.toISOString(),
@@ -57,77 +69,62 @@ function serializeGraphNode(node: GraphNode): SerializableGraphNode {
  * Convert a graph node to an Item
  * Now supports multi-type items via the types array
  */
+const GraphPropsSchema = z.record(z.string(), z.unknown())
+
+function readGraphProp<T>(
+  props: Record<string, unknown>,
+  key: string,
+  schema: z.ZodType<T>,
+): T | undefined {
+  const parsed = schema.safeParse(props[key])
+  return parsed.success ? parsed.data : undefined
+}
+
+function getGraphItemTypes(props: Record<string, unknown>): Item['types'] {
+  const storedTypes = readGraphProp(props, 'types', z.array(ItemTypeSchema).min(1))
+  if (storedTypes) {
+    return storedTypes
+  }
+
+  return [readGraphProp(props, 'type', ItemTypeSchema) ?? 'html']
+}
+
 function graphNodeToItem(node: GraphNode, tags: Array<TagRef> = []): Item {
-  const props = node.props || {}
-  // Support both single type and types array from graph
-  const storedTypes = props.types as Array<string> | undefined
-  const singleType = (props.type as string) || 'html'
-  const types = (
-    storedTypes && storedTypes.length > 0 ? storedTypes : [singleType]
-  ) as Array<Item['type']>
-  const itemType = types[0] // First type for type-specific fields
+  const props = GraphPropsSchema.parse(node.props ?? {})
+  const types = getGraphItemTypes(props)
 
-  const metadata: ItemMetadata = {
-    tags,
-    category: (props.category as string) || 'uncategorized',
-    createdAt: node.created_at?.toISOString() || '',
-    updatedAt: node.updated_at?.toISOString() || '',
-    version: props.version as string | undefined,
-    author: props.author as string | undefined,
-    license: props.license as string | undefined,
-  }
-
-  // Base item properties with multi-type support
-  const baseItem = {
-    id: (props.item_id as string) || String(node.id),
+  return ItemSchema.parse({
+    id: readGraphProp(props, 'item_id', z.string()) ?? String(node.id),
     name: node.content || '',
-    description: (props.description as string) || '',
-    types, // Multi-type support
-    type: types[0], // Deprecated, equals types[0]
-    path: (props.path as string) || '',
-    homepage: props.homepage as string | undefined,
-    thumbnail: props.thumbnail as string | undefined,
-    docs: props.docs as Item['docs'],
-    dependencies: props.dependencies as Array<string> | undefined,
-    metadata,
-    installConfig: props.installConfig as Item['installConfig'],
+    description: readGraphProp(props, 'description', z.string()) ?? '',
+    types,
+    type: types[0],
+    path: readGraphProp(props, 'path', z.string()) ?? '',
+    homepage: readGraphProp(props, 'homepage', z.string().url()),
+    thumbnail: readGraphProp(props, 'thumbnail', z.string()),
+    docs: readGraphProp(props, 'docs', z.array(DocEntrySchema)),
+    dependencies: readGraphProp(props, 'dependencies', z.array(z.string())),
+    metadata: {
+      tags,
+      category: readGraphProp(props, 'category', z.string()) ?? 'uncategorized',
+      createdAt: node.created_at?.toISOString() || '',
+      updatedAt: node.updated_at?.toISOString() || '',
+      version: readGraphProp(props, 'version', z.string()),
+      author: readGraphProp(props, 'author', z.string()),
+      license: readGraphProp(props, 'license', z.string()),
+    },
+    installConfig: readGraphProp(props, 'installConfig', InstallConfigSchema),
     status: 'not-installed' as const,
-    commands: (props.commands as Array<ItemCommand>) || [],
-  }
-
-  // Add type-specific fields based on ALL types in the array
-  const result: any = { ...baseItem }
-
-  if (types.includes('tool')) {
-    result.checkCommand = (props.checkCommand as string) || ''
-    result.platform =
-      (props.platform as Array<'windows' | 'linux' | 'macos'>) || []
-    result.installInstructions = props.installInstructions as string | undefined
-    result.configSchema = props.configSchema as
-      | {
-          fields: Array<{
-            key: string
-            label: string
-            type: 'text' | 'password' | 'url'
-            required: boolean
-            defaultValue?: string
-            placeholder?: string
-          }>
-        }
-      | undefined
-  }
-
-  if (types.includes('typescript')) {
-    result.startCommand = props.startCommand as string | undefined
-    result.buildCommand = props.buildCommand as string | undefined
-  }
-
-  if (types.includes('remote-repo')) {
-    result.clonePath = props.clonePath as string | undefined
-    result.branch = props.branch as string | undefined
-  }
-
-  return result as Item
+    commands: readGraphProp(props, 'commands', z.array(ItemCommandSchema)),
+    checkCommand: readGraphProp(props, 'checkCommand', z.string()),
+    platform: readGraphProp(props, 'platform', z.array(PlatformSchema)),
+    installInstructions: readGraphProp(props, 'installInstructions', z.string()),
+    configSchema: readGraphProp(props, 'configSchema', ConfigSchemaSchema),
+    startCommand: readGraphProp(props, 'startCommand', z.string()),
+    buildCommand: readGraphProp(props, 'buildCommand', z.string()),
+    clonePath: readGraphProp(props, 'clonePath', z.string()),
+    branch: readGraphProp(props, 'branch', z.string()),
+  })
 }
 
 /**
@@ -151,22 +148,19 @@ function itemToGraphProps(item: Partial<Item>): Record<string, unknown> {
     commands: item.commands,
   }
 
-  // Type-specific properties using type assertion
-  // For multi-type items, include properties from ALL applicable types
-  const anyItem = item as Record<string, unknown>
   if (item.types?.includes('tool')) {
-    props.checkCommand = anyItem.checkCommand
-    props.platform = anyItem.platform
-    props.installInstructions = anyItem.installInstructions
-    props.configSchema = anyItem.configSchema
+    props.checkCommand = item.checkCommand
+    props.platform = item.platform
+    props.installInstructions = item.installInstructions
+    props.configSchema = item.configSchema
   }
   if (item.types?.includes('typescript')) {
-    props.startCommand = anyItem.startCommand
-    props.buildCommand = anyItem.buildCommand
+    props.startCommand = item.startCommand
+    props.buildCommand = item.buildCommand
   }
   if (item.types?.includes('remote-repo')) {
-    props.clonePath = anyItem.clonePath
-    props.branch = anyItem.branch
+    props.clonePath = item.clonePath
+    props.branch = item.branch
   }
 
   return props
@@ -231,12 +225,12 @@ export const getItemFromGraphServerFn = createServerFn({ method: 'GET' })
 export const createItemInGraphServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
-      item: z.any(), // Item type
+      item: ItemSchema,
     }),
   )
   .handler(async (ctx) => {
     try {
-      const item = ctx.data.item as Item
+      const { item } = ctx.data
 
       const node = await createNode({
         content: item.name,
@@ -268,7 +262,7 @@ export const updateItemInGraphServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       id: z.string(),
-      updates: z.any(),
+      updates: PartialItemSchema,
     }),
   )
   .handler(async (ctx) => {
@@ -279,15 +273,25 @@ export const updateItemInGraphServerFn = createServerFn({ method: 'POST' })
         return { success: false as const, error: 'Item not found' }
       }
 
-      const updates = ctx.data.updates as Partial<Item>
-      const newProps = {
-        ...(node.props || {}),
-        ...itemToGraphProps(updates),
-      }
+      const currentItem = graphNodeToItem(node, await getItemTags(node))
+      const mergedTypes = ctx.data.updates.types ?? currentItem.types
+      const mergedItem = ItemSchema.parse({
+        ...currentItem,
+        ...ctx.data.updates,
+        types: mergedTypes,
+        type: ctx.data.updates.type ?? mergedTypes[0],
+        metadata: ctx.data.updates.metadata
+          ? {
+              ...currentItem.metadata,
+              ...ctx.data.updates.metadata,
+              tags: ctx.data.updates.metadata.tags ?? currentItem.metadata.tags,
+            }
+          : currentItem.metadata,
+      })
 
       await updateNode(node.id, {
-        content: updates.name || node.content,
-        props: newProps,
+        content: mergedItem.name,
+        props: itemToGraphProps(mergedItem),
       })
 
       return { success: true as const }
@@ -424,7 +428,7 @@ export const updateItemCategoryInGraphServerFn = createServerFn({
 
       await updateNode(itemNode.id, {
         props: {
-          ...(itemNode.props || {}),
+          ...itemNode.props,
           category: ctx.data.category,
         },
       })

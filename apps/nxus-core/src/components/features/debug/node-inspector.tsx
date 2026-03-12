@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import type { AssembledNode } from '@nxus/db'
+import { UUID_REGEX, type AssembledNode } from '@nxus/db'
 import { getBacklinksServerFn } from '@/services/query/query.server'
 
 interface NodeInspectorProps {
@@ -72,9 +72,7 @@ export function NodeInspector({ node, onNavigate }: NodeInspectorProps) {
       // Check if value looks like a UUID (node reference)
       if (
         typeof value === 'string' &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          value,
-        )
+        UUID_REGEX.test(value)
       ) {
         nodeReferences.push({
           fieldName,
@@ -85,9 +83,7 @@ export function NodeInspector({ node, onNavigate }: NodeInspectorProps) {
         for (const v of value) {
           if (
             typeof v === 'string' &&
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-              v,
-            )
+            UUID_REGEX.test(v)
           ) {
             nodeReferences.push({
               fieldName,
@@ -352,7 +348,7 @@ function PropertyRow({
 // Smart property value renderer
 function PropertyValue({
   value,
-  rawValue,
+  rawValue: _rawValue,
   onNavigate,
 }: {
   value: unknown
@@ -362,9 +358,7 @@ function PropertyValue({
   // UUID detection for node links
   if (
     typeof value === 'string' &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      value,
-    )
+    UUID_REGEX.test(value)
   ) {
     return (
       <button
