@@ -123,8 +123,8 @@ function graphNodeToItem(node: GraphNode, tags: Array<TagRef> = []): Item {
     metadata: {
       tags,
       category: readGraphProp(props, 'category', z.string()) ?? 'uncategorized',
-      createdAt: node.created_at?.toISOString() || '',
-      updatedAt: node.updated_at?.toISOString() || '',
+      createdAt: node.created_at?.toISOString() || new Date().toISOString(),
+      updatedAt: node.updated_at?.toISOString() || new Date().toISOString(),
       version: readGraphProp(props, 'version', z.string()),
       author: readGraphProp(props, 'author', z.string()),
       license: readGraphProp(props, 'license', z.string()),
