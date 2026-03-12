@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { QueryDefinitionSchema } from '@nxus/db'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
 import type { FieldType } from '@/types/outline'
@@ -307,7 +308,7 @@ export const reorderNodeServerFn = createServerFn({ method: 'POST' })
  * Used by query supertag nodes to render live results in the outline.
  */
 export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ definition: z.any() }))
+  .inputValidator(z.object({ definition: QueryDefinitionSchema }))
   .handler(async (ctx) => {
     // Ensure seeded first, then use nodeFacade for query evaluation
     await initDatabaseSeeded()
@@ -335,7 +336,7 @@ export const updateQueryDefinitionServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       nodeId: z.string(),
-      definition: z.any(),
+      definition: QueryDefinitionSchema,
     }),
   )
   .handler(async (ctx) => {

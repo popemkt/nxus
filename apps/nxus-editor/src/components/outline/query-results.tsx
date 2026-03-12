@@ -43,7 +43,7 @@ export const QueryResults = memo(function QueryResults({
     error,
   } = useQuery({
     queryKey: outlineQueryKeys.evaluation(definitionKey),
-    queryFn: () => evaluateQueryServerFn({ data: { definition } }),
+    queryFn: () => evaluateQueryServerFn({ data: { definition: definition as QueryDefinition } }),
     enabled: hasDefinition,
     staleTime: 30_000,
   })
@@ -188,9 +188,10 @@ function QueryResultRow({
     : null
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        'flex items-start rounded-sm cursor-pointer',
+        'flex w-full items-start rounded-sm cursor-pointer text-left',
         'hover:bg-foreground/[0.03] transition-colors duration-75',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
@@ -218,7 +219,7 @@ function QueryResultRow({
       </span>
 
       {/* Content + badges */}
-      <div className="flex min-h-6 flex-1 items-start gap-1.5 px-1">
+      <span className="flex min-h-6 flex-1 items-start gap-1.5 px-1">
         <span
           className={cn(
             'text-[14.5px] leading-[1.6] text-foreground/70 truncate',
@@ -228,7 +229,7 @@ function QueryResultRow({
         </span>
 
         {node.supertags.length > 0 && (
-          <div className="flex h-6 items-center gap-0.5">
+          <span className="flex h-6 items-center gap-0.5">
             {node.supertags.map((tag) => {
               const color = getSupertagColor(tag.id)
               return (
@@ -253,9 +254,9 @@ function QueryResultRow({
                 </span>
               )
             })}
-          </div>
+          </span>
         )}
-      </div>
-    </div>
+      </span>
+    </button>
   )
 }
