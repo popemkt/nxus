@@ -86,6 +86,7 @@ export function OutlineEditor() {
                 collapsed: n.collapsed,
                 supertags: n.supertags,
                 fields: n.fields ?? [],
+                special: n.special ?? null,
               })
             }
             topLevelIds.push(rootId)
@@ -102,6 +103,7 @@ export function OutlineEditor() {
           collapsed: false,
           supertags: [],
           fields: [],
+          special: null,
         }
         nodeMap.set(WORKSPACE_ROOT_ID, workspaceRoot)
 

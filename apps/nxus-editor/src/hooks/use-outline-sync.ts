@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createNodeServerFn,
   updateNodeContentServerFn,
@@ -31,6 +32,7 @@ function toServerParentId(parentId: string | null): string | null {
  */
 export function useOutlineSync() {
   const contentTimers = useRef(new Map<string, NodeJS.Timeout>())
+  const queryClient = useQueryClient()
 
   /**
    * Debounced content save — waits 500ms after last keystroke before persisting.
@@ -47,9 +49,10 @@ export function useOutlineSync() {
         updateNodeContentServerFn({ data: { nodeId, content } }).catch((err) => {
           console.error('[sync] Failed to update content:', err)
         })
+        queryClient.invalidateQueries({ queryKey: ['outline-special', 'query'] })
       }, 500),
     )
-  }, [])
+  }, [queryClient])
 
   /**
    * Create node — optimistic in store, then persist.
@@ -116,6 +119,8 @@ export function useOutlineSync() {
                 syncContent(result.nodeId, persistedNode.content)
               }
             }
+
+            queryClient.invalidateQueries({ queryKey: ['outline-special', 'query'] })
           })
           .catch((err) => {
             console.error('[sync] Failed to create node:', err)
@@ -123,7 +128,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [syncContent],
+    [queryClient, syncContent],
   )
 
   /**
@@ -142,10 +147,14 @@ export function useOutlineSync() {
    */
   const deleteNode = useCallback((nodeId: string) => {
     useOutlineStore.getState().deleteNode(nodeId)
-    deleteNodeServerFn({ data: { nodeId } }).catch((err) => {
-      console.error('[sync] Failed to delete node:', err)
-    })
-  }, [])
+    deleteNodeServerFn({ data: { nodeId } })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['outline-special', 'query'] })
+      })
+      .catch((err) => {
+        console.error('[sync] Failed to delete node:', err)
+      })
+  }, [queryClient])
 
   /**
    * Indent node — optimistic + persist reparent.
@@ -161,11 +170,15 @@ export function useOutlineSync() {
           newParentId: toServerParentId(node.parentId),
           order: parseInt(node.order, 10),
         },
-      }).catch((err) => {
-        console.error('[sync] Failed to indent node:', err)
       })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['outline-special', 'query'] })
+        })
+        .catch((err) => {
+          console.error('[sync] Failed to indent node:', err)
+        })
     }
-  }, [])
+  }, [queryClient])
 
   /**
    * Outdent node — optimistic + persist reparent.
@@ -181,11 +194,15 @@ export function useOutlineSync() {
           newParentId: toServerParentId(node.parentId),
           order: parseInt(node.order, 10),
         },
-      }).catch((err) => {
-        console.error('[sync] Failed to outdent node:', err)
       })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['outline-special', 'query'] })
+        })
+        .catch((err) => {
+          console.error('[sync] Failed to outdent node:', err)
+        })
     }
-  }, [])
+  }, [queryClient])
 
   /**
    * Move up/down — optimistic + persist both sides of order swap.

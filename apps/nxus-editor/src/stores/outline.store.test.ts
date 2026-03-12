@@ -11,7 +11,17 @@ function makeNode(
   children: string[] = [],
   fields: OutlineField[] = [],
 ): OutlineNode {
-  return { id, content, parentId, order, children, collapsed: false, supertags: [], fields }
+  return {
+    id,
+    content,
+    parentId,
+    order,
+    children,
+    collapsed: false,
+    supertags: [],
+    fields,
+    special: null,
+  }
 }
 
 function seedStore() {

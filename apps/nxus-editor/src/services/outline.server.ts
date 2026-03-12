@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { getSupertagColor } from '@/lib/supertag-colors'
+import { extractOutlineSpecial } from '@/lib/outline-specials'
 import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
-import type { FieldType } from '@/types/outline'
+import type { FieldType, OutlineSpecial } from '@/types/outline'
 
 /**
  * Get a node and its children (one level deep), assembled with properties/supertags.
@@ -34,6 +35,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
       fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
+      special: OutlineSpecial | null
     }
 
     const nodeMap = new Map<string, OutlineNodeResult>()
@@ -133,6 +135,10 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
           return { id: st.id, name: st.content, color: dbColor ?? getSupertagColor(st.id), systemId: st.systemId }
         }),
         fields: extractFields(assembled),
+        special: extractOutlineSpecial({
+          supertags: assembled.supertags,
+          queryDefinition: getProperty(assembled, FIELD_NAMES.QUERY_DEFINITION),
+        }),
       }
 
       nodeMap.set(nodeId, outlineNode)
@@ -164,6 +170,68 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     const nodesArray = Array.from(nodeMap.values())
     return { success: true as const, nodes: nodesArray, rootId: ctx.data.nodeId }
+  })
+
+export const executeQueryNodeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ nodeId: z.string() }))
+  .handler(async (ctx) => {
+    const {
+      nodeFacade,
+      getProperty,
+      FIELD_NAMES,
+      SYSTEM_SUPERTAGS,
+      QueryDefinitionSchema,
+    } = await import('@nxus/db/server')
+
+    await nodeFacade.init()
+
+    const queryNode = await nodeFacade.findNodeById(ctx.data.nodeId)
+    if (!queryNode) {
+      return { success: false as const, error: 'Query node not found' }
+    }
+
+    const isQueryNode = queryNode.supertags.some(
+      (tag: { systemId: string | null }) => tag.systemId === SYSTEM_SUPERTAGS.QUERY,
+    )
+    if (!isQueryNode) {
+      return { success: false as const, error: 'Node is not a query' }
+    }
+
+    const parsedDefinition = QueryDefinitionSchema.safeParse(
+      getProperty(queryNode, FIELD_NAMES.QUERY_DEFINITION),
+    )
+    if (!parsedDefinition.success) {
+      return { success: false as const, error: 'Invalid query definition' }
+    }
+
+    const result = await nodeFacade.evaluateQuery(parsedDefinition.data)
+
+    return {
+      success: true as const,
+      definition: parsedDefinition.data,
+      totalCount: result.totalCount,
+      evaluatedAt: result.evaluatedAt.toISOString(),
+      nodes: result.nodes.map((node: {
+        id: string
+        content: string | null
+        systemId: string | null
+        supertags: Array<{ id: string; content: string; systemId: string | null }>
+      }) => ({
+        id: node.id,
+        content: node.content,
+        systemId: node.systemId,
+        supertags: node.supertags.map((tag: {
+          id: string
+          content: string
+          systemId: string | null
+        }) => ({
+          id: tag.id,
+          name: tag.content,
+          color: getSupertagColor(tag.id),
+          systemId: tag.systemId,
+        })),
+      })),
+    }
   })
 
 /**
