@@ -272,18 +272,16 @@ export const NodeBlock = memo(function NodeBlock({
                   setWorkbenchOpen((o) => !o)
                 }}
                 className={cn(
-                  'inline-flex h-6 items-center gap-0.5 rounded-sm px-1.5 py-px',
-                  'text-[11px] font-medium leading-[1.8]',
-                  'select-none whitespace-nowrap shrink-0',
-                  'cursor-pointer transition-opacity',
+                  'inline-flex items-center justify-center rounded-sm shrink-0',
+                  'h-[20px] w-[20px]',
+                  'select-none cursor-pointer transition-colors',
                   workbenchOpen
                     ? 'bg-foreground/12 text-foreground/60'
-                    : 'bg-foreground/5 text-foreground/30 hover:bg-foreground/8 hover:text-foreground/50',
+                    : 'text-foreground/25 hover:bg-foreground/8 hover:text-foreground/50',
                 )}
                 title="Configure query"
               >
-                <Sliders size={10} weight="bold" className="shrink-0" />
-                Configure
+                <Sliders size={11} weight="bold" />
               </button>
             ) : undefined
           }
