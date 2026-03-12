@@ -1,8 +1,8 @@
-import { useState, memo, useCallback } from 'react'
+import { memo, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Hash, ArrowClockwise, Sliders } from '@phosphor-icons/react'
+import { Hash, ArrowClockwise } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import { QueryBuilder, QueryLinter } from '@nxus/workbench'
+import { QueryBuilder } from '@nxus/workbench'
 import type { QueryDefinition } from '@nxus/db'
 import { evaluateQueryServerFn, updateQueryDefinitionServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
@@ -19,6 +19,7 @@ interface QueryResultsProps {
   nodeId: string
   definition: unknown
   depth: number
+  workbenchOpen: boolean
 }
 
 /**
@@ -29,8 +30,8 @@ export const QueryResults = memo(function QueryResults({
   nodeId,
   definition,
   depth,
+  workbenchOpen,
 }: QueryResultsProps) {
-  const [workbenchOpen, setWorkbenchOpen] = useState(false)
   const navigateToNode = useNavigateToNode()
   const queryClient = useQueryClient()
 
@@ -59,7 +60,7 @@ export const QueryResults = memo(function QueryResults({
         .then(() => {
           queryClient.invalidateQueries({ queryKey: outlineQueryKeys.all })
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error('[query-workbench] Failed to save definition:', err)
         })
     },
@@ -70,36 +71,7 @@ export const QueryResults = memo(function QueryResults({
 
   return (
     <div className="query-results">
-      {/* Inline query summary + configure button */}
-      <div
-        className="flex items-center gap-1.5 py-0.5"
-        style={{ paddingLeft }}
-      >
-        {isQueryDefinition(definition) && (
-          <QueryLinter
-            query={definition}
-            compact
-            className="flex-1 min-w-0 truncate text-foreground/30"
-          />
-        )}
-        <button
-          type="button"
-          onClick={() => setWorkbenchOpen((o) => !o)}
-          className={cn(
-            'flex items-center gap-1 rounded-sm px-1.5 py-0.5',
-            'text-[11px] text-foreground/30 hover:text-foreground/60',
-            'hover:bg-foreground/5 transition-colors duration-100',
-            'select-none shrink-0',
-            workbenchOpen && 'bg-foreground/5 text-foreground/50',
-          )}
-          title="Configure query"
-        >
-          <Sliders size={12} weight="bold" />
-          <span>Configure</span>
-        </button>
-      </div>
-
-      {/* Inline query workbench */}
+      {/* Inline query workbench — QueryLinter + QueryBuilder together */}
       {workbenchOpen && isQueryDefinition(definition) && (
         <div
           className="border border-foreground/[0.06] rounded-md my-1 bg-background/50"
@@ -111,7 +83,7 @@ export const QueryResults = memo(function QueryResults({
             compact
             showExecute={false}
             showSave={false}
-            showLinter={false}
+            showLinter
             resultCount={totalCount}
             isLoading={isLoading}
             isError={!!error}
