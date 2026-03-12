@@ -14,8 +14,6 @@ interface NodeContentProps {
   onActivate: (cursorPos?: number) => void
   onChange: (content: string) => void
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void
-  /** Optional element rendered between the text and supertag badges */
-  afterContent?: React.ReactNode
 }
 
 export function NodeContent({
@@ -27,7 +25,6 @@ export function NodeContent({
   onActivate,
   onChange,
   onKeyDown,
-  afterContent,
 }: NodeContentProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const isComposing = useRef(false)
@@ -153,7 +150,6 @@ export function NodeContent({
         </div>
       )}
 
-      {afterContent}
       {supertags.length > 0 && <SupertagBadges supertags={supertags} />}
     </div>
   )

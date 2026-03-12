@@ -263,29 +263,27 @@ export const NodeBlock = memo(function NodeBlock({
           onActivate={handleActivate}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
-          afterContent={
-            isQuery && !node.collapsed ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setWorkbenchOpen((o) => !o)
-                }}
-                className={cn(
-                  'inline-flex items-center justify-center rounded-sm shrink-0',
-                  'h-[20px] w-[20px]',
-                  'select-none cursor-pointer transition-colors',
-                  workbenchOpen
-                    ? 'bg-foreground/12 text-foreground/60'
-                    : 'text-foreground/25 hover:bg-foreground/8 hover:text-foreground/50',
-                )}
-                title="Configure query"
-              >
-                <Sliders size={11} weight="bold" />
-              </button>
-            ) : undefined
-          }
         />
+        {isQuery && !node.collapsed && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setWorkbenchOpen((o) => !o)
+            }}
+            className={cn(
+              'inline-flex items-center justify-center rounded-sm shrink-0',
+              'h-6 w-6',
+              'select-none cursor-pointer transition-colors',
+              workbenchOpen
+                ? 'bg-foreground/12 text-foreground/60'
+                : 'text-foreground/25 hover:bg-foreground/8 hover:text-foreground/50',
+            )}
+            title="Configure query"
+          >
+            <Sliders size={12} weight="bold" />
+          </button>
+        )}
       </div>
 
       {/* Fields + Children — wrapped in a single container with tree line */}
