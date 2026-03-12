@@ -134,7 +134,14 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
   toggleCollapse: (id) => {
     const { nodes } = get()
     const node = nodes.get(id)
-    if (!node || (node.children.length === 0 && node.fields.length === 0)) return
+    if (
+      !node ||
+      (node.children.length === 0 &&
+        node.fields.length === 0 &&
+        node.special === null)
+    ) {
+      return
+    }
     const next = new Map(nodes)
     next.set(id, { ...node, collapsed: !node.collapsed })
     set({ nodes: next })
@@ -211,6 +218,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       collapsed: false,
       supertags: [],
       fields: [],
+      special: null,
     }
 
     const next = new Map(workingNodes)

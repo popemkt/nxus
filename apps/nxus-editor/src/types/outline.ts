@@ -1,3 +1,5 @@
+import type { QueryDefinition } from '@nxus/db'
+
 export type FieldType =
   | 'text'
   | 'number'
@@ -28,6 +30,7 @@ export interface OutlineNode {
   collapsed: boolean
   supertags: SupertagBadge[]
   fields: OutlineField[]
+  special: OutlineSpecial | null
 }
 
 export interface SupertagBadge {
@@ -36,6 +39,13 @@ export interface SupertagBadge {
   color: string | null
   systemId: string | null
 }
+
+export interface OutlineQuerySpecial {
+  kind: 'query'
+  definition: QueryDefinition
+}
+
+export type OutlineSpecial = OutlineQuerySpecial
 
 /**
  * A node IS a supertag definition if it's tagged with the meta-supertag.

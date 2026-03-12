@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { cn } from '@nxus/ui'
 import type { OutlineField } from '@/types/outline'
@@ -51,6 +52,7 @@ function FieldRow({
   depth: number
 }) {
   const navigateToNode = useNavigateToNode()
+  const queryClient = useQueryClient()
 
   // For multi-reference fields, collect all values into an array
   const value =
@@ -71,11 +73,15 @@ function FieldRow({
           fieldId: field.fieldId,
           value: newValue,
         },
-      }).catch((err) => {
-        console.error('[fields] Failed to update field:', err)
       })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['outline-special', 'query'] })
+        })
+        .catch((err) => {
+          console.error('[fields] Failed to update field:', err)
+        })
     },
-    [nodeId, field.fieldId],
+    [nodeId, field.fieldId, queryClient],
   )
 
   return (

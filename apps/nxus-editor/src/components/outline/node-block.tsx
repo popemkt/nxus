@@ -4,10 +4,12 @@ import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { hasSpecialContent } from '@/lib/outline-specials'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 import { FieldsSection } from './fields-section'
+import { SpecialNodeContent } from './special-node-content'
 
 interface NodeBlockProps {
   nodeId: string
@@ -206,7 +208,8 @@ export const NodeBlock = memo(function NodeBlock({
   const isSelected = selectedNodeId === nodeId
   const hasChildren = node.children.length > 0
   const hasFields = node.fields.length > 0
-  const isExpandable = hasChildren || hasFields
+  const hasSpecial = hasSpecialContent(node)
+  const isExpandable = hasChildren || hasFields || hasSpecial
   const primaryTagColor = node.supertags[0]?.color ?? null
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
 
@@ -271,6 +274,10 @@ export const NodeBlock = memo(function NodeBlock({
           {/* Fields (properties) — rendered before children */}
           {node.fields.length > 0 && (
             <FieldsSection nodeId={nodeId} fields={node.fields} depth={depth} />
+          )}
+
+          {hasSpecial && (
+            <SpecialNodeContent node={node} depth={depth} />
           )}
 
           {/* Children */}
