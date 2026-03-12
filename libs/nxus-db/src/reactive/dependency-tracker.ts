@@ -22,18 +22,11 @@ import type {
   QueryFilter,
   SupertagFilter,
   PropertyFilter,
-  ContentFilter,
   RelationFilter,
   TemporalFilter,
   HasFieldFilter,
   LogicalFilter,
-  isSupertagFilter,
-  isPropertyFilter,
-  isContentFilter,
-  isRelationFilter,
-  isTemporalFilter,
-  isHasFieldFilter,
-  isLogicalFilter,
+  PathFilter,
 } from '../types/query.js'
 
 // ============================================================================
@@ -158,6 +151,15 @@ export function extractFilterDependencies(filter: QueryFilter): DependencySet {
       // Property filters depend on specific field changes
       const propFilter = filter as PropertyFilter
       deps.add(propFilter.fieldId)
+      break
+    }
+
+    case 'path': {
+      // Path filters depend on every field hop in the traversal
+      const pathFilter = filter as PathFilter
+      for (const segment of pathFilter.path) {
+        deps.add(segment.fieldId)
+      }
       break
     }
 

@@ -327,6 +327,8 @@ function getFilterLabel(filter: QueryDefinition['filters'][number]): string {
       return `#${filter.supertagId?.replace('supertag:', '') || '?'}`
     case 'property':
       return `${filter.fieldId?.replace('field:', '') || '?'} ${filter.op} ${filter.value || '?'}`
+    case 'path':
+      return `${filter.path.map((segment) => segment.fieldId?.replace('field:', '') || '?').join('.')} ${filter.op} ${filter.value || '?'}`
     case 'content':
       return `"${filter.query?.slice(0, 20) || '?'}${(filter.query?.length ?? 0) > 20 ? '...' : ''}"`
     case 'temporal':

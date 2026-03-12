@@ -598,6 +598,36 @@ describe('evaluateQuery', () => {
     expect(result.nodes[0].content).toBe('Active')
   })
 
+  it('should evaluate a path filter across reference hops', async () => {
+    const alice = await backend.createNode({ content: 'Alice' })
+    const bob = await backend.createNode({ content: 'Bob' })
+    const redHat = await backend.createNode({ content: 'Red Hat' })
+    const blueHat = await backend.createNode({ content: 'Blue Hat' })
+
+    await backend.setProperty(alice, SYSTEM_FIELDS.DEPENDENCIES, redHat)
+    await backend.setProperty(bob, SYSTEM_FIELDS.DEPENDENCIES, blueHat)
+    await backend.setProperty(redHat, SYSTEM_FIELDS.STATUS, 'red')
+    await backend.setProperty(blueHat, SYSTEM_FIELDS.STATUS, 'blue')
+
+    const result = await backend.evaluateQuery({
+      filters: [
+        {
+          type: 'path',
+          path: [
+            { fieldId: SYSTEM_FIELDS.DEPENDENCIES },
+            { fieldId: SYSTEM_FIELDS.STATUS },
+          ],
+          op: 'eq',
+          value: 'red',
+        },
+      ],
+      limit: 500,
+    })
+
+    expect(result.nodes).toHaveLength(1)
+    expect(result.nodes[0].content).toBe('Alice')
+  })
+
   it('should evaluate a hasField filter', async () => {
     const id1 = await backend.createNode({ content: 'Has Path' })
     await backend.setProperty(id1, SYSTEM_FIELDS.PATH, '/test')

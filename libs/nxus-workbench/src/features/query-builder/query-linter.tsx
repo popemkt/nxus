@@ -15,6 +15,7 @@ import type {
   FilterOp,
   SupertagFilter,
   PropertyFilter,
+  PathFilter,
   ContentFilter,
   RelationFilter,
   TemporalFilter,
@@ -113,6 +114,8 @@ function formatFilter(filter: QueryFilter): string {
       return formatSupertagFilter(filter)
     case 'property':
       return formatPropertyFilter(filter)
+    case 'path':
+      return formatPathFilter(filter)
     case 'content':
       return formatContentFilter(filter)
     case 'relation':
@@ -156,6 +159,21 @@ function formatPropertyFilter(filter: PropertyFilter): string {
   }
 
   return `where ${fieldName} ${op} ${value}`
+}
+
+function formatPathFilter(filter: PathFilter): string {
+  const path = filter.path
+    .map((segment) => formatSystemId(segment.fieldId || '?'))
+    .join('.')
+
+  if (filter.op === 'isEmpty') {
+    return `where ${path} is empty`
+  }
+  if (filter.op === 'isNotEmpty') {
+    return `where ${path} is not empty`
+  }
+
+  return `where ${path} ${formatOperator(filter.op)} ${formatValue(filter.value)}`
 }
 
 /**
