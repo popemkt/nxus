@@ -69,6 +69,31 @@ export const PropertyFilterSchema = BaseFilterSchema.extend({
 export type PropertyFilter = z.infer<typeof PropertyFilterSchema>
 
 /**
+ * Path segment for recursive field traversal.
+ *
+ * All non-terminal segments are treated as reference hops. The terminal
+ * segment is compared against `value` using `op`.
+ */
+export const PathSegmentSchema = z.object({
+  fieldId: z.string(), // UUID of the field node (or systemId for system fields)
+})
+export type PathSegment = z.infer<typeof PathSegmentSchema>
+
+/**
+ * Path filter - recursively follows field references, then compares the
+ * terminal field value.
+ *
+ * Example: Hat.Color = "Red"
+ */
+export const PathFilterSchema = BaseFilterSchema.extend({
+  type: z.literal('path'),
+  path: z.array(PathSegmentSchema).min(1),
+  op: FilterOpSchema,
+  value: z.unknown().optional(),
+})
+export type PathFilter = z.infer<typeof PathFilterSchema>
+
+/**
  * Content filter - full-text search on node content
  *
  * Example: Find nodes containing "Claude" in their content
@@ -164,6 +189,7 @@ export const QueryFilterSchema: z.ZodType<QueryFilter> = z.lazy(() =>
   z.union([
     SupertagFilterSchema,
     PropertyFilterSchema,
+    PathFilterSchema,
     ContentFilterSchema,
     RelationFilterSchema,
     TemporalFilterSchema,
@@ -178,6 +204,7 @@ export const QueryFilterSchema: z.ZodType<QueryFilter> = z.lazy(() =>
 export type QueryFilter =
   | SupertagFilter
   | PropertyFilter
+  | PathFilter
   | ContentFilter
   | RelationFilter
   | TemporalFilter
@@ -283,6 +310,13 @@ export function isSupertagFilter(filter: QueryFilter): filter is SupertagFilter 
  */
 export function isPropertyFilter(filter: QueryFilter): filter is PropertyFilter {
   return filter.type === 'property'
+}
+
+/**
+ * Type guard for path filter
+ */
+export function isPathFilter(filter: QueryFilter): filter is PathFilter {
+  return filter.type === 'path'
 }
 
 /**

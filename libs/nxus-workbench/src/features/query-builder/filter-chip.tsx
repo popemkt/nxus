@@ -260,6 +260,15 @@ function getFilterDisplay(filter: QueryFilter): {
         color: filter.fieldId ? '#3b82f6' : undefined, // Blue for properties
       }
 
+    case 'path':
+      return {
+        icon: TextT,
+        label: filter.path.length > 0
+          ? `${filter.path.map((segment) => formatSystemId(segment.fieldId)).join('.')} ${formatOp(filter.op)} ${formatValue(filter.value)}`
+          : 'Select path...',
+        color: filter.path.length > 0 ? '#2563eb' : undefined,
+      }
+
     case 'content':
       return {
         icon: MagnifyingGlass,
@@ -320,6 +329,8 @@ function isFilterComplete(filter: QueryFilter): boolean {
       return !!(filter.fieldId && filter.op)
     case 'content':
       return !!filter.query
+    case 'path':
+      return filter.path.length > 0
     case 'temporal':
       return !!(filter.field && filter.op && (filter.days || filter.date))
     case 'relation':

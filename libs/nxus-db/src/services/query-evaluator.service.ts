@@ -23,6 +23,7 @@ import type {
   FilterOp,
   HasFieldFilter,
   LogicalFilter,
+  PathFilter,
   PropertyFilter,
   QueryDefinition,
   QueryFilter,
@@ -132,6 +133,8 @@ export function evaluateFilter(
       return evaluateSupertagFilter(db, filter, candidateIds)
     case 'property':
       return evaluatePropertyFilter(db, filter, candidateIds)
+    case 'path':
+      return evaluatePathFilter(db, filter, candidateIds)
     case 'content':
       return evaluateContentFilter(db, filter, candidateIds)
     case 'hasField':
@@ -237,30 +240,7 @@ export function evaluatePropertyFilter(
     return new Set()
   }
 
-  // Get all properties for this field
-  const props = db
-    .select()
-    .from(nodeProperties)
-    .where(eq(nodeProperties.fieldNodeId, field.id))
-    .all()
-
-  // Build map of nodeId -> property values
-  const nodePropsMap = new Map<string, unknown[]>()
-  for (const prop of props) {
-    if (!candidateIds.has(prop.nodeId)) continue
-
-    let parsedValue: unknown = prop.value
-    try {
-      parsedValue = JSON.parse(prop.value || 'null')
-    } catch {
-      // Keep as string
-    }
-
-    if (!nodePropsMap.has(prop.nodeId)) {
-      nodePropsMap.set(prop.nodeId, [])
-    }
-    nodePropsMap.get(prop.nodeId)!.push(parsedValue)
-  }
+  const nodePropsMap = getParsedPropertiesForField(db, field.id, candidateIds)
 
   // For isEmpty/isNotEmpty, we need to consider nodes without the property
   if (op === 'isEmpty') {
@@ -290,6 +270,117 @@ export function evaluatePropertyFilter(
   for (const [nodeId, values] of nodePropsMap) {
     if (values.some((v) => compareValues(v, op, value))) {
       result.add(nodeId)
+    }
+  }
+
+  return result
+}
+
+/**
+ * Filter nodes by recursively traversing field references.
+ *
+ * Semantics:
+ * - Each non-terminal segment is treated as a reference hop
+ * - A candidate matches if any branch reaches a terminal value that satisfies
+ *   the comparison
+ */
+export function evaluatePathFilter(
+  db: Database,
+  filter: PathFilter,
+  candidateIds: Set<string>,
+): Set<string> {
+  const resolvedPath = filter.path.map((segment) =>
+    getFieldOrSupertagNode(db, segment.fieldId),
+  )
+
+  if (resolvedPath.some((segment) => !segment)) {
+    return new Set()
+  }
+
+  let frontier = new Map<string, Set<string>>()
+  for (const candidateId of candidateIds) {
+    frontier.set(candidateId, new Set([candidateId]))
+  }
+
+  for (const segment of resolvedPath.slice(0, -1)) {
+    if (!segment || frontier.size === 0) {
+      return new Set()
+    }
+
+    const stepValues = getParsedPropertiesForField(
+      db,
+      segment.id,
+      new Set(frontier.keys()),
+    )
+
+    const nextRaw = new Map<string, Set<string>>()
+    for (const [sourceNodeId, values] of stepValues) {
+      const roots = frontier.get(sourceNodeId)
+      if (!roots) continue
+
+      for (const refId of extractReferenceIds(values)) {
+        const existingRoots = nextRaw.get(refId)
+        if (existingRoots) {
+          for (const rootId of roots) {
+            existingRoots.add(rootId)
+          }
+        } else {
+          nextRaw.set(refId, new Set(roots))
+        }
+      }
+    }
+
+    if (nextRaw.size === 0) {
+      return new Set()
+    }
+
+    const existingIds = getExistingNodeIds(db, new Set(nextRaw.keys()))
+    frontier = new Map()
+    for (const nodeId of existingIds) {
+      const roots = nextRaw.get(nodeId)
+      if (roots) {
+        frontier.set(nodeId, roots)
+      }
+    }
+  }
+
+  const terminalSegment = resolvedPath[resolvedPath.length - 1]
+  if (!terminalSegment || frontier.size === 0) {
+    return new Set()
+  }
+
+  const terminalValues = getParsedPropertiesForField(
+    db,
+    terminalSegment.id,
+    new Set(frontier.keys()),
+  )
+
+  const result = new Set<string>()
+  for (const [nodeId, roots] of frontier) {
+    const values = terminalValues.get(nodeId)
+
+    if (filter.op === 'isEmpty') {
+      if (!values || values.every(isEmptyValue)) {
+        for (const rootId of roots) {
+          result.add(rootId)
+        }
+      }
+      continue
+    }
+
+    if (filter.op === 'isNotEmpty') {
+      if (values?.some((value) => !isEmptyValue(value))) {
+        for (const rootId of roots) {
+          result.add(rootId)
+        }
+      }
+      continue
+    }
+
+    if (values?.some((value) => compareValues(value, filter.op, filter.value))) {
+      for (const rootId of roots) {
+        result.add(rootId)
+      }
     }
   }
 
@@ -369,6 +460,83 @@ function compareValues(actual: unknown, op: FilterOp, target: unknown): boolean 
     default:
       return false
   }
+}
+
+function getParsedPropertiesForField(
+  db: Database,
+  fieldNodeId: string,
+  ownerIds: Set<string>,
+): Map<string, unknown[]> {
+  const ownerIdArray = [...ownerIds]
+  if (ownerIdArray.length === 0) {
+    return new Map()
+  }
+
+  const props = db
+    .select({ nodeId: nodeProperties.nodeId, value: nodeProperties.value })
+    .from(nodeProperties)
+    .where(and(
+      eq(nodeProperties.fieldNodeId, fieldNodeId),
+      inArray(nodeProperties.nodeId, ownerIdArray),
+    ))
+    .all()
+
+  const nodePropsMap = new Map<string, unknown[]>()
+  for (const prop of props) {
+    const parsedValue = parsePropertyValue(prop.value)
+    const existing = nodePropsMap.get(prop.nodeId)
+    if (existing) {
+      existing.push(parsedValue)
+    } else {
+      nodePropsMap.set(prop.nodeId, [parsedValue])
+    }
+  }
+
+  return nodePropsMap
+}
+
+function parsePropertyValue(value: string | null): unknown {
+  try {
+    return JSON.parse(value || 'null')
+  } catch {
+    return value
+  }
+}
+
+function extractReferenceIds(values: unknown[]): string[] {
+  const refs: string[] = []
+  for (const value of values) {
+    if (typeof value === 'string') {
+      refs.push(value)
+      continue
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'string') {
+          refs.push(item)
+        }
+      }
+    }
+  }
+  return refs
+}
+
+function getExistingNodeIds(db: Database, nodeIds: Set<string>): Set<string> {
+  const nodeIdArray = [...nodeIds]
+  if (nodeIdArray.length === 0) {
+    return new Set()
+  }
+
+  const rows = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(and(
+      inArray(nodes.id, nodeIdArray),
+      isNull(nodes.deletedAt),
+    ))
+    .all()
+
+  return new Set(rows.map((row) => row.id))
 }
 
 // ============================================================================

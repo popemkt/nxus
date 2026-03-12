@@ -24,6 +24,7 @@ import type {
   QueryDefinition,
   SupertagFilter,
   PropertyFilter,
+  PathFilter,
   ContentFilter,
   HasFieldFilter,
   TemporalFilter,
@@ -1001,6 +1002,8 @@ export class SurrealBackend implements NodeBackend {
         return this.evaluateSupertagFilter(filter, candidateIds)
       case 'property':
         return this.evaluatePropertyFilter(filter, candidateIds)
+      case 'path':
+        return this.evaluatePathFilter(filter, candidateIds)
       case 'content':
         return this.evaluateContentFilter(filter, candidateIds)
       case 'hasField':
@@ -1160,6 +1163,107 @@ export class SurrealBackend implements NodeBackend {
     for (const [nodeRefId, values] of nodePropsMap) {
       if (values.some((v) => compareValues(v, op, target))) {
         result.add(nodeRefId)
+      }
+    }
+
+    return result
+  }
+
+  private async evaluatePathFilter(
+    filter: PathFilter,
+    candidateIds: Set<string>,
+  ): Promise<Set<string>> {
+    const resolvedPath: string[] = []
+    for (const segment of filter.path) {
+      try {
+        resolvedPath.push(await this.resolveFieldId(segment.fieldId))
+      } catch {
+        return new Set()
+      }
+    }
+
+    let frontier = new Map<string, Set<string>>()
+    for (const candidateId of candidateIds) {
+      frontier.set(candidateId, new Set([candidateId]))
+    }
+
+    for (const fieldRecordId of resolvedPath.slice(0, -1)) {
+      if (frontier.size === 0) {
+        return new Set()
+      }
+
+      const stepValues = await this.getFieldValuesForNodes(
+        fieldRecordId,
+        new Set(frontier.keys()),
+      )
+
+      const nextRaw = new Map<string, Set<string>>()
+      for (const [sourceNodeId, values] of stepValues) {
+        const roots = frontier.get(sourceNodeId)
+        if (!roots) continue
+
+        for (const refId of this.extractReferenceIds(values)) {
+          const existingRoots = nextRaw.get(refId)
+          if (existingRoots) {
+            for (const rootId of roots) {
+              existingRoots.add(rootId)
+            }
+          } else {
+            nextRaw.set(refId, new Set(roots))
+          }
+        }
+      }
+
+      if (nextRaw.size === 0) {
+        return new Set()
+      }
+
+      const existingIds = await this.getExistingNodeIds(new Set(nextRaw.keys()))
+      frontier = new Map()
+      for (const nodeId of existingIds) {
+        const roots = nextRaw.get(nodeId)
+        if (roots) {
+          frontier.set(nodeId, roots)
+        }
+      }
+    }
+
+    const terminalFieldId = resolvedPath[resolvedPath.length - 1]
+    if (!terminalFieldId || frontier.size === 0) {
+      return new Set()
+    }
+
+    const terminalValues = await this.getFieldValuesForNodes(
+      terminalFieldId,
+      new Set(frontier.keys()),
+    )
+
+    const result = new Set<string>()
+    for (const [nodeId, roots] of frontier) {
+      const values = terminalValues.get(nodeId)
+
+      if (filter.op === 'isEmpty') {
+        if (!values || values.every(isEmptyValue)) {
+          for (const rootId of roots) {
+            result.add(rootId)
+          }
+        }
+        continue
+      }
+
+      if (filter.op === 'isNotEmpty') {
+        if (values?.some((value) => !isEmptyValue(value))) {
+          for (const rootId of roots) {
+            result.add(rootId)
+          }
+        }
+        continue
+      }
+
+      if (values?.some((value) => compareValues(value, filter.op, filter.value))) {
+        for (const rootId of roots) {
+          result.add(rootId)
+        }
       }
     }
 
@@ -1425,6 +1529,74 @@ export class SurrealBackend implements NodeBackend {
       default:
         return candidateIds
     }
+  }
+
+  private async getFieldValuesForNodes(
+    fieldRecordId: string,
+    nodeIds: Set<string>,
+  ): Promise<Map<string, unknown[]>> {
+    if (nodeIds.size === 0) {
+      return new Map()
+    }
+
+    const db = this.ensureInitialized()
+    const [edges] = await db.query<[Array<{ node_ref: RecordId; value: unknown }>]>(
+      'SELECT in AS node_ref, `value` FROM has_field WHERE out = $fieldId',
+      { fieldId: new StringRecordId(fieldRecordId) },
+    )
+
+    const result = new Map<string, unknown[]>()
+    for (const edge of (edges || [])) {
+      const nodeId = rid(edge.node_ref)
+      if (!nodeIds.has(nodeId)) continue
+
+      const existing = result.get(nodeId)
+      if (existing) {
+        existing.push(edge.value)
+      } else {
+        result.set(nodeId, [edge.value])
+      }
+    }
+
+    return result
+  }
+
+  private extractReferenceIds(values: unknown[]): string[] {
+    const refs: string[] = []
+    for (const value of values) {
+      if (typeof value === 'string') {
+        refs.push(value)
+        continue
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === 'string') {
+            refs.push(item)
+          }
+        }
+      }
+    }
+    return refs
+  }
+
+  private async getExistingNodeIds(nodeIds: Set<string>): Promise<Set<string>> {
+    if (nodeIds.size === 0) {
+      return new Set()
+    }
+
+    const db = this.ensureInitialized()
+    const [rows] = await db.query<[Array<{ id: RecordId }>]>(
+      'SELECT id FROM node WHERE deleted_at IS NONE',
+    )
+
+    const result = new Set<string>()
+    for (const row of (rows || [])) {
+      const nodeId = rid(row.id)
+      if (nodeIds.has(nodeId)) {
+        result.add(nodeId)
+      }
+    }
+    return result
   }
 
   // ---------------------------------------------------------------------------
