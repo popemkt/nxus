@@ -19,6 +19,7 @@ import {
 } from './graph.service'
 import type { GraphNode } from './graph.service'
 import {
+  BaseItemSchema,
   ConfigSchemaSchema,
   DocEntrySchema,
   InstallConfigSchema,
@@ -26,8 +27,8 @@ import {
   ItemSchema,
   ItemTypeSchema,
   JsonObjectSchema,
-  PartialItemSchema,
   PlatformSchema,
+  TagRefSchema,
   type Item,
   type JsonObject,
   type TagRef,
@@ -70,6 +71,21 @@ function serializeGraphNode(node: GraphNode): SerializableGraphNode {
  * Now supports multi-type items via the types array
  */
 const GraphPropsSchema = z.record(z.string(), z.unknown())
+const UpdateItemMetadataSchema = z.object({
+  tags: z.array(TagRefSchema).optional(),
+  category: z.string().optional(),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional(),
+  version: z.string().optional(),
+  author: z.string().optional(),
+  license: z.string().optional(),
+})
+
+const UpdateItemSchema = BaseItemSchema.omit({ metadata: true })
+  .partial()
+  .extend({
+    metadata: UpdateItemMetadataSchema.optional(),
+  })
 
 function readGraphProp<T>(
   props: Record<string, unknown>,
@@ -134,7 +150,8 @@ function itemToGraphProps(item: Partial<Item>): Record<string, unknown> {
   const props: Record<string, unknown> = {
     item_id: item.id,
     description: item.description,
-    type: item.type,
+    type: item.type ?? item.types?.[0],
+    types: item.types,
     path: item.path,
     homepage: item.homepage,
     thumbnail: item.thumbnail,
@@ -262,7 +279,7 @@ export const updateItemInGraphServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({
       id: z.string(),
-      updates: PartialItemSchema,
+      updates: UpdateItemSchema,
     }),
   )
   .handler(async (ctx) => {
