@@ -12,7 +12,7 @@
  */
 
 import { cn } from '@nxus/ui'
-import type { AssembledNode } from '@nxus/db'
+import { UUID_REGEX, type AssembledNode } from '@nxus/db'
 import {
   getNodeServerFn,
   updateNodeContentServerFn,
@@ -168,9 +168,7 @@ export function NodeInspector({
       // Check if value looks like a UUID (node reference)
       if (
         typeof value === 'string' &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          value,
-        )
+        UUID_REGEX.test(value)
       ) {
         nodeReferences.push({
           fieldName,
@@ -181,9 +179,7 @@ export function NodeInspector({
         for (const v of value) {
           if (
             typeof v === 'string' &&
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-              v,
-            )
+            UUID_REGEX.test(v)
           ) {
             nodeReferences.push({
               fieldName,
@@ -438,7 +434,7 @@ export function NodeInspector({
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-16">Owner:</span>
                 <button
-                  onClick={() => onNavigate(node.ownerId!)}
+                    onClick={() => node.ownerId && onNavigate(node.ownerId)}
                   className="text-primary hover:underline font-mono"
                 >
                   {node.ownerId.slice(0, 8)}...
@@ -620,9 +616,7 @@ function PropertyValue({
   // UUID detection for node links
   if (
     typeof value === 'string' &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      value,
-    )
+    UUID_REGEX.test(value)
   ) {
     return (
       <div className="flex items-center gap-1.5">

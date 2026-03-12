@@ -1,8 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { BLOOMS_LEVELS } from '@nxus/db'
-
-const BloomsLevelSchema = z.enum(BLOOMS_LEVELS)
+import { BloomsLevelSchema } from '@nxus/db'
 
 const QuestionInputSchema = z.object({
   conceptId: z.string(),

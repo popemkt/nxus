@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CommandParamSchema, CommandRequirementSchema } from './command-params.js'
+import { JsonObjectSchema } from './common.js'
 import { WorkflowDefinitionSchema } from './workflow.js'
 
 /**
@@ -138,6 +139,9 @@ export const ScriptModeOptionsSchema = z.object({
 })
 export type ScriptModeOptions = z.infer<typeof ScriptModeOptionsSchema>
 
+export const CommandOptionsSchema = JsonObjectSchema
+export type CommandOptions = z.infer<typeof CommandOptionsSchema>
+
 /**
  * Base fields shared by all command types
  */
@@ -199,7 +203,7 @@ const DocsCommandSchema = BaseCommandSchema.extend({
 const ConfigureCommandSchema = BaseCommandSchema.extend({
   mode: z.literal('configure'),
   /** Configuration options */
-  options: z.record(z.string(), z.any()).optional(),
+  options: CommandOptionsSchema.optional(),
 })
 
 /**
@@ -215,7 +219,7 @@ const ScriptCommandSchema = BaseCommandSchema.extend({
   /** Script execution options (typed) */
   scriptOptions: ScriptModeOptionsSchema.optional(),
   /** Script options (generic, for backward compat with existing manifests) */
-  options: z.record(z.string(), z.any()).optional(),
+  options: CommandOptionsSchema.optional(),
 })
 
 /**
@@ -225,7 +229,7 @@ const PreviewCommandSchema = BaseCommandSchema.extend({
   mode: z.literal('preview'),
   command: z.string().describe('Content or path to preview'),
   /** Preview-specific options */
-  options: z.record(z.string(), z.any()).optional(),
+  options: CommandOptionsSchema.optional(),
 })
 
 /**
@@ -323,7 +327,7 @@ export type ConfigSchema = z.infer<typeof ConfigSchemaSchema>
  * The first type in the array (`types[0]`) is used for display purposes (icon, color, grouping).
  * The `type` field is kept for backward compatibility and equals `types[0]`.
  */
-const BaseItemSchema = z.object({
+export const BaseItemSchema = z.object({
   id: z.string().describe('Unique identifier'),
   name: z.string().min(1).describe('Display name'),
   description: z.string().describe('App description'),
@@ -411,6 +415,9 @@ const BaseItemSchema = z.object({
  * Replaces the previous discriminated union to allow items to have multiple types.
  * Type-specific fields are validated via refinements based on the `types` array.
  */
+export const PartialItemSchema = BaseItemSchema.partial()
+export type PartialItem = z.infer<typeof PartialItemSchema>
+
 export const ItemSchema = BaseItemSchema.superRefine((data, ctx) => {
   // Validate: type (deprecated) must match types[0]
   if (data.type !== data.types[0]) {

@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { JsonValue } from './common.js'
+import { JsonObjectSchema } from './common.js'
 
 // ============================================================================
 // Step Result - Output from command execution
@@ -26,11 +28,11 @@ export interface WorkflowContext {
   /** Environment variables from process.env */
   env: Record<string, string>
   /** Parameters passed to the workflow */
-  params: Record<string, unknown>
+  params: Record<string, JsonValue>
   /** Results from executed steps, keyed by step ID */
   results: Record<string, StepResult>
   /** User-defined variables (from prompt steps) */
-  variables: Record<string, unknown>
+  variables: Record<string, JsonValue>
 }
 
 // ============================================================================
@@ -45,7 +47,7 @@ export const CommandStepSchema = z.object({
   type: z.literal('command'),
   /** Command reference: 'local-command' or 'item-id:command-id' */
   ref: z.string(),
-  params: z.record(z.string(), z.any()).optional(),
+  params: JsonObjectSchema.optional(),
   onSuccess: z.string().optional(),
   onFailure: z.string().optional(),
   timeout: z.number().optional().describe('Timeout in milliseconds'),

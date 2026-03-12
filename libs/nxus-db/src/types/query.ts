@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod'
+import { UUID_REGEX } from './common.js'
 
 // ============================================================================
 // Filter Operators
@@ -222,15 +223,16 @@ export type QueryDefinition = z.infer<typeof QueryDefinitionSchema>
  *
  * This represents a query node with supertag:query when fully assembled.
  */
-export interface SavedQuery {
-  id: string
-  content: string // Query name/title
-  definition: QueryDefinition
-  resultCache?: string[] // Cached node IDs from last evaluation
-  evaluatedAt?: Date // When results were last cached
-  createdAt: Date
-  updatedAt: Date
-}
+export const SavedQuerySchema = z.object({
+  id: z.string().regex(UUID_REGEX),
+  content: z.string(),
+  definition: QueryDefinitionSchema,
+  resultCache: z.array(z.string().regex(UUID_REGEX)).optional(),
+  evaluatedAt: z.coerce.date().optional(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+})
+export type SavedQuery = z.infer<typeof SavedQuerySchema>
 
 /**
  * Input for creating a new saved query

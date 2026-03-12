@@ -1,8 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { BLOOMS_LEVELS } from '@nxus/db'
-
-const BloomsLevelSchema = z.enum(BLOOMS_LEVELS)
+import { BloomsLevelSchema } from '@nxus/db'
 
 export const getConceptsByTopicServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ topicId: z.string() }))
@@ -29,14 +27,17 @@ export const getConceptByIdServerFn = createServerFn({ method: 'GET' })
     return { success: true as const, concept }
   })
 
-const SaveConceptInputSchema = z.object({
-  topicId: z.string(),
+const ConceptInputSchema = z.object({
   title: z.string().min(1),
   summary: z.string().min(1),
   whyItMatters: z.string().optional(),
   bloomsLevel: BloomsLevelSchema.optional(),
   source: z.string().optional(),
   relatedConceptTitles: z.array(z.string()).optional(),
+})
+
+const SaveConceptInputSchema = ConceptInputSchema.extend({
+  topicId: z.string(),
 })
 
 export const saveConceptServerFn = createServerFn({ method: 'POST' })
@@ -56,14 +57,7 @@ export const saveConceptServerFn = createServerFn({ method: 'POST' })
  */
 const SaveConceptsBatchInputSchema = z.object({
   topicId: z.string(),
-  concepts: z.array(z.object({
-    title: z.string().min(1),
-    summary: z.string().min(1),
-    whyItMatters: z.string().optional(),
-    bloomsLevel: BloomsLevelSchema.optional(),
-    source: z.string().optional(),
-    relatedConceptTitles: z.array(z.string()).optional(),
-  })),
+  concepts: z.array(ConceptInputSchema),
 })
 
 export const saveConceptsBatchServerFn = createServerFn({ method: 'POST' })

@@ -11,7 +11,20 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
+import {
+  CreateQueryInputSchema,
+  EvaluateQueryInputSchema,
+  FIELD_NAMES,
+  QueryDefinitionSchema,
+  SavedQuerySchema,
+  UpdateQueryInputSchema,
+} from '@nxus/db'
 import { z } from 'zod'
+
+function formatInvalidSavedQueryError(queryId: string, error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  return `[Query] Invalid saved query ${queryId}: ${message}`
+}
 
 // ============================================================================
 // Query Evaluation Server Functions
@@ -21,12 +34,7 @@ import { z } from 'zod'
  * Evaluate a query definition and return matching nodes
  */
 export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    z.object({
-      definition: z.any(), // QueryDefinition
-      limit: z.number().optional(),
-    })
-  )
+  .inputValidator(EvaluateQueryInputSchema)
   .handler(async (ctx) => {
     const { nodeFacade } = await import('@nxus/db/server')
     const { definition, limit } = ctx.data
@@ -52,13 +60,7 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
  * Create a new saved query (stored as a node with supertag:query)
  */
 export const createQueryServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    z.object({
-      name: z.string(),
-      definition: z.any(), // QueryDefinition
-      ownerId: z.string().optional(),
-    })
-  )
+  .inputValidator(CreateQueryInputSchema)
   .handler(async (ctx) => {
     const { nodeFacade, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } = await import(
       '@nxus/db/server'
@@ -93,13 +95,7 @@ export const createQueryServerFn = createServerFn({ method: 'POST' })
  * Update an existing saved query
  */
 export const updateQueryServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    z.object({
-      queryId: z.string(),
-      name: z.string().optional(),
-      definition: z.any().optional(), // QueryDefinition
-    })
-  )
+  .inputValidator(UpdateQueryInputSchema)
   .handler(async (ctx) => {
     const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
     const { queryId, name, definition } = ctx.data
@@ -165,7 +161,7 @@ export const deleteQueryServerFn = createServerFn({ method: 'POST' })
  */
 export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const { nodeFacade, getProperty, SYSTEM_SUPERTAGS, FIELD_NAMES } = await import(
+    const { nodeFacade, getProperty, SYSTEM_SUPERTAGS } = await import(
       '@nxus/db/server'
     )
 
@@ -175,26 +171,39 @@ export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler
       SYSTEM_SUPERTAGS.QUERY
     )
 
-    const queries = queryNodes.map((node) => {
-      // Field names must match the 'content' property in bootstrap.ts
-      // (e.g., 'queryDefinition' not 'query_definition')
-      const definition = getProperty(node, FIELD_NAMES.QUERY_DEFINITION) ?? {
-        filters: [],
-        limit: 500,
-      }
-      const resultCache = getProperty<string[]>(node, FIELD_NAMES.QUERY_RESULT_CACHE)
-      const evaluatedAtStr = getProperty<string>(node, FIELD_NAMES.QUERY_EVALUATED_AT)
+    const queries: Array<z.infer<typeof SavedQuerySchema>> = []
 
-      return {
-        id: node.id,
-        content: node.content || 'Untitled Query',
-        definition,
-        resultCache: resultCache ?? undefined,
-        evaluatedAt: evaluatedAtStr ? new Date(evaluatedAtStr) : undefined,
-        createdAt: node.createdAt,
-        updatedAt: node.updatedAt,
+    for (const node of queryNodes) {
+      try {
+        // Field names must match the 'content' property in bootstrap.ts
+        // (e.g., 'queryDefinition' not 'query_definition')
+        const definition = QueryDefinitionSchema.parse(
+          getProperty(node, FIELD_NAMES.QUERY_DEFINITION) ?? {},
+        )
+        const resultCache = getProperty<string[]>(
+          node,
+          FIELD_NAMES.QUERY_RESULT_CACHE,
+        )
+        const evaluatedAtStr = getProperty<string>(
+          node,
+          FIELD_NAMES.QUERY_EVALUATED_AT,
+        )
+
+        queries.push(
+          SavedQuerySchema.parse({
+            id: node.id,
+            content: node.content || 'Untitled Query',
+            definition,
+            resultCache: resultCache ?? undefined,
+            evaluatedAt: evaluatedAtStr ? new Date(evaluatedAtStr) : undefined,
+            createdAt: node.createdAt,
+            updatedAt: node.updatedAt,
+          }),
+        )
+      } catch (error) {
+        console.warn(formatInvalidSavedQueryError(node.id, error))
       }
-    })
+    }
 
     return {
       success: true as const,
@@ -228,24 +237,35 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
 
     // Get query definition - ensure it has required fields for evaluateQuery
     // Field names must match the 'content' property in bootstrap.ts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const storedDefinition = getProperty(queryNode, FIELD_NAMES.QUERY_DEFINITION) as any
-    const definition = {
-      filters: Array.isArray(storedDefinition?.filters) ? storedDefinition.filters : [],
-      limit: typeof storedDefinition?.limit === 'number' ? storedDefinition.limit : 500,
-      sort: storedDefinition?.sort,
-    }
-    const resultCache = getProperty<string[]>(queryNode, FIELD_NAMES.QUERY_RESULT_CACHE)
-    const evaluatedAtStr = getProperty<string>(queryNode, FIELD_NAMES.QUERY_EVALUATED_AT)
+    let definition: z.infer<typeof QueryDefinitionSchema>
+    let query: z.infer<typeof SavedQuerySchema>
+    try {
+      definition = QueryDefinitionSchema.parse(
+        getProperty(queryNode, FIELD_NAMES.QUERY_DEFINITION) ?? {},
+      )
+      const resultCache = getProperty<string[]>(
+        queryNode,
+        FIELD_NAMES.QUERY_RESULT_CACHE,
+      )
+      const evaluatedAtStr = getProperty<string>(
+        queryNode,
+        FIELD_NAMES.QUERY_EVALUATED_AT,
+      )
 
-    const query = {
-      id: queryNode.id,
-      content: queryNode.content || 'Untitled Query',
-      definition,
-      resultCache: resultCache ?? undefined,
-      evaluatedAt: evaluatedAtStr ? new Date(evaluatedAtStr) : undefined,
-      createdAt: queryNode.createdAt,
-      updatedAt: queryNode.updatedAt,
+      query = SavedQuerySchema.parse({
+        id: queryNode.id,
+        content: queryNode.content || 'Untitled Query',
+        definition,
+        resultCache: resultCache ?? undefined,
+        evaluatedAt: evaluatedAtStr ? new Date(evaluatedAtStr) : undefined,
+        createdAt: queryNode.createdAt,
+        updatedAt: queryNode.updatedAt,
+      })
+    } catch (error) {
+      return {
+        success: false as const,
+        error: formatInvalidSavedQueryError(queryNode.id, error),
+      }
     }
 
     // Evaluate the query
