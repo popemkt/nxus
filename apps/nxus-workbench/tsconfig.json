@@ -32,6 +32,9 @@
   },
   "references": [
     {
+      "path": "../../libs/nxus-config"
+    },
+    {
       "path": "../../libs/nxus-workbench"
     },
     {

@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@nxus/config": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@fontsource-variable/outfit": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
