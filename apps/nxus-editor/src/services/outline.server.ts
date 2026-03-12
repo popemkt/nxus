@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
 import type { FieldType } from '@/types/outline'
+import { initDatabaseSeeded } from './ensure-seeded.server'
 
 /**
  * Get a node and its children (one level deep), assembled with properties/supertags.
@@ -12,7 +13,6 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string(), depth: z.number().optional() }))
   .handler(async (ctx) => {
     const {
-      initDatabaseWithBootstrap,
       assembleNode,
       nodes,
       eq,
@@ -21,7 +21,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       getProperty,
       FIELD_NAMES,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
+    const db = await initDatabaseSeeded()
 
     const maxDepth = ctx.data.depth ?? Number.MAX_SAFE_INTEGER
 
@@ -173,12 +173,11 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 export const getWorkspaceRootServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     const {
-      initDatabaseWithBootstrap,
       nodes,
       isNull,
       and,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
+    const db = await initDatabaseSeeded()
 
     const rootNodes = db
       .select()
@@ -214,12 +213,11 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
   )
   .handler(async (ctx) => {
     const {
-      initDatabaseWithBootstrap,
       createNode,
       setProperty,
       SYSTEM_FIELDS,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
+    const db = await initDatabaseSeeded()
 
     const nodeId = createNode(db, {
       content: ctx.data.content,
@@ -239,10 +237,8 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
 export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), content: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, updateNodeContent } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
+    const { updateNodeContent } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
     updateNodeContent(db, ctx.data.nodeId, ctx.data.content)
     return { success: true as const }
   })
@@ -253,10 +249,8 @@ export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
 export const deleteNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, deleteNode } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
+    const { deleteNode } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
     deleteNode(db, ctx.data.nodeId)
     return { success: true as const }
   })
@@ -274,13 +268,12 @@ export const reparentNodeServerFn = createServerFn({ method: 'POST' })
   )
   .handler(async (ctx) => {
     const {
-      initDatabaseWithBootstrap,
       nodes,
       eq,
       setProperty,
       SYSTEM_FIELDS,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
+    const db = await initDatabaseSeeded()
 
     db.update(nodes)
       .set({
@@ -303,9 +296,8 @@ export const reparentNodeServerFn = createServerFn({ method: 'POST' })
 export const reorderNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), order: z.number() }))
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, setProperty, SYSTEM_FIELDS } =
-      await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
+    const { setProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
     setProperty(db, ctx.data.nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
     return { success: true as const }
   })
@@ -317,6 +309,8 @@ export const reorderNodeServerFn = createServerFn({ method: 'POST' })
 export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ definition: z.any() }))
   .handler(async (ctx) => {
+    // Ensure seeded first, then use nodeFacade for query evaluation
+    await initDatabaseSeeded()
     const { nodeFacade } = await import('@nxus/db/server')
     await nodeFacade.init()
 
@@ -334,6 +328,29 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Update a query node's definition.
+ * Serializes the QueryDefinition to JSON and stores it on field:query_definition.
+ */
+export const updateQueryDefinitionServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      nodeId: z.string(),
+      definition: z.any(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { setProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+    setProperty(
+      db,
+      ctx.data.nodeId,
+      SYSTEM_FIELDS.QUERY_DEFINITION,
+      JSON.stringify(ctx.data.definition),
+    )
+    return { success: true as const }
+  })
+
+/**
  * Set a field value on a node.
  */
 export const setFieldValueServerFn = createServerFn({ method: 'POST' })
@@ -345,10 +362,8 @@ export const setFieldValueServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, setProperty } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
+    const { setProperty } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
     setProperty(
       db,
       ctx.data.nodeId,

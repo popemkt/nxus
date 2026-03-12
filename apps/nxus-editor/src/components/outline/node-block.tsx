@@ -4,7 +4,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
-import { SUPERTAG_DEFINITION_SYSTEM_ID, QUERY_SYSTEM_ID, QUERY_FIELD_SYSTEM_IDS } from '@/types/outline'
+import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
+import { isQueryNode, extractQueryDefinition, getVisibleFields } from './query-helpers'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 import { FieldsSection } from './fields-section'
@@ -208,15 +209,11 @@ export const NodeBlock = memo(function NodeBlock({
   const hasChildren = node.children.length > 0
   const primaryTagColor = node.supertags[0]?.color ?? null
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
-  const isQuery = node.supertags.some((t) => t.systemId === QUERY_SYSTEM_ID)
+  const isQuery = isQueryNode(node)
 
   // For query nodes: extract definition and filter out query-internal fields
-  const queryDefinition = isQuery
-    ? node.fields.find((f) => f.fieldSystemId === 'field:query_definition')?.values[0]?.value
-    : undefined
-  const visibleFields = isQuery
-    ? node.fields.filter((f) => !f.fieldSystemId || !QUERY_FIELD_SYSTEM_IDS.has(f.fieldSystemId))
-    : node.fields
+  const queryDefinition = isQuery ? extractQueryDefinition(node) : undefined
+  const visibleFields = getVisibleFields(node.fields, isQuery)
   const hasFields = visibleFields.length > 0
   const isExpandable = hasChildren || hasFields || isQuery
 
@@ -285,8 +282,8 @@ export const NodeBlock = memo(function NodeBlock({
           )}
 
           {/* Query results — rendered between fields and children */}
-          {isQuery && queryDefinition && (
-            <QueryResults definition={queryDefinition} depth={depth} />
+          {isQuery && queryDefinition != null && (
+            <QueryResults nodeId={nodeId} definition={queryDefinition} depth={depth} />
           )}
 
           {/* Children */}

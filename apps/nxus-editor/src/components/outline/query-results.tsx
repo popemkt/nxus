@@ -1,9 +1,13 @@
-import { useState, useEffect, memo } from 'react'
-import { Hash, ArrowClockwise } from '@phosphor-icons/react'
+import { useState, memo, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Hash, ArrowClockwise, Sliders } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import { evaluateQueryServerFn } from '@/services/outline.server'
+import { QueryBuilder, QueryLinter } from '@nxus/workbench'
+import type { QueryDefinition } from '@nxus/db'
+import { evaluateQueryServerFn, updateQueryDefinitionServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getSupertagColor } from '@/lib/supertag-colors'
+import { outlineQueryKeys, safeStringify, isQueryDefinition } from './query-helpers'
 
 interface QueryResultNode {
   id: string
@@ -12,99 +16,142 @@ interface QueryResultNode {
 }
 
 interface QueryResultsProps {
+  nodeId: string
   definition: unknown
   depth: number
 }
 
 /**
  * Evaluates a query definition and renders matching nodes as reference rows.
- * Used inside NodeBlock when a node has the #Query supertag.
+ * Uses TanStack Query for caching and automatic invalidation.
  */
 export const QueryResults = memo(function QueryResults({
+  nodeId,
   definition,
   depth,
 }: QueryResultsProps) {
-  const [results, setResults] = useState<QueryResultNode[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [workbenchOpen, setWorkbenchOpen] = useState(false)
   const navigateToNode = useNavigateToNode()
+  const queryClient = useQueryClient()
 
-  // Stabilize definition identity so the effect only re-runs on actual changes
   const definitionKey = safeStringify(definition)
+  const hasDefinition = !!definition && definitionKey !== '{}' && definitionKey !== ''
 
-  useEffect(() => {
-    if (!definition || definitionKey === '{}' || definitionKey === '') {
-      setLoading(false)
-      setResults([])
-      setTotalCount(0)
-      return
-    }
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: outlineQueryKeys.evaluation(definitionKey),
+    queryFn: () => evaluateQueryServerFn({ data: { definition } }),
+    enabled: hasDefinition,
+    staleTime: 30_000,
+  })
 
-    let cancelled = false
-    setLoading(true)
-    setError(null)
+  const results: QueryResultNode[] = data?.success ? data.nodes : []
+  const totalCount = data?.success ? data.totalCount : 0
 
-    evaluateQueryServerFn({ data: { definition } })
-      .then((res) => {
-        if (cancelled) return
-        if (res.success) {
-          setResults(res.nodes)
-          setTotalCount(res.totalCount)
-        }
+  const handleDefinitionChange = useCallback(
+    (newDef: QueryDefinition) => {
+      updateQueryDefinitionServerFn({
+        data: { nodeId, definition: newDef },
       })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Query failed')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [definitionKey])
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: outlineQueryKeys.all })
+        })
+        .catch((err) => {
+          console.error('[query-workbench] Failed to save definition:', err)
+        })
+    },
+    [nodeId, queryClient],
+  )
 
   const paddingLeft = `${(depth + 1) * 24}px`
 
-  if (loading) {
-    return (
-      <div
-        className="flex items-center gap-1.5 py-1 text-[13px] text-foreground/30"
-        style={{ paddingLeft }}
-      >
-        <ArrowClockwise size={12} className="animate-spin" />
-        <span>Running query...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div
-        className="py-1 text-[13px] text-red-400/70"
-        style={{ paddingLeft }}
-      >
-        Query error: {error}
-      </div>
-    )
-  }
-
-  if (results.length === 0) {
-    return (
-      <div
-        className="py-1 text-[13px] text-foreground/25 italic"
-        style={{ paddingLeft }}
-      >
-        No results
-      </div>
-    )
-  }
-
   return (
     <div className="query-results">
+      {/* Inline query summary + configure button */}
+      <div
+        className="flex items-center gap-1.5 py-0.5"
+        style={{ paddingLeft }}
+      >
+        {isQueryDefinition(definition) && (
+          <QueryLinter
+            query={definition}
+            compact
+            className="flex-1 min-w-0 truncate text-foreground/30"
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => setWorkbenchOpen((o) => !o)}
+          className={cn(
+            'flex items-center gap-1 rounded-sm px-1.5 py-0.5',
+            'text-[11px] text-foreground/30 hover:text-foreground/60',
+            'hover:bg-foreground/5 transition-colors duration-100',
+            'select-none shrink-0',
+            workbenchOpen && 'bg-foreground/5 text-foreground/50',
+          )}
+          title="Configure query"
+        >
+          <Sliders size={12} weight="bold" />
+          <span>Configure</span>
+        </button>
+      </div>
+
+      {/* Inline query workbench */}
+      {workbenchOpen && isQueryDefinition(definition) && (
+        <div
+          className="border border-foreground/[0.06] rounded-md my-1 bg-background/50"
+          style={{ marginLeft: paddingLeft, marginRight: '8px' }}
+        >
+          <QueryBuilder
+            value={definition}
+            onChange={handleDefinitionChange}
+            compact
+            showExecute={false}
+            showSave={false}
+            showLinter={false}
+            resultCount={totalCount}
+            isLoading={isLoading}
+            isError={!!error}
+            errorMessage={error instanceof Error ? error.message : undefined}
+          />
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading && (
+        <div
+          className="flex items-center gap-1.5 py-1 text-[13px] text-foreground/30"
+          style={{ paddingLeft }}
+        >
+          <ArrowClockwise size={12} className="animate-spin" />
+          <span>Running query...</span>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && !isLoading && (
+        <div
+          className="py-1 text-[13px] text-red-400/70"
+          style={{ paddingLeft }}
+        >
+          Query error: {error instanceof Error ? error.message : 'Query failed'}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && hasDefinition && results.length === 0 && (
+        <div
+          className="py-1 text-[13px] text-foreground/25 italic"
+          style={{ paddingLeft }}
+        >
+          No results
+        </div>
+      )}
+
+      {/* Result rows */}
       {results.map((node) => (
         <QueryResultRow
           key={node.id}
@@ -114,6 +161,7 @@ export const QueryResults = memo(function QueryResults({
         />
       ))}
 
+      {/* Truncation notice */}
       {totalCount > results.length && (
         <div
           className="py-0.5 text-[12px] text-foreground/25"
@@ -210,12 +258,4 @@ function QueryResultRow({
       </div>
     </div>
   )
-}
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value) ?? ''
-  } catch {
-    return ''
-  }
 }

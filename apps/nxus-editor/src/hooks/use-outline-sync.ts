@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createNodeServerFn,
   updateNodeContentServerFn,
@@ -6,6 +7,7 @@ import {
   reparentNodeServerFn,
   reorderNodeServerFn,
 } from '@/services/outline.server'
+import { outlineQueryKeys } from '@/components/outline/query-helpers'
 import { useOutlineStore } from '@/stores/outline.store'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
@@ -31,6 +33,12 @@ function toServerParentId(parentId: string | null): string | null {
  */
 export function useOutlineSync() {
   const contentTimers = useRef(new Map<string, NodeJS.Timeout>())
+  const queryClient = useQueryClient()
+
+  /** Invalidate all outline query evaluations so results refresh after data changes */
+  const invalidateQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: outlineQueryKeys.all })
+  }, [queryClient])
 
   /**
    * Debounced content save — waits 500ms after last keystroke before persisting.
@@ -44,12 +52,14 @@ export function useOutlineSync() {
       nodeId,
       setTimeout(() => {
         timers.delete(nodeId)
-        updateNodeContentServerFn({ data: { nodeId, content } }).catch((err) => {
-          console.error('[sync] Failed to update content:', err)
-        })
+        updateNodeContentServerFn({ data: { nodeId, content } })
+          .then(() => invalidateQueries())
+          .catch((err) => {
+            console.error('[sync] Failed to update content:', err)
+          })
       }, 500),
     )
-  }, [])
+  }, [invalidateQueries])
 
   /**
    * Create node — optimistic in store, then persist.
@@ -116,6 +126,7 @@ export function useOutlineSync() {
                 syncContent(result.nodeId, persistedNode.content)
               }
             }
+            invalidateQueries()
           })
           .catch((err) => {
             console.error('[sync] Failed to create node:', err)
@@ -123,7 +134,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [syncContent],
+    [syncContent, invalidateQueries],
   )
 
   /**
@@ -142,10 +153,12 @@ export function useOutlineSync() {
    */
   const deleteNode = useCallback((nodeId: string) => {
     useOutlineStore.getState().deleteNode(nodeId)
-    deleteNodeServerFn({ data: { nodeId } }).catch((err) => {
-      console.error('[sync] Failed to delete node:', err)
-    })
-  }, [])
+    deleteNodeServerFn({ data: { nodeId } })
+      .then(() => invalidateQueries())
+      .catch((err) => {
+        console.error('[sync] Failed to delete node:', err)
+      })
+  }, [invalidateQueries])
 
   /**
    * Indent node — optimistic + persist reparent.
@@ -161,11 +174,13 @@ export function useOutlineSync() {
           newParentId: toServerParentId(node.parentId),
           order: parseInt(node.order, 10),
         },
-      }).catch((err) => {
-        console.error('[sync] Failed to indent node:', err)
       })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to indent node:', err)
+        })
     }
-  }, [])
+  }, [invalidateQueries])
 
   /**
    * Outdent node — optimistic + persist reparent.
@@ -181,11 +196,13 @@ export function useOutlineSync() {
           newParentId: toServerParentId(node.parentId),
           order: parseInt(node.order, 10),
         },
-      }).catch((err) => {
-        console.error('[sync] Failed to outdent node:', err)
       })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to outdent node:', err)
+        })
     }
-  }, [])
+  }, [invalidateQueries])
 
   /**
    * Move up/down — optimistic + persist both sides of order swap.
@@ -205,9 +222,11 @@ export function useOutlineSync() {
     // Persist both the moved node and the swapped sibling
     reorderNodeServerFn({
       data: { nodeId, order: parseInt(node.order, 10) },
-    }).catch((err) => {
-      console.error('[sync] Failed to reorder node:', err)
     })
+      .then(() => invalidateQueries())
+      .catch((err) => {
+        console.error('[sync] Failed to reorder node:', err)
+      })
 
     // The sibling that was swapped now has our old order
     if (node.parentId) {
@@ -227,7 +246,7 @@ export function useOutlineSync() {
         }
       }
     }
-  }, [])
+  }, [invalidateQueries])
 
   const moveNodeDown = useCallback((nodeId: string) => {
     const { nodes: preNodes } = useOutlineStore.getState()
@@ -242,9 +261,11 @@ export function useOutlineSync() {
 
     reorderNodeServerFn({
       data: { nodeId, order: parseInt(node.order, 10) },
-    }).catch((err) => {
-      console.error('[sync] Failed to reorder node:', err)
     })
+      .then(() => invalidateQueries())
+      .catch((err) => {
+        console.error('[sync] Failed to reorder node:', err)
+      })
 
     if (node.parentId) {
       const parent = nodes.get(node.parentId)
@@ -263,7 +284,7 @@ export function useOutlineSync() {
         }
       }
     }
-  }, [])
+  }, [invalidateQueries])
 
   return {
     createNodeAfter,
