@@ -152,6 +152,14 @@ function formatInvalidGraphItemError(node: GraphNode, error: unknown): string {
   return `[Graph] Invalid item ${describeGraphItemNode(node)}: ${message}`
 }
 
+function omitUndefinedValues<T extends Record<string, unknown>>(
+  value: T,
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined),
+  ) as Partial<T>
+}
+
 /**
  * Convert an Item to graph node properties
  */
@@ -318,17 +326,21 @@ export const updateItemInGraphServerFn = createServerFn({ method: 'POST' })
           error: formatInvalidGraphItemError(node, error),
         }
       }
-      const mergedTypes = ctx.data.updates.types ?? currentItem.types
+      const sanitizedUpdates = omitUndefinedValues(ctx.data.updates)
+      const metadataUpdates = sanitizedUpdates.metadata
+        ? omitUndefinedValues(sanitizedUpdates.metadata)
+        : undefined
+      const mergedTypes = sanitizedUpdates.types ?? currentItem.types
       const mergedItem = ItemSchema.parse({
         ...currentItem,
-        ...ctx.data.updates,
+        ...sanitizedUpdates,
         types: mergedTypes,
-        type: ctx.data.updates.type ?? mergedTypes[0],
-        metadata: ctx.data.updates.metadata
+        type: sanitizedUpdates.type ?? mergedTypes[0],
+        metadata: metadataUpdates
           ? {
               ...currentItem.metadata,
-              ...ctx.data.updates.metadata,
-              tags: ctx.data.updates.metadata.tags ?? currentItem.metadata.tags,
+              ...metadataUpdates,
+              tags: metadataUpdates.tags ?? currentItem.metadata.tags,
             }
           : currentItem.metadata,
       })
