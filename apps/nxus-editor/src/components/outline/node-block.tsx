@@ -263,30 +263,31 @@ export const NodeBlock = memo(function NodeBlock({
           onActivate={handleActivate}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
+          afterContent={
+            isQuery && !node.collapsed ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setWorkbenchOpen((o) => !o)
+                }}
+                className={cn(
+                  'inline-flex h-6 items-center gap-0.5 rounded-sm px-1.5 py-px',
+                  'text-[11px] font-medium leading-[1.8]',
+                  'select-none whitespace-nowrap shrink-0',
+                  'cursor-pointer transition-opacity',
+                  workbenchOpen
+                    ? 'bg-foreground/12 text-foreground/60'
+                    : 'bg-foreground/5 text-foreground/30 hover:bg-foreground/8 hover:text-foreground/50',
+                )}
+                title="Configure query"
+              >
+                <Sliders size={10} weight="bold" className="shrink-0" />
+                Configure
+              </button>
+            ) : undefined
+          }
         />
-        {/* Configure badge — shown next to content when query is expanded */}
-        {isQuery && !node.collapsed && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setWorkbenchOpen((o) => !o)
-            }}
-            className={cn(
-              'inline-flex h-6 items-center gap-0.5 rounded-sm px-1.5 py-px',
-              'text-[11px] font-medium leading-[1.8]',
-              'select-none whitespace-nowrap shrink-0',
-              'cursor-pointer transition-opacity',
-              workbenchOpen
-                ? 'bg-foreground/12 text-foreground/60'
-                : 'bg-foreground/5 text-foreground/30 hover:bg-foreground/8 hover:text-foreground/50',
-            )}
-            title="Configure query"
-          >
-            <Sliders size={10} weight="bold" className="shrink-0" />
-            Configure
-          </button>
-        )}
       </div>
 
       {/* Fields + Children — wrapped in a single container with tree line */}
