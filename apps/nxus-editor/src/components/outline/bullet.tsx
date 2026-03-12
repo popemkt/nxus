@@ -10,6 +10,7 @@ import {
   ArrowSquareOut,
   TreeStructure,
   BracketsAngle,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 import type { FieldType } from '@/types/outline'
 
@@ -19,6 +20,7 @@ interface BulletProps {
   childCount: number
   tagColor: string | null
   isSupertag: boolean
+  isQuery?: boolean
   isReference?: boolean
   onClick: (e: React.MouseEvent) => void
 }
@@ -29,6 +31,7 @@ export function Bullet({
   childCount,
   tagColor,
   isSupertag,
+  isQuery,
   isReference,
   onClick,
 }: BulletProps) {
@@ -60,7 +63,7 @@ export function Bullet({
         />
       )}
 
-      {/* Supertag definitions get # hashtag, regular nodes get round dot */}
+      {/* Supertag definitions get # hashtag, queries get search icon, regular nodes get round dot */}
       {isSupertag ? (
         <span
           className={cn(
@@ -75,6 +78,15 @@ export function Bullet({
         >
           #
         </span>
+      ) : isQuery ? (
+        <MagnifyingGlass
+          size={14}
+          weight="bold"
+          className={cn(
+            !tagColor && 'text-foreground/45',
+          )}
+          style={tagColor ? { color: tagColor } : undefined}
+        />
       ) : isReference ? (
         /* Referenced node — dashed circle matches collapsed halo size (inset-[3px] → 18px) */
         <span

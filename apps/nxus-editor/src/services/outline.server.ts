@@ -311,6 +311,29 @@ export const reorderNodeServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Evaluate a query definition and return matching nodes.
+ * Used by query supertag nodes to render live results in the outline.
+ */
+export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ definition: z.any() }))
+  .handler(async (ctx) => {
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+
+    const result = await nodeFacade.evaluateQuery(ctx.data.definition)
+
+    return {
+      success: true as const,
+      nodes: result.nodes.map((n) => ({
+        id: n.id,
+        content: n.content ?? '',
+        supertags: n.supertags,
+      })),
+      totalCount: result.totalCount,
+    }
+  })
+
+/**
  * Set a field value on a node.
  */
 export const setFieldValueServerFn = createServerFn({ method: 'POST' })

@@ -4,10 +4,11 @@ import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
-import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
+import { SUPERTAG_DEFINITION_SYSTEM_ID, QUERY_SYSTEM_ID, QUERY_FIELD_SYSTEM_IDS } from '@/types/outline'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
 import { FieldsSection } from './fields-section'
+import { QueryResults } from './query-results'
 
 interface NodeBlockProps {
   nodeId: string
@@ -205,10 +206,19 @@ export const NodeBlock = memo(function NodeBlock({
   const isActive = activeNodeId === nodeId
   const isSelected = selectedNodeId === nodeId
   const hasChildren = node.children.length > 0
-  const hasFields = node.fields.length > 0
-  const isExpandable = hasChildren || hasFields
   const primaryTagColor = node.supertags[0]?.color ?? null
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
+  const isQuery = node.supertags.some((t) => t.systemId === QUERY_SYSTEM_ID)
+
+  // For query nodes: extract definition and filter out query-internal fields
+  const queryDefinition = isQuery
+    ? node.fields.find((f) => f.fieldSystemId === 'field:query_definition')?.values[0]?.value
+    : undefined
+  const visibleFields = isQuery
+    ? node.fields.filter((f) => !f.fieldSystemId || !QUERY_FIELD_SYSTEM_IDS.has(f.fieldSystemId))
+    : node.fields
+  const hasFields = visibleFields.length > 0
+  const isExpandable = hasChildren || hasFields || isQuery
 
   // Shallow-compared selector: only re-renders when the sorted order actually changes.
   // Content-only edits in children don't change order → parent skips re-render.
@@ -241,6 +251,7 @@ export const NodeBlock = memo(function NodeBlock({
           childCount={node.children.length}
           tagColor={primaryTagColor}
           isSupertag={isSupertag}
+          isQuery={isQuery}
           onClick={handleBulletClick}
         />
         <NodeContent
@@ -269,8 +280,13 @@ export const NodeBlock = memo(function NodeBlock({
           </div>
 
           {/* Fields (properties) — rendered before children */}
-          {node.fields.length > 0 && (
-            <FieldsSection nodeId={nodeId} fields={node.fields} depth={depth} />
+          {visibleFields.length > 0 && (
+            <FieldsSection nodeId={nodeId} fields={visibleFields} depth={depth} />
+          )}
+
+          {/* Query results — rendered between fields and children */}
+          {isQuery && queryDefinition && (
+            <QueryResults definition={queryDefinition} depth={depth} />
           )}
 
           {/* Children */}
