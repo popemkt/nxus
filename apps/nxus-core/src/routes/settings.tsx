@@ -35,7 +35,7 @@ import {
 import { commandRegistry } from '@/services/command-palette/registry'
 import { useToolConfigStore } from '@/services/state/tool-config-state'
 import { useSettingsStore } from '@/stores/settings.store'
-import { ThemeChooser } from '@/components/features/settings/theme-chooser'
+import { ThemeChooser } from '@nxus/config'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 

@@ -21,6 +21,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/outfit": "^5.2.8",
+    "@nxus/config": "workspace:*",
     "@nxus/db": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@phosphor-icons/react": "^2.1.10",

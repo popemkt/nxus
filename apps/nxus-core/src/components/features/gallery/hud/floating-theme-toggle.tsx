@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Moon, Sun } from '@phosphor-icons/react'
-import { useThemeStore } from '@/stores/theme.store'
+import { useThemeStore } from '@nxus/config'
 
 /**
  * Floating theme toggle that appears on the right side of the screen.
