@@ -143,6 +143,15 @@ function graphNodeToItem(node: GraphNode, tags: Array<TagRef> = []): Item {
   })
 }
 
+function describeGraphItemNode(node: GraphNode): string {
+  return node.system_id ?? String(node.id)
+}
+
+function formatInvalidGraphItemError(node: GraphNode, error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  return `[Graph] Invalid item ${describeGraphItemNode(node)}: ${message}`
+}
+
 /**
  * Convert an Item to graph node properties
  */
@@ -203,9 +212,12 @@ export const getAllItemsFromGraphServerFn = createServerFn({
     const items: Array<Item> = []
 
     for (const node of itemNodes) {
-      // Get tags for this item
-      const tags = await getItemTags(node)
-      items.push(graphNodeToItem(node, tags))
+      try {
+        const tags = await getItemTags(node)
+        items.push(graphNodeToItem(node, tags))
+      } catch (error) {
+        console.warn(formatInvalidGraphItemError(node, error))
+      }
     }
 
     console.log('[Graph] Found', items.length, 'items')
@@ -229,8 +241,15 @@ export const getItemFromGraphServerFn = createServerFn({ method: 'GET' })
         return { success: false as const, error: 'Item not found' }
       }
 
-      const tags = await getItemTags(node)
-      return { success: true as const, item: graphNodeToItem(node, tags) }
+      try {
+        const tags = await getItemTags(node)
+        return { success: true as const, item: graphNodeToItem(node, tags) }
+      } catch (error) {
+        return {
+          success: false as const,
+          error: formatInvalidGraphItemError(node, error),
+        }
+      }
     } catch (error) {
       return { success: false as const, error: String(error) }
     }
@@ -290,7 +309,15 @@ export const updateItemInGraphServerFn = createServerFn({ method: 'POST' })
         return { success: false as const, error: 'Item not found' }
       }
 
-      const currentItem = graphNodeToItem(node, await getItemTags(node))
+      let currentItem: Item
+      try {
+        currentItem = graphNodeToItem(node, await getItemTags(node))
+      } catch (error) {
+        return {
+          success: false as const,
+          error: formatInvalidGraphItemError(node, error),
+        }
+      }
       const mergedTypes = ctx.data.updates.types ?? currentItem.types
       const mergedItem = ItemSchema.parse({
         ...currentItem,
