@@ -8,11 +8,12 @@ import { Bullet } from './bullet'
 
 interface FieldValueProps {
   fieldType: FieldType
+  fieldNodeId?: string
   value: unknown
   onChange: (value: unknown) => void
 }
 
-export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
+export function FieldValue({ fieldType, fieldNodeId, value, onChange }: FieldValueProps) {
   // Safety: if value is an object/array and not a reference type, render as JSON
   if (value !== null && value !== undefined && typeof value === 'object' && fieldType !== 'nodes') {
     return <JsonField value={value} />
@@ -24,7 +25,7 @@ export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
     case 'date':
       return <DateField value={String(value ?? '')} onChange={onChange} />
     case 'select':
-      return <SelectField value={String(value ?? '')} />
+      return <SelectField value={String(value ?? '')} fieldNodeId={fieldNodeId} onChange={onChange} />
     case 'node':
       return <NodeRefField value={String(value ?? '')} />
     case 'nodes':
@@ -221,20 +222,87 @@ function DateField({
 
 /* ─── Select field ─── */
 
-function SelectField({ value }: { value: string }) {
-  if (!value) {
-    return <span className={emptyTextClass}>Empty</span>
-  }
+function SelectField({
+  value,
+  fieldNodeId,
+  onChange,
+}: {
+  value: string
+  fieldNodeId?: string
+  onChange: (v: unknown) => void
+}) {
+  const [options, setOptions] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const anchorRef = useRef<HTMLDivElement>(null)
+
+  const loadOptions = useCallback(() => {
+    if (loaded || !fieldNodeId) return
+    import('@/services/field.server').then(({ getFieldOptionsServerFn }) => {
+      getFieldOptionsServerFn({ data: { fieldNodeId } })
+        .then((result) => {
+          if (result.success) setOptions(result.options)
+          setLoaded(true)
+        })
+        .catch(() => setLoaded(true))
+    })
+  }, [fieldNodeId, loaded])
+
+  const handleClick = useCallback(() => {
+    loadOptions()
+    setOpen((o) => !o)
+  }, [loadOptions])
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[14.5px] font-medium leading-[1.6]',
-        'bg-foreground/8 text-foreground/60',
+    <div ref={anchorRef} className="relative">
+      <span
+        className={cn(
+          'inline-flex items-center rounded-sm px-1.5 py-px cursor-pointer',
+          'text-[14.5px] font-medium leading-[1.6]',
+          value ? 'bg-foreground/8 text-foreground/60' : 'text-foreground/25 italic',
+        )}
+        onClick={(e) => {
+          e.stopPropagation()
+          handleClick()
+        }}
+      >
+        {value || 'Empty'}
+      </span>
+
+      {open && options.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 min-w-[140px] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 shadow-lg">
+          {options.map((opt) => (
+            <div
+              key={opt}
+              className={cn(
+                'cursor-pointer rounded-md px-2 py-1 text-xs',
+                'hover:bg-accent hover:text-accent-foreground',
+                opt === value && 'bg-accent/50 font-medium',
+              )}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onChange(opt)
+                setOpen(false)
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
       )}
-    >
-      {String(value)}
-    </span>
+    </div>
   )
 }
 

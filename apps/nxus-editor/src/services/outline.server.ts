@@ -21,6 +21,8 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       and,
       getProperty,
       FIELD_NAMES,
+      getSupertagFieldDefinitions,
+      getAncestorSupertags,
     } = await import('@nxus/db/server')
     const db = await initDatabaseSeeded()
 
@@ -32,6 +34,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       parentId: string | null
       children: string[]
       order: string
+      createdAt: number
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
       fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
@@ -79,6 +82,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     function extractFields(assembled: {
       properties: Record<string, { value: unknown; rawValue: string; fieldNodeId: string; fieldName: string; fieldSystemId: string | null; order: number }[]>
+      supertags: { id: string }[]
     }): OutlineNodeResult['fields'] {
       const fields: OutlineNodeResult['fields'] = []
 
@@ -106,8 +110,34 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         })
       }
 
-      // Sort fields alphabetically by name for consistent display
-      fields.sort((a, b) => a.fieldName.localeCompare(b.fieldName))
+      // Build definition-order priority map from supertag field definitions
+      const priorityMap = new Map<string, number>()
+      let priority = 0
+      for (const st of assembled.supertags) {
+        const defs = getSupertagFieldDefinitions(db, st.id)
+        const ancestors = getAncestorSupertags(db, st.id)
+        // Own fields first
+        for (const [systemId] of defs) {
+          if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
+        }
+        // Then inherited
+        for (const ancestorId of ancestors) {
+          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+          for (const [systemId] of ancestorDefs) {
+            if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
+          }
+        }
+      }
+
+      // Sort: fields with definition priority first (in order), remaining alphabetically
+      fields.sort((a, b) => {
+        const aPriority = a.fieldSystemId ? priorityMap.get(a.fieldSystemId) : undefined
+        const bPriority = b.fieldSystemId ? priorityMap.get(b.fieldSystemId) : undefined
+        if (aPriority !== undefined && bPriority !== undefined) return aPriority - bPriority
+        if (aPriority !== undefined) return -1
+        if (bPriority !== undefined) return 1
+        return a.fieldName.localeCompare(b.fieldName)
+      })
       return fields
     }
 
@@ -125,6 +155,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         parentId: assembled.ownerId,
         children: [],
         order: String(orderValue ?? 0).padStart(8, '0'),
+        createdAt: assembled.createdAt?.getTime() ?? 0,
         collapsed: false,
         supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => {
           const stNode = assembleNode(db, st.id)
@@ -154,7 +185,9 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         childIds.sort((a, b) => {
           const na = nodeMap.get(a)
           const nb = nodeMap.get(b)
-          return (na?.order ?? '').localeCompare(nb?.order ?? '')
+          const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+          if (orderCmp !== 0) return orderCmp
+          return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
         })
 
         outlineNode.children = childIds

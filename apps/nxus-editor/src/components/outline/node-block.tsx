@@ -6,6 +6,7 @@ import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
+import type { SupertagBadge } from '@/types/outline'
 import { isQueryNode, extractQueryDefinition, getVisibleFields } from './query-helpers'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
@@ -44,6 +45,8 @@ export const NodeBlock = memo(function NodeBlock({
     outdentNode,
     moveNodeUp,
     moveNodeDown,
+    removeSupertag,
+    addSupertag,
   } = useOutlineSync()
 
   const handleBulletClick = useCallback(
@@ -70,6 +73,20 @@ export const NodeBlock = memo(function NodeBlock({
       updateNodeContent(nodeId, content)
     },
     [updateNodeContent, nodeId],
+  )
+
+  const handleRemoveSupertag = useCallback(
+    (supertagId: string, supertagSystemId: string | null) => {
+      removeSupertag(nodeId, supertagId, supertagSystemId)
+    },
+    [removeSupertag, nodeId],
+  )
+
+  const handleAddSupertag = useCallback(
+    (supertag: SupertagBadge) => {
+      addSupertag(nodeId, supertag, [])
+    },
+    [addSupertag, nodeId],
   )
 
   const handleKeyDown = useCallback(
@@ -228,7 +245,9 @@ export const NodeBlock = memo(function NodeBlock({
       return [...n.children].sort((a, b) => {
         const na = s.nodes.get(a)
         const nb = s.nodes.get(b)
-        return (na?.order ?? '').localeCompare(nb?.order ?? '')
+        const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+        if (orderCmp !== 0) return orderCmp
+        return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
       })
     }),
   )
@@ -263,6 +282,8 @@ export const NodeBlock = memo(function NodeBlock({
           onActivate={handleActivate}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
+          onRemoveSupertag={handleRemoveSupertag}
+          onAddSupertag={handleAddSupertag}
         />
         {isQuery && !node.collapsed && (
           <button

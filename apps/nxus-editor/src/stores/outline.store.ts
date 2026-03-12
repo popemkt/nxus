@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { NodeMap, OutlineNode } from '@/types/outline'
+import type { NodeMap, OutlineField, OutlineNode, SupertagBadge } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 interface OutlineState {
@@ -17,6 +17,10 @@ interface OutlineState {
   toggleCollapse: (id: string) => void
   updateNodeContent: (id: string, content: string) => void
   updateFieldValue: (nodeId: string, fieldId: string, value: unknown) => void
+  addSupertag: (nodeId: string, supertag: SupertagBadge, newFields: OutlineField[]) => void
+  removeSupertag: (nodeId: string, supertagId: string) => void
+  addField: (nodeId: string, field: OutlineField) => void
+  removeField: (nodeId: string, fieldId: string) => void
   createNodeAfter: (afterId: string) => string
   deleteNode: (id: string) => void
   indentNode: (id: string) => void
@@ -65,7 +69,9 @@ function sortNodeIds(nodeIds: string[], nodes: NodeMap): string[] {
   return [...nodeIds].sort((a, b) => {
     const na = nodes.get(a)
     const nb = nodes.get(b)
-    return (na?.order ?? '').localeCompare(nb?.order ?? '')
+    const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+    if (orderCmp !== 0) return orderCmp
+    return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
   })
 }
 
@@ -161,6 +167,62 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
           ? { ...f, values: [{ value, order: f.values[0]?.order ?? 0 }] }
           : f,
       ),
+    })
+    set({ nodes: next })
+  },
+
+  addSupertag: (nodeId, supertag, newFields) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    // Skip if already has this supertag
+    if (node.supertags.some((t) => t.id === supertag.id)) return
+    const next = new Map(nodes)
+    // Merge new fields, skipping duplicates by fieldId
+    const existingFieldIds = new Set(node.fields.map((f) => f.fieldId))
+    const fieldsToAdd = newFields.filter((f) => !existingFieldIds.has(f.fieldId))
+    next.set(nodeId, {
+      ...node,
+      supertags: [...node.supertags, supertag],
+      fields: [...node.fields, ...fieldsToAdd],
+    })
+    set({ nodes: next })
+  },
+
+  removeSupertag: (nodeId, supertagId) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      supertags: node.supertags.filter((t) => t.id !== supertagId),
+      // Fields are kept (Tana behavior — no data loss on tag removal)
+    })
+    set({ nodes: next })
+  },
+
+  addField: (nodeId, field) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    if (node.fields.some((f) => f.fieldId === field.fieldId)) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      fields: [...node.fields, field],
+    })
+    set({ nodes: next })
+  },
+
+  removeField: (nodeId, fieldId) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      fields: node.fields.filter((f) => f.fieldId !== fieldId),
     })
     set({ nodes: next })
   },

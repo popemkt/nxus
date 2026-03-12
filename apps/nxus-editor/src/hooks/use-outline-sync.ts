@@ -6,9 +6,16 @@ import {
   deleteNodeServerFn,
   reparentNodeServerFn,
   reorderNodeServerFn,
+  setFieldValueServerFn,
 } from '@/services/outline.server'
+import {
+  addSupertagServerFn,
+  removeSupertagServerFn,
+} from '@/services/supertag.server'
+import { clearFieldServerFn } from '@/services/field.server'
 import { outlineQueryKeys } from '@/components/outline/query-helpers'
 import { useOutlineStore } from '@/stores/outline.store'
+import type { OutlineField, SupertagBadge } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 /**
@@ -286,6 +293,90 @@ export function useOutlineSync() {
     }
   }, [invalidateQueries])
 
+  /**
+   * Add supertag — optimistic add to store, then persist via server.
+   * Server returns inherited fields which are merged into store.
+   */
+  const addSupertag = useCallback(
+    (nodeId: string, supertag: SupertagBadge, newFields: OutlineField[]) => {
+      useOutlineStore.getState().addSupertag(nodeId, supertag, newFields)
+
+      if (!supertag.systemId) return
+      addSupertagServerFn({ data: { nodeId, supertagSystemId: supertag.systemId } })
+        .then((result) => {
+          if (result.success && result.newFields) {
+            // Merge any additional fields from server that weren't in the optimistic set
+            const { nodes } = useOutlineStore.getState()
+            const node = nodes.get(nodeId)
+            if (node) {
+              const existingFieldIds = new Set(node.fields.map((f) => f.fieldId))
+              const extraFields = result.newFields.filter(
+                (f) => !existingFieldIds.has(f.fieldId),
+              ) as OutlineField[]
+              if (extraFields.length > 0) {
+                for (const f of extraFields) {
+                  useOutlineStore.getState().addField(nodeId, f)
+                }
+              }
+            }
+          }
+          invalidateQueries()
+        })
+        .catch((err) => {
+          console.error('[sync] Failed to add supertag:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
+  /**
+   * Remove supertag — optimistic remove from store, then persist.
+   * Fields are kept (Tana behavior).
+   */
+  const removeSupertag = useCallback(
+    (nodeId: string, supertagId: string, supertagSystemId: string | null) => {
+      useOutlineStore.getState().removeSupertag(nodeId, supertagId)
+      if (!supertagSystemId) return
+      removeSupertagServerFn({ data: { nodeId, supertagSystemId } })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to remove supertag:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
+  /**
+   * Add field — optimistic add to store, persist with empty/default value.
+   */
+  const addField = useCallback(
+    (nodeId: string, field: OutlineField) => {
+      useOutlineStore.getState().addField(nodeId, field)
+      // Persist with empty value to materialize the field
+      setFieldValueServerFn({
+        data: { nodeId, fieldId: field.fieldId, value: '' },
+      }).catch((err) => {
+        console.error('[sync] Failed to add field:', err)
+      })
+    },
+    [],
+  )
+
+  /**
+   * Remove field — optimistic remove from store, clear on server.
+   */
+  const removeField = useCallback(
+    (nodeId: string, fieldId: string) => {
+      useOutlineStore.getState().removeField(nodeId, fieldId)
+      clearFieldServerFn({ data: { nodeId, fieldId } })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to remove field:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
   return {
     createNodeAfter,
     updateNodeContent,
@@ -295,5 +386,9 @@ export function useOutlineSync() {
     moveNodeUp,
     moveNodeDown,
     syncContent,
+    addSupertag,
+    removeSupertag,
+    addField,
+    removeField,
   }
 }

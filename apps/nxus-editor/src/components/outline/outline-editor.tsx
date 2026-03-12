@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
-import { Hash } from '@phosphor-icons/react'
+import { Hash, X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
@@ -83,6 +83,7 @@ export function OutlineEditor() {
                 parentId: n.parentId,
                 children: n.children,
                 order: n.order,
+                createdAt: n.createdAt,
                 collapsed: n.collapsed,
                 supertags: n.supertags,
                 fields: n.fields ?? [],
@@ -91,6 +92,15 @@ export function OutlineEditor() {
             topLevelIds.push(rootId)
           }
         }
+
+        // Sort top-level nodes by order then createdAt
+        topLevelIds.sort((a, b) => {
+          const na = nodeMap.get(a)
+          const nb = nodeMap.get(b)
+          const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+          if (orderCmp !== 0) return orderCmp
+          return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
+        })
 
         // Create virtual workspace root to hold top-level nodes
         const workspaceRoot: OutlineNode = {
@@ -240,7 +250,9 @@ export function OutlineEditor() {
   const sortedChildren = [...rootNode.children].sort((a, b) => {
     const na = nodes.get(a)
     const nb = nodes.get(b)
-    return (na?.order ?? '').localeCompare(nb?.order ?? '')
+    const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+    if (orderCmp !== 0) return orderCmp
+    return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
   })
 
   return (
@@ -282,6 +294,7 @@ export function OutlineEditor() {
 
 function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootNodeId: string }) {
   const navigateToNode = useNavigateToNode()
+  const { removeSupertag } = useOutlineSync()
 
   // Use last supertag's color for the background gradient
   const gradientColor = rootNode.supertags.length > 0
@@ -317,7 +330,7 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
               <span
                 key={tag.id}
                 className={cn(
-                  'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+                  'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
                   'text-[11px] font-medium leading-[1.8]',
                   'select-none whitespace-nowrap',
                   'cursor-pointer transition-opacity hover:opacity-70',
@@ -333,6 +346,17 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
               >
                 <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
                 {tag.name}
+                <button
+                  type="button"
+                  className="ml-0.5 hidden shrink-0 rounded-sm p-px opacity-50 hover:opacity-100 group-hover/tag:inline-flex"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeSupertag(rootNodeId, tag.id, tag.systemId)
+                  }}
+                  title={`Remove #${tag.name}`}
+                >
+                  <X size={8} weight="bold" />
+                </button>
               </span>
             ))}
           </div>
