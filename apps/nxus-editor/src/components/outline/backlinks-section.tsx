@@ -5,10 +5,12 @@ import { cn } from '@nxus/ui'
 import { getBacklinksServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getSupertagColor } from '@/lib/supertag-colors'
+import { Bullet } from './bullet'
 
 interface BacklinkNode {
   id: string
   content: string
+  childCount: number
   supertags: { id: string; content: string; systemId: string | null }[]
 }
 
@@ -108,74 +110,13 @@ function FieldGroup({
 
       {expanded && (
         <>
-          {visibleNodes.map((node) => {
-            const primaryColor = node.supertags[0]
-              ? getSupertagColor(node.supertags[0].id)
-              : null
-
-            return (
-              <button
-                key={node.id}
-                type="button"
-                className={cn(
-                  'flex w-full items-start rounded-sm cursor-pointer text-left',
-                  'hover:bg-foreground/[0.03] transition-colors duration-75',
-                  'pl-4',
-                )}
-                onClick={() => navigateToNode(node.id)}
-                title={`Go to: ${node.content || 'Untitled'}`}
-              >
-                {/* Dashed-circle reference bullet */}
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-                  <span
-                    className={cn(
-                      'flex items-center justify-center rounded-full',
-                      'h-[18px] w-[18px] border border-dashed',
-                      !primaryColor && 'border-foreground/20',
-                    )}
-                    style={primaryColor ? { borderColor: `${primaryColor}40` } : undefined}
-                  >
-                    <span
-                      className={cn(
-                        'block h-[4px] w-[4px] rounded-full',
-                        !primaryColor && 'bg-foreground/40',
-                      )}
-                      style={primaryColor ? { backgroundColor: primaryColor } : undefined}
-                    />
-                  </span>
-                </span>
-
-                {/* Content + badges */}
-                <span className="flex min-h-6 flex-1 items-start gap-1.5 px-1">
-                  <span className="text-[14.5px] leading-[1.6] text-foreground/70 truncate">
-                    {node.content || '\u200B'}
-                  </span>
-
-                  {node.supertags.length > 0 && (
-                    <span className="flex h-6 items-center gap-0.5">
-                      {node.supertags.map((tag) => {
-                        const color = getSupertagColor(tag.id)
-                        return (
-                          <span
-                            key={tag.id}
-                            className={cn(
-                              'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                              'text-[11px] font-medium leading-[1.8]',
-                              'select-none whitespace-nowrap',
-                            )}
-                            style={{ backgroundColor: `${color}18`, color }}
-                          >
-                            <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
-                            {tag.content}
-                          </span>
-                        )
-                      })}
-                    </span>
-                  )}
-                </span>
-              </button>
-            )
-          })}
+          {visibleNodes.map((node) => (
+            <ReferenceNodeRow
+              key={node.id}
+              node={node}
+              navigateToNode={navigateToNode}
+            />
+          ))}
 
           {/* "Show N more" toggle */}
           {hasMore && !showAll && (
@@ -198,6 +139,82 @@ function FieldGroup({
           )}
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * Renders a backlink reference as a full node row — same look as a real node
+ * but with a dashed-circle bullet. Clicking navigates to the node.
+ */
+function ReferenceNodeRow({
+  node,
+  navigateToNode,
+}: {
+  node: BacklinkNode
+  navigateToNode: (nodeId: string) => void
+}) {
+  const primaryTagColor = node.supertags[0]
+    ? getSupertagColor(node.supertags[0].id)
+    : null
+
+  return (
+    <div
+      className={cn(
+        'flex items-start rounded-sm cursor-pointer',
+        'hover:bg-foreground/[0.03] transition-colors duration-75',
+        'pl-4',
+      )}
+      onClick={() => navigateToNode(node.id)}
+      title={`Go to: ${node.content || 'Untitled'}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') navigateToNode(node.id)
+      }}
+    >
+      {/* Dashed-circle bullet — uses Bullet component with isReference */}
+      <Bullet
+        hasChildren={node.childCount > 0}
+        collapsed={true}
+        childCount={node.childCount}
+        tagColor={primaryTagColor}
+        isSupertag={false}
+        isReference={true}
+        onClick={(e) => {
+          e.stopPropagation()
+          navigateToNode(node.id)
+        }}
+      />
+
+      {/* Content + supertag badges — same layout as NodeContent */}
+      <div className="node-content flex min-h-6 flex-1 items-start gap-1.5 px-1">
+        <span className="text-[14.5px] leading-[1.6] text-foreground/70 truncate flex-1">
+          {node.content || '\u200B'}
+        </span>
+
+        {node.supertags.length > 0 && (
+          <div className="flex h-6 items-center gap-0.5">
+            {node.supertags.map((tag) => {
+              const color = getSupertagColor(tag.id)
+              return (
+                <span
+                  key={tag.id}
+                  className={cn(
+                    'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+                    'text-[11px] font-medium leading-[1.8]',
+                    'select-none whitespace-nowrap',
+                  )}
+                  style={{ backgroundColor: `${color}18`, color }}
+                >
+                  <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
+                  {tag.content}
+                </span>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

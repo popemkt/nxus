@@ -292,6 +292,11 @@ export function OutlineEditor() {
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
+        // If a node is being edited, select it (exit edit mode) so focus can shift to palette
+        const { activeNodeId: currentActive } = useOutlineStore.getState()
+        if (currentActive) {
+          useOutlineStore.getState().selectNode(currentActive)
+        }
         setCmdPaletteOpen((o) => !o)
       }
     }

@@ -363,74 +363,91 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
 
 /**
  * Get backlinks grouped by field name — "Appears as [fieldName] in..."
- * Queries nodeProperties directly for rows whose value references the target node,
- * then groups them by field name with the linking node's content + supertags.
+ * Uses the facade's evaluateQuery with linksTo for architecture portability,
+ * then post-processes assembled nodes' properties to extract field grouping.
  */
 export const getBacklinksServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
-    const {
-      nodeProperties,
-      assembleNode,
-    } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await initDatabaseSeeded()
+    await nodeFacade.init()
 
     const targetNodeId = ctx.data.nodeId
 
-    // Find all properties whose value references the target node
-    const allProps = db.select().from(nodeProperties).all()
+    // Use facade evaluateQuery with linksTo filter (architecture-portable)
+    const result = await nodeFacade.evaluateQuery({
+      filters: [{ type: 'relation', relationType: 'linksTo', targetNodeId }],
+      limit: 50,
+    })
 
-    // Map: fieldName -> Set of nodeIds that reference target via that field
+    // Skip system field names used for internal wiring
+    const systemFieldNames = new Set(['supertag', 'extends', 'order', 'field_type', 'query_definition', 'color'])
+
+    // Post-process: group nodes by which field references the target
     const fieldGroups = new Map<string, { fieldName: string; nodeIds: Set<string> }>()
 
-    for (const prop of allProps) {
-      try {
-        const value = JSON.parse(prop.value || '')
-        const isMatch =
-          value === targetNodeId ||
-          (Array.isArray(value) && value.includes(targetNodeId))
-        if (!isMatch) continue
+    for (const assembled of result.nodes) {
+      // Scan properties to find which fields reference the target
+      for (const [, propValues] of Object.entries(assembled.properties)) {
+        if (!propValues || propValues.length === 0) continue
+        const first = propValues[0]!
+        if (systemFieldNames.has(first.fieldName)) continue
 
-        // Resolve the field node to get the field name
-        const fieldNode = assembleNode(db, prop.fieldNodeId)
-        const fieldName = fieldNode?.content ?? 'Unknown'
+        const referencesTarget = propValues.some((pv) => {
+          if (pv.value === targetNodeId) return true
+          if (Array.isArray(pv.value) && pv.value.includes(targetNodeId)) return true
+          return false
+        })
 
-        // Skip system fields like 'supertag', 'extends', 'order' etc.
-        const systemFieldNames = new Set(['supertag', 'extends', 'order', 'field_type', 'query_definition', 'color'])
-        if (systemFieldNames.has(fieldName)) continue
-
-        if (!fieldGroups.has(fieldName)) {
-          fieldGroups.set(fieldName, { fieldName, nodeIds: new Set() })
+        if (referencesTarget) {
+          const fieldName = first.fieldName
+          if (!fieldGroups.has(fieldName)) {
+            fieldGroups.set(fieldName, { fieldName, nodeIds: new Set() })
+          }
+          fieldGroups.get(fieldName)!.nodeIds.add(assembled.id)
         }
-        fieldGroups.get(fieldName)!.nodeIds.add(prop.nodeId)
-      } catch {
-        // Skip malformed values
       }
     }
 
-    // Assemble linking nodes and build grouped result
-    const groups = Array.from(fieldGroups.values()).map((group) => {
-      const nodes = Array.from(group.nodeIds)
-        .map((nodeId) => {
-          const assembled = assembleNode(db, nodeId)
-          if (!assembled || assembled.deletedAt) return null
-          return {
-            id: assembled.id,
-            content: assembled.content ?? '',
-            supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => ({
-              id: st.id,
-              content: st.content,
-              systemId: st.systemId,
-            })),
-          }
-        })
-        .filter((n): n is NonNullable<typeof n> => n !== null)
+    // Count children for each linking node (for bullet rendering)
+    const { nodes: nodesTable, isNull, eq, and } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+    const childCountMap = new Map<string, number>()
+    for (const assembled of result.nodes) {
+      const childRows = db
+        .select()
+        .from(nodesTable)
+        .where(and(eq(nodesTable.ownerId, assembled.id), isNull(nodesTable.deletedAt)))
+        .all()
+      childCountMap.set(assembled.id, childRows.length)
+    }
 
-      return {
+    // Build grouped result with node data
+    const nodeDataMap = new Map(
+      result.nodes.map((n) => [
+        n.id,
+        {
+          id: n.id,
+          content: n.content ?? '',
+          childCount: childCountMap.get(n.id) ?? 0,
+          supertags: n.supertags.map((st: { id: string; content: string; systemId: string | null }) => ({
+            id: st.id,
+            content: st.content,
+            systemId: st.systemId,
+          })),
+        },
+      ]),
+    )
+
+    const groups = Array.from(fieldGroups.values())
+      .map((group) => ({
         fieldName: group.fieldName,
-        nodes,
-      }
-    }).filter((g) => g.nodes.length > 0)
+        nodes: Array.from(group.nodeIds)
+          .map((id) => nodeDataMap.get(id))
+          .filter((n): n is NonNullable<typeof n> => n !== null),
+      }))
+      .filter((g) => g.nodes.length > 0)
 
     const totalCount = groups.reduce((sum, g) => sum + g.nodes.length, 0)
 
