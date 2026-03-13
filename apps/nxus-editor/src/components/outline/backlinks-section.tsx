@@ -22,7 +22,7 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
   const navigateToNode = useNavigateToNode()
 
   const definition: QueryDefinition = {
-    filters: [{ type: 'relation', relationType: 'linkedFrom', targetNodeId: nodeId }],
+    filters: [{ type: 'relation', relationType: 'linksTo', targetNodeId: nodeId }],
     limit: 50,
   }
 

@@ -25,6 +25,7 @@ interface OutlineState {
   addField: (nodeId: string, field: OutlineField) => void
   removeField: (nodeId: string, fieldId: string) => void
   createNodeAfter: (afterId: string, initialContent?: string) => string
+  createFirstChild: (parentId: string) => string
   deleteNode: (id: string) => void
   indentNode: (id: string) => void
   outdentNode: (id: string) => void
@@ -309,7 +310,34 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       ...parent,
       children: [...parent.children, newId],
     })
-    set({ nodes: next, activeNodeId: newId, selectedNodeId: newId })
+    set({ nodes: next, activeNodeId: newId, selectedNodeId: newId, selectedNodeIds: new Set([newId]) })
+    return newId
+  },
+
+  createFirstChild: (parentId) => {
+    const { nodes } = get()
+    const parent = nodes.get(parentId)
+    if (!parent) return parentId
+
+    const newId = generateId()
+    const newNode: OutlineNode = {
+      id: newId,
+      content: '',
+      parentId,
+      children: [],
+      order: generateOrder(ORDER_STEP),
+      collapsed: false,
+      supertags: [],
+      fields: [],
+    }
+
+    const next = new Map(nodes)
+    next.set(newId, newNode)
+    next.set(parentId, {
+      ...parent,
+      children: [...parent.children, newId],
+    })
+    set({ nodes: next, activeNodeId: newId, selectedNodeId: newId, selectedNodeIds: new Set([newId]) })
     return newId
   },
 

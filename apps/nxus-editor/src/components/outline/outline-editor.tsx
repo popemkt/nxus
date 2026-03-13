@@ -9,6 +9,7 @@ import { NodeBlock } from './node-block'
 import { FieldsSection } from './fields-section'
 import { BacklinksSection } from './backlinks-section'
 import { CommandPalette } from './command-palette'
+import { NodeCommandPalette } from './node-command-palette'
 import {
   getWorkspaceRootServerFn,
   getNodeTreeServerFn,
@@ -36,11 +37,12 @@ export function OutlineEditor() {
     (s) => s.getPreviousVisibleNode,
   )
 
-  const { createNodeAfter, deleteNode, indentNode, outdentNode } = useOutlineSync()
+  const { createNodeAfter, createFirstChild, deleteNode, indentNode, outdentNode } = useOutlineSync()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
 
   // Sync URL search param → store rootNodeId (handles back/forward + bookmarks)
   useEffect(() => {
@@ -155,7 +157,17 @@ export function OutlineEditor() {
     (e: KeyboardEvent) => {
       if (activeNodeId) return
 
-      if (!selectedNodeId) return
+      // Empty outline — Enter creates the first node
+      if (!selectedNodeId) {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          const root = nodes.get(rootNodeId)
+          if (root && root.children.length === 0) {
+            createFirstChild(rootNodeId)
+          }
+        }
+        return
+      }
 
       const hasMultiSelect = selectedNodeIds.size > 1
 
@@ -250,12 +262,14 @@ export function OutlineEditor() {
       selectedNodeId,
       selectedNodeIds,
       nodes,
+      rootNodeId,
       activateNode,
       selectNode,
       extendSelection,
       toggleCollapse,
       deleteNode,
       createNodeAfter,
+      createFirstChild,
       indentNode,
       outdentNode,
       getPreviousVisibleNode,
@@ -268,12 +282,17 @@ export function OutlineEditor() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [handleGlobalKeyDown])
 
-  // Cmd+K / Ctrl+K — open command palette
+  // Cmd+S / Ctrl+S — open search palette
+  // Cmd+K / Ctrl+K — open inline command palette
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
         setPaletteOpen((o) => !o)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setCmdPaletteOpen((o) => !o)
       }
     }
     window.addEventListener('keydown', handler)
@@ -347,9 +366,15 @@ export function OutlineEditor() {
             Empty. Press Enter to start writing.
           </div>
         )}
+
+        {/* Backlinks — after children, only in zoomed-in view */}
+        {rootNodeId !== WORKSPACE_ROOT_ID && (
+          <BacklinksSection nodeId={rootNodeId} />
+        )}
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <NodeCommandPalette open={cmdPaletteOpen} onClose={() => setCmdPaletteOpen(false)} />
     </div>
   )
 }
@@ -430,8 +455,6 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
       {rootNode.fields.length > 0 && (
         <FieldsSection nodeId={rootNodeId} fields={rootNode.fields} depth={-1} />
       )}
-
-      <BacklinksSection nodeId={rootNodeId} />
     </div>
   )
 }

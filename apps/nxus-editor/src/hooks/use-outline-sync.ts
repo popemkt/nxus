@@ -145,6 +145,58 @@ export function useOutlineSync() {
   )
 
   /**
+   * Create the first child of a parent node (when outline is empty).
+   */
+  const createFirstChild = useCallback(
+    (parentId: string) => {
+      const { createFirstChild: storeCreate } = useOutlineStore.getState()
+      const newId = storeCreate(parentId)
+
+      const { nodes } = useOutlineStore.getState()
+      const node = nodes.get(newId)
+      if (node && node.parentId) {
+        const serverParentId = toServerParentId(node.parentId)
+        createNodeServerFn({
+          data: {
+            content: '',
+            parentId: serverParentId,
+            order: parseInt(node.order, 10),
+          },
+        })
+          .then((result) => {
+            if (result.success && result.nodeId !== newId) {
+              useOutlineStore.setState((state) => {
+                const tempNode = state.nodes.get(newId)
+                if (!tempNode) return state
+                const next = new Map(state.nodes)
+                next.delete(newId)
+                next.set(result.nodeId, { ...tempNode, id: result.nodeId })
+                const parent = tempNode.parentId ? next.get(tempNode.parentId) : null
+                if (parent && tempNode.parentId) {
+                  next.set(tempNode.parentId, {
+                    ...parent,
+                    children: parent.children.map((c) => c === newId ? result.nodeId : c),
+                  })
+                }
+                return {
+                  nodes: next,
+                  activeNodeId: state.activeNodeId === newId ? result.nodeId : state.activeNodeId,
+                  selectedNodeId: state.selectedNodeId === newId ? result.nodeId : state.selectedNodeId,
+                }
+              })
+            }
+            invalidateQueries()
+          })
+          .catch((err) => {
+            console.error('[sync] Failed to create first child:', err)
+          })
+      }
+      return newId
+    },
+    [invalidateQueries],
+  )
+
+  /**
    * Update content — optimistic + debounced persist.
    */
   const updateNodeContent = useCallback(
@@ -379,6 +431,7 @@ export function useOutlineSync() {
 
   return {
     createNodeAfter,
+    createFirstChild,
     updateNodeContent,
     deleteNode,
     indentNode,
