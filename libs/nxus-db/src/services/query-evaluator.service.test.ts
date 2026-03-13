@@ -17,6 +17,7 @@ import {
   evaluateFilter,
   evaluateHasFieldFilter,
   evaluateLogicalFilter,
+  evaluatePathFilter,
   evaluatePropertyFilter,
   evaluateQuery,
   evaluateRelationFilter,
@@ -102,6 +103,8 @@ function seedSystemNodes() {
     { id: 'field-priority', systemId: 'field:priority', content: 'Priority' },
     { id: 'field-category', systemId: 'field:category', content: 'Category' },
     { id: 'field-dependencies', systemId: 'field:dependencies', content: 'Dependencies' },
+    { id: 'field-hat', systemId: 'field:hat', content: 'Hat' },
+    { id: 'field-color', systemId: 'field:color', content: 'Color' },
   ]
 
   for (const field of systemFields) {
@@ -408,6 +411,88 @@ describe('query-evaluator.service', () => {
         db,
         { type: 'property', fieldId: 'field:non-existent', op: 'eq', value: 'test' },
         candidates,
+      )
+
+      expect(result.size).toBe(0)
+    })
+  })
+
+  // ==========================================================================
+  // evaluatePathFilter
+  // ==========================================================================
+
+  describe('evaluatePathFilter', () => {
+    it('should match a two-hop field path against terminal values', () => {
+      const alice = createNode(db, { content: 'Alice' })
+      const bob = createNode(db, { content: 'Bob' })
+      const redHat = createNode(db, { content: 'Red Hat' })
+      const blueHat = createNode(db, { content: 'Blue Hat' })
+
+      setProperty(db, alice, 'field:hat' as FieldSystemId, redHat)
+      setProperty(db, bob, 'field:hat' as FieldSystemId, blueHat)
+      setProperty(db, redHat, 'field:color' as FieldSystemId, 'Red')
+      setProperty(db, blueHat, 'field:color' as FieldSystemId, 'Blue')
+
+      const result = evaluatePathFilter(
+        db,
+        {
+          type: 'path',
+          path: [{ fieldId: 'field:hat' }, { fieldId: 'field:color' }],
+          op: 'eq',
+          value: 'Red',
+        },
+        new Set([alice, bob]),
+      )
+
+      expect(result.size).toBe(1)
+      expect(result.has(alice)).toBe(true)
+      expect(result.has(bob)).toBe(false)
+    })
+
+    it('should match when any branch in a multi-value reference path matches', () => {
+      const alice = createNode(db, { content: 'Alice' })
+      const bob = createNode(db, { content: 'Bob' })
+      const redHat = createNode(db, { content: 'Red Hat' })
+      const greenHat = createNode(db, { content: 'Green Hat' })
+      const blueHat = createNode(db, { content: 'Blue Hat' })
+
+      setProperty(db, alice, 'field:hat' as FieldSystemId, [greenHat, redHat])
+      setProperty(db, bob, 'field:hat' as FieldSystemId, [blueHat])
+      setProperty(db, redHat, 'field:color' as FieldSystemId, 'Red')
+      setProperty(db, greenHat, 'field:color' as FieldSystemId, 'Green')
+      setProperty(db, blueHat, 'field:color' as FieldSystemId, 'Blue')
+
+      const result = evaluatePathFilter(
+        db,
+        {
+          type: 'path',
+          path: [{ fieldId: 'field:hat' }, { fieldId: 'field:color' }],
+          op: 'eq',
+          value: 'Red',
+        },
+        new Set([alice, bob]),
+      )
+
+      expect(result.size).toBe(1)
+      expect(result.has(alice)).toBe(true)
+      expect(result.has(bob)).toBe(false)
+    })
+
+    it('should return empty set when an intermediate segment cannot be traversed', () => {
+      const alice = createNode(db, { content: 'Alice' })
+      const hat = createNode(db, { content: 'Hat' })
+
+      setProperty(db, hat, 'field:color' as FieldSystemId, 'Red')
+
+      const result = evaluatePathFilter(
+        db,
+        {
+          type: 'path',
+          path: [{ fieldId: 'field:hat' }, { fieldId: 'field:color' }],
+          op: 'eq',
+          value: 'Red',
+        },
+        new Set([alice]),
       )
 
       expect(result.size).toBe(0)
@@ -896,6 +981,35 @@ describe('query-evaluator.service', () => {
       expect(result.nodes.length).toBe(1)
       expect(result.nodes[0].id).toBe(item1)
     })
+
+    it('should evaluate a path filter inside a complete query', () => {
+      const alice = createNode(db, { content: 'Alice', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const bob = createNode(db, { content: 'Bob', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      const redHat = createNode(db, { content: 'Red Hat' })
+      const blueHat = createNode(db, { content: 'Blue Hat' })
+
+      setProperty(db, alice, 'field:hat' as FieldSystemId, redHat)
+      setProperty(db, bob, 'field:hat' as FieldSystemId, blueHat)
+      setProperty(db, redHat, 'field:color' as FieldSystemId, 'Red')
+      setProperty(db, blueHat, 'field:color' as FieldSystemId, 'Blue')
+
+      const result = evaluateQuery(db, {
+        filters: [
+          { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+          {
+            type: 'path',
+            path: [{ fieldId: 'field:hat' }, { fieldId: 'field:color' }],
+            op: 'eq',
+            value: 'Red',
+          },
+        ],
+        limit: 500,
+      })
+
+      expect(result.nodes.length).toBe(1)
+      expect(result.nodes[0].id).toBe(alice)
+      expect(result.totalCount).toBe(1)
+    })
   })
 
   // ==========================================================================
@@ -921,6 +1035,17 @@ describe('query-evaluator.service', () => {
         candidates,
       )
       expect(contentResult.has(node)).toBe(true)
+
+      const pathResult = evaluateFilter(
+        db,
+        {
+          type: 'path',
+          path: [{ fieldId: 'field:description' }],
+          op: 'isEmpty',
+        },
+        candidates,
+      )
+      expect(pathResult.has(node)).toBe(true)
     })
   })
 })
