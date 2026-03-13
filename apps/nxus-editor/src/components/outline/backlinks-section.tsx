@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Hash, CaretRight } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import type { QueryDefinition } from '@nxus/db'
-import { evaluateQueryServerFn } from '@/services/outline.server'
+import { getBacklinksServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getSupertagColor } from '@/lib/supertag-colors'
 
@@ -11,6 +10,11 @@ interface BacklinkNode {
   id: string
   content: string
   supertags: { id: string; content: string; systemId: string | null }[]
+}
+
+interface BacklinkGroup {
+  fieldName: string
+  nodes: BacklinkNode[]
 }
 
 interface BacklinksSectionProps {
@@ -21,20 +25,16 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
   const [collapsed, setCollapsed] = useState(false)
   const navigateToNode = useNavigateToNode()
 
-  const definition: QueryDefinition = {
-    filters: [{ type: 'relation', relationType: 'linksTo', targetNodeId: nodeId }],
-    limit: 50,
-  }
-
   const { data, isLoading } = useQuery({
     queryKey: ['backlinks', nodeId],
-    queryFn: () => evaluateQueryServerFn({ data: { definition } }),
+    queryFn: () => getBacklinksServerFn({ data: { nodeId } }),
     staleTime: 30_000,
   })
 
-  const results: BacklinkNode[] = data?.success ? data.nodes : []
+  const groups: BacklinkGroup[] = data?.success ? data.groups : []
+  const totalCount = data?.success ? data.totalCount : 0
 
-  if (isLoading || results.length === 0) return null
+  if (isLoading || totalCount === 0) return null
 
   return (
     <div className="mt-3 mb-1">
@@ -52,12 +52,63 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
           weight="bold"
           className={cn('transition-transform', !collapsed && 'rotate-90')}
         />
-        References ({results.length})
+        References ({totalCount})
       </button>
 
       {!collapsed && (
         <div className="mt-0.5">
-          {results.map((node) => {
+          {groups.map((group) => (
+            <FieldGroup
+              key={group.fieldName}
+              group={group}
+              navigateToNode={navigateToNode}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FieldGroup({
+  group,
+  navigateToNode,
+}: {
+  group: BacklinkGroup
+  navigateToNode: (nodeId: string) => void
+}) {
+  const [expanded, setExpanded] = useState(true)
+  const INITIAL_SHOW = 3
+  const [showAll, setShowAll] = useState(false)
+
+  const visibleNodes = showAll ? group.nodes : group.nodes.slice(0, INITIAL_SHOW)
+  const hasMore = group.nodes.length > INITIAL_SHOW
+
+  return (
+    <div className="mb-1">
+      {/* Field group header: "Appears as [fieldName] in..." */}
+      <button
+        type="button"
+        className={cn(
+          'flex items-center gap-1 pl-2 py-0.5',
+          'text-[11px] text-foreground/25',
+          'cursor-pointer hover:text-foreground/40 transition-colors',
+        )}
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <CaretRight
+          size={8}
+          weight="bold"
+          className={cn('transition-transform', expanded && 'rotate-90')}
+        />
+        <span>
+          Appears as <span className="font-medium text-foreground/35">{group.fieldName}</span> in…
+        </span>
+      </button>
+
+      {expanded && (
+        <>
+          {visibleNodes.map((node) => {
             const primaryColor = node.supertags[0]
               ? getSupertagColor(node.supertags[0].id)
               : null
@@ -69,7 +120,7 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
                 className={cn(
                   'flex w-full items-start rounded-sm cursor-pointer text-left',
                   'hover:bg-foreground/[0.03] transition-colors duration-75',
-                  'pl-1',
+                  'pl-4',
                 )}
                 onClick={() => navigateToNode(node.id)}
                 title={`Go to: ${node.content || 'Untitled'}`}
@@ -125,7 +176,27 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
               </button>
             )
           })}
-        </div>
+
+          {/* "Show N more" toggle */}
+          {hasMore && !showAll && (
+            <button
+              type="button"
+              className="pl-10 py-0.5 text-[11px] text-foreground/25 hover:text-foreground/40 transition-colors cursor-pointer"
+              onClick={() => setShowAll(true)}
+            >
+              Show {group.nodes.length - INITIAL_SHOW} more
+            </button>
+          )}
+          {hasMore && showAll && (
+            <button
+              type="button"
+              className="pl-10 py-0.5 text-[11px] text-foreground/25 hover:text-foreground/40 transition-colors cursor-pointer"
+              onClick={() => setShowAll(false)}
+            >
+              Show less
+            </button>
+          )}
+        </>
       )}
     </div>
   )

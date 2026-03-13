@@ -362,6 +362,82 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Get backlinks grouped by field name — "Appears as [fieldName] in..."
+ * Queries nodeProperties directly for rows whose value references the target node,
+ * then groups them by field name with the linking node's content + supertags.
+ */
+export const getBacklinksServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ nodeId: z.string() }))
+  .handler(async (ctx) => {
+    const {
+      nodeProperties,
+      assembleNode,
+    } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    const targetNodeId = ctx.data.nodeId
+
+    // Find all properties whose value references the target node
+    const allProps = db.select().from(nodeProperties).all()
+
+    // Map: fieldName -> Set of nodeIds that reference target via that field
+    const fieldGroups = new Map<string, { fieldName: string; nodeIds: Set<string> }>()
+
+    for (const prop of allProps) {
+      try {
+        const value = JSON.parse(prop.value || '')
+        const isMatch =
+          value === targetNodeId ||
+          (Array.isArray(value) && value.includes(targetNodeId))
+        if (!isMatch) continue
+
+        // Resolve the field node to get the field name
+        const fieldNode = assembleNode(db, prop.fieldNodeId)
+        const fieldName = fieldNode?.content ?? 'Unknown'
+
+        // Skip system fields like 'supertag', 'extends', 'order' etc.
+        const systemFieldNames = new Set(['supertag', 'extends', 'order', 'field_type', 'query_definition', 'color'])
+        if (systemFieldNames.has(fieldName)) continue
+
+        if (!fieldGroups.has(fieldName)) {
+          fieldGroups.set(fieldName, { fieldName, nodeIds: new Set() })
+        }
+        fieldGroups.get(fieldName)!.nodeIds.add(prop.nodeId)
+      } catch {
+        // Skip malformed values
+      }
+    }
+
+    // Assemble linking nodes and build grouped result
+    const groups = Array.from(fieldGroups.values()).map((group) => {
+      const nodes = Array.from(group.nodeIds)
+        .map((nodeId) => {
+          const assembled = assembleNode(db, nodeId)
+          if (!assembled || assembled.deletedAt) return null
+          return {
+            id: assembled.id,
+            content: assembled.content ?? '',
+            supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => ({
+              id: st.id,
+              content: st.content,
+              systemId: st.systemId,
+            })),
+          }
+        })
+        .filter((n): n is NonNullable<typeof n> => n !== null)
+
+      return {
+        fieldName: group.fieldName,
+        nodes,
+      }
+    }).filter((g) => g.nodes.length > 0)
+
+    const totalCount = groups.reduce((sum, g) => sum + g.nodes.length, 0)
+
+    return { success: true as const, groups, totalCount }
+  })
+
+/**
  * Update a query node's definition.
  * Serializes the QueryDefinition to JSON and stores it on field:query_definition.
  */

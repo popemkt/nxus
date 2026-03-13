@@ -129,8 +129,6 @@ test.describe('Outline Editor', () => {
         await page.keyboard.press('Escape')
         await page.waitForTimeout(300)
 
-        // Active editor should be gone, but node should be selected (bg highlight)
-        const selectedNode = page.locator('.node-row').filter({ has: page.locator('.bg-primary\\/5') })
         // At least the contenteditable should be gone
         const editables = await page.locator('[contenteditable="true"]').count()
         expect(editables).toBe(0)
@@ -280,6 +278,354 @@ test.describe('Outline Editor', () => {
         // Should have the field indicator (›)
         const indicator = firstField.locator('text=›')
         await expect(indicator).toBeVisible()
+      }
+    })
+  })
+
+  test.describe('Node Splitting', () => {
+    test('Enter at end of text creates empty sibling', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const initialCount = await nodeBlocks.count()
+
+      if (initialCount > 0) {
+        // Click first node to activate
+        const firstContent = page.locator('.node-content').first()
+        await firstContent.click()
+        await expect(page.locator('[contenteditable="true"]')).toBeVisible({ timeout: 3000 })
+
+        // Move cursor to end
+        await page.keyboard.press('End')
+        await page.waitForTimeout(100)
+
+        // Press Enter — should create an empty sibling (no split)
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(500)
+
+        const newCount = await nodeBlocks.count()
+        expect(newCount).toBe(initialCount + 1)
+
+        // The new node should be active and empty
+        const activeEditable = page.locator('[contenteditable="true"]')
+        await expect(activeEditable).toBeVisible()
+        const text = await activeEditable.textContent()
+        expect(text?.trim()).toBe('')
+      }
+    })
+
+    test('Enter mid-text splits node content', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const initialCount = await nodeBlocks.count()
+
+      if (initialCount > 0) {
+        // Click first node to activate and type predictable content
+        const firstContent = page.locator('.node-content').first()
+        await firstContent.click()
+        await expect(page.locator('[contenteditable="true"]')).toBeVisible({ timeout: 3000 })
+
+        // Select all and type new content so we know exactly what's there
+        await page.keyboard.press('Meta+a')
+        await page.keyboard.type('AABB')
+        await page.waitForTimeout(200)
+
+        // Move cursor to middle (after "AA")
+        await page.keyboard.press('Home')
+        await page.keyboard.press('ArrowRight')
+        await page.keyboard.press('ArrowRight')
+        await page.waitForTimeout(100)
+
+        // Press Enter — should split: current node gets "AA", new node gets "BB"
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(500)
+
+        const newCount = await nodeBlocks.count()
+        expect(newCount).toBe(initialCount + 1)
+
+        // The new node (now active) should contain the after-text
+        const activeEditable = page.locator('[contenteditable="true"]')
+        const afterText = await activeEditable.textContent()
+        expect(afterText).toContain('BB')
+      }
+    })
+  })
+
+  test.describe('Multi-Node Selection', () => {
+    test('Shift+ArrowDown extends selection to multiple nodes', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const count = await nodeBlocks.count()
+
+      if (count >= 2) {
+        // Activate first node then Escape to enter selection mode
+        await page.locator('.node-content').first().click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        // Shift+ArrowDown to extend selection
+        await page.keyboard.press('Shift+ArrowDown')
+        await page.waitForTimeout(300)
+
+        // Both nodes should now be highlighted (bg-primary/5)
+        // Check that at least 2 node rows have selection styling
+        const selectedNodes = page.locator('.node-row.bg-primary\\/5')
+        const selectedCount = await selectedNodes.count()
+        expect(selectedCount).toBeGreaterThanOrEqual(2)
+      }
+    })
+
+    test('ArrowDown without Shift resets to single selection', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const count = await nodeBlocks.count()
+
+      if (count >= 3) {
+        // Enter selection mode
+        await page.locator('.node-content').first().click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        // Extend selection to 2 nodes
+        await page.keyboard.press('Shift+ArrowDown')
+        await page.waitForTimeout(200)
+
+        // Then plain ArrowDown — should reset to single selection
+        await page.keyboard.press('ArrowDown')
+        await page.waitForTimeout(300)
+
+        const selectedNodes = page.locator('.node-row.bg-primary\\/5')
+        const selectedCount = await selectedNodes.count()
+        expect(selectedCount).toBe(1)
+      }
+    })
+
+    test('Delete removes all selected nodes in multi-select', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const initialCount = await nodeBlocks.count()
+
+      if (initialCount >= 3) {
+        // Enter selection mode on first node
+        await page.locator('.node-content').first().click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        // Select 2 nodes with Shift+ArrowDown
+        await page.keyboard.press('Shift+ArrowDown')
+        await page.waitForTimeout(200)
+
+        // Delete all selected
+        await page.keyboard.press('Delete')
+        await page.waitForTimeout(500)
+
+        const newCount = await nodeBlocks.count()
+        expect(newCount).toBe(initialCount - 2)
+      }
+    })
+  })
+
+  test.describe('Search Palette (Ctrl+S)', () => {
+    test('Ctrl+S opens search palette modal', async ({ page }) => {
+      await page.waitForTimeout(2000)
+
+      // Open search palette
+      await page.keyboard.press('Meta+s')
+      await page.waitForTimeout(300)
+
+      // Should show a modal with search input
+      const searchInput = page.locator('input[placeholder*="Search"]')
+      await expect(searchInput).toBeVisible({ timeout: 3000 })
+    })
+
+    test('typing in search palette shows results', async ({ page }) => {
+      await page.waitForTimeout(2000)
+
+      await page.keyboard.press('Meta+s')
+      await page.waitForTimeout(300)
+
+      const searchInput = page.locator('input[placeholder*="Search"]')
+      await expect(searchInput).toBeVisible({ timeout: 3000 })
+
+      // Type a search query
+      await searchInput.fill('a')
+      await page.waitForTimeout(500) // Wait for debounced search
+
+      // Results list should appear (or "No results" message)
+      const resultsList = page.locator('button.flex.w-full')
+      const noResults = page.getByText('No results')
+
+      const hasResults = await resultsList.count() > 0
+      const hasNoResults = await noResults.isVisible().catch(() => false)
+
+      expect(hasResults || hasNoResults).toBe(true)
+    })
+
+    test('Escape closes search palette', async ({ page }) => {
+      await page.waitForTimeout(2000)
+
+      await page.keyboard.press('Meta+s')
+      await page.waitForTimeout(300)
+
+      const searchInput = page.locator('input[placeholder*="Search"]')
+      await expect(searchInput).toBeVisible({ timeout: 3000 })
+
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(300)
+
+      await expect(searchInput).toBeHidden()
+    })
+  })
+
+  test.describe('Command Palette (Ctrl+K)', () => {
+    test('Ctrl+K opens inline command palette below focused node', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeContent = page.locator('.node-content').first()
+
+      if (await nodeContent.isVisible().catch(() => false)) {
+        // Activate a node first, then Escape to select mode
+        await nodeContent.click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        // Open command palette
+        await page.keyboard.press('Meta+k')
+        await page.waitForTimeout(300)
+
+        // Should show command palette with input
+        const cmdInput = page.locator('input[placeholder*="command"]')
+        await expect(cmdInput).toBeVisible({ timeout: 3000 })
+      }
+    })
+
+    test('command palette shows commands list', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeContent = page.locator('.node-content').first()
+
+      if (await nodeContent.isVisible().catch(() => false)) {
+        await nodeContent.click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        await page.keyboard.press('Meta+k')
+        await page.waitForTimeout(300)
+
+        // Should show available commands
+        const addSupertag = page.getByText('Add supertag')
+        const deleteNode = page.getByText('Delete node')
+
+        await expect(addSupertag).toBeVisible({ timeout: 3000 })
+        await expect(deleteNode).toBeVisible()
+      }
+    })
+
+    test('Escape closes command palette', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeContent = page.locator('.node-content').first()
+
+      if (await nodeContent.isVisible().catch(() => false)) {
+        await nodeContent.click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        await page.keyboard.press('Meta+k')
+        await page.waitForTimeout(300)
+
+        const cmdInput = page.locator('input[placeholder*="command"]')
+        await expect(cmdInput).toBeVisible({ timeout: 3000 })
+
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        await expect(cmdInput).toBeHidden()
+      }
+    })
+
+    test('selecting Add supertag navigates to supertag step', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeContent = page.locator('.node-content').first()
+
+      if (await nodeContent.isVisible().catch(() => false)) {
+        await nodeContent.click()
+        await page.waitForTimeout(300)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(300)
+
+        await page.keyboard.press('Meta+k')
+        await page.waitForTimeout(300)
+
+        // Select "Add supertag" (first item, press Enter)
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(300)
+
+        // Should now show supertag search step with breadcrumb
+        const breadcrumb = page.getByText('Add supertag', { exact: false })
+        await expect(breadcrumb.first()).toBeVisible({ timeout: 3000 })
+
+        const searchInput = page.locator('input[placeholder*="supertag"]')
+        await expect(searchInput).toBeVisible()
+      }
+    })
+  })
+
+  test.describe('Backlinks', () => {
+    test('zoomed node shows References section when backlinks exist', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const count = await nodeBlocks.count()
+
+      if (count > 0) {
+        // Zoom into a node that might have backlinks
+        const bullet = page.locator('.bullet-container').first()
+        await bullet.click({ modifiers: ['Meta'] })
+        await page.waitForTimeout(1000)
+
+        // Check for References section — may or may not exist depending on data
+        const refsSection = page.getByText(/References \(\d+\)/)
+        const hasRefs = await refsSection.isVisible().catch(() => false)
+
+        // If references exist, they should show "Appears as ... in..." grouping
+        if (hasRefs) {
+          const appearsAs = page.getByText(/Appears as/)
+          await expect(appearsAs.first()).toBeVisible({ timeout: 3000 })
+        }
+      }
+    })
+
+    test('References section is collapsible', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const nodeBlocks = page.locator('.node-block')
+      const count = await nodeBlocks.count()
+
+      if (count > 0) {
+        const bullet = page.locator('.bullet-container').first()
+        await bullet.click({ modifiers: ['Meta'] })
+        await page.waitForTimeout(1000)
+
+        const refsButton = page.getByText(/References \(\d+\)/)
+        const hasRefs = await refsButton.isVisible().catch(() => false)
+
+        if (hasRefs) {
+          // Click to collapse
+          await refsButton.click()
+          await page.waitForTimeout(300)
+
+          // The "Appears as" text should be hidden after collapse
+          const appearsAs = page.getByText(/Appears as/)
+          const visible = await appearsAs.first().isVisible().catch(() => false)
+          expect(visible).toBe(false)
+
+          // Click again to expand
+          await refsButton.click()
+          await page.waitForTimeout(300)
+
+          await expect(appearsAs.first()).toBeVisible()
+        }
       }
     })
   })

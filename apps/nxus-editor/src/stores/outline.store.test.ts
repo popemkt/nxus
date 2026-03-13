@@ -32,6 +32,7 @@ describe('outline store', () => {
       rootNodeId: WORKSPACE_ROOT_ID,
       activeNodeId: null,
       selectedNodeId: null,
+      selectedNodeIds: new Set(),
       cursorPosition: 0,
     })
   })
@@ -342,6 +343,111 @@ describe('outline store', () => {
       useOutlineStore.getState().toggleCollapse('a')
       expect(useOutlineStore.getState().getNextVisibleNode('a')).toBe('b')
       expect(useOutlineStore.getState().getPreviousVisibleNode('b')).toBe('a')
+    })
+  })
+
+  describe('createNodeAfter with initialContent (node splitting)', () => {
+    it('creates a new sibling with the given content', () => {
+      seedStore()
+      const newId = useOutlineStore.getState().createNodeAfter('a', 'after text')
+      const state = useOutlineStore.getState()
+
+      expect(state.nodes.get(newId)?.content).toBe('after text')
+      expect(state.nodes.get(newId)?.parentId).toBe(WORKSPACE_ROOT_ID)
+      expect(state.activeNodeId).toBe(newId)
+    })
+
+    it('defaults to empty content when no initialContent', () => {
+      seedStore()
+      const newId = useOutlineStore.getState().createNodeAfter('a')
+      expect(useOutlineStore.getState().nodes.get(newId)?.content).toBe('')
+    })
+  })
+
+  describe('createFirstChild', () => {
+    it('creates a child of the given parent', () => {
+      seedStore()
+      // 'b' has no children
+      const newId = useOutlineStore.getState().createFirstChild('b')
+      const state = useOutlineStore.getState()
+
+      expect(state.nodes.has(newId)).toBe(true)
+      expect(state.nodes.get(newId)?.parentId).toBe('b')
+      expect(state.nodes.get(newId)?.content).toBe('')
+      expect(state.nodes.get('b')?.children).toContain(newId)
+      expect(state.activeNodeId).toBe(newId)
+    })
+
+    it('returns parentId if parent does not exist', () => {
+      seedStore()
+      const result = useOutlineStore.getState().createFirstChild('nonexistent')
+      expect(result).toBe('nonexistent')
+    })
+  })
+
+  describe('multi-select: selectedNodeIds, extendSelection, clearSelection', () => {
+    it('selectNode sets single selection and clears multi-set', () => {
+      seedStore()
+      useOutlineStore.getState().selectNode('a')
+      const state = useOutlineStore.getState()
+      expect(state.selectedNodeId).toBe('a')
+      expect(state.selectedNodeIds.size).toBe(1)
+      expect(state.selectedNodeIds.has('a')).toBe(true)
+      expect(state.activeNodeId).toBeNull()
+    })
+
+    it('selectNode(null) clears everything', () => {
+      seedStore()
+      useOutlineStore.getState().selectNode('a')
+      useOutlineStore.getState().selectNode(null)
+      const state = useOutlineStore.getState()
+      expect(state.selectedNodeId).toBeNull()
+      expect(state.selectedNodeIds.size).toBe(0)
+    })
+
+    it('extendSelection adds nodes to the set', () => {
+      seedStore()
+      useOutlineStore.getState().selectNode('a')
+      useOutlineStore.getState().extendSelection('b')
+      const state = useOutlineStore.getState()
+      expect(state.selectedNodeIds.size).toBe(2)
+      expect(state.selectedNodeIds.has('a')).toBe(true)
+      expect(state.selectedNodeIds.has('b')).toBe(true)
+      expect(state.selectedNodeId).toBe('b') // anchor moves
+    })
+
+    it('extendSelection shrinks when going back over selected node', () => {
+      seedStore()
+      useOutlineStore.getState().selectNode('a')
+      useOutlineStore.getState().extendSelection('b')
+      useOutlineStore.getState().extendSelection('a')
+      const state = useOutlineStore.getState()
+      // 'b' should be removed (shrink), 'a' stays
+      expect(state.selectedNodeIds.has('a')).toBe(true)
+      expect(state.selectedNodeIds.has('b')).toBe(false)
+      expect(state.selectedNodeId).toBe('a')
+    })
+
+    it('clearSelection empties all selection state', () => {
+      seedStore()
+      useOutlineStore.getState().selectNode('a')
+      useOutlineStore.getState().extendSelection('b')
+      useOutlineStore.getState().clearSelection()
+      const state = useOutlineStore.getState()
+      expect(state.selectedNodeId).toBeNull()
+      expect(state.selectedNodeIds.size).toBe(0)
+      expect(state.activeNodeId).toBeNull()
+    })
+
+    it('activateNode sets single selection in set', () => {
+      seedStore()
+      useOutlineStore.getState().selectNode('a')
+      useOutlineStore.getState().extendSelection('b')
+      useOutlineStore.getState().activateNode('c', 5)
+      const state = useOutlineStore.getState()
+      expect(state.selectedNodeIds.size).toBe(1)
+      expect(state.selectedNodeIds.has('c')).toBe(true)
+      expect(state.activeNodeId).toBe('c')
     })
   })
 })
