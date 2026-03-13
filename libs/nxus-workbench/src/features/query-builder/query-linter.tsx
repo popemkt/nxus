@@ -12,7 +12,6 @@ import { cn } from '@nxus/ui'
 import type {
   QueryDefinition,
   QueryFilter,
-  FilterOp,
   SupertagFilter,
   PropertyFilter,
   PathFilter,
@@ -22,6 +21,12 @@ import type {
   HasFieldFilter,
   LogicalFilter,
 } from '@nxus/db'
+import {
+  formatFilterIdentifier,
+  formatFilterOperator,
+  formatFilterValue,
+  formatPathFilterLabel,
+} from './filter-format.js'
 
 // ============================================================================
 // Types
@@ -137,7 +142,7 @@ function formatFilter(filter: QueryFilter): string {
  * Format supertag filter
  */
 function formatSupertagFilter(filter: SupertagFilter): string {
-  const supertagName = formatSystemId(filter.supertagId || '?')
+  const supertagName = formatFilterIdentifier(filter.supertagId)
   const inherited = filter.includeInherited ? '+' : ''
   return `with #${supertagName}${inherited}`
 }
@@ -146,9 +151,9 @@ function formatSupertagFilter(filter: SupertagFilter): string {
  * Format property filter
  */
 function formatPropertyFilter(filter: PropertyFilter): string {
-  const fieldName = formatSystemId(filter.fieldId || '?')
-  const op = formatOperator(filter.op)
-  const value = formatValue(filter.value)
+  const fieldName = formatFilterIdentifier(filter.fieldId)
+  const op = formatFilterOperator(filter.op)
+  const value = formatFilterValue(filter.value)
 
   // Handle operators that don't need a value
   if (filter.op === 'isEmpty') {
@@ -162,18 +167,7 @@ function formatPropertyFilter(filter: PropertyFilter): string {
 }
 
 function formatPathFilter(filter: PathFilter): string {
-  const path = filter.path
-    .map((segment) => formatSystemId(segment.fieldId || '?'))
-    .join('.')
-
-  if (filter.op === 'isEmpty') {
-    return `where ${path} is empty`
-  }
-  if (filter.op === 'isNotEmpty') {
-    return `where ${path} is not empty`
-  }
-
-  return `where ${path} ${formatOperator(filter.op)} ${formatValue(filter.value)}`
+  return formatPathFilterLabel(filter, { includeWhere: true })
 }
 
 /**
@@ -226,7 +220,7 @@ function formatTemporalFilter(filter: TemporalFilter): string {
  * Format hasField filter
  */
 function formatHasFieldFilter(filter: HasFieldFilter): string {
-  const fieldName = formatSystemId(filter.fieldId || '?')
+  const fieldName = formatFilterIdentifier(filter.fieldId)
   return filter.negate ? `missing ${fieldName}` : `having ${fieldName}`
 }
 
@@ -260,46 +254,7 @@ function formatLogicalFilter(filter: LogicalFilter): string {
  * Format a system ID for display (e.g., "supertag:item" -> "Item")
  */
 function formatSystemId(systemId: string): string {
-  const parts = systemId.split(':')
-  const name = parts[parts.length - 1] ?? ''
-  if (!name) return systemId || '?'
-  return name.charAt(0).toUpperCase() + name.slice(1)
-}
-
-/**
- * Format a filter operator for display
- */
-function formatOperator(op: FilterOp): string {
-  const opLabels: Record<FilterOp, string> = {
-    eq: '=',
-    neq: '≠',
-    gt: '>',
-    gte: '≥',
-    lt: '<',
-    lte: '≤',
-    contains: 'contains',
-    startsWith: 'starts with',
-    endsWith: 'ends with',
-    isEmpty: 'is empty',
-    isNotEmpty: 'is not empty',
-  }
-  return opLabels[op] || op
-}
-
-/**
- * Format a filter value for display
- */
-function formatValue(value: unknown): string {
-  if (value === undefined || value === null || value === '') {
-    return '?'
-  }
-  if (typeof value === 'string') {
-    return `"${value}"`
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value)
-  }
-  return JSON.stringify(value)
+  return formatFilterIdentifier(systemId)
 }
 
 /**

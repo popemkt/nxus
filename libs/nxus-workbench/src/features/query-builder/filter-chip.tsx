@@ -25,6 +25,10 @@ import { RelationFilterEditor } from './filters/relation-filter.js'
 import { TemporalFilterEditor } from './filters/temporal-filter.js'
 import { HasFieldFilterEditor } from './filters/hasfield-filter.js'
 import { LogicalFilterEditor } from './filters/logical-filter.js'
+import {
+  formatFilterIdentifier,
+  formatPathFilterLabel,
+} from './filter-format.js'
 
 // ============================================================================
 // Types
@@ -55,6 +59,7 @@ export function FilterChip({
 
   // Get filter display info
   const { icon: Icon, label, color } = getFilterDisplay(filter)
+  const isEditable = isEditableFilter(filter)
 
   // Determine if filter is complete (has required values)
   const isComplete = isFilterComplete(filter)
@@ -64,18 +69,19 @@ export function FilterChip({
       {/* Chip display */}
       <div
         className={cn(
-          'flex items-center gap-1.5 px-2 py-1 rounded-md border cursor-pointer transition-all',
-          'hover:border-primary/50',
+          'flex items-center gap-1.5 px-2 py-1 rounded-md border transition-all',
+          isEditable && 'cursor-pointer hover:border-primary/50',
           isComplete
             ? 'bg-primary/10 border-primary/30 text-primary'
             : 'bg-muted/50 border-dashed border-muted-foreground/30 text-muted-foreground',
           compact ? 'text-[10px] h-6' : 'text-xs h-7',
         )}
-        onClick={() => setIsEditing(true)}
-        role="button"
-        tabIndex={0}
+        onClick={isEditable ? () => setIsEditing(true) : undefined}
+        role={isEditable ? 'button' : undefined}
+        tabIndex={isEditable ? 0 : undefined}
+        aria-disabled={isEditable ? undefined : true}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (isEditable && (e.key === 'Enter' || e.key === ' ')) {
             setIsEditing(true)
           }
         }}
@@ -246,7 +252,7 @@ function getFilterDisplay(filter: QueryFilter): {
       return {
         icon: Hash,
         label: filter.supertagId
-          ? formatSystemId(filter.supertagId)
+          ? formatFilterIdentifier(filter.supertagId)
           : 'Select supertag...',
         color: filter.supertagId ? '#8b5cf6' : undefined, // Purple for supertags
       }
@@ -255,7 +261,7 @@ function getFilterDisplay(filter: QueryFilter): {
       return {
         icon: TextT,
         label: filter.fieldId
-          ? `${formatSystemId(filter.fieldId)} ${formatOp(filter.op)} ${formatValue(filter.value)}`
+          ? `${formatFilterIdentifier(filter.fieldId)} ${formatOp(filter.op)} ${formatValue(filter.value)}`
           : 'Select property...',
         color: filter.fieldId ? '#3b82f6' : undefined, // Blue for properties
       }
@@ -264,7 +270,11 @@ function getFilterDisplay(filter: QueryFilter): {
       return {
         icon: TextT,
         label: filter.path.length > 0
-          ? `${filter.path.map((segment) => formatSystemId(segment.fieldId)).join('.')} ${formatOp(filter.op)} ${formatValue(filter.value)}`
+          ? formatPathFilterLabel(filter, {
+              ascii: true,
+              emptyPlaceholder: '...',
+              truncateAt: 15,
+            })
           : 'Select path...',
         color: filter.path.length > 0 ? '#2563eb' : undefined,
       }
@@ -296,7 +306,7 @@ function getFilterDisplay(filter: QueryFilter): {
       return {
         icon: CheckSquare,
         label: filter.fieldId
-          ? `${filter.negate ? 'Missing' : 'Has'} ${formatSystemId(filter.fieldId)}`
+          ? `${filter.negate ? 'Missing' : 'Has'} ${formatFilterIdentifier(filter.fieldId)}`
           : 'Select field...',
         color: filter.fieldId ? '#06b6d4' : undefined, // Cyan for hasField
       }
@@ -346,14 +356,8 @@ function isFilterComplete(filter: QueryFilter): boolean {
   }
 }
 
-/**
- * Format a system ID for display (e.g., "supertag:item" -> "Item")
- */
-function formatSystemId(systemId: string): string {
-  const parts = systemId.split(':')
-  const name = parts[parts.length - 1] ?? ''
-  if (!name) return systemId
-  return name.charAt(0).toUpperCase() + name.slice(1)
+function isEditableFilter(filter: QueryFilter): boolean {
+  return filter.type !== 'path'
 }
 
 /**

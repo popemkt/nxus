@@ -1540,16 +1540,18 @@ export class SurrealBackend implements NodeBackend {
     }
 
     const db = this.ensureInitialized()
+    const nodeRefs = [...nodeIds].map((nodeId) => new StringRecordId(nodeId))
     const [edges] = await db.query<[Array<{ node_ref: RecordId; value: unknown }>]>(
-      'SELECT in AS node_ref, `value` FROM has_field WHERE out = $fieldId',
-      { fieldId: new StringRecordId(fieldRecordId) },
+      'SELECT in AS node_ref, `value` FROM has_field WHERE out = $fieldId AND in IN $nodeRefs',
+      {
+        fieldId: new StringRecordId(fieldRecordId),
+        nodeRefs,
+      },
     )
 
     const result = new Map<string, unknown[]>()
     for (const edge of (edges || [])) {
       const nodeId = rid(edge.node_ref)
-      if (!nodeIds.has(nodeId)) continue
-
       const existing = result.get(nodeId)
       if (existing) {
         existing.push(edge.value)
@@ -1585,16 +1587,15 @@ export class SurrealBackend implements NodeBackend {
     }
 
     const db = this.ensureInitialized()
+    const nodeRefs = [...nodeIds].map((nodeId) => new StringRecordId(nodeId))
     const [rows] = await db.query<[Array<{ id: RecordId }>]>(
-      'SELECT id FROM node WHERE deleted_at IS NONE',
+      'SELECT id FROM node WHERE deleted_at IS NONE AND id IN $nodeRefs',
+      { nodeRefs },
     )
 
     const result = new Set<string>()
     for (const row of (rows || [])) {
-      const nodeId = rid(row.id)
-      if (nodeIds.has(nodeId)) {
-        result.add(nodeId)
-      }
+      result.add(rid(row.id))
     }
     return result
   }

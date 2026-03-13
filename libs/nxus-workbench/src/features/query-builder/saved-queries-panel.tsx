@@ -25,6 +25,10 @@ import {
   useDeleteQuery,
 } from '../../hooks/use-query.js'
 import type { QueryDefinition, SavedQuery } from '@nxus/db'
+import {
+  formatFilterIdentifier,
+  formatPathFilterLabel,
+} from './filter-format.js'
 
 // ============================================================================
 // Types
@@ -328,7 +332,11 @@ function getFilterLabel(filter: QueryDefinition['filters'][number]): string {
     case 'property':
       return `${filter.fieldId?.replace('field:', '') || '?'} ${filter.op} ${filter.value || '?'}`
     case 'path':
-      return `${filter.path.map((segment) => segment.fieldId?.replace('field:', '') || '?').join('.')} ${filter.op} ${filter.value || '?'}`
+      return formatPathFilterLabel(filter, {
+        ascii: true,
+        emptyPlaceholder: '?',
+        quoteStrings: false,
+      })
     case 'content':
       return `"${filter.query?.slice(0, 20) || '?'}${(filter.query?.length ?? 0) > 20 ? '...' : ''}"`
     case 'temporal':
@@ -336,7 +344,7 @@ function getFilterLabel(filter: QueryDefinition['filters'][number]): string {
     case 'relation':
       return filter.relationType || 'relation'
     case 'hasField':
-      return `${filter.negate ? '!' : ''}has:${filter.fieldId?.replace('field:', '') || '?'}`
+      return `${filter.negate ? '!' : ''}has:${formatFilterIdentifier(filter.fieldId)}`
     case 'and':
       return `AND (${filter.filters?.length ?? 0})`
     case 'or':
