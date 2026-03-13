@@ -79,18 +79,50 @@ export const PathSegmentSchema = z.object({
 })
 export type PathSegment = z.infer<typeof PathSegmentSchema>
 
+const PathUnaryOpSchema = z.enum(['isEmpty', 'isNotEmpty'])
+const PathValueOpSchema = z.enum([
+  'eq',
+  'neq',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'contains',
+  'startsWith',
+  'endsWith',
+])
+
 /**
- * Path filter - recursively follows field references, then compares the
- * terminal field value.
+ * Path filter for unary emptiness checks.
+ */
+export const PathUnaryFilterSchema = BaseFilterSchema.extend({
+  type: z.literal('path'),
+  path: z.array(PathSegmentSchema).min(1),
+  op: PathUnaryOpSchema,
+})
+export type PathUnaryFilter = z.infer<typeof PathUnaryFilterSchema>
+
+/**
+ * Path filter with a required comparison value.
  *
  * Example: Hat.Color = "Red"
  */
-export const PathFilterSchema = BaseFilterSchema.extend({
+export const PathValueFilterSchema = BaseFilterSchema.extend({
   type: z.literal('path'),
   path: z.array(PathSegmentSchema).min(1),
-  op: FilterOpSchema,
-  value: z.unknown().optional(),
+  op: PathValueOpSchema,
+  value: z.unknown(),
 })
+export type PathValueFilter = z.infer<typeof PathValueFilterSchema>
+
+/**
+ * Path filter - recursively follows field references, then compares the
+ * terminal field value.
+ */
+export const PathFilterSchema = z.union([
+  PathUnaryFilterSchema,
+  PathValueFilterSchema,
+])
 export type PathFilter = z.infer<typeof PathFilterSchema>
 
 /**
