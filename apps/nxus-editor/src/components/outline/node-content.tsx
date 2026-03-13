@@ -19,6 +19,8 @@ interface NodeContentProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void
   onRemoveSupertag?: (supertagId: string, supertagSystemId: string | null) => void
   onAddSupertag?: (supertag: SupertagBadge) => void
+  onTriggerFieldAdd?: () => void
+  onSplitNode?: (beforeText: string, afterText: string) => void
 }
 
 export function NodeContent({
@@ -32,6 +34,8 @@ export function NodeContent({
   onKeyDown,
   onRemoveSupertag,
   onAddSupertag,
+  onTriggerFieldAdd,
+  onSplitNode,
 }: NodeContentProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const isComposing = useRef(false)
@@ -84,6 +88,17 @@ export function NodeContent({
   const handleInput = useCallback(() => {
     if (editorRef.current && !isComposing.current) {
       const text = editorRef.current.textContent ?? ''
+
+      // Detect `>` trigger for inline field creation
+      // `>` at start of text or after whitespace triggers field add
+      if (onTriggerFieldAdd && text.trimEnd() === '>') {
+        editorRef.current.textContent = ''
+        onChange('')
+        setAutocomplete(null)
+        onTriggerFieldAdd()
+        return
+      }
+
       onChange(text)
 
       // Detect `#word` pattern at caret position for supertag autocomplete
@@ -105,7 +120,7 @@ export function NodeContent({
         setAutocomplete(null)
       }
     }
-  }, [onChange, onAddSupertag])
+  }, [onChange, onAddSupertag, onTriggerFieldAdd])
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -173,11 +188,26 @@ export function NodeContent({
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (isComposing.current) return
       // Let autocomplete handle its own keys — it captures at document level
-      if (!autocomplete) {
-        onKeyDown(e)
+      if (autocomplete) return
+
+      // Enter mid-text → split node
+      if (e.key === 'Enter' && !e.shiftKey && onSplitNode && editorRef.current) {
+        const sel = window.getSelection()
+        const text = editorRef.current.textContent ?? ''
+        const offset = sel?.focusOffset ?? text.length
+        // Only split if cursor is mid-text (not at end and not empty)
+        if (text.length > 0 && offset < text.length) {
+          e.preventDefault()
+          const before = text.slice(0, offset)
+          const after = text.slice(offset)
+          onSplitNode(before, after)
+          return
+        }
       }
+
+      onKeyDown(e)
     },
-    [onKeyDown, autocomplete],
+    [onKeyDown, autocomplete, onSplitNode],
   )
 
   return (
@@ -274,21 +304,23 @@ function SupertagBadges({
           }}
           title={`Go to: ${tag.name}`}
         >
-          <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
+          {/* Icon area — fixed size, X overlays # on hover */}
+          <span className="relative shrink-0 h-[10px] w-[10px]">
+            <Hash size={10} weight="bold" className="opacity-60 group-hover/tag:opacity-0 transition-opacity" />
+            {onRemove && (
+              <span
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRemove(tag.id, tag.systemId)
+                }}
+                title={`Remove #${tag.name}`}
+              >
+                <X size={10} weight="bold" />
+              </span>
+            )}
+          </span>
           {tag.name}
-          {onRemove && (
-            <button
-              type="button"
-              className="ml-0.5 hidden shrink-0 rounded-sm p-px opacity-50 hover:opacity-100 group-hover/tag:inline-flex"
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemove(tag.id, tag.systemId)
-              }}
-              title={`Remove #${tag.name}`}
-            >
-              <X size={8} weight="bold" />
-            </button>
-          )}
         </span>
       ))}
     </div>

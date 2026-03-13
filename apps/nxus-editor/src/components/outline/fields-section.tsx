@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
@@ -16,6 +15,8 @@ interface FieldsSectionProps {
   nodeId: string
   fields: OutlineField[]
   depth: number
+  pendingFieldActive?: boolean
+  onPendingFieldDismiss?: () => void
 }
 
 /**
@@ -26,13 +27,11 @@ interface FieldsSectionProps {
  * with a field icon in the bullet column, a fixed-width label, and
  * the value area aligned across all fields.
  */
-export function FieldsSection({ nodeId, fields, depth }: FieldsSectionProps) {
-  const { removeField } = useOutlineSync()
-
-  if (fields.length === 0) return null
+export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPendingFieldDismiss }: FieldsSectionProps) {
+  const { removeField, addField } = useOutlineSync()
 
   return (
-    <div className="fields-section group/fields">
+    <div className="fields-section">
       {fields.map((field) => (
         <FieldRow
           key={field.fieldId}
@@ -42,7 +41,18 @@ export function FieldsSection({ nodeId, fields, depth }: FieldsSectionProps) {
           onRemove={() => removeField(nodeId, field.fieldId)}
         />
       ))}
-      <AddFieldTrigger nodeId={nodeId} depth={depth} existingFieldIds={fields.map((f) => f.fieldSystemId ?? f.fieldId)} />
+      {pendingFieldActive && (
+        <PendingFieldRow
+          nodeId={nodeId}
+          depth={depth}
+          existingFieldIds={fields.map((f) => f.fieldSystemId ?? f.fieldId)}
+          onCommit={(field) => {
+            addField(nodeId, field)
+            onPendingFieldDismiss?.()
+          }}
+          onDismiss={() => onPendingFieldDismiss?.()}
+        />
+      )}
     </div>
   )
 }
@@ -86,27 +96,35 @@ function FieldRow({
     [nodeId, field.fieldId],
   )
 
+  const handleLabelKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLSpanElement>) => {
+      // Backspace at position 0 → delete this field row
+      if (e.key === 'Backspace') {
+        const sel = window.getSelection()
+        if (sel && sel.focusOffset === 0) {
+          e.preventDefault()
+          onRemove()
+          return
+        }
+      }
+      // Prevent Enter from inserting a line break
+      if (e.key === 'Enter') {
+        e.preventDefault()
+      }
+      // Don't let keyboard events bubble to node-level handlers
+      e.stopPropagation()
+    },
+    [onRemove],
+  )
+
   return (
     <div
       className={cn(
-        'field-row group/field-row flex items-start py-1',
+        'field-row flex items-start py-1',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Remove button — visible on hover */}
-      <button
-        type="button"
-        className="hidden shrink-0 h-6 w-4 items-center justify-center text-foreground/25 hover:text-foreground/50 group-hover/field-row:inline-flex"
-        onClick={(e) => {
-          e.stopPropagation()
-          onRemove()
-        }}
-        title={`Remove ${field.fieldName}`}
-      >
-        <X size={10} weight="bold" />
-      </button>
-
       {/* Field icon — clickable to navigate to field definition node */}
       <span
         className="cursor-pointer hover:opacity-70 transition-opacity"
@@ -119,13 +137,16 @@ function FieldRow({
         <FieldBullet fieldType={field.fieldType} />
       </span>
 
-      {/* Field label — fixed width, pinned to first line, pl-1 matches node-content px-1 */}
+      {/* Field label — editable, Backspace at pos 0 deletes the field */}
       <span
+        contentEditable
+        suppressContentEditableWarning
         className={cn(
           'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
-          'select-none h-6 flex items-center pl-1',
+          'h-6 flex items-center pl-1 outline-none cursor-text',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
+        onKeyDown={handleLabelKeyDown}
       >
         {field.fieldName}
       </span>
@@ -143,6 +164,8 @@ function FieldRow({
   )
 }
 
+/* ─── Pending field row — inline field creation triggered by `>` ─── */
+
 interface AvailableField {
   fieldNodeId: string
   fieldName: string
@@ -150,98 +173,161 @@ interface AvailableField {
   fieldSystemId: string
 }
 
-function AddFieldTrigger({
+function PendingFieldRow({
   nodeId,
   depth,
   existingFieldIds,
+  onCommit,
+  onDismiss,
 }: {
   nodeId: string
   depth: number
   existingFieldIds: string[]
+  onCommit: (field: OutlineField) => void
+  onDismiss: () => void
 }) {
-  const [open, setOpen] = useState(false)
+  const labelRef = useRef<HTMLSpanElement>(null)
+  const [query, setQuery] = useState('')
   const [options, setOptions] = useState<AvailableField[]>([])
   const [loaded, setLoaded] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { addField } = useOutlineSync()
+  const [highlightIndex, setHighlightIndex] = useState(0)
 
-  const handleOpen = useCallback(() => {
-    if (!loaded) {
-      import('@/services/field.server').then(({ getAvailableFieldsServerFn }) => {
-        getAvailableFieldsServerFn({ data: { nodeId } })
-          .then((result) => {
-            if (result.success) setOptions(result.fields)
-            setLoaded(true)
-          })
-          .catch(() => setLoaded(true))
-      })
-    }
-    setOpen(true)
-  }, [nodeId, loaded])
-
-  // Close on outside click
+  // Auto-focus the label input on mount
   useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+    if (labelRef.current) {
+      labelRef.current.focus()
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }, [])
+
+  // Fetch available fields
+  useEffect(() => {
+    import('@/services/field.server').then(({ getAvailableFieldsServerFn }) => {
+      getAvailableFieldsServerFn({ data: { nodeId } })
+        .then((result) => {
+          if (result.success) setOptions(result.fields)
+          setLoaded(true)
+        })
+        .catch(() => setLoaded(true))
+    })
+  }, [nodeId])
 
   const existingSet = new Set(existingFieldIds)
-  const availableOptions = options.filter((o) => !existingSet.has(o.fieldSystemId))
+  const filtered = options
+    .filter((o) => !existingSet.has(o.fieldSystemId))
+    .filter((o) => !query || o.fieldName.toLowerCase().includes(query.toLowerCase()))
+
+  // Reset highlight when query changes
+  useEffect(() => {
+    setHighlightIndex(0)
+  }, [query])
+
+  const commitField = useCallback(
+    (opt: AvailableField) => {
+      onCommit({
+        fieldId: opt.fieldSystemId,
+        fieldName: opt.fieldName,
+        fieldNodeId: opt.fieldNodeId,
+        fieldSystemId: opt.fieldSystemId,
+        fieldType: opt.fieldType as OutlineField['fieldType'],
+        values: [],
+      })
+    },
+    [onCommit],
+  )
+
+  const handleInput = useCallback(() => {
+    const text = labelRef.current?.textContent ?? ''
+    setQuery(text)
+  }, [])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLSpanElement>) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.min(i + 1, filtered.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.max(i - 1, 0))
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const selected = filtered[highlightIndex]
+        if (selected) {
+          commitField(selected)
+        }
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onDismiss()
+        return
+      }
+      if (e.key === 'Backspace') {
+        const sel = window.getSelection()
+        if (sel && sel.focusOffset === 0 && !query) {
+          e.preventDefault()
+          onDismiss()
+          return
+        }
+      }
+      e.stopPropagation()
+    },
+    [filtered, highlightIndex, commitField, onDismiss, query],
+  )
 
   return (
     <div
-      ref={containerRef}
-      className="relative"
+      className={cn('field-row flex items-start py-1 relative')}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
+      onClick={(e) => e.stopPropagation()}
     >
-      <button
-        type="button"
-        className={cn(
-          'hidden items-center gap-1 rounded-sm px-1 py-0.5',
-          'text-[12px] text-foreground/25 hover:text-foreground/40',
-          'cursor-pointer transition-colors',
-          'group-hover/fields:inline-flex',
-        )}
-        onClick={(e) => {
-          e.stopPropagation()
-          handleOpen()
-        }}
-        title="Add field"
-      >
-        <Plus size={10} weight="bold" />
-        <span>Add field</span>
-      </button>
+      {/* Placeholder for field icon */}
+      <span className="h-6 w-6 shrink-0" />
 
-      {open && (
-        <div className="absolute left-0 bottom-full z-50 mb-1 max-h-48 min-w-[180px] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 shadow-lg"
-          style={{ marginLeft: `${(depth + 1) * 24}px` }}
+      {/* Editable label — acts as autocomplete input */}
+      <span
+        ref={labelRef}
+        contentEditable
+        suppressContentEditableWarning
+        className={cn(
+          'shrink-0 text-[14.5px] leading-[1.6] font-medium',
+          'h-6 flex items-center pl-1 outline-none cursor-text',
+          query ? 'text-foreground/50' : 'text-foreground/25 italic',
+        )}
+        style={{ width: `${FIELD_LABEL_WIDTH}px` }}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onBlur={() => {
+          // Delay to allow mousedown on dropdown to fire first
+          setTimeout(() => onDismiss(), 150)
+        }}
+        data-placeholder="Field name…"
+      />
+
+      {/* Autocomplete dropdown */}
+      {loaded && (
+        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-48 min-w-[200px] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 shadow-lg"
+          style={{ marginLeft: `${(depth + 1) * 24 + 24}px` }}
         >
-          {availableOptions.length === 0 && (
+          {filtered.length === 0 && (
             <span className="block px-2 py-1 text-xs text-foreground/40">
-              {loaded ? 'No fields available' : 'Loading...'}
+              {query ? 'No matching fields' : 'No fields available'}
             </span>
           )}
-          {availableOptions.map((opt) => (
+          {filtered.map((opt, i) => (
             <div
               key={opt.fieldSystemId}
-              className="cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
+              className={cn(
+                'cursor-pointer rounded-md px-2 py-1 text-xs',
+                i === highlightIndex && 'bg-accent text-accent-foreground',
+              )}
+              onMouseEnter={() => setHighlightIndex(i)}
               onMouseDown={(e) => {
                 e.preventDefault()
-                addField(nodeId, {
-                  fieldId: opt.fieldSystemId,
-                  fieldName: opt.fieldName,
-                  fieldNodeId: opt.fieldNodeId,
-                  fieldSystemId: opt.fieldSystemId,
-                  fieldType: opt.fieldType as OutlineField['fieldType'],
-                  values: [],
-                })
-                setOpen(false)
+                commitField(opt)
               }}
             >
               {opt.fieldName}

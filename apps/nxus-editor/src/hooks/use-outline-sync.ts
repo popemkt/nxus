@@ -72,9 +72,9 @@ export function useOutlineSync() {
    * Create node — optimistic in store, then persist.
    */
   const createNodeAfter = useCallback(
-    (afterId: string) => {
+    (afterId: string, initialContent?: string) => {
       const { createNodeAfter: storeCreate } = useOutlineStore.getState()
-      const newId = storeCreate(afterId)
+      const newId = storeCreate(afterId, initialContent)
 
       // Read fresh state after mutation
       const { nodes } = useOutlineStore.getState()
@@ -83,7 +83,7 @@ export function useOutlineSync() {
         const serverParentId = toServerParentId(node.parentId)
         createNodeServerFn({
           data: {
-            content: '',
+            content: initialContent ?? '',
             parentId: serverParentId,
             order: parseInt(node.order, 10),
           },

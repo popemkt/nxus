@@ -37,6 +37,7 @@ export function FieldValue({ fieldType, fieldNodeId, value, onChange }: FieldVal
     case 'email':
       return <EmailField value={String(value ?? '')} onChange={onChange} />
     case 'number':
+      return <NumberField value={value} onChange={onChange} />
     case 'text':
     default:
       return <EditableField value={String(value ?? '')} onChange={onChange} />
@@ -128,6 +129,84 @@ function EditableField({
   )
 }
 
+/* ─── Number field — validates on commit, reverts on NaN ─── */
+
+function NumberField({
+  value,
+  onChange,
+}: {
+  value: unknown
+  onChange: (v: unknown) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isEditing = useRef(false)
+  const displayValue = value !== null && value !== undefined && value !== '' ? String(value) : ''
+
+  const handleClick = useCallback(() => {
+    if (!isEditing.current && ref.current) {
+      isEditing.current = true
+      ref.current.contentEditable = 'true'
+      ref.current.focus()
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }, [])
+
+  const commit = useCallback(() => {
+    if (!ref.current) return
+    isEditing.current = false
+    ref.current.contentEditable = 'false'
+    const text = ref.current.textContent ?? ''
+    if (text === '') {
+      if (displayValue !== '') onChange('')
+      return
+    }
+    const parsed = parseFloat(text)
+    if (Number.isNaN(parsed)) {
+      // Revert to previous value
+      ref.current.textContent = displayValue
+    } else if (String(parsed) !== String(value)) {
+      onChange(parsed)
+    }
+  }, [value, displayValue, onChange])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        ref.current?.blur()
+      }
+      if (e.key === 'Escape') {
+        if (ref.current) ref.current.textContent = displayValue
+        ref.current?.blur()
+      }
+      e.stopPropagation()
+    },
+    [displayValue],
+  )
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        editableClass,
+        displayValue ? 'text-foreground/70' : 'text-foreground/25 italic',
+        'cursor-text',
+      )}
+      onClick={handleClick}
+      onBlur={commit}
+      onKeyDown={handleKeyDown}
+      suppressContentEditableWarning
+    >
+      {displayValue || 'Empty'}
+    </div>
+  )
+}
+
 /* ─── Boolean field ─── */
 
 function BooleanField({
@@ -183,9 +262,7 @@ function DateField({
         type="date"
         className={cn(
           editableClass,
-          'text-foreground/80',
-          'border border-foreground/10 bg-transparent',
-          'focus:border-primary/40',
+          'text-foreground/70 bg-transparent border-none',
         )}
         defaultValue={value ? String(value).slice(0, 10) : ''}
         onChange={(e) => {
@@ -269,9 +346,9 @@ function SelectField({
     <div ref={anchorRef} className="relative">
       <span
         className={cn(
-          'inline-flex items-center rounded-sm px-1.5 py-px cursor-pointer',
-          'text-[14.5px] font-medium leading-[1.6]',
-          value ? 'bg-foreground/8 text-foreground/60' : 'text-foreground/25 italic',
+          editableClass,
+          'cursor-text',
+          value ? 'text-foreground/70' : 'text-foreground/25 italic',
         )}
         onClick={(e) => {
           e.stopPropagation()
@@ -377,7 +454,7 @@ function UrlField({
         className={cn(
           editableClass,
           'text-primary/70 underline underline-offset-2 decoration-primary/20',
-          'cursor-text hover:bg-foreground/5 truncate',
+          'cursor-text truncate',
         )}
         onClick={handleClick}
         onBlur={commit}
@@ -474,7 +551,7 @@ function EmailField({
         className={cn(
           editableClass,
           'text-primary/70 underline underline-offset-2 decoration-primary/20',
-          'cursor-text hover:bg-foreground/5 truncate',
+          'cursor-text truncate',
         )}
         onClick={handleClick}
         onBlur={commit}

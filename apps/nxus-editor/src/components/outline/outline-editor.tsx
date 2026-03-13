@@ -7,6 +7,8 @@ import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
 import { NodeBlock } from './node-block'
 import { FieldsSection } from './fields-section'
+import { BacklinksSection } from './backlinks-section'
+import { CommandPalette } from './command-palette'
 import {
   getWorkspaceRootServerFn,
   getNodeTreeServerFn,
@@ -24,18 +26,21 @@ export function OutlineEditor() {
   const deactivateNode = useOutlineStore((s) => s.deactivateNode)
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
+  const selectedNodeIds = useOutlineStore((s) => s.selectedNodeIds)
   const activateNode = useOutlineStore((s) => s.activateNode)
   const selectNode = useOutlineStore((s) => s.selectNode)
+  const extendSelection = useOutlineStore((s) => s.extendSelection)
   const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
   const getNextVisibleNode = useOutlineStore((s) => s.getNextVisibleNode)
   const getPreviousVisibleNode = useOutlineStore(
     (s) => s.getPreviousVisibleNode,
   )
 
-  const { createNodeAfter, deleteNode } = useOutlineSync()
+  const { createNodeAfter, deleteNode, indentNode, outdentNode } = useOutlineSync()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   // Sync URL search param → store rootNodeId (handles back/forward + bookmarks)
   useEffect(() => {
@@ -152,17 +157,33 @@ export function OutlineEditor() {
 
       if (!selectedNodeId) return
 
+      const hasMultiSelect = selectedNodeIds.size > 1
+
       switch (e.key) {
         case 'ArrowUp': {
           e.preventDefault()
-          const prevId = getPreviousVisibleNode(selectedNodeId)
-          if (prevId) selectNode(prevId)
+          if (e.shiftKey) {
+            // Shift+Arrow extends multi-selection
+            const prevId = getPreviousVisibleNode(selectedNodeId)
+            if (prevId) extendSelection(prevId)
+          } else if (e.metaKey && e.shiftKey) {
+            // Cmd+Shift+Arrow moves all selected up
+            break
+          } else {
+            const prevId = getPreviousVisibleNode(selectedNodeId)
+            if (prevId) selectNode(prevId)
+          }
           break
         }
         case 'ArrowDown': {
           e.preventDefault()
-          const nextId = getNextVisibleNode(selectedNodeId)
-          if (nextId) selectNode(nextId)
+          if (e.shiftKey) {
+            const nextId = getNextVisibleNode(selectedNodeId)
+            if (nextId) extendSelection(nextId)
+          } else {
+            const nextId = getNextVisibleNode(selectedNodeId)
+            if (nextId) selectNode(nextId)
+          }
           break
         }
         case 'Enter': {
@@ -179,15 +200,38 @@ export function OutlineEditor() {
         case 'Backspace':
         case 'Delete': {
           e.preventDefault()
-          const prevId = getPreviousVisibleNode(selectedNodeId)
-          const nextId = getNextVisibleNode(selectedNodeId)
-          deleteNode(selectedNodeId)
-          selectNode(nextId ?? prevId ?? null)
+          if (hasMultiSelect) {
+            // Bulk delete all selected nodes
+            const ids = [...selectedNodeIds]
+            // Find a node to select after deletion
+            const firstId = ids[0]!
+            const prevId = getPreviousVisibleNode(firstId)
+            const lastId = ids[ids.length - 1]!
+            const nextId = getNextVisibleNode(lastId)
+            for (const id of ids) {
+              deleteNode(id)
+            }
+            selectNode(nextId ?? prevId ?? null)
+          } else {
+            const prevId = getPreviousVisibleNode(selectedNodeId)
+            const nextId = getNextVisibleNode(selectedNodeId)
+            deleteNode(selectedNodeId)
+            selectNode(nextId ?? prevId ?? null)
+          }
           break
         }
-        case 'Tab':
-          // Don't prevent default — allow native focus movement
+        case 'Tab': {
+          if (hasMultiSelect) {
+            e.preventDefault()
+            const ids = [...selectedNodeIds]
+            if (e.shiftKey) {
+              for (const id of ids) outdentNode(id)
+            } else {
+              for (const id of ids) indentNode(id)
+            }
+          }
           break
+        }
         case 'o': {
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault()
@@ -204,12 +248,16 @@ export function OutlineEditor() {
     [
       activeNodeId,
       selectedNodeId,
+      selectedNodeIds,
       nodes,
       activateNode,
       selectNode,
+      extendSelection,
       toggleCollapse,
       deleteNode,
       createNodeAfter,
+      indentNode,
+      outdentNode,
       getPreviousVisibleNode,
       getNextVisibleNode,
     ],
@@ -219,6 +267,18 @@ export function OutlineEditor() {
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [handleGlobalKeyDown])
+
+  // Cmd+K / Ctrl+K — open command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   if (loading) {
     return (
@@ -288,6 +348,8 @@ export function OutlineEditor() {
           </div>
         )}
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
 }
@@ -344,19 +406,21 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
                 onClick={() => navigateToNode(tag.id)}
                 title={`Go to: ${tag.name}`}
               >
-                <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
+                {/* Icon area — fixed size, X overlays # on hover */}
+                <span className="relative shrink-0 h-[10px] w-[10px]">
+                  <Hash size={10} weight="bold" className="opacity-60 group-hover/tag:opacity-0 transition-opacity" />
+                  <span
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeSupertag(rootNodeId, tag.id, tag.systemId)
+                    }}
+                    title={`Remove #${tag.name}`}
+                  >
+                    <X size={10} weight="bold" />
+                  </span>
+                </span>
                 {tag.name}
-                <button
-                  type="button"
-                  className="ml-0.5 hidden shrink-0 rounded-sm p-px opacity-50 hover:opacity-100 group-hover/tag:inline-flex"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    removeSupertag(rootNodeId, tag.id, tag.systemId)
-                  }}
-                  title={`Remove #${tag.name}`}
-                >
-                  <X size={8} weight="bold" />
-                </button>
               </span>
             ))}
           </div>
@@ -366,6 +430,8 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
       {rootNode.fields.length > 0 && (
         <FieldsSection nodeId={rootNodeId} fields={rootNode.fields} depth={-1} />
       )}
+
+      <BacklinksSection nodeId={rootNodeId} />
     </div>
   )
 }

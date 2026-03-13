@@ -7,6 +7,7 @@ interface OutlineState {
   rootNodeId: string
   activeNodeId: string | null
   selectedNodeId: string | null
+  selectedNodeIds: Set<string>
   cursorPosition: number
 
   setNodes: (nodes: NodeMap) => void
@@ -14,6 +15,8 @@ interface OutlineState {
   activateNode: (id: string, cursorPos?: number) => void
   deactivateNode: () => void
   selectNode: (id: string | null) => void
+  extendSelection: (id: string) => void
+  clearSelection: () => void
   toggleCollapse: (id: string) => void
   updateNodeContent: (id: string, content: string) => void
   updateFieldValue: (nodeId: string, fieldId: string, value: unknown) => void
@@ -21,7 +24,7 @@ interface OutlineState {
   removeSupertag: (nodeId: string, supertagId: string) => void
   addField: (nodeId: string, field: OutlineField) => void
   removeField: (nodeId: string, fieldId: string) => void
-  createNodeAfter: (afterId: string) => string
+  createNodeAfter: (afterId: string, initialContent?: string) => string
   deleteNode: (id: string) => void
   indentNode: (id: string) => void
   outdentNode: (id: string) => void
@@ -121,6 +124,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
   rootNodeId: WORKSPACE_ROOT_ID,
   activeNodeId: null,
   selectedNodeId: null,
+  selectedNodeIds: new Set(),
   cursorPosition: 0,
 
   setNodes: (nodes) => set({ nodes }),
@@ -130,12 +134,36 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set({
       activeNodeId: id,
       selectedNodeId: id,
+      selectedNodeIds: new Set([id]),
       cursorPosition: cursorPos ?? 0,
     }),
 
   deactivateNode: () => set({ activeNodeId: null }),
 
-  selectNode: (id) => set({ selectedNodeId: id, activeNodeId: null }),
+  selectNode: (id) =>
+    set({
+      selectedNodeId: id,
+      selectedNodeIds: id ? new Set([id]) : new Set(),
+      activeNodeId: null,
+    }),
+
+  extendSelection: (id) => {
+    const { selectedNodeIds, selectedNodeId } = get()
+    const next = new Set(selectedNodeIds)
+    if (next.has(id)) {
+      // If extending back over an already-selected node, shrink the range
+      // by removing the current anchor end
+      if (selectedNodeId && selectedNodeId !== id) {
+        next.delete(selectedNodeId)
+      }
+    } else {
+      next.add(id)
+    }
+    set({ selectedNodeIds: next, selectedNodeId: id, activeNodeId: null })
+  },
+
+  clearSelection: () =>
+    set({ selectedNodeId: null, selectedNodeIds: new Set(), activeNodeId: null }),
 
   toggleCollapse: (id) => {
     const { nodes } = get()
@@ -227,7 +255,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set({ nodes: next })
   },
 
-  createNodeAfter: (afterId) => {
+  createNodeAfter: (afterId, initialContent) => {
     const { nodes } = get()
     let workingNodes = nodes
     const afterNode = workingNodes.get(afterId)
@@ -266,7 +294,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
 
     const newNode: OutlineNode = {
       id: newId,
-      content: '',
+      content: initialContent ?? '',
       parentId,
       children: [],
       order: newOrder,
