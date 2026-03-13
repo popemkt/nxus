@@ -174,13 +174,13 @@ export function OutlineEditor() {
       switch (e.key) {
         case 'ArrowUp': {
           e.preventDefault()
-          if (e.shiftKey) {
+          if (e.metaKey && e.shiftKey) {
+            // Cmd+Shift+Arrow moves all selected up
+            break
+          } else if (e.shiftKey) {
             // Shift+Arrow extends multi-selection
             const prevId = getPreviousVisibleNode(selectedNodeId)
             if (prevId) extendSelection(prevId)
-          } else if (e.metaKey && e.shiftKey) {
-            // Cmd+Shift+Arrow moves all selected up
-            break
           } else {
             const prevId = getPreviousVisibleNode(selectedNodeId)
             if (prevId) selectNode(prevId)

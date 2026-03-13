@@ -117,6 +117,11 @@ export function useOutlineSync() {
                   })
                 }
 
+                // Remap selectedNodeIds if it contains the temp ID
+                const newSelectedNodeIds = state.selectedNodeIds.has(newId)
+                  ? new Set([...state.selectedNodeIds].map((id) => id === newId ? result.nodeId : id))
+                  : state.selectedNodeIds
+
                 return {
                   nodes: next,
                   activeNodeId:
@@ -125,6 +130,7 @@ export function useOutlineSync() {
                     state.selectedNodeId === newId
                       ? result.nodeId
                       : state.selectedNodeId,
+                  selectedNodeIds: newSelectedNodeIds,
                 }
               })
 
@@ -178,10 +184,15 @@ export function useOutlineSync() {
                     children: parent.children.map((c) => c === newId ? result.nodeId : c),
                   })
                 }
+                const newSelectedNodeIds = state.selectedNodeIds.has(newId)
+                  ? new Set([...state.selectedNodeIds].map((id) => id === newId ? result.nodeId : id))
+                  : state.selectedNodeIds
+
                 return {
                   nodes: next,
                   activeNodeId: state.activeNodeId === newId ? result.nodeId : state.activeNodeId,
                   selectedNodeId: state.selectedNodeId === newId ? result.nodeId : state.selectedNodeId,
+                  selectedNodeIds: newSelectedNodeIds,
                 }
               })
             }

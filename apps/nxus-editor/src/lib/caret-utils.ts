@@ -18,7 +18,10 @@ export function getCaretRect(): { top: number; left: number; height: number } | 
   const result = { top: rect.top, left: rect.left, height: rect.height }
 
   // Clean up
-  span.parentNode?.removeChild(span)
+  const parentEl = span.parentNode
+  parentEl?.removeChild(span)
+  // Merge fragmented text nodes to prevent focusOffset drift
+  parentEl?.normalize()
   // Restore selection
   sel.removeAllRanges()
   sel.addRange(range)

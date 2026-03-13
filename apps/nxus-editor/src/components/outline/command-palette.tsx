@@ -25,7 +25,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const navigateToNode = useNavigateToNode()
 
-  // Focus input when opening
+  // Focus input when opening, clear debounce when closing
   useEffect(() => {
     if (open) {
       setQuery('')
@@ -33,6 +33,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       setHighlightIndex(0)
       // Delay to allow portal to mount
       requestAnimationFrame(() => inputRef.current?.focus())
+    } else {
+      // Cancel any pending debounced search when closing
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
     }
   }, [open])
 

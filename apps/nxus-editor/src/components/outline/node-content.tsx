@@ -161,16 +161,17 @@ export function NodeContent({
       const match = textBeforeCaret.match(/(^|[\s])#(\S*)$/)
       if (match) {
         const hashStart = textBeforeCaret.lastIndexOf('#')
-        const newText = text.slice(0, hashStart).trimEnd() + text.slice(offset)
+        const prefix = text.slice(0, hashStart).trimEnd()
+        const newText = prefix + text.slice(offset)
         editorRef.current.textContent = newText
         onChange(newText)
 
-        // Restore cursor
+        // Restore cursor at the end of the trimmed prefix
         const textNode = editorRef.current.firstChild
         if (textNode) {
           const newSel = window.getSelection()
           const range = document.createRange()
-          const pos = Math.min(hashStart, textNode.textContent?.length ?? 0)
+          const pos = Math.min(prefix.length, textNode.textContent?.length ?? 0)
           range.setStart(textNode, pos)
           range.collapse(true)
           newSel?.removeAllRanges()

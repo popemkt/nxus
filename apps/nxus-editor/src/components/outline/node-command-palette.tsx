@@ -46,7 +46,7 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const navigateToNode = useNavigateToNode()
-  const { deleteNode, addSupertag } = useOutlineSync()
+  const { deleteNode, addSupertag, indentNode, outdentNode } = useOutlineSync()
 
   const targetNodeId = activeNodeId ?? selectedNodeId
 
@@ -94,7 +94,6 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       immediate: true,
       action: () => {
         if (targetNodeId) {
-          const { indentNode } = useOutlineStore.getState()
           indentNode(targetNodeId)
         }
         onClose()
@@ -108,7 +107,6 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       immediate: true,
       action: () => {
         if (targetNodeId) {
-          const { outdentNode } = useOutlineStore.getState()
           outdentNode(targetNodeId)
         }
         onClose()
