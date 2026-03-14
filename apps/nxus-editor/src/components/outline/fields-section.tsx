@@ -4,9 +4,9 @@ import type { OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
 import { FieldBullet } from './bullet'
 import { setFieldValueServerFn } from '@/services/outline.server'
-import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { useOutlineStore } from '@/stores/outline.store'
 
 /** Fixed label width so all field values start at the same horizontal position */
 const FIELD_LABEL_WIDTH = 120
@@ -28,7 +28,7 @@ interface FieldsSectionProps {
  * the value area aligned across all fields.
  */
 export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPendingFieldDismiss }: FieldsSectionProps) {
-  const { removeField, addField } = useOutlineSync()
+  const { addField } = useOutlineSync()
 
   return (
     <div className="fields-section">
@@ -38,7 +38,6 @@ export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPen
           nodeId={nodeId}
           field={field}
           depth={depth}
-          onRemove={() => removeField(nodeId, field.fieldId)}
         />
       ))}
       {pendingFieldActive && (
@@ -61,12 +60,10 @@ function FieldRow({
   nodeId,
   field,
   depth,
-  onRemove,
 }: {
   nodeId: string
   field: OutlineField
   depth: number
-  onRemove: () => void
 }) {
   const navigateToNode = useNavigateToNode()
 
@@ -96,27 +93,6 @@ function FieldRow({
     [nodeId, field.fieldId],
   )
 
-  const handleLabelKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLSpanElement>) => {
-      // Backspace at position 0 → delete this field row
-      if (e.key === 'Backspace') {
-        const sel = window.getSelection()
-        if (sel && sel.focusOffset === 0) {
-          e.preventDefault()
-          onRemove()
-          return
-        }
-      }
-      // Prevent Enter from inserting a line break
-      if (e.key === 'Enter') {
-        e.preventDefault()
-      }
-      // Don't let keyboard events bubble to node-level handlers
-      e.stopPropagation()
-    },
-    [onRemove],
-  )
-
   return (
     <div
       className={cn(
@@ -137,16 +113,13 @@ function FieldRow({
         <FieldBullet fieldType={field.fieldType} />
       </span>
 
-      {/* Field label — editable, Backspace at pos 0 deletes the field */}
+      {/* Field label */}
       <span
-        contentEditable
-        suppressContentEditableWarning
         className={cn(
           'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
-          'h-6 flex items-center pl-1 outline-none cursor-text',
+          'h-6 flex items-center pl-1 select-none',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
-        onKeyDown={handleLabelKeyDown}
       >
         {field.fieldName}
       </span>

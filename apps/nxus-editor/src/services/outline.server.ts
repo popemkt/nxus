@@ -352,7 +352,7 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
 
     return {
       success: true as const,
-      nodes: result.nodes.map((n) => ({
+      nodes: result.nodes.map((n: { id: string; content: string | null; supertags: unknown[] }) => ({
         id: n.id,
         content: n.content ?? '',
         supertags: n.supertags,
@@ -378,18 +378,30 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
     // Use facade evaluateQuery with linksTo filter (architecture-portable)
     const result = await nodeFacade.evaluateQuery({
       filters: [{ type: 'relation', relationType: 'linksTo', targetNodeId }],
-      limit: 50,
+      limit: Number.MAX_SAFE_INTEGER,
     })
 
     // Skip system field names used for internal wiring
     const systemFieldNames = new Set(['supertag', 'extends', 'order', 'field_type', 'query_definition', 'color'])
+    type BacklinkPropertyValue = {
+      value: unknown
+      fieldName: string
+    }
+    type BacklinkNodeSummary = {
+      id: string
+      content: string
+      childCount: number
+      supertags: { id: string; content: string; systemId: string | null }[]
+    }
 
     // Post-process: group nodes by which field references the target
     const fieldGroups = new Map<string, { fieldName: string; nodeIds: Set<string> }>()
 
     for (const assembled of result.nodes) {
       // Scan properties to find which fields reference the target
-      for (const [, propValues] of Object.entries(assembled.properties)) {
+      for (const [, propValues] of Object.entries(
+        assembled.properties,
+      ) as [string, BacklinkPropertyValue[]][]) {
         if (!propValues || propValues.length === 0) continue
         const first = propValues[0]!
         if (systemFieldNames.has(first.fieldName)) continue
@@ -424,8 +436,12 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
     }
 
     // Build grouped result with node data
-    const nodeDataMap = new Map(
-      result.nodes.map((n) => [
+    const nodeDataMap = new Map<string, BacklinkNodeSummary>(
+      result.nodes.map((n: {
+        id: string
+        content: string | null
+        supertags: { id: string; content: string; systemId: string | null }[]
+      }) => [
         n.id,
         {
           id: n.id,
@@ -445,11 +461,11 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
         fieldName: group.fieldName,
         nodes: Array.from(group.nodeIds)
           .map((id) => nodeDataMap.get(id))
-          .filter((n): n is NonNullable<typeof n> => n !== null),
+          .filter((n): n is BacklinkNodeSummary => n !== undefined),
       }))
       .filter((g) => g.nodes.length > 0)
 
-    const totalCount = groups.reduce((sum, g) => sum + g.nodes.length, 0)
+    const totalCount = result.totalCount
 
     return { success: true as const, groups, totalCount }
   })

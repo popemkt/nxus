@@ -5,7 +5,6 @@ import {
   MagnifyingGlass,
   Trash,
   ArrowRight,
-  TreeStructure,
   ArrowBendUpLeft,
 } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
@@ -111,12 +110,6 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
         }
         onClose()
       },
-    },
-    {
-      id: 'move-to',
-      label: 'Move to...',
-      icon: <TreeStructure size={14} />,
-      step: 'navigate',
     },
     {
       id: 'delete',
