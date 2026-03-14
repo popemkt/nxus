@@ -21,6 +21,8 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       and,
       getProperty,
       FIELD_NAMES,
+      getSupertagFieldDefinitions,
+      getAncestorSupertags,
     } = await import('@nxus/db/server')
     const db = await initDatabaseSeeded()
 
@@ -32,6 +34,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       parentId: string | null
       children: string[]
       order: string
+      createdAt: number
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
       fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
@@ -79,6 +82,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     function extractFields(assembled: {
       properties: Record<string, { value: unknown; rawValue: string; fieldNodeId: string; fieldName: string; fieldSystemId: string | null; order: number }[]>
+      supertags: { id: string }[]
     }): OutlineNodeResult['fields'] {
       const fields: OutlineNodeResult['fields'] = []
 
@@ -106,8 +110,34 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         })
       }
 
-      // Sort fields alphabetically by name for consistent display
-      fields.sort((a, b) => a.fieldName.localeCompare(b.fieldName))
+      // Build definition-order priority map from supertag field definitions
+      const priorityMap = new Map<string, number>()
+      let priority = 0
+      for (const st of assembled.supertags) {
+        const defs = getSupertagFieldDefinitions(db, st.id)
+        const ancestors = getAncestorSupertags(db, st.id)
+        // Own fields first
+        for (const [systemId] of defs) {
+          if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
+        }
+        // Then inherited
+        for (const ancestorId of ancestors) {
+          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+          for (const [systemId] of ancestorDefs) {
+            if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
+          }
+        }
+      }
+
+      // Sort: fields with definition priority first (in order), remaining alphabetically
+      fields.sort((a, b) => {
+        const aPriority = a.fieldSystemId ? priorityMap.get(a.fieldSystemId) : undefined
+        const bPriority = b.fieldSystemId ? priorityMap.get(b.fieldSystemId) : undefined
+        if (aPriority !== undefined && bPriority !== undefined) return aPriority - bPriority
+        if (aPriority !== undefined) return -1
+        if (bPriority !== undefined) return 1
+        return a.fieldName.localeCompare(b.fieldName)
+      })
       return fields
     }
 
@@ -125,6 +155,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         parentId: assembled.ownerId,
         children: [],
         order: String(orderValue ?? 0).padStart(8, '0'),
+        createdAt: assembled.createdAt?.getTime() ?? 0,
         collapsed: false,
         supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => {
           const stNode = assembleNode(db, st.id)
@@ -154,7 +185,9 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         childIds.sort((a, b) => {
           const na = nodeMap.get(a)
           const nb = nodeMap.get(b)
-          return (na?.order ?? '').localeCompare(nb?.order ?? '')
+          const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+          if (orderCmp !== 0) return orderCmp
+          return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
         })
 
         outlineNode.children = childIds
@@ -319,13 +352,122 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
 
     return {
       success: true as const,
-      nodes: result.nodes.map((n) => ({
+      nodes: result.nodes.map((n: { id: string; content: string | null; supertags: unknown[] }) => ({
         id: n.id,
         content: n.content ?? '',
         supertags: n.supertags,
       })),
       totalCount: result.totalCount,
     }
+  })
+
+/**
+ * Get backlinks grouped by field name — "Appears as [fieldName] in..."
+ * Uses the facade's evaluateQuery with linksTo for architecture portability,
+ * then post-processes assembled nodes' properties to extract field grouping.
+ */
+export const getBacklinksServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ nodeId: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeFacade } = await import('@nxus/db/server')
+    await initDatabaseSeeded()
+    await nodeFacade.init()
+
+    const targetNodeId = ctx.data.nodeId
+
+    // Use facade evaluateQuery with linksTo filter (architecture-portable)
+    const result = await nodeFacade.evaluateQuery({
+      filters: [{ type: 'relation', relationType: 'linksTo', targetNodeId }],
+      limit: Number.MAX_SAFE_INTEGER,
+    })
+
+    // Skip system field names used for internal wiring
+    const systemFieldNames = new Set(['supertag', 'extends', 'order', 'field_type', 'query_definition', 'color'])
+    type BacklinkPropertyValue = {
+      value: unknown
+      fieldName: string
+    }
+    type BacklinkNodeSummary = {
+      id: string
+      content: string
+      childCount: number
+      supertags: { id: string; content: string; systemId: string | null }[]
+    }
+
+    // Post-process: group nodes by which field references the target
+    const fieldGroups = new Map<string, { fieldName: string; nodeIds: Set<string> }>()
+
+    for (const assembled of result.nodes) {
+      // Scan properties to find which fields reference the target
+      for (const [, propValues] of Object.entries(
+        assembled.properties,
+      ) as [string, BacklinkPropertyValue[]][]) {
+        if (!propValues || propValues.length === 0) continue
+        const first = propValues[0]!
+        if (systemFieldNames.has(first.fieldName)) continue
+
+        const referencesTarget = propValues.some((pv) => {
+          if (pv.value === targetNodeId) return true
+          if (Array.isArray(pv.value) && pv.value.includes(targetNodeId)) return true
+          return false
+        })
+
+        if (referencesTarget) {
+          const fieldName = first.fieldName
+          if (!fieldGroups.has(fieldName)) {
+            fieldGroups.set(fieldName, { fieldName, nodeIds: new Set() })
+          }
+          fieldGroups.get(fieldName)!.nodeIds.add(assembled.id)
+        }
+      }
+    }
+
+    // Count children for each linking node (for bullet rendering)
+    const { nodes: nodesTable, isNull, eq, and } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+    const childCountMap = new Map<string, number>()
+    for (const assembled of result.nodes) {
+      const childRows = db
+        .select()
+        .from(nodesTable)
+        .where(and(eq(nodesTable.ownerId, assembled.id), isNull(nodesTable.deletedAt)))
+        .all()
+      childCountMap.set(assembled.id, childRows.length)
+    }
+
+    // Build grouped result with node data
+    const nodeDataMap = new Map<string, BacklinkNodeSummary>(
+      result.nodes.map((n: {
+        id: string
+        content: string | null
+        supertags: { id: string; content: string; systemId: string | null }[]
+      }) => [
+        n.id,
+        {
+          id: n.id,
+          content: n.content ?? '',
+          childCount: childCountMap.get(n.id) ?? 0,
+          supertags: n.supertags.map((st: { id: string; content: string; systemId: string | null }) => ({
+            id: st.id,
+            content: st.content,
+            systemId: st.systemId,
+          })),
+        },
+      ]),
+    )
+
+    const groups = Array.from(fieldGroups.values())
+      .map((group) => ({
+        fieldName: group.fieldName,
+        nodes: Array.from(group.nodeIds)
+          .map((id) => nodeDataMap.get(id))
+          .filter((n): n is BacklinkNodeSummary => n !== undefined),
+      }))
+      .filter((g) => g.nodes.length > 0)
+
+    const totalCount = result.totalCount
+
+    return { success: true as const, groups, totalCount }
   })
 
 /**

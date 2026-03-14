@@ -8,11 +8,12 @@ import { Bullet } from './bullet'
 
 interface FieldValueProps {
   fieldType: FieldType
+  fieldNodeId?: string
   value: unknown
   onChange: (value: unknown) => void
 }
 
-export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
+export function FieldValue({ fieldType, fieldNodeId, value, onChange }: FieldValueProps) {
   // Safety: if value is an object/array and not a reference type, render as JSON
   if (value !== null && value !== undefined && typeof value === 'object' && fieldType !== 'nodes') {
     return <JsonField value={value} />
@@ -24,7 +25,7 @@ export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
     case 'date':
       return <DateField value={String(value ?? '')} onChange={onChange} />
     case 'select':
-      return <SelectField value={String(value ?? '')} />
+      return <SelectField value={String(value ?? '')} fieldNodeId={fieldNodeId} onChange={onChange} />
     case 'node':
       return <NodeRefField value={String(value ?? '')} />
     case 'nodes':
@@ -36,6 +37,7 @@ export function FieldValue({ fieldType, value, onChange }: FieldValueProps) {
     case 'email':
       return <EmailField value={String(value ?? '')} onChange={onChange} />
     case 'number':
+      return <NumberField value={value} onChange={onChange} />
     case 'text':
     default:
       return <EditableField value={String(value ?? '')} onChange={onChange} />
@@ -127,6 +129,84 @@ function EditableField({
   )
 }
 
+/* ─── Number field — validates on commit, reverts on NaN ─── */
+
+function NumberField({
+  value,
+  onChange,
+}: {
+  value: unknown
+  onChange: (v: unknown) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isEditing = useRef(false)
+  const displayValue = value !== null && value !== undefined && value !== '' ? String(value) : ''
+
+  const handleClick = useCallback(() => {
+    if (!isEditing.current && ref.current) {
+      isEditing.current = true
+      ref.current.contentEditable = 'true'
+      ref.current.focus()
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }, [])
+
+  const commit = useCallback(() => {
+    if (!ref.current) return
+    isEditing.current = false
+    ref.current.contentEditable = 'false'
+    const text = ref.current.textContent ?? ''
+    if (text === '') {
+      if (displayValue !== '') onChange('')
+      return
+    }
+    const parsed = parseFloat(text)
+    if (Number.isNaN(parsed)) {
+      // Revert to previous value
+      ref.current.textContent = displayValue
+    } else if (String(parsed) !== String(value)) {
+      onChange(parsed)
+    }
+  }, [value, displayValue, onChange])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        ref.current?.blur()
+      }
+      if (e.key === 'Escape') {
+        if (ref.current) ref.current.textContent = displayValue
+        ref.current?.blur()
+      }
+      e.stopPropagation()
+    },
+    [displayValue],
+  )
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        editableClass,
+        displayValue ? 'text-foreground/70' : 'text-foreground/25 italic',
+        'cursor-text',
+      )}
+      onClick={handleClick}
+      onBlur={commit}
+      onKeyDown={handleKeyDown}
+      suppressContentEditableWarning
+    >
+      {displayValue || 'Empty'}
+    </div>
+  )
+}
+
 /* ─── Boolean field ─── */
 
 function BooleanField({
@@ -182,9 +262,7 @@ function DateField({
         type="date"
         className={cn(
           editableClass,
-          'text-foreground/80',
-          'border border-foreground/10 bg-transparent',
-          'focus:border-primary/40',
+          'text-foreground/70 bg-transparent border-none',
         )}
         defaultValue={value ? String(value).slice(0, 10) : ''}
         onChange={(e) => {
@@ -221,20 +299,87 @@ function DateField({
 
 /* ─── Select field ─── */
 
-function SelectField({ value }: { value: string }) {
-  if (!value) {
-    return <span className={emptyTextClass}>Empty</span>
-  }
+function SelectField({
+  value,
+  fieldNodeId,
+  onChange,
+}: {
+  value: string
+  fieldNodeId?: string
+  onChange: (v: unknown) => void
+}) {
+  const [options, setOptions] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const anchorRef = useRef<HTMLDivElement>(null)
+
+  const loadOptions = useCallback(() => {
+    if (loaded || !fieldNodeId) return
+    import('@/services/field.server').then(({ getFieldOptionsServerFn }) => {
+      getFieldOptionsServerFn({ data: { fieldNodeId } })
+        .then((result) => {
+          if (result.success) setOptions(result.options)
+          setLoaded(true)
+        })
+        .catch(() => setLoaded(true))
+    })
+  }, [fieldNodeId, loaded])
+
+  const handleClick = useCallback(() => {
+    loadOptions()
+    setOpen((o) => !o)
+  }, [loadOptions])
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-sm px-1.5 py-px',
-        'text-[14.5px] font-medium leading-[1.6]',
-        'bg-foreground/8 text-foreground/60',
+    <div ref={anchorRef} className="relative">
+      <span
+        className={cn(
+          editableClass,
+          'cursor-text',
+          value ? 'text-foreground/70' : 'text-foreground/25 italic',
+        )}
+        onClick={(e) => {
+          e.stopPropagation()
+          handleClick()
+        }}
+      >
+        {value || 'Empty'}
+      </span>
+
+      {open && options.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 min-w-[140px] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 shadow-lg">
+          {options.map((opt) => (
+            <div
+              key={opt}
+              className={cn(
+                'cursor-pointer rounded-md px-2 py-1 text-xs',
+                'hover:bg-accent hover:text-accent-foreground',
+                opt === value && 'bg-accent/50 font-medium',
+              )}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onChange(opt)
+                setOpen(false)
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
       )}
-    >
-      {String(value)}
-    </span>
+    </div>
   )
 }
 
@@ -309,7 +454,7 @@ function UrlField({
         className={cn(
           editableClass,
           'text-primary/70 underline underline-offset-2 decoration-primary/20',
-          'cursor-text hover:bg-foreground/5 truncate',
+          'cursor-text truncate',
         )}
         onClick={handleClick}
         onBlur={commit}
@@ -406,7 +551,7 @@ function EmailField({
         className={cn(
           editableClass,
           'text-primary/70 underline underline-offset-2 decoration-primary/20',
-          'cursor-text hover:bg-foreground/5 truncate',
+          'cursor-text truncate',
         )}
         onClick={handleClick}
         onBlur={commit}
@@ -449,18 +594,23 @@ function NodeRefField({ value }: { value: string }) {
   return (
     <div
       className={cn(
-        'flex items-start group/ref',
-        'rounded-sm cursor-pointer',
+        'flex items-start rounded-sm cursor-pointer',
+        'hover:bg-foreground/[0.03] transition-colors duration-75',
       )}
       onClick={(e) => {
         e.stopPropagation()
         navigateToNode(value)
       }}
       title={`Go to: ${node.content || 'Untitled'}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') navigateToNode(value)
+      }}
     >
       <Bullet
         hasChildren={node.children.length > 0}
-        collapsed={false}
+        collapsed={true}
         childCount={node.children.length}
         tagColor={primaryTagColor}
         isSupertag={false}
@@ -470,28 +620,30 @@ function NodeRefField({ value }: { value: string }) {
           navigateToNode(value)
         }}
       />
-      <span className={cn('text-[14.5px] leading-[1.6] text-foreground/70 truncate')}>
-        {node.content || '\u200B'}
-      </span>
-      {node.supertags.length > 0 && (
-        <div className="flex items-center gap-0.5 ml-1.5">
-          {node.supertags.map((tag) => (
-            <span
-              key={tag.id}
-              className={cn(
-                'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                'text-[11px] font-medium leading-[1.8]',
-                'select-none whitespace-nowrap',
-                !tag.color && 'bg-foreground/8 text-foreground/50',
-              )}
-              style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
-            >
-              <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="node-content flex min-h-6 flex-1 items-start gap-1.5 px-1">
+        <span className="text-[14.5px] leading-[1.6] text-foreground/70 truncate flex-1">
+          {node.content || '\u200B'}
+        </span>
+        {node.supertags.length > 0 && (
+          <div className="flex h-6 items-center gap-0.5">
+            {node.supertags.map((tag) => (
+              <span
+                key={tag.id}
+                className={cn(
+                  'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+                  'text-[11px] font-medium leading-[1.8]',
+                  'select-none whitespace-nowrap',
+                  !tag.color && 'bg-foreground/8 text-foreground/50',
+                )}
+                style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
+              >
+                <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
