@@ -67,9 +67,15 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       setStep({ type: 'commands' })
       setQuery('')
       setHighlightIndex(0)
-      requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [open])
+
+  // Focus input once the palette is actually rendered (portal needs anchorRect)
+  useEffect(() => {
+    if (open && anchorRect) {
+      requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [open, anchorRect])
 
   // Commands list
   const commands: Command[] = [

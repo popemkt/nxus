@@ -594,18 +594,23 @@ function NodeRefField({ value }: { value: string }) {
   return (
     <div
       className={cn(
-        'flex items-start group/ref',
-        'rounded-sm cursor-pointer',
+        'flex items-start rounded-sm cursor-pointer',
+        'hover:bg-foreground/[0.03] transition-colors duration-75',
       )}
       onClick={(e) => {
         e.stopPropagation()
         navigateToNode(value)
       }}
       title={`Go to: ${node.content || 'Untitled'}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') navigateToNode(value)
+      }}
     >
       <Bullet
         hasChildren={node.children.length > 0}
-        collapsed={false}
+        collapsed={true}
         childCount={node.children.length}
         tagColor={primaryTagColor}
         isSupertag={false}
@@ -615,28 +620,30 @@ function NodeRefField({ value }: { value: string }) {
           navigateToNode(value)
         }}
       />
-      <span className={cn('text-[14.5px] leading-[1.6] text-foreground/70 truncate')}>
-        {node.content || '\u200B'}
-      </span>
-      {node.supertags.length > 0 && (
-        <div className="flex items-center gap-0.5 ml-1.5">
-          {node.supertags.map((tag) => (
-            <span
-              key={tag.id}
-              className={cn(
-                'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                'text-[11px] font-medium leading-[1.8]',
-                'select-none whitespace-nowrap',
-                !tag.color && 'bg-foreground/8 text-foreground/50',
-              )}
-              style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
-            >
-              <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="node-content flex min-h-6 flex-1 items-start gap-1.5 px-1">
+        <span className="text-[14.5px] leading-[1.6] text-foreground/70 truncate flex-1">
+          {node.content || '\u200B'}
+        </span>
+        {node.supertags.length > 0 && (
+          <div className="flex h-6 items-center gap-0.5">
+            {node.supertags.map((tag) => (
+              <span
+                key={tag.id}
+                className={cn(
+                  'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+                  'text-[11px] font-medium leading-[1.8]',
+                  'select-none whitespace-nowrap',
+                  !tag.color && 'bg-foreground/8 text-foreground/50',
+                )}
+                style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
+              >
+                <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
