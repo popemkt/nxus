@@ -116,7 +116,7 @@ function EditableField({
       ref={ref}
       className={cn(
         editableClass,
-        value ? 'text-foreground/70' : 'text-foreground/25 italic',
+        value ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
         'cursor-text',
       )}
       onClick={handleClick}
@@ -124,7 +124,7 @@ function EditableField({
       onKeyDown={handleKeyDown}
       suppressContentEditableWarning
     >
-      {value || 'Empty'}
+      {value || ''}
     </div>
   )
 }
@@ -194,7 +194,7 @@ function NumberField({
       ref={ref}
       className={cn(
         editableClass,
-        displayValue ? 'text-foreground/70' : 'text-foreground/25 italic',
+        displayValue ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
         'cursor-text',
       )}
       onClick={handleClick}
@@ -202,7 +202,7 @@ function NumberField({
       onKeyDown={handleKeyDown}
       suppressContentEditableWarning
     >
-      {displayValue || 'Empty'}
+      {displayValue || ''}
     </div>
   )
 }
@@ -287,12 +287,12 @@ function DateField({
     <span
       className={cn(
         editableClass,
-        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic',
+        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
         'cursor-text',
       )}
       onClick={() => setEditing(true)}
     >
-      {displayDate || 'Empty'}
+      {displayDate || ''}
     </span>
   )
 }
@@ -348,14 +348,14 @@ function SelectField({
         className={cn(
           editableClass,
           'cursor-text',
-          value ? 'text-foreground/70' : 'text-foreground/25 italic',
+          value ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
         )}
         onClick={(e) => {
           e.stopPropagation()
           handleClick()
         }}
       >
-        {value || 'Empty'}
+        {value || ''}
       </span>
 
       {open && options.length > 0 && (
@@ -432,28 +432,15 @@ function UrlField({
     [value],
   )
 
-  if (!value) {
-    return (
-      <div
-        ref={ref}
-        className={cn(editableClass, 'text-foreground/25 italic cursor-text')}
-        onClick={handleClick}
-        onBlur={commit}
-        onKeyDown={handleKeyDown}
-        suppressContentEditableWarning
-      >
-        Empty
-      </div>
-    )
-  }
-
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <div
         ref={ref}
         className={cn(
           editableClass,
-          'text-primary/70 underline underline-offset-2 decoration-primary/20',
+          value
+            ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
+            : 'text-foreground/25 italic empty-placeholder',
           'cursor-text truncate',
         )}
         onClick={handleClick}
@@ -461,21 +448,23 @@ function UrlField({
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning
       >
-        {value}
+        {value || ''}
       </div>
-      <a
-        href={value}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 text-foreground/25 hover:text-foreground/50 transition-colors"
-        onClick={(e) => e.stopPropagation()}
-        title="Open URL"
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M4.5 2H2.5C2.22 2 2 2.22 2 2.5v7c0 .28.22.5.5.5h7c.28 0 .5-.22.5-.5V7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-          <path d="M7 2h3v3M10 2L5.5 6.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </a>
+      {value && (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 text-foreground/25 hover:text-foreground/50 transition-colors"
+          onClick={(e) => e.stopPropagation()}
+          title="Open URL"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4.5 2H2.5C2.22 2 2 2.22 2 2.5v7c0 .28.22.5.5.5h7c.28 0 .5-.22.5-.5V7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+            <path d="M7 2h3v3M10 2L5.5 6.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
+      )}
     </div>
   )
 }
@@ -529,28 +518,15 @@ function EmailField({
     [value],
   )
 
-  if (!value) {
-    return (
-      <div
-        ref={ref}
-        className={cn(editableClass, 'text-foreground/25 italic cursor-text')}
-        onClick={handleClick}
-        onBlur={commit}
-        onKeyDown={handleKeyDown}
-        suppressContentEditableWarning
-      >
-        Empty
-      </div>
-    )
-  }
-
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <div
         ref={ref}
         className={cn(
           editableClass,
-          'text-primary/70 underline underline-offset-2 decoration-primary/20',
+          value
+            ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
+            : 'text-foreground/25 italic empty-placeholder',
           'cursor-text truncate',
         )}
         onClick={handleClick}
@@ -558,19 +534,21 @@ function EmailField({
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning
       >
-        {value}
+        {value || ''}
       </div>
-      <a
-        href={`mailto:${value}`}
-        className="shrink-0 text-foreground/25 hover:text-foreground/50 transition-colors"
-        onClick={(e) => e.stopPropagation()}
-        title="Send email"
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <rect x="1" y="2.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
-          <path d="M1.5 3L6 6.5L10.5 3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </a>
+      {value && (
+        <a
+          href={`mailto:${value}`}
+          className="shrink-0 text-foreground/25 hover:text-foreground/50 transition-colors"
+          onClick={(e) => e.stopPropagation()}
+          title="Send email"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <rect x="1" y="2.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+            <path d="M1.5 3L6 6.5L10.5 3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
+      )}
     </div>
   )
 }
