@@ -326,8 +326,10 @@ export function OutlineEditor() {
         setCmdPaletteOpen((o) => !o)
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    // Capture phase is required so shortcuts still work when focused editors
+    // stop keydown propagation in the bubble phase.
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
   }, [])
 
   if (loading) {
