@@ -310,6 +310,28 @@ describe('outline store', () => {
     })
   })
 
+  describe('moveNodeTo', () => {
+    it('moves a node under a new parent as the last child', () => {
+      seedStore()
+      useOutlineStore.getState().moveNodeTo('b', 'a')
+      const state = useOutlineStore.getState()
+
+      expect(state.nodes.get('b')?.parentId).toBe('a')
+      expect(state.nodes.get(WORKSPACE_ROOT_ID)?.children).not.toContain('b')
+      expect(state.nodes.get('a')?.children).toContain('b')
+      expect(state.nodes.get('a')?.collapsed).toBe(false)
+    })
+
+    it('does not allow moving a node under its descendant', () => {
+      seedStore()
+      useOutlineStore.getState().moveNodeTo('a', 'a1')
+      const state = useOutlineStore.getState()
+
+      expect(state.nodes.get('a')?.parentId).toBe(WORKSPACE_ROOT_ID)
+      expect(state.nodes.get('a1')?.parentId).toBe('a')
+    })
+  })
+
   describe('getVisibleNodes', () => {
     it('returns all nodes in tree order (excluding root)', () => {
       seedStore()

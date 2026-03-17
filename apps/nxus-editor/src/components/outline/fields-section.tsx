@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
@@ -28,7 +29,7 @@ interface FieldsSectionProps {
  * the value area aligned across all fields.
  */
 export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPendingFieldDismiss }: FieldsSectionProps) {
-  const { addField } = useOutlineSync()
+  const { addField, removeField } = useOutlineSync()
 
   return (
     <div className="fields-section">
@@ -38,6 +39,7 @@ export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPen
           nodeId={nodeId}
           field={field}
           depth={depth}
+          onRemove={() => removeField(nodeId, field.fieldId)}
         />
       ))}
       {pendingFieldActive && (
@@ -60,10 +62,12 @@ function FieldRow({
   nodeId,
   field,
   depth,
+  onRemove,
 }: {
   nodeId: string
   field: OutlineField
   depth: number
+  onRemove: () => void
 }) {
   const navigateToNode = useNavigateToNode()
 
@@ -96,10 +100,14 @@ function FieldRow({
   return (
     <div
       className={cn(
-        'field-row flex items-start py-1',
+        'field-row group/field flex items-start py-1',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
       onClick={(e) => e.stopPropagation()}
+      data-field-row="true"
+      data-node-id={nodeId}
+      data-field-id={field.fieldId}
+      data-field-name={field.fieldName}
     >
       {/* Field icon — clickable to navigate to field definition node */}
       <span
@@ -123,6 +131,24 @@ function FieldRow({
       >
         {field.fieldName}
       </span>
+
+      <button
+        type="button"
+        className={cn(
+          'mt-[1px] mr-1 flex h-6 w-5 shrink-0 items-center justify-center rounded-sm',
+          'text-foreground/20 opacity-0 transition-opacity',
+          'group-hover/field:opacity-100 hover:bg-foreground/8 hover:text-foreground/50',
+          'focus:opacity-100',
+        )}
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove()
+        }}
+        title={`Remove ${field.fieldName}`}
+        aria-label={`Remove ${field.fieldName}`}
+      >
+        <X size={11} weight="bold" />
+      </button>
 
       {/* Field value — same plane as node content, flows naturally */}
       <div className="flex-1 min-w-0">

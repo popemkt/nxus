@@ -440,6 +440,31 @@ export function useOutlineSync() {
     [invalidateQueries],
   )
 
+  /**
+   * Move a node under another node.
+   */
+  const moveNodeTo = useCallback(
+    (nodeId: string, newParentId: string) => {
+      useOutlineStore.getState().moveNodeTo(nodeId, newParentId)
+      const { nodes } = useOutlineStore.getState()
+      const node = nodes.get(nodeId)
+      if (!node) return
+
+      reparentNodeServerFn({
+        data: {
+          nodeId,
+          newParentId: toServerParentId(newParentId),
+          order: parseInt(node.order, 10),
+        },
+      })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to move node:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
   return {
     createNodeAfter,
     createFirstChild,
@@ -454,5 +479,6 @@ export function useOutlineSync() {
     removeSupertag,
     addField,
     removeField,
+    moveNodeTo,
   }
 }

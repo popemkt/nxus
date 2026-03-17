@@ -10,6 +10,7 @@ import { FieldsSection } from './fields-section'
 import { BacklinksSection } from './backlinks-section'
 import { CommandPalette } from './command-palette'
 import { NodeCommandPalette } from './node-command-palette'
+import type { CommandPaletteFieldContext } from './node-command-palette'
 import {
   getWorkspaceRootServerFn,
   getNodeTreeServerFn,
@@ -43,6 +44,8 @@ export function OutlineEditor() {
   const [error, setError] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+  const [commandFieldContext, setCommandFieldContext] =
+    useState<CommandPaletteFieldContext | null>(null)
 
   // Sync URL search param → store rootNodeId (handles back/forward + bookmarks)
   useEffect(() => {
@@ -292,10 +295,33 @@ export function OutlineEditor() {
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        // If a node is being edited, select it (exit edit mode) so focus can shift to palette
-        const { activeNodeId: currentActive } = useOutlineStore.getState()
-        if (currentActive) {
-          useOutlineStore.getState().selectNode(currentActive)
+        const activeElement =
+          document.activeElement instanceof Element ? document.activeElement : null
+        const selectionAnchor = window.getSelection()?.anchorNode
+        const selectionElement = selectionAnchor instanceof Element
+          ? selectionAnchor
+          : selectionAnchor?.parentElement ?? null
+        const fieldRow =
+          activeElement?.closest('[data-field-row="true"]') ??
+          selectionElement?.closest('[data-field-row="true"]') ??
+          null
+
+        if (fieldRow instanceof HTMLElement) {
+          const nodeId = fieldRow.dataset.nodeId
+          const fieldId = fieldRow.dataset.fieldId
+          const fieldName = fieldRow.dataset.fieldName
+          setCommandFieldContext(
+            nodeId && fieldId && fieldName
+              ? { nodeId, fieldId, fieldName }
+              : null,
+          )
+        } else {
+          setCommandFieldContext(null)
+          // If a node is being edited, select it (exit edit mode) so focus can shift to palette
+          const { activeNodeId: currentActive } = useOutlineStore.getState()
+          if (currentActive) {
+            useOutlineStore.getState().selectNode(currentActive)
+          }
         }
         setCmdPaletteOpen((o) => !o)
       }
@@ -379,7 +405,14 @@ export function OutlineEditor() {
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <NodeCommandPalette open={cmdPaletteOpen} onClose={() => setCmdPaletteOpen(false)} />
+      <NodeCommandPalette
+        open={cmdPaletteOpen}
+        fieldContext={commandFieldContext}
+        onClose={() => {
+          setCmdPaletteOpen(false)
+          setCommandFieldContext(null)
+        }}
+      />
     </div>
   )
 }

@@ -19,6 +19,13 @@ type PaletteStep =
   | { type: 'commands' }
   | { type: 'add-supertag' }
   | { type: 'navigate' }
+  | { type: 'move-to' }
+
+export interface CommandPaletteFieldContext {
+  nodeId: string
+  fieldId: string
+  fieldName: string
+}
 
 interface Command {
   id: string
@@ -32,9 +39,30 @@ interface Command {
 interface NodeCommandPaletteProps {
   open: boolean
   onClose: () => void
+  fieldContext?: CommandPaletteFieldContext | null
 }
 
-export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
+function isDescendantNode(
+  nodes: ReturnType<typeof useOutlineStore.getState>['nodes'],
+  ancestorId: string,
+  candidateId: string,
+): boolean {
+  const ancestor = nodes.get(ancestorId)
+  if (!ancestor) return false
+
+  for (const childId of ancestor.children) {
+    if (childId === candidateId) return true
+    if (isDescendantNode(nodes, childId, candidateId)) return true
+  }
+
+  return false
+}
+
+export function NodeCommandPalette({
+  open,
+  onClose,
+  fieldContext = null,
+}: NodeCommandPaletteProps) {
   const [step, setStep] = useState<PaletteStep>({ type: 'commands' })
   const [query, setQuery] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(0)
@@ -44,10 +72,18 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
 
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
+  const nodes = useOutlineStore((s) => s.nodes)
   const navigateToNode = useNavigateToNode()
-  const { deleteNode, addSupertag, indentNode, outdentNode } = useOutlineSync()
+  const {
+    deleteNode,
+    addSupertag,
+    indentNode,
+    outdentNode,
+    removeField,
+    moveNodeTo,
+  } = useOutlineSync()
 
-  const targetNodeId = activeNodeId ?? selectedNodeId
+  const targetNodeId = fieldContext?.nodeId ?? activeNodeId ?? selectedNodeId
 
   // Position the palette below the active/selected node
   useEffect(() => {
@@ -55,11 +91,18 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       setAnchorRect(null)
       return
     }
-    const nodeEl = document.querySelector(`[data-node-id="${targetNodeId}"] .node-row`)
-    if (nodeEl) {
-      setAnchorRect(nodeEl.getBoundingClientRect())
+    const fieldEl = fieldContext
+      ? document.querySelector(
+          `[data-field-row="true"][data-node-id="${fieldContext.nodeId}"][data-field-id="${fieldContext.fieldId}"]`,
+        )
+      : null
+    const anchorEl =
+      fieldEl ??
+      document.querySelector(`[data-node-id="${targetNodeId}"] .node-row`)
+    if (anchorEl instanceof HTMLElement) {
+      setAnchorRect(anchorEl.getBoundingClientRect())
     }
-  }, [open, targetNodeId])
+  }, [open, targetNodeId, fieldContext])
 
   // Reset state on open
   useEffect(() => {
@@ -76,7 +119,6 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [open, anchorRect])
-
   // Commands list
   const commands: Command[] = [
     {
@@ -91,6 +133,27 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       icon: <MagnifyingGlass size={14} />,
       step: 'navigate',
     },
+    {
+      id: 'move-to',
+      label: 'Move to...',
+      icon: <ArrowRight size={14} />,
+      step: 'move-to',
+    },
+    ...(fieldContext
+      ? [
+          {
+            id: 'remove-field',
+            label: `Remove field: ${fieldContext.fieldName}`,
+            icon: <Trash size={14} />,
+            step: 'commands' as const,
+            immediate: true,
+            action: () => {
+              removeField(fieldContext.nodeId, fieldContext.fieldId)
+              onClose()
+            },
+          },
+        ]
+      : []),
     {
       id: 'indent',
       label: 'Indent',
@@ -168,7 +231,7 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (step.type !== 'navigate') return
+    if (step.type !== 'navigate' && step.type !== 'move-to') return
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!query.trim()) {
       setSearchResults([])
@@ -183,8 +246,16 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
         })
         .catch(() => setSearchResults([]))
         .finally(() => setSearchLoading(false))
-    }, 300)
+      }, 300)
   }, [query, step.type])
+
+  const filteredSearchResults = step.type === 'move-to' && targetNodeId
+    ? searchResults.filter(
+        (node) =>
+          node.id !== targetNodeId &&
+          !isDescendantNode(nodes, targetNodeId, node.id),
+      )
+    : searchResults
 
   // Compute items based on step
   const items: { id: string; label: string; icon?: React.ReactNode; color?: string | null }[] =
@@ -197,7 +268,7 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
             icon: <Hash size={12} weight="bold" />,
             color: s.color,
           }))
-        : searchResults.map((n) => ({
+        : filteredSearchResults.map((n) => ({
             id: n.id,
             label: n.content || 'Untitled',
           }))
@@ -234,14 +305,30 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
           onClose()
         }
       } else if (step.type === 'navigate') {
-        const node = searchResults[index]
+        const node = filteredSearchResults[index]
         if (node) {
           navigateToNode(node.id)
           onClose()
         }
+      } else if (step.type === 'move-to') {
+        const node = filteredSearchResults[index]
+        if (node && targetNodeId) {
+          moveNodeTo(targetNodeId, node.id)
+          onClose()
+        }
       }
     },
-    [step, filteredCommands, filteredSupertags, searchResults, targetNodeId, addSupertag, navigateToNode, onClose],
+    [
+      step,
+      filteredCommands,
+      filteredSupertags,
+      filteredSearchResults,
+      targetNodeId,
+      addSupertag,
+      navigateToNode,
+      moveNodeTo,
+      onClose,
+    ],
   )
 
   const handleKeyDown = useCallback(
@@ -285,14 +372,18 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
       ? 'Type a command...'
       : step.type === 'add-supertag'
         ? 'Search supertags...'
-        : 'Search nodes...'
+        : step.type === 'move-to'
+          ? 'Move under node...'
+          : 'Search nodes...'
 
   const stepLabel =
     step.type === 'add-supertag'
       ? 'Add supertag'
       : step.type === 'navigate'
         ? 'Navigate'
-        : null
+        : step.type === 'move-to'
+          ? 'Move to'
+          : null
 
   return createPortal(
     <>
@@ -392,11 +483,14 @@ export function NodeCommandPalette({ open, onClose }: NodeCommandPaletteProps) {
             No matching supertags
           </div>
         )}
-        {items.length === 0 && step.type === 'navigate' && query.trim() && !searchLoading && (
+        {items.length === 0 &&
+          (step.type === 'navigate' || step.type === 'move-to') &&
+          query.trim() &&
+          !searchLoading && (
           <div className="px-3 py-3 text-center text-[12px] text-foreground/25 border-t border-foreground/[0.06]">
             No results
           </div>
-        )}
+          )}
 
         {/* Hint */}
         <div className="flex items-center gap-3 px-3 py-1.5 border-t border-foreground/[0.06] text-[10px] text-foreground/20">

@@ -24,6 +24,7 @@ interface OutlineState {
   removeSupertag: (nodeId: string, supertagId: string) => void
   addField: (nodeId: string, field: OutlineField) => void
   removeField: (nodeId: string, fieldId: string) => void
+  moveNodeTo: (nodeId: string, newParentId: string) => void
   createNodeAfter: (afterId: string, initialContent?: string) => string
   createFirstChild: (parentId: string) => string
   deleteNode: (id: string) => void
@@ -118,6 +119,22 @@ function getVisibleNodesRecursive(
       getVisibleNodesRecursive(childId, nodes, result)
     }
   }
+}
+
+function isDescendantNode(
+  nodes: NodeMap,
+  ancestorId: string,
+  candidateId: string,
+): boolean {
+  const ancestor = nodes.get(ancestorId)
+  if (!ancestor) return false
+
+  for (const childId of ancestor.children) {
+    if (childId === candidateId) return true
+    if (isDescendantNode(nodes, childId, candidateId)) return true
+  }
+
+  return false
 }
 
 export const useOutlineStore = create<OutlineState>((set, get) => ({
@@ -254,6 +271,43 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       fields: node.fields.filter((f) => f.fieldId !== fieldId),
     })
     set({ nodes: next })
+  },
+
+  moveNodeTo: (nodeId, newParentId) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    const currentParent = node?.parentId ? nodes.get(node.parentId) : null
+    const newParent = nodes.get(newParentId)
+
+    if (!node || !node.parentId || !currentParent || !newParent) return
+    if (nodeId === newParentId) return
+    if (node.parentId === newParentId) return
+    if (isDescendantNode(nodes, nodeId, newParentId)) return
+
+    const existingChildren = newParent.children.filter((childId) => childId !== nodeId)
+    const lastChildId = sortNodeIds(existingChildren, nodes).at(-1)
+    const lastChildOrder = lastChildId ? nodes.get(lastChildId)?.order ?? null : null
+
+    const next = new Map(nodes)
+    next.set(node.parentId, {
+      ...currentParent,
+      children: currentParent.children.filter((childId) => childId !== nodeId),
+    })
+    next.set(newParentId, {
+      ...newParent,
+      children: [...existingChildren, nodeId],
+      collapsed: false,
+    })
+    next.set(nodeId, {
+      ...node,
+      parentId: newParentId,
+      order: generateOrderBetween(lastChildOrder, null) ?? generateOrder(ORDER_STEP),
+    })
+    set({
+      nodes: next,
+      selectedNodeId: nodeId,
+      selectedNodeIds: new Set([nodeId]),
+    })
   },
 
   createNodeAfter: (afterId, initialContent) => {
