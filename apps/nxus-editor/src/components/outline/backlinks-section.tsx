@@ -36,7 +36,11 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
   const groups: BacklinkGroup[] = data?.success ? data.groups : []
   const totalCount = data?.success ? data.totalCount : 0
 
-  if (isLoading || totalCount === 0) return null
+  if (isLoading) return null
+  if (data && !data.success) {
+    return <div className="mt-3 px-1 text-[12px] text-foreground/35">References unavailable</div>
+  }
+  if (totalCount === 0) return null
 
   return (
     <div className="mt-3 mb-1">

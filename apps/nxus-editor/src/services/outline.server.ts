@@ -381,11 +381,16 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
       limit: Number.MAX_SAFE_INTEGER,
     })
 
-    // Skip system field names used for internal wiring
-    const systemFieldNames = new Set(['supertag', 'extends', 'order', 'field_type', 'query_definition', 'color'])
+    // Skip system fields used for internal wiring (by systemId, not display name)
+    const systemFieldSystemIds = new Set([
+      'field:supertag', 'field:extends', 'field:order', 'field:field_type',
+      'field:query_definition', 'field:color',
+    ])
     type BacklinkPropertyValue = {
       value: unknown
       fieldName: string
+      fieldSystemId?: string | null
+      fieldNodeId?: string
     }
     type BacklinkNodeSummary = {
       id: string
@@ -395,6 +400,7 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
     }
 
     // Post-process: group nodes by which field references the target
+    // Use fieldSystemId (or fieldNodeId as fallback) for identity, not display name
     const fieldGroups = new Map<string, { fieldName: string; nodeIds: Set<string> }>()
 
     for (const assembled of result.nodes) {
@@ -404,7 +410,8 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
       ) as [string, BacklinkPropertyValue[]][]) {
         if (!propValues || propValues.length === 0) continue
         const first = propValues[0]!
-        if (systemFieldNames.has(first.fieldName)) continue
+        const fieldKey = first.fieldSystemId ?? first.fieldNodeId ?? first.fieldName
+        if (first.fieldSystemId && systemFieldSystemIds.has(first.fieldSystemId)) continue
 
         const referencesTarget = propValues.some((pv) => {
           if (pv.value === targetNodeId) return true
@@ -413,11 +420,10 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
         })
 
         if (referencesTarget) {
-          const fieldName = first.fieldName
-          if (!fieldGroups.has(fieldName)) {
-            fieldGroups.set(fieldName, { fieldName, nodeIds: new Set() })
+          if (!fieldGroups.has(fieldKey)) {
+            fieldGroups.set(fieldKey, { fieldName: first.fieldName, nodeIds: new Set() })
           }
-          fieldGroups.get(fieldName)!.nodeIds.add(assembled.id)
+          fieldGroups.get(fieldKey)!.nodeIds.add(assembled.id)
         }
       }
     }

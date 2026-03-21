@@ -229,6 +229,7 @@ export function NodeCommandPalette({
   const [searchResults, setSearchResults] = useState<{ id: string; content: string; supertags: SupertagBadge[] }[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const searchRequestIdRef = useRef(0)
 
   useEffect(() => {
     if (step.type !== 'navigate' && step.type !== 'move-to') return
@@ -239,13 +240,19 @@ export function NodeCommandPalette({
       return
     }
     setSearchLoading(true)
+    const thisRequest = ++searchRequestIdRef.current
     debounceRef.current = setTimeout(() => {
       searchNodesServerFn({ data: { query: query.trim(), limit: 10 } })
         .then((res) => {
+          if (thisRequest !== searchRequestIdRef.current) return
           if (res.success) setSearchResults(res.nodes)
         })
-        .catch(() => setSearchResults([]))
-        .finally(() => setSearchLoading(false))
+        .catch(() => {
+          if (thisRequest === searchRequestIdRef.current) setSearchResults([])
+        })
+        .finally(() => {
+          if (thisRequest === searchRequestIdRef.current) setSearchLoading(false)
+        })
       }, 300)
   }, [query, step.type])
 

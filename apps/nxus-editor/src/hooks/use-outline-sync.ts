@@ -171,6 +171,13 @@ export function useOutlineSync() {
         })
           .then((result) => {
             if (result.success && result.nodeId !== newId) {
+              // Cancel any pending content debounce for the temp ID
+              const pendingTimer = contentTimers.current.get(newId)
+              if (pendingTimer) {
+                clearTimeout(pendingTimer)
+                contentTimers.current.delete(newId)
+              }
+
               useOutlineStore.setState((state) => {
                 const tempNode = state.nodes.get(newId)
                 if (!tempNode) return state
@@ -195,6 +202,12 @@ export function useOutlineSync() {
                   selectedNodeIds: newSelectedNodeIds,
                 }
               })
+
+              // Transfer any pending content save to the new server ID
+              const persistedNode = useOutlineStore.getState().nodes.get(result.nodeId)
+              if (persistedNode?.content) {
+                syncContent(result.nodeId, persistedNode.content)
+              }
             }
             invalidateQueries()
           })
@@ -204,7 +217,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [invalidateQueries],
+    [syncContent, invalidateQueries],
   )
 
   /**

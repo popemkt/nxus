@@ -203,10 +203,12 @@ function PendingFieldRow({
     import('@/services/field.server').then(({ getAvailableFieldsServerFn }) => {
       getAvailableFieldsServerFn({ data: { nodeId } })
         .then((result) => {
-          if (result.success) setOptions(result.fields)
-          setLoaded(true)
+          if (result.success) {
+            setOptions(result.fields)
+            setLoaded(true)
+          }
         })
-        .catch(() => setLoaded(true))
+        .catch(() => { /* leave loaded=false so next open retries */ })
     })
   }, [nodeId])
 

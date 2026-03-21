@@ -7,7 +7,10 @@ import { initDatabaseSeeded } from './ensure-seeded.server'
  * Search nodes by content text. Uses the query evaluator with a ContentFilter.
  */
 export const searchNodesServerFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ query: z.string(), limit: z.number().optional() }))
+  .inputValidator(z.object({
+    query: z.string().trim().min(1).max(200),
+    limit: z.number().int().positive().max(50).optional(),
+  }))
   .handler(async (ctx) => {
     const { nodeFacade } = await import('@nxus/db/server')
     await initDatabaseSeeded()

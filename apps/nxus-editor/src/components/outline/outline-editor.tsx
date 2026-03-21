@@ -159,6 +159,8 @@ export function OutlineEditor() {
   const handleGlobalKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (activeNodeId) return
+      // Don't handle outline shortcuts while a palette is open
+      if (paletteOpen || cmdPaletteOpen) return
 
       // Empty outline — Enter creates the first node
       if (!selectedNodeId) {
@@ -277,6 +279,8 @@ export function OutlineEditor() {
       outdentNode,
       getPreviousVisibleNode,
       getNextVisibleNode,
+      paletteOpen,
+      cmdPaletteOpen,
     ],
   )
 

@@ -23,6 +23,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [highlightIndex, setHighlightIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const requestIdRef = useRef(0)
   const navigateToNode = useNavigateToNode()
 
   // Focus input when opening, clear debounce when closing
@@ -51,16 +52,22 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       return
     }
     setLoading(true)
+    const thisRequest = ++requestIdRef.current
     debounceRef.current = setTimeout(() => {
       searchNodesServerFn({ data: { query: q.trim(), limit: 20 } })
         .then((res) => {
+          if (thisRequest !== requestIdRef.current) return // stale
           if (res.success) {
             setResults(res.nodes)
             setHighlightIndex(0)
           }
         })
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false))
+        .catch(() => {
+          if (thisRequest === requestIdRef.current) setResults([])
+        })
+        .finally(() => {
+          if (thisRequest === requestIdRef.current) setLoading(false)
+        })
     }, 300)
   }, [])
 

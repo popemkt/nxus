@@ -165,8 +165,9 @@ function NumberField({
       if (displayValue !== '') onChange('')
       return
     }
-    const parsed = parseFloat(text)
-    if (Number.isNaN(parsed)) {
+    const trimmed = text.trim()
+    const parsed = Number(trimmed)
+    if (trimmed === '' || Number.isNaN(parsed)) {
       // Revert to previous value
       ref.current.textContent = displayValue
     } else if (String(parsed) !== String(value)) {
@@ -318,10 +319,12 @@ function SelectField({
     import('@/services/field.server').then(({ getFieldOptionsServerFn }) => {
       getFieldOptionsServerFn({ data: { fieldNodeId } })
         .then((result) => {
-          if (result.success) setOptions(result.options)
-          setLoaded(true)
+          if (result.success) {
+            setOptions(result.options)
+            setLoaded(true)
+          }
         })
-        .catch(() => setLoaded(true))
+        .catch(() => { /* leave loaded=false so next click retries */ })
     })
   }, [fieldNodeId, loaded])
 
