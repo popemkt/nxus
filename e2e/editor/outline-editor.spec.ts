@@ -23,23 +23,29 @@ test.describe('Outline Editor', () => {
 
   test.describe('Node Rendering', () => {
     test('displays node blocks from database', async ({ page }) => {
-      // Wait for loading to finish
-      await page.waitForTimeout(2000)
+      // Wait for loading spinner to disappear, then check for content
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
 
       // Should have at least one node block or an empty state message
       const nodeBlocks = page.locator('.node-block')
-      const emptyMessage = page.getByText('Empty')
       const noNodesMessage = page.getByText('No nodes found')
 
+      // Wait up to 10s for either nodes or empty state to appear
+      await Promise.race([
+        nodeBlocks.first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {}),
+        noNodesMessage.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {}),
+      ])
+
       const hasNodes = await nodeBlocks.count() > 0
-      const isEmpty = await emptyMessage.isVisible().catch(() => false)
       const hasNoNodes = await noNodesMessage.isVisible().catch(() => false)
 
-      expect(hasNodes || isEmpty || hasNoNodes).toBe(true)
+      expect(hasNodes || hasNoNodes).toBe(true)
     })
 
     test('shows bullet icons for each node', async ({ page }) => {
-      await page.waitForTimeout(2000)
+      // Wait for nodes to load
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
       const nodeBlocks = page.locator('.node-block')
       const count = await nodeBlocks.count()
 
