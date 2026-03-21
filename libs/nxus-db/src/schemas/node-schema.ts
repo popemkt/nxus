@@ -289,6 +289,17 @@ export const SYSTEM_FIELDS = {
   RECALL_REVIEW_DIFFICULTY_BEFORE: 'field:recall_review_difficulty_before' as FieldSystemId,
   RECALL_REVIEW_SCHEDULED_DAYS: 'field:recall_review_scheduled_days' as FieldSystemId,
   RECALL_REVIEW_HINTS_USED: 'field:recall_review_hints_used' as FieldSystemId,
+
+  // Supertag configuration fields (Tana parity)
+  DEFAULT_CHILD_SUPERTAG: 'field:default_child_supertag' as FieldSystemId, // Auto-tag new children
+  CONTENT_TEMPLATE: 'field:content_template' as FieldSystemId, // JSON template for new instances
+  REQUIRED: 'field:required' as FieldSystemId, // Whether field is required (boolean)
+  HIDE_WHEN: 'field:hide_when' as FieldSystemId, // Visibility rule: never|when_empty|when_not_empty|when_default|always
+  PINNED: 'field:pinned' as FieldSystemId, // Whether field appears first in lists
+  AUTO_COLLECT: 'field:auto_collect' as FieldSystemId, // Whether select field auto-collects new values (boolean, default true)
+  INSTANCE_SUPERTAG: 'field:instance_supertag' as FieldSystemId, // For instance fields: supertag to pull options from
+  VIEW_AS: 'field:view_as' as FieldSystemId, // Node's preferred view: outline|table|kanban|calendar|tabs|cards
+  VIEW_CONFIG: 'field:view_config' as FieldSystemId, // JSON view configuration (sort, group, filter, display)
 } as const
 
 /**
@@ -411,6 +422,17 @@ export const FIELD_NAMES = {
   RECALL_REVIEW_DIFFICULTY_BEFORE: 'recallReviewDifficultyBefore' as FieldContentName,
   RECALL_REVIEW_SCHEDULED_DAYS: 'recallReviewScheduledDays' as FieldContentName,
   RECALL_REVIEW_HINTS_USED: 'recallReviewHintsUsed' as FieldContentName,
+
+  // Supertag configuration fields (Tana parity)
+  DEFAULT_CHILD_SUPERTAG: 'defaultChildSupertag' as FieldContentName,
+  CONTENT_TEMPLATE: 'contentTemplate' as FieldContentName,
+  REQUIRED: 'required' as FieldContentName,
+  HIDE_WHEN: 'hideWhen' as FieldContentName,
+  PINNED: 'pinned' as FieldContentName,
+  AUTO_COLLECT: 'autoCollect' as FieldContentName,
+  INSTANCE_SUPERTAG: 'instanceSupertag' as FieldContentName,
+  VIEW_AS: 'viewAs' as FieldContentName,
+  VIEW_CONFIG: 'viewConfig' as FieldContentName,
 } as const
 
 /**
@@ -450,6 +472,7 @@ export type FieldType =
   | 'boolean'
   | 'date'
   | 'select'
+  | 'instance' // Options from nodes with a specific supertag
   | 'url'
   | 'email'
   | 'node' // Single node reference

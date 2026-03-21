@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "id": "4ad026f9-0a44-4610-9b8b-7198d887f973",
+      "name": "Self-collecting field options & value suggestions",
+      "description": "Implement Tana's auto-collect behavior for options fields (S1/S2/S3). When a user enters a new value in a select field that isn't in the options list, automatically add it. Show previously-used values as suggestions when editing any field. Add server functions to query used values across nodes for a given field. Update SelectField component with auto-collect + create-new-option UI. Add tests for the auto-collect logic and the used-values query.",
+      "status": "Completed",
+      "sort_order": 0,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T05:36:30.497350Z"
+    },
+    {
+      "id": "fe003d3d-2b36-4ca1-89b2-ef162465b978",
+      "name": "Options from supertag field type",
+      "description": "Implemented as part of Step 1. InstanceField component added to field-value.tsx, getNodesBySupertagServerFn added to field.server.ts, 'instance' type added to FieldType in both outline types and DB schema.",
+      "status": "Completed",
+      "sort_order": 1,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T05:36:38.507538Z"
+    },
+    {
+      "id": "35f1ec43-f785-40d7-b4c2-b4dd3af8b880",
+      "name": "View-as system with table & kanban views",
+      "description": "Implemented view-as system: (1) ViewToolbar component with mode switching (outline/table/kanban), sort/group config, (2) TableView component with auto-detected field columns, inline editing via FieldValue, clickable node names, sorting, (3) KanbanView with field-based grouping, drag-and-drop between columns, supertag badges, field previews, (4) ViewMode/ViewConfig types in outline.ts, (5) Per-node persistence via field:view_as and field:view_config system fields with optimistic updates + server persist, (6) Integrated into node-block.tsx with conditional rendering based on viewMode. Fixed React hooks ordering bug (childFields referenced before sortedChildren). All 584 tests pass.",
+      "status": "Completed",
+      "sort_order": 2,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T05:58:59.903945Z"
+    },
+    {
+      "id": "1856946d-53af-4410-8981-533c9ae40371",
+      "name": "Critical keyboard shortcuts",
+      "description": "Implemented all 4 keyboard shortcuts: (1) Cmd+Shift+Up/Down wired to moveNodeUp/moveNodeDown with multi-select support, (2) Cmd+./Cmd+, for zoom in/out via navigateToNode, (3) Cmd+Z/Cmd+Shift+Z undo/redo with snapshot-based history stack (undo.store.ts) integrated into useOutlineSync, (4) Cmd+Enter to toggle boolean/checkbox fields on selected node. Also fixed pre-existing TS errors: added 'instance' icon to bullet.tsx fieldIconMap and fixed addSupertagByNodeIdServerFn for InstanceField. All 584+ tests pass.",
+      "status": "Completed",
+      "sort_order": 3,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T05:49:22.907183Z"
+    },
+    {
+      "id": "6a617f4c-30d9-4ed9-a655-551f52e202c1",
+      "name": "Inline query editor in outline",
+      "description": "Already implemented. The inline query editor is fully functional: QueryBuilder from @nxus/workbench is rendered inline in query-results.tsx when workbenchOpen is true (toggled via Sliders icon button in node-block.tsx). Supports live editing of filters/sort/limit, shows QueryLinter summary, result count, loading/error states, and persists changes via updateQueryDefinitionServerFn with automatic cache invalidation.",
+      "status": "Completed",
+      "sort_order": 4,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T06:01:26.328633Z"
+    },
+    {
+      "id": "73c899f3-4e39-4b30-a6ce-a3bec46f32e3",
+      "name": "Default child supertags & content templates",
+      "description": "Implemented default-child-supertag (F5) and content templates (F6). Server-side: createNodeServerFn now checks parent's supertags for default_child_supertag field, resolves the UUID reference to a systemId via assembleNode, auto-applies the supertag with addNodeSupertag, collects field definitions from the supertag + ancestors, and applies content templates by creating child nodes. Returns appliedSupertag and appliedFields to client. Client-side: use-outline-sync.ts CreateNodeResult interface, createNodeAfter and createFirstChild callbacks merge server-returned supertag/fields into store. All 584 tests pass, zero new TS errors.",
+      "status": "Completed",
+      "sort_order": 5,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T06:14:15.063445Z"
+    },
+    {
+      "id": "1698103f-0f27-46e1-adb0-cbad72939cad",
+      "name": "Supertag configuration panel",
+      "description": "Implemented supertag configuration panel (T1): (1) Server functions: getSupertagConfigServerFn (full config with own/inherited fields, default child, template, extends, color), addSupertagFieldServerFn (create field node + link to supertag), removeSupertagFieldServerFn (unlink field), updateFieldTypeServerFn (change field type), updateSupertagConfigServerFn (default child, template, extends, color). (2) SupertagConfigPanel component: Fields tab (add/remove fields, change types, view inherited), Settings tab (color picker, extends picker, default child picker, template editor). (3) Wired into SupertagBadges: gear icon appears on hover, opens config panel as popover below badge. All 584 tests pass.",
+      "status": "Completed",
+      "sort_order": 6,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T06:21:15.298789Z"
+    },
+    {
+      "id": "71371db2-842e-47bd-9d89-6efae5178431",
+      "name": "Field constraints - required & hide rules",
+      "description": "Implemented field constraints (F2/F3/F7): (1) Server-side: outline.server.ts reads required/hideWhen/pinned from field definition nodes via fieldConstraintCache, includes in field data, sorts pinned fields first. (2) Client-side visibility: fields-section.tsx visibleFields memo filters by hideWhen rules (never, when_empty, when_not_empty, always). (3) Required indicator: FieldRow shows red label + WarningCircle icon when required field is empty. (4) Server function: updateFieldConstraintsServerFn persists required/hideWhen/pinned on field definition nodes. (5) Config panel: FieldConfigRow expanded with required checkbox, pinned toggle, hideWhen dropdown. getSupertagConfigServerFn returns constraint data. All 584 tests pass.",
+      "status": "Completed",
+      "sort_order": 7,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T06:29:07.650051Z"
+    },
+    {
+      "id": "21936822-ea57-4fff-a596-ef58286405df",
+      "name": "Comprehensive test suite",
+      "description": "Comprehensive test suite completed — 600 tests across 21 test files (up from 584/20). New test files: (1) libs/nxus-db/src/services/supertag-fields.test.ts — 16 DB-layer tests for field definitions, constraints (required/hideWhen/pinned), default-child-supertag, content templates, auto-collect, instance supertag. (2) apps/nxus-editor/src/components/outline/field-visibility.test.ts — 20 tests for hideWhen visibility logic, required-field detection, pinned sorting. Expanded: (3) outline.store.test.ts — 16 new tests for addSupertag, removeSupertag, addField, removeField, field constraint metadata preservation. (4) e2e/editor/outline-editor.spec.ts — 4 new E2E test sections for view switching, field rows, keyboard shortcuts, supertag config. All tests pass, TypeScript clean.",
+      "status": "Completed",
+      "sort_order": 8,
+      "start_new_chat": false,
+      "stop_after_completion": false,
+      "created_at": "2026-03-21T05:31:06.299341Z",
+      "updated_at": "2026-03-21T06:37:12.386039Z"
+    }
+  ]
+}

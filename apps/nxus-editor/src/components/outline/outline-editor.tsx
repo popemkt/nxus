@@ -14,6 +14,7 @@ import type { CommandPaletteFieldContext } from './node-command-palette'
 import {
   getWorkspaceRootServerFn,
   getNodeTreeServerFn,
+  setFieldValueServerFn,
 } from '@/services/outline.server'
 import type { OutlineNode } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
@@ -38,7 +39,8 @@ export function OutlineEditor() {
     (s) => s.getPreviousVisibleNode,
   )
 
-  const { createNodeAfter, createFirstChild, deleteNode, indentNode, outdentNode } = useOutlineSync()
+  const { createNodeAfter, createFirstChild, deleteNode, indentNode, outdentNode, moveNodeUp, moveNodeDown, undo, redo } = useOutlineSync()
+  const navigateToNode = useNavigateToNode()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -179,8 +181,13 @@ export function OutlineEditor() {
       switch (e.key) {
         case 'ArrowUp': {
           e.preventDefault()
-          if (e.metaKey && e.shiftKey) {
-            // Cmd+Shift+Arrow moves all selected up
+          if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+            // Cmd+Shift+Up moves selected nodes up
+            if (hasMultiSelect) {
+              for (const id of selectedNodeIds) moveNodeUp(id)
+            } else {
+              moveNodeUp(selectedNodeId)
+            }
             break
           } else if (e.shiftKey) {
             // Shift+Arrow extends multi-selection
@@ -194,7 +201,16 @@ export function OutlineEditor() {
         }
         case 'ArrowDown': {
           e.preventDefault()
-          if (e.shiftKey) {
+          if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+            // Cmd+Shift+Down moves selected nodes down
+            if (hasMultiSelect) {
+              const ids = [...selectedNodeIds]
+              // Move in reverse order to avoid order collisions
+              for (let i = ids.length - 1; i >= 0; i--) moveNodeDown(ids[i]!)
+            } else {
+              moveNodeDown(selectedNodeId)
+            }
+          } else if (e.shiftKey) {
             const nextId = getNextVisibleNode(selectedNodeId)
             if (nextId) extendSelection(nextId)
           } else {
@@ -205,8 +221,23 @@ export function OutlineEditor() {
         }
         case 'Enter': {
           e.preventDefault()
-          const node = nodes.get(selectedNodeId)
-          activateNode(selectedNodeId, node?.content.length ?? 0)
+          if (e.metaKey || e.ctrlKey) {
+            // Cmd+Enter — toggle checkbox/boolean fields on selected node
+            const node = nodes.get(selectedNodeId)
+            if (node) {
+              const boolField = node.fields.find((f) => f.fieldType === 'boolean')
+              if (boolField) {
+                const currentVal = Boolean(boolField.values[0]?.value)
+                useOutlineStore.getState().updateFieldValue(selectedNodeId, boolField.fieldId, !currentVal)
+                setFieldValueServerFn({ data: { nodeId: selectedNodeId, fieldId: boolField.fieldId, value: !currentVal } })
+                  .catch((err) => console.error('[sync] Failed to toggle checkbox:', err))
+              }
+            }
+          } else {
+            // Plain Enter — activate node for editing
+            const node = nodes.get(selectedNodeId)
+            activateNode(selectedNodeId, node?.content.length ?? 0)
+          }
           break
         }
         case ' ': {
@@ -260,6 +291,28 @@ export function OutlineEditor() {
           selectNode(null)
           break
         }
+        case '.': {
+          // Cmd+. — zoom into selected node
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault()
+            const node = nodes.get(selectedNodeId)
+            if (node && node.children.length > 0) {
+              navigateToNode(selectedNodeId)
+            }
+          }
+          break
+        }
+        case ',': {
+          // Cmd+, — zoom out to parent
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault()
+            const rootNode = nodes.get(rootNodeId)
+            if (rootNode && rootNode.parentId) {
+              navigateToNode(rootNode.parentId)
+            }
+          }
+          break
+        }
       }
     },
     [
@@ -277,8 +330,11 @@ export function OutlineEditor() {
       createFirstChild,
       indentNode,
       outdentNode,
+      moveNodeUp,
+      moveNodeDown,
       getPreviousVisibleNode,
       getNextVisibleNode,
+      navigateToNode,
       paletteOpen,
       cmdPaletteOpen,
     ],
@@ -291,8 +347,18 @@ export function OutlineEditor() {
 
   // Cmd+S / Ctrl+S — open search palette
   // Cmd+K / Ctrl+K — open inline command palette
+  // Cmd+Z / Cmd+Shift+Z — undo/redo
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          redo()
+        } else {
+          undo()
+        }
+        return
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
         setPaletteOpen((o) => !o)
@@ -334,7 +400,7 @@ export function OutlineEditor() {
     // stop keydown propagation in the bubble phase.
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [])
+  }, [undo, redo])
 
   if (loading) {
     return (

@@ -15,7 +15,16 @@ import {
 import { clearFieldServerFn } from '@/services/field.server'
 import { outlineQueryKeys } from '@/components/outline/query-helpers'
 import { useOutlineStore } from '@/stores/outline.store'
+import { useUndoStore } from '@/stores/undo.store'
 import type { OutlineField, SupertagBadge } from '@/types/outline'
+
+/** Result type from createNodeServerFn */
+interface CreateNodeResult {
+  success: true
+  nodeId: string
+  appliedSupertag: { id: string; name: string; systemId: string; color: string | null } | null
+  appliedFields: OutlineField[]
+}
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 /**
@@ -47,6 +56,12 @@ export function useOutlineSync() {
     queryClient.invalidateQueries({ queryKey: outlineQueryKeys.all })
   }, [queryClient])
 
+  /** Capture the current node map state before a mutation for undo support */
+  const captureUndoSnapshot = useCallback(() => {
+    const { nodes } = useOutlineStore.getState()
+    useUndoStore.getState().pushSnapshot(nodes)
+  }, [])
+
   /**
    * Debounced content save — waits 500ms after last keystroke before persisting.
    */
@@ -73,6 +88,7 @@ export function useOutlineSync() {
    */
   const createNodeAfter = useCallback(
     (afterId: string, initialContent?: string) => {
+      captureUndoSnapshot()
       const { createNodeAfter: storeCreate } = useOutlineStore.getState()
       const newId = storeCreate(afterId, initialContent)
 
@@ -88,7 +104,8 @@ export function useOutlineSync() {
             order: parseInt(node.order, 10),
           },
         })
-          .then((result) => {
+          .then((_result: unknown) => {
+            const result = _result as CreateNodeResult
             if (result.success && result.nodeId !== newId) {
               // Cancel any pending content debounce for the temp ID
               const pendingTimer = contentTimers.current.get(newId)
@@ -104,7 +121,18 @@ export function useOutlineSync() {
 
                 const next = new Map(state.nodes)
                 next.delete(newId)
-                next.set(result.nodeId, { ...tempNode, id: result.nodeId })
+
+                // Merge default-child-supertag data from server
+                const mergedNode = { ...tempNode, id: result.nodeId }
+                if (result.appliedSupertag) {
+                  mergedNode.supertags = [...mergedNode.supertags, result.appliedSupertag]
+                }
+                if (result.appliedFields && result.appliedFields.length > 0) {
+                  const existingFieldIds = new Set(mergedNode.fields.map((f: OutlineField) => f.fieldId))
+                  const newFields = result.appliedFields.filter((f: OutlineField) => !existingFieldIds.has(f.fieldId))
+                  mergedNode.fields = [...mergedNode.fields, ...newFields]
+                }
+                next.set(result.nodeId, mergedNode)
 
                 // Update parent's children array
                 const parent = tempNode.parentId ? next.get(tempNode.parentId) : null
@@ -138,6 +166,26 @@ export function useOutlineSync() {
               if (persistedNode?.content) {
                 syncContent(result.nodeId, persistedNode.content)
               }
+            } else if (result.success) {
+              // Server ID matches temp ID — still merge supertag/fields if present
+              if (result.appliedSupertag || (result.appliedFields && result.appliedFields.length > 0)) {
+                useOutlineStore.setState((state) => {
+                  const node = state.nodes.get(newId)
+                  if (!node) return state
+                  const next = new Map(state.nodes)
+                  const updated = { ...node }
+                  if (result.appliedSupertag) {
+                    updated.supertags = [...updated.supertags, result.appliedSupertag]
+                  }
+                  if (result.appliedFields && result.appliedFields.length > 0) {
+                    const existingFieldIds = new Set(updated.fields.map((f: OutlineField) => f.fieldId))
+                    const newFields = result.appliedFields.filter((f: OutlineField) => !existingFieldIds.has(f.fieldId))
+                    updated.fields = [...updated.fields, ...newFields]
+                  }
+                  next.set(newId, updated)
+                  return { nodes: next }
+                })
+              }
             }
             invalidateQueries()
           })
@@ -147,7 +195,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [syncContent, invalidateQueries],
+    [syncContent, invalidateQueries, captureUndoSnapshot],
   )
 
   /**
@@ -155,6 +203,7 @@ export function useOutlineSync() {
    */
   const createFirstChild = useCallback(
     (parentId: string) => {
+      captureUndoSnapshot()
       const { createFirstChild: storeCreate } = useOutlineStore.getState()
       const newId = storeCreate(parentId)
 
@@ -169,7 +218,8 @@ export function useOutlineSync() {
             order: parseInt(node.order, 10),
           },
         })
-          .then((result) => {
+          .then((_result: unknown) => {
+            const result = _result as CreateNodeResult
             if (result.success && result.nodeId !== newId) {
               // Cancel any pending content debounce for the temp ID
               const pendingTimer = contentTimers.current.get(newId)
@@ -183,7 +233,19 @@ export function useOutlineSync() {
                 if (!tempNode) return state
                 const next = new Map(state.nodes)
                 next.delete(newId)
-                next.set(result.nodeId, { ...tempNode, id: result.nodeId })
+
+                // Merge default-child-supertag data from server
+                const mergedNode = { ...tempNode, id: result.nodeId }
+                if (result.appliedSupertag) {
+                  mergedNode.supertags = [...mergedNode.supertags, result.appliedSupertag]
+                }
+                if (result.appliedFields && result.appliedFields.length > 0) {
+                  const existingFieldIds = new Set(mergedNode.fields.map((f: OutlineField) => f.fieldId))
+                  const newFields = result.appliedFields.filter((f: OutlineField) => !existingFieldIds.has(f.fieldId))
+                  mergedNode.fields = [...mergedNode.fields, ...newFields]
+                }
+                next.set(result.nodeId, mergedNode)
+
                 const parent = tempNode.parentId ? next.get(tempNode.parentId) : null
                 if (parent && tempNode.parentId) {
                   next.set(tempNode.parentId, {
@@ -208,6 +270,26 @@ export function useOutlineSync() {
               if (persistedNode?.content) {
                 syncContent(result.nodeId, persistedNode.content)
               }
+            } else if (result.success) {
+              // Server ID matches temp ID — still merge supertag/fields if present
+              if (result.appliedSupertag || (result.appliedFields && result.appliedFields.length > 0)) {
+                useOutlineStore.setState((state) => {
+                  const node = state.nodes.get(newId)
+                  if (!node) return state
+                  const next = new Map(state.nodes)
+                  const updated = { ...node }
+                  if (result.appliedSupertag) {
+                    updated.supertags = [...updated.supertags, result.appliedSupertag]
+                  }
+                  if (result.appliedFields && result.appliedFields.length > 0) {
+                    const existingFieldIds = new Set(updated.fields.map((f: OutlineField) => f.fieldId))
+                    const newFields = result.appliedFields.filter((f: OutlineField) => !existingFieldIds.has(f.fieldId))
+                    updated.fields = [...updated.fields, ...newFields]
+                  }
+                  next.set(newId, updated)
+                  return { nodes: next }
+                })
+              }
             }
             invalidateQueries()
           })
@@ -217,7 +299,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [syncContent, invalidateQueries],
+    [syncContent, invalidateQueries, captureUndoSnapshot],
   )
 
   /**
@@ -235,18 +317,20 @@ export function useOutlineSync() {
    * Delete node — optimistic + persist.
    */
   const deleteNode = useCallback((nodeId: string) => {
+    captureUndoSnapshot()
     useOutlineStore.getState().deleteNode(nodeId)
     deleteNodeServerFn({ data: { nodeId } })
       .then(() => invalidateQueries())
       .catch((err) => {
         console.error('[sync] Failed to delete node:', err)
       })
-  }, [invalidateQueries])
+  }, [invalidateQueries, captureUndoSnapshot])
 
   /**
    * Indent node — optimistic + persist reparent.
    */
   const indentNode = useCallback((nodeId: string) => {
+    captureUndoSnapshot()
     useOutlineStore.getState().indentNode(nodeId)
     const { nodes } = useOutlineStore.getState()
     const node = nodes.get(nodeId)
@@ -263,12 +347,13 @@ export function useOutlineSync() {
           console.error('[sync] Failed to indent node:', err)
         })
     }
-  }, [invalidateQueries])
+  }, [invalidateQueries, captureUndoSnapshot])
 
   /**
    * Outdent node — optimistic + persist reparent.
    */
   const outdentNode = useCallback((nodeId: string) => {
+    captureUndoSnapshot()
     useOutlineStore.getState().outdentNode(nodeId)
     const { nodes } = useOutlineStore.getState()
     const node = nodes.get(nodeId)
@@ -285,12 +370,13 @@ export function useOutlineSync() {
           console.error('[sync] Failed to outdent node:', err)
         })
     }
-  }, [invalidateQueries])
+  }, [invalidateQueries, captureUndoSnapshot])
 
   /**
    * Move up/down — optimistic + persist both sides of order swap.
    */
   const moveNodeUp = useCallback((nodeId: string) => {
+    captureUndoSnapshot()
     // Snapshot the pre-swap siblings to identify the swapped one
     const { nodes: preNodes } = useOutlineStore.getState()
     const preNode = preNodes.get(nodeId)
@@ -329,9 +415,10 @@ export function useOutlineSync() {
         }
       }
     }
-  }, [invalidateQueries])
+  }, [invalidateQueries, captureUndoSnapshot])
 
   const moveNodeDown = useCallback((nodeId: string) => {
+    captureUndoSnapshot()
     const { nodes: preNodes } = useOutlineStore.getState()
     const preNode = preNodes.get(nodeId)
     const preOrder = preNode?.order
@@ -367,7 +454,7 @@ export function useOutlineSync() {
         }
       }
     }
-  }, [invalidateQueries])
+  }, [invalidateQueries, captureUndoSnapshot])
 
   /**
    * Add supertag — optimistic add to store, then persist via server.
@@ -478,6 +565,47 @@ export function useOutlineSync() {
     [invalidateQueries],
   )
 
+  /**
+   * Undo — restore the previous node map snapshot.
+   */
+  const undo = useCallback(() => {
+    const { nodes: currentNodes } = useOutlineStore.getState()
+    const snapshot = useUndoStore.getState().undo()
+    if (!snapshot) return
+
+    // The undo() call already moved the snapshot to the redo stack.
+    // But we need to push the *current* state onto the redo stack for proper redo.
+    // The undo store's undo() pops from undoStack and pushes to redoStack.
+    // However what it pushes is the *old* snapshot, not the current state.
+    // We need to fix this: redo should restore the state *before* the undo.
+    // Let's replace the last redo entry with the current nodes.
+    useUndoStore.setState((state) => {
+      const redoStack = [...state.redoStack]
+      redoStack[redoStack.length - 1] = new Map(currentNodes)
+      return { redoStack }
+    })
+
+    useOutlineStore.setState({ nodes: snapshot })
+  }, [])
+
+  /**
+   * Redo — restore the next node map snapshot.
+   */
+  const redo = useCallback(() => {
+    const { nodes: currentNodes } = useOutlineStore.getState()
+    const snapshot = useUndoStore.getState().redo()
+    if (!snapshot) return
+
+    // Replace the last undo entry with the current state for proper undo chain
+    useUndoStore.setState((state) => {
+      const undoStack = [...state.undoStack]
+      undoStack[undoStack.length - 1] = new Map(currentNodes)
+      return { undoStack }
+    })
+
+    useOutlineStore.setState({ nodes: snapshot })
+  }, [])
+
   return {
     createNodeAfter,
     createFirstChild,
@@ -493,5 +621,7 @@ export function useOutlineSync() {
     addField,
     removeField,
     moveNodeTo,
+    undo,
+    redo,
   }
 }

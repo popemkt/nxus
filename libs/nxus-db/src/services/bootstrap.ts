@@ -567,6 +567,17 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.RECALL_REVIEW_DIFFICULTY_BEFORE, content: 'recallReviewDifficultyBefore', fieldType: 'number' },
     { systemId: SYSTEM_FIELDS.RECALL_REVIEW_SCHEDULED_DAYS, content: 'recallReviewScheduledDays', fieldType: 'number' },
     { systemId: SYSTEM_FIELDS.RECALL_REVIEW_HINTS_USED, content: 'recallReviewHintsUsed', fieldType: 'number' },
+
+    // Supertag configuration fields (Tana parity)
+    { systemId: SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG, content: 'defaultChildSupertag', fieldType: 'node' },
+    { systemId: SYSTEM_FIELDS.CONTENT_TEMPLATE, content: 'contentTemplate', fieldType: 'json' },
+    { systemId: SYSTEM_FIELDS.REQUIRED, content: 'required', fieldType: 'boolean' },
+    { systemId: SYSTEM_FIELDS.HIDE_WHEN, content: 'hideWhen', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.PINNED, content: 'pinned', fieldType: 'boolean' },
+    { systemId: SYSTEM_FIELDS.AUTO_COLLECT, content: 'autoCollect', fieldType: 'boolean' },
+    { systemId: SYSTEM_FIELDS.INSTANCE_SUPERTAG, content: 'instanceSupertag', fieldType: 'node' },
+    { systemId: SYSTEM_FIELDS.VIEW_AS, content: 'viewAs', fieldType: 'select' },
+    { systemId: SYSTEM_FIELDS.VIEW_CONFIG, content: 'viewConfig', fieldType: 'json' },
   ];
 
   for (const field of commonFields) {
