@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
 import { Sliders } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useShallow } from 'zustand/react/shallow'
@@ -123,11 +123,11 @@ export const NodeBlock = memo(function NodeBlock({
 
   const [viewMode, setViewModeLocal] = useState<ViewMode>(storedViewMode)
   const [viewConfig, setViewConfigLocal] = useState<ViewConfig>(storedViewConfig)
+  const viewConfigTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleViewModeChange = useCallback(
     (mode: ViewMode) => {
       setViewModeLocal(mode)
-      // Persist to field:view_as
       useOutlineStore.getState().updateFieldValue(nodeId, 'field:view_as', mode)
       setFieldValueServerFn({ data: { nodeId, fieldId: 'field:view_as', value: mode } }).catch((err) => {
         console.error('[view] Failed to persist view mode:', err)
@@ -141,9 +141,14 @@ export const NodeBlock = memo(function NodeBlock({
       setViewConfigLocal(cfg)
       const serialized = JSON.stringify(cfg)
       useOutlineStore.getState().updateFieldValue(nodeId, 'field:view_config', serialized)
-      setFieldValueServerFn({ data: { nodeId, fieldId: 'field:view_config', value: serialized } }).catch((err) => {
-        console.error('[view] Failed to persist view config:', err)
-      })
+      // Debounce config persistence to avoid rapid-fire server calls
+      if (viewConfigTimerRef.current) clearTimeout(viewConfigTimerRef.current)
+      viewConfigTimerRef.current = setTimeout(() => {
+        viewConfigTimerRef.current = null
+        setFieldValueServerFn({ data: { nodeId, fieldId: 'field:view_config', value: serialized } }).catch((err) => {
+          console.error('[view] Failed to persist view config:', err)
+        })
+      }, 300)
     },
     [nodeId],
   )

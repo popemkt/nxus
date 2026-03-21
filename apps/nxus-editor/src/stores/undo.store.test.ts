@@ -37,42 +37,51 @@ describe('undo store', () => {
     expect(useUndoStore.getState().undoStack.length).toBe(1)
   })
 
-  it('undo pops from undo stack and pushes to redo stack', () => {
+  it('undo pops from undo stack and pushes currentNodes to redo stack', () => {
     const snapshot1 = makeNodeMap([['a', 'Alpha']])
     const snapshot2 = makeNodeMap([['a', 'Beta']])
+    const current = makeNodeMap([['a', 'Current']])
     useUndoStore.getState().pushSnapshot(snapshot1)
     useUndoStore.getState().pushSnapshot(snapshot2)
 
     expect(useUndoStore.getState().undoStack.length).toBe(2)
 
-    const result = useUndoStore.getState().undo()
+    const result = useUndoStore.getState().undo(current)
     expect(result).toBeTruthy()
     expect(result!.get('a')?.content).toBe('Beta')
     expect(useUndoStore.getState().undoStack.length).toBe(1)
     expect(useUndoStore.getState().redoStack.length).toBe(1)
+    // Redo stack should hold the current state (not the popped snapshot)
+    expect(useUndoStore.getState().redoStack[0]!.get('a')?.content).toBe('Current')
     expect(useUndoStore.getState().canRedo()).toBe(true)
   })
 
-  it('redo pops from redo stack and pushes to undo stack', () => {
+  it('redo pops from redo stack and pushes currentNodes to undo stack', () => {
     const snapshot = makeNodeMap([['a', 'Alpha']])
+    const afterUndo = makeNodeMap([['a', 'AfterUndo']])
+    const afterRedo = makeNodeMap([['a', 'AfterRedo']])
     useUndoStore.getState().pushSnapshot(snapshot)
-    useUndoStore.getState().undo()
+    useUndoStore.getState().undo(afterUndo)
 
     expect(useUndoStore.getState().canRedo()).toBe(true)
 
-    const result = useUndoStore.getState().redo()
+    const result = useUndoStore.getState().redo(afterRedo)
     expect(result).toBeTruthy()
     expect(useUndoStore.getState().undoStack.length).toBe(1)
     expect(useUndoStore.getState().redoStack.length).toBe(0)
+    // Undo stack should hold the current state passed to redo()
+    expect(useUndoStore.getState().undoStack[0]!.get('a')?.content).toBe('AfterRedo')
   })
 
   it('undo returns null when stack is empty', () => {
-    const result = useUndoStore.getState().undo()
+    const current = makeNodeMap([['a', 'Current']])
+    const result = useUndoStore.getState().undo(current)
     expect(result).toBeNull()
   })
 
   it('redo returns null when stack is empty', () => {
-    const result = useUndoStore.getState().redo()
+    const current = makeNodeMap([['a', 'Current']])
+    const result = useUndoStore.getState().redo(current)
     expect(result).toBeNull()
   })
 
@@ -80,10 +89,11 @@ describe('undo store', () => {
     const snapshot1 = makeNodeMap([['a', 'V1']])
     const snapshot2 = makeNodeMap([['a', 'V2']])
     const snapshot3 = makeNodeMap([['a', 'V3']])
+    const current = makeNodeMap([['a', 'Current']])
 
     useUndoStore.getState().pushSnapshot(snapshot1)
     useUndoStore.getState().pushSnapshot(snapshot2)
-    useUndoStore.getState().undo() // redo stack now has 1 entry
+    useUndoStore.getState().undo(current) // redo stack now has 1 entry
 
     expect(useUndoStore.getState().canRedo()).toBe(true)
 
@@ -102,7 +112,7 @@ describe('undo store', () => {
   it('clear resets both stacks', () => {
     useUndoStore.getState().pushSnapshot(makeNodeMap([['a', 'Alpha']]))
     useUndoStore.getState().pushSnapshot(makeNodeMap([['a', 'Beta']]))
-    useUndoStore.getState().undo()
+    useUndoStore.getState().undo(makeNodeMap([['a', 'Current']]))
 
     useUndoStore.getState().clear()
     expect(useUndoStore.getState().canUndo()).toBe(false)

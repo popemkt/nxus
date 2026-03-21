@@ -183,16 +183,16 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
       return { success: false as const, error: 'Supertag not found' }
     }
 
-    // Helper to read constraint properties from a field definition node
+    // Read constraint properties, normalizing string 'true' → boolean at the read boundary
     function readFieldConstraints(fieldNode: ReturnType<typeof assembleNode>) {
       if (!fieldNode) return {}
-      const required = getProperty(fieldNode, FIELD_NAMES.REQUIRED) as boolean | string | undefined
+      const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
       const hideWhen = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
-      const pinned = getProperty(fieldNode, FIELD_NAMES.PINNED) as boolean | string | undefined
+      const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
       return {
-        ...(required === true || required === 'true' ? { required: true } : {}),
+        ...(requiredRaw === true || requiredRaw === 'true' ? { required: true } : {}),
         ...(hideWhen ? { hideWhen } : {}),
-        ...(pinned === true || pinned === 'true' ? { pinned: true } : {}),
+        ...(pinnedRaw === true || pinnedRaw === 'true' ? { pinned: true } : {}),
       }
     }
 
@@ -335,18 +335,27 @@ export const addSupertagFieldServerFn = createServerFn({ method: 'POST' })
       setProperty(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
     }
 
-    // Generate a system ID for the field
-    const systemId = `field:${ctx.data.fieldName.toLowerCase().replace(/[^a-z0-9_]/g, '_')}_${fieldNodeId.slice(0, 8)}`
-    db.update((await import('@nxus/db/server')).nodes)
+    // Generate a system ID for the field using 12 UUID chars to reduce collision risk
+    const { nodes: nodesTable, eq } = await import('@nxus/db/server')
+    const sanitizedName = ctx.data.fieldName.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+    let systemId = `field:${sanitizedName}_${fieldNodeId.slice(0, 12)}`
+
+    // Check for collision and regenerate with full UUID if needed
+    const existing = db.select().from(nodesTable).where(eq(nodesTable.systemId, systemId)).get()
+    if (existing) {
+      systemId = `field:${sanitizedName}_${fieldNodeId.replace(/-/g, '')}`
+    }
+
+    db.update(nodesTable)
       .set({ systemId })
-      .where((await import('@nxus/db/server')).eq((await import('@nxus/db/server')).nodes.id, fieldNodeId))
+      .where(eq(nodesTable.id, fieldNodeId))
       .run()
 
     // Link the field to the supertag as a property (declares the field in the schema)
     setProperty(
       db,
       ctx.data.supertagId,
-      fieldNodeId as unknown as import('@nxus/db/server').FieldSystemId,
+      systemId as import('@nxus/db/server').FieldSystemId,
       JSON.stringify(null),
     )
 

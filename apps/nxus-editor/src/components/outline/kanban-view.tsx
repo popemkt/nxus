@@ -126,6 +126,11 @@ export function KanbanView({ childIds, depth, config }: KanbanViewProps) {
 
             {/* Cards */}
             <div className="flex flex-col gap-1 px-1.5 pb-2 min-h-[40px]">
+              {col.childIds.length === 0 && col.key === UNCATEGORIZED && columns.length === 1 && (
+                <div className="px-2 py-3 text-[11px] text-foreground/20 text-center italic">
+                  No children have this field
+                </div>
+              )}
               {col.childIds.map((childId) => {
                 const child = nodes.get(childId)
                 if (!child) return null

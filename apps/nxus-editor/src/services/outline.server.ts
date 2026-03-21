@@ -58,15 +58,15 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       const result = ft as FieldType
       fieldTypeCache.set(fieldNodeId, result)
 
-      // Also cache constraints from the field definition node
+      // Cache constraints, normalizing string 'true' → boolean true at the read boundary
       if (fieldNode && !fieldConstraintCache.has(fieldNodeId)) {
-        const required = getProperty(fieldNode, FIELD_NAMES.REQUIRED) as boolean | string | undefined
-        const hideWhen = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
-        const pinned = getProperty(fieldNode, FIELD_NAMES.PINNED) as boolean | string | undefined
+        const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
+        const hideWhenRaw = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
+        const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
         fieldConstraintCache.set(fieldNodeId, {
-          required: required === true || required === 'true' ? true : undefined,
-          hideWhen: hideWhen || undefined,
-          pinned: pinned === true || pinned === 'true' ? true : undefined,
+          required: requiredRaw === true || requiredRaw === 'true' ? true : undefined,
+          hideWhen: hideWhenRaw || undefined,
+          pinned: pinnedRaw === true || pinnedRaw === 'true' ? true : undefined,
         })
       }
 

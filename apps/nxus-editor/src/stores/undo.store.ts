@@ -7,13 +7,17 @@ interface UndoState {
   undoStack: NodeMap[]
   redoStack: NodeMap[]
   pushSnapshot: (nodes: NodeMap) => void
-  undo: () => NodeMap | null
-  redo: () => NodeMap | null
+  /** Pop the last undo snapshot and atomically push currentNodes onto the redo stack. */
+  undo: (currentNodes: NodeMap) => NodeMap | null
+  /** Pop the last redo snapshot and atomically push currentNodes onto the undo stack. */
+  redo: (currentNodes: NodeMap) => NodeMap | null
   canUndo: () => boolean
   canRedo: () => boolean
   clear: () => void
 }
 
+// Outline store creates new Map + spread operator for mutations, so shallow
+// copies in undo snapshots are safe — nodes are never mutated in place.
 export const useUndoStore = create<UndoState>((set, get) => ({
   undoStack: [],
   redoStack: [],
@@ -26,25 +30,25 @@ export const useUndoStore = create<UndoState>((set, get) => ({
     })
   },
 
-  undo: () => {
-    const { undoStack, redoStack } = get()
+  undo: (currentNodes) => {
+    const { undoStack } = get()
     if (undoStack.length === 0) return null
     const snapshot = undoStack[undoStack.length - 1]!
-    set({
-      undoStack: undoStack.slice(0, -1),
-      redoStack: [...redoStack, snapshot],
-    })
+    set((state) => ({
+      undoStack: state.undoStack.slice(0, -1),
+      redoStack: [...state.redoStack, new Map(currentNodes)],
+    }))
     return snapshot
   },
 
-  redo: () => {
-    const { undoStack, redoStack } = get()
+  redo: (currentNodes) => {
+    const { redoStack } = get()
     if (redoStack.length === 0) return null
     const snapshot = redoStack[redoStack.length - 1]!
-    set({
-      undoStack: [...undoStack, snapshot],
-      redoStack: redoStack.slice(0, -1),
-    })
+    set((state) => ({
+      undoStack: [...state.undoStack, new Map(currentNodes)],
+      redoStack: state.redoStack.slice(0, -1),
+    }))
     return snapshot
   },
 

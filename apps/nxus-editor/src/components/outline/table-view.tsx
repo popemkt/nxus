@@ -52,7 +52,10 @@ export function TableView({ childIds, depth, config }: TableViewProps) {
       const valB = nodeB?.fields.find((f) => f.fieldId === fieldId)?.values[0]?.value
       const strA = String(valA ?? '')
       const strB = String(valB ?? '')
-      return strA.localeCompare(strB) * dir
+      const cmp = strA.localeCompare(strB) * dir
+      if (cmp !== 0) return cmp
+      // Stable tiebreaker by node ID
+      return a.localeCompare(b)
     })
   }, [childIds, nodes, config.sortByFieldId, config.sortDirection])
 

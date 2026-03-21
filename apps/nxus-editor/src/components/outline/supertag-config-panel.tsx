@@ -89,10 +89,9 @@ export function SupertagConfigPanel({
   useEffect(() => {
     import('@/services/supertag.server').then(({ getSupertagConfigServerFn }) => {
       getSupertagConfigServerFn({ data: { supertagId } })
-        .then((_result: unknown) => {
-          const result = _result as { success: boolean; config?: SupertagConfig }
-          if (result.success && result.config) {
-            setConfig(result.config)
+        .then((result) => {
+          if (result && typeof result === 'object' && 'success' in result && result.success && 'config' in result && result.config) {
+            setConfig(result.config as SupertagConfig)
           }
           setLoading(false)
         })
@@ -241,18 +240,18 @@ function FieldsTab({
     if (!trimmed) return
 
     const { addSupertagFieldServerFn } = await import('@/services/supertag.server')
-    const _result: unknown = await addSupertagFieldServerFn({
+    const result = await addSupertagFieldServerFn({
       data: {
         supertagId: config.id,
         fieldName: trimmed,
         fieldType: newFieldType,
       },
     })
-    const result = _result as { success: boolean; field?: ConfigField }
-    if (result.success && result.field) {
+    if (result && typeof result === 'object' && 'success' in result && result.success && 'field' in result && result.field) {
+      const newField = result.field as ConfigField
       onConfigChange({
         ...config,
-        ownFields: [...config.ownFields, result.field],
+        ownFields: [...config.ownFields, newField],
       })
       setNewFieldName('')
       setNewFieldType('text')
@@ -582,10 +581,9 @@ function SettingsTab({
   useEffect(() => {
     import('@/services/supertag.server').then(({ listSupertagsServerFn }) => {
       listSupertagsServerFn()
-        .then((_result: unknown) => {
-          const result = _result as { success: boolean; supertags?: SupertagBadge[] }
-          if (result.success && result.supertags) {
-            setSupertags(result.supertags)
+        .then((result) => {
+          if (result && typeof result === 'object' && 'success' in result && result.success && 'supertags' in result && Array.isArray(result.supertags)) {
+            setSupertags(result.supertags as SupertagBadge[])
           }
           setSupertagsLoaded(true)
         })

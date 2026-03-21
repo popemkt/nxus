@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   createNodeServerFn,
@@ -51,6 +51,15 @@ export function useOutlineSync() {
   const contentTimers = useRef(new Map<string, NodeJS.Timeout>())
   const queryClient = useQueryClient()
 
+  // Clear pending content debounce timers on unmount
+  useEffect(() => {
+    const timers = contentTimers.current
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer)
+      timers.clear()
+    }
+  }, [])
+
   /** Invalidate all outline query evaluations so results refresh after data changes */
   const invalidateQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: outlineQueryKeys.all })
@@ -101,7 +110,7 @@ export function useOutlineSync() {
           data: {
             content: initialContent ?? '',
             parentId: serverParentId,
-            order: parseInt(node.order, 10),
+            order: parseInt(node.order, 10) || 0,
           },
         })
           .then((_result: unknown) => {
@@ -215,7 +224,7 @@ export function useOutlineSync() {
           data: {
             content: '',
             parentId: serverParentId,
-            order: parseInt(node.order, 10),
+            order: parseInt(node.order, 10) || 0,
           },
         })
           .then((_result: unknown) => {
@@ -339,7 +348,7 @@ export function useOutlineSync() {
         data: {
           nodeId,
           newParentId: toServerParentId(node.parentId),
-          order: parseInt(node.order, 10),
+          order: parseInt(node.order, 10) || 0,
         },
       })
         .then(() => invalidateQueries())
@@ -362,7 +371,7 @@ export function useOutlineSync() {
         data: {
           nodeId,
           newParentId: toServerParentId(node.parentId),
-          order: parseInt(node.order, 10),
+          order: parseInt(node.order, 10) || 0,
         },
       })
         .then(() => invalidateQueries())
@@ -390,7 +399,7 @@ export function useOutlineSync() {
 
     // Persist both the moved node and the swapped sibling
     reorderNodeServerFn({
-      data: { nodeId, order: parseInt(node.order, 10) },
+      data: { nodeId, order: parseInt(node.order, 10) || 0 },
     })
       .then(() => invalidateQueries())
       .catch((err) => {
@@ -406,7 +415,7 @@ export function useOutlineSync() {
           const sib = nodes.get(sibId)
           if (sib && sib.order === preOrder) {
             reorderNodeServerFn({
-              data: { nodeId: sibId, order: parseInt(sib.order, 10) },
+              data: { nodeId: sibId, order: parseInt(sib.order, 10) || 0 },
             }).catch((err) => {
               console.error('[sync] Failed to reorder swapped sibling:', err)
             })
@@ -430,7 +439,7 @@ export function useOutlineSync() {
     if (!node || node.order === preOrder) return
 
     reorderNodeServerFn({
-      data: { nodeId, order: parseInt(node.order, 10) },
+      data: { nodeId, order: parseInt(node.order, 10) || 0 },
     })
       .then(() => invalidateQueries())
       .catch((err) => {
@@ -445,7 +454,7 @@ export function useOutlineSync() {
           const sib = nodes.get(sibId)
           if (sib && sib.order === preOrder) {
             reorderNodeServerFn({
-              data: { nodeId: sibId, order: parseInt(sib.order, 10) },
+              data: { nodeId: sibId, order: parseInt(sib.order, 10) || 0 },
             }).catch((err) => {
               console.error('[sync] Failed to reorder swapped sibling:', err)
             })
@@ -554,7 +563,7 @@ export function useOutlineSync() {
         data: {
           nodeId,
           newParentId: toServerParentId(newParentId),
-          order: parseInt(node.order, 10),
+          order: parseInt(node.order, 10) || 0,
         },
       })
         .then(() => invalidateQueries())
@@ -570,21 +579,8 @@ export function useOutlineSync() {
    */
   const undo = useCallback(() => {
     const { nodes: currentNodes } = useOutlineStore.getState()
-    const snapshot = useUndoStore.getState().undo()
+    const snapshot = useUndoStore.getState().undo(currentNodes)
     if (!snapshot) return
-
-    // The undo() call already moved the snapshot to the redo stack.
-    // But we need to push the *current* state onto the redo stack for proper redo.
-    // The undo store's undo() pops from undoStack and pushes to redoStack.
-    // However what it pushes is the *old* snapshot, not the current state.
-    // We need to fix this: redo should restore the state *before* the undo.
-    // Let's replace the last redo entry with the current nodes.
-    useUndoStore.setState((state) => {
-      const redoStack = [...state.redoStack]
-      redoStack[redoStack.length - 1] = new Map(currentNodes)
-      return { redoStack }
-    })
-
     useOutlineStore.setState({ nodes: snapshot })
   }, [])
 
@@ -593,16 +589,8 @@ export function useOutlineSync() {
    */
   const redo = useCallback(() => {
     const { nodes: currentNodes } = useOutlineStore.getState()
-    const snapshot = useUndoStore.getState().redo()
+    const snapshot = useUndoStore.getState().redo(currentNodes)
     if (!snapshot) return
-
-    // Replace the last undo entry with the current state for proper undo chain
-    useUndoStore.setState((state) => {
-      const undoStack = [...state.undoStack]
-      undoStack[undoStack.length - 1] = new Map(currentNodes)
-      return { undoStack }
-    })
-
     useOutlineStore.setState({ nodes: snapshot })
   }, [])
 
