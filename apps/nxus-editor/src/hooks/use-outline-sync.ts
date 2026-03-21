@@ -6,9 +6,16 @@ import {
   deleteNodeServerFn,
   reparentNodeServerFn,
   reorderNodeServerFn,
+  setFieldValueServerFn,
 } from '@/services/outline.server'
+import {
+  addSupertagServerFn,
+  removeSupertagServerFn,
+} from '@/services/supertag.server'
+import { clearFieldServerFn } from '@/services/field.server'
 import { outlineQueryKeys } from '@/components/outline/query-helpers'
 import { useOutlineStore } from '@/stores/outline.store'
+import type { OutlineField, SupertagBadge } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 /**
@@ -65,9 +72,9 @@ export function useOutlineSync() {
    * Create node — optimistic in store, then persist.
    */
   const createNodeAfter = useCallback(
-    (afterId: string) => {
+    (afterId: string, initialContent?: string) => {
       const { createNodeAfter: storeCreate } = useOutlineStore.getState()
-      const newId = storeCreate(afterId)
+      const newId = storeCreate(afterId, initialContent)
 
       // Read fresh state after mutation
       const { nodes } = useOutlineStore.getState()
@@ -76,7 +83,7 @@ export function useOutlineSync() {
         const serverParentId = toServerParentId(node.parentId)
         createNodeServerFn({
           data: {
-            content: '',
+            content: initialContent ?? '',
             parentId: serverParentId,
             order: parseInt(node.order, 10),
           },
@@ -110,6 +117,11 @@ export function useOutlineSync() {
                   })
                 }
 
+                // Remap selectedNodeIds if it contains the temp ID
+                const newSelectedNodeIds = state.selectedNodeIds.has(newId)
+                  ? new Set([...state.selectedNodeIds].map((id) => id === newId ? result.nodeId : id))
+                  : state.selectedNodeIds
+
                 return {
                   nodes: next,
                   activeNodeId:
@@ -118,6 +130,7 @@ export function useOutlineSync() {
                     state.selectedNodeId === newId
                       ? result.nodeId
                       : state.selectedNodeId,
+                  selectedNodeIds: newSelectedNodeIds,
                 }
               })
 
@@ -130,6 +143,76 @@ export function useOutlineSync() {
           })
           .catch((err) => {
             console.error('[sync] Failed to create node:', err)
+          })
+      }
+      return newId
+    },
+    [syncContent, invalidateQueries],
+  )
+
+  /**
+   * Create the first child of a parent node (when outline is empty).
+   */
+  const createFirstChild = useCallback(
+    (parentId: string) => {
+      const { createFirstChild: storeCreate } = useOutlineStore.getState()
+      const newId = storeCreate(parentId)
+
+      const { nodes } = useOutlineStore.getState()
+      const node = nodes.get(newId)
+      if (node && node.parentId) {
+        const serverParentId = toServerParentId(node.parentId)
+        createNodeServerFn({
+          data: {
+            content: '',
+            parentId: serverParentId,
+            order: parseInt(node.order, 10),
+          },
+        })
+          .then((result) => {
+            if (result.success && result.nodeId !== newId) {
+              // Cancel any pending content debounce for the temp ID
+              const pendingTimer = contentTimers.current.get(newId)
+              if (pendingTimer) {
+                clearTimeout(pendingTimer)
+                contentTimers.current.delete(newId)
+              }
+
+              useOutlineStore.setState((state) => {
+                const tempNode = state.nodes.get(newId)
+                if (!tempNode) return state
+                const next = new Map(state.nodes)
+                next.delete(newId)
+                next.set(result.nodeId, { ...tempNode, id: result.nodeId })
+                const parent = tempNode.parentId ? next.get(tempNode.parentId) : null
+                if (parent && tempNode.parentId) {
+                  next.set(tempNode.parentId, {
+                    ...parent,
+                    children: parent.children.map((c) => c === newId ? result.nodeId : c),
+                  })
+                }
+                const newSelectedNodeIds = state.selectedNodeIds.has(newId)
+                  ? new Set([...state.selectedNodeIds].map((id) => id === newId ? result.nodeId : id))
+                  : state.selectedNodeIds
+
+                return {
+                  nodes: next,
+                  activeNodeId: state.activeNodeId === newId ? result.nodeId : state.activeNodeId,
+                  selectedNodeId: state.selectedNodeId === newId ? result.nodeId : state.selectedNodeId,
+                  selectedNodeIds: newSelectedNodeIds,
+                }
+              })
+
+              // Transfer any pending content save to the new server ID
+              const persistedNode = useOutlineStore.getState().nodes.get(result.nodeId)
+              if (persistedNode?.content) {
+                syncContent(result.nodeId, persistedNode.content)
+              }
+            }
+            invalidateQueries()
+          })
+          .catch((err) => {
+            console.error('[sync] Failed to create first child:', err)
           })
       }
       return newId
@@ -286,8 +369,118 @@ export function useOutlineSync() {
     }
   }, [invalidateQueries])
 
+  /**
+   * Add supertag — optimistic add to store, then persist via server.
+   * Server returns inherited fields which are merged into store.
+   */
+  const addSupertag = useCallback(
+    (nodeId: string, supertag: SupertagBadge, newFields: OutlineField[]) => {
+      useOutlineStore.getState().addSupertag(nodeId, supertag, newFields)
+
+      if (!supertag.systemId) return
+      addSupertagServerFn({ data: { nodeId, supertagSystemId: supertag.systemId } })
+        .then((result) => {
+          if (result.success && result.newFields) {
+            // Merge any additional fields from server that weren't in the optimistic set
+            const { nodes } = useOutlineStore.getState()
+            const node = nodes.get(nodeId)
+            if (node) {
+              const existingFieldIds = new Set(node.fields.map((f) => f.fieldId))
+              const extraFields = result.newFields.filter(
+                (f) => !existingFieldIds.has(f.fieldId),
+              ) as OutlineField[]
+              if (extraFields.length > 0) {
+                for (const f of extraFields) {
+                  useOutlineStore.getState().addField(nodeId, f)
+                }
+              }
+            }
+          }
+          invalidateQueries()
+        })
+        .catch((err) => {
+          console.error('[sync] Failed to add supertag:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
+  /**
+   * Remove supertag — optimistic remove from store, then persist.
+   * Fields are kept (Tana behavior).
+   */
+  const removeSupertag = useCallback(
+    (nodeId: string, supertagId: string, supertagSystemId: string | null) => {
+      useOutlineStore.getState().removeSupertag(nodeId, supertagId)
+      if (!supertagSystemId) return
+      removeSupertagServerFn({ data: { nodeId, supertagSystemId } })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to remove supertag:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
+  /**
+   * Add field — optimistic add to store, persist with empty/default value.
+   */
+  const addField = useCallback(
+    (nodeId: string, field: OutlineField) => {
+      useOutlineStore.getState().addField(nodeId, field)
+      // Persist with empty value to materialize the field
+      setFieldValueServerFn({
+        data: { nodeId, fieldId: field.fieldId, value: '' },
+      }).catch((err) => {
+        console.error('[sync] Failed to add field:', err)
+      })
+    },
+    [],
+  )
+
+  /**
+   * Remove field — optimistic remove from store, clear on server.
+   */
+  const removeField = useCallback(
+    (nodeId: string, fieldId: string) => {
+      useOutlineStore.getState().removeField(nodeId, fieldId)
+      clearFieldServerFn({ data: { nodeId, fieldId } })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to remove field:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
+  /**
+   * Move a node under another node.
+   */
+  const moveNodeTo = useCallback(
+    (nodeId: string, newParentId: string) => {
+      useOutlineStore.getState().moveNodeTo(nodeId, newParentId)
+      const { nodes } = useOutlineStore.getState()
+      const node = nodes.get(nodeId)
+      if (!node) return
+
+      reparentNodeServerFn({
+        data: {
+          nodeId,
+          newParentId: toServerParentId(newParentId),
+          order: parseInt(node.order, 10),
+        },
+      })
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to move node:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
   return {
     createNodeAfter,
+    createFirstChild,
     updateNodeContent,
     deleteNode,
     indentNode,
@@ -295,5 +488,10 @@ export function useOutlineSync() {
     moveNodeUp,
     moveNodeDown,
     syncContent,
+    addSupertag,
+    removeSupertag,
+    addField,
+    removeField,
+    moveNodeTo,
   }
 }

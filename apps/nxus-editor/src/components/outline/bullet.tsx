@@ -88,7 +88,7 @@ export function Bullet({
           style={tagColor ? { color: tagColor } : undefined}
         />
       ) : isReference ? (
-        /* Referenced node — dashed circle matches collapsed halo size (inset-[3px] → 18px) */
+        /* Referenced node — dashed circle, filled inner dot when has children */
         <span
           className={cn(
             'flex items-center justify-center rounded-full',
@@ -99,8 +99,10 @@ export function Bullet({
         >
           <span
             className={cn(
-              'block h-[4px] w-[4px] rounded-full',
+              'block rounded-full',
+              hasChildren ? 'h-[5px] w-[5px]' : 'h-[4px] w-[4px]',
               !tagColor && 'bg-foreground/40',
+              !tagColor && hasChildren && 'bg-foreground/55',
             )}
             style={tagColor ? { backgroundColor: tagColor } : undefined}
           />
