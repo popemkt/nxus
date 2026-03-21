@@ -12,6 +12,8 @@ import {
   PushPin,
   Asterisk,
   EyeSlash,
+  TextAlignLeft,
+  ChartBar,
 } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { FieldType, HideWhen, SupertagBadge } from '@/types/outline'
@@ -42,6 +44,7 @@ interface ConfigField {
   required?: boolean
   hideWhen?: string
   pinned?: boolean
+  description?: string
 }
 
 interface InheritedField extends ConfigField {
@@ -288,7 +291,7 @@ function FieldsTab({
   )
 
   const handleChangeConstraints = useCallback(
-    async (fieldNodeId: string, constraints: { required?: boolean | null; hideWhen?: HideWhen | null; pinned?: boolean | null }) => {
+    async (fieldNodeId: string, constraints: { required?: boolean | null; hideWhen?: HideWhen | null; pinned?: boolean | null; description?: string | null }) => {
       const { updateFieldConstraintsServerFn } = await import('@/services/supertag.server')
       await updateFieldConstraintsServerFn({ data: { fieldNodeId, ...constraints } })
       onConfigChange({
@@ -304,6 +307,9 @@ function FieldsTab({
           }
           if (constraints.pinned !== undefined) {
             updated.pinned = constraints.pinned ?? undefined
+          }
+          if (constraints.description !== undefined) {
+            updated.description = constraints.description ?? undefined
           }
           return updated
         }),
@@ -415,9 +421,40 @@ function FieldConfigRow({
   inheritedFrom?: string
   onRemove: () => void
   onChangeType: (type: FieldType) => void
-  onChangeConstraints?: (constraints: { required?: boolean | null; hideWhen?: HideWhen | null; pinned?: boolean | null }) => void
+  onChangeConstraints?: (constraints: { required?: boolean | null; hideWhen?: HideWhen | null; pinned?: boolean | null; description?: string | null }) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [usageStats, setUsageStats] = useState<{ nodeCount: number; supertagCount: number } | null>(null)
+  const [descDraft, setDescDraft] = useState(field.description ?? '')
+  const descTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Load usage stats when expanded
+  useEffect(() => {
+    if (!expanded || inherited || usageStats) return
+    import('@/services/supertag.server').then(({ getFieldUsageStatsServerFn }) => {
+      getFieldUsageStatsServerFn({ data: { fieldNodeId: field.fieldNodeId } })
+        .then((result) => {
+          if (result && typeof result === 'object' && 'success' in result && result.success && 'stats' in result) {
+            setUsageStats(result.stats as { nodeCount: number; supertagCount: number })
+          }
+        })
+        .catch(() => {})
+    })
+  }, [expanded, inherited, field.fieldNodeId, usageStats])
+
+  // Debounced description save
+  const handleDescriptionChange = useCallback(
+    (value: string) => {
+      setDescDraft(value)
+      if (!onChangeConstraints) return
+      if (descTimerRef.current) clearTimeout(descTimerRef.current)
+      descTimerRef.current = setTimeout(() => {
+        descTimerRef.current = null
+        onChangeConstraints({ description: value || null })
+      }, 500)
+    },
+    [onChangeConstraints],
+  )
 
   return (
     <div className={cn(inherited && 'opacity-60')}>
@@ -479,6 +516,18 @@ function FieldConfigRow({
       {/* Expanded constraint settings */}
       {expanded && !inherited && onChangeConstraints && (
         <div className="pl-6 pr-2 pb-1.5 space-y-1">
+          {/* Description */}
+          <div className="flex items-start gap-1.5 text-[11px] text-foreground/40">
+            <TextAlignLeft size={9} weight="bold" className="text-foreground/30 shrink-0 mt-1" />
+            <input
+              type="text"
+              value={descDraft}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              placeholder="Field description…"
+              className="flex-1 bg-transparent text-[10px] text-foreground/50 outline-none border-b border-foreground/[0.06] px-0.5 py-0.5 focus:border-foreground/15"
+            />
+          </div>
+
           {/* Required toggle */}
           <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-foreground/40 hover:text-foreground/60">
             <input
@@ -520,6 +569,18 @@ function FieldConfigRow({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Usage stats */}
+          <div className="flex items-center gap-1.5 text-[11px] text-foreground/30 pt-0.5">
+            <ChartBar size={9} weight="bold" className="shrink-0" />
+            {usageStats ? (
+              <span>
+                Used in {usageStats.nodeCount} node{usageStats.nodeCount !== 1 ? 's' : ''}, {usageStats.supertagCount} supertag{usageStats.supertagCount !== 1 ? 's' : ''}
+              </span>
+            ) : (
+              <span className="text-foreground/20">Loading…</span>
+            )}
           </div>
         </div>
       )}

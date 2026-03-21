@@ -189,16 +189,18 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
       const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
       const hideWhen = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
       const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
+      const description = getProperty(fieldNode, FIELD_NAMES.DESCRIPTION) as string | undefined
       return {
         ...(requiredRaw === true || requiredRaw === 'true' ? { required: true } : {}),
         ...(hideWhen ? { hideWhen } : {}),
         ...(pinnedRaw === true || pinnedRaw === 'true' ? { pinned: true } : {}),
+        ...(description ? { description } : {}),
       }
     }
 
     // Own field definitions (not inherited)
     const ownDefs = getSupertagFieldDefinitions(db, ctx.data.supertagId)
-    const ownFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; required?: boolean; hideWhen?: string; pinned?: boolean }[] = []
+    const ownFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string }[] = []
 
     for (const [systemId, def] of ownDefs) {
       if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
@@ -217,7 +219,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
 
     // Inherited fields from ancestors
     const ancestors = getAncestorSupertags(db, ctx.data.supertagId)
-    const inheritedFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; fromSupertagId: string; fromSupertagName: string; required?: boolean; hideWhen?: string; pinned?: boolean }[] = []
+    const inheritedFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; fromSupertagId: string; fromSupertagName: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string }[] = []
     const ownFieldIds = new Set(ownFields.map((f) => f.fieldSystemId))
 
     for (const ancestorId of ancestors) {
@@ -426,6 +428,7 @@ export const updateFieldConstraintsServerFn = createServerFn({ method: 'POST' })
       required: z.boolean().nullable().optional(),
       hideWhen: z.enum(['never', 'when_empty', 'when_not_empty', 'always']).nullable().optional(),
       pinned: z.boolean().nullable().optional(),
+      description: z.string().nullable().optional(),
     }),
   )
   .handler(async (ctx) => {
@@ -456,7 +459,59 @@ export const updateFieldConstraintsServerFn = createServerFn({ method: 'POST' })
       }
     }
 
+    if (ctx.data.description !== undefined) {
+      if (ctx.data.description) {
+        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.DESCRIPTION, ctx.data.description)
+      } else {
+        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.DESCRIPTION)
+      }
+    }
+
     return { success: true as const }
+  })
+
+/**
+ * Get "used in" stats for a field: how many nodes and supertags reference it.
+ */
+export const getFieldUsageStatsServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ fieldNodeId: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeProperties, eq, sql } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    // Count distinct nodes that have a property with this field
+    const nodeCountResult = db
+      .select({ count: sql<number>`count(distinct ${nodeProperties.nodeId})` })
+      .from(nodeProperties)
+      .where(eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId))
+      .get()
+
+    // Count supertags that declare this field in their schema.
+    // A supertag declares a field by having a property row where
+    // fieldNodeId = this field's node ID AND nodeId = the supertag definition node.
+    const {
+      getNodeIdsBySupertagWithInheritance,
+    } = await import('@nxus/db/server')
+
+    const supertagNodeIds = getNodeIdsBySupertagWithInheritance(db, SUPERTAG_DEFINITION_SYSTEM_ID)
+    const supertagIdSet = new Set(supertagNodeIds)
+
+    // Get distinct nodes referencing this field, then filter to supertags
+    const allRefs = db
+      .select({ nodeId: nodeProperties.nodeId })
+      .from(nodeProperties)
+      .where(eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId))
+      .all()
+
+    const supertagCount = new Set(allRefs.filter((r: { nodeId: string }) => supertagIdSet.has(r.nodeId)).map((r: { nodeId: string }) => r.nodeId)).size
+
+    return {
+      success: true as const,
+      stats: {
+        nodeCount: nodeCountResult?.count ?? 0,
+        supertagCount,
+      },
+    }
   })
 
 /**

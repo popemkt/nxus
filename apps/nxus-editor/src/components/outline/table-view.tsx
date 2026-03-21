@@ -40,12 +40,34 @@ export function TableView({ childIds, depth, config }: TableViewProps) {
     return cols
   }, [childIds, nodes, config.visibleFieldIds])
 
+  // Filter children by config.filters
+  const filteredChildIds = useMemo(() => {
+    if (!config.filters || config.filters.length === 0) return childIds
+    return childIds.filter((childId) => {
+      const child = nodes.get(childId)
+      if (!child) return false
+      return config.filters!.every((filter) => {
+        const field = child.fields.find((f) => f.fieldId === filter.fieldId)
+        const val = field?.values[0]?.value
+        const strVal = val !== undefined && val !== null ? String(val) : ''
+        switch (filter.operator) {
+          case 'is_empty': return !strVal
+          case 'is_not_empty': return !!strVal
+          case 'equals': return strVal === (filter.value ?? '')
+          case 'not_equals': return strVal !== (filter.value ?? '')
+          case 'contains': return strVal.toLowerCase().includes((filter.value ?? '').toLowerCase())
+          default: return true
+        }
+      })
+    })
+  }, [childIds, nodes, config.filters])
+
   // Sort children by config
   const sortedChildIds = useMemo(() => {
-    if (!config.sortByFieldId) return childIds
+    if (!config.sortByFieldId) return filteredChildIds
     const fieldId = config.sortByFieldId
     const dir = config.sortDirection === 'desc' ? -1 : 1
-    return [...childIds].sort((a, b) => {
+    return [...filteredChildIds].sort((a, b) => {
       const nodeA = nodes.get(a)
       const nodeB = nodes.get(b)
       const valA = nodeA?.fields.find((f) => f.fieldId === fieldId)?.values[0]?.value
@@ -57,7 +79,7 @@ export function TableView({ childIds, depth, config }: TableViewProps) {
       // Stable tiebreaker by node ID
       return a.localeCompare(b)
     })
-  }, [childIds, nodes, config.sortByFieldId, config.sortDirection])
+  }, [filteredChildIds, nodes, config.sortByFieldId, config.sortDirection])
 
   const handleFieldChange = useCallback(
     (childNodeId: string, fieldId: string, value: unknown) => {

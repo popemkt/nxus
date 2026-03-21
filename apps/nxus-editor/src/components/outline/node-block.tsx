@@ -15,6 +15,8 @@ import { QueryResults } from './query-results'
 import { ViewToolbar } from './view-toolbar'
 import { TableView } from './table-view'
 import { KanbanView } from './kanban-view'
+import { CardsView } from './cards-view'
+import { ListView } from './list-view'
 import { setFieldValueServerFn } from '@/services/outline.server'
 
 interface NodeBlockProps {
@@ -446,6 +448,18 @@ export const NodeBlock = memo(function NodeBlock({
             />
           ) : viewMode === 'kanban' && hasChildren ? (
             <KanbanView
+              childIds={sortedChildren}
+              depth={depth}
+              config={viewConfig}
+            />
+          ) : viewMode === 'cards' && hasChildren ? (
+            <CardsView
+              childIds={sortedChildren}
+              depth={depth}
+              config={viewConfig}
+            />
+          ) : viewMode === 'list' && hasChildren ? (
+            <ListView
               childIds={sortedChildren}
               depth={depth}
               config={viewConfig}

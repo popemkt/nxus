@@ -64,7 +64,13 @@ export const QUERY_FIELD_SYSTEM_IDS = new Set([
   'field:query_limit',
 ])
 
-export type ViewMode = 'outline' | 'table' | 'kanban'
+export type ViewMode = 'outline' | 'table' | 'kanban' | 'cards' | 'list'
+
+export interface ViewFilter {
+  fieldId: string
+  operator: 'equals' | 'not_equals' | 'contains' | 'is_empty' | 'is_not_empty'
+  value?: string
+}
 
 export interface ViewConfig {
   groupByFieldId?: string
@@ -72,6 +78,7 @@ export interface ViewConfig {
   sortDirection?: 'asc' | 'desc'
   columnWidths?: Record<string, number>
   visibleFieldIds?: string[]
+  filters?: ViewFilter[]
 }
 
 export type NodeMap = Map<string, OutlineNode>

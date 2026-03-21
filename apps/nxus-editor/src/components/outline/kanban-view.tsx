@@ -20,12 +20,34 @@ export function KanbanView({ childIds, depth, config }: KanbanViewProps) {
 
   const groupFieldId = config.groupByFieldId
 
+  // Filter children by config.filters
+  const filteredChildIds = useMemo(() => {
+    if (!config.filters || config.filters.length === 0) return childIds
+    return childIds.filter((childId) => {
+      const child = nodes.get(childId)
+      if (!child) return false
+      return config.filters!.every((filter) => {
+        const field = child.fields.find((f) => f.fieldId === filter.fieldId)
+        const val = field?.values[0]?.value
+        const strVal = val !== undefined && val !== null ? String(val) : ''
+        switch (filter.operator) {
+          case 'is_empty': return !strVal
+          case 'is_not_empty': return !!strVal
+          case 'equals': return strVal === (filter.value ?? '')
+          case 'not_equals': return strVal !== (filter.value ?? '')
+          case 'contains': return strVal.toLowerCase().includes((filter.value ?? '').toLowerCase())
+          default: return true
+        }
+      })
+    })
+  }, [childIds, nodes, config.filters])
+
   // Collect distinct group values from children
   const groups = useMemo(() => {
     if (!groupFieldId) return [{ key: UNCATEGORIZED, label: 'All' }]
 
     const seen = new Map<string, string>()
-    for (const childId of childIds) {
+    for (const childId of filteredChildIds) {
       const child = nodes.get(childId)
       if (!child) continue
       const field = child.fields.find((f) => f.fieldId === groupFieldId)
@@ -39,14 +61,14 @@ export function KanbanView({ childIds, depth, config }: KanbanViewProps) {
     const result = Array.from(seen.entries()).map(([key, label]) => ({ key, label }))
     result.push({ key: UNCATEGORIZED, label: 'Uncategorized' })
     return result
-  }, [childIds, nodes, groupFieldId])
+  }, [filteredChildIds, nodes, groupFieldId])
 
   // Group children into columns
   const columns = useMemo(() => {
     const grouped = new Map<string, string[]>()
     for (const g of groups) grouped.set(g.key, [])
 
-    for (const childId of childIds) {
+    for (const childId of filteredChildIds) {
       const child = nodes.get(childId)
       if (!child) continue
       const field = child.fields.find((f) => f.fieldId === groupFieldId)
@@ -66,7 +88,7 @@ export function KanbanView({ childIds, depth, config }: KanbanViewProps) {
       ...g,
       childIds: grouped.get(g.key) ?? [],
     }))
-  }, [groups, childIds, nodes, groupFieldId])
+  }, [groups, filteredChildIds, nodes, groupFieldId])
 
   // Handle drag-and-drop between columns
   const handleDrop = useCallback(
