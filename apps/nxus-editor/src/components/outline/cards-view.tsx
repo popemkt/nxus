@@ -3,6 +3,7 @@ import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import type { ViewConfig } from '@/types/outline'
+import { SupertagPill } from './supertag-pill'
 
 interface CardsViewProps {
   childIds: string[]
@@ -85,17 +86,7 @@ export function CardsView({ childIds, depth, config }: CardsViewProps) {
               {child.supertags.length > 0 && (
                 <div className="flex items-center gap-1 mt-2">
                   {child.supertags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="text-[10px] rounded-sm px-1 py-px font-medium"
-                      style={
-                        tag.color
-                          ? { backgroundColor: `${tag.color}18`, color: tag.color }
-                          : undefined
-                      }
-                    >
-                      #{tag.name}
-                    </span>
+                    <SupertagPill key={tag.id} tag={tag} size="sm" showIcon={false} />
                   ))}
                 </div>
               )}

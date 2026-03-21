@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Hash, X, GearSix } from '@phosphor-icons/react'
+import { X, GearSix } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getCaretRect } from '@/lib/caret-utils'
+import { getSupertagColor } from '@/lib/supertag-colors'
 import { SupertagAutocomplete } from './supertag-autocomplete'
 import { SupertagConfigPanel } from './supertag-config-panel'
 
@@ -283,63 +284,61 @@ function SupertagBadges({
 
   return (
     <div className="flex h-6 items-center gap-0.5">
-      {supertags.map((tag) => (
-        <span
-          key={tag.id}
-          className={cn(
-            'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-            'text-[11px] font-medium leading-[1.8]',
-            'select-none whitespace-nowrap',
-            'cursor-pointer transition-opacity hover:opacity-70',
-            !tag.color && 'bg-foreground/8 text-foreground/50',
-          )}
-          style={
-            tag.color
-              ? {
-                  backgroundColor: `${tag.color}18`,
-                  color: tag.color,
-                }
-              : undefined
-          }
-          onClick={(e) => {
-            e.stopPropagation()
-            navigateToNode(tag.id)
-          }}
-          title={`Go to: ${tag.name} (⌥+click to configure)`}
-        >
-          {/* Icon area — fixed size, X overlays # on hover */}
-          <span className="relative shrink-0 h-[10px] w-[10px]">
-            <Hash size={10} weight="bold" className="opacity-60 group-hover/tag:opacity-0 transition-opacity" />
-            {onRemove && (
-              <span
-                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemove(tag.id, tag.systemId)
-                }}
-                title={`Remove #${tag.name}`}
-              >
-                <X size={10} weight="bold" />
-              </span>
-            )}
-          </span>
-          {tag.name}
-          {/* Gear icon — opens config panel */}
+      {supertags.map((tag) => {
+        const color = tag.color ?? getSupertagColor(tag.id)
+        return (
           <span
-            className="relative shrink-0 h-[10px] w-[10px] opacity-0 group-hover/tag:opacity-40 hover:!opacity-80 transition-opacity cursor-pointer ml-0.5"
+            key={tag.id}
+            className={cn(
+              'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+              'text-[11px] font-medium leading-[1.8]',
+              'select-none whitespace-nowrap',
+              'cursor-pointer transition-opacity hover:opacity-70',
+            )}
+            style={{
+              backgroundColor: `${color}18`,
+              color,
+            }}
             onClick={(e) => {
               e.stopPropagation()
-              const rect = (e.currentTarget.closest('.group\\/tag') as HTMLElement)?.getBoundingClientRect()
-              if (rect) {
-                setConfigTag({ id: tag.id, rect })
-              }
+              navigateToNode(tag.id)
             }}
-            title={`Configure #${tag.name}`}
+            title={`Go to: ${tag.name} (⌥+click to configure)`}
           >
-            <GearSix size={10} weight="bold" />
+            {/* Icon area — fixed size, X overlays # on hover */}
+            <span className="relative shrink-0 h-[10px] w-[10px]">
+              <span className="opacity-60 group-hover/tag:opacity-0 transition-opacity text-[10px] font-bold">#</span>
+              {onRemove && (
+                <span
+                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemove(tag.id, tag.systemId)
+                  }}
+                  title={`Remove #${tag.name}`}
+                >
+                  <X size={10} weight="bold" />
+                </span>
+              )}
+            </span>
+            {tag.name}
+            {/* Gear icon — opens config panel */}
+            <span
+              className="relative shrink-0 h-[10px] w-[10px] opacity-0 group-hover/tag:opacity-40 hover:!opacity-80 transition-opacity cursor-pointer ml-0.5"
+              onClick={(e) => {
+                e.stopPropagation()
+                const rect = (e.currentTarget.closest('.group\\/tag') as HTMLElement)?.getBoundingClientRect()
+                if (rect) {
+                  setConfigTag({ id: tag.id, rect })
+                }
+              }}
+              title={`Configure #${tag.name}`}
+            >
+              <GearSix size={10} weight="bold" />
+            </span>
           </span>
-        </span>
-      ))}
+        )
+      })}
 
       {configTag && (
         <SupertagConfigPanel

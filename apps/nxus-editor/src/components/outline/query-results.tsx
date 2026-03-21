@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Hash, ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowClockwise } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { QueryBuilder } from '@nxus/workbench'
 import type { QueryDefinition } from '@nxus/db'
@@ -8,6 +8,7 @@ import { evaluateQueryServerFn, updateQueryDefinitionServerFn } from '@/services
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { outlineQueryKeys, safeStringify, isQueryDefinition } from './query-helpers'
+import { SupertagPill } from './supertag-pill'
 
 interface QueryResultNode {
   id: string
@@ -202,30 +203,9 @@ function QueryResultRow({
 
         {node.supertags.length > 0 && (
           <span className="flex h-6 items-center gap-0.5">
-            {node.supertags.map((tag) => {
-              const color = getSupertagColor(tag.id)
-              return (
-                <span
-                  key={tag.id}
-                  className={cn(
-                    'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                    'text-[11px] font-medium leading-[1.8]',
-                    'select-none whitespace-nowrap',
-                  )}
-                  style={{
-                    backgroundColor: `${color}18`,
-                    color,
-                  }}
-                >
-                  <Hash
-                    size={10}
-                    weight="bold"
-                    className="shrink-0 opacity-60"
-                  />
-                  {tag.content}
-                </span>
-              )
-            })}
+            {node.supertags.map((tag) => (
+              <SupertagPill key={tag.id} tag={tag} />
+            ))}
           </span>
         )}
       </span>

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
-import { Hash, X } from '@phosphor-icons/react'
-import { cn } from '@nxus/ui'
+import { X } from '@phosphor-icons/react'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
@@ -10,6 +9,9 @@ import { FieldsSection } from './fields-section'
 import { BacklinksSection } from './backlinks-section'
 import { CommandPalette } from './command-palette'
 import { NodeCommandPalette } from './node-command-palette'
+import { SupertagDetailView } from './supertag-detail-view'
+import { FieldDetailView } from './field-detail-view'
+import { SupertagPill } from './supertag-pill'
 import type { CommandPaletteFieldContext } from './node-command-palette'
 import {
   getWorkspaceRootServerFn,
@@ -17,8 +19,13 @@ import {
   setFieldValueServerFn,
 } from '@/services/outline.server'
 import type { OutlineNode } from '@/types/outline'
-import { WORKSPACE_ROOT_ID } from '@/types/outline'
+import {
+  WORKSPACE_ROOT_ID,
+  SUPERTAG_DEFINITION_SYSTEM_ID,
+  FIELD_DEFINITION_SYSTEM_ID,
+} from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { getSupertagColor } from '@/lib/supertag-colors'
 
 export function OutlineEditor() {
   const { node: urlNodeId } = useSearch({ from: '/' })
@@ -437,6 +444,12 @@ export function OutlineEditor() {
     return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
   })
 
+  // Detect if root node is a supertag or field definition
+  const isSupertag = rootNodeId !== WORKSPACE_ROOT_ID &&
+    rootNode.supertags.some((st) => st.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
+  const isField = rootNodeId !== WORKSPACE_ROOT_ID &&
+    rootNode.supertags.some((st) => st.systemId === FIELD_DEFINITION_SYSTEM_ID)
+
   return (
     <div
       className="outline-editor flex h-full flex-col"
@@ -446,35 +459,46 @@ export function OutlineEditor() {
     >
       <Breadcrumbs />
 
-      {/* Root node title + fields (only when zoomed into a specific node) */}
-      {rootNodeId !== WORKSPACE_ROOT_ID && (
-        <RootNodeHeader rootNode={rootNode} rootNodeId={rootNodeId} />
-      )}
+      {/* Supertag definition — show config detail view */}
+      {isSupertag && <SupertagDetailView node={rootNode} />}
 
-      {/* Outline body */}
-      <div
-        className="outline-body flex-1 overflow-y-auto px-2 pb-40"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            handleBackgroundClick()
-          }
-        }}
-      >
-        {sortedChildren.map((childId) => (
-          <NodeBlock key={childId} nodeId={childId} depth={0} />
-        ))}
+      {/* Field definition — show config detail view */}
+      {isField && !isSupertag && <FieldDetailView node={rootNode} />}
 
-        {sortedChildren.length === 0 && (
-          <div className="px-8 py-4 text-sm text-foreground/25">
-            Empty. Press Enter to start writing.
+      {/* Normal node — show header + outline body */}
+      {!isSupertag && !isField && (
+        <>
+          {/* Root node title + fields (only when zoomed into a specific node) */}
+          {rootNodeId !== WORKSPACE_ROOT_ID && (
+            <RootNodeHeader rootNode={rootNode} rootNodeId={rootNodeId} />
+          )}
+
+          {/* Outline body */}
+          <div
+            className="outline-body flex-1 overflow-y-auto px-2 pb-40"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                handleBackgroundClick()
+              }
+            }}
+          >
+            {sortedChildren.map((childId) => (
+              <NodeBlock key={childId} nodeId={childId} depth={0} />
+            ))}
+
+            {sortedChildren.length === 0 && (
+              <div className="px-8 py-4 text-sm text-foreground/25">
+                Empty. Press Enter to start writing.
+              </div>
+            )}
+
+            {/* Backlinks — after children, only in zoomed-in view */}
+            {rootNodeId !== WORKSPACE_ROOT_ID && (
+              <BacklinksSection nodeId={rootNodeId} />
+            )}
           </div>
-        )}
-
-        {/* Backlinks — after children, only in zoomed-in view */}
-        {rootNodeId !== WORKSPACE_ROOT_ID && (
-          <BacklinksSection nodeId={rootNodeId} />
-        )}
-      </div>
+        </>
+      )}
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <NodeCommandPalette
@@ -493,10 +517,9 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
   const navigateToNode = useNavigateToNode()
   const { removeSupertag } = useOutlineSync()
 
-  // Use last supertag's color for the background gradient
-  const gradientColor = rootNode.supertags.length > 0
-    ? rootNode.supertags[rootNode.supertags.length - 1]!.color
-    : null
+  // Use last supertag's color for the background gradient (resolve via getSupertagColor fallback)
+  const lastTag = rootNode.supertags.length > 0 ? rootNode.supertags[rootNode.supertags.length - 1]! : null
+  const gradientColor = lastTag ? (lastTag.color ?? getSupertagColor(lastTag.id)) : null
 
   return (
     <div className="px-2 pb-2">
@@ -524,38 +547,22 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
         {rootNode.supertags.length > 0 && (
           <div className="relative flex items-center gap-1 pb-2">
             {rootNode.supertags.map((tag) => (
-              <span
-                key={tag.id}
-                className={cn(
-                  'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                  'text-[11px] font-medium leading-[1.8]',
-                  'select-none whitespace-nowrap',
-                  'cursor-pointer transition-opacity hover:opacity-70',
-                  !tag.color && 'bg-foreground/8 text-foreground/50',
-                )}
-                style={
-                  tag.color
-                    ? { backgroundColor: `${tag.color}18`, color: tag.color }
-                    : undefined
-                }
-                onClick={() => navigateToNode(tag.id)}
-                title={`Go to: ${tag.name}`}
-              >
-                {/* Icon area — fixed size, X overlays # on hover */}
-                <span className="relative shrink-0 h-[10px] w-[10px]">
-                  <Hash size={10} weight="bold" className="opacity-60 group-hover/tag:opacity-0 transition-opacity" />
-                  <span
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeSupertag(rootNodeId, tag.id, tag.systemId)
-                    }}
-                    title={`Remove #${tag.name}`}
-                  >
-                    <X size={10} weight="bold" />
-                  </span>
+              <span key={tag.id} className="group/tag relative">
+                <SupertagPill
+                  tag={tag}
+                  onClick={() => navigateToNode(tag.id)}
+                />
+                {/* X overlay on hover to remove supertag */}
+                <span
+                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer rounded-sm bg-foreground/10"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeSupertag(rootNodeId, tag.id, tag.systemId)
+                  }}
+                  title={`Remove #${tag.name}`}
+                >
+                  <X size={10} weight="bold" className="text-foreground/60" />
                 </span>
-                {tag.name}
               </span>
             ))}
           </div>

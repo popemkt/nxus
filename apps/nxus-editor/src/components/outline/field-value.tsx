@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { Hash, Plus } from '@phosphor-icons/react'
+import { Plus } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { Bullet } from './bullet'
+import { SupertagPill } from './supertag-pill'
 
 interface FieldValueProps {
   fieldType: FieldType
@@ -73,6 +74,7 @@ function EditableField({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
+  const [hasContent, setHasContent] = useState(!!value)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -89,11 +91,18 @@ function EditableField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
     const newValue = ref.current.textContent ?? ''
+    setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
 
@@ -104,8 +113,8 @@ function EditableField({
         ref.current?.blur()
       }
       if (e.key === 'Escape') {
-        // Revert content
         if (ref.current) ref.current.textContent = value
+        setHasContent(!!value)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -113,15 +122,21 @@ function EditableField({
     [value],
   )
 
+  // Sync when value prop changes externally
+  useEffect(() => {
+    setHasContent(!!value)
+  }, [value])
+
   return (
     <div
       ref={ref}
       className={cn(
         editableClass,
-        value ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
         'cursor-text',
       )}
       onClick={handleClick}
+      onInput={handleInput}
       onBlur={commit}
       onKeyDown={handleKeyDown}
       suppressContentEditableWarning
@@ -143,6 +158,7 @@ function NumberField({
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
   const displayValue = value !== null && value !== undefined && value !== '' ? String(value) : ''
+  const [hasContent, setHasContent] = useState(!!displayValue)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -158,12 +174,19 @@ function NumberField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
     const text = ref.current.textContent ?? ''
     if (text === '') {
+      setHasContent(false)
       if (displayValue !== '') onChange('')
       return
     }
@@ -172,7 +195,9 @@ function NumberField({
     if (trimmed === '' || Number.isNaN(parsed)) {
       // Revert to previous value
       ref.current.textContent = displayValue
+      setHasContent(!!displayValue)
     } else if (String(parsed) !== String(value)) {
+      setHasContent(true)
       onChange(parsed)
     }
   }, [value, displayValue, onChange])
@@ -185,6 +210,7 @@ function NumberField({
       }
       if (e.key === 'Escape') {
         if (ref.current) ref.current.textContent = displayValue
+        setHasContent(!!displayValue)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -192,15 +218,21 @@ function NumberField({
     [displayValue],
   )
 
+  // Sync when value prop changes externally
+  useEffect(() => {
+    setHasContent(!!displayValue)
+  }, [displayValue])
+
   return (
     <div
       ref={ref}
       className={cn(
         editableClass,
-        displayValue ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
         'cursor-text',
       )}
       onClick={handleClick}
+      onInput={handleInput}
       onBlur={commit}
       onKeyDown={handleKeyDown}
       suppressContentEditableWarning
@@ -772,6 +804,7 @@ function UrlField({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
+  const [hasContent, setHasContent] = useState(!!value)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -787,11 +820,18 @@ function UrlField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
     const newValue = ref.current.textContent ?? ''
+    setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
 
@@ -803,6 +843,7 @@ function UrlField({
       }
       if (e.key === 'Escape') {
         if (ref.current) ref.current.textContent = value
+        setHasContent(!!value)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -810,18 +851,23 @@ function UrlField({
     [value],
   )
 
+  useEffect(() => {
+    setHasContent(!!value)
+  }, [value])
+
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <div
         ref={ref}
         className={cn(
           editableClass,
-          value
+          hasContent
             ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic empty-placeholder',
+            : 'text-foreground/25 italic',
           'cursor-text truncate',
         )}
         onClick={handleClick}
+        onInput={handleInput}
         onBlur={commit}
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning
@@ -858,6 +904,7 @@ function EmailField({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
+  const [hasContent, setHasContent] = useState(!!value)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -873,11 +920,18 @@ function EmailField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
     const newValue = ref.current.textContent ?? ''
+    setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
 
@@ -889,6 +943,7 @@ function EmailField({
       }
       if (e.key === 'Escape') {
         if (ref.current) ref.current.textContent = value
+        setHasContent(!!value)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -896,18 +951,23 @@ function EmailField({
     [value],
   )
 
+  useEffect(() => {
+    setHasContent(!!value)
+  }, [value])
+
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <div
         ref={ref}
         className={cn(
           editableClass,
-          value
+          hasContent
             ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic empty-placeholder',
+            : 'text-foreground/25 italic',
           'cursor-text truncate',
         )}
         onClick={handleClick}
+        onInput={handleInput}
         onBlur={commit}
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning
@@ -983,19 +1043,7 @@ function NodeRefField({ value }: { value: string }) {
         {node.supertags.length > 0 && (
           <div className="flex h-6 items-center gap-0.5">
             {node.supertags.map((tag) => (
-              <span
-                key={tag.id}
-                className={cn(
-                  'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                  'text-[11px] font-medium leading-[1.8]',
-                  'select-none whitespace-nowrap',
-                  !tag.color && 'bg-foreground/8 text-foreground/50',
-                )}
-                style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
-              >
-                <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
-                {tag.name}
-              </span>
+              <SupertagPill key={tag.id} tag={tag} />
             ))}
           </div>
         )}

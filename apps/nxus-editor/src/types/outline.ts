@@ -50,6 +50,11 @@ export interface SupertagBadge {
 export const SUPERTAG_DEFINITION_SYSTEM_ID = 'supertag:supertag'
 
 /**
+ * A node IS a field definition if it's tagged with the field meta-supertag.
+ */
+export const FIELD_DEFINITION_SYSTEM_ID = 'supertag:field'
+
+/**
  * A node IS a query if it's tagged with the query supertag.
  */
 export const QUERY_SYSTEM_ID = 'supertag:query'

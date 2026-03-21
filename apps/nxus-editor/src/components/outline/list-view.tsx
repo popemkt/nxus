@@ -3,6 +3,7 @@ import { cn } from '@nxus/ui'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import type { ViewConfig } from '@/types/outline'
+import { SupertagPill } from './supertag-pill'
 
 interface ListViewProps {
   childIds: string[]
@@ -86,17 +87,7 @@ export function ListView({ childIds, depth, config }: ListViewProps) {
 
             {/* Supertag badges */}
             {child.supertags.map((tag) => (
-              <span
-                key={tag.id}
-                className="text-[9px] rounded-sm px-1 py-px font-medium shrink-0"
-                style={
-                  tag.color
-                    ? { backgroundColor: `${tag.color}18`, color: tag.color }
-                    : undefined
-                }
-              >
-                #{tag.name}
-              </span>
+              <SupertagPill key={tag.id} tag={tag} size="sm" showIcon={false} className="shrink-0" />
             ))}
 
             {/* Inline field summaries */}

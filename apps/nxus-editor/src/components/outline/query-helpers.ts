@@ -36,13 +36,23 @@ export function isQueryNode(node: OutlineNode): boolean {
   return node.supertags.some((t) => t.systemId === QUERY_SYSTEM_ID)
 }
 
-/** Extract the query definition from a query node's fields */
+/** Extract the query definition from a query node's fields.
+ *  The value may arrive as a JSON string from the DB — parse it if so. */
 export function extractQueryDefinition(
   node: OutlineNode,
 ): unknown | undefined {
-  return node.fields.find(
+  const raw = node.fields.find(
     (f) => f.fieldSystemId === 'field:query_definition',
   )?.values[0]?.value
+  if (raw === undefined || raw === null) return undefined
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return undefined
+    }
+  }
+  return raw
 }
 
 /** Filter out query-internal fields (definition, sort, limit) for display */
