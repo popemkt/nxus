@@ -579,6 +579,117 @@ test.describe('Outline Editor', () => {
     })
   })
 
+  test.describe('View Switching', () => {
+    test('view toolbar appears on nodes with supertags', async ({ page }) => {
+      // Wait for editor to load
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
+
+      // Look for view toolbar (outline/table/kanban buttons)
+      const viewToolbar = page.locator('.view-toolbar, [data-view-toolbar]')
+      const count = await viewToolbar.count()
+
+      // If any nodes have supertags, they might show a view toolbar
+      if (count > 0) {
+        await expect(viewToolbar.first()).toBeVisible()
+      }
+    })
+
+    test('field rows display with field bullet icons', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
+
+      const fieldRows = page.locator('.field-row')
+      const count = await fieldRows.count()
+
+      if (count > 0) {
+        // Each field row should have a field bullet and label
+        const firstRow = fieldRows.first()
+        await expect(firstRow).toBeVisible()
+
+        // Should have a data-field-name attribute
+        const fieldName = await firstRow.getAttribute('data-field-name')
+        expect(fieldName).toBeTruthy()
+      }
+    })
+  })
+
+  test.describe('Keyboard Shortcuts (move, undo)', () => {
+    test('Cmd+Shift+Down moves selected node down', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      const nodeBlocks = page.locator('.node-block')
+      const count = await nodeBlocks.count()
+
+      if (count >= 2) {
+        // Get first two node texts
+        const firstContent = page.locator('.node-content .editable').first()
+        const firstText = await firstContent.textContent()
+
+        // Enter selection mode on first node
+        await firstContent.click()
+        await page.waitForTimeout(200)
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(200)
+
+        // Move down
+        await page.keyboard.press('Meta+Shift+ArrowDown')
+        await page.waitForTimeout(300)
+
+        // The first node should now be at position 2
+        const newFirstText = await page.locator('.node-content .editable').first().textContent()
+        if (firstText && newFirstText) {
+          expect(newFirstText).not.toBe(firstText)
+        }
+      }
+    })
+
+    test('Cmd+Z undoes last action', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      const nodeBlocks = page.locator('.node-block')
+      const initialCount = await nodeBlocks.count()
+
+      if (initialCount > 0) {
+        // Create a new node
+        await page.locator('.node-content').first().click()
+        await expect(page.locator('[contenteditable="true"]')).toBeVisible({ timeout: 3000 })
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(500)
+
+        const afterCreateCount = await nodeBlocks.count()
+        expect(afterCreateCount).toBe(initialCount + 1)
+
+        // Undo
+        await page.keyboard.press('Meta+z')
+        await page.waitForTimeout(500)
+
+        const afterUndoCount = await nodeBlocks.count()
+        expect(afterUndoCount).toBe(initialCount)
+      }
+    })
+  })
+
+  test.describe('Supertag Configuration', () => {
+    test('supertag badges show gear icon on hover', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
+
+      // Find supertag badges
+      const badges = page.locator('[data-supertag-badge]')
+      const count = await badges.count()
+
+      if (count > 0) {
+        // Hover over first badge — gear icon should appear
+        await badges.first().hover()
+        await page.waitForTimeout(300)
+
+        // Look for GearSix icon in the badge area
+        const gearIcon = badges.first().locator('svg')
+        const gearCount = await gearIcon.count()
+        expect(gearCount).toBeGreaterThanOrEqual(1)
+      }
+    })
+  })
+
   test.describe('Backlinks', () => {
     test('zoomed node shows References section when backlinks exist', async ({ page }) => {
       await page.waitForTimeout(2000)

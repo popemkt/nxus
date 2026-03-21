@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Hash, X } from '@phosphor-icons/react'
+import { Hash, X, GearSix } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getCaretRect } from '@/lib/caret-utils'
 import { SupertagAutocomplete } from './supertag-autocomplete'
+import { SupertagConfigPanel } from './supertag-config-panel'
 
 interface NodeContentProps {
   nodeId: string
@@ -278,6 +279,7 @@ function SupertagBadges({
   onRemove?: (supertagId: string, supertagSystemId: string | null) => void
 }) {
   const navigateToNode = useNavigateToNode()
+  const [configTag, setConfigTag] = useState<{ id: string; rect: DOMRect } | null>(null)
 
   return (
     <div className="flex h-6 items-center gap-0.5">
@@ -303,7 +305,7 @@ function SupertagBadges({
             e.stopPropagation()
             navigateToNode(tag.id)
           }}
-          title={`Go to: ${tag.name}`}
+          title={`Go to: ${tag.name} (⌥+click to configure)`}
         >
           {/* Icon area — fixed size, X overlays # on hover */}
           <span className="relative shrink-0 h-[10px] w-[10px]">
@@ -322,8 +324,35 @@ function SupertagBadges({
             )}
           </span>
           {tag.name}
+          {/* Gear icon — opens config panel */}
+          <span
+            className="relative shrink-0 h-[10px] w-[10px] opacity-0 group-hover/tag:opacity-40 hover:!opacity-80 transition-opacity cursor-pointer ml-0.5"
+            onClick={(e) => {
+              e.stopPropagation()
+              const rect = (e.currentTarget.closest('.group\\/tag') as HTMLElement)?.getBoundingClientRect()
+              if (rect) {
+                setConfigTag({ id: tag.id, rect })
+              }
+            }}
+            title={`Configure #${tag.name}`}
+          >
+            <GearSix size={10} weight="bold" />
+          </span>
         </span>
       ))}
+
+      {configTag && (
+        <SupertagConfigPanel
+          supertagId={configTag.id}
+          anchorRect={{
+            top: configTag.rect.top,
+            left: configTag.rect.left,
+            width: configTag.rect.width,
+            height: configTag.rect.height,
+          }}
+          onClose={() => setConfigTag(null)}
+        />
+      )}
     </div>
   )
 }

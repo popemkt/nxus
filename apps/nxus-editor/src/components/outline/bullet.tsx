@@ -11,6 +11,7 @@ import {
   TreeStructure,
   BracketsAngle,
   MagnifyingGlass,
+  UsersThree,
 } from '@phosphor-icons/react'
 import type { FieldType } from '@/types/outline'
 
@@ -143,6 +144,7 @@ const fieldIconMap: Record<FieldType, React.ComponentType<{ size: number; weight
   node: ArrowSquareOut,
   nodes: TreeStructure,
   json: BracketsAngle,
+  instance: UsersThree,
 }
 
 /**

@@ -120,6 +120,31 @@ export const addSupertagServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Add a supertag to a node by the supertag's node ID (UUID) instead of system ID.
+ * Used by InstanceField when creating a new node that should be tagged with a supertag
+ * whose system ID is not known on the client.
+ */
+export const addSupertagByNodeIdServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      nodeId: z.string(),
+      supertagNodeId: z.string(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { addNodeSupertag, assembleNode } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    const supertagNode = assembleNode(db, ctx.data.supertagNodeId)
+    if (!supertagNode || !supertagNode.systemId) {
+      return { success: false as const, error: 'Supertag not found or has no system ID' }
+    }
+
+    const added = addNodeSupertag(db, ctx.data.nodeId, supertagNode.systemId)
+    return { success: true as const, added }
+  })
+
+/**
  * Remove a supertag from a node. Fields are kept (Tana behavior — no data loss).
  */
 export const removeSupertagServerFn = createServerFn({ method: 'POST' })
@@ -134,4 +159,354 @@ export const removeSupertagServerFn = createServerFn({ method: 'POST' })
     const db = await initDatabaseSeeded()
     const removed = removeNodeSupertag(db, ctx.data.nodeId, ctx.data.supertagSystemId)
     return { success: true as const, removed }
+  })
+
+/**
+ * Get the full configuration for a supertag definition.
+ * Returns field definitions (own + inherited), default child supertag,
+ * content template, extends chain, and color.
+ */
+export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ supertagId: z.string() }))
+  .handler(async (ctx) => {
+    const {
+      assembleNode,
+      getProperty,
+      getSupertagFieldDefinitions,
+      getAncestorSupertags,
+      FIELD_NAMES,
+    } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    const supertagNode = assembleNode(db, ctx.data.supertagId)
+    if (!supertagNode) {
+      return { success: false as const, error: 'Supertag not found' }
+    }
+
+    // Read constraint properties, normalizing string 'true' → boolean at the read boundary
+    function readFieldConstraints(fieldNode: ReturnType<typeof assembleNode>) {
+      if (!fieldNode) return {}
+      const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
+      const hideWhen = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
+      const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
+      return {
+        ...(requiredRaw === true || requiredRaw === 'true' ? { required: true } : {}),
+        ...(hideWhen ? { hideWhen } : {}),
+        ...(pinnedRaw === true || pinnedRaw === 'true' ? { pinned: true } : {}),
+      }
+    }
+
+    // Own field definitions (not inherited)
+    const ownDefs = getSupertagFieldDefinitions(db, ctx.data.supertagId)
+    const ownFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; required?: boolean; hideWhen?: string; pinned?: boolean }[] = []
+
+    for (const [systemId, def] of ownDefs) {
+      if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
+      const fieldNode = assembleNode(db, def.fieldNodeId)
+      const fieldType = fieldNode
+        ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
+        : 'text'
+      ownFields.push({
+        fieldNodeId: def.fieldNodeId,
+        fieldName: def.fieldName,
+        fieldSystemId: systemId,
+        fieldType,
+        ...readFieldConstraints(fieldNode),
+      })
+    }
+
+    // Inherited fields from ancestors
+    const ancestors = getAncestorSupertags(db, ctx.data.supertagId)
+    const inheritedFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; fromSupertagId: string; fromSupertagName: string; required?: boolean; hideWhen?: string; pinned?: boolean }[] = []
+    const ownFieldIds = new Set(ownFields.map((f) => f.fieldSystemId))
+
+    for (const ancestorId of ancestors) {
+      const ancestorNode = assembleNode(db, ancestorId)
+      const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+      for (const [systemId, def] of ancestorDefs) {
+        if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
+        if (ownFieldIds.has(systemId)) continue
+        if (inheritedFields.some((f) => f.fieldSystemId === systemId)) continue
+        const fieldNode = assembleNode(db, def.fieldNodeId)
+        const fieldType = fieldNode
+          ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
+          : 'text'
+        inheritedFields.push({
+          fieldNodeId: def.fieldNodeId,
+          fieldName: def.fieldName,
+          fieldSystemId: systemId,
+          fieldType,
+          fromSupertagId: ancestorId,
+          fromSupertagName: ancestorNode?.content ?? '',
+          ...readFieldConstraints(fieldNode),
+        })
+      }
+    }
+
+    // Default child supertag
+    const defaultChildRef = getProperty(supertagNode, FIELD_NAMES.DEFAULT_CHILD_SUPERTAG) as string | undefined
+    let defaultChildSupertag: { id: string; name: string; systemId: string | null; color: string | null } | null = null
+    if (defaultChildRef) {
+      const childTagNode = assembleNode(db, defaultChildRef)
+      if (childTagNode) {
+        const dbColor = (getProperty(childTagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+        defaultChildSupertag = {
+          id: childTagNode.id,
+          name: childTagNode.content ?? '',
+          systemId: childTagNode.systemId,
+          color: dbColor ?? getSupertagColor(childTagNode.id),
+        }
+      }
+    }
+
+    // Content template
+    const templateRaw = getProperty(supertagNode, FIELD_NAMES.CONTENT_TEMPLATE) as string | undefined
+    let contentTemplate: string | null = null
+    if (templateRaw) {
+      contentTemplate = typeof templateRaw === 'string' ? templateRaw : JSON.stringify(templateRaw)
+    }
+
+    // Extends (parent supertag)
+    let extendsSupertag: { id: string; name: string; systemId: string | null; color: string | null } | null = null
+    if (ancestors.length > 0) {
+      const parentNode = assembleNode(db, ancestors[0]!)
+      if (parentNode) {
+        const dbColor = (getProperty(parentNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+        extendsSupertag = {
+          id: parentNode.id,
+          name: parentNode.content ?? '',
+          systemId: parentNode.systemId,
+          color: dbColor ?? getSupertagColor(parentNode.id),
+        }
+      }
+    }
+
+    // Color
+    const color = (getProperty(supertagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+
+    return {
+      success: true as const,
+      config: {
+        id: supertagNode.id,
+        name: supertagNode.content ?? '',
+        systemId: supertagNode.systemId,
+        color: color ?? getSupertagColor(supertagNode.id),
+        ownFields,
+        inheritedFields,
+        defaultChildSupertag,
+        contentTemplate,
+        extendsSupertag,
+      },
+    }
+  })
+
+/**
+ * Add a field definition to a supertag's schema.
+ * Creates a new field node and links it as a property on the supertag.
+ */
+export const addSupertagFieldServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      supertagId: z.string(),
+      fieldName: z.string(),
+      fieldType: z.string().optional(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const {
+      createNode,
+      setProperty,
+      addNodeSupertag,
+      SYSTEM_FIELDS,
+      SYSTEM_SUPERTAGS,
+    } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    // Create a new field node
+    const fieldNodeId = createNode(db, {
+      content: ctx.data.fieldName,
+    })
+
+    // Tag it as a field
+    addNodeSupertag(db, fieldNodeId, SYSTEM_SUPERTAGS.FIELD)
+
+    // Set field type
+    if (ctx.data.fieldType && ctx.data.fieldType !== 'text') {
+      setProperty(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
+    }
+
+    // Generate a system ID for the field using 12 UUID chars to reduce collision risk
+    const { nodes: nodesTable, eq } = await import('@nxus/db/server')
+    const sanitizedName = ctx.data.fieldName.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+    let systemId = `field:${sanitizedName}_${fieldNodeId.slice(0, 12)}`
+
+    // Check for collision and regenerate with full UUID if needed
+    const existing = db.select().from(nodesTable).where(eq(nodesTable.systemId, systemId)).get()
+    if (existing) {
+      systemId = `field:${sanitizedName}_${fieldNodeId.replace(/-/g, '')}`
+    }
+
+    db.update(nodesTable)
+      .set({ systemId })
+      .where(eq(nodesTable.id, fieldNodeId))
+      .run()
+
+    // Link the field to the supertag as a property (declares the field in the schema)
+    setProperty(
+      db,
+      ctx.data.supertagId,
+      systemId as import('@nxus/db/server').FieldSystemId,
+      JSON.stringify(null),
+    )
+
+    return {
+      success: true as const,
+      field: {
+        fieldNodeId,
+        fieldName: ctx.data.fieldName,
+        fieldSystemId: systemId,
+        fieldType: ctx.data.fieldType ?? 'text',
+      },
+    }
+  })
+
+/**
+ * Remove a field definition from a supertag's schema.
+ * Removes the property link from the supertag node, but does not delete the field node.
+ */
+export const removeSupertagFieldServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      supertagId: z.string(),
+      fieldNodeId: z.string(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { nodeProperties, eq, and } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    // Remove the property linking the field to the supertag
+    db.delete(nodeProperties)
+      .where(
+        and(
+          eq(nodeProperties.nodeId, ctx.data.supertagId),
+          eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId),
+        ),
+      )
+      .run()
+
+    return { success: true as const }
+  })
+
+/**
+ * Update a field's type on its definition node.
+ */
+export const updateFieldTypeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      fieldNodeId: z.string(),
+      fieldType: z.string(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { setProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
+    return { success: true as const }
+  })
+
+/**
+ * Update field constraints (required, hideWhen, pinned) on a field definition node.
+ */
+export const updateFieldConstraintsServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      fieldNodeId: z.string(),
+      required: z.boolean().nullable().optional(),
+      hideWhen: z.enum(['never', 'when_empty', 'when_not_empty', 'always']).nullable().optional(),
+      pinned: z.boolean().nullable().optional(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { setProperty, clearProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    if (ctx.data.required !== undefined) {
+      if (ctx.data.required) {
+        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.REQUIRED, 'true')
+      } else {
+        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.REQUIRED)
+      }
+    }
+
+    if (ctx.data.hideWhen !== undefined) {
+      if (ctx.data.hideWhen && ctx.data.hideWhen !== 'never') {
+        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.HIDE_WHEN, ctx.data.hideWhen)
+      } else {
+        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.HIDE_WHEN)
+      }
+    }
+
+    if (ctx.data.pinned !== undefined) {
+      if (ctx.data.pinned) {
+        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.PINNED, 'true')
+      } else {
+        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.PINNED)
+      }
+    }
+
+    return { success: true as const }
+  })
+
+/**
+ * Update supertag configuration: default child supertag, content template, extends, color.
+ */
+export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      supertagId: z.string(),
+      defaultChildSupertagId: z.string().nullable().optional(),
+      contentTemplate: z.string().nullable().optional(),
+      extendsId: z.string().nullable().optional(),
+      color: z.string().nullable().optional(),
+    }),
+  )
+  .handler(async (ctx) => {
+    const { setProperty, clearProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    if (ctx.data.defaultChildSupertagId !== undefined) {
+      if (ctx.data.defaultChildSupertagId) {
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG, JSON.stringify(ctx.data.defaultChildSupertagId))
+      } else {
+        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG)
+      }
+    }
+
+    if (ctx.data.contentTemplate !== undefined) {
+      if (ctx.data.contentTemplate) {
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.CONTENT_TEMPLATE, ctx.data.contentTemplate)
+      } else {
+        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.CONTENT_TEMPLATE)
+      }
+    }
+
+    if (ctx.data.extendsId !== undefined) {
+      if (ctx.data.extendsId) {
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, JSON.stringify(ctx.data.extendsId))
+      } else {
+        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS)
+      }
+    }
+
+    if (ctx.data.color !== undefined) {
+      if (ctx.data.color) {
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.COLOR, ctx.data.color)
+      } else {
+        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.COLOR)
+      }
+    }
+
+    return { success: true as const }
   })

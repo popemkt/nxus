@@ -37,12 +37,13 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       createdAt: number
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
-      fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[] }[]
+      fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[]; required?: boolean; hideWhen?: string; pinned?: boolean }[]
     }
 
     const nodeMap = new Map<string, OutlineNodeResult>()
-    // Cache field types to avoid redundant lookups
+    // Cache field types and constraints to avoid redundant lookups
     const fieldTypeCache = new Map<string, FieldType>()
+    const fieldConstraintCache = new Map<string, { required?: boolean; hideWhen?: string; pinned?: boolean }>()
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -56,6 +57,19 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         : 'text'
       const result = ft as FieldType
       fieldTypeCache.set(fieldNodeId, result)
+
+      // Cache constraints, normalizing string 'true' → boolean true at the read boundary
+      if (fieldNode && !fieldConstraintCache.has(fieldNodeId)) {
+        const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
+        const hideWhenRaw = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
+        const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
+        fieldConstraintCache.set(fieldNodeId, {
+          required: requiredRaw === true || requiredRaw === 'true' ? true : undefined,
+          hideWhen: hideWhenRaw || undefined,
+          pinned: pinnedRaw === true || pinnedRaw === 'true' ? true : undefined,
+        })
+      }
+
       return result
     }
 
@@ -100,6 +114,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         const declaredType = resolveFieldType(first.fieldNodeId)
         const fieldType = inferFieldType(declaredType, sortedValues)
 
+        const constraints = fieldConstraintCache.get(first.fieldNodeId)
         fields.push({
           fieldId: first.fieldSystemId ?? first.fieldNodeId,
           fieldName: first.fieldName,
@@ -107,6 +122,9 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
           fieldSystemId: first.fieldSystemId,
           fieldType,
           values: sortedValues,
+          ...(constraints?.required && { required: true }),
+          ...(constraints?.hideWhen && { hideWhen: constraints.hideWhen }),
+          ...(constraints?.pinned && { pinned: true }),
         })
       }
 
@@ -129,8 +147,12 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         }
       }
 
-      // Sort: fields with definition priority first (in order), remaining alphabetically
+      // Sort: pinned first, then definition priority, then alphabetically
       fields.sort((a, b) => {
+        // Pinned fields always come first
+        if (a.pinned && !b.pinned) return -1
+        if (!a.pinned && b.pinned) return 1
+
         const aPriority = a.fieldSystemId ? priorityMap.get(a.fieldSystemId) : undefined
         const bPriority = b.fieldSystemId ? priorityMap.get(b.fieldSystemId) : undefined
         if (aPriority !== undefined && bPriority !== undefined) return aPriority - bPriority
@@ -236,6 +258,8 @@ export const getWorkspaceRootServerFn = createServerFn({ method: 'GET' }).handle
 
 /**
  * Create a new node as a child of a parent.
+ * If the parent has supertags with a default_child_supertag configured,
+ * automatically applies that supertag (and its field schema) to the new node.
  */
 export const createNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
@@ -249,8 +273,15 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     const {
       createNode,
       setProperty,
+      addNodeSupertag,
+      assembleNode,
+      getProperty,
+      getSupertagFieldDefinitions,
+      getAncestorSupertags,
       SYSTEM_FIELDS,
+      FIELD_NAMES,
     } = await import('@nxus/db/server')
+    const { getSupertagColor } = await import('@/lib/supertag-colors')
     const db = await initDatabaseSeeded()
 
     const nodeId = createNode(db, {
@@ -262,7 +293,109 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
       setProperty(db, nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
     }
 
-    return { success: true as const, nodeId }
+    // Check parent's supertags for a default_child_supertag
+    let appliedSupertag: { id: string; name: string; systemId: string; color: string | null } | null = null
+    const appliedFields: Array<{
+      fieldId: string
+      fieldName: string
+      fieldNodeId: string
+      fieldSystemId: string | null
+      fieldType: string
+      values: { value: {}; order: number }[]
+    }> = []
+
+    if (ctx.data.parentId) {
+      const parentAssembled = assembleNode(db, ctx.data.parentId)
+      if (parentAssembled) {
+        for (const parentTag of parentAssembled.supertags) {
+          if (!parentTag.id) continue
+          const tagAssembled = assembleNode(db, parentTag.id)
+          if (!tagAssembled) continue
+
+          // defaultChildSupertag field stores a node UUID reference
+          const defaultChildRef = getProperty(tagAssembled, FIELD_NAMES.DEFAULT_CHILD_SUPERTAG) as string | undefined
+          if (!defaultChildRef) continue
+
+          // Resolve the referenced supertag node to get its systemId
+          const childTagNode = assembleNode(db, defaultChildRef)
+          if (!childTagNode?.systemId) continue
+
+          // Apply the default child supertag to the new node
+          const added = addNodeSupertag(db, nodeId, childTagNode.systemId)
+          if (!added) break
+
+          const dbColor = (getProperty(childTagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+          appliedSupertag = {
+            id: childTagNode.id,
+            name: childTagNode.content ?? '',
+            systemId: childTagNode.systemId,
+            color: dbColor ?? getSupertagColor(childTagNode.id),
+          }
+
+          // Collect field definitions from this supertag + ancestors
+          const fieldDefs = getSupertagFieldDefinitions(db, childTagNode.id)
+          const ancestors = getAncestorSupertags(db, childTagNode.id)
+          for (const ancestorId of ancestors) {
+            const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+            for (const [key, val] of ancestorDefs) {
+              if (!fieldDefs.has(key)) fieldDefs.set(key, val)
+            }
+          }
+
+          const HIDDEN = new Set([
+            'field:supertag', 'field:extends', 'field:field_type', 'field:order',
+            'field:parent', 'field:default_child_supertag', 'field:content_template',
+            'field:auto_collect', 'field:instance_supertag', 'field:view_config',
+            'field:query_result_cache', 'field:query_evaluated_at',
+          ])
+
+          for (const [systemId, def] of fieldDefs) {
+            if (HIDDEN.has(systemId)) continue
+            let fieldType = 'text'
+            const fieldNode = assembleNode(db, def.fieldNodeId)
+            if (fieldNode) {
+              fieldType = (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
+            }
+            appliedFields.push({
+              fieldId: systemId,
+              fieldName: def.fieldName,
+              fieldNodeId: def.fieldNodeId,
+              fieldSystemId: systemId,
+              fieldType,
+              values: [],
+            })
+          }
+
+          // Apply content template if one exists on the supertag
+          const templateRaw = getProperty(tagAssembled, FIELD_NAMES.CONTENT_TEMPLATE) as string | undefined
+          if (templateRaw) {
+            try {
+              const template = typeof templateRaw === 'string' ? JSON.parse(templateRaw) : templateRaw
+              if (template && Array.isArray(template.children)) {
+                for (const childDef of template.children) {
+                  if (!childDef || typeof childDef.content !== 'string') continue
+                  createNode(db, {
+                    content: childDef.content,
+                    ownerId: nodeId,
+                  })
+                }
+              }
+            } catch {
+              // Invalid template JSON — skip silently
+            }
+          }
+
+          break // Only apply first default child supertag found
+        }
+      }
+    }
+
+    return {
+      success: true as const,
+      nodeId,
+      appliedSupertag,
+      appliedFields,
+    }
   })
 
 /**
