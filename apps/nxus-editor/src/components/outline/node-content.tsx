@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, GearSix } from '@phosphor-icons/react'
+import { X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getCaretRect } from '@/lib/caret-utils'
 import { SupertagAutocomplete } from './supertag-autocomplete'
-import { SupertagConfigPanel } from './supertag-config-panel'
 import { SupertagPill } from './supertag-pill'
 
 interface NodeContentProps {
@@ -280,7 +279,6 @@ function SupertagBadges({
   onRemove?: (supertagId: string, supertagSystemId: string | null) => void
 }) {
   const navigateToNode = useNavigateToNode()
-  const [configTag, setConfigTag] = useState<{ id: string; rect: DOMRect } | null>(null)
 
   return (
     <div className="flex h-6 items-center gap-0.5">
@@ -296,51 +294,21 @@ function SupertagBadges({
               navigateToNode(tag.id)
             }}
           />
-          {/* Hover overlay: X to remove + gear to configure */}
-          {(onRemove) && (
+          {/* Hover: X button overlays the # icon to remove */}
+          {onRemove && (
             <span
-              className="absolute inset-0 flex items-center justify-end gap-px opacity-0 group-hover/tag:opacity-100 transition-opacity rounded-sm"
+              className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-[18px] opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove(tag.id, tag.systemId)
+              }}
+              title={`Remove #${tag.name}`}
             >
-              <span
-                className="flex items-center justify-center h-full px-0.5 cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const rect = (e.currentTarget.closest('.group\\/tag') as HTMLElement)?.getBoundingClientRect()
-                  if (rect) {
-                    setConfigTag({ id: tag.id, rect })
-                  }
-                }}
-                title={`Configure #${tag.name}`}
-              >
-                <GearSix size={9} weight="bold" />
-              </span>
-              <span
-                className="flex items-center justify-center h-full px-0.5 cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemove(tag.id, tag.systemId)
-                }}
-                title={`Remove #${tag.name}`}
-              >
-                <X size={9} weight="bold" />
-              </span>
+              <X size={9} weight="bold" className="text-foreground/60 hover:text-foreground" />
             </span>
           )}
         </span>
       ))}
-
-      {configTag && (
-        <SupertagConfigPanel
-          supertagId={configTag.id}
-          anchorRect={{
-            top: configTag.rect.top,
-            left: configTag.rect.left,
-            width: configTag.rect.width,
-            height: configTag.rect.height,
-          }}
-          onClose={() => setConfigTag(null)}
-        />
-      )}
     </div>
   )
 }
