@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Hash, X } from '@phosphor-icons/react'
+import { Hash } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
@@ -255,7 +255,7 @@ export function NodeContent({
       )}
 
       {supertags.length > 0 && (
-        <SupertagBadges supertags={supertags} onRemove={onRemoveSupertag} />
+        <SupertagBadges supertags={supertags} />
       )}
 
       {autocomplete && createPortal(
@@ -273,10 +273,8 @@ export function NodeContent({
 
 function SupertagBadges({
   supertags,
-  onRemove,
 }: {
   supertags: SupertagBadge[]
-  onRemove?: (supertagId: string, supertagSystemId: string | null) => void
 }) {
   const navigateToNode = useNavigateToNode()
 
@@ -288,7 +286,7 @@ function SupertagBadges({
           <span
             key={tag.id}
             className={cn(
-              'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+              'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
               'text-[11px] font-medium leading-[1.8]',
               'select-none whitespace-nowrap',
               'cursor-pointer transition-opacity hover:opacity-70',
@@ -303,22 +301,7 @@ function SupertagBadges({
             }}
             title={`Go to: ${tag.name}`}
           >
-            {/* Icon area — fixed size, X overlays # on hover */}
-            <span className="relative shrink-0 h-[10px] w-[10px]">
-              <Hash size={10} weight="bold" className="opacity-60 group-hover/tag:opacity-0 transition-opacity" />
-              {onRemove && (
-                <span
-                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRemove(tag.id, tag.systemId)
-                  }}
-                  title={`Remove #${tag.name}`}
-                >
-                  <X size={10} weight="bold" />
-                </span>
-              )}
-            </span>
+            <Hash size={10} weight="bold" className="opacity-60 shrink-0" />
             {tag.name}
           </span>
         )
