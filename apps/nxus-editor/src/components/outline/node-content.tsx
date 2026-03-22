@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Hash } from '@phosphor-icons/react'
+import { Hash, X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
@@ -255,7 +255,7 @@ export function NodeContent({
       )}
 
       {supertags.length > 0 && (
-        <SupertagBadges supertags={supertags} />
+        <SupertagBadges supertags={supertags} onRemove={onRemoveSupertag} />
       )}
 
       {autocomplete && createPortal(
@@ -273,8 +273,10 @@ export function NodeContent({
 
 function SupertagBadges({
   supertags,
+  onRemove,
 }: {
   supertags: SupertagBadge[]
+  onRemove?: (supertagId: string, supertagSystemId: string | null) => void
 }) {
   const navigateToNode = useNavigateToNode()
 
@@ -286,7 +288,7 @@ function SupertagBadges({
           <span
             key={tag.id}
             className={cn(
-              'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+              'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
               'text-[11px] font-medium leading-[1.8]',
               'select-none whitespace-nowrap',
               'cursor-pointer transition-opacity hover:opacity-70',
@@ -301,7 +303,24 @@ function SupertagBadges({
             }}
             title={`Go to: ${tag.name}`}
           >
-            <Hash size={10} weight="bold" className="opacity-60 shrink-0" />
+            <span className="relative shrink-0 size-[10px]">
+              <Hash
+                size={10}
+                weight="bold"
+                className="absolute inset-0 opacity-60 group-hover/tag:invisible"
+              />
+              {onRemove && (
+                <X
+                  size={10}
+                  weight="bold"
+                  className="absolute inset-0 invisible group-hover/tag:visible"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemove(tag.id, tag.systemId ?? null)
+                  }}
+                />
+              )}
+            </span>
             {tag.name}
           </span>
         )
