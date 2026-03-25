@@ -514,9 +514,12 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
       limit: Number.MAX_SAFE_INTEGER,
     })
 
-    // Skip system fields used for internal wiring (by systemId, not display name)
+    // Skip system fields used for internal wiring (by systemId, not display name).
+    // NOTE: field:supertag and field:extends are NOT excluded — they are the
+    // primary way nodes reference supertag/field definition nodes and should
+    // appear as backlinks.
     const systemFieldSystemIds = new Set([
-      'field:supertag', 'field:extends', 'field:order', 'field:field_type',
+      'field:order', 'field:field_type',
       'field:query_definition', 'field:color',
     ])
     type BacklinkPropertyValue = {

@@ -473,6 +473,88 @@ describe('outline store', () => {
     })
   })
 
+  describe('updateFieldBySystemId', () => {
+    it('updates a field matched by fieldSystemId', () => {
+      const field: OutlineField = {
+        fieldId: 'field-node-1',
+        fieldName: 'Query Definition',
+        fieldNodeId: 'field-node-1',
+        fieldSystemId: 'field:query_definition',
+        fieldType: 'json',
+        values: [{ value: { filters: [] }, order: 0 }],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [field]))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      const newDef = { filters: [{ type: 'supertag', supertag: 'tool' }] }
+      useOutlineStore.getState().updateFieldBySystemId('a', 'field:query_definition', newDef)
+
+      const updated = useOutlineStore.getState().nodes.get('a')!.fields[0]!
+      expect(updated.values[0]!.value).toEqual(newDef)
+      expect(updated.values[0]!.order).toBe(0)
+    })
+
+    it('preserves other fields on the same node', () => {
+      const qField: OutlineField = {
+        fieldId: 'f1',
+        fieldName: 'Query Definition',
+        fieldNodeId: 'f1',
+        fieldSystemId: 'field:query_definition',
+        fieldType: 'json',
+        values: [{ value: 'old', order: 0 }],
+      }
+      const otherField: OutlineField = {
+        fieldId: 'f2',
+        fieldName: 'Notes',
+        fieldNodeId: 'f2',
+        fieldSystemId: 'field:notes',
+        fieldType: 'text',
+        values: [{ value: 'keep me', order: 0 }],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [qField, otherField]))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      useOutlineStore.getState().updateFieldBySystemId('a', 'field:query_definition', 'new')
+
+      const node = useOutlineStore.getState().nodes.get('a')!
+      expect(node.fields[0]!.values[0]!.value).toBe('new')
+      expect(node.fields[1]!.values[0]!.value).toBe('keep me')
+    })
+
+    it('does nothing for nonexistent node', () => {
+      seedStore()
+      const before = useOutlineStore.getState().nodes
+      useOutlineStore.getState().updateFieldBySystemId('nonexistent', 'field:x', 'val')
+      expect(useOutlineStore.getState().nodes).toBe(before)
+    })
+
+    it('creates a values entry when field has no existing values', () => {
+      const field: OutlineField = {
+        fieldId: 'f1',
+        fieldName: 'Query Definition',
+        fieldNodeId: 'f1',
+        fieldSystemId: 'field:query_definition',
+        fieldType: 'json',
+        values: [],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [field]))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      useOutlineStore.getState().updateFieldBySystemId('a', 'field:query_definition', 'new-val')
+
+      const updated = useOutlineStore.getState().nodes.get('a')!.fields[0]!
+      expect(updated.values).toHaveLength(1)
+      expect(updated.values[0]!.value).toBe('new-val')
+      expect(updated.values[0]!.order).toBe(0)
+    })
+  })
+
   // ─── Supertag operations ─────────────────────────────────────────
 
   describe('addSupertag', () => {
