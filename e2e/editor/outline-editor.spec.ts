@@ -658,6 +658,10 @@ test.describe('Outline Editor', () => {
         const afterCreateCount = await nodeBlocks.count()
         expect(afterCreateCount).toBe(initialCount + 1)
 
+        // Exit edit mode first so Cmd+Z triggers outline-level undo
+        await page.keyboard.press('Escape')
+        await page.waitForTimeout(200)
+
         // Undo
         await page.keyboard.press('Meta+z')
         await page.waitForTimeout(500)

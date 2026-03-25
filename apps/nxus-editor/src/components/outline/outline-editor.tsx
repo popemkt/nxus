@@ -358,6 +358,14 @@ export function OutlineEditor() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        // Let native undo/redo work inside contentEditable elements and inputs
+        const active = document.activeElement
+        if (
+          active instanceof HTMLElement &&
+          (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+        ) {
+          return
+        }
         e.preventDefault()
         if (e.shiftKey) {
           redo()

@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Sliders } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useShallow } from 'zustand/react/shallow'
@@ -126,6 +126,14 @@ export const NodeBlock = memo(function NodeBlock({
   const [viewMode, setViewModeLocal] = useState<ViewMode>(storedViewMode)
   const [viewConfig, setViewConfigLocal] = useState<ViewConfig>(storedViewConfig)
   const viewConfigTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync local state when store values change externally (e.g. undo/redo)
+  useEffect(() => {
+    setViewModeLocal(storedViewMode)
+  }, [storedViewMode])
+  useEffect(() => {
+    setViewConfigLocal(storedViewConfig)
+  }, [storedViewConfig])
 
   const handleViewModeChange = useCallback(
     (mode: ViewMode) => {

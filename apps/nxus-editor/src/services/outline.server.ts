@@ -147,6 +147,40 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         }
       }
 
+      // Include empty fields from supertag definitions that have no stored values yet.
+      // Without this, fields from a supertag only appear after the user sets a value.
+      const existingFieldSystemIds = new Set(fields.map((f) => f.fieldSystemId).filter(Boolean))
+      for (const st of assembled.supertags) {
+        const defs = getSupertagFieldDefinitions(db, st.id)
+        const ancestors = getAncestorSupertags(db, st.id)
+        const allDefs = new Map(defs)
+        for (const ancestorId of ancestors) {
+          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+          for (const [key, val] of ancestorDefs) {
+            if (!allDefs.has(key)) allDefs.set(key, val)
+          }
+        }
+        for (const [systemId, def] of allDefs) {
+          if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
+          if (existingFieldSystemIds.has(systemId)) continue
+          existingFieldSystemIds.add(systemId)
+
+          const declaredType = resolveFieldType(def.fieldNodeId)
+          const constraints = fieldConstraintCache.get(def.fieldNodeId)
+          fields.push({
+            fieldId: systemId,
+            fieldName: def.fieldName,
+            fieldNodeId: def.fieldNodeId,
+            fieldSystemId: systemId,
+            fieldType: declaredType,
+            values: [],
+            ...(constraints?.required && { required: true }),
+            ...(constraints?.hideWhen && { hideWhen: constraints.hideWhen }),
+            ...(constraints?.pinned && { pinned: true }),
+          })
+        }
+      }
+
       // Sort: pinned first, then definition priority, then alphabetically
       fields.sort((a, b) => {
         // Pinned fields always come first
@@ -342,15 +376,8 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
             }
           }
 
-          const HIDDEN = new Set([
-            'field:supertag', 'field:extends', 'field:field_type', 'field:order',
-            'field:parent', 'field:default_child_supertag', 'field:content_template',
-            'field:auto_collect', 'field:instance_supertag', 'field:view_config',
-            'field:query_result_cache', 'field:query_evaluated_at',
-          ])
-
           for (const [systemId, def] of fieldDefs) {
-            if (HIDDEN.has(systemId)) continue
+            if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
             let fieldType = 'text'
             const fieldNode = assembleNode(db, def.fieldNodeId)
             if (fieldNode) {
@@ -366,8 +393,8 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
             })
           }
 
-          // Apply content template if one exists on the supertag
-          const templateRaw = getProperty(tagAssembled, FIELD_NAMES.CONTENT_TEMPLATE) as string | undefined
+          // Apply content template if one exists on the child supertag (not the parent's)
+          const templateRaw = getProperty(childTagNode, FIELD_NAMES.CONTENT_TEMPLATE) as string | undefined
           if (templateRaw) {
             try {
               const template = typeof templateRaw === 'string' ? JSON.parse(templateRaw) : templateRaw

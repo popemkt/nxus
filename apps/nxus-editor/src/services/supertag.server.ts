@@ -533,7 +533,7 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
 
     if (ctx.data.defaultChildSupertagId !== undefined) {
       if (ctx.data.defaultChildSupertagId) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG, JSON.stringify(ctx.data.defaultChildSupertagId))
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG, ctx.data.defaultChildSupertagId)
       } else {
         clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG)
       }
@@ -549,7 +549,7 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
 
     if (ctx.data.extendsId !== undefined) {
       if (ctx.data.extendsId) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, JSON.stringify(ctx.data.extendsId))
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, ctx.data.extendsId)
       } else {
         clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS)
       }

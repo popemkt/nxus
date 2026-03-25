@@ -132,7 +132,7 @@ function EditableField({
       ref={ref}
       className={cn(
         editableClass,
-        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
+        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
         'cursor-text',
       )}
       onClick={handleClick}
@@ -228,7 +228,7 @@ function NumberField({
       ref={ref}
       className={cn(
         editableClass,
-        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
+        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
         'cursor-text',
       )}
       onClick={handleClick}
@@ -863,7 +863,7 @@ function UrlField({
           editableClass,
           hasContent
             ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic',
+            : 'text-foreground/25 italic empty-placeholder',
           'cursor-text truncate',
         )}
         onClick={handleClick}
@@ -963,7 +963,7 @@ function EmailField({
           editableClass,
           hasContent
             ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic',
+            : 'text-foreground/25 italic empty-placeholder',
           'cursor-text truncate',
         )}
         onClick={handleClick}

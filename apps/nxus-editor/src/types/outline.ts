@@ -116,6 +116,7 @@ export const HIDDEN_FIELD_SYSTEM_IDS = new Set([
   'field:content_template',
   'field:auto_collect',
   'field:instance_supertag',
+  'field:view_as',
   'field:view_config',
   // Field constraint metadata — stored on field definition nodes, not displayed as node fields
   'field:required',
