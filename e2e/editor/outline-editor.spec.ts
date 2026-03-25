@@ -691,59 +691,246 @@ test.describe('Outline Editor', () => {
   })
 
   test.describe('Backlinks', () => {
-    test('zoomed node shows References section when backlinks exist', async ({ page }) => {
-      await page.waitForTimeout(2000)
-      const nodeBlocks = page.locator('.node-block')
-      const count = await nodeBlocks.count()
+    /**
+     * Helper: scroll the supertag detail view to the bottom to reveal the References section.
+     * The supertag-detail-view has its own overflow-y-auto container.
+     */
+    async function scrollToReferences(page: import('@playwright/test').Page) {
+      // The supertag detail view is the scrollable container, not the window
+      await page.evaluate(() => {
+        const container = document.querySelector('.supertag-detail-view') ?? document.querySelector('.outline-body')
+        if (container) container.scrollTop = container.scrollHeight
+      })
+      await page.waitForTimeout(1000)
+      // Scroll again after backlinks data may have loaded
+      await page.evaluate(() => {
+        const container = document.querySelector('.supertag-detail-view') ?? document.querySelector('.outline-body')
+        if (container) container.scrollTop = container.scrollHeight
+      })
+    }
 
-      if (count > 0) {
-        // Zoom into a node that might have backlinks
-        const bullet = page.locator('.bullet-container').first()
-        await bullet.click({ modifiers: ['Meta'] })
-        await page.waitForTimeout(1000)
+    /**
+     * Helper: zoom into a supertag node and scroll to the References section.
+     * Returns the References header locator, or null if it's not available.
+     */
+    async function zoomIntoSupertagAndFindRefs(page: import('@playwright/test').Page) {
+      // Find supertag bullets ("#" text inside bullet-container buttons)
+      const supertagBullets = page.getByRole('button', { name: '#', exact: true })
+      const stCount = await supertagBullets.count()
+      if (stCount === 0) return null
 
-        // Check for References section — may or may not exist depending on data
-        const refsSection = page.getByText(/References \(\d+\)/)
-        const hasRefs = await refsSection.isVisible().catch(() => false)
+      // Cmd+click to zoom into the supertag detail view
+      await supertagBullets.first().click({ modifiers: ['Meta'] })
+      await page.waitForTimeout(1500)
 
-        // If references exist, they should show "Appears as ... in..." grouping
-        if (hasRefs) {
-          const appearsAs = page.getByText(/Appears as/)
-          await expect(appearsAs.first()).toBeVisible({ timeout: 3000 })
-        }
+      await scrollToReferences(page)
+
+      // The text in the DOM is "References" (CSS uppercase transforms the display)
+      const refsButton = page.getByText(/References/i).filter({ hasText: /\(\d+\)/ })
+      return refsButton
+    }
+
+    test('zoomed supertag node shows referenced nodes, not just a count', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 })
+
+      const refsButton = await zoomIntoSupertagAndFindRefs(page)
+      if (!refsButton) {
+        test.skip(true, 'No supertag nodes found in seed data')
+        return
       }
+
+      await expect(refsButton).toBeVisible({ timeout: 10_000 })
+
+      // Extract the count — it should be > 0 for any supertag with tagged instances
+      const refsText = await refsButton.textContent() ?? ''
+      const countMatch = refsText.match(/\((\d+)\)/)
+      const refCount = countMatch ? parseInt(countMatch[1]!, 10) : 0
+
+      if (refCount === 0) {
+        test.skip(true, 'First supertag has no backlinks')
+        return
+      }
+
+      // The key regression test: "Appears as ... in..." group headers should be visible
+      const appearsAs = page.getByText(/Appears as/)
+      await expect(appearsAs.first()).toBeVisible({ timeout: 5_000 })
+
+      // And actual referenced node rows (with role="button" and "Go to:" title) should render
+      const refRows = page.locator('[role="button"][title^="Go to:"]')
+      const rowCount = await refRows.count()
+      expect(rowCount).toBeGreaterThan(0)
+
+      // Verify node rows contain text content (not empty)
+      const firstRowText = await refRows.first().textContent()
+      expect(firstRowText?.trim().length).toBeGreaterThan(0)
+    })
+
+    test('backlinks show actual node names with supertag pills', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 })
+
+      // Find a supertag node — e.g. #Tool — which has many tagged instances
+      const toolNode = page.locator('.node-content').filter({ hasText: '#Tool' }).first()
+      const toolVisible = await toolNode.isVisible().catch(() => false)
+
+      if (!toolVisible) {
+        test.skip(true, '#Tool supertag not found in seed data')
+        return
+      }
+
+      // Find the bullet for this node and Cmd+click to zoom in
+      const toolBlock = toolNode.locator('xpath=ancestor::*[contains(@class,"node-block")]').first()
+      const bullet = toolBlock.locator('.bullet-container').first()
+      await bullet.click({ modifiers: ['Meta'] })
+      await page.waitForTimeout(1500)
+
+      // Scroll the supertag detail view to the bottom
+      await scrollToReferences(page)
+
+      const refsButton = page.getByText(/References/i).filter({ hasText: /\(\d+\)/ })
+      await expect(refsButton).toBeVisible({ timeout: 10_000 })
+
+      // Verify "Appears as supertag in..." group header
+      const supertagGroup = page.getByText('Appears as').filter({ hasText: 'supertag' })
+      await expect(supertagGroup.first()).toBeVisible({ timeout: 5_000 })
+
+      // Verify that actual node rows exist within the references area
+      const refRows = page.locator('[role="button"][title^="Go to:"]')
+      const rowCount = await refRows.count()
+      expect(rowCount).toBeGreaterThan(0)
+
+      // Each reference row should show node names (text content, not just blanks)
+      const firstRowText = await refRows.first().textContent()
+      expect(firstRowText?.trim().length).toBeGreaterThan(0)
     })
 
     test('References section is collapsible', async ({ page }) => {
-      await page.waitForTimeout(2000)
-      const nodeBlocks = page.locator('.node-block')
-      const count = await nodeBlocks.count()
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 })
 
-      if (count > 0) {
-        const bullet = page.locator('.bullet-container').first()
-        await bullet.click({ modifiers: ['Meta'] })
-        await page.waitForTimeout(1000)
-
-        const refsButton = page.getByText(/References \(\d+\)/)
-        const hasRefs = await refsButton.isVisible().catch(() => false)
-
-        if (hasRefs) {
-          // Click to collapse
-          await refsButton.click()
-          await page.waitForTimeout(300)
-
-          // The "Appears as" text should be hidden after collapse
-          const appearsAs = page.getByText(/Appears as/)
-          const visible = await appearsAs.first().isVisible().catch(() => false)
-          expect(visible).toBe(false)
-
-          // Click again to expand
-          await refsButton.click()
-          await page.waitForTimeout(300)
-
-          await expect(appearsAs.first()).toBeVisible()
-        }
+      const refsButton = await zoomIntoSupertagAndFindRefs(page)
+      if (!refsButton) {
+        test.skip(true, 'No supertag nodes found in seed data')
+        return
       }
+
+      const hasRefs = await refsButton.isVisible({ timeout: 10_000 }).catch(() => false)
+
+      if (!hasRefs) {
+        test.skip(true, 'No backlinks on this supertag')
+        return
+      }
+
+      // Verify reference rows are visible before collapse
+      const appearsAs = page.getByText(/Appears as/)
+      await expect(appearsAs.first()).toBeVisible({ timeout: 5_000 })
+
+      // Click to collapse
+      await refsButton.click()
+      await page.waitForTimeout(300)
+
+      // The "Appears as" text should be hidden after collapse
+      const visible = await appearsAs.first().isVisible().catch(() => false)
+      expect(visible).toBe(false)
+
+      // Click again to expand
+      await refsButton.click()
+      await page.waitForTimeout(300)
+
+      await expect(appearsAs.first()).toBeVisible()
+    })
+  })
+
+  test.describe('Empty Node — Press Enter to Write', () => {
+    test('pressing Enter on empty node creates first child', async ({ page }) => {
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 })
+
+      // Strategy: find a non-supertag parent node on the home page, zoom into it
+      // using Cmd+click on its bullet, then find a leaf child and Cmd+click again.
+      // The leaf child should show "Empty. Press Enter to start writing."
+
+      // Find a non-supertag, non-query parent node by checking the node-content text.
+      // Query nodes have "Configure query" buttons; supertags have "#" in their bullet.
+      // We look for parent nodes like "Remember" or "Nxus Development".
+      const parentNodeId = await page.evaluate(() => {
+        const blocks = document.querySelectorAll('.node-block')
+        for (const block of blocks) {
+          // Must have children (nested .node-block)
+          if (!block.querySelector('.node-block')) continue
+
+          const row = block.querySelector(':scope > .node-row')
+          if (!row) continue
+
+          // Must have a button.bullet-container (not a field bullet <span>)
+          const bullet = row.querySelector('button.bullet-container')
+          if (!bullet) continue
+
+          // Skip supertags (bullet contains "#")
+          if (bullet.textContent?.includes('#')) continue
+
+          // Skip query nodes (they have a "Configure query" button in their row)
+          if (row.querySelector('button[aria-label="Configure query"], button[title="Configure query"]')) continue
+          // Also check text — query nodes have names like "Inbox: ..."
+          const content = row.querySelector('.node-content')
+          if (content?.textContent?.includes('Configure query')) continue
+
+          return block.getAttribute('data-node-id')
+        }
+        return null
+      })
+
+      if (!parentNodeId) {
+        test.skip(true, 'No non-supertag, non-query parent node found in seed data')
+        return
+      }
+
+      // Navigate to this parent using the correct URL pattern
+      await page.goto(`/editor/?node=${parentNodeId}`)
+      await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
+      await page.waitForTimeout(1500)
+
+      // Now we're zoomed into the parent. Find a leaf child bullet ("Cmd+click to focus")
+      const leafBullets = page.getByRole('button', { name: 'Cmd+click to focus' })
+      const leafCount = await leafBullets.count()
+
+      if (leafCount === 0) {
+        test.skip(true, 'No leaf children found in content parent')
+        return
+      }
+
+      // Cmd+click on the first leaf child to zoom into it
+      await leafBullets.first().click({ modifiers: ['Meta'] })
+      await page.waitForTimeout(1500)
+
+      const emptyMessage = page.getByText('Empty. Press Enter to start writing.')
+      const messageVisible = await emptyMessage.isVisible().catch(() => false)
+
+      if (!messageVisible) {
+        test.skip(true, 'Selected leaf is not an empty node')
+        return
+      }
+
+      // Press Enter — should create a new child node
+      await page.keyboard.press('Enter')
+      await page.waitForTimeout(500)
+
+      // The empty message should be gone
+      await expect(emptyMessage).toBeHidden({ timeout: 3_000 })
+
+      // A new editable node should be active (contenteditable or textbox)
+      const editable = page.locator('[contenteditable="true"], textarea, input[type="text"]')
+      await expect(editable.first()).toBeVisible({ timeout: 3_000 })
+
+      // Undo the creation to restore state
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(200)
+      await page.keyboard.press('Meta+z')
+      await page.waitForTimeout(500)
+
+      // Empty message should reappear after undo
+      await expect(emptyMessage).toBeVisible({ timeout: 5_000 })
     })
   })
 })
