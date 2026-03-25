@@ -774,7 +774,7 @@ export function bootstrapSystemNodesSync(
     const id = upsertSystemNode(db, q.systemId, q.content, verbose);
     assignSupertag(db, id, querySupertag, supertagFieldId);
     assignSupertag(db, id, systemId, supertagFieldId, 1);
-    setProperty(db, id, queryDefFieldId, JSON.stringify(q.definition));
+    setProperty(db, id, queryDefFieldId, q.definition);
   }
 
   // ============================================================================

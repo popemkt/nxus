@@ -627,7 +627,7 @@ export const updateQueryDefinitionServerFn = createServerFn({ method: 'POST' })
       db,
       ctx.data.nodeId,
       SYSTEM_FIELDS.QUERY_DEFINITION,
-      JSON.stringify(ctx.data.definition),
+      ctx.data.definition,
     )
     return { success: true as const }
   })

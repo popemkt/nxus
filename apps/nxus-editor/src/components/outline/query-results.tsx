@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowClockwise } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
@@ -36,8 +36,15 @@ export const QueryResults = memo(function QueryResults({
   const navigateToNode = useNavigateToNode()
   const queryClient = useQueryClient()
 
-  const definitionKey = safeStringify(definition)
-  const hasDefinition = !!definition && definitionKey !== '{}' && definitionKey !== ''
+  // Local state so filter edits are reflected immediately (the store prop
+  // only updates after a full refresh, so we optimistically track changes).
+  const [localDef, setLocalDef] = useState<unknown>(definition)
+  useEffect(() => {
+    setLocalDef(definition)
+  }, [definition])
+
+  const definitionKey = safeStringify(localDef)
+  const hasDefinition = !!localDef && definitionKey !== '{}' && definitionKey !== ''
 
   const {
     data,
@@ -45,7 +52,7 @@ export const QueryResults = memo(function QueryResults({
     error,
   } = useQuery({
     queryKey: outlineQueryKeys.evaluation(definitionKey),
-    queryFn: () => evaluateQueryServerFn({ data: { definition: definition as QueryDefinition } }),
+    queryFn: () => evaluateQueryServerFn({ data: { definition: localDef as QueryDefinition } }),
     enabled: hasDefinition,
     staleTime: 30_000,
   })
@@ -55,6 +62,9 @@ export const QueryResults = memo(function QueryResults({
 
   const handleDefinitionChange = useCallback(
     (newDef: QueryDefinition) => {
+      // Update local state immediately so the query re-evaluates
+      setLocalDef(newDef)
+
       updateQueryDefinitionServerFn({
         data: { nodeId, definition: newDef },
       })
@@ -73,13 +83,13 @@ export const QueryResults = memo(function QueryResults({
   return (
     <div className="query-results">
       {/* Inline query workbench — QueryLinter + QueryBuilder together */}
-      {workbenchOpen && isQueryDefinition(definition) && (
+      {workbenchOpen && isQueryDefinition(localDef) && (
         <div
           className="border border-foreground/[0.06] rounded-md my-1 bg-background/50"
           style={{ marginLeft: paddingLeft, marginRight: '8px' }}
         >
           <QueryBuilder
-            value={definition}
+            value={localDef}
             onChange={handleDefinitionChange}
             compact
             showExecute={false}
