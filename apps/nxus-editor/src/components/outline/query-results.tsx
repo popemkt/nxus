@@ -6,6 +6,7 @@ import { QueryBuilder } from '@nxus/workbench'
 import type { QueryDefinition } from '@nxus/db'
 import { evaluateQueryServerFn, updateQueryDefinitionServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { useOutlineStore } from '@/stores/outline.store'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { outlineQueryKeys, safeStringify, isQueryDefinition } from './query-helpers'
 import { SupertagPill } from './supertag-pill'
@@ -35,6 +36,7 @@ export const QueryResults = memo(function QueryResults({
 }: QueryResultsProps) {
   const navigateToNode = useNavigateToNode()
   const queryClient = useQueryClient()
+  const updateFieldBySystemId = useOutlineStore((s) => s.updateFieldBySystemId)
 
   // Local state so filter edits are reflected immediately (the store prop
   // only updates after a full refresh, so we optimistically track changes).
@@ -64,6 +66,8 @@ export const QueryResults = memo(function QueryResults({
     (newDef: QueryDefinition) => {
       // Update local state immediately so the query re-evaluates
       setLocalDef(newDef)
+      // Sync to Zustand store so collapse/expand sees the new value
+      updateFieldBySystemId(nodeId, 'field:query_definition', newDef)
 
       updateQueryDefinitionServerFn({
         data: { nodeId, definition: newDef },
@@ -75,7 +79,7 @@ export const QueryResults = memo(function QueryResults({
           console.error('[query-workbench] Failed to save definition:', err)
         })
     },
-    [nodeId, queryClient],
+    [nodeId, queryClient, updateFieldBySystemId],
   )
 
   const paddingLeft = `${(depth + 1) * 24}px`
