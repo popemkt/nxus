@@ -218,11 +218,6 @@
     display: inline-block;
   }
 
-  /* Empty field placeholder — CSS-only, never part of editable content */
-  .empty-placeholder:empty::before {
-    content: 'Empty';
-  }
-
   .editable[contenteditable='true']:focus {
     outline: none;
   }

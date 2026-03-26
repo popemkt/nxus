@@ -101,7 +101,9 @@ function EditableField({
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
-    const newValue = ref.current.textContent ?? ''
+    const newValue = (ref.current.textContent ?? '').trim()
+    // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+    if (!newValue) ref.current.innerHTML = ''
     setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
@@ -128,20 +130,26 @@ function EditableField({
   }, [value])
 
   return (
-    <div
-      ref={ref}
-      className={cn(
-        editableClass,
-        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
-        'cursor-text',
+    <div className="relative cursor-text" onClick={handleClick}>
+      <div
+        ref={ref}
+        className={cn(
+          editableClass,
+          hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
+          'cursor-text min-h-[1.6em]',
+        )}
+        onInput={handleInput}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        {value || undefined}
+      </div>
+      {!hasContent && (
+        <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+          Empty
+        </span>
       )}
-      onClick={handleClick}
-      onInput={handleInput}
-      onBlur={commit}
-      onKeyDown={handleKeyDown}
-      suppressContentEditableWarning
-    >
-      {value || ''}
     </div>
   )
 }
@@ -185,7 +193,9 @@ function NumberField({
     isEditing.current = false
     ref.current.contentEditable = 'false'
     const text = ref.current.textContent ?? ''
-    if (text === '') {
+    if (text.trim() === '') {
+      // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+      ref.current.innerHTML = ''
       setHasContent(false)
       if (displayValue !== '') onChange('')
       return
@@ -224,20 +234,26 @@ function NumberField({
   }, [displayValue])
 
   return (
-    <div
-      ref={ref}
-      className={cn(
-        editableClass,
-        hasContent ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
-        'cursor-text',
+    <div className="relative cursor-text" onClick={handleClick}>
+      <div
+        ref={ref}
+        className={cn(
+          editableClass,
+          hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
+          'cursor-text min-h-[1.6em]',
+        )}
+        onInput={handleInput}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        {displayValue || undefined}
+      </div>
+      {!hasContent && (
+        <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+          Empty
+        </span>
       )}
-      onClick={handleClick}
-      onInput={handleInput}
-      onBlur={commit}
-      onKeyDown={handleKeyDown}
-      suppressContentEditableWarning
-    >
-      {displayValue || ''}
     </div>
   )
 }
@@ -322,12 +338,12 @@ function DateField({
     <span
       className={cn(
         editableClass,
-        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic',
         'cursor-text',
       )}
       onClick={() => setEditing(true)}
     >
-      {displayDate || ''}
+      {displayDate || 'Empty'}
     </span>
   )
 }
@@ -495,7 +511,7 @@ function SelectField({
         className={cn(
           editableClass,
           'cursor-text',
-          value ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+          value ? 'text-foreground/70' : 'text-foreground/25 italic',
         )}
         onClick={(e) => {
           e.stopPropagation()
@@ -503,7 +519,7 @@ function SelectField({
           else handleOpen()
         }}
       >
-        {value || ''}
+        {value || 'Empty'}
       </span>
 
       {open && (
@@ -720,7 +736,7 @@ function InstanceField({
         className={cn(
           editableClass,
           'cursor-text',
-          displayValue ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+          displayValue ? 'text-foreground/70' : 'text-foreground/25 italic',
         )}
         onClick={(e) => {
           e.stopPropagation()
@@ -728,7 +744,7 @@ function InstanceField({
           else handleOpen()
         }}
       >
-        {displayValue || ''}
+        {displayValue || 'Empty'}
       </span>
 
       {open && (
@@ -830,7 +846,9 @@ function UrlField({
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
-    const newValue = ref.current.textContent ?? ''
+    const newValue = (ref.current.textContent ?? '').trim()
+    // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+    if (!newValue) ref.current.innerHTML = ''
     setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
@@ -857,22 +875,28 @@ function UrlField({
 
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <div
-        ref={ref}
-        className={cn(
-          editableClass,
-          hasContent
-            ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic empty-placeholder',
-          'cursor-text truncate',
+      <div className="relative flex-1 min-w-0 cursor-text" onClick={handleClick}>
+        <div
+          ref={ref}
+          className={cn(
+            editableClass,
+            hasContent
+              ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
+              : 'text-foreground/25 italic',
+            'cursor-text truncate min-h-[1.6em]',
+          )}
+          onInput={handleInput}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          suppressContentEditableWarning
+        >
+          {value || undefined}
+        </div>
+        {!hasContent && (
+          <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+            Empty
+          </span>
         )}
-        onClick={handleClick}
-        onInput={handleInput}
-        onBlur={commit}
-        onKeyDown={handleKeyDown}
-        suppressContentEditableWarning
-      >
-        {value || ''}
       </div>
       {value && (
         <a
@@ -930,7 +954,9 @@ function EmailField({
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
-    const newValue = ref.current.textContent ?? ''
+    const newValue = (ref.current.textContent ?? '').trim()
+    // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+    if (!newValue) ref.current.innerHTML = ''
     setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
@@ -957,22 +983,28 @@ function EmailField({
 
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <div
-        ref={ref}
-        className={cn(
-          editableClass,
-          hasContent
-            ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic empty-placeholder',
-          'cursor-text truncate',
+      <div className="relative flex-1 min-w-0 cursor-text" onClick={handleClick}>
+        <div
+          ref={ref}
+          className={cn(
+            editableClass,
+            hasContent
+              ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
+              : 'text-foreground/25 italic',
+            'cursor-text truncate min-h-[1.6em]',
+          )}
+          onInput={handleInput}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          suppressContentEditableWarning
+        >
+          {value || undefined}
+        </div>
+        {!hasContent && (
+          <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+            Empty
+          </span>
         )}
-        onClick={handleClick}
-        onInput={handleInput}
-        onBlur={commit}
-        onKeyDown={handleKeyDown}
-        suppressContentEditableWarning
-      >
-        {value || ''}
       </div>
       {value && (
         <a
