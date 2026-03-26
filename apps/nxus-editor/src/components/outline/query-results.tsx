@@ -1,13 +1,15 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Hash, ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowClockwise } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { QueryBuilder } from '@nxus/workbench'
 import type { QueryDefinition } from '@nxus/db'
 import { evaluateQueryServerFn, updateQueryDefinitionServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { useOutlineStore } from '@/stores/outline.store'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { outlineQueryKeys, safeStringify, isQueryDefinition } from './query-helpers'
+import { SupertagPill } from './supertag-pill'
 
 interface QueryResultNode {
   id: string
@@ -34,9 +36,17 @@ export const QueryResults = memo(function QueryResults({
 }: QueryResultsProps) {
   const navigateToNode = useNavigateToNode()
   const queryClient = useQueryClient()
+  const updateFieldBySystemId = useOutlineStore((s) => s.updateFieldBySystemId)
 
-  const definitionKey = safeStringify(definition)
-  const hasDefinition = !!definition && definitionKey !== '{}' && definitionKey !== ''
+  // Local state so filter edits are reflected immediately (the store prop
+  // only updates after a full refresh, so we optimistically track changes).
+  const [localDef, setLocalDef] = useState<unknown>(definition)
+  useEffect(() => {
+    setLocalDef(definition)
+  }, [definition])
+
+  const definitionKey = safeStringify(localDef)
+  const hasDefinition = !!localDef && definitionKey !== '{}' && definitionKey !== ''
 
   const {
     data,
@@ -44,7 +54,7 @@ export const QueryResults = memo(function QueryResults({
     error,
   } = useQuery({
     queryKey: outlineQueryKeys.evaluation(definitionKey),
-    queryFn: () => evaluateQueryServerFn({ data: { definition: definition as QueryDefinition } }),
+    queryFn: () => evaluateQueryServerFn({ data: { definition: localDef as QueryDefinition } }),
     enabled: hasDefinition,
     staleTime: 30_000,
   })
@@ -54,6 +64,11 @@ export const QueryResults = memo(function QueryResults({
 
   const handleDefinitionChange = useCallback(
     (newDef: QueryDefinition) => {
+      // Update local state immediately so the query re-evaluates
+      setLocalDef(newDef)
+      // Sync to Zustand store so collapse/expand sees the new value
+      updateFieldBySystemId(nodeId, 'field:query_definition', newDef)
+
       updateQueryDefinitionServerFn({
         data: { nodeId, definition: newDef },
       })
@@ -64,7 +79,7 @@ export const QueryResults = memo(function QueryResults({
           console.error('[query-workbench] Failed to save definition:', err)
         })
     },
-    [nodeId, queryClient],
+    [nodeId, queryClient, updateFieldBySystemId],
   )
 
   const paddingLeft = `${(depth + 1) * 24}px`
@@ -72,13 +87,13 @@ export const QueryResults = memo(function QueryResults({
   return (
     <div className="query-results">
       {/* Inline query workbench — QueryLinter + QueryBuilder together */}
-      {workbenchOpen && isQueryDefinition(definition) && (
+      {workbenchOpen && isQueryDefinition(localDef) && (
         <div
           className="border border-foreground/[0.06] rounded-md my-1 bg-background/50"
           style={{ marginLeft: paddingLeft, marginRight: '8px' }}
         >
           <QueryBuilder
-            value={definition}
+            value={localDef}
             onChange={handleDefinitionChange}
             compact
             showExecute={false}
@@ -202,30 +217,9 @@ function QueryResultRow({
 
         {node.supertags.length > 0 && (
           <span className="flex h-6 items-center gap-0.5">
-            {node.supertags.map((tag) => {
-              const color = getSupertagColor(tag.id)
-              return (
-                <span
-                  key={tag.id}
-                  className={cn(
-                    'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                    'text-[11px] font-medium leading-[1.8]',
-                    'select-none whitespace-nowrap',
-                  )}
-                  style={{
-                    backgroundColor: `${color}18`,
-                    color,
-                  }}
-                >
-                  <Hash
-                    size={10}
-                    weight="bold"
-                    className="shrink-0 opacity-60"
-                  />
-                  {tag.content}
-                </span>
-              )
-            })}
+            {node.supertags.map((tag) => (
+              <SupertagPill key={tag.id} tag={tag} />
+            ))}
           </span>
         )}
       </span>

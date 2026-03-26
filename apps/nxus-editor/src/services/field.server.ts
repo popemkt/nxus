@@ -103,6 +103,109 @@ export const getAvailableFieldsServerFn = createServerFn({ method: 'GET' })
   })
 
 /**
+ * Get all distinct values that have been used for a given field across all nodes.
+ * This powers the "self-collecting" suggestions: even if a value isn't in the
+ * field definition's options list, it shows up because it's been used elsewhere.
+ */
+export const getUsedFieldValuesServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ fieldNodeId: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeProperties, eq } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    const rows = db
+      .select({ value: nodeProperties.value })
+      .from(nodeProperties)
+      .where(eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId))
+      .all()
+
+    // Collect distinct string values (parse JSON where needed)
+    const seen = new Set<string>()
+    for (const row of rows) {
+      if (!row.value) continue
+      try {
+        const parsed = JSON.parse(row.value)
+        if (typeof parsed === 'string' && parsed.trim()) {
+          seen.add(parsed.trim())
+        }
+      } catch {
+        // Raw string value
+        if (row.value.trim()) seen.add(row.value.trim())
+      }
+    }
+
+    return { success: true as const, values: Array.from(seen).sort() }
+  })
+
+/**
+ * Add a new option to a select field's options list (auto-collect behavior).
+ * If the field definition already has options, appends the new value.
+ * If no options exist yet, creates the options array with the new value.
+ */
+export const addFieldOptionServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ fieldNodeId: z.string(), option: z.string() }))
+  .handler(async (ctx) => {
+    const { assembleNode, getProperty, setProperty, FIELD_NAMES, SYSTEM_FIELDS } = await import(
+      '@nxus/db/server'
+    )
+    const db = await initDatabaseSeeded()
+
+    const fieldNode = assembleNode(db, ctx.data.fieldNodeId)
+    if (!fieldNode) return { success: false as const, error: 'Field not found' }
+
+    // Read existing options
+    const optionsRaw = getProperty(fieldNode, FIELD_NAMES.OPTIONS)
+    let options: string[] = []
+    if (typeof optionsRaw === 'string') {
+      try {
+        const parsed = JSON.parse(optionsRaw)
+        if (Array.isArray(parsed)) options = parsed.map(String)
+      } catch {
+        options = optionsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      }
+    } else if (Array.isArray(optionsRaw)) {
+      options = optionsRaw.map(String)
+    }
+
+    // Don't add duplicates
+    const newOption = ctx.data.option.trim()
+    if (!newOption || options.includes(newOption)) {
+      return { success: true as const, options }
+    }
+
+    options.push(newOption)
+    setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.OPTIONS, JSON.stringify(options))
+
+    return { success: true as const, options }
+  })
+
+/**
+ * Get nodes tagged with a specific supertag — used for "options from supertag" field type.
+ * Returns node id + content for dropdown population.
+ */
+export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ supertagId: z.string() }))
+  .handler(async (ctx) => {
+    const { getNodeIdsBySupertagWithInheritance, assembleNode } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+
+    const nodeIds = getNodeIdsBySupertagWithInheritance(db, ctx.data.supertagId)
+    const results: { id: string; content: string }[] = []
+
+    for (const nodeId of nodeIds) {
+      const node = assembleNode(db, nodeId)
+      if (node && !node.deletedAt) {
+        results.push({ id: node.id, content: node.content ?? '' })
+      }
+    }
+
+    return { success: true as const, nodes: results }
+  })
+
+/**
  * Clear a field value from a node (remove the property).
  */
 export const clearFieldServerFn = createServerFn({ method: 'POST' })

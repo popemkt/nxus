@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Hash, MagnifyingGlass } from '@phosphor-icons/react'
+import { MagnifyingGlass } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { searchNodesServerFn } from '@/services/search.server'
+import { SupertagPill } from './supertag-pill'
 
 interface SearchResult {
   id: string
@@ -180,21 +181,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 {node.supertags.length > 0 && (
                   <span className="flex items-center gap-0.5 shrink-0">
                     {node.supertags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag.id}
-                        className={cn(
-                          'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                          'text-[10px] font-medium leading-[1.6]',
-                          'select-none whitespace-nowrap',
-                        )}
-                        style={{
-                          backgroundColor: tag.color ? `${tag.color}18` : undefined,
-                          color: tag.color ?? undefined,
-                        }}
-                      >
-                        <Hash size={8} weight="bold" className="opacity-60" />
-                        {tag.name}
-                      </span>
+                      <SupertagPill key={tag.id} tag={tag} size="sm" />
                     ))}
                   </span>
                 )}

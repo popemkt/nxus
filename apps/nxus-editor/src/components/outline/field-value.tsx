@@ -1,10 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Hash } from '@phosphor-icons/react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { Plus } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { FieldType } from '@/types/outline'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { Bullet } from './bullet'
+import { SupertagPill } from './supertag-pill'
 
 interface FieldValueProps {
   fieldType: FieldType
@@ -26,6 +27,8 @@ export function FieldValue({ fieldType, fieldNodeId, value, onChange }: FieldVal
       return <DateField value={String(value ?? '')} onChange={onChange} />
     case 'select':
       return <SelectField value={String(value ?? '')} fieldNodeId={fieldNodeId} onChange={onChange} />
+    case 'instance':
+      return <InstanceField value={String(value ?? '')} fieldNodeId={fieldNodeId} onChange={onChange} />
     case 'node':
       return <NodeRefField value={String(value ?? '')} />
     case 'nodes':
@@ -71,6 +74,7 @@ function EditableField({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
+  const [hasContent, setHasContent] = useState(!!value)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -87,11 +91,20 @@ function EditableField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
-    const newValue = ref.current.textContent ?? ''
+    const newValue = (ref.current.textContent ?? '').trim()
+    // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+    if (!newValue) ref.current.innerHTML = ''
+    setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
 
@@ -102,8 +115,8 @@ function EditableField({
         ref.current?.blur()
       }
       if (e.key === 'Escape') {
-        // Revert content
         if (ref.current) ref.current.textContent = value
+        setHasContent(!!value)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -111,20 +124,32 @@ function EditableField({
     [value],
   )
 
+  // Sync when value prop changes externally
+  useEffect(() => {
+    setHasContent(!!value)
+  }, [value])
+
   return (
-    <div
-      ref={ref}
-      className={cn(
-        editableClass,
-        value ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
-        'cursor-text',
+    <div className="relative cursor-text" onClick={handleClick}>
+      <div
+        ref={ref}
+        className={cn(
+          editableClass,
+          hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
+          'cursor-text min-h-[1.6em]',
+        )}
+        onInput={handleInput}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        {value || undefined}
+      </div>
+      {!hasContent && (
+        <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+          Empty
+        </span>
       )}
-      onClick={handleClick}
-      onBlur={commit}
-      onKeyDown={handleKeyDown}
-      suppressContentEditableWarning
-    >
-      {value || ''}
     </div>
   )
 }
@@ -141,6 +166,7 @@ function NumberField({
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
   const displayValue = value !== null && value !== undefined && value !== '' ? String(value) : ''
+  const [hasContent, setHasContent] = useState(!!displayValue)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -156,12 +182,21 @@ function NumberField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
     const text = ref.current.textContent ?? ''
-    if (text === '') {
+    if (text.trim() === '') {
+      // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+      ref.current.innerHTML = ''
+      setHasContent(false)
       if (displayValue !== '') onChange('')
       return
     }
@@ -170,7 +205,9 @@ function NumberField({
     if (trimmed === '' || Number.isNaN(parsed)) {
       // Revert to previous value
       ref.current.textContent = displayValue
+      setHasContent(!!displayValue)
     } else if (String(parsed) !== String(value)) {
+      setHasContent(true)
       onChange(parsed)
     }
   }, [value, displayValue, onChange])
@@ -183,6 +220,7 @@ function NumberField({
       }
       if (e.key === 'Escape') {
         if (ref.current) ref.current.textContent = displayValue
+        setHasContent(!!displayValue)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -190,20 +228,32 @@ function NumberField({
     [displayValue],
   )
 
+  // Sync when value prop changes externally
+  useEffect(() => {
+    setHasContent(!!displayValue)
+  }, [displayValue])
+
   return (
-    <div
-      ref={ref}
-      className={cn(
-        editableClass,
-        displayValue ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
-        'cursor-text',
+    <div className="relative cursor-text" onClick={handleClick}>
+      <div
+        ref={ref}
+        className={cn(
+          editableClass,
+          hasContent ? 'text-foreground/70' : 'text-foreground/25 italic',
+          'cursor-text min-h-[1.6em]',
+        )}
+        onInput={handleInput}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        suppressContentEditableWarning
+      >
+        {displayValue || undefined}
+      </div>
+      {!hasContent && (
+        <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+          Empty
+        </span>
       )}
-      onClick={handleClick}
-      onBlur={commit}
-      onKeyDown={handleKeyDown}
-      suppressContentEditableWarning
-    >
-      {displayValue || ''}
     </div>
   )
 }
@@ -288,18 +338,25 @@ function DateField({
     <span
       className={cn(
         editableClass,
-        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+        displayDate ? 'text-foreground/70' : 'text-foreground/25 italic',
         'cursor-text',
       )}
       onClick={() => setEditing(true)}
     >
-      {displayDate || ''}
+      {displayDate || 'Empty'}
     </span>
   )
 }
 
-/* ─── Select field ─── */
+/* ─── Select field with self-collecting options ─── */
 
+/**
+ * Enhanced select field that:
+ * 1. Loads options from field definition
+ * 2. Collects used values from other nodes as suggestions
+ * 3. Allows creating new options (auto-collect) when typing a value not in the list
+ * 4. Supports search/filter with keyboard navigation
+ */
 function SelectField({
   value,
   fieldNodeId,
@@ -309,29 +366,82 @@ function SelectField({
   fieldNodeId?: string
   onChange: (v: unknown) => void
 }) {
-  const [options, setOptions] = useState<string[]>([])
+  const [definedOptions, setDefinedOptions] = useState<string[]>([])
+  const [usedValues, setUsedValues] = useState<string[]>([])
   const [open, setOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [search, setSearch] = useState('')
+  const [highlightIndex, setHighlightIndex] = useState(0)
   const anchorRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const loadOptions = useCallback(() => {
     if (loaded || !fieldNodeId) return
-    import('@/services/field.server').then(({ getFieldOptionsServerFn }) => {
-      getFieldOptionsServerFn({ data: { fieldNodeId } })
-        .then((result) => {
-          if (result.success) {
-            setOptions(result.options)
-            setLoaded(true)
-          }
-        })
-        .catch(() => { /* leave loaded=false so next click retries */ })
-    })
+    Promise.all([
+      import('@/services/field.server').then(({ getFieldOptionsServerFn }) =>
+        getFieldOptionsServerFn({ data: { fieldNodeId } }),
+      ),
+      import('@/services/field.server').then(({ getUsedFieldValuesServerFn }) =>
+        getUsedFieldValuesServerFn({ data: { fieldNodeId } }),
+      ),
+    ])
+      .then(([optionsResult, usedResult]) => {
+        if (optionsResult.success) setDefinedOptions(optionsResult.options)
+        if (usedResult.success) setUsedValues(usedResult.values)
+        setLoaded(true)
+      })
+      .catch(() => {
+        /* leave loaded=false so next click retries */
+      })
   }, [fieldNodeId, loaded])
 
-  const handleClick = useCallback(() => {
+  const handleOpen = useCallback(() => {
     loadOptions()
-    setOpen((o) => !o)
+    setOpen(true)
+    setSearch('')
+    setHighlightIndex(0)
   }, [loadOptions])
+
+  // Merge defined options and used values, deduplicating
+  const allOptions = useMemo(() => {
+    const set = new Set<string>()
+    const result: { value: string; source: 'defined' | 'used' }[] = []
+    for (const opt of definedOptions) {
+      if (!set.has(opt)) {
+        set.add(opt)
+        result.push({ value: opt, source: 'defined' })
+      }
+    }
+    for (const val of usedValues) {
+      if (!set.has(val)) {
+        set.add(val)
+        result.push({ value: val, source: 'used' })
+      }
+    }
+    return result
+  }, [definedOptions, usedValues])
+
+  const filtered = useMemo(() => {
+    if (!search) return allOptions
+    const q = search.toLowerCase()
+    return allOptions.filter((o) => o.value.toLowerCase().includes(q))
+  }, [allOptions, search])
+
+  const canCreateNew = search.trim() && !allOptions.some((o) => o.value.toLowerCase() === search.toLowerCase().trim())
+
+  // Total items: filtered + optional "create new" row
+  const totalItems = filtered.length + (canCreateNew ? 1 : 0)
+
+  useEffect(() => {
+    setHighlightIndex(0)
+  }, [search])
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => searchRef.current?.focus())
+    }
+  }, [open])
 
   // Close on outside click
   useEffect(() => {
@@ -345,41 +455,354 @@ function SelectField({
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
+  const selectOption = useCallback(
+    (opt: string) => {
+      onChange(opt)
+      setOpen(false)
+    },
+    [onChange],
+  )
+
+  const createAndSelect = useCallback(
+    (newValue: string) => {
+      const trimmed = newValue.trim()
+      if (!trimmed || !fieldNodeId) return
+      // Auto-collect: add to field definition's options list
+      import('@/services/field.server').then(({ addFieldOptionServerFn }) => {
+        addFieldOptionServerFn({ data: { fieldNodeId, option: trimmed } }).catch(() => {
+          /* best-effort */
+        })
+      })
+      // Update local state for immediate feedback
+      setDefinedOptions((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]))
+      onChange(trimmed)
+      setOpen(false)
+    },
+    [fieldNodeId, onChange],
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.min(i + 1, totalItems - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.max(i - 1, 0))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        if (highlightIndex < filtered.length) {
+          selectOption(filtered[highlightIndex]!.value)
+        } else if (canCreateNew) {
+          createAndSelect(search)
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+      }
+      e.stopPropagation()
+    },
+    [totalItems, highlightIndex, filtered, canCreateNew, search, selectOption, createAndSelect],
+  )
+
   return (
     <div ref={anchorRef} className="relative">
       <span
         className={cn(
           editableClass,
           'cursor-text',
-          value ? 'text-foreground/70' : 'text-foreground/25 italic empty-placeholder',
+          value ? 'text-foreground/70' : 'text-foreground/25 italic',
         )}
         onClick={(e) => {
           e.stopPropagation()
-          handleClick()
+          if (open) setOpen(false)
+          else handleOpen()
         }}
       >
-        {value || ''}
+        {value || 'Empty'}
       </span>
 
-      {open && options.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 min-w-[140px] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 shadow-lg">
-          {options.map((opt) => (
-            <div
-              key={opt}
-              className={cn(
-                'cursor-pointer rounded-md px-2 py-1 text-xs',
-                'hover:bg-accent hover:text-accent-foreground',
-                opt === value && 'bg-accent/50 font-medium',
-              )}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                onChange(opt)
-                setOpen(false)
-              }}
-            >
-              {opt}
-            </div>
-          ))}
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-foreground/10 bg-popover shadow-lg">
+          {/* Search input */}
+          <div className="p-1.5 border-b border-foreground/5">
+            <input
+              ref={searchRef}
+              type="text"
+              className="w-full bg-transparent text-xs outline-none placeholder:text-foreground/30 px-1.5 py-1"
+              placeholder="Search or type new..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          {/* Options list */}
+          <div className="max-h-48 overflow-y-auto p-1">
+            {filtered.length === 0 && !canCreateNew && (
+              <span className="block px-2 py-1 text-xs text-foreground/40">No options</span>
+            )}
+            {filtered.map((opt, i) => (
+              <div
+                key={opt.value}
+                className={cn(
+                  'cursor-pointer rounded-md px-2 py-1 text-xs flex items-center gap-1.5',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  i === highlightIndex && 'bg-accent text-accent-foreground',
+                  opt.value === value && 'font-medium',
+                )}
+                onMouseEnter={() => setHighlightIndex(i)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  selectOption(opt.value)
+                }}
+              >
+                <span className="flex-1 truncate">{opt.value}</span>
+                {opt.source === 'used' && (
+                  <span className="text-[10px] text-foreground/25 shrink-0">used</span>
+                )}
+              </div>
+            ))}
+            {/* Create new option */}
+            {canCreateNew && (
+              <div
+                className={cn(
+                  'cursor-pointer rounded-md px-2 py-1 text-xs flex items-center gap-1.5',
+                  'hover:bg-primary/10 hover:text-primary',
+                  highlightIndex === filtered.length && 'bg-primary/10 text-primary',
+                  'border-t border-foreground/5 mt-0.5 pt-1.5',
+                )}
+                onMouseEnter={() => setHighlightIndex(filtered.length)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  createAndSelect(search)
+                }}
+              >
+                <Plus size={12} weight="bold" className="shrink-0" />
+                <span>Create &ldquo;{search.trim()}&rdquo;</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Instance field (options from supertag) ─── */
+
+/**
+ * Field type where options come from nodes tagged with a specific supertag.
+ * E.g., an "Assignee" field shows all #Person nodes.
+ * Typing a new value prompts creation of a new node with that supertag.
+ */
+function InstanceField({
+  value,
+  fieldNodeId,
+  onChange,
+}: {
+  value: string
+  fieldNodeId?: string
+  onChange: (v: unknown) => void
+}) {
+  const [nodes, setNodes] = useState<{ id: string; content: string }[]>([])
+  const [open, setOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [search, setSearch] = useState('')
+  const [highlightIndex, setHighlightIndex] = useState(0)
+  const [supertagId, setSupertagId] = useState<string | null>(null)
+  const anchorRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // Load the supertag ID from field definition's options (which stores the supertag reference)
+  const loadNodes = useCallback(() => {
+    if (loaded || !fieldNodeId) return
+    import('@/services/field.server').then(async ({ getFieldOptionsServerFn, getNodesBySupertagServerFn }) => {
+      try {
+        // The field's options contain the supertag ID/systemId to pull from
+        const optResult = await getFieldOptionsServerFn({ data: { fieldNodeId } })
+        if (!optResult.success || optResult.options.length === 0) {
+          setLoaded(true)
+          return
+        }
+        const stId = optResult.options[0]! // First option is the supertag ID
+        setSupertagId(stId)
+        const nodesResult = await getNodesBySupertagServerFn({ data: { supertagId: stId } })
+        if (nodesResult.success) setNodes(nodesResult.nodes)
+        setLoaded(true)
+      } catch {
+        /* leave loaded=false */
+      }
+    })
+  }, [fieldNodeId, loaded])
+
+  const handleOpen = useCallback(() => {
+    loadNodes()
+    setOpen(true)
+    setSearch('')
+    setHighlightIndex(0)
+  }, [loadNodes])
+
+  const filtered = useMemo(() => {
+    if (!search) return nodes
+    const q = search.toLowerCase()
+    return nodes.filter((n) => n.content.toLowerCase().includes(q))
+  }, [nodes, search])
+
+  // Display the selected node's content
+  const selectedNode = useMemo(() => nodes.find((n) => n.id === value), [nodes, value])
+  const displayValue = selectedNode?.content || value || ''
+
+  const canCreateNew = search.trim() && !nodes.some((n) => n.content.toLowerCase() === search.toLowerCase().trim())
+  const totalItems = filtered.length + (canCreateNew ? 1 : 0)
+
+  useEffect(() => {
+    setHighlightIndex(0)
+  }, [search])
+
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => searchRef.current?.focus())
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const selectNode = useCallback(
+    (nodeId: string) => {
+      onChange(nodeId)
+      setOpen(false)
+    },
+    [onChange],
+  )
+
+  const createAndSelect = useCallback(
+    async (name: string) => {
+      if (!supertagId) return
+      try {
+        const { createNodeServerFn } = await import('@/services/outline.server')
+        const { addSupertagByNodeIdServerFn } = await import('@/services/supertag.server')
+        // Create a new node
+        const _result: unknown = await createNodeServerFn({ data: { content: name.trim(), parentId: null } })
+        const result = _result as { success: boolean; nodeId: string }
+        if (!result.success) return
+        // Tag it with the supertag
+        await addSupertagByNodeIdServerFn({ data: { nodeId: result.nodeId, supertagNodeId: supertagId } })
+        // Update local list
+        setNodes((prev) => [...prev, { id: result.nodeId, content: name.trim() }])
+        onChange(result.nodeId)
+        setOpen(false)
+      } catch {
+        /* best effort */
+      }
+    },
+    [supertagId, onChange],
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.min(i + 1, totalItems - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.max(i - 1, 0))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        if (highlightIndex < filtered.length) {
+          selectNode(filtered[highlightIndex]!.id)
+        } else if (canCreateNew) {
+          createAndSelect(search)
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+      }
+      e.stopPropagation()
+    },
+    [totalItems, highlightIndex, filtered, canCreateNew, search, selectNode, createAndSelect],
+  )
+
+  return (
+    <div ref={anchorRef} className="relative">
+      <span
+        className={cn(
+          editableClass,
+          'cursor-text',
+          displayValue ? 'text-foreground/70' : 'text-foreground/25 italic',
+        )}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (open) setOpen(false)
+          else handleOpen()
+        }}
+      >
+        {displayValue || 'Empty'}
+      </span>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-lg border border-foreground/10 bg-popover shadow-lg">
+          <div className="p-1.5 border-b border-foreground/5">
+            <input
+              ref={searchRef}
+              type="text"
+              className="w-full bg-transparent text-xs outline-none placeholder:text-foreground/30 px-1.5 py-1"
+              placeholder="Search or create..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto p-1">
+            {filtered.length === 0 && !canCreateNew && (
+              <span className="block px-2 py-1 text-xs text-foreground/40">
+                {loaded ? 'No matching nodes' : 'Loading...'}
+              </span>
+            )}
+            {filtered.map((node, i) => (
+              <div
+                key={node.id}
+                className={cn(
+                  'cursor-pointer rounded-md px-2 py-1 text-xs',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  i === highlightIndex && 'bg-accent text-accent-foreground',
+                  node.id === value && 'font-medium',
+                )}
+                onMouseEnter={() => setHighlightIndex(i)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  selectNode(node.id)
+                }}
+              >
+                {node.content || 'Untitled'}
+              </div>
+            ))}
+            {canCreateNew && (
+              <div
+                className={cn(
+                  'cursor-pointer rounded-md px-2 py-1 text-xs flex items-center gap-1.5',
+                  'hover:bg-primary/10 hover:text-primary',
+                  highlightIndex === filtered.length && 'bg-primary/10 text-primary',
+                  'border-t border-foreground/5 mt-0.5 pt-1.5',
+                )}
+                onMouseEnter={() => setHighlightIndex(filtered.length)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  createAndSelect(search)
+                }}
+              >
+                <Plus size={12} weight="bold" className="shrink-0" />
+                <span>Create &ldquo;{search.trim()}&rdquo;</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -397,6 +820,7 @@ function UrlField({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
+  const [hasContent, setHasContent] = useState(!!value)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -412,11 +836,20 @@ function UrlField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
-    const newValue = ref.current.textContent ?? ''
+    const newValue = (ref.current.textContent ?? '').trim()
+    // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+    if (!newValue) ref.current.innerHTML = ''
+    setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
 
@@ -428,6 +861,7 @@ function UrlField({
       }
       if (e.key === 'Escape') {
         if (ref.current) ref.current.textContent = value
+        setHasContent(!!value)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -435,23 +869,34 @@ function UrlField({
     [value],
   )
 
+  useEffect(() => {
+    setHasContent(!!value)
+  }, [value])
+
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <div
-        ref={ref}
-        className={cn(
-          editableClass,
-          value
-            ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic empty-placeholder',
-          'cursor-text truncate',
+      <div className="relative flex-1 min-w-0 cursor-text" onClick={handleClick}>
+        <div
+          ref={ref}
+          className={cn(
+            editableClass,
+            hasContent
+              ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
+              : 'text-foreground/25 italic',
+            'cursor-text truncate min-h-[1.6em]',
+          )}
+          onInput={handleInput}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          suppressContentEditableWarning
+        >
+          {value || undefined}
+        </div>
+        {!hasContent && (
+          <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+            Empty
+          </span>
         )}
-        onClick={handleClick}
-        onBlur={commit}
-        onKeyDown={handleKeyDown}
-        suppressContentEditableWarning
-      >
-        {value || ''}
       </div>
       {value && (
         <a
@@ -483,6 +928,7 @@ function EmailField({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isEditing = useRef(false)
+  const [hasContent, setHasContent] = useState(!!value)
 
   const handleClick = useCallback(() => {
     if (!isEditing.current && ref.current) {
@@ -498,11 +944,20 @@ function EmailField({
     }
   }, [])
 
+  const handleInput = useCallback(() => {
+    if (ref.current) {
+      setHasContent(!!(ref.current.textContent?.trim()))
+    }
+  }, [])
+
   const commit = useCallback(() => {
     if (!ref.current) return
     isEditing.current = false
     ref.current.contentEditable = 'false'
-    const newValue = ref.current.textContent ?? ''
+    const newValue = (ref.current.textContent ?? '').trim()
+    // Clear leftover browser DOM (e.g. <br>) so placeholder can show
+    if (!newValue) ref.current.innerHTML = ''
+    setHasContent(!!newValue)
     if (newValue !== value) onChange(newValue)
   }, [value, onChange])
 
@@ -514,6 +969,7 @@ function EmailField({
       }
       if (e.key === 'Escape') {
         if (ref.current) ref.current.textContent = value
+        setHasContent(!!value)
         ref.current?.blur()
       }
       e.stopPropagation()
@@ -521,23 +977,34 @@ function EmailField({
     [value],
   )
 
+  useEffect(() => {
+    setHasContent(!!value)
+  }, [value])
+
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <div
-        ref={ref}
-        className={cn(
-          editableClass,
-          value
-            ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
-            : 'text-foreground/25 italic empty-placeholder',
-          'cursor-text truncate',
+      <div className="relative flex-1 min-w-0 cursor-text" onClick={handleClick}>
+        <div
+          ref={ref}
+          className={cn(
+            editableClass,
+            hasContent
+              ? 'text-primary/70 underline underline-offset-2 decoration-primary/20'
+              : 'text-foreground/25 italic',
+            'cursor-text truncate min-h-[1.6em]',
+          )}
+          onInput={handleInput}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          suppressContentEditableWarning
+        >
+          {value || undefined}
+        </div>
+        {!hasContent && (
+          <span className="pointer-events-none absolute inset-0 flex items-center px-1 text-[14.5px] leading-[1.6] text-foreground/25 italic">
+            Empty
+          </span>
         )}
-        onClick={handleClick}
-        onBlur={commit}
-        onKeyDown={handleKeyDown}
-        suppressContentEditableWarning
-      >
-        {value || ''}
       </div>
       {value && (
         <a
@@ -608,19 +1075,7 @@ function NodeRefField({ value }: { value: string }) {
         {node.supertags.length > 0 && (
           <div className="flex h-6 items-center gap-0.5">
             {node.supertags.map((tag) => (
-              <span
-                key={tag.id}
-                className={cn(
-                  'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                  'text-[11px] font-medium leading-[1.8]',
-                  'select-none whitespace-nowrap',
-                  !tag.color && 'bg-foreground/8 text-foreground/50',
-                )}
-                style={tag.color ? { backgroundColor: `${tag.color}18`, color: tag.color } : undefined}
-              >
-                <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
-                {tag.name}
-              </span>
+              <SupertagPill key={tag.id} tag={tag} />
             ))}
           </div>
         )}

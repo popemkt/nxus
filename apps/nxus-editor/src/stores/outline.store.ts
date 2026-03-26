@@ -20,6 +20,7 @@ interface OutlineState {
   toggleCollapse: (id: string) => void
   updateNodeContent: (id: string, content: string) => void
   updateFieldValue: (nodeId: string, fieldId: string, value: unknown) => void
+  updateFieldBySystemId: (nodeId: string, fieldSystemId: string, value: unknown) => void
   addSupertag: (nodeId: string, supertag: SupertagBadge, newFields: OutlineField[]) => void
   removeSupertag: (nodeId: string, supertagId: string) => void
   addField: (nodeId: string, field: OutlineField) => void
@@ -210,6 +211,22 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       ...node,
       fields: node.fields.map((f) =>
         f.fieldId === fieldId
+          ? { ...f, values: [{ value, order: f.values[0]?.order ?? 0 }] }
+          : f,
+      ),
+    })
+    set({ nodes: next })
+  },
+
+  updateFieldBySystemId: (nodeId, fieldSystemId, value) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      fields: node.fields.map((f) =>
+        f.fieldSystemId === fieldSystemId
           ? { ...f, values: [{ value, order: f.values[0]?.order ?? 0 }] }
           : f,
       ),

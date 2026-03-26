@@ -5,6 +5,7 @@ import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getCaretRect } from '@/lib/caret-utils'
+import { getSupertagColor } from '@/lib/supertag-colors'
 import { SupertagAutocomplete } from './supertag-autocomplete'
 
 interface NodeContentProps {
@@ -281,49 +282,49 @@ function SupertagBadges({
 
   return (
     <div className="flex h-6 items-center gap-0.5">
-      {supertags.map((tag) => (
-        <span
-          key={tag.id}
-          className={cn(
-            'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-            'text-[11px] font-medium leading-[1.8]',
-            'select-none whitespace-nowrap',
-            'cursor-pointer transition-opacity hover:opacity-70',
-            !tag.color && 'bg-foreground/8 text-foreground/50',
-          )}
-          style={
-            tag.color
-              ? {
-                  backgroundColor: `${tag.color}18`,
-                  color: tag.color,
-                }
-              : undefined
-          }
-          onClick={(e) => {
-            e.stopPropagation()
-            navigateToNode(tag.id)
-          }}
-          title={`Go to: ${tag.name}`}
-        >
-          {/* Icon area — fixed size, X overlays # on hover */}
-          <span className="relative shrink-0 h-[10px] w-[10px]">
-            <Hash size={10} weight="bold" className="opacity-60 group-hover/tag:opacity-0 transition-opacity" />
-            {onRemove && (
-              <span
-                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemove(tag.id, tag.systemId)
-                }}
-                title={`Remove #${tag.name}`}
-              >
-                <X size={10} weight="bold" />
-              </span>
+      {supertags.map((tag) => {
+        const color = tag.color ?? getSupertagColor(tag.id)
+        return (
+          <span
+            key={tag.id}
+            className={cn(
+              'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
+              'text-[11px] font-medium leading-[1.8]',
+              'select-none whitespace-nowrap',
+              'cursor-pointer transition-opacity hover:opacity-70',
             )}
+            style={{
+              backgroundColor: `${color}18`,
+              color,
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              navigateToNode(tag.id)
+            }}
+            title={`Go to: ${tag.name}`}
+          >
+            <span className="relative shrink-0 size-[10px]">
+              <Hash
+                size={10}
+                weight="bold"
+                className="absolute inset-0 opacity-60 group-hover/tag:invisible"
+              />
+              {onRemove && (
+                <X
+                  size={10}
+                  weight="bold"
+                  className="absolute inset-0 invisible group-hover/tag:visible"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemove(tag.id, tag.systemId ?? null)
+                  }}
+                />
+              )}
+            </span>
+            {tag.name}
           </span>
-          {tag.name}
-        </span>
-      ))}
+        )
+      })}
     </div>
   )
 }

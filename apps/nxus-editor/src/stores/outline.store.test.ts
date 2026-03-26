@@ -472,4 +472,293 @@ describe('outline store', () => {
       expect(state.activeNodeId).toBe('c')
     })
   })
+
+  describe('updateFieldBySystemId', () => {
+    it('updates a field matched by fieldSystemId', () => {
+      const field: OutlineField = {
+        fieldId: 'field-node-1',
+        fieldName: 'Query Definition',
+        fieldNodeId: 'field-node-1',
+        fieldSystemId: 'field:query_definition',
+        fieldType: 'json',
+        values: [{ value: { filters: [] }, order: 0 }],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [field]))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      const newDef = { filters: [{ type: 'supertag', supertag: 'tool' }] }
+      useOutlineStore.getState().updateFieldBySystemId('a', 'field:query_definition', newDef)
+
+      const updated = useOutlineStore.getState().nodes.get('a')!.fields[0]!
+      expect(updated.values[0]!.value).toEqual(newDef)
+      expect(updated.values[0]!.order).toBe(0)
+    })
+
+    it('preserves other fields on the same node', () => {
+      const qField: OutlineField = {
+        fieldId: 'f1',
+        fieldName: 'Query Definition',
+        fieldNodeId: 'f1',
+        fieldSystemId: 'field:query_definition',
+        fieldType: 'json',
+        values: [{ value: 'old', order: 0 }],
+      }
+      const otherField: OutlineField = {
+        fieldId: 'f2',
+        fieldName: 'Notes',
+        fieldNodeId: 'f2',
+        fieldSystemId: 'field:notes',
+        fieldType: 'text',
+        values: [{ value: 'keep me', order: 0 }],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [qField, otherField]))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      useOutlineStore.getState().updateFieldBySystemId('a', 'field:query_definition', 'new')
+
+      const node = useOutlineStore.getState().nodes.get('a')!
+      expect(node.fields[0]!.values[0]!.value).toBe('new')
+      expect(node.fields[1]!.values[0]!.value).toBe('keep me')
+    })
+
+    it('does nothing for nonexistent node', () => {
+      seedStore()
+      const before = useOutlineStore.getState().nodes
+      useOutlineStore.getState().updateFieldBySystemId('nonexistent', 'field:x', 'val')
+      expect(useOutlineStore.getState().nodes).toBe(before)
+    })
+
+    it('creates a values entry when field has no existing values', () => {
+      const field: OutlineField = {
+        fieldId: 'f1',
+        fieldName: 'Query Definition',
+        fieldNodeId: 'f1',
+        fieldSystemId: 'field:query_definition',
+        fieldType: 'json',
+        values: [],
+      }
+
+      const nodes = new Map<string, OutlineNode>()
+      nodes.set('a', makeNode('a', 'Alpha', WORKSPACE_ROOT_ID, '00001000', [], [field]))
+      useOutlineStore.setState({ nodes, rootNodeId: WORKSPACE_ROOT_ID })
+
+      useOutlineStore.getState().updateFieldBySystemId('a', 'field:query_definition', 'new-val')
+
+      const updated = useOutlineStore.getState().nodes.get('a')!.fields[0]!
+      expect(updated.values).toHaveLength(1)
+      expect(updated.values[0]!.value).toBe('new-val')
+      expect(updated.values[0]!.order).toBe(0)
+    })
+  })
+
+  // ─── Supertag operations ─────────────────────────────────────────
+
+  describe('addSupertag', () => {
+    it('adds a supertag badge to a node', () => {
+      seedStore()
+      const tag = { id: 'tag1', name: 'Project', color: '#3b82f6', systemId: 'supertag:project' }
+      useOutlineStore.getState().addSupertag('a', tag, [])
+      const node = useOutlineStore.getState().nodes.get('a')!
+      expect(node.supertags).toHaveLength(1)
+      expect(node.supertags[0]!.name).toBe('Project')
+    })
+
+    it('also merges new fields from the supertag definition', () => {
+      seedStore()
+      const tag = { id: 'tag1', name: 'Bug', color: null, systemId: 'supertag:bug' }
+      const fields: OutlineField[] = [
+        {
+          fieldId: 'field:severity',
+          fieldName: 'Severity',
+          fieldNodeId: 'fn-sev',
+          fieldSystemId: 'field:severity',
+          fieldType: 'select',
+          values: [],
+        },
+        {
+          fieldId: 'field:status',
+          fieldName: 'Status',
+          fieldNodeId: 'fn-status',
+          fieldSystemId: 'field:status',
+          fieldType: 'select',
+          values: [],
+        },
+      ]
+      useOutlineStore.getState().addSupertag('b', tag, fields)
+      const node = useOutlineStore.getState().nodes.get('b')!
+      expect(node.supertags).toHaveLength(1)
+      expect(node.fields).toHaveLength(2)
+      expect(node.fields[0]!.fieldName).toBe('Severity')
+    })
+
+    it('skips duplicate supertag if already present', () => {
+      seedStore()
+      const tag = { id: 'tag1', name: 'Project', color: null, systemId: 'supertag:project' }
+      useOutlineStore.getState().addSupertag('a', tag, [])
+      useOutlineStore.getState().addSupertag('a', tag, [])
+      expect(useOutlineStore.getState().nodes.get('a')!.supertags).toHaveLength(1)
+    })
+
+    it('skips duplicate fields if already present', () => {
+      seedStore()
+      const existingField: OutlineField = {
+        fieldId: 'field:priority',
+        fieldName: 'Priority',
+        fieldNodeId: 'fn-pri',
+        fieldSystemId: 'field:priority',
+        fieldType: 'select',
+        values: [{ value: 'High', order: 0 }],
+      }
+      // First set node with existing field
+      const nodes = useOutlineStore.getState().nodes
+      const newNodes = new Map(nodes)
+      const nodeA = newNodes.get('a')!
+      newNodes.set('a', { ...nodeA, fields: [existingField] })
+      useOutlineStore.setState({ nodes: newNodes })
+
+      // Now add supertag with same field
+      const tag = { id: 'tag1', name: 'Bug', color: null, systemId: 'supertag:bug' }
+      useOutlineStore.getState().addSupertag('a', tag, [existingField])
+      expect(useOutlineStore.getState().nodes.get('a')!.fields).toHaveLength(1) // not duplicated
+    })
+
+    it('does nothing for nonexistent node', () => {
+      seedStore()
+      const before = useOutlineStore.getState().nodes.size
+      const tag = { id: 'tag1', name: 'Test', color: null, systemId: 'supertag:test' }
+      useOutlineStore.getState().addSupertag('nonexistent', tag, [])
+      expect(useOutlineStore.getState().nodes.size).toBe(before)
+    })
+  })
+
+  describe('removeSupertag', () => {
+    it('removes a supertag but keeps fields', () => {
+      seedStore()
+      const tag = { id: 'tag1', name: 'Project', color: null, systemId: 'supertag:project' }
+      const field: OutlineField = {
+        fieldId: 'field:status',
+        fieldName: 'Status',
+        fieldNodeId: 'fn-status',
+        fieldSystemId: 'field:status',
+        fieldType: 'select',
+        values: [],
+      }
+      useOutlineStore.getState().addSupertag('a', tag, [field])
+      expect(useOutlineStore.getState().nodes.get('a')!.supertags).toHaveLength(1)
+      expect(useOutlineStore.getState().nodes.get('a')!.fields).toHaveLength(1)
+
+      useOutlineStore.getState().removeSupertag('a', 'tag1')
+      const node = useOutlineStore.getState().nodes.get('a')!
+      expect(node.supertags).toHaveLength(0)
+      expect(node.fields).toHaveLength(1) // fields preserved (Tana behavior)
+    })
+  })
+
+  // ─── Field operations ────────────────────────────────────────────
+
+  describe('addField', () => {
+    it('adds a field to a node', () => {
+      seedStore()
+      const field: OutlineField = {
+        fieldId: 'field:notes',
+        fieldName: 'Notes',
+        fieldNodeId: 'fn-notes',
+        fieldSystemId: 'field:notes',
+        fieldType: 'text',
+        values: [],
+      }
+      useOutlineStore.getState().addField('b', field)
+      const node = useOutlineStore.getState().nodes.get('b')!
+      expect(node.fields).toHaveLength(1)
+      expect(node.fields[0]!.fieldName).toBe('Notes')
+    })
+
+    it('skips duplicate field by fieldId', () => {
+      seedStore()
+      const field: OutlineField = {
+        fieldId: 'field:notes',
+        fieldName: 'Notes',
+        fieldNodeId: 'fn-notes',
+        fieldSystemId: 'field:notes',
+        fieldType: 'text',
+        values: [],
+      }
+      useOutlineStore.getState().addField('b', field)
+      useOutlineStore.getState().addField('b', field)
+      expect(useOutlineStore.getState().nodes.get('b')!.fields).toHaveLength(1)
+    })
+  })
+
+  describe('removeField', () => {
+    it('removes a field by fieldId', () => {
+      seedStore()
+      const field: OutlineField = {
+        fieldId: 'field:notes',
+        fieldName: 'Notes',
+        fieldNodeId: 'fn-notes',
+        fieldSystemId: 'field:notes',
+        fieldType: 'text',
+        values: [],
+      }
+      useOutlineStore.getState().addField('b', field)
+      expect(useOutlineStore.getState().nodes.get('b')!.fields).toHaveLength(1)
+
+      useOutlineStore.getState().removeField('b', 'field:notes')
+      expect(useOutlineStore.getState().nodes.get('b')!.fields).toHaveLength(0)
+    })
+  })
+
+  // ─── Field with constraint metadata ──────────────────────────────
+
+  describe('fields with constraint metadata', () => {
+    it('preserves required/hideWhen/pinned in field data', () => {
+      seedStore()
+      const field: OutlineField = {
+        fieldId: 'field:priority',
+        fieldName: 'Priority',
+        fieldNodeId: 'fn-pri',
+        fieldSystemId: 'field:priority',
+        fieldType: 'select',
+        values: [],
+        required: true,
+        hideWhen: 'never',
+        pinned: true,
+      }
+      useOutlineStore.getState().addField('a', field)
+
+      const node = useOutlineStore.getState().nodes.get('a')!
+      expect(node.fields[0]!.required).toBe(true)
+      expect(node.fields[0]!.hideWhen).toBe('never')
+      expect(node.fields[0]!.pinned).toBe(true)
+    })
+
+    it('updateFieldValue on a required field changes value but preserves constraints', () => {
+      seedStore()
+      const field: OutlineField = {
+        fieldId: 'field:priority',
+        fieldName: 'Priority',
+        fieldNodeId: 'fn-pri',
+        fieldSystemId: 'field:priority',
+        fieldType: 'select',
+        values: [{ value: 'Low', order: 0 }],
+        required: true,
+        pinned: true,
+      }
+      const nodes = useOutlineStore.getState().nodes
+      const newNodes = new Map(nodes)
+      newNodes.set('a', { ...newNodes.get('a')!, fields: [field] })
+      useOutlineStore.setState({ nodes: newNodes })
+
+      useOutlineStore.getState().updateFieldValue('a', 'field:priority', 'High')
+
+      const updated = useOutlineStore.getState().nodes.get('a')!.fields[0]!
+      expect(updated.values[0]!.value).toBe('High')
+      expect(updated.required).toBe(true)
+      expect(updated.pinned).toBe(true)
+    })
+  })
 })

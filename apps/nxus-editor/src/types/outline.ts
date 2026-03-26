@@ -4,11 +4,14 @@ export type FieldType =
   | 'boolean'
   | 'date'
   | 'select'
+  | 'instance'
   | 'url'
   | 'email'
   | 'node'
   | 'nodes'
   | 'json'
+
+export type HideWhen = 'never' | 'when_empty' | 'when_not_empty' | 'always'
 
 export interface OutlineField {
   fieldId: string
@@ -17,6 +20,9 @@ export interface OutlineField {
   fieldSystemId: string | null
   fieldType: FieldType
   values: { value: unknown; order: number }[]
+  required?: boolean
+  hideWhen?: HideWhen
+  pinned?: boolean
 }
 
 export interface OutlineNode {
@@ -44,6 +50,11 @@ export interface SupertagBadge {
 export const SUPERTAG_DEFINITION_SYSTEM_ID = 'supertag:supertag'
 
 /**
+ * A node IS a field definition if it's tagged with the field meta-supertag.
+ */
+export const FIELD_DEFINITION_SYSTEM_ID = 'supertag:field'
+
+/**
  * A node IS a query if it's tagged with the query supertag.
  */
 export const QUERY_SYSTEM_ID = 'supertag:query'
@@ -57,6 +68,23 @@ export const QUERY_FIELD_SYSTEM_IDS = new Set([
   'field:query_sort',
   'field:query_limit',
 ])
+
+export type ViewMode = 'outline' | 'table' | 'kanban' | 'cards' | 'list'
+
+export interface ViewFilter {
+  fieldId: string
+  operator: 'equals' | 'not_equals' | 'contains' | 'is_empty' | 'is_not_empty'
+  value?: string
+}
+
+export interface ViewConfig {
+  groupByFieldId?: string
+  sortByFieldId?: string
+  sortDirection?: 'asc' | 'desc'
+  columnWidths?: Record<string, number>
+  visibleFieldIds?: string[]
+  filters?: ViewFilter[]
+}
 
 export type NodeMap = Map<string, OutlineNode>
 
@@ -83,4 +111,15 @@ export const HIDDEN_FIELD_SYSTEM_IDS = new Set([
   'field:gcal_access_token',
   'field:gcal_refresh_token',
   'field:gcal_token_expiry',
+  // Supertag config fields — shown in config panel, not in field rows
+  'field:default_child_supertag',
+  'field:content_template',
+  'field:auto_collect',
+  'field:instance_supertag',
+  'field:view_as',
+  'field:view_config',
+  // Field constraint metadata — stored on field definition nodes, not displayed as node fields
+  'field:required',
+  'field:hide_when',
+  'field:pinned',
 ])

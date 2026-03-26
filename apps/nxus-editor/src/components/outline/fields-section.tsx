@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { X } from '@phosphor-icons/react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { X, WarningCircle } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import type { OutlineField } from '@/types/outline'
+import type { HideWhen, OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
 import { FieldBullet } from './bullet'
 import { setFieldValueServerFn } from '@/services/outline.server'
@@ -31,9 +31,21 @@ interface FieldsSectionProps {
 export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPendingFieldDismiss }: FieldsSectionProps) {
   const { addField, removeField } = useOutlineSync()
 
+  // Apply hideWhen visibility rules
+  const visibleFields = useMemo(() => {
+    return fields.filter((field) => {
+      if (!field.hideWhen || field.hideWhen === 'never') return true
+      if (field.hideWhen === 'always') return false
+      const hasValue = field.values.length > 0 && field.values.some((v) => v.value !== null && v.value !== '' && v.value !== undefined)
+      if (field.hideWhen === 'when_empty' && !hasValue) return false
+      if (field.hideWhen === 'when_not_empty' && hasValue) return false
+      return true
+    })
+  }, [fields])
+
   return (
     <div className="fields-section">
-      {fields.map((field) => (
+      {visibleFields.map((field) => (
         <FieldRow
           key={field.fieldId}
           nodeId={nodeId}
@@ -78,6 +90,14 @@ function FieldRow({
       : field.values.length > 0
         ? field.values[0]!.value
         : undefined
+
+  // Check if a required field is missing its value
+  const isEmpty =
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    (Array.isArray(value) && value.length === 0)
+  const showRequiredWarning = field.required && isEmpty
 
   const handleChange = useCallback(
     (newValue: unknown) => {
@@ -124,12 +144,21 @@ function FieldRow({
       {/* Field label */}
       <span
         className={cn(
-          'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
+          'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium',
           'h-6 flex items-center pl-1 select-none',
+          showRequiredWarning ? 'text-red-400/70' : 'text-foreground/35',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
       >
         {field.fieldName}
+        {showRequiredWarning && (
+          <WarningCircle
+            size={11}
+            weight="fill"
+            className="ml-0.5 shrink-0 text-red-400/60"
+            title="Required field"
+          />
+        )}
       </span>
 
       <button

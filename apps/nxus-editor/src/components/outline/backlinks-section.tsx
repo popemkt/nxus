@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Hash, CaretRight } from '@phosphor-icons/react'
+import { CaretRight, ArrowClockwise } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import { getBacklinksServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { Bullet } from './bullet'
+import { SupertagPill } from './supertag-pill'
 
 interface BacklinkNode {
   id: string
@@ -35,12 +36,7 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
 
   const groups: BacklinkGroup[] = data?.success ? data.groups : []
   const totalCount = data?.success ? data.totalCount : 0
-
-  if (isLoading) return null
-  if (data && !data.success) {
-    return <div className="mt-3 px-1 text-[12px] text-foreground/35">References unavailable</div>
-  }
-  if (totalCount === 0) return null
+  const hasError = data && !data.success
 
   return (
     <div className="mt-3 mb-1">
@@ -58,11 +54,22 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
           weight="bold"
           className={cn('transition-transform', !collapsed && 'rotate-90')}
         />
-        References ({totalCount})
+        References
+        {isLoading ? (
+          <ArrowClockwise size={10} className="animate-spin ml-0.5" />
+        ) : (
+          <span className="text-foreground/20 ml-0.5">({totalCount})</span>
+        )}
       </button>
 
       {!collapsed && (
         <div className="mt-0.5">
+          {hasError && (
+            <div className="pl-4 py-1 text-[11px] text-foreground/25">References unavailable</div>
+          )}
+          {!isLoading && !hasError && totalCount === 0 && (
+            <div className="pl-4 py-1 text-[11px] text-foreground/20 italic">No references</div>
+          )}
           {groups.map((group) => (
             <FieldGroup
               key={group.fieldName}
@@ -199,23 +206,9 @@ function ReferenceNodeRow({
 
         {node.supertags.length > 0 && (
           <div className="flex h-6 items-center gap-0.5">
-            {node.supertags.map((tag) => {
-              const color = getSupertagColor(tag.id)
-              return (
-                <span
-                  key={tag.id}
-                  className={cn(
-                    'inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
-                    'text-[11px] font-medium leading-[1.8]',
-                    'select-none whitespace-nowrap',
-                  )}
-                  style={{ backgroundColor: `${color}18`, color }}
-                >
-                  <Hash size={10} weight="bold" className="shrink-0 opacity-60" />
-                  {tag.content}
-                </span>
-              )
-            })}
+            {node.supertags.map((tag) => (
+              <SupertagPill key={tag.id} tag={tag} />
+            ))}
           </div>
         )}
       </div>
