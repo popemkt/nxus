@@ -581,7 +581,7 @@ export function useOutlineSync() {
     const { nodes: currentNodes } = useOutlineStore.getState()
     const snapshot = useUndoStore.getState().undo(currentNodes)
     if (!snapshot) return
-    useOutlineStore.setState({ nodes: snapshot })
+    useOutlineStore.setState({ nodes: snapshot, activeNodeId: null, selectedNodeId: null, selectedNodeIds: new Set() })
   }, [])
 
   /**
@@ -591,7 +591,7 @@ export function useOutlineSync() {
     const { nodes: currentNodes } = useOutlineStore.getState()
     const snapshot = useUndoStore.getState().redo(currentNodes)
     if (!snapshot) return
-    useOutlineStore.setState({ nodes: snapshot })
+    useOutlineStore.setState({ nodes: snapshot, activeNodeId: null, selectedNodeId: null, selectedNodeIds: new Set() })
   }, [])
 
   return {
