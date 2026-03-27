@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@nxus/calendar": "workspace:*",
+    "@nxus/config": "workspace:*",
     "@nxus/db": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@fontsource-variable/outfit": "^5.2.8",

@@ -1,7 +1,7 @@
 import { cn } from '@nxus/ui'
 import { Moon, Sun } from '@phosphor-icons/react'
-import { useThemeStore, useThemeHydrated } from '@/stores/theme.store'
-import { themeOptions } from '@/config/theme-options'
+import { useThemeStore, useThemeHydrated } from '../theme/theme.store'
+import { themeOptions } from '../theme/theme-options'
 
 /**
  * Theme chooser component - displays a grid of available theme palettes
