@@ -1,0 +1,43 @@
+{
+    "id": "cli-anything",
+    "name": "CLI-Anything",
+    "description": "Making ALL Software Agent-Native. Transform any professional software into agent-native tools without losing capabilities.",
+    "type": "remote-repo",
+    "path": "https://github.com/HKUDS/CLI-Anything.git",
+    "homepage": "https://github.com/HKUDS/CLI-Anything",
+    "commands": [
+        {
+            "id": "clone",
+            "name": "Clone Repo",
+            "description": "Clone the CLI-Anything repository",
+            "icon": "DownloadSimple",
+            "category": "Source",
+            "target": "item",
+            "mode": "execute",
+            "command": "git clone https://github.com/HKUDS/CLI-Anything.git"
+        },
+        {
+            "id": "docs",
+            "name": "GitHub",
+            "description": "Open CLI-Anything on GitHub",
+            "icon": "GithubLogo",
+            "category": "Help",
+            "target": "item",
+            "mode": "docs",
+            "command": "https://github.com/HKUDS/CLI-Anything"
+        }
+    ],
+    "dependencies": ["git"],
+    "metadata": {
+        "tags": [],
+        "category": "ai-tools",
+        "createdAt": "2026-03-12T00:00:00Z",
+        "updatedAt": "2026-03-12T00:00:00Z",
+        "version": "1.0.0",
+        "author": "HKUDS"
+    },
+    "installConfig": {
+        "script": "pip install -e .",
+        "platform": ["linux", "macos", "windows"]
+    }
+}
