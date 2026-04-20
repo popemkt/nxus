@@ -25,6 +25,7 @@ export interface OutlineNode {
   parentId: string | null
   children: string[]
   order: string
+  createdAt?: number
   collapsed: boolean
   supertags: SupertagBadge[]
   fields: OutlineField[]

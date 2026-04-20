@@ -1,11 +1,13 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
 import { FieldBullet } from './bullet'
 import { setFieldValueServerFn } from '@/services/outline.server'
-import { useOutlineStore } from '@/stores/outline.store'
+import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { useOutlineStore } from '@/stores/outline.store'
 
 /** Fixed label width so all field values start at the same horizontal position */
 const FIELD_LABEL_WIDTH = 120
@@ -14,6 +16,8 @@ interface FieldsSectionProps {
   nodeId: string
   fields: OutlineField[]
   depth: number
+  pendingFieldActive?: boolean
+  onPendingFieldDismiss?: () => void
 }
 
 /**
@@ -24,8 +28,8 @@ interface FieldsSectionProps {
  * with a field icon in the bullet column, a fixed-width label, and
  * the value area aligned across all fields.
  */
-export function FieldsSection({ nodeId, fields, depth }: FieldsSectionProps) {
-  if (fields.length === 0) return null
+export function FieldsSection({ nodeId, fields, depth, pendingFieldActive, onPendingFieldDismiss }: FieldsSectionProps) {
+  const { addField, removeField } = useOutlineSync()
 
   return (
     <div className="fields-section">
@@ -35,8 +39,21 @@ export function FieldsSection({ nodeId, fields, depth }: FieldsSectionProps) {
           nodeId={nodeId}
           field={field}
           depth={depth}
+          onRemove={() => removeField(nodeId, field.fieldId)}
         />
       ))}
+      {pendingFieldActive && (
+        <PendingFieldRow
+          nodeId={nodeId}
+          depth={depth}
+          existingFieldIds={fields.map((f) => f.fieldSystemId ?? f.fieldId)}
+          onCommit={(field) => {
+            addField(nodeId, field)
+            onPendingFieldDismiss?.()
+          }}
+          onDismiss={() => onPendingFieldDismiss?.()}
+        />
+      )}
     </div>
   )
 }
@@ -45,10 +62,12 @@ function FieldRow({
   nodeId,
   field,
   depth,
+  onRemove,
 }: {
   nodeId: string
   field: OutlineField
   depth: number
+  onRemove: () => void
 }) {
   const navigateToNode = useNavigateToNode()
 
@@ -81,10 +100,14 @@ function FieldRow({
   return (
     <div
       className={cn(
-        'field-row flex items-start py-1',
+        'field-row group/field flex items-start py-1',
       )}
       style={{ paddingLeft: `${(depth + 1) * 24}px` }}
       onClick={(e) => e.stopPropagation()}
+      data-field-row="true"
+      data-node-id={nodeId}
+      data-field-id={field.fieldId}
+      data-field-name={field.fieldName}
     >
       {/* Field icon — clickable to navigate to field definition node */}
       <span
@@ -98,25 +121,222 @@ function FieldRow({
         <FieldBullet fieldType={field.fieldType} />
       </span>
 
-      {/* Field label — fixed width, pinned to first line, pl-1 matches node-content px-1 */}
+      {/* Field label */}
       <span
         className={cn(
           'shrink-0 truncate text-[14.5px] leading-[1.6] font-medium text-foreground/35',
-          'select-none h-6 flex items-center pl-1',
+          'h-6 flex items-center pl-1 select-none',
         )}
         style={{ width: `${FIELD_LABEL_WIDTH}px` }}
       >
         {field.fieldName}
       </span>
 
+      <button
+        type="button"
+        className={cn(
+          'mt-[1px] mr-1 flex h-6 w-5 shrink-0 items-center justify-center rounded-sm',
+          'text-foreground/20 opacity-0 transition-opacity',
+          'group-hover/field:opacity-100 hover:bg-foreground/8 hover:text-foreground/50',
+          'focus:opacity-100',
+        )}
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove()
+        }}
+        title={`Remove ${field.fieldName}`}
+        aria-label={`Remove ${field.fieldName}`}
+      >
+        <X size={11} weight="bold" />
+      </button>
+
       {/* Field value — same plane as node content, flows naturally */}
       <div className="flex-1 min-w-0">
         <FieldValue
           fieldType={field.fieldType}
+          fieldNodeId={field.fieldNodeId}
           value={value}
           onChange={handleChange}
         />
       </div>
+    </div>
+  )
+}
+
+/* ─── Pending field row — inline field creation triggered by `>` ─── */
+
+interface AvailableField {
+  fieldNodeId: string
+  fieldName: string
+  fieldType: string
+  fieldSystemId: string
+}
+
+function PendingFieldRow({
+  nodeId,
+  depth,
+  existingFieldIds,
+  onCommit,
+  onDismiss,
+}: {
+  nodeId: string
+  depth: number
+  existingFieldIds: string[]
+  onCommit: (field: OutlineField) => void
+  onDismiss: () => void
+}) {
+  const labelRef = useRef<HTMLSpanElement>(null)
+  const [query, setQuery] = useState('')
+  const [options, setOptions] = useState<AvailableField[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [highlightIndex, setHighlightIndex] = useState(0)
+
+  // Auto-focus the label input on mount
+  useEffect(() => {
+    if (labelRef.current) {
+      labelRef.current.focus()
+    }
+  }, [])
+
+  // Fetch available fields
+  useEffect(() => {
+    import('@/services/field.server').then(({ getAvailableFieldsServerFn }) => {
+      getAvailableFieldsServerFn({ data: { nodeId } })
+        .then((result) => {
+          if (result.success) {
+            setOptions(result.fields)
+            setLoaded(true)
+          }
+        })
+        .catch(() => { /* leave loaded=false so next open retries */ })
+    })
+  }, [nodeId])
+
+  const existingSet = new Set(existingFieldIds)
+  const filtered = options
+    .filter((o) => !existingSet.has(o.fieldSystemId))
+    .filter((o) => !query || o.fieldName.toLowerCase().includes(query.toLowerCase()))
+
+  // Reset highlight when query changes
+  useEffect(() => {
+    setHighlightIndex(0)
+  }, [query])
+
+  const commitField = useCallback(
+    (opt: AvailableField) => {
+      onCommit({
+        fieldId: opt.fieldSystemId,
+        fieldName: opt.fieldName,
+        fieldNodeId: opt.fieldNodeId,
+        fieldSystemId: opt.fieldSystemId,
+        fieldType: opt.fieldType as OutlineField['fieldType'],
+        values: [],
+      })
+    },
+    [onCommit],
+  )
+
+  const handleInput = useCallback(() => {
+    const text = labelRef.current?.textContent ?? ''
+    setQuery(text)
+  }, [])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLSpanElement>) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.min(i + 1, filtered.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlightIndex((i) => Math.max(i - 1, 0))
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const selected = filtered[highlightIndex]
+        if (selected) {
+          commitField(selected)
+        }
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onDismiss()
+        return
+      }
+      if (e.key === 'Backspace') {
+        const sel = window.getSelection()
+        if (sel && sel.focusOffset === 0 && !query) {
+          e.preventDefault()
+          onDismiss()
+          return
+        }
+      }
+      e.stopPropagation()
+    },
+    [filtered, highlightIndex, commitField, onDismiss, query],
+  )
+
+  return (
+    <div
+      className={cn('field-row flex items-start py-1 relative')}
+      style={{ paddingLeft: `${(depth + 1) * 24}px` }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Placeholder for field icon */}
+      <span className="h-6 w-6 shrink-0" />
+
+      {/* Editable label — acts as autocomplete input */}
+      <span
+        ref={labelRef}
+        contentEditable
+        suppressContentEditableWarning
+        className={cn(
+          'shrink-0 text-[14.5px] leading-[1.6] font-medium',
+          'h-6 flex items-center pl-1 outline-none cursor-text',
+          query ? 'text-foreground/50' : 'text-foreground/25 italic',
+        )}
+        style={{ width: `${FIELD_LABEL_WIDTH}px` }}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onBlur={() => {
+          // Delay to allow mousedown on dropdown to fire first
+          setTimeout(() => onDismiss(), 150)
+        }}
+        data-placeholder="Field name…"
+      />
+
+      {/* Autocomplete dropdown */}
+      {loaded && (
+        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-48 min-w-[200px] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 shadow-lg"
+          style={{ marginLeft: `${(depth + 1) * 24 + 24}px` }}
+        >
+          {filtered.length === 0 && (
+            <span className="block px-2 py-1 text-xs text-foreground/40">
+              {query ? 'No matching fields' : 'No fields available'}
+            </span>
+          )}
+          {filtered.map((opt, i) => (
+            <div
+              key={opt.fieldSystemId}
+              className={cn(
+                'cursor-pointer rounded-md px-2 py-1 text-xs',
+                i === highlightIndex && 'bg-accent text-accent-foreground',
+              )}
+              onMouseEnter={() => setHighlightIndex(i)}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                commitField(opt)
+              }}
+            >
+              {opt.fieldName}
+              <span className="ml-1 text-foreground/25">{opt.fieldType}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

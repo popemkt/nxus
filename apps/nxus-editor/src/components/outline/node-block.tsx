@@ -6,6 +6,7 @@ import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
+import type { SupertagBadge } from '@/types/outline'
 import { isQueryNode, extractQueryDefinition, getVisibleFields } from './query-helpers'
 import { Bullet } from './bullet'
 import { NodeContent } from './node-content'
@@ -24,6 +25,7 @@ export const NodeBlock = memo(function NodeBlock({
   const node = useOutlineStore((s) => s.nodes.get(nodeId))
   const activeNodeId = useOutlineStore((s) => s.activeNodeId)
   const selectedNodeId = useOutlineStore((s) => s.selectedNodeId)
+  const isMultiSelected = useOutlineStore((s) => s.selectedNodeIds.has(nodeId))
   const cursorPosition = useOutlineStore((s) => s.cursorPosition)
 
   // UI-only store actions (no server persistence needed)
@@ -44,6 +46,8 @@ export const NodeBlock = memo(function NodeBlock({
     outdentNode,
     moveNodeUp,
     moveNodeDown,
+    removeSupertag,
+    addSupertag,
   } = useOutlineSync()
 
   const handleBulletClick = useCallback(
@@ -71,6 +75,35 @@ export const NodeBlock = memo(function NodeBlock({
     },
     [updateNodeContent, nodeId],
   )
+
+  const handleRemoveSupertag = useCallback(
+    (supertagId: string, supertagSystemId: string | null) => {
+      removeSupertag(nodeId, supertagId, supertagSystemId)
+    },
+    [removeSupertag, nodeId],
+  )
+
+  const handleAddSupertag = useCallback(
+    (supertag: SupertagBadge) => {
+      addSupertag(nodeId, supertag, [])
+    },
+    [addSupertag, nodeId],
+  )
+
+  const handleSplitNode = useCallback(
+    (beforeText: string, afterText: string) => {
+      updateNodeContent(nodeId, beforeText)
+      createNodeAfter(nodeId, afterText)
+    },
+    [nodeId, updateNodeContent, createNodeAfter],
+  )
+
+  // Pending field — triggered by typing `>` in node content
+  const [pendingFieldActive, setPendingFieldActive] = useState(false)
+
+  const handleTriggerFieldAdd = useCallback(() => {
+    setPendingFieldActive(true)
+  }, [])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -206,7 +239,7 @@ export const NodeBlock = memo(function NodeBlock({
   if (!node) return null
 
   const isActive = activeNodeId === nodeId
-  const isSelected = selectedNodeId === nodeId
+  const isSelected = selectedNodeId === nodeId || isMultiSelected
   const hasChildren = node.children.length > 0
   const primaryTagColor = node.supertags[0]?.color ?? null
   const [workbenchOpen, setWorkbenchOpen] = useState(false)
@@ -216,7 +249,7 @@ export const NodeBlock = memo(function NodeBlock({
   // For query nodes: extract definition and filter out query-internal fields
   const queryDefinition = isQuery ? extractQueryDefinition(node) : undefined
   const visibleFields = getVisibleFields(node.fields, isQuery)
-  const hasFields = visibleFields.length > 0
+  const hasFields = visibleFields.length > 0 || pendingFieldActive
   const isExpandable = hasChildren || hasFields || isQuery
 
   // Shallow-compared selector: only re-renders when the sorted order actually changes.
@@ -228,7 +261,9 @@ export const NodeBlock = memo(function NodeBlock({
       return [...n.children].sort((a, b) => {
         const na = s.nodes.get(a)
         const nb = s.nodes.get(b)
-        return (na?.order ?? '').localeCompare(nb?.order ?? '')
+        const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+        if (orderCmp !== 0) return orderCmp
+        return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
       })
     }),
   )
@@ -263,6 +298,10 @@ export const NodeBlock = memo(function NodeBlock({
           onActivate={handleActivate}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
+          onRemoveSupertag={handleRemoveSupertag}
+          onAddSupertag={handleAddSupertag}
+          onTriggerFieldAdd={handleTriggerFieldAdd}
+          onSplitNode={handleSplitNode}
         />
         {isQuery && !node.collapsed && (
           <button
@@ -299,8 +338,14 @@ export const NodeBlock = memo(function NodeBlock({
           </div>
 
           {/* Fields (properties) — rendered before children */}
-          {visibleFields.length > 0 && (
-            <FieldsSection nodeId={nodeId} fields={visibleFields} depth={depth} />
+          {(visibleFields.length > 0 || pendingFieldActive) && (
+            <FieldsSection
+              nodeId={nodeId}
+              fields={visibleFields}
+              depth={depth}
+              pendingFieldActive={pendingFieldActive}
+              onPendingFieldDismiss={() => setPendingFieldActive(false)}
+            />
           )}
 
           {/* Query results — rendered between fields and children */}

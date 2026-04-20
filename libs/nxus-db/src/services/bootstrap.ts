@@ -577,6 +577,139 @@ export function bootstrapSystemNodesSync(
   }
 
   // ============================================================================
+  // Step 4b: Link supertags to their field definitions
+  // This makes getSupertagFieldDefinitions() work — each supertag node gets
+  // properties pointing to the field definition nodes it defines for instances.
+  // ============================================================================
+  if (verbose) console.log('\n[4b/6] Linking supertag field schemas...');
+
+  const supertagFieldSchemas: Record<string, string[]> = {
+    // #Item (base): common entity fields
+    [SYSTEM_SUPERTAGS.ITEM]: [
+      SYSTEM_FIELDS.TYPE as string,
+      SYSTEM_FIELDS.PATH as string,
+      SYSTEM_FIELDS.HOMEPAGE as string,
+      SYSTEM_FIELDS.DESCRIPTION as string,
+      SYSTEM_FIELDS.LEGACY_ID as string,
+      SYSTEM_FIELDS.CATEGORY as string,
+      SYSTEM_FIELDS.TAGS as string,
+      SYSTEM_FIELDS.COLOR as string,
+      SYSTEM_FIELDS.ICON as string,
+    ],
+    // #Tool extends #Item, adds tool-specific fields
+    [SYSTEM_SUPERTAGS.TOOL]: [
+      SYSTEM_FIELDS.CHECK_COMMAND as string,
+      SYSTEM_FIELDS.DEPENDENCIES as string,
+      SYSTEM_FIELDS.INSTALL_INSTRUCTIONS as string,
+      SYSTEM_FIELDS.PLATFORM as string,
+      SYSTEM_FIELDS.PLATFORMS as string,
+    ],
+    // #Command: standalone command fields
+    [SYSTEM_SUPERTAGS.COMMAND]: [
+      SYSTEM_FIELDS.COMMAND as string,
+      SYSTEM_FIELDS.COMMAND_ID as string,
+      SYSTEM_FIELDS.MODE as string,
+      SYSTEM_FIELDS.TARGET as string,
+      SYSTEM_FIELDS.ICON as string,
+      SYSTEM_FIELDS.DESCRIPTION as string,
+      SYSTEM_FIELDS.CATEGORY as string,
+      SYSTEM_FIELDS.SCRIPT_SOURCE as string,
+      SYSTEM_FIELDS.CWD as string,
+      SYSTEM_FIELDS.DOCS as string,
+      SYSTEM_FIELDS.REQUIRES as string,
+      SYSTEM_FIELDS.OPTIONS as string,
+      SYSTEM_FIELDS.PLATFORMS as string,
+    ],
+    // #Tag
+    [SYSTEM_SUPERTAGS.TAG]: [
+      SYSTEM_FIELDS.COLOR as string,
+    ],
+    // #Query: saved query fields
+    [SYSTEM_SUPERTAGS.QUERY]: [
+      SYSTEM_FIELDS.QUERY_DEFINITION as string,
+      SYSTEM_FIELDS.QUERY_SORT as string,
+      SYSTEM_FIELDS.QUERY_LIMIT as string,
+    ],
+    // #Inbox
+    [SYSTEM_SUPERTAGS.INBOX]: [
+      SYSTEM_FIELDS.STATUS as string,
+      SYSTEM_FIELDS.NOTES as string,
+      SYSTEM_FIELDS.TITLE as string,
+    ],
+    // #Task
+    [SYSTEM_SUPERTAGS.TASK]: [
+      SYSTEM_FIELDS.DESCRIPTION as string,
+      SYSTEM_FIELDS.START_DATE as string,
+      SYSTEM_FIELDS.END_DATE as string,
+      SYSTEM_FIELDS.ALL_DAY as string,
+    ],
+    // #Event
+    [SYSTEM_SUPERTAGS.EVENT]: [
+      SYSTEM_FIELDS.DESCRIPTION as string,
+      SYSTEM_FIELDS.START_DATE as string,
+      SYSTEM_FIELDS.END_DATE as string,
+      SYSTEM_FIELDS.ALL_DAY as string,
+      SYSTEM_FIELDS.RRULE as string,
+      SYSTEM_FIELDS.REMINDER as string,
+    ],
+    // #Automation
+    [SYSTEM_SUPERTAGS.AUTOMATION]: [
+      SYSTEM_FIELDS.AUTOMATION_DEFINITION as string,
+      SYSTEM_FIELDS.AUTOMATION_STATE as string,
+      SYSTEM_FIELDS.AUTOMATION_LAST_FIRED as string,
+      SYSTEM_FIELDS.AUTOMATION_ENABLED as string,
+    ],
+    // #ComputedField
+    [SYSTEM_SUPERTAGS.COMPUTED_FIELD]: [
+      SYSTEM_FIELDS.COMPUTED_FIELD_DEFINITION as string,
+      SYSTEM_FIELDS.COMPUTED_FIELD_VALUE as string,
+      SYSTEM_FIELDS.COMPUTED_FIELD_UPDATED_AT as string,
+    ],
+    // #RecallTopic
+    [SYSTEM_SUPERTAGS.RECALL_TOPIC]: [
+      SYSTEM_FIELDS.RECALL_SUMMARY as string,
+      SYSTEM_FIELDS.RECALL_WHY_IT_MATTERS as string,
+      SYSTEM_FIELDS.RECALL_SOURCE as string,
+      SYSTEM_FIELDS.RECALL_RELATED_CONCEPTS as string,
+    ],
+    // #RecallConcept
+    [SYSTEM_SUPERTAGS.RECALL_CONCEPT]: [
+      SYSTEM_FIELDS.RECALL_BLOOMS_LEVEL as string,
+      SYSTEM_FIELDS.RECALL_CURRENT_BLOOMS_LEVEL as string,
+      SYSTEM_FIELDS.RECALL_DUE as string,
+      SYSTEM_FIELDS.RECALL_STABILITY as string,
+      SYSTEM_FIELDS.RECALL_DIFFICULTY as string,
+      SYSTEM_FIELDS.RECALL_REPS as string,
+      SYSTEM_FIELDS.RECALL_LAPSES as string,
+      SYSTEM_FIELDS.RECALL_STATE as string,
+      SYSTEM_FIELDS.RECALL_LAST_REVIEW as string,
+      SYSTEM_FIELDS.RECALL_CACHED_QUESTION as string,
+    ],
+    // #RecallReviewLog
+    [SYSTEM_SUPERTAGS.RECALL_REVIEW_LOG]: [
+      SYSTEM_FIELDS.RECALL_QUESTION_TEXT as string,
+      SYSTEM_FIELDS.RECALL_QUESTION_TYPE as string,
+      SYSTEM_FIELDS.RECALL_USER_ANSWER as string,
+      SYSTEM_FIELDS.RECALL_AI_FEEDBACK as string,
+      SYSTEM_FIELDS.RECALL_RATING as string,
+      SYSTEM_FIELDS.RECALL_REVIEW_SCORE as string,
+      SYSTEM_FIELDS.RECALL_REVIEW_TIME_SPENT_MS as string,
+    ],
+  };
+
+  for (const [supertagSystemId, fieldSystemIds] of Object.entries(supertagFieldSchemas)) {
+    const stNodeId = systemNodeIds.get(supertagSystemId);
+    if (!stNodeId) continue;
+    for (const fieldSysId of fieldSystemIds) {
+      const fieldNodeId = systemNodeIds.get(fieldSysId);
+      if (!fieldNodeId) continue;
+      // Add a property on the supertag node pointing to the field definition node
+      // Value is "null" (no default value) — just declares that this field exists
+      setProperty(db, stNodeId, fieldNodeId, JSON.stringify(null));
+    }
+  }
+
+  // ============================================================================
   // Step 5: Create system query nodes
   // ============================================================================
   if (verbose) console.log('\n[5/5] Creating system query nodes...');

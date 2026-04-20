@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { NodeMap, OutlineNode } from '@/types/outline'
+import type { NodeMap, OutlineField, OutlineNode, SupertagBadge } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
 interface OutlineState {
@@ -7,6 +7,7 @@ interface OutlineState {
   rootNodeId: string
   activeNodeId: string | null
   selectedNodeId: string | null
+  selectedNodeIds: Set<string>
   cursorPosition: number
 
   setNodes: (nodes: NodeMap) => void
@@ -14,10 +15,18 @@ interface OutlineState {
   activateNode: (id: string, cursorPos?: number) => void
   deactivateNode: () => void
   selectNode: (id: string | null) => void
+  extendSelection: (id: string) => void
+  clearSelection: () => void
   toggleCollapse: (id: string) => void
   updateNodeContent: (id: string, content: string) => void
   updateFieldValue: (nodeId: string, fieldId: string, value: unknown) => void
-  createNodeAfter: (afterId: string) => string
+  addSupertag: (nodeId: string, supertag: SupertagBadge, newFields: OutlineField[]) => void
+  removeSupertag: (nodeId: string, supertagId: string) => void
+  addField: (nodeId: string, field: OutlineField) => void
+  removeField: (nodeId: string, fieldId: string) => void
+  moveNodeTo: (nodeId: string, newParentId: string) => void
+  createNodeAfter: (afterId: string, initialContent?: string) => string
+  createFirstChild: (parentId: string) => string
   deleteNode: (id: string) => void
   indentNode: (id: string) => void
   outdentNode: (id: string) => void
@@ -65,7 +74,9 @@ function sortNodeIds(nodeIds: string[], nodes: NodeMap): string[] {
   return [...nodeIds].sort((a, b) => {
     const na = nodes.get(a)
     const nb = nodes.get(b)
-    return (na?.order ?? '').localeCompare(nb?.order ?? '')
+    const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+    if (orderCmp !== 0) return orderCmp
+    return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
   })
 }
 
@@ -110,11 +121,28 @@ function getVisibleNodesRecursive(
   }
 }
 
+function isDescendantNode(
+  nodes: NodeMap,
+  ancestorId: string,
+  candidateId: string,
+): boolean {
+  const ancestor = nodes.get(ancestorId)
+  if (!ancestor) return false
+
+  for (const childId of ancestor.children) {
+    if (childId === candidateId) return true
+    if (isDescendantNode(nodes, childId, candidateId)) return true
+  }
+
+  return false
+}
+
 export const useOutlineStore = create<OutlineState>((set, get) => ({
   nodes: new Map(),
   rootNodeId: WORKSPACE_ROOT_ID,
   activeNodeId: null,
   selectedNodeId: null,
+  selectedNodeIds: new Set(),
   cursorPosition: 0,
 
   setNodes: (nodes) => set({ nodes }),
@@ -124,12 +152,36 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set({
       activeNodeId: id,
       selectedNodeId: id,
+      selectedNodeIds: new Set([id]),
       cursorPosition: cursorPos ?? 0,
     }),
 
   deactivateNode: () => set({ activeNodeId: null }),
 
-  selectNode: (id) => set({ selectedNodeId: id, activeNodeId: null }),
+  selectNode: (id) =>
+    set({
+      selectedNodeId: id,
+      selectedNodeIds: id ? new Set([id]) : new Set(),
+      activeNodeId: null,
+    }),
+
+  extendSelection: (id) => {
+    const { selectedNodeIds, selectedNodeId } = get()
+    const next = new Set(selectedNodeIds)
+    if (next.has(id)) {
+      // If extending back over an already-selected node, shrink the range
+      // by removing the current anchor end
+      if (selectedNodeId && selectedNodeId !== id) {
+        next.delete(selectedNodeId)
+      }
+    } else {
+      next.add(id)
+    }
+    set({ selectedNodeIds: next, selectedNodeId: id, activeNodeId: null })
+  },
+
+  clearSelection: () =>
+    set({ selectedNodeId: null, selectedNodeIds: new Set(), activeNodeId: null }),
 
   toggleCollapse: (id) => {
     const { nodes } = get()
@@ -165,7 +217,100 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set({ nodes: next })
   },
 
-  createNodeAfter: (afterId) => {
+  addSupertag: (nodeId, supertag, newFields) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    // Skip if already has this supertag
+    if (node.supertags.some((t) => t.id === supertag.id)) return
+    const next = new Map(nodes)
+    // Merge new fields, skipping duplicates by fieldId
+    const existingFieldIds = new Set(node.fields.map((f) => f.fieldId))
+    const fieldsToAdd = newFields.filter((f) => !existingFieldIds.has(f.fieldId))
+    next.set(nodeId, {
+      ...node,
+      supertags: [...node.supertags, supertag],
+      fields: [...node.fields, ...fieldsToAdd],
+    })
+    set({ nodes: next })
+  },
+
+  removeSupertag: (nodeId, supertagId) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      supertags: node.supertags.filter((t) => t.id !== supertagId),
+      // Fields are kept (Tana behavior — no data loss on tag removal)
+    })
+    set({ nodes: next })
+  },
+
+  addField: (nodeId, field) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    if (node.fields.some((f) => f.fieldId === field.fieldId)) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      fields: [...node.fields, field],
+    })
+    set({ nodes: next })
+  },
+
+  removeField: (nodeId, fieldId) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    if (!node) return
+    const next = new Map(nodes)
+    next.set(nodeId, {
+      ...node,
+      fields: node.fields.filter((f) => f.fieldId !== fieldId),
+    })
+    set({ nodes: next })
+  },
+
+  moveNodeTo: (nodeId, newParentId) => {
+    const { nodes } = get()
+    const node = nodes.get(nodeId)
+    const currentParent = node?.parentId ? nodes.get(node.parentId) : null
+    const newParent = nodes.get(newParentId)
+
+    if (!node || !node.parentId || !currentParent || !newParent) return
+    if (nodeId === newParentId) return
+    if (node.parentId === newParentId) return
+    if (isDescendantNode(nodes, nodeId, newParentId)) return
+
+    const existingChildren = newParent.children.filter((childId) => childId !== nodeId)
+    const lastChildId = sortNodeIds(existingChildren, nodes).at(-1)
+    const lastChildOrder = lastChildId ? nodes.get(lastChildId)?.order ?? null : null
+
+    const next = new Map(nodes)
+    next.set(node.parentId, {
+      ...currentParent,
+      children: currentParent.children.filter((childId) => childId !== nodeId),
+    })
+    next.set(newParentId, {
+      ...newParent,
+      children: [...existingChildren, nodeId],
+      collapsed: false,
+    })
+    next.set(nodeId, {
+      ...node,
+      parentId: newParentId,
+      order: generateOrderBetween(lastChildOrder, null) ?? generateOrder(ORDER_STEP),
+    })
+    set({
+      nodes: next,
+      selectedNodeId: nodeId,
+      selectedNodeIds: new Set([nodeId]),
+    })
+  },
+
+  createNodeAfter: (afterId, initialContent) => {
     const { nodes } = get()
     let workingNodes = nodes
     const afterNode = workingNodes.get(afterId)
@@ -204,7 +349,7 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
 
     const newNode: OutlineNode = {
       id: newId,
-      content: '',
+      content: initialContent ?? '',
       parentId,
       children: [],
       order: newOrder,
@@ -219,7 +364,34 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       ...parent,
       children: [...parent.children, newId],
     })
-    set({ nodes: next, activeNodeId: newId, selectedNodeId: newId })
+    set({ nodes: next, activeNodeId: newId, selectedNodeId: newId, selectedNodeIds: new Set([newId]) })
+    return newId
+  },
+
+  createFirstChild: (parentId) => {
+    const { nodes } = get()
+    const parent = nodes.get(parentId)
+    if (!parent) return parentId
+
+    const newId = generateId()
+    const newNode: OutlineNode = {
+      id: newId,
+      content: '',
+      parentId,
+      children: [],
+      order: generateOrder(ORDER_STEP),
+      collapsed: false,
+      supertags: [],
+      fields: [],
+    }
+
+    const next = new Map(nodes)
+    next.set(newId, newNode)
+    next.set(parentId, {
+      ...parent,
+      children: [...parent.children, newId],
+    })
+    set({ nodes: next, activeNodeId: newId, selectedNodeId: newId, selectedNodeIds: new Set([newId]) })
     return newId
   },
 
