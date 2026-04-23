@@ -72,6 +72,9 @@ importers:
       '@nxus/calendar':
         specifier: workspace:*
         version: link:../../libs/nxus-calendar
+      '@nxus/config':
+        specifier: workspace:*
+        version: link:../../libs/nxus-config
       '@nxus/db':
         specifier: workspace:*
         version: link:../../libs/nxus-db
@@ -175,6 +178,9 @@ importers:
       '@fontsource-variable/outfit':
         specifier: ^5.2.8
         version: 5.2.8
+      '@nxus/config':
+        specifier: workspace:*
+        version: link:../../libs/nxus-config
       '@nxus/db':
         specifier: workspace:*
         version: link:../../libs/nxus-db
@@ -462,6 +468,9 @@ importers:
       '@fontsource-variable/outfit':
         specifier: ^5.2.8
         version: 5.2.8
+      '@nxus/config':
+        specifier: workspace:*
+        version: link:../../libs/nxus-config
       '@nxus/ui':
         specifier: workspace:*
         version: link:../../libs/nxus-ui
@@ -541,6 +550,9 @@ importers:
       '@fontsource-variable/outfit':
         specifier: ^5.2.8
         version: 5.2.8
+      '@nxus/config':
+        specifier: workspace:*
+        version: link:../../libs/nxus-config
       '@nxus/db':
         specifier: workspace:*
         version: link:../../libs/nxus-db
@@ -638,6 +650,9 @@ importers:
       '@fontsource-variable/outfit':
         specifier: ^5.2.8
         version: 5.2.8
+      '@nxus/config':
+        specifier: workspace:*
+        version: link:../../libs/nxus-config
       '@nxus/db':
         specifier: workspace:*
         version: link:../../libs/nxus-db
@@ -787,6 +802,24 @@ importers:
       vitest:
         specifier: ^3.0.5
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.3.0)(lightningcss@1.30.2)(msw@2.12.4(@types/node@22.19.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  libs/nxus-config:
+    dependencies:
+      '@nxus/ui':
+        specifier: workspace:*
+        version: link:../nxus-ui
+      '@phosphor-icons/react':
+        specifier: ^2.1.10
+        version: 2.1.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3(react@19.2.3)
+      zustand:
+        specifier: ^5.0.9
+        version: 5.0.9(@types/react@19.2.7)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
 
   libs/nxus-db:
     dependencies:

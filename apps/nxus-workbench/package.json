@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@nxus/config": "workspace:*",
     "@nxus/db": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@nxus/workbench": "workspace:*",

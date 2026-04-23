@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { MoonIcon, SunIcon } from '@phosphor-icons/react'
 import { Button } from '../../../ui/button'
-import { useThemeStore } from '@/stores/theme.store'
+import { useThemeStore } from '@nxus/config'
 
 /**
  * Theme toggle button - toggles between light and dark color modes.
