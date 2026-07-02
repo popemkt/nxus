@@ -62,3 +62,4 @@ playwright/.cache/
 
 # TypeScript build info
 *.tsbuildinfo
+.claude/settings.local.json
