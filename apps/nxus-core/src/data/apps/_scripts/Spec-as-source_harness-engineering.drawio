@@ -1,0 +1,90 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Harness engineering" id="PKBa1x_rj1n9-b0Hsf2P">
+    <mxGraphModel dx="753" dy="506" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="qdohbViG0SO-9dYkMyN0-19" edge="1" parent="1" source="qdohbViG0SO-9dYkMyN0-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="qdohbViG0SO-9dYkMyN0-11" value="Feeds into">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-10" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Spec-as-source development" vertex="1">
+          <mxGeometry height="200" width="200" x="50" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-12" parent="qdohbViG0SO-9dYkMyN0-10" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Guidelines" vertex="1">
+          <mxGeometry height="90" width="160" x="10" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-13" parent="qdohbViG0SO-9dYkMyN0-12" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Functional spec as vision + scope" vertex="1">
+          <mxGeometry height="30" width="160" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-14" parent="qdohbViG0SO-9dYkMyN0-12" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Bridging spec as functional + implementation" vertex="1">
+          <mxGeometry height="30" width="160" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-21" edge="1" parent="1" source="qdohbViG0SO-9dYkMyN0-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" target="qdohbViG0SO-9dYkMyN0-14" value="Feeds back to/complements the spec">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-11" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Harness engineering" vertex="1">
+          <mxGeometry height="412.5" width="530" x="500" y="267.5" as="geometry">
+            <mxRectangle height="30" width="150" x="500" y="250" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-16" parent="qdohbViG0SO-9dYkMyN0-11" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Meta practices" vertex="1">
+          <mxGeometry height="90" width="230" x="10" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-17" parent="qdohbViG0SO-9dYkMyN0-16" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Functional spec as vision + scope" vertex="1">
+          <mxGeometry height="30" width="230" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-18" parent="qdohbViG0SO-9dYkMyN0-16" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Bridging spec as functional + implementation side by side (ADR etc)" vertex="1">
+          <mxGeometry height="30" width="230" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-23" parent="qdohbViG0SO-9dYkMyN0-11" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Architecture rules" vertex="1">
+          <mxGeometry height="120" width="230" x="10" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-24" parent="qdohbViG0SO-9dYkMyN0-23" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Naming adherance to functional docs" vertex="1">
+          <mxGeometry height="30" width="230" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-25" parent="qdohbViG0SO-9dYkMyN0-23" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Clean seams, modular design if makes sense, clear input-ouput" vertex="1">
+          <mxGeometry height="30" width="230" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-27" parent="qdohbViG0SO-9dYkMyN0-23" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Clean and tight typings to eliminate branchings" vertex="1">
+          <mxGeometry height="30" width="230" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-59" parent="qdohbViG0SO-9dYkMyN0-11" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Always good practices" vertex="1">
+          <mxGeometry height="120" width="230" x="10" y="282.5" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-60" parent="qdohbViG0SO-9dYkMyN0-59" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Latest libs, best DX techs" vertex="1">
+          <mxGeometry height="30" width="230" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-61" parent="qdohbViG0SO-9dYkMyN0-59" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Less code = less bugs and things to manage" vertex="1">
+          <mxGeometry height="30" width="230" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-69" parent="qdohbViG0SO-9dYkMyN0-59" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Straightforwardness unless absolute necessary" vertex="1">
+          <mxGeometry height="30" width="230" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-62" parent="qdohbViG0SO-9dYkMyN0-11" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Domain specific practices" vertex="1">
+          <mxGeometry height="60" width="230" x="270" y="282.5" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-63" parent="qdohbViG0SO-9dYkMyN0-62" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Skills elevating aptitude towards technology used" vertex="1">
+          <mxGeometry height="30" width="230" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-64" parent="qdohbViG0SO-9dYkMyN0-11" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Technology specific practices" vertex="1">
+          <mxGeometry height="60" width="230" x="270" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-65" parent="qdohbViG0SO-9dYkMyN0-64" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Skills elevating aptitude towards technology used" vertex="1">
+          <mxGeometry height="30" width="230" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-66" parent="qdohbViG0SO-9dYkMyN0-11" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Non-negotiable - fundamental practices" vertex="1">
+          <mxGeometry height="90" width="230" x="270" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-67" parent="qdohbViG0SO-9dYkMyN0-66" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Logging, OTel, Configurations." vertex="1">
+          <mxGeometry height="30" width="230" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-68" parent="qdohbViG0SO-9dYkMyN0-66" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Concurrency, security" vertex="1">
+          <mxGeometry height="30" width="230" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qdohbViG0SO-9dYkMyN0-22" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;References&lt;/h1&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/openai/symphony&quot;&gt;openai/symphony: Symphony turns project work into isolated, autonomous implementation runs, allowing teams to manage work instead of supervising coding agents.&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://martinfowler.com/articles/harness-engineering.html&quot;&gt;Harness engineering for coding agent users&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html&quot;&gt;Understanding Spec-Driven-Development: Kiro, spec-kit, and Tessl&lt;/a&gt;&lt;/p&gt;&lt;p&gt;AI benchmarks with scaffolding is usually higher than without (duh)&lt;br&gt;Sqlite test suite aka spec is closed source, while the code is oss. That means the value of spec IS the software itself&lt;br&gt;Huge CLAUDE.md file some practices to learn from&amp;nbsp;&lt;a href=&quot;https://github.com/coleam00/Archon/blob/dev/CLAUDE.md&quot; style=&quot;background-color: transparent;&quot;&gt;Archon/CLAUDE.md at dev · coleam00/Archon&lt;/a&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;" vertex="1">
+          <mxGeometry height="170" width="890" x="20" y="780" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

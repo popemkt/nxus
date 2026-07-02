@@ -61,6 +61,22 @@
                     "powershell"
                 ]
             }
+        },
+        {
+            "id": "update-evidence-tags",
+            "name": "Update Evidence Tags",
+            "description": "Find all evidence deployments in a K8s namespace and patch their container image tags",
+            "icon": "Rocket",
+            "category": "DevOps",
+            "target": "item",
+            "mode": "script",
+            "command": "update-evidence-tags.ps1",
+            "requires": {
+                "tools": [
+                    "powershell",
+                    "kubectl"
+                ]
+            }
         }
     ],
     "dependencies": [
