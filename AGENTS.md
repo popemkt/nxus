@@ -40,6 +40,7 @@ Every rule in `spec/rules/` traces to one of these six:
 
 ## Changing things
 
+- Non-trivial changes run through the Archon workflows in [.archon/workflows/](.archon/workflows/README.md) — `feature-intake`, `bug-fix`, `spec-drift-check`, `tana-gap`. They are the sanctioned action entrypoints (enforcement is still prose; see the README's honest note).
 - Follow the spec-first change workflow: [spec/rules/spec-first-change.md](spec/rules/spec-first-change.md).
 - Commits: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`). No CHANGELOG ceremony.
 - Known spec↔code divergence is marked `DRIFT:` (searchable) — record it, don't hide it.

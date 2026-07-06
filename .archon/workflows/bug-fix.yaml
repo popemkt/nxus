@@ -1,0 +1,230 @@
+# Date: 2026-07-07
+# Question: Can Archon run a repro-first bug-fix loop against nxus — restate,
+#           locate via grep/graph, write a failing test, fix, gate, drift-check
+#           — as a single sanctioned entrypoint?
+# Verdict: Draft. Non-interactive (no interview, no approval gates) — unlike
+#          feature-intake.yaml, the user already knows the bug; this workflow
+#          is a disciplined bash+agent loop, not a negotiation. Structure
+#          mirrors the Draiver reference's deterministic validate/fix-loop
+#          pattern (emdash-calcasa-plus-replication/.archon/workflows/
+#          feature-intake.yaml nodes 10-11), not its interview machinery.
+#
+# Encodes:
+#   - Code grounding (AGENTS.md "Code grounding") — prefer codebase-memory MCP
+#     (search_graph/trace_path/get_code_snippet) over blind grepping
+#   - Testing rule (spec/rules/testing.md) — story-named tests; deleting a
+#     failing test instead of fixing it is spec vandalism
+#   - Dev-entrypoints rule (spec/rules/dev-entrypoints.md) — pnpm <script> only
+#   - Drift rule (spec/rules/drift.md) — close DRIFT: blocks the fix resolves;
+#     record a new one only if the fix reveals the spec itself needs to change
+#   - Spec-first change rule (spec/rules/spec-first-change.md) — a fix that
+#     changes previously-documented behavior edits spec/ in the SAME change
+#
+# PROVIDER = CODEX everywhere. Same rationale as feature-intake.yaml: avoids
+# the nested-Claude-Code hang (Archon #1030) when driven from inside a CC
+# session. Caveat: per-node allowed_tools are IGNORED under codex (advisory
+# only — the "read-only" intent of restate_bug/locate is not tool-enforced,
+# only prompt-enforced).
+# Caveat: $ARGUMENTS is the ONLY binding for the invocation message; a
+# declared `inputs:` block does not receive it (Archon #1535).
+# Caveat: `when:` needs the leading $ or the node silently skips — unused
+# here (no branches), noted for consistency with the other three workflows.
+
+name: bug-fix
+description: Repro-first bug fix. Restate, locate, fail a test, fix, gate, drift-check.
+
+provider: codex
+
+triggers:
+  - slash: /bugfix
+  - manual
+
+# NO isolation block — see feature-intake.yaml's isolation comment (fixed dev
+# ports 3000-3005 + a single seeded SQLite db make a parallel git-worktree
+# unworkable for `pnpm dev`/`pnpm e2e`). Run with
+# `archon workflow run bug-fix --no-worktree "<bug report>"` from a shell
+# OUTSIDE any Claude Code session (Archon #1067 — see
+# .archon/workflows/README.md).
+
+nodes:
+
+  # --------------------------------------------------------------------------
+  # 1. Restate the bug as a precise, falsifiable claim. Fresh context.
+  # --------------------------------------------------------------------------
+  - id: restate_bug
+    context: fresh
+    prompt: |
+      Bug report (verbatim): $ARGUMENTS
+
+      Restate it as: expected behavior, actual behavior, minimal repro steps,
+      and the suspected app/lib scope (gateway|core|workbench|calendar|recall|
+      editor|nxus-db|nxus-ui). If the report is too vague to restate
+      precisely, say what's missing rather than guessing.
+      Emit JSON:
+        { expected: string, actual: string, repro_steps: string[],
+          suspected_scope: string[] }
+    output_format:
+      type: object
+      required: [expected, actual, repro_steps, suspected_scope]
+
+  # --------------------------------------------------------------------------
+  # 2. Locate. Prefer the codebase-memory graph over blind grep (AGENTS.md
+  #    "Code grounding") — search_graph for symbols, trace_path for call
+  #    chains, get_code_snippet to read definitions.
+  # --------------------------------------------------------------------------
+  - id: locate
+    depends_on: [restate_bug]
+    context: shared
+    prompt: |
+      Restated bug (from prior node): $restate_bug.output
+
+      Locate the suspect code. Prefer the codebase-memory MCP tools
+      (search_graph, trace_path, get_code_snippet) over blind grepping for
+      structural questions ("what calls X", "where is Y defined"); fall back
+      to grep/ripgrep for text search the graph can't answer. If
+      `.codebase-memory/artifact.json`'s recorded commit looks stale vs HEAD,
+      say so rather than trusting a stale graph silently.
+      Emit JSON:
+        { suspect_files: string[], call_chain: string, hypothesis: string }
+    output_format:
+      type: object
+      required: [suspect_files, call_chain, hypothesis]
+
+  # --------------------------------------------------------------------------
+  # 3. Write a failing test where feasible, BEFORE the fix. Story-named if it
+  #    proves product behavior (spec/rules/testing.md); a plain unit test if
+  #    it's an internal invariant. Not every bug has a clean test seam (e.g. a
+  #    typo in a doc-only script) — say so instead of forcing one.
+  # --------------------------------------------------------------------------
+  - id: write_failing_test
+    depends_on: [locate]
+    context: shared
+    prompt: |
+      Hypothesis (from prior node): $locate.output
+
+      Write a test that currently FAILS and would pass once the bug is
+      fixed. Prefer a story-named e2e/behavior test if the bug is
+      user-observable product behavior; a Vitest unit test if it's an
+      internal invariant. If no clean test seam exists, do not force one —
+      explain why in `reason` and set test_written=false (the fix still
+      proceeds; this becomes a visible gap, not a silent one).
+      Emit JSON:
+        { test_written: bool, test_path: string|null, reason: string }
+    output_format:
+      type: object
+      required: [test_written, test_path, reason]
+
+  # --------------------------------------------------------------------------
+  # 4. Fix. Minimal, scoped to the hypothesis — no silent scope expansion.
+  # --------------------------------------------------------------------------
+  - id: fix
+    depends_on: [write_failing_test]
+    context: shared
+    prompt: |
+      Hypothesis: $locate.output
+      Failing test: $write_failing_test.output
+
+      Implement the minimal fix that makes the failing test (if one exists)
+      pass, consistent with the hypothesis. Data-layer fixes MUST stay
+      mode-agnostic across table/node/graph architectures
+      (spec/tech/persistence.md; use isTableArchitecture()/
+      isNodeArchitecture()/isGraphArchitecture() in the data layer only,
+      never in feature code). Do not expand scope beyond what the restated
+      bug requires.
+
+  # --------------------------------------------------------------------------
+  # 5. Targeted test run — fast local iteration signal before paying for the
+  #    full gate below. Runs only the file written in step 3 (if any); this
+  #    narrows scope for iteration speed, it does NOT replace the full gate,
+  #    which is the actual sanctioned check (spec/rules/dev-entrypoints.md
+  #    governs the app's launch surface, not scoping a single test file for a
+  #    debug iteration).
+  # --------------------------------------------------------------------------
+  - id: targeted_test
+    depends_on: [fix]
+    context: shared
+    prompt: |
+      Failing test (from step 3): $write_failing_test.output
+      If test_written was true, run ONLY that file (`pnpm exec vitest run
+      <path>` for a unit test, `pnpm exec playwright test <path>` for an e2e
+      spec) and report pass/fail. If test_written was false, say so and skip
+      — the full gate below is the only check for this fix.
+
+  # --------------------------------------------------------------------------
+  # 6. Full gate. Exact command per the repo mandate — sanctioned pnpm
+  #    scripts only, chained so a failure short-circuits the rest.
+  # --------------------------------------------------------------------------
+  - id: full_gate
+    depends_on: [targeted_test]
+    bash: pnpm typecheck && pnpm lint && pnpm test
+    timeout: 1800000
+
+  # --------------------------------------------------------------------------
+  # 7. Fix-loop. Deterministic until_bash re-check — mirrors feature-intake's
+  #    validate_fix_loop. trigger_rule: all_done so it still runs (and can
+  #    react) when full_gate itself failed.
+  # --------------------------------------------------------------------------
+  - id: fix_loop
+    depends_on: [full_gate]
+    trigger_rule: all_done
+    loop:
+      interactive: false
+      max_iterations: 8
+      context: shared
+      until: DONE
+      until_bash: "pnpm typecheck && pnpm lint && pnpm test"
+      prompt: |
+        Full-gate result: $full_gate.output
+        If it already passed, emit <promise>DONE</promise> immediately.
+        Otherwise diagnose and patch CODE — do not weaken or delete the
+        failing test from step 3 to make this pass (spec/rules/testing.md:
+        deleting a failing test instead of fixing it is spec vandalism).
+        Re-run the gate after patching.
+
+  # --------------------------------------------------------------------------
+  # 8. Drift check. Did the fix contradict a documented spec claim? A bug fix
+  #    that changes previously-documented behavior is itself a spec-first
+  #    change (spec-first-change.md) and must edit spec/ in the SAME change.
+  # --------------------------------------------------------------------------
+  - id: drift_check
+    depends_on: [fix_loop]
+    context: shared
+    prompt: |
+      Compare the fixed behavior against spec/product/ and spec/tech/ claims
+      for the affected area (suspected_scope from restate_bug).
+
+      Three cases:
+        (a) The bug was already-recorded drift (a DRIFT: block described
+            exactly this gap) -> the fix CLOSES it: delete the block
+            (spec/rules/drift.md #3 — a block describing already-fixed code
+            is itself drift).
+        (b) The old (buggy) behavior was what a spec claimed was correct ->
+            the fix changes documented behavior -> edit the spec claim in
+            spec/product/ or spec/tech/ in THIS change (spec-first-change.md).
+        (c) Neither -> pure bug fix, no spec touch needed.
+
+      Do exactly one of (a)/(b)/(c). Do not silently do nothing if (a) or (b)
+      applies.
+      Emit JSON:
+        { case: "closed_drift"|"spec_amended"|"no_spec_change",
+          files_changed: string[] }
+    output_format:
+      type: object
+      required: [case, files_changed]
+
+  # --------------------------------------------------------------------------
+  # 9. Commit suggestion. MUST NOT commit.
+  # --------------------------------------------------------------------------
+  - id: commit_suggestion
+    depends_on: [drift_check]
+    context: shared
+    prompt: |
+      Run `git status --porcelain` and `git diff --stat` (read-only).
+      Print ONE suggested conventional-commit message (AGENTS.md: fix: is the
+      expected type here, unless drift_check also touched spec/product or
+      spec/tech, in which case say so in the body) — subject line + short
+      body.
+
+      Do NOT run `git add`, `git commit`, `git push`, or any other mutating
+      git command. This workflow ends with a suggestion, not a commit — the
+      human reviews and commits.

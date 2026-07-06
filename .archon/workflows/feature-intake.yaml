@@ -1,0 +1,413 @@
+# Date: 2026-07-07
+# Question: Can Archon drive nxus's spec-first change workflow
+#           (spec/rules/spec-first-change.md) as a single sanctioned entrypoint,
+#           from intake through gate to a ready-to-commit diff?
+# Verdict: Draft. Interview-first (interactive), then non-interactive spec-first
+#          execution with two approval gates (spec-before-code, tests-before-
+#          validation) — adapted from the Draiver reference feature-intake.yaml
+#          (emdash-calcasa-plus-replication/.archon/workflows/feature-intake.yaml).
+#          No plannotator step: nxus's mandate is a single interview loop, not
+#          a two-step interview+holistic-review pattern.
+#
+# Encodes:
+#   - Placement rule (spec/rules/placement.md) — "what invalidates this text?"
+#   - Spec-first change rule (spec/rules/spec-first-change.md) — spec edits
+#     precede code edits, routed to spec/product/ (functional) or spec/tech/
+#     (technical) or spec/rules/ (workflow/policy) — NOT Draiver's
+#     Draiver.Instructions/technical-specs split.
+#   - Drift rule (spec/rules/drift.md) — DRIFT: blocks for intentional divergence
+#   - Testing rule (spec/rules/testing.md) — story-named behavior tests
+#   - Dev-entrypoints rule (spec/rules/dev-entrypoints.md) — pnpm <script> only,
+#     never raw vite/nx invocations
+#   - Toolchain commands (spec/tech/toolchain.md §2) — pnpm typecheck / lint / test
+#   - Repository workflow: conventional commits, no CHANGELOG ceremony (AGENTS.md)
+#
+# PROVIDER = CODEX everywhere. Why (same underlying Archon issues as the
+# Draiver reference):
+#   - Avoids the nested-Claude-Code hang (Archon #1030): Archon spawns a *codex*
+#     child, not a claude SDK child, so this workflow can be driven from inside
+#     a CC session without hanging.
+#   Caveat: per-node allowed_tools/denied_tools/hooks/mcp/skills are IGNORED
+#   under codex (configure globally in ~/.codex/config.toml instead). The
+#   read-only *intent* of ground_spec_surface/locate_spec_homes is therefore
+#   advisory under codex, not tool-enforced — the prompt language is the only
+#   real guardrail.
+#   Caveat: if output_format gets flaky on the codex default model, pin a
+#   stronger model per node with `model: <codex-model-id>`.
+
+name: feature-intake
+description: Non-trivial nxus change. Spec-first, interview-driven, gated by typecheck/lint/test.
+
+provider: codex
+
+# Required for approval gates + the interactive interview loop to render
+# correctly in web/CLI foreground. Without this they queue silently in
+# background runs.
+interactive: true
+
+triggers:
+  - slash: /feature
+  - manual
+
+# NO isolation block — nxus workflows run on the working checkout, not a
+# fresh git-worktree. Why: `pnpm dev` boots all 6 apps on FIXED ports
+# 3000-3005 and `predev` force-kills whatever is already bound to them
+# (spec/tech/toolchain.md §1); a second worktree can't run its own dev/e2e
+# servers alongside the first without a port collision, and a fresh worktree
+# also starts without `node_modules` and the seeded SQLite db
+# (`apps/nxus-core` db:seed) that `pnpm test`/`pnpm e2e` need on disk — this
+# mirrors the Draiver cohesion-review.yaml finding that `npx nx graph`
+# starves in a bare worktree lacking node_modules. Run this workflow with
+# `archon workflow run feature-intake --no-worktree "<request>"` from a shell
+# OUTSIDE any Claude Code session (see .archon/workflows/README.md for the
+# full run-mode caveat, Archon #1067).
+
+# The user's invocation message is interpolated as $ARGUMENTS (Archon's only
+# binding for the CLI/dashboard message). A declared `inputs:` block does NOT
+# receive the positional message — see Archon issue #1535. Do not reintroduce
+# one.
+#
+# Variable syntax (verified against the Draiver reference's parameter matrix):
+#   $ARGUMENTS              -> the invocation message
+#   $<node_id>.output       -> a prior node's full output (note the leading $)
+#   $<node_id>.output.field -> a field, ONLY if that node declared output_format
+# A `when:` expression missing the leading $ is INVALID and the node is
+# silently skipped (fail-closed) — always write `when: "$node.output.field == ..."`.
+
+nodes:
+
+  # --------------------------------------------------------------------------
+  # 1. Ground in the spec surface. Fresh context = no prior chatter pollutes it.
+  # --------------------------------------------------------------------------
+  - id: ground_spec_surface
+    context: fresh
+    prompt: |
+      Read these files. Do not edit anything:
+        - AGENTS.md
+        - spec/README.md
+        - spec/rules/README.md
+      Emit JSON:
+        { principles_in_scope: string[], candidate_spec_homes: string[] }
+    output_format:
+      type: object
+      required: [principles_in_scope, candidate_spec_homes]
+      properties:
+        principles_in_scope: { type: array, items: { type: string } }
+        candidate_spec_homes: { type: array, items: { type: string } }
+
+  # --------------------------------------------------------------------------
+  # 2. Route the request to its canonical spec home(s) via the placement
+  #    question: "what invalidates this text?" (spec/rules/placement.md).
+  # --------------------------------------------------------------------------
+  - id: locate_spec_homes
+    depends_on: [ground_spec_surface]
+    context: shared
+    prompt: |
+      Request: $ARGUMENTS
+      Principles in scope (from prior node): $ground_spec_surface.output
+
+      Inspect spec/product/ (what nxus does) and spec/tech/ (how it's built)
+      to find the file(s) this request would invalidate. A request can be
+      functional, technical, or both. If it changes workflow/policy instead,
+      the home is spec/rules/.
+      Emit JSON:
+        { functional_home: string|null, technical_home: string|null,
+          is_functional_change: bool, is_technical_change: bool }
+    output_format:
+      type: object
+      required: [functional_home, technical_home, is_functional_change, is_technical_change]
+
+  # --------------------------------------------------------------------------
+  # 3. Pure-refactor cutout (spec-first-change.md #4). Informs the interview —
+  #    NOT used as a `when:` guard on the interview node itself (see the
+  #    syntax note above: a `when:` missing the leading $ silently skips the
+  #    node — that class of bug is exactly what bit the Draiver reference's
+  #    earlier triviality-guard attempt). The agent short-circuits inside the
+  #    loop instead.
+  # --------------------------------------------------------------------------
+  - id: triage_pure_refactor
+    depends_on: [locate_spec_homes]
+    context: shared
+    prompt: |
+      Request: $ARGUMENTS
+      Spec homes (from prior node): $locate_spec_homes.output
+
+      Apply spec-first-change.md #4: a PURE refactor — no observable behavior
+      change, no invariant touched, no architectural boundary crossed — needs
+      no spec edit (it still must fix any path:line citations it moves).
+      Anything that changes behavior, the data model, an invariant, or a
+      boundary is NOT pure. If ambiguous, it is NOT pure.
+      Emit JSON: { is_pure_refactor: bool, reason: string }
+    output_format:
+      type: object
+      required: [is_pure_refactor, reason]
+
+  # --------------------------------------------------------------------------
+  # 4. Interactive interview. Each iteration asks 1-4 questions, pauses, the
+  #    user answers free-text ($LOOP_USER_INPUT), loop continues until DONE.
+  #    Writes the resolved-decisions doc to a dated docs/notes/ file per the
+  #    placement rule's exploratory-text convention (spec/rules/placement.md
+  #    #3) — non-normative scratch until task_breakdown/spec_edit promote its
+  #    content into spec/.
+  # --------------------------------------------------------------------------
+  - id: intake_interview
+    depends_on: [triage_pure_refactor]
+    loop:
+      interactive: true
+      max_iterations: 20
+      context: shared
+      until: DONE
+      gate_message: "Answer the intake questions, or type 'done' once aligned."
+      prompt: |
+        Feature request (verbatim): $ARGUMENTS
+        Pure-refactor triage (from prior node): $triage_pure_refactor.output
+
+        If the triage marked this a pure refactor, skip the interview: emit
+        <promise>DONE</promise> on the first turn. Otherwise conduct an intake
+        interview.
+
+        Each iteration:
+          - Ask 1-4 related questions. Every question carries a recommended
+            option + reason. Serialize dependent questions across iterations
+            (do not jump branches).
+          - Maintain the resolved-decisions doc at
+            docs/notes/<today's date, YYYY-MM-DD>-intake-<slug>.md (pick a
+            short slug from the request on the first turn, then keep writing
+            the same path). Overwrite it each turn with the full current
+            state: intent, scope, in/out, spec routing decision
+            (product/tech/rules, from locate_spec_homes), open items.
+
+        User input arrives as $LOOP_USER_INPUT.
+
+        Exit (emit <promise>DONE</promise>) ONLY when ALL hold:
+          (a) functional intent is unambiguous
+          (b) spec routing is confirmed (which file(s) in spec/product,
+              spec/tech, spec/rules will change)
+          (c) the testing approach is named (unit vs e2e vs both, per
+              spec/rules/testing.md)
+          (d) the user explicitly signed off on the resolved plan
+
+        Do NOT exit because patience ran out. One more question is always
+        cheaper than building the wrong thing.
+
+  # --------------------------------------------------------------------------
+  # 5. Task breakdown. Spec edits FIRST (spec-first-change.md #1).
+  # --------------------------------------------------------------------------
+  - id: task_breakdown
+    depends_on: [intake_interview]
+    context: shared
+    prompt: |
+      Feature request (verbatim): $ARGUMENTS
+      Resolved intake doc: read the docs/notes/*-intake-*.md file written by
+      the prior interview loop.
+
+      Produce an ordered task list. Order MUST be:
+        1. Spec edit(s) — spec/product/ and/or spec/tech/ and/or spec/rules/
+        2. Implementation (data-layer changes MUST stay mode-agnostic across
+           table/node/graph architectures — see spec/tech/persistence.md and
+           the isTableArchitecture()/isNodeArchitecture()/isGraphArchitecture()
+           guards; never leak mode logic into feature code)
+        3. Story-named behavior tests (spec/rules/testing.md)
+        4. Validation: pnpm typecheck / pnpm lint / pnpm test
+        5. Reconciliation: re-read spec vs code, fix genuine ambiguities only
+    output_format:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items: { type: object, required: [step, target, summary] }
+
+  # --------------------------------------------------------------------------
+  # 6. Direct spec edit at the canonical home. No proposal layer.
+  # --------------------------------------------------------------------------
+  - id: spec_edit
+    depends_on: [task_breakdown]
+    context: shared
+    prompt: |
+      Task list (from prior node): $task_breakdown.output
+
+      Edit the canonical home(s) identified upstream:
+        - Functional behavior  -> spec/product/...
+        - Implementation/tech  -> spec/tech/...
+        - Workflow/policy      -> spec/rules/... (one rule per file; update
+                                  spec/rules/README.md in the same commit)
+
+      Follow spec/README.md conventions: "Invalidated by: ..." as the first
+      line, MUST/SHOULD/MAY language, path:line citations for evidence. One
+      concept, one home — link to the owning file instead of restating it
+      (spec/rules/no-duplicate-concepts.md).
+
+      Add a `DRIFT:` block (spec/rules/drift.md format) for any intentional
+      divergence you are knowingly landing.
+
+      Emit JSON: { files_changed: string[], touches_ui: bool }
+    output_format:
+      type: object
+      required: [files_changed, touches_ui]
+
+  # --------------------------------------------------------------------------
+  # 7. Spec gate. Single-shot approval (resumes reliably — no resume loop).
+  # --------------------------------------------------------------------------
+  - id: spec_edit_gate
+    depends_on: [spec_edit]
+    approval:
+      message: |
+        Review spec edits BEFORE any code lands (spec-first-change.md #1:
+        spec edits precede code edits in commit order).
+
+        Checklist:
+          - Functional changes touch spec/product/ (or is_functional_change
+            was false)
+          - Technical decisions touch spec/tech/ (or is_technical_change was
+            false)
+          - No rule body restated outside its home (no-duplicate-concepts.md)
+          - DRIFT: blocks added for any intentional divergence
+      on_reject:
+        prompt: |
+          Reviewer rejected. Reapply changes per feedback in
+          $APPROVAL_FEEDBACK and re-request approval. Do NOT proceed to
+          implementation.
+
+  # --------------------------------------------------------------------------
+  # 8. Implementation.
+  # --------------------------------------------------------------------------
+  - id: implement
+    depends_on: [spec_edit_gate]
+    context: shared
+    prompt: |
+      Task list (from prior node): $task_breakdown.output
+
+      Walk the task list. The spec is the brief. If implementation wants to
+      do something the spec does not authorize, STOP and emit a request to
+      revise spec_edit — do not silently expand intent in code.
+
+  # --------------------------------------------------------------------------
+  # 9. Behavior-test gate. Story-naming isn't lint-enforced -> approval.
+  # --------------------------------------------------------------------------
+  - id: behavior_tests_gate
+    depends_on: [implement]
+    approval:
+      message: |
+        Confirm (spec/rules/testing.md):
+          - Test titles describe observable behavior in story form, not
+            implementation ("pressing Enter creates a sibling node below",
+            not "calls createNodeServerFn")
+          - New product behavior has an e2e (e2e/<app>/) or store-level
+            behavior test naming the story
+          - No `it.skip`/`test.skip` added without a reason string AND, if it
+            encodes a known capability gap, a matching DRIFT: block
+      on_reject:
+        prompt: |
+          Rename / rewrite tests per feedback, re-request approval.
+
+  # --------------------------------------------------------------------------
+  # 10. Validation. Three deterministic bash nodes in parallel — the
+  #     sanctioned pnpm scripts (spec/rules/dev-entrypoints.md: never raw
+  #     `nx run`/`vite` invocations baked into workflows).
+  # --------------------------------------------------------------------------
+  - id: typecheck
+    depends_on: [behavior_tests_gate]
+    bash: pnpm typecheck
+    timeout: 600000
+
+  - id: tests
+    depends_on: [behavior_tests_gate]
+    bash: pnpm test
+    timeout: 1800000
+
+  - id: lint
+    depends_on: [behavior_tests_gate]
+    bash: pnpm lint
+    timeout: 600000
+
+  # --------------------------------------------------------------------------
+  # 11. Fix-loop. Re-runs the full gate each iteration; exits when green.
+  #     Uses until_bash (deterministic) rather than a `.failed` when-guard,
+  #     whose accessor isn't documented for codex — mirrors the Draiver
+  #     reference's validate_fix_loop for the same reason.
+  # --------------------------------------------------------------------------
+  - id: validate_fix_loop
+    depends_on: [typecheck, tests, lint]
+    trigger_rule: all_done
+    loop:
+      interactive: false
+      max_iterations: 8
+      context: shared
+      until: DONE
+      until_bash: "pnpm typecheck && pnpm lint && pnpm test"
+      prompt: |
+        Validation results:
+          typecheck: $typecheck.output
+          tests:     $tests.output
+          lint:      $lint.output
+        If all three already pass, emit <promise>DONE</promise> immediately.
+        Otherwise diagnose the root cause and patch CODE (not spec —
+        accidental drift never edits spec; spec edits only happen for genuine
+        ambiguity, handled by the reconcile node below). Re-run the pnpm
+        scripts after patching.
+
+  # --------------------------------------------------------------------------
+  # 12. UI smoke for changes that touch a running app. `when:` reads
+  #     spec_edit's output_format field — note the leading $, and that this
+  #     is a real bool, not the string 'true'.
+  # --------------------------------------------------------------------------
+  - id: ui_smoke
+    depends_on: [validate_fix_loop, typecheck, tests, lint]
+    trigger_rule: none_failed_min_one_success
+    when: "$spec_edit.output.touches_ui == true"
+    approval:
+      message: |
+        UI-affecting change detected. Start the app via the sanctioned
+        entrypoint ONLY (spec/rules/dev-entrypoints.md):
+          pnpm dev             (all 6 apps)
+          pnpm dev:<app>       (gateway|core|workbench|calendar|recall|editor)
+        Do NOT invoke vite/nx directly — that rule forbids ad-hoc entrypoints.
+
+        Walk the golden path + edge cases in-browser. Confirm no regression
+        in adjacent flows. Approve when verified, reject with notes if broken.
+
+  # --------------------------------------------------------------------------
+  # 13. Reconcile. Spec-first rule: genuine ambiguity -> spec edit; accidental
+  #     drift -> code fix (or a DRIFT: block), never the reverse.
+  # --------------------------------------------------------------------------
+  - id: reconcile
+    depends_on: [ui_smoke, validate_fix_loop]
+    trigger_rule: none_failed_min_one_success
+    context: shared
+    prompt: |
+      Re-read the spec edits made at spec_edit vs the shipped code.
+      Classify each divergence:
+        (a) genuine ambiguity discovered during implementation -> amend spec
+        (b) accidental code drift                               -> fix code,
+            or record a DRIFT: block (spec/rules/drift.md) if it can't be
+            closed in this change
+      (b) MUST NOT result in spec edits beyond adding/closing a DRIFT: block.
+
+  # --------------------------------------------------------------------------
+  # 14. Commit suggestion. MUST NOT commit — this repo's mandate is that
+  #     workflows print, humans commit.
+  # --------------------------------------------------------------------------
+  - id: commit_suggestion
+    depends_on: [reconcile]
+    context: shared
+    prompt: |
+      Run `git status --porcelain` and `git diff --stat` (read-only) to see
+      what this workflow changed.
+
+      Print ONE suggested conventional-commit message (AGENTS.md: feat: /
+      fix: / chore: / docs: / refactor: / test:; no CHANGELOG ceremony) —
+      subject line + a short body if the "why" isn't obvious from the
+      subject.
+
+      Do NOT run `git add`, `git commit`, `git push`, or any other mutating
+      git command. This workflow ends with a suggestion, not a commit — the
+      human reviews and commits.
+
+# ------------------------------------------------------------------------------
+# Deliberately `approval` (not deterministic):
+#   - spec review before code   -> spec_edit_gate
+#   - story-test naming lint    -> behavior_tests_gate (no lint rule exists yet)
+#   - UI regression check       -> ui_smoke (no visual-diff harness exists yet)
+# Promote each to a bash/deterministic node once the matching tool exists.
+# ------------------------------------------------------------------------------

@@ -1,0 +1,136 @@
+# Date: 2026-07-07
+# Question: Can Archon run a read-only DRIFT: audit over spec/** — enumerate
+#           recorded drift, verify a sample of normative claims against code,
+#           and surface stale citations / closed drift / new undocumented
+#           drift — without ever editing anything?
+# Verdict: Draft. Advisory only, mirrors the Draiver reference
+#          cohesion-review.yaml shape (scope -> ground -> judge/report), grounded
+#          in spec/rules/drift.md as the single source of truth for what a
+#          DRIFT: block IS — this workflow does not restate that rubric, only
+#          orchestrates against it (no-duplicate-concepts.md).
+#
+# Encodes:
+#   - Drift rule (spec/rules/drift.md) — DRIFT: is the only marker; a block
+#     describing already-fixed code is itself drift; closing = delete the block
+#   - Traceability principle (AGENTS.md) — every normative claim cites path:line
+#   - Reimplementability property (spec/README.md) — spec/** MUST together be
+#     reimplementation-complete; a stale citation silently erodes that property
+#
+# PROVIDER = CODEX. Same rationale as feature-intake.yaml/bug-fix.yaml:
+# avoids the nested-Claude-Code hang (Archon #1030) when driven from inside a
+# CC session. Every node here is read-only BY INTENT, but allowed_tools are
+# IGNORED under codex (advisory only, not tool-enforced) — the enforcement is
+# the prompt language "NEVER edit", not a tool allowlist.
+# Caveat: $ARGUMENTS is the only binding for the invocation message (Archon
+# #1535); `when:` needs the leading $ (unused here — no branches, single
+# linear pipeline).
+
+name: spec-drift-check
+description: Read-only DRIFT audit of spec/** — stale citations, closed drift, new undocumented drift. Never edits, never gates.
+
+provider: codex
+
+triggers:
+  - slash: /drift-check
+  - manual
+
+# NO isolation block — see feature-intake.yaml's isolation comment (fixed dev
+# ports + seeded SQLite db make a parallel worktree unworkable). This
+# workflow is read-only regardless, but stays consistent with the repo-wide
+# no-worktree convention; it also wants HEAD-accurate file state for the
+# path:line citations it verifies, which a stale worktree branch would skew.
+
+# $ARGUMENTS optionally scopes the audit to a path/glob under spec/ (e.g.
+# "spec/tech/persistence.md"); default to all of spec/ if empty.
+
+nodes:
+
+  # --------------------------------------------------------------------------
+  # 1. Enumerate every DRIFT: block. The marker is the literal string,
+  #    greppable repo-wide (spec/rules/drift.md #1).
+  # --------------------------------------------------------------------------
+  - id: enumerate_drift
+    context: fresh
+    allowed_tools: [Read, Grep, Bash]
+    prompt: |
+      Scope: $ARGUMENTS (default to "spec/" if empty)
+
+      Run `grep -rn "DRIFT:" <scope>` and read each hit's full block (the
+      canonical/current/impact/closes lines that follow it, per
+      spec/rules/drift.md's format). Do not edit anything.
+      Emit JSON:
+        { blocks: [ { file: string, title: string, canonical: string,
+                       current: string, cited_evidence: string[] } ] }
+    output_format:
+      type: object
+      required: [blocks]
+      properties:
+        blocks: { type: array }
+
+  # --------------------------------------------------------------------------
+  # 2. Sample normative claims NOT already covered by a DRIFT: block, to catch
+  #    divergence nobody has recorded yet. "Normative" = MUST/SHOULD/MAY
+  #    sentences carrying a path:line citation (spec/README.md conventions).
+  # --------------------------------------------------------------------------
+  - id: sample_normative_claims
+    depends_on: [enumerate_drift]
+    context: shared
+    allowed_tools: [Read, Grep]
+    prompt: |
+      Scope: $ARGUMENTS (default to "spec/" if empty)
+      Already-recorded drift (from prior node): $enumerate_drift.output
+
+      Sample 10-20 MUST/SHOULD/MAY claims across spec/product/, spec/tech/,
+      and spec/rules/ that carry a `path:line` citation and are NOT already
+      inside one of the DRIFT: blocks above. Bias the sample toward files
+      with the oldest-looking citations and toward spec/tech/ (implementation
+      claims rot faster than product intent).
+      Emit JSON:
+        { sampled_claims: [ { file: string, claim: string, cited_evidence: string } ] }
+    output_format:
+      type: object
+      required: [sampled_claims]
+
+  # --------------------------------------------------------------------------
+  # 3. Verify + report. Free-text report IS the deliverable (mirrors the
+  #    Draiver reference cohesion-review.yaml's `review` node). NEVER edit
+  #    spec/ or code — this node only reads and reports.
+  # --------------------------------------------------------------------------
+  - id: audit
+    depends_on: [sample_normative_claims]
+    context: shared
+    allowed_tools: [Read, Grep]
+    prompt: |
+      DRIFT: blocks (from enumerate_drift): $enumerate_drift.output
+      Sampled claims (from sample_normative_claims): $sample_normative_claims.output
+
+      For EVERY recorded DRIFT: block: open the `current:` citation's
+      file:line and check whether the code still matches that description.
+        - If the code no longer looks like `current:` describes (line moved,
+          function renamed, logic changed) -> STALE CITATION.
+        - If the code now matches `canonical:` (the drift was fixed but the
+          block was never deleted, per drift.md #3) -> CLOSED DRIFT.
+        - Otherwise -> still open, list it as-is.
+
+      For EVERY sampled claim: open its cited file:line and check whether the
+      code still supports the claim.
+        - If it contradicts the claim and NO DRIFT: block covers it ->
+          NEW UNDOCUMENTED DRIFT.
+        - If the citation no longer resolves (file/line moved) -> STALE
+          CITATION.
+
+      NEVER edit spec/ or code — this is a read-only audit. The report is the
+      output.
+
+      Output a `DRIFT AUDIT` report: one line per finding (category,
+      file:line, one-sentence explanation), grouped by category (stale
+      citations / closed drift / new undocumented drift / still-open
+      confirmed drift), then counts per category. If ANY finding exists, LEAD
+      with a banner `⚠ DRIFT AUDIT: <n> FINDINGS`; if none, lead with
+      `✓ DRIFT AUDIT: clean`. End with a final machine-parseable line:
+      `DRIFT_AUDIT_STATUS: CLEAN` or `DRIFT_AUDIT_STATUS: FINDINGS(<n>)`.
+
+      This workflow does not gate by itself: a wrapper/CI step would grep
+      DRIFT_AUDIT_STATUS to decide whether that blocks — none exists today
+      (spec/tech/toolchain.md §7 lists the current CI gates; this audit is
+      not among them).

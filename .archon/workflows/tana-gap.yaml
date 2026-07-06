@@ -1,0 +1,140 @@
+# Date: 2026-07-07
+# Question: Can Archon turn ad-hoc Tana product recon into a prioritized,
+#           spec-shaped feature proposal for nxus-editor — WITHOUT touching
+#           any file — as a repeatable read-only entrypoint?
+# Verdict: Draft. Advisory only. Reads spec/product/editor.md +
+#          spec/product/data-model.md as the canonical baseline of what nxus
+#          already claims to do, optionally layers in an external recon file
+#          if one happens to exist on disk, and drafts ONE feature's spec
+#          edit + task breakdown as plain text output — never writes it.
+#
+# Encodes:
+#   - Reimplementability property (spec/README.md) — the proposal is scoped
+#     against what spec/product/ ALREADY claims, not the live app, since spec
+#     is supposed to be the complete description
+#   - Spec-first change rule (spec/rules/spec-first-change.md) — the DRAFT
+#     follows the same routing/format rules a real spec_edit node would, so
+#     promoting it later (e.g. via feature-intake.yaml) is a copy-paste, not
+#     a rewrite
+#   - Placement rule (spec/rules/placement.md) — the draft targets
+#     spec/product/ (functional: "what nxus does"), never spec/tech/, for a
+#     product-shaped gap like this
+#
+# PROVIDER = CODEX. Same rationale as the other three workflows: avoids the
+# nested-Claude-Code hang (Archon #1030) when driven from inside a CC
+# session. allowed_tools are IGNORED under codex (advisory only) — the
+# "never write" constraint below is enforced by prompt language, not a tool
+# allowlist.
+# Caveat: $ARGUMENTS is the only binding for the invocation message (#1535).
+
+name: tana-gap
+description: Read-only Tana-vs-nxus-editor gap proposal — one feature, spec draft + tasks. Never implements.
+
+provider: codex
+
+triggers:
+  - slash: /tana-gap
+  - manual
+
+# NO isolation block — see feature-intake.yaml's isolation comment. This
+# workflow is read-only regardless of isolation, but stays consistent with
+# the repo-wide no-worktree convention. It's also moot here in a different
+# way: the recon file below is a session-local scratch path outside the
+# repo, so a fresh worktree wouldn't carry it either way.
+
+# $ARGUMENTS optionally names a feature area to focus on (e.g. "formula
+# fields", "supertag config"); default to "highest-impact gap" if empty.
+
+nodes:
+
+  # --------------------------------------------------------------------------
+  # 1. Ground in nxus's OWN claimed capabilities, plus recon if it exists.
+  #    The recon path is a session-scoped scratch file from a prior research
+  #    session — it will very likely be ABSENT on a different machine or a
+  #    later run. Treat absence as the normal case, not an error.
+  # --------------------------------------------------------------------------
+  - id: read_context
+    context: fresh
+    allowed_tools: [Read, Bash]
+    prompt: |
+      Read, do not edit:
+        - spec/product/editor.md
+        - spec/product/data-model.md
+
+      Then check whether this file exists (it is OPTIONAL, session-scratch,
+      and normally ABSENT — its absence is not an error):
+        /private/tmp/claude-501/-Volumes-Data-workspace-repos-nxus/6cfa8038-23f8-4b0f-9985-c58db63e314b/scratchpad/tana-recon.md
+      If it exists, read it as prior Tana-vs-nxus recon evidence. If it does
+      not, proceed on spec/product/ alone plus general knowledge of Tana as a
+      well-known outliner product, and say so explicitly in the output.
+
+      Emit JSON:
+        { editor_capabilities: string[], data_model_invariants: string[],
+          recon_found: bool, recon_highlights: string[] }
+    output_format:
+      type: object
+      required: [editor_capabilities, data_model_invariants, recon_found, recon_highlights]
+
+  # --------------------------------------------------------------------------
+  # 2. Rank candidate gaps. Impact vs effort, cited against spec/product/ and,
+  #    where available, the recon file's own gap citations.
+  # --------------------------------------------------------------------------
+  - id: rank_gaps
+    depends_on: [read_context]
+    context: shared
+    allowed_tools: [Read]
+    prompt: |
+      Focus area (optional): $ARGUMENTS
+      Context (from prior node): $read_context.output
+
+      Produce a prioritized list of candidate gap features nxus-editor lacks
+      relative to Tana. If a focus area was given, only rank candidates
+      within it; otherwise rank across all recon_highlights (or, if recon was
+      not found, across your general Tana knowledge contrasted with
+      editor_capabilities/data_model_invariants).
+
+      For each candidate: impact (does it unlock a whole class of workflows,
+      e.g. formula fields, or is it a small affordance), effort (rough:
+      small/medium/large, naming which spec/product/ + spec/tech/ areas it
+      would touch), and a one-line rationale. Sort by impact-per-effort,
+      highest first.
+      Emit JSON:
+        { candidates: [ { feature: string, impact: string, effort: string,
+                           rationale: string } ] }
+    output_format:
+      type: object
+      required: [candidates]
+
+  # --------------------------------------------------------------------------
+  # 3. Draft ONE proposal (top-ranked, or the $ARGUMENTS focus if it named a
+  #    specific feature). Output-only — NEVER write files.
+  # --------------------------------------------------------------------------
+  - id: draft_proposal
+    depends_on: [rank_gaps]
+    context: shared
+    allowed_tools: [Read]
+    prompt: |
+      Ranked candidates (from prior node): $rank_gaps.output
+
+      Pick the single top-priority feature (or the one $ARGUMENTS named, if
+      it matches a candidate). Produce, as TEXT OUTPUT ONLY:
+
+      (a) A draft spec edit for spec/product/editor.md and/or
+          spec/product/data-model.md, formatted exactly as it would appear if
+          applied: an "Invalidated by: ..." line if it introduces a new
+          section, MUST/SHOULD/MAY language, path:line evidence placeholders
+          for where the real implementation would live, and a DRIFT: block
+          (spec/rules/drift.md format) marking that the proposal depends on a
+          capability that doesn't exist yet.
+
+      (b) A task breakdown following spec-first-change.md order: spec
+          edit(s) first, then implementation, then story-named tests
+          (spec/rules/testing.md), then validation (pnpm typecheck / pnpm
+          lint / pnpm test), then reconciliation.
+
+      Do NOT use a Write or Edit tool. Do NOT modify any file in this
+      workspace. This is a proposal for a human (or a later feature-intake
+      run) to act on — the draft text IS the deliverable.
+
+      End with a machine-parseable line:
+      `TANA_GAP_STATUS: PROPOSED(<feature-slug>)`
