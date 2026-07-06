@@ -100,9 +100,9 @@ function seedSystemNodes() {
 
   // Create system field nodes
   const systemFields = [
-    { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'Supertag' },
-    { id: 'field-extends', systemId: SYSTEM_FIELDS.EXTENDS, content: 'Extends' },
-    { id: 'field-type', systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'Field Type' },
+    { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'supertag' },
+    { id: 'field-extends', systemId: SYSTEM_FIELDS.EXTENDS, content: 'extends' },
+    { id: 'field-type', systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'fieldType' },
     { id: 'field-price', systemId: 'field:price', content: 'Price' },
     { id: 'field-quantity', systemId: 'field:quantity', content: 'Quantity' },
     { id: 'field-amount', systemId: 'field:amount', content: 'Amount' },

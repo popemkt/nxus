@@ -100,7 +100,7 @@ function seedSystemNodes() {
     {
       id: 'field-supertag',
       systemId: SYSTEM_FIELDS.SUPERTAG,
-      content: 'Supertag',
+      content: 'supertag',
     },
     { id: 'field-type', systemId: SYSTEM_FIELDS.TYPE, content: 'Type' },
     { id: 'field-path', systemId: SYSTEM_FIELDS.PATH, content: 'Path' },

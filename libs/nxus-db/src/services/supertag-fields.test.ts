@@ -74,9 +74,9 @@ function seedSystemNodes() {
   const now = Date.now()
 
   const systemFields = [
-    { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'Supertag' },
-    { id: 'field-extends', systemId: SYSTEM_FIELDS.EXTENDS, content: 'Extends' },
-    { id: 'field-type', systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'Field Type' },
+    { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'supertag' },
+    { id: 'field-extends', systemId: SYSTEM_FIELDS.EXTENDS, content: 'extends' },
+    { id: 'field-type', systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'fieldType' },
     { id: 'field-required', systemId: SYSTEM_FIELDS.REQUIRED, content: 'required' },
     { id: 'field-hide-when', systemId: SYSTEM_FIELDS.HIDE_WHEN, content: 'hideWhen' },
     { id: 'field-pinned', systemId: SYSTEM_FIELDS.PINNED, content: 'pinned' },

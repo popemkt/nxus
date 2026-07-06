@@ -20,7 +20,7 @@ import type { Surreal, RecordId } from 'surrealdb'
 import { StringRecordId } from 'surrealdb'
 import { eq } from 'drizzle-orm'
 import { nodes, nodeProperties } from '../../schemas/node-schema.js'
-import { SYSTEM_FIELDS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, FIELD_NAMES } from '../../schemas/node-schema.js'
 import type * as itemSchema from '../../schemas/item-schema.js'
 import { SqliteBackend } from './sqlite-backend.js'
 import { SurrealBackend } from './surreal-backend.js'
@@ -609,8 +609,8 @@ async function validateMigration(
     const sqliteFieldNames = new Set(Object.keys(sqliteNode.properties))
     const surrealFieldNames = new Set(Object.keys(surrealNode.properties))
 
-    // Skip 'Supertag' field name — in SurrealDB this is modeled as has_supertag edges, not properties
-    sqliteFieldNames.delete('Supertag')
+    // Skip the supertag meta-field — in SurrealDB this is modeled as has_supertag edges, not properties
+    sqliteFieldNames.delete(FIELD_NAMES.SUPERTAG)
 
     for (const fieldName of sqliteFieldNames) {
       if (!surrealFieldNames.has(fieldName)) {

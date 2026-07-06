@@ -311,10 +311,12 @@ export const SYSTEM_FIELDS = {
  * FIELD_NAMES.PARENT   = 'parent'       (for reads)
  */
 export const FIELD_NAMES = {
-  // Core system fields
-  SUPERTAG: 'Supertag' as FieldContentName,
-  EXTENDS: 'Extends' as FieldContentName,
-  FIELD_TYPE: 'Field Type' as FieldContentName,
+  // Core system fields — MUST match the content seeded in bootstrap.ts
+  // (upsertSystemNode never rewrites content on existing DBs, so these
+  // constants follow the data, not the other way around).
+  SUPERTAG: 'supertag' as FieldContentName,
+  EXTENDS: 'extends' as FieldContentName,
+  FIELD_TYPE: 'fieldType' as FieldContentName,
 
   // Common entity fields
   TYPE: 'type' as FieldContentName,
