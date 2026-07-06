@@ -63,3 +63,10 @@ playwright/.cache/
 # TypeScript build info
 *.tsbuildinfo
 .claude/settings.local.json
+
+# Debug screenshots & tool caches
+.playwright-mcp/
+.understand-anything/
+*.png
+!apps/**/public/**/*.png
+!**/assets/**/*.png
