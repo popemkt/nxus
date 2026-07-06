@@ -1,5 +1,7 @@
 # Nxus Documentation
 
+> **Note**: the normative documentation is the spec tree — start at [spec/README.md](../spec/README.md). The pages below are legacy prose being folded into `spec/`; when they disagree with the spec, the spec wins.
+
 Welcome to the official documentation for **Nxus**, a local-first, node-based application ecosystem.
 
 ## 🚀 Getting Started

@@ -59,10 +59,10 @@ Once your manifest is ready, you need to sync it with the Nxus database.
 1. **Run the Migration**:
 
    ```bash
-   pnpm db:migrate
+   pnpm --filter @nxus/core-app db:migrate
    ```
 
-   This script scans the `apps` directory and updates the SQLite database with your new manifest.
+   This runs `apps/nxus-core/scripts/migrate-manifests.ts`, which scans the manifest directory and updates the SQLite database with your new manifest. (There is no root `db:migrate` script.)
 
 2. **Verify in the UI**:
    Open the Nxus dashboard. Your new app should now appear in the list and be searchable in the Command Palette.

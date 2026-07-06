@@ -1,0 +1,11 @@
+{
+    "schema_version": 1,
+    "commit": "5640edad2191e11c81de0e9cfe02bbf4a5230a08",
+    "indexed_at": "2026-07-06T16:14:47Z",
+    "project": "Volumes-Data-workspace-repos-nxus",
+    "nodes": 9722,
+    "edges": 17162,
+    "original_size": 14221312,
+    "compressed_size": 2728272,
+    "compression_level": 9
+}

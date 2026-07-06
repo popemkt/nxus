@@ -1,6 +1,8 @@
 ---
-description: How to add/modify database schema columns in Nxus
+description: "ARCHIVED (2026-07-06): legacy table-mode schema workflow"
 ---
+
+> **ARCHIVED 2026-07-06.** This workflow maintains the removed `table`-mode item tables (`commands`/`item_commands`, `items`, `tags`, …) and cites paths that no longer exist (`apps/nxus-core/src/db/*`; schema now lives in `libs/nxus-db`). `table` mode is REMOVED — see [spec/tech/persistence.md](../../spec/tech/persistence.md) for the current schema, modes, and migration policy. Frozen for history; do not follow.
 
 # Database Schema Changes Workflow
 
