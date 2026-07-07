@@ -43,6 +43,7 @@ Layer 0 is the typed harness model — two membranes, the actor/process/artifact
 - Non-trivial changes run through the Archon workflows in [.archon/workflows/](.archon/workflows/README.md) — `feature-intake`, `bug-fix`, `spec-drift-check`, `tana-gap`. They are the sanctioned action entrypoints (enforcement is still prose; see the README's honest note).
 - Follow the spec-first change workflow: [spec/rules/spec-first-change.md](spec/rules/spec-first-change.md).
 - Commits: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`). No CHANGELOG ceremony.
+- Behavior-bearing commits carry a `Gates:` line in the body naming what was verified and its result (`Gates: tsc 12 projects; editor e2e 33 passed`) — the durable verdict record ([harness-model.md](spec/rules/harness-model.md) I5/I6); evidence itself is re-derivable, the verdict is not.
 - Known spec↔code divergence is marked `DRIFT:` (searchable) — record it, don't hide it.
 
 ## Running things
