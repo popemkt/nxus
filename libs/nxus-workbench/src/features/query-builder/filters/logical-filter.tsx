@@ -1,21 +1,16 @@
 /**
  * LogicalFilterEditor - Editor for logical/composite filters
  *
- * Allows combining multiple filters with AND/OR/NOT logic.
- * Supports nested filter groups for complex queries.
+ * Allows combining multiple filters with AND/OR/NOT logic. Nested filters are
+ * rendered with the same `FilterList`/`AddFilterMenu`/`FilterChip` components
+ * the top-level QueryBuilder uses (`../filter-list.js`, `../add-filter-menu.js`)
+ * rather than a parallel implementation — since `FilterChip` already dispatches
+ * `and`/`or`/`not` filters back into this same editor (`../filter-chip.tsx`),
+ * this reuse is what makes groups nest to arbitrary depth for free.
  */
 
 import { useState, useEffect } from 'react'
-import {
-  Check,
-  Trash,
-  Hash,
-  TextT,
-  MagnifyingGlass,
-  Calendar,
-  LinkSimple,
-  CheckSquare,
-} from '@phosphor-icons/react'
+import { Check } from '@phosphor-icons/react'
 import {
   Button,
   Label,
@@ -27,6 +22,9 @@ import {
   cn,
 } from '@nxus/ui'
 import type { LogicalFilter, QueryFilter } from '@nxus/db'
+import { FilterList } from '../filter-list.js'
+import { AddFilterMenu } from '../add-filter-menu.js'
+import { createDefaultFilter, type FilterType } from '../filter-defaults.js'
 
 // ============================================================================
 // Types
@@ -42,7 +40,6 @@ export interface LogicalFilterEditorProps {
 }
 
 type LogicalOperator = 'and' | 'or' | 'not'
-type SimpleFilterType = 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField'
 
 // ============================================================================
 // Constants
@@ -68,23 +65,6 @@ const LOGICAL_OPERATORS = [
     description: 'Invert the result (exclude matches)',
   },
 ] as const
-
-/**
- * Available filter types for nested filters
- */
-const FILTER_TYPES: Array<{
-  type: SimpleFilterType
-  label: string
-  icon: typeof Hash
-  color: string
-}> = [
-  { type: 'supertag', label: 'Supertag', icon: Hash, color: '#8b5cf6' },
-  { type: 'property', label: 'Property', icon: TextT, color: '#3b82f6' },
-  { type: 'content', label: 'Content', icon: MagnifyingGlass, color: '#22c55e' },
-  { type: 'temporal', label: 'Date', icon: Calendar, color: '#f59e0b' },
-  { type: 'relation', label: 'Relation', icon: LinkSimple, color: '#ec4899' },
-  { type: 'hasField', label: 'Has Field', icon: CheckSquare, color: '#06b6d4' },
-]
 
 // ============================================================================
 // Component
@@ -115,17 +95,28 @@ export function LogicalFilterEditor({
     onUpdate({ type: newType })
   }
 
-  // Handle adding a nested filter
-  const handleAddNestedFilter = (filterType: SimpleFilterType) => {
-    const newFilter = createDefaultNestedFilter(filterType)
+  // Handle adding a nested filter — any filter type, including and/or/not, so
+  // groups can nest to arbitrary depth (createDefaultFilter is the same
+  // factory the top-level QueryBuilder uses, ../filter-defaults.js).
+  const handleAddNestedFilter = (filterType: FilterType) => {
+    const newFilter = createDefaultFilter(filterType)
     const updatedFilters = [...nestedFilters, newFilter]
     setNestedFilters(updatedFilters)
     onUpdate({ filters: updatedFilters })
   }
 
+  // Handle updating a nested filter in place (edited via its own FilterChip popover)
+  const handleUpdateNestedFilter = (filterId: string, updates: Record<string, unknown>) => {
+    const updatedFilters = nestedFilters.map((f) =>
+      f.id === filterId ? { ...f, ...updates } : f,
+    )
+    setNestedFilters(updatedFilters)
+    onUpdate({ filters: updatedFilters })
+  }
+
   // Handle removing a nested filter
-  const handleRemoveNestedFilter = (index: number) => {
-    const updatedFilters = nestedFilters.filter((_, i) => i !== index)
+  const handleRemoveNestedFilter = (filterId: string) => {
+    const updatedFilters = nestedFilters.filter((f) => f.id !== filterId)
     setNestedFilters(updatedFilters)
     onUpdate({ filters: updatedFilters })
   }
@@ -173,49 +164,41 @@ export function LogicalFilterEditor({
         </Select>
       </div>
 
-      {/* Nested filters list */}
+      {/* Nested filters — indented + left-bordered to read as a group inside
+          the parent editor, however deep the recursion goes. */}
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs text-muted-foreground">
           Nested filters ({nestedFilters.length})
         </Label>
 
-        {nestedFilters.length > 0 ? (
-          <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-            {nestedFilters.map((nestedFilter, index) => (
-              <NestedFilterItem
-                key={nestedFilter.id || index}
-                filter={nestedFilter}
-                onRemove={() => handleRemoveNestedFilter(index)}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-[10px] text-muted-foreground/70 py-2">
-            No nested filters yet. Add filters below.
-          </p>
-        )}
-      </div>
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-1.5 rounded-sm border-l-2 py-1 pl-2.5',
+            hasNestedFilters ? 'border-border' : 'border-dashed border-muted-foreground/30',
+          )}
+        >
+          {hasNestedFilters ? (
+            <FilterList
+              filters={nestedFilters}
+              onUpdateFilter={handleUpdateNestedFilter}
+              onRemoveFilter={handleRemoveNestedFilter}
+              compact
+            />
+          ) : (
+            <p className="text-[10px] text-muted-foreground/70">
+              No nested filters yet.
+            </p>
+          )}
 
-      {/* Add nested filter buttons */}
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs text-muted-foreground">Add filter</Label>
-        <div className="flex flex-wrap gap-1">
-          {FILTER_TYPES.map((filterOption) => (
-            <Button
-              key={filterOption.type}
-              variant="outline"
-              size="xs"
-              onClick={() => handleAddNestedFilter(filterOption.type)}
-              className="text-[10px] h-6 px-2 gap-1"
-            >
-              <filterOption.icon
-                className="size-3"
-                weight="bold"
-                style={{ color: filterOption.color }}
-              />
-              {filterOption.label}
-            </Button>
-          ))}
+          {/* Add nested filter — same menu as the top level, including
+              AND/OR/NOT groups and path filters, so nesting has no depth cap.
+              Distinct aria-label from the top-level trigger so screen readers
+              (and tests) can tell them apart when both are on screen. */}
+          <AddFilterMenu
+            onAddFilter={handleAddNestedFilter}
+            compact
+            ariaLabel="Add nested filter"
+          />
         </div>
       </div>
 
@@ -243,173 +226,4 @@ export function LogicalFilterEditor({
       </div>
     </div>
   )
-}
-
-// ============================================================================
-// Nested Filter Item
-// ============================================================================
-
-interface NestedFilterItemProps {
-  filter: QueryFilter
-  onRemove: () => void
-}
-
-function NestedFilterItem({ filter, onRemove }: NestedFilterItemProps) {
-  const { icon: Icon, label, color } = getFilterDisplayInfo(filter)
-
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-1.5 px-2 py-1 rounded-md border',
-        'bg-muted/30 border-border',
-        'text-[10px]',
-      )}
-    >
-      <Icon
-        className="size-3 shrink-0"
-        weight="bold"
-        style={{ color }}
-      />
-      <span className="truncate flex-1">{label}</span>
-      <button
-        className="flex items-center justify-center shrink-0 bg-transparent border-none cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-        onClick={onRemove}
-        title="Remove filter"
-      >
-        <Trash className="size-3" weight="bold" />
-      </button>
-    </div>
-  )
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Create a default nested filter
- */
-function createDefaultNestedFilter(filterType: SimpleFilterType): QueryFilter {
-  const id = crypto.randomUUID().slice(0, 8)
-
-  switch (filterType) {
-    case 'supertag':
-      return {
-        id,
-        type: 'supertag',
-        supertagId: '',
-        includeInherited: true,
-      }
-    case 'property':
-      return {
-        id,
-        type: 'property',
-        fieldId: '',
-        op: 'eq',
-        value: '',
-      }
-    case 'content':
-      return {
-        id,
-        type: 'content',
-        query: '',
-        caseSensitive: false,
-      }
-    case 'relation':
-      return {
-        id,
-        type: 'relation',
-        relationType: 'childOf',
-        targetNodeId: undefined,
-      }
-    case 'temporal':
-      return {
-        id,
-        type: 'temporal',
-        field: 'createdAt',
-        op: 'within',
-        days: 7,
-      }
-    case 'hasField':
-      return {
-        id,
-        type: 'hasField',
-        fieldId: '',
-        negate: false,
-      }
-    default:
-      throw new Error(`Unknown filter type: ${filterType}`)
-  }
-}
-
-/**
- * Get display info for a filter
- */
-function getFilterDisplayInfo(filter: QueryFilter): {
-  icon: typeof Hash
-  label: string
-  color: string
-} {
-  switch (filter.type) {
-    case 'supertag':
-      return {
-        icon: Hash,
-        label: filter.supertagId
-          ? `#${formatSystemId(filter.supertagId)}`
-          : 'Supertag...',
-        color: '#8b5cf6',
-      }
-    case 'property':
-      return {
-        icon: TextT,
-        label: filter.fieldId
-          ? formatSystemId(filter.fieldId)
-          : 'Property...',
-        color: '#3b82f6',
-      }
-    case 'content':
-      return {
-        icon: MagnifyingGlass,
-        label: filter.query ? `"${filter.query}"` : 'Search...',
-        color: '#22c55e',
-      }
-    case 'temporal':
-      return {
-        icon: Calendar,
-        label: filter.op === 'within'
-          ? `${filter.field} within ${filter.days}d`
-          : `${filter.field} ${filter.op} ${filter.date || '...'}`,
-        color: '#f59e0b',
-      }
-    case 'relation':
-      return {
-        icon: LinkSimple,
-        label: filter.relationType || 'Relation...',
-        color: '#ec4899',
-      }
-    case 'hasField':
-      return {
-        icon: CheckSquare,
-        label: filter.fieldId
-          ? `${filter.negate ? '!' : ''}${formatSystemId(filter.fieldId)}`
-          : 'Has field...',
-        color: '#06b6d4',
-      }
-    default:
-      return {
-        icon: TextT,
-        label: 'Unknown',
-        color: '#6b7280',
-      }
-  }
-}
-
-/**
- * Format a system ID for display
- */
-function formatSystemId(systemId: string): string {
-  const parts = systemId.split(':')
-  const name = parts[parts.length - 1] ?? ''
-  if (!name) return systemId
-  return name.charAt(0).toUpperCase() + name.slice(1)
 }

@@ -34,9 +34,15 @@ export type { QueryLinterProps } from './query-linter.js'
 export {
   SupertagFilterEditor,
   PropertyFilterEditor,
+  PathFilterEditor,
   ContentFilterEditor,
   RelationFilterEditor,
   TemporalFilterEditor,
   HasFieldFilterEditor,
   LogicalFilterEditor,
 } from './filters/index.js'
+
+// Filter type constants + default-filter factory (shared by top-level and
+// nested "Add filter" menus)
+export { createDefaultFilter } from './filter-defaults.js'
+export type { FilterType, SimpleFilterType, LogicalFilterType } from './filter-defaults.js'

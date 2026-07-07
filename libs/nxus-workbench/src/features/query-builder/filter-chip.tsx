@@ -15,11 +15,13 @@ import {
   LinkSimple,
   CheckSquare,
   TreeStructure,
+  Path as PathIcon,
 } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { QueryFilter, FilterOp } from '@nxus/db'
 import { SupertagFilterEditor } from './filters/supertag-filter.js'
 import { PropertyFilterEditor } from './filters/property-filter.js'
+import { PathFilterEditor } from './filters/path-filter.js'
 import { ContentFilterEditor } from './filters/content-filter.js'
 import { RelationFilterEditor } from './filters/relation-filter.js'
 import { TemporalFilterEditor } from './filters/temporal-filter.js'
@@ -28,6 +30,7 @@ import { LogicalFilterEditor } from './filters/logical-filter.js'
 import {
   formatFilterIdentifier,
   formatPathFilterLabel,
+  isPathUnaryOp,
 } from './filter-format.js'
 
 // ============================================================================
@@ -59,7 +62,9 @@ export function FilterChip({
 
   // Get filter display info
   const { icon: Icon, label, color } = getFilterDisplay(filter)
-  const isEditable = isEditableFilter(filter)
+  // Every filter type has a dedicated editor (see FilterEditor below), so all
+  // chips are clickable.
+  const isEditable = true
 
   // Determine if filter is complete (has required values)
   const isComplete = isFilterComplete(filter)
@@ -195,6 +200,13 @@ function FilterEditor({ filter, onUpdate, onClose, compact }: FilterEditorProps)
             onClose={onClose}
           />
         )}
+        {filter.type === 'path' && (
+          <PathFilterEditor
+            filter={filter}
+            onUpdate={onUpdate}
+            onClose={onClose}
+          />
+        )}
         {filter.type === 'content' && (
           <ContentFilterEditor
             filter={filter}
@@ -266,18 +278,25 @@ function getFilterDisplay(filter: QueryFilter): {
         color: filter.fieldId ? '#3b82f6' : undefined, // Blue for properties
       }
 
-    case 'path':
+    case 'path': {
+      // A freshly-created path filter has one placeholder segment with an
+      // empty fieldId (createDefaultFilter, ../filter-defaults.js) so the
+      // array is never truly empty — check for a selected field instead of
+      // `.length > 0` or the chip would render "? is empty" instead of a
+      // clear "Select path..." placeholder.
+      const hasSelectedSegment = filter.path.some((segment) => !!segment.fieldId)
       return {
-        icon: TextT,
-        label: filter.path.length > 0
+        icon: PathIcon,
+        label: hasSelectedSegment
           ? formatPathFilterLabel(filter, {
               ascii: true,
               emptyPlaceholder: '...',
               truncateAt: 15,
             })
           : 'Select path...',
-        color: filter.path.length > 0 ? '#2563eb' : undefined,
+        color: hasSelectedSegment ? '#2563eb' : undefined,
       }
+    }
 
     case 'content':
       return {
@@ -340,7 +359,12 @@ function isFilterComplete(filter: QueryFilter): boolean {
     case 'content':
       return !!filter.query
     case 'path':
-      return filter.path.length > 0
+      return (
+        filter.path.length > 0 &&
+        filter.path.every((segment) => !!segment.fieldId) &&
+        (isPathUnaryOp(filter) ||
+          ('value' in filter && filter.value !== undefined && filter.value !== ''))
+      )
     case 'temporal':
       return !!(filter.field && filter.op && (filter.days || filter.date))
     case 'relation':
@@ -354,10 +378,6 @@ function isFilterComplete(filter: QueryFilter): boolean {
     default:
       return false
   }
-}
-
-function isEditableFilter(filter: QueryFilter): boolean {
-  return filter.type !== 'path'
 }
 
 /**

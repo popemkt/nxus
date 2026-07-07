@@ -98,7 +98,7 @@ export function SupertagFilterEditor({
           onValueChange={handleSupertagChange}
           disabled={isLoading}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" data-testid="supertag-filter-select">
             <SelectValue>
               {localValue ? (
                 <span className="flex items-center gap-2">

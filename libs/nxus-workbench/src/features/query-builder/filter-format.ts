@@ -98,6 +98,21 @@ export function formatPathSegments(path: PathSegment[]): string {
   return path.map((segment) => formatFilterIdentifier(segment.fieldId)).join('.')
 }
 
+/**
+ * True for a path filter that should render/evaluate as unary (`isEmpty`/
+ * `isNotEmpty`, no value). PathFilter is a two-member union keyed on `op`,
+ * but each member's `op` is itself a union of several literals, so TS can't
+ * treat `op` as a single-literal discriminant (the same limitation the
+ * evaluator hits, `query-evaluator.service.ts:380-383`) — checking `'value'
+ * in filter` narrows structurally instead. `value === undefined` is treated
+ * the same as absent because a UI editor may leave a stale `value: undefined`
+ * key on the object after switching a filter from a value op to a unary op
+ * (object spread merges can set a key to `undefined` but can't delete it).
+ */
+export function isPathUnaryOp(filter: PathFilter): boolean {
+  return !('value' in filter) || filter.value === undefined
+}
+
 export function formatPathFilterLabel(
   filter: PathFilter,
   {
@@ -111,7 +126,7 @@ export function formatPathFilterLabel(
   const prefix = includeWhere ? 'where ' : ''
   const path = formatPathSegments(filter.path)
 
-  if (!('value' in filter)) {
+  if (!('value' in filter) || filter.value === undefined) {
     return `${prefix}${path} ${formatFilterOperator(filter.op, { ascii })}`
   }
 

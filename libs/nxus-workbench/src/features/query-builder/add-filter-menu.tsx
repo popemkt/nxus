@@ -21,25 +21,12 @@ import {
   Hash,
   LinkSimple,
   MagnifyingGlass,
+  Path,
   Plus,
   TextT,
   TreeStructure,
 } from '@phosphor-icons/react';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-type FilterType =
-  | 'supertag'
-  | 'property'
-  | 'content'
-  | 'relation'
-  | 'temporal'
-  | 'hasField'
-  | 'and'
-  | 'or'
-  | 'not';
+import type { FilterType } from './filter-defaults.js';
 
 export interface AddFilterMenuProps {
   /** Called when a filter type is selected */
@@ -48,6 +35,12 @@ export interface AddFilterMenuProps {
   compact?: boolean;
   /** Disabled state */
   disabled?: boolean;
+  /**
+   * Accessible label for the trigger when `compact` (no visible "Add filter"
+   * text). Lets a nested group's menu announce itself distinctly from the
+   * top-level one when both are on screen at once (e.g. "Add nested filter").
+   */
+  ariaLabel?: string;
 }
 
 // ============================================================================
@@ -100,6 +93,13 @@ const ADVANCED_FILTER_OPTIONS = [
     icon: CheckSquare,
     color: '#06b6d4', // Cyan
   },
+  {
+    type: 'path' as const,
+    label: 'Path',
+    description: 'Follow a reference chain (e.g. Hat.Color = "Red")',
+    icon: Path,
+    color: '#2563eb', // Blue
+  },
 ] as const;
 
 const LOGICAL_FILTER_OPTIONS = [
@@ -134,6 +134,7 @@ export function AddFilterMenu({
   onAddFilter,
   compact = false,
   disabled = false,
+  ariaLabel = 'Add filter',
 }: AddFilterMenuProps) {
   return (
     <DropdownMenu>
@@ -144,6 +145,7 @@ export function AddFilterMenu({
             size={compact ? 'xs' : 'sm'}
             disabled={disabled}
             className={cn('border-dashed', !compact && 'gap-1')}
+            aria-label={compact ? ariaLabel : undefined}
           />
         }
       >

@@ -12,6 +12,7 @@ import { FilterList } from './filter-list.js'
 import { AddFilterMenu } from './add-filter-menu.js'
 import { SortConfig } from './sort-config.js'
 import { QueryLinter } from './query-linter.js'
+import { createDefaultFilter, type FilterType } from './filter-defaults.js'
 
 // ============================================================================
 // Types
@@ -74,9 +75,7 @@ export function QueryBuilder({
   const hasFilters = value.filters.length > 0
 
   // Handle adding a new filter
-  const handleAddFilter = (
-    filterType: 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField' | 'and' | 'or' | 'not',
-  ) => {
+  const handleAddFilter = (filterType: FilterType) => {
     const newFilter = createDefaultFilter(filterType)
     onChange({
       ...value,
@@ -245,82 +244,3 @@ export function QueryBuilder({
   )
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Create a default filter of the given type with placeholder values
- */
-function createDefaultFilter(
-  filterType: 'supertag' | 'property' | 'content' | 'relation' | 'temporal' | 'hasField' | 'and' | 'or' | 'not',
-) {
-  const id = crypto.randomUUID().slice(0, 8)
-
-  switch (filterType) {
-    case 'supertag':
-      return {
-        id,
-        type: 'supertag' as const,
-        supertagId: '',
-        includeInherited: true,
-      }
-    case 'property':
-      return {
-        id,
-        type: 'property' as const,
-        fieldId: '',
-        op: 'eq' as const,
-        value: '',
-      }
-    case 'content':
-      return {
-        id,
-        type: 'content' as const,
-        query: '',
-        caseSensitive: false,
-      }
-    case 'relation':
-      return {
-        id,
-        type: 'relation' as const,
-        relationType: 'childOf' as const,
-        targetNodeId: undefined,
-      }
-    case 'temporal':
-      return {
-        id,
-        type: 'temporal' as const,
-        field: 'createdAt' as const,
-        op: 'within' as const,
-        days: 7,
-      }
-    case 'hasField':
-      return {
-        id,
-        type: 'hasField' as const,
-        fieldId: '',
-        negate: false,
-      }
-    case 'and':
-      return {
-        id,
-        type: 'and' as const,
-        filters: [],
-      }
-    case 'or':
-      return {
-        id,
-        type: 'or' as const,
-        filters: [],
-      }
-    case 'not':
-      return {
-        id,
-        type: 'not' as const,
-        filters: [],
-      }
-    default:
-      throw new Error(`Unknown filter type: ${filterType}`)
-  }
-}

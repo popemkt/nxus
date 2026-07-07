@@ -6,6 +6,7 @@
 
 export { SupertagFilterEditor } from './supertag-filter.js'
 export { PropertyFilterEditor } from './property-filter.js'
+export { PathFilterEditor } from './path-filter.js'
 export { ContentFilterEditor } from './content-filter.js'
 export { RelationFilterEditor } from './relation-filter.js'
 export { TemporalFilterEditor } from './temporal-filter.js'

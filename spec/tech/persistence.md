@@ -72,6 +72,13 @@ Bootstrap invariants:
 - MUST be idempotent (re-run on every process start).
 - `upsertSystemNode` (`bootstrap.ts:42-73`) matches by `systemId` and **never updates content of an existing node** — renaming a system node in code silently does nothing to existing DBs, so any seed-content rename requires a data migration. This behavior is what let the (now-fixed, commit 60d0741) FIELD_NAMES/bootstrap content mismatch persist across re-bootstraps; the parity invariant (I5) and its test are owned by [../product/data-model.md](../product/data-model.md).
 
+DRIFT: bootstrap check-then-insert races across processes
+
+- canonical: bootstrapping the same DB file from two processes is safe — the upsert is atomic.
+- current: `upsertSystemNode` (`bootstrap.ts:42-73`) is an unlocked SELECT-then-INSERT on `nodes.system_id`; two processes bootstrapping one fresh DB (dev server + an e2e worker seeding directly) race, and the loser throws `SQLITE_CONSTRAINT_UNIQUE` — observed crashing both a test seed and a `getSupertags` server fn (500) mid-run.
+- impact: any multi-process scenario against one DB file can crash at init; e2e specs must gate on the server's bootstrap finishing first (`learnings/e2e-autoseed-suppression.md`).
+- closes: make the insert atomic (`INSERT ... ON CONFLICT(system_id) DO NOTHING`, then read back), or wrap bootstrap in an IMMEDIATE transaction.
+
 ## 4. Architecture modes
 
 `ArchitectureType = 'node' | 'graph'` (`apps/nxus-core/src/config/feature-flags.ts:11`), selected by `process.env.ARCHITECTURE_TYPE`, defaulting to `'node'`.

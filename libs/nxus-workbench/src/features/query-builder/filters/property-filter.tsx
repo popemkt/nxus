@@ -151,7 +151,7 @@ export function PropertyFilterEditor({
           onValueChange={handleFieldChange}
           disabled={fieldsLoading || fieldsError}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" data-testid="property-filter-field-select">
             <SelectValue>
               {selectedFieldLabel || (
                 <span className="text-muted-foreground">
@@ -178,7 +178,7 @@ export function PropertyFilterEditor({
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs text-muted-foreground">Condition</Label>
         <Select value={op} onValueChange={handleOpChange}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" data-testid="property-filter-op-select">
             <SelectValue>
               {selectedOperator?.label || (
                 <span className="text-muted-foreground">Select condition</span>

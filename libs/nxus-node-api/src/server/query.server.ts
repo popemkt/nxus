@@ -293,10 +293,16 @@ export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
 
 /**
  * Get all fields (for filter editor)
+ *
+ * `fieldType` is included so authoring UIs (notably the path-filter chain
+ * builder) can tell reference-bearing fields (`instance`/`node`/`nodes`) apart
+ * from terminal value fields without a second round-trip.
  */
 export const getQueryFieldsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const { nodeFacade, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
+    const { nodeFacade, getProperty, SYSTEM_SUPERTAGS, FIELD_NAMES } = await import(
+      '@nxus/db/server'
+    )
 
     await nodeFacade.init()
 
@@ -308,6 +314,7 @@ export const getQueryFieldsServerFn = createServerFn({ method: 'GET' }).handler(
       .map((node) => ({
         systemId: node.systemId || node.id,
         label: node.content || node.systemId || node.id,
+        fieldType: getProperty<string>(node, FIELD_NAMES.FIELD_TYPE),
       }))
       .sort((a, b) => a.label.localeCompare(b.label))
 
