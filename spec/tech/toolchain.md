@@ -75,6 +75,13 @@ Boot model: the `webServer` block runs `pnpm dev` — all 6 apps — and polls t
 
 Layout: `e2e/<app>/*.spec.ts` per app (editor 2, core 5, calendar 3, workbench 4, recall 3 + `mock-ai.ts` AI mock, gateway 1 — ~85 `test()` blocks, editor's 940-line `outline-editor.spec.ts` dominant), shared `e2e/fixtures/base.fixture.ts` and `e2e/helpers/navigation.ts` (URL/name constants). New behavior-bearing features MUST land with a story-named e2e spec — e2e specs are the behavioral proof layer; when spec prose and an e2e test disagree, one is wrong and the disagreement becomes a `DRIFT:` block (see [../README.md](../README.md)).
 
+DRIFT: core specs are order-dependent in long single-worker runs
+
+- canonical: every e2e spec passes regardless of suite composition and worker count.
+- current: `e2e/core/gallery.spec.ts` C2/C3 (and the long-known `inbox.spec.ts` C8) fail in full-suite single-worker runs but pass isolated and at the overnight baseline — earlier core specs mutate the shared e2e DB (items accumulate) and later assertions inherit that state.
+- impact: full-suite runs carry ~2 known false reds; per-app runs are the trustworthy gate for app-scoped changes.
+- closes: give core specs the seeded-isolation treatment already applied to editor/workbench specs (own nodes via direct-DB seed + zoomed/filtered views; see `learnings/e2e-autoseed-suppression.md` for the bootstrap-gate protocol).
+
 DRIFT: 502-retry fixture papers over readiness
 - canonical: the gateway `/__health` endpoint reports ready only when all upstream apps answer; tests navigate once, no retry loops.
 - current: `/__health` passes before upstreams finish booting, so `navigateToApp` retries up to 3× on HTTP 502 with 3s sleeps (`e2e/fixtures/base.fixture.ts:11-21`), then waits for `networkidle` (`:22`) — itself a flake-prone signal under polling transports.
