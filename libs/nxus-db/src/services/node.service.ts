@@ -709,6 +709,32 @@ export function deleteNode(
 }
 
 /**
+ * Restore a soft-deleted node (clears deletedAt).
+ *
+ * Used by undo: undoing a delete cannot re-create the node with the same id
+ * via createNode, but the row (and its properties) are still present under
+ * a soft delete, so clearing deletedAt resurrects it in place.
+ */
+export function restoreNode(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+): void {
+  db.update(nodes)
+    .set({ deletedAt: null })
+    .where(eq(nodes.id, nodeId))
+    .run()
+
+  // Emit node:created — restoring a node is a membership change like
+  // creation (it re-enters query results), reusing that mutation type
+  // avoids widening MutationType for a rare, symmetrical op.
+  eventBus.emit({
+    type: 'node:created',
+    timestamp: new Date(),
+    nodeId,
+  })
+}
+
+/**
  * Set a property value (creates or updates).
  *
  * @param fieldId A FieldSystemId (e.g., SYSTEM_FIELDS.STATUS).

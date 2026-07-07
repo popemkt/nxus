@@ -457,6 +457,20 @@ export const deleteNodeServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Restore a soft-deleted node (clears deletedAt).
+ * Used by undo: undoing a delete resurrects the node server-side rather
+ * than trying to re-create it (which would mint a new id).
+ */
+export const restoreNodeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ nodeId: z.string() }))
+  .handler(async (ctx) => {
+    const { restoreNode } = await import('@nxus/db/server')
+    const db = await initDatabaseSeeded()
+    restoreNode(db, ctx.data.nodeId)
+    return { success: true as const }
+  })
+
+/**
  * Reparent a node — change its owner and optionally its order.
  */
 export const reparentNodeServerFn = createServerFn({ method: 'POST' })

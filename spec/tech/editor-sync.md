@@ -52,7 +52,7 @@ Every row: optimistic store mutation first (instant UI), then server call. `hook
 | Remove supertag | `removeSupertag` (hook:508) | `removeSupertagServerFn` (supertag.server.ts:150); fields kept — Tana behavior (outline.store.ts:263) | immediate | **no** |
 | Add field | `addField` (hook:524) | `setFieldValueServerFn` with `value: ''` to materialize (hook:528-530, outline.server.ts:668) | immediate | **no** |
 | Remove field | `removeField` (hook:540) | `clearFieldServerFn` (field.server.ts:211) | immediate | **no** |
-| Undo / redo | `undo`/`redo` (hook:580/590) | **none** (drift, §5) | — | consumes stack |
+| Undo / redo | `undo`/`redo` (hook) | `diffOutlineSnapshots` → `deleteNodeServerFn`/`restoreNodeServerFn`/`updateNodeContentServerFn`/`reorderNodeServerFn`/`reparentNodeServerFn`, batched (structural only — field/supertag diffs still local-only, drift, §5) | immediate | consumes stack |
 
 Load path: `getWorkspaceRootServerFn` (outline.server.ts:263) → `getNodeTreeServerFn` (outline.server.ts:13, default `maxDepth = Number.MAX_SAFE_INTEGER` at :29). Assembly cost and N+1 concerns are owned by [./persistence.md](./persistence.md).
 
@@ -102,9 +102,10 @@ DRIFT: move-swap-two-calls-non-atomic
 
 DRIFT: cosmetic-undo
 - canonical: INV-2 — undo/redo hit the server.
-- current: `undo()`/`redo()` restore the Zustand map only and clear selection; zero server calls, zero query invalidation (use-outline-sync.ts:580-595).
-- impact: **data loss.** Undo a delete → node reappears locally but stays soft-deleted in DB; reload silently re-loses it. Redo after typing diverges content. The entire undo system is cosmetic w.r.t. persistence.
-- closes: snapshot-diff → compensating server mutations (batched, transactional) + `invalidateQueries()` in the restore path; e2e test: create → delete → undo → reload → node visible.
+- status: **partially closed.** `undo()`/`redo()` now diff the pre-restore node map against the restored snapshot (`diffOutlineSnapshots`, `apps/nxus-editor/src/lib/outline-diff.ts`) and persist the structural result via `Promise.all(...).then(invalidateQueries).catch(console.error)` in `persistSnapshotDiff` (use-outline-sync.ts). Covered: node deletion (`deleteNodeServerFn`), node resurrection (new `restoreNodeServerFn` / `restoreNode`, which clears `deletedAt` in place — undo cannot reuse `createNode` since that mints a new id), content reverts (`updateNodeContentServerFn`), order reverts (`reorderNodeServerFn`), and parent reverts (`reparentNodeServerFn`, which carries the restored order so a parent change never double-persists via a separate reorder call).
+- current: field and supertag differences between the two snapshots are detected (`fieldsOrSupertagsChanged` op) but NOT persisted — the differ only `console.warn('[sync] undo: field/supertag changes not yet persisted')`s and leaves the store-only value in place, same as before this change. The batch is also non-transactional (`Promise.all` of independent server fns, not one DB transaction), so a partial failure can leave the diff half-applied.
+- impact: undoing a delete/create/content-edit/move/indent-outdent now survives reload (the historically bad cases in INV-2's example). Undoing an add/remove-supertag or add/remove/edit-field still reverts the store but not the DB — reload re-diverges for those ops specifically, and a partial-batch failure mid-diff is silent (falls back to §6's existing `fire-and-forget-sync-no-rollback` behavior).
+- closes: extend `diffOutlineSnapshots` (and `persistSnapshotDiff`) with a field/supertag branch — diff `OutlineField[]`/`SupertagBadge[]` per node into `setFieldValueServerFn`/`clearFieldServerFn`/`addSupertagServerFn`/`removeSupertagServerFn` calls; wrap the whole batch in one transaction once a transactional server fn exists (see §6 for the broader non-atomicity this shares); e2e test: create → delete → undo → reload → node visible (structural case, now provable) and add-field → undo → reload → field gone (field case, still open).
 
 DRIFT: inconsistent-undo-snapshot-coverage
 - canonical: INV-10 — every sync-hook mutation participates in undo; typing coalesces to one entry.

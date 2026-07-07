@@ -4,6 +4,7 @@ import {
   createNodeServerFn,
   updateNodeContentServerFn,
   deleteNodeServerFn,
+  restoreNodeServerFn,
   reparentNodeServerFn,
   reorderNodeServerFn,
   setFieldValueServerFn,
@@ -16,7 +17,8 @@ import { clearFieldServerFn } from '@/services/field.server'
 import { outlineQueryKeys } from '@/components/outline/query-helpers'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useUndoStore } from '@/stores/undo.store'
-import type { OutlineField, SupertagBadge } from '@/types/outline'
+import { diffOutlineSnapshots } from '@/lib/outline-diff'
+import type { NodeMap, OutlineField, SupertagBadge } from '@/types/outline'
 
 /** Result type from createNodeServerFn */
 interface CreateNodeResult {
@@ -570,24 +572,83 @@ export function useOutlineSync() {
   )
 
   /**
-   * Undo — restore the previous node map snapshot.
+   * Persist the compensating server mutations for an undo/redo snapshot
+   * restore. `before` is the store state just before the restore, `after`
+   * is the snapshot that replaced it. Structural ops (delete/restore/
+   * content/order/parent) hit the server; field/supertag differences are
+   * flagged but not yet persisted (spec/tech/editor-sync.md, DRIFT:
+   * cosmetic-undo — closes structural ops, leaves fields/supertags local-only).
+   */
+  const persistSnapshotDiff = useCallback(
+    (before: NodeMap, after: NodeMap) => {
+      const ops = diffOutlineSnapshots(before, after)
+      const calls = ops.flatMap((op): Promise<unknown>[] => {
+        switch (op.type) {
+          case 'delete':
+            return [deleteNodeServerFn({ data: { nodeId: op.nodeId } })]
+          case 'restore':
+            return [restoreNodeServerFn({ data: { nodeId: op.nodeId } })]
+          case 'content':
+            return [
+              updateNodeContentServerFn({
+                data: { nodeId: op.nodeId, content: op.content },
+              }),
+            ]
+          case 'reorder':
+            return [
+              reorderNodeServerFn({
+                data: { nodeId: op.nodeId, order: parseInt(op.order, 10) || 0 },
+              }),
+            ]
+          case 'reparent':
+            return [
+              reparentNodeServerFn({
+                data: {
+                  nodeId: op.nodeId,
+                  newParentId: toServerParentId(op.parentId),
+                  order: parseInt(op.order, 10) || 0,
+                },
+              }),
+            ]
+          case 'fieldsOrSupertagsChanged':
+            console.warn('[sync] undo: field/supertag changes not yet persisted', op.nodeId)
+            return []
+        }
+      })
+
+      if (calls.length === 0) return
+      Promise.all(calls)
+        .then(() => invalidateQueries())
+        .catch((err) => {
+          console.error('[sync] Failed to persist undo/redo diff:', err)
+        })
+    },
+    [invalidateQueries],
+  )
+
+  /**
+   * Undo — restore the previous node map snapshot, then persist the diff
+   * between the pre-restore and post-restore maps to the server.
    */
   const undo = useCallback(() => {
     const { nodes: currentNodes } = useOutlineStore.getState()
     const snapshot = useUndoStore.getState().undo(currentNodes)
     if (!snapshot) return
     useOutlineStore.setState({ nodes: snapshot, activeNodeId: null, selectedNodeId: null, selectedNodeIds: new Set() })
-  }, [])
+    persistSnapshotDiff(currentNodes, snapshot)
+  }, [persistSnapshotDiff])
 
   /**
-   * Redo — restore the next node map snapshot.
+   * Redo — restore the next node map snapshot, then persist the diff
+   * between the pre-restore and post-restore maps to the server.
    */
   const redo = useCallback(() => {
     const { nodes: currentNodes } = useOutlineStore.getState()
     const snapshot = useUndoStore.getState().redo(currentNodes)
     if (!snapshot) return
     useOutlineStore.setState({ nodes: snapshot, activeNodeId: null, selectedNodeId: null, selectedNodeIds: new Set() })
-  }, [])
+    persistSnapshotDiff(currentNodes, snapshot)
+  }, [persistSnapshotDiff])
 
   return {
     createNodeAfter,
