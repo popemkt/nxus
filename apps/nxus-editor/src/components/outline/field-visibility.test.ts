@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { HideWhen, OutlineField } from '@/types/outline'
+import type { OutlineField } from '@/types/outline'
 
 // ─── Test helpers ────────────────────────────────────────────────
 

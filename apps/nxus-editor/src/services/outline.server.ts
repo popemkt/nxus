@@ -269,14 +269,21 @@ export const getWorkspaceRootServerFn = createServerFn({ method: 'GET' }).handle
     } = await import('@nxus/db/server')
     const db = await initDatabaseSeeded()
 
+    // System nodes (field:*, supertag:*, …) are ownerless too — the workspace
+    // root shows only user content (systemId IS NULL). See spec/product/editor.md.
     const rootNodes = db
       .select()
       .from(nodes)
-      .where(and(isNull(nodes.ownerId), isNull(nodes.deletedAt)))
+      .where(and(isNull(nodes.ownerId), isNull(nodes.deletedAt), isNull(nodes.systemId)))
       .all()
 
     if (rootNodes.length === 0) {
-      const anyNode = db.select().from(nodes).where(isNull(nodes.deletedAt)).limit(1).get()
+      const anyNode = db
+        .select()
+        .from(nodes)
+        .where(and(isNull(nodes.deletedAt), isNull(nodes.systemId)))
+        .limit(1)
+        .get()
       return {
         success: true as const,
         rootIds: anyNode ? [anyNode.id] : [],
@@ -512,7 +519,7 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
 
     return {
       success: true as const,
-      nodes: result.nodes.map((n: { id: string; content: string | null; supertags: unknown[] }) => ({
+      nodes: result.nodes.map((n) => ({
         id: n.id,
         content: n.content ?? '',
         supertags: n.supertags,

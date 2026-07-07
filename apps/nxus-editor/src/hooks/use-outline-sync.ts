@@ -386,83 +386,78 @@ export function useOutlineSync() {
    */
   const moveNodeUp = useCallback((nodeId: string) => {
     captureUndoSnapshot()
-    // Snapshot the pre-swap siblings to identify the swapped one
+    // Snapshot all sibling orders: a tied-order move rebalances the whole
+    // sibling list (see outline.store rebalanceIfTied), so any sibling may
+    // change — diff pre/post and persist every change.
     const { nodes: preNodes } = useOutlineStore.getState()
     const preNode = preNodes.get(nodeId)
-    const preOrder = preNode?.order
+    const parentId = preNode?.parentId
+    const preOrders = new Map<string, string>()
+    if (parentId) {
+      const parent = preNodes.get(parentId)
+      for (const sibId of parent?.children ?? []) {
+        const sib = preNodes.get(sibId)
+        if (sib) preOrders.set(sibId, sib.order)
+      }
+    }
 
     useOutlineStore.getState().moveNodeUp(nodeId)
 
     const { nodes } = useOutlineStore.getState()
-    const node = nodes.get(nodeId)
-    if (!node || node.order === preOrder) return // no-op
+    const changed = [...preOrders].filter(
+      ([id, order]) => nodes.get(id) && nodes.get(id)!.order !== order,
+    )
+    if (changed.length === 0) return // no-op (already at boundary)
 
-    // Persist both the moved node and the swapped sibling
-    reorderNodeServerFn({
-      data: { nodeId, order: parseInt(node.order, 10) || 0 },
-    })
+    Promise.all(
+      changed.map(([id]) =>
+        reorderNodeServerFn({
+          data: { nodeId: id, order: parseInt(nodes.get(id)!.order, 10) || 0 },
+        }),
+      ),
+    )
       .then(() => invalidateQueries())
       .catch((err) => {
-        console.error('[sync] Failed to reorder node:', err)
+        console.error('[sync] Failed to reorder nodes:', err)
       })
-
-    // The sibling that was swapped now has our old order
-    if (node.parentId) {
-      const parent = nodes.get(node.parentId)
-      if (parent) {
-        for (const sibId of parent.children) {
-          if (sibId === nodeId) continue
-          const sib = nodes.get(sibId)
-          if (sib && sib.order === preOrder) {
-            reorderNodeServerFn({
-              data: { nodeId: sibId, order: parseInt(sib.order, 10) || 0 },
-            }).catch((err) => {
-              console.error('[sync] Failed to reorder swapped sibling:', err)
-            })
-            break
-          }
-        }
-      }
-    }
   }, [invalidateQueries, captureUndoSnapshot])
 
   const moveNodeDown = useCallback((nodeId: string) => {
     captureUndoSnapshot()
+    // Snapshot all sibling orders: a tied-order move rebalances the whole
+    // sibling list (see outline.store rebalanceIfTied), so any sibling may
+    // change — diff pre/post and persist every change.
     const { nodes: preNodes } = useOutlineStore.getState()
     const preNode = preNodes.get(nodeId)
-    const preOrder = preNode?.order
+    const parentId = preNode?.parentId
+    const preOrders = new Map<string, string>()
+    if (parentId) {
+      const parent = preNodes.get(parentId)
+      for (const sibId of parent?.children ?? []) {
+        const sib = preNodes.get(sibId)
+        if (sib) preOrders.set(sibId, sib.order)
+      }
+    }
 
     useOutlineStore.getState().moveNodeDown(nodeId)
 
     const { nodes } = useOutlineStore.getState()
-    const node = nodes.get(nodeId)
-    if (!node || node.order === preOrder) return
+    const changed = [...preOrders].filter(
+      ([id, order]) => nodes.get(id) && nodes.get(id)!.order !== order,
+    )
+    if (changed.length === 0) return // no-op (already at boundary)
 
-    reorderNodeServerFn({
-      data: { nodeId, order: parseInt(node.order, 10) || 0 },
-    })
+    Promise.all(
+      changed.map(([id]) =>
+        reorderNodeServerFn({
+          data: { nodeId: id, order: parseInt(nodes.get(id)!.order, 10) || 0 },
+        }),
+      ),
+    )
       .then(() => invalidateQueries())
       .catch((err) => {
-        console.error('[sync] Failed to reorder node:', err)
+        console.error('[sync] Failed to reorder nodes:', err)
       })
-
-    if (node.parentId) {
-      const parent = nodes.get(node.parentId)
-      if (parent) {
-        for (const sibId of parent.children) {
-          if (sibId === nodeId) continue
-          const sib = nodes.get(sibId)
-          if (sib && sib.order === preOrder) {
-            reorderNodeServerFn({
-              data: { nodeId: sibId, order: parseInt(sib.order, 10) || 0 },
-            }).catch((err) => {
-              console.error('[sync] Failed to reorder swapped sibling:', err)
-            })
-            break
-          }
-        }
-      }
-    }
   }, [invalidateQueries, captureUndoSnapshot])
 
   /**

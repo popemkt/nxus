@@ -487,13 +487,13 @@ function FieldConfigRow({
           )}
           {/* Constraint badges */}
           {field.required && (
-            <Asterisk size={8} weight="bold" className="inline ml-0.5 text-red-400/60" title="Required" />
+            <Asterisk size={8} weight="bold" className="inline ml-0.5 text-red-400/60" alt="Required" />
           )}
           {field.pinned && (
-            <PushPin size={8} weight="bold" className="inline ml-0.5 text-foreground/30" title="Pinned" />
+            <PushPin size={8} weight="bold" className="inline ml-0.5 text-foreground/30" alt="Pinned" />
           )}
           {field.hideWhen && field.hideWhen !== 'never' && (
-            <EyeSlash size={8} weight="bold" className="inline ml-0.5 text-foreground/30" title={`Hide: ${field.hideWhen}`} />
+            <EyeSlash size={8} weight="bold" className="inline ml-0.5 text-foreground/30" alt={`Hide: ${field.hideWhen}`} />
           )}
         </span>
         <FieldTypeSelect

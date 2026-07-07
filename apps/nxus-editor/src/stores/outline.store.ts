@@ -55,6 +55,30 @@ function parseOrder(order: string | null): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+/**
+ * Swapping equal order keys is an identity operation — seeded siblings all
+ * carry order '00000000'. When the two nodes about to swap have tied orders,
+ * reassign sequential orders to the whole sibling list first (in their
+ * current sorted positions) so the swap is meaningful. The sync layer diffs
+ * pre/post orders and persists every changed sibling.
+ */
+function rebalanceIfTied(
+  next: Map<string, OutlineNode>,
+  sortedSiblings: string[],
+  aId: string,
+  bId: string,
+): void {
+  const a = next.get(aId)
+  const b = next.get(bId)
+  if (!a || !b || a.order !== b.order) return
+  sortedSiblings.forEach((sid, i) => {
+    const sib = next.get(sid)
+    if (!sib) return
+    const newOrder = generateOrder(i * ORDER_STEP)
+    if (sib.order !== newOrder) next.set(sid, { ...sib, order: newOrder })
+  })
+}
+
 function generateOrderBetween(a: string | null, b: string | null): string | null {
   const aNum = parseOrder(a)
   const bNum = parseOrder(b)
@@ -553,9 +577,12 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     if (!prevSibling) return
 
     const next = new Map(nodes)
-    const tempOrder = node.order
-    next.set(id, { ...node, order: prevSibling.order })
-    next.set(prevSiblingId, { ...prevSibling, order: tempOrder })
+    rebalanceIfTied(next, sortedSiblings, id, prevSiblingId)
+    const me = next.get(id)!
+    const other = next.get(prevSiblingId)!
+    const tempOrder = me.order
+    next.set(id, { ...me, order: other.order })
+    next.set(prevSiblingId, { ...other, order: tempOrder })
     set({ nodes: next })
   },
 
@@ -576,9 +603,12 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     if (!nextSibling) return
 
     const next = new Map(nodes)
-    const tempOrder = node.order
-    next.set(id, { ...node, order: nextSibling.order })
-    next.set(nextSiblingId, { ...nextSibling, order: tempOrder })
+    rebalanceIfTied(next, sortedSiblings, id, nextSiblingId)
+    const me = next.get(id)!
+    const other = next.get(nextSiblingId)!
+    const tempOrder = me.order
+    next.set(id, { ...me, order: other.order })
+    next.set(nextSiblingId, { ...other, order: tempOrder })
     set({ nodes: next })
   },
 

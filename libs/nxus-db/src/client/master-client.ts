@@ -16,8 +16,13 @@ const dataDir = resolve(__dirname, '../data')
 // User data directory for ephemeral/local data
 const userDataDir = resolve(homedir(), '.popemkt', '.nxus')
 
-// Database paths
-const masterDbPath = resolve(dataDir, 'nxus.db')
+// Database paths.
+// NXUS_DB_PATH overrides the master DB location (read once at boot) — used by
+// e2e runs to isolate themselves from the developer's real database. See
+// spec/tech/persistence.md and spec/tech/toolchain.md.
+const masterDbPath = process.env.NXUS_DB_PATH
+  ? resolve(process.env.NXUS_DB_PATH)
+  : resolve(dataDir, 'nxus.db')
 const ephemeralDbPath = resolve(userDataDir, 'ephemeral.db')
 
 // Ensure directories exist

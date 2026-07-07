@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { X, WarningCircle } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import type { HideWhen, OutlineField } from '@/types/outline'
+import type { OutlineField } from '@/types/outline'
 import { FieldValue } from './field-value'
 import { FieldBullet } from './bullet'
 import { setFieldValueServerFn } from '@/services/outline.server'
@@ -156,7 +156,7 @@ function FieldRow({
             size={11}
             weight="fill"
             className="ml-0.5 shrink-0 text-red-400/60"
-            title="Required field"
+            alt="Required field"
           />
         )}
       </span>

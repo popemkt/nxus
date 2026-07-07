@@ -281,9 +281,10 @@ test.describe('Outline Editor', () => {
         const firstField = fieldRows.first()
         await expect(firstField).toBeVisible()
 
-        // Should have the field indicator (›)
-        const indicator = firstField.locator('text=›')
-        await expect(indicator).toBeVisible()
+        // Field rows lead with a typed field icon (FieldBullet), not the
+        // legacy '›' glyph — see spec/product/editor.md "Field Type Icons".
+        const bullet = firstField.locator('svg').first()
+        await expect(bullet).toBeVisible()
       }
     })
   })

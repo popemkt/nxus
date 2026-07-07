@@ -106,7 +106,12 @@ function getOrCreateTagNode(
     })
     .run()
 
-  addProperty(db, nodeId, F.supertag, JSON.stringify(ST.tag))
+  const supertagFieldId = F.supertag
+  const tagSupertagId = ST.tag
+  if (!supertagFieldId || !tagSupertagId) {
+    throw new Error('seed: bootstrap did not provide supertag field/tag ids')
+  }
+  addProperty(db, nodeId, supertagFieldId, JSON.stringify(tagSupertagId))
   tagNodeIds.set(tagName, nodeId)
   return nodeId
 }
@@ -344,11 +349,12 @@ export async function seedNodes() {
     const itemTypes: Array<ItemType> =
       item.types && item.types.length > 0
         ? item.types
-        : [item.primaryType || item.type]
+        : [item.type]
 
     // Add supertag for each type
     for (let i = 0; i < itemTypes.length; i++) {
       const itemType = itemTypes[i]
+      if (!itemType) continue
       const supertagSystemId = ITEM_TYPE_TO_SUPERTAG[itemType]
       if (supertagSystemId) {
         const supertagId = getSystemNodeId(db, supertagSystemId)
@@ -366,7 +372,7 @@ export async function seedNodes() {
       db,
       nodeId,
       F.type,
-      JSON.stringify(item.primaryType || item.type),
+      JSON.stringify(item.type),
     )
     addProperty(db, nodeId, F.path, JSON.stringify(item.path))
     if (item.description)
@@ -406,8 +412,8 @@ export async function seedNodes() {
 
     // Tags
     const manifestTags: Array<TagRef> = item.metadata?.tags ?? []
-    for (let i = 0; i < manifestTags.length; i++) {
-      const tagNodeId = getOrCreateTagNode(db, manifestTags[i].name, F, ST)
+    for (const [i, manifestTag] of manifestTags.entries()) {
+      const tagNodeId = getOrCreateTagNode(db, manifestTag.name, F, ST)
       addProperty(db, nodeId, F.tags, JSON.stringify(tagNodeId), i)
     }
 
@@ -539,8 +545,8 @@ export async function seedNodes() {
     const nodeId = itemNodeIds.get(item.id)
     if (!nodeId || !item.dependencies) continue
 
-    for (let i = 0; i < item.dependencies.length; i++) {
-      const depNodeId = itemNodeIds.get(item.dependencies[i])
+    for (const [i, depId] of item.dependencies.entries()) {
+      const depNodeId = itemNodeIds.get(depId)
       if (depNodeId) {
         addProperty(db, nodeId, F.deps, JSON.stringify(depNodeId), i)
         depCount++

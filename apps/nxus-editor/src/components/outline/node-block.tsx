@@ -254,6 +254,11 @@ export const NodeBlock = memo(function NodeBlock({
 
       if (e.key === 'Escape') {
         e.preventDefault()
+        // Stop the native event here: the window-level select-mode handler
+        // also binds Escape (clear selection). Without this, the same
+        // keypress exits edit mode AND immediately clears the selection it
+        // just created (zustand flushes synchronously mid-dispatch).
+        e.stopPropagation()
         const { selectNode } = useOutlineStore.getState()
         selectNode(nodeId)
         return
