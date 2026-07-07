@@ -23,7 +23,7 @@ import {
   WavesIcon,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import type { ThemePalette } from '@/stores/theme.store'
+import type { ThemePalette } from '@nxus/ui'
 
 export interface ThemeOption {
   value: ThemePalette

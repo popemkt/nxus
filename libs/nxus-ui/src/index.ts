@@ -1,7 +1,19 @@
 // @nxus/ui - Shared UI components
 
 // Utils
-export { cn } from './lib/utils'
+export { cn } from './lib/utils';
+
+// Theme
+export {
+  ALL_THEME_PALETTES,
+  STANDARD_THEME_PALETTES,
+  ThemeProvider,
+  applyStoredTheme,
+  getThemeHeadScript,
+  useTheme,
+  useThemeHydrated,
+} from './theme/theme';
+export type { ColorMode, ThemePalette } from './theme/theme';
 
 // Components
 export {
@@ -17,11 +29,11 @@ export {
   AlertDialogPortal,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from './components/alert-dialog'
+} from './components/alert-dialog';
 
-export { Badge, badgeVariants } from './components/badge'
+export { Badge, badgeVariants } from './components/badge';
 
-export { Button, buttonVariants } from './components/button'
+export { Button, buttonVariants } from './components/button';
 
 export {
   Card,
@@ -30,9 +42,9 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
-} from './components/card'
+} from './components/card';
 
-export { Checkbox } from './components/checkbox'
+export { Checkbox } from './components/checkbox';
 
 export {
   Combobox,
@@ -51,7 +63,7 @@ export {
   ComboboxTrigger,
   ComboboxValue,
   useComboboxAnchor,
-} from './components/combobox'
+} from './components/combobox';
 
 export {
   DropdownMenu,
@@ -69,7 +81,7 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from './components/dropdown-menu'
+} from './components/dropdown-menu';
 
 export {
   Field,
@@ -82,20 +94,20 @@ export {
   FieldSeparator,
   FieldSet,
   FieldTitle,
-} from './components/field'
+} from './components/field';
 
-export { Input } from './components/input'
+export { Input } from './components/input';
 
 export {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupTextarea,
-} from './components/input-group'
+} from './components/input-group';
 
-export { Label } from './components/label'
+export { Label } from './components/label';
 
-export { LoadingSpinner, LoadingDots } from './components/loading-spinner'
+export { LoadingSpinner, LoadingDots } from './components/loading-spinner';
 
 export {
   Select,
@@ -104,11 +116,11 @@ export {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './components/select'
+} from './components/select';
 
-export { ResizeHandle } from './components/resizable'
+export { ResizeHandle } from './components/resizable';
 
-export { Separator } from './components/separator'
+export { Separator } from './components/separator';
 
 export {
   Skeleton,
@@ -116,8 +128,8 @@ export {
   SkeletonButton,
   SkeletonIcon,
   SkeletonText,
-} from './components/skeleton'
+} from './components/skeleton';
 
-export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/tabs'
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/tabs';
 
-export { Textarea } from './components/textarea'
+export { Textarea } from './components/textarea';
