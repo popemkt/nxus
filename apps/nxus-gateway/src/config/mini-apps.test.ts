@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { miniApps } from './mini-apps.js'
-import type { MiniApp } from './mini-apps.js'
 
 describe('miniApps configuration', () => {
   it('has the expected number of mini apps', () => {

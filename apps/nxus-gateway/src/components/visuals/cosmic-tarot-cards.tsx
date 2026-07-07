@@ -430,7 +430,7 @@ export function CosmicTarotCards({ apps }: { apps: MiniApp[] }) {
 
   const particles = useMemo(
     () =>
-      Array.from({ length: 18 }, (_, i) => ({
+      Array.from({ length: 18 }, () => ({
         delay: Math.random() * 8,
         x: Math.random() * 100,
         duration: 6 + Math.random() * 8,

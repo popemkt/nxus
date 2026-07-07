@@ -59,6 +59,8 @@ function AuroraCard({ app, index }: { app: MiniApp; index: number }) {
     []
   )
 
+  if (!p) return null
+
   // Right blob shifts with mouse
   const rx = 60 + mouse.x * 15
   const ry = 70 + mouse.y * 10

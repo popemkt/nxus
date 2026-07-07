@@ -3,19 +3,17 @@ import { z } from 'zod'
 import { QUESTION_TYPES } from '@nxus/mastra'
 import type { RecallConcept } from '@nxus/db'
 
-function toFsrsCard(concept: RecallConcept & { card: NonNullable<RecallConcept['card']> }) {
+function toFsrsCard(card: NonNullable<RecallConcept['card']>) {
   return {
-    due: new Date(concept.card.due),
-    stability: concept.card.stability,
-    difficulty: concept.card.difficulty,
-    elapsed_days: concept.card.elapsedDays,
-    scheduled_days: concept.card.scheduledDays,
-    reps: concept.card.reps,
-    lapses: concept.card.lapses,
-    state: concept.card.state,
-    last_review: concept.card.lastReview
-      ? new Date(concept.card.lastReview)
-      : undefined,
+    due: new Date(card.due),
+    stability: card.stability,
+    difficulty: card.difficulty,
+    elapsed_days: card.elapsedDays,
+    scheduled_days: card.scheduledDays,
+    reps: card.reps,
+    lapses: card.lapses,
+    state: card.state,
+    last_review: card.lastReview ? new Date(card.lastReview) : undefined,
   }
 }
 
@@ -36,18 +34,25 @@ export const getDueCardsServerFn = createServerFn({ method: 'GET' })
     z.object({ topicId: z.string().optional(), limit: z.number().optional() }),
   )
   .handler(async (ctx) => {
-    const {
-      initDatabaseWithBootstrap,
-      getDueCards,
-      getDueCardsByTopic,
-    } = await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
+    try {
+      const {
+        initDatabaseWithBootstrap,
+        getDueCards,
+        getDueCardsByTopic,
+      } = await import('@nxus/db/server')
+      const db = await initDatabaseWithBootstrap()
 
-    const cards = ctx.data.topicId
-      ? getDueCardsByTopic(db, ctx.data.topicId, ctx.data.limit)
-      : getDueCards(db, ctx.data.limit)
+      const cards = ctx.data.topicId
+        ? getDueCardsByTopic(db, ctx.data.topicId, ctx.data.limit)
+        : getDueCards(db, ctx.data.limit)
 
-    return { success: true as const, cards }
+      return { success: true as const, cards }
+    } catch (err) {
+      return {
+        success: false as const,
+        error: err instanceof Error ? err.message : 'Failed to load due cards',
+      }
+    }
   })
 
 export const getRecallStatsServerFn = createServerFn({ method: 'GET' }).handler(
@@ -95,7 +100,7 @@ export const submitReviewServerFn = createServerFn({ method: 'POST' })
     const { fsrs } = await import('ts-fsrs')
 
     const f = fsrs()
-    const card = toFsrsCard(concept)
+    const card = toFsrsCard(concept.card)
 
     const now = new Date()
     const scheduling = f.repeat(card, now)
@@ -178,7 +183,7 @@ export const previewIntervalsServerFn = createServerFn({ method: 'POST' })
 
     const { fsrs } = await import('ts-fsrs')
     const f = fsrs()
-    const card = toFsrsCard(concept)
+    const card = toFsrsCard(concept.card)
 
     const scheduling = f.repeat(card, new Date())
     const intervals = computeIntervals(scheduling)
@@ -189,10 +194,17 @@ export const previewIntervalsServerFn = createServerFn({ method: 'POST' })
 export const getAllCardsByTopicServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ topicId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, getAllCardsByTopic } = await import('@nxus/db/server')
-    const db = await initDatabaseWithBootstrap()
-    const cards = getAllCardsByTopic(db, ctx.data.topicId)
-    return { success: true as const, cards }
+    try {
+      const { initDatabaseWithBootstrap, getAllCardsByTopic } = await import('@nxus/db/server')
+      const db = await initDatabaseWithBootstrap()
+      const cards = getAllCardsByTopic(db, ctx.data.topicId)
+      return { success: true as const, cards }
+    } catch (err) {
+      return {
+        success: false as const,
+        error: err instanceof Error ? err.message : 'Failed to load cards for cram',
+      }
+    }
   })
 
 export const getLearningPathServerFn = createServerFn({ method: 'GET' })

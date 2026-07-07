@@ -97,10 +97,14 @@ function ScrollbarManager() {
     let timeout: NodeJS.Timeout
 
     const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement
-      if (!target || !target.setAttribute) return
-
-      const element = target === document ? document.documentElement : target
+      const target = e.target
+      const element =
+        target instanceof Document
+          ? target.documentElement
+          : target instanceof HTMLElement
+            ? target
+            : null
+      if (!element) return
 
       element.setAttribute('data-scrolling', 'true')
 

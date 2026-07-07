@@ -22,6 +22,7 @@ function reorderForBento(apps: MiniApp[]): MiniApp[] {
   if (coreIndex <= 0) return apps
   const copy = [...apps]
   const [core] = copy.splice(coreIndex, 1)
+  if (!core) return apps
   return [core, ...copy]
 }
 
