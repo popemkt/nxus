@@ -28,3 +28,4 @@ One file per learning, kebab-case slug. Each entry MUST carry: a date (when lear
 |---|---|---|
 | [vite-server-only-imports.md](vite-server-only-imports.md) | Vite / TanStack Start | Node-only deps (better-sqlite3) MUST be dynamically imported *inside* server-fn handlers; `.server.ts` suffixes and re-exports do not protect the client bundle. |
 | [playwright-mcp-profile-lock.md](playwright-mcp-profile-lock.md) | Playwright MCP / Chrome | "Browser is already in use" = a stray Chrome process holds the MCP profile lock; find and kill the holder PID. |
+| [e2e-autoseed-suppression.md](e2e-autoseed-suppression.md) | Playwright + nxus auto-seed | A direct-DB e2e seed before the server's first request suppresses demo-data auto-seed and starves other specs; navigate + poll for `item:%` nodes before seeding. |

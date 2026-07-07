@@ -730,6 +730,112 @@ export function assembleNodeWithInheritance(
 }
 
 // ============================================================================
+// Inline mentions - extraction and reconciliation
+// ============================================================================
+
+/**
+ * Inline mention token grammar: `[[node:<uuid>]]`.
+ * The uuid group matches any RFC-4122-shaped id (nodes use uuidv7).
+ */
+const INLINE_MENTION_TOKEN_PATTERN =
+  /\[\[node:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\]\]/g
+
+/**
+ * Extract the set of node ids referenced via `[[node:<uuid>]]` tokens in
+ * `content`, deduplicated, in first-occurrence order.
+ */
+export function extractMentionedNodeIds(content: string | null | undefined): string[] {
+  if (!content) return []
+  const ids: string[] = []
+  const seen = new Set<string>()
+  for (const match of content.matchAll(INLINE_MENTION_TOKEN_PATTERN)) {
+    const id = match[1]
+    if (id && !seen.has(id)) {
+      seen.add(id)
+      ids.push(id)
+    }
+  }
+  return ids
+}
+
+/**
+ * Reconcile a node's `field:mentions` property rows against the inline
+ * `[[node:<uuid>]]` tokens currently present in its content.
+ *
+ * This is the single write-time extraction point: callers never parse
+ * content to answer "what does this node mention" — they read
+ * `field:mentions` like any other node-refs property. Diffs against the
+ * existing rows (add new, remove gone) rather than clear-and-reinsert, so
+ * `property:added`/`property:removed` events only fire for actual changes.
+ */
+export function reconcileMentions(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  content: string | null | undefined,
+): void {
+  const field = getSystemNode(db, SYSTEM_FIELDS.MENTIONS)
+  if (!field) return // bootstrap hasn't run (e.g. pre-migration DB) — tolerate
+
+  const desired = extractMentionedNodeIds(content)
+  const desiredSet = new Set(desired)
+
+  const existingRows = db
+    .select()
+    .from(nodeProperties)
+    .where(and(eq(nodeProperties.nodeId, nodeId), eq(nodeProperties.fieldNodeId, field.id)))
+    .all()
+
+  const existingByValue = new Map<string, (typeof existingRows)[number]>()
+  for (const row of existingRows) {
+    try {
+      const value: unknown = JSON.parse(row.value ?? 'null')
+      if (typeof value === 'string') existingByValue.set(value, row)
+    } catch {
+      // Malformed row — ignore, it will be left in place untouched.
+    }
+  }
+
+  const now = new Date()
+
+  for (const [value, row] of existingByValue) {
+    if (desiredSet.has(value)) continue
+    db.delete(nodeProperties).where(eq(nodeProperties.id, row.id)).run()
+    eventBus.emit({
+      type: 'property:removed',
+      timestamp: now,
+      nodeId,
+      fieldId: field.id,
+      fieldSystemId: SYSTEM_FIELDS.MENTIONS,
+      beforeValue: value,
+    })
+  }
+
+  let maxOrder = existingRows.reduce((max, p) => Math.max(max, p.order ?? 0), -1)
+  for (const value of desired) {
+    if (existingByValue.has(value)) continue
+    maxOrder += 1
+    db.insert(nodeProperties)
+      .values({
+        nodeId,
+        fieldNodeId: field.id,
+        value: JSON.stringify(value),
+        order: maxOrder,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run()
+    eventBus.emit({
+      type: 'property:added',
+      timestamp: now,
+      nodeId,
+      fieldId: field.id,
+      fieldSystemId: SYSTEM_FIELDS.MENTIONS,
+      afterValue: value,
+    })
+  }
+}
+
+// ============================================================================
 // Write API - Create/Update/Delete nodes (for new mini-apps)
 // ============================================================================
 
@@ -783,6 +889,9 @@ export function createNode(
     }
   }
 
+  // Extract [[node:<uuid>]] tokens from the initial content into field:mentions
+  reconcileMentions(db, nodeId, options.content)
+
   return nodeId
 }
 
@@ -816,6 +925,10 @@ export function updateNodeContent(
     beforeValue: beforeContent,
     afterValue: content,
   })
+
+  // Re-extract [[node:<uuid>]] tokens on every content write — this is the
+  // canonical write path (§ Inline mentions above); queries never parse content.
+  reconcileMentions(db, nodeId, content)
 }
 
 /**

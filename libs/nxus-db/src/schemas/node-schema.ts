@@ -183,6 +183,7 @@ export const SYSTEM_FIELDS = {
   EXTENDS: 'field:extends' as FieldSystemId, // Supertag inheritance
   FIELD_TYPE: 'field:field_type' as FieldSystemId, // Type of a field (text, node, nodes, etc.)
   FORMULA: 'field:formula' as FieldSystemId, // Formula expression stored on formula field definitions
+  MENTIONS: 'field:mentions' as FieldSystemId, // Inline [[node:<uuid>]] references extracted from content
 
   // Common entity fields
   TYPE: 'field:type' as FieldSystemId,
@@ -319,6 +320,7 @@ export const FIELD_NAMES = {
   EXTENDS: 'extends' as FieldContentName,
   FIELD_TYPE: 'fieldType' as FieldContentName,
   FORMULA: 'formula' as FieldContentName,
+  MENTIONS: 'mentions' as FieldContentName,
 
   // Common entity fields
   TYPE: 'type' as FieldContentName,

@@ -52,6 +52,7 @@ Proof: `outline-editor.spec.ts` — "Node Rendering" (:24-58), "Collapse/Expand"
 - **Enter at end of text** creates an empty sibling below and activates it. **Enter mid-text splits the node**: current node keeps the before-text, the new sibling gets the after-text and becomes active (`node-content.tsx:196-208`, `node-block.tsx:99-105`).
 - **Backspace on an empty leaf** deletes it and re-activates the previous visible node at end-of-text (`node-block.tsx:193-208`). **Backspace at start of a non-empty leaf** merges its content into the previous visible node and deletes it, caret at the merge point (`node-block.tsx:210-228`).
 - Empty outline (zoomed root with no children) shows "Empty. Press Enter to start writing."; Enter creates the first child (`outline-editor.tsx:174-184,497-501`).
+- **Inline mention tokens.** Content MAY contain `[[node:<uuid>]]` tokens (the wire format for a node reference embedded in text, see [data-model.md §3.5](./data-model.md)). The read view (inactive node) renders each token as a small clickable chip — dashed-circle icon + the target node's content, same dashed-circle styling as other reference rows (§2) — that navigates on click (`renderNodeContent`/`MentionChip`, `node-content.tsx`). The active `contentEditable` shows the raw token text unchanged; this is WYSIWYG-lite by design, not a rich text editor — there is no hidden markup, what you type is what is stored. Typing `[[` opens a search popover (`MentionAutocomplete`, `mention-autocomplete.tsx`) that inserts `[[node:<id>]]` at the cursor on selection, mirroring the `#` supertag-autocomplete trigger pattern.
 
 Proof: `outline-editor.spec.ts` — "Node Activation & Editing" (:60-104), "Node Splitting" (:291-357), "Empty Node — Press Enter to Write" (:849-939).
 
@@ -198,20 +199,22 @@ Every zoomed-in node view and every supertag detail view ends with a collapsible
 
 - Header: caret + "References (N)" total count; clicking toggles the whole section (`backlinks-section.tsx:49-69`).
 - The section body has two independently collapsible top-level groups with counts: **Mentioned (N)** and **Referenced (N)** (`backlinks-section.tsx:78-91,100-151`).
-- **Mentioned** is for inline content references. Current storage has no inline-reference relation; the data model only defines supertag assignments and node/nodes field values as reference-bearing properties (`data-model.md:39-44`). Until that model exists, Mentioned renders as an empty subsection (see DRIFT below).
-- **Referenced** contains property-backed references. `getBacklinksServerFn` classifies each backlink as `field-value` or `supertag` by inspecting the referencing property's field (`outline.server.ts:585-609`) and returns grouped node rows (`outline.server.ts:665-678`).
-- Referenced groups preserve the field-level heading "Appears as *fieldName* in…" with a per-field count; supertag assignment itself is a field group ("Appears as supertag in…") (`backlinks-section.tsx:155-190`).
+- **Mentioned** lists inline content references — nodes whose `content` contains a `[[node:<target-uuid>]]` token (§3, `data-model.md §3.5`). Tokens are extracted at content-write time into `field:mentions`, a `nodes`-typed reference field like any other (`data-model.md §3.5`); `getGroupedBacklinks` classifies `field:mentions` rows as origin kind `inline-mention` (`libs/nxus-node-api/src/server/operations.ts:572-578`) and `getBacklinksServerFn` passes the grouping through unchanged (`outline.server.ts:443-455`).
+- **Referenced** contains the remaining property-backed references. `getGroupedBacklinks` classifies each backlink as `field-value` or `supertag` by inspecting the referencing property's field, with `field:mentions` excluded from this branch so it never double-counts under both subsections (`operations.ts:549-587`).
+- Referenced groups preserve the field-level heading "Appears as *fieldName* in…" with a per-field count; supertag assignment itself is a field group ("Appears as supertag in…") (`backlinks-section.tsx:155-190`). Mentioned's single group reuses the same heading component (its field name is "mentions").
 - Groups show 3 rows initially with "Show N more" / "Show less" (`backlinks-section.tsx:162-219`).
 - Each backlink renders as a full reference node row: dashed-circle bullet, node content, supertag pills; click or Enter navigates (`backlinks-section.tsx:231-287`).
 - Data is cached 30s per node by the References query (`backlinks-section.tsx:35-39`).
 
-Proof: `outline-editor.spec.ts` — "Backlinks" (`outline-editor.spec.ts:718-880`), especially split-section assertions and Referenced collapse (`outline-editor.spec.ts:780-795`).
+Proof: `outline-editor.spec.ts` — "Backlinks" (`outline-editor.spec.ts:718-880`), especially split-section assertions and Referenced collapse (`outline-editor.spec.ts:780-795`); `e2e/editor/inline-mentions.spec.ts` proves a token renders as a chip, the target's Mentioned subsection lists the mentioning node, and both directions of navigation.
 
-DRIFT: inline mentions not representable
-- canonical: References.Mentioned lists inline content references where a node's rich/text content contains a reference to the target node.
-- current: node references are only property-backed: `field:supertag` assignments and `node`/`nodes` field values (`data-model.md:39-44`). `getBacklinksServerFn` can classify `field-value` and `supertag`, but has no inline mention relation to query (`outline.server.ts:585-609`). The editor renders Mentioned as an empty subsection (`backlinks-section.tsx:78-84,136-140`).
-- impact: users see the Tana-style top-level split, but inline mentions cannot appear until the core model can store or derive them.
-- closes: define and implement inline content node references in the data model and have `getBacklinksServerFn` emit `inline-mention` groups.
+(Closed 2026-07-07: the "inline mentions not representable" DRIFT — `field:mentions` extraction/reconciliation landed in `libs/nxus-db` (`node.service.ts:740-836`), `getGroupedBacklinks` emits `inline-mention` groups, and the editor renders `[[node:<uuid>]]` tokens as clickable chips with a `[[`-triggered insertion popover. Graph-mode (`ARCHITECTURE_TYPE=graph`) extraction is not implemented — see DRIFT below.)
+
+DRIFT: inline mention extraction is node-mode only
+- canonical: `field:mentions` is reconciled on every content write regardless of architecture mode (`data-model.md §3.5`).
+- current: reconciliation is implemented in `node.service.ts`'s `createNode`/`updateNodeContent`, which only the SQLite/node-mode backend calls (`backends/sqlite-backend.ts:67-75`); the SurrealDB/graph-mode backend's `createNode`/`updateNodeContent` (`backends/surreal-backend.ts:205,276`) do not call it.
+- impact: under `ARCHITECTURE_TYPE=graph` (experimental, non-default), inline mention tokens render as chips but never populate `field:mentions`, so the target's Mentioned subsection stays empty.
+- closes: port `extractMentionedNodeIds`/reconciliation into the SurrealDB backend's content-write path, or hoist reconciliation into the shared `NodeFacade` layer so both backends get it for free.
 
 ## 9. Zoomed-In Node View (detail screen)
 

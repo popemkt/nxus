@@ -105,6 +105,7 @@ export const HIDDEN_FIELD_SYSTEM_IDS = new Set([
   'field:extends',
   'field:field_type',
   'field:formula',
+  'field:mentions',
   'field:order',
   'field:parent',
   'field:query_result_cache',

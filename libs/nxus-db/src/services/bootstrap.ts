@@ -587,6 +587,10 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_FIELDS.INSTANCE_SUPERTAG, content: 'instanceSupertag', fieldType: 'node' },
     { systemId: SYSTEM_FIELDS.VIEW_AS, content: 'viewAs', fieldType: 'select' },
     { systemId: SYSTEM_FIELDS.VIEW_CONFIG, content: 'viewConfig', fieldType: 'json' },
+    // Inline mention backlinks (Tana parity): node-refs extracted from content's
+    // [[node:<uuid>]] tokens. Engine-internal — never part of a supertag's
+    // instance schema, hidden from field-row rendering (see HIDDEN_FIELD_SYSTEM_IDS).
+    { systemId: SYSTEM_FIELDS.MENTIONS, content: 'mentions', fieldType: 'nodes' },
   ];
 
   for (const field of commonFields) {

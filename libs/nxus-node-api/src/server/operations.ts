@@ -569,9 +569,12 @@ export async function getGroupedBacklinks(
         continue
       }
 
-      const originKind: BacklinkOriginKind = first.fieldSystemId === 'field:supertag'
-        ? 'supertag'
-        : 'field-value'
+      const originKind: BacklinkOriginKind =
+        first.fieldSystemId === 'field:supertag'
+          ? 'supertag'
+          : first.fieldSystemId === 'field:mentions'
+            ? 'inline-mention'
+            : 'field-value'
       const existingGroup = fieldGroups.get(fieldKey)
       if (existingGroup) {
         existingGroup.nodeIds.add(assembled.id)
