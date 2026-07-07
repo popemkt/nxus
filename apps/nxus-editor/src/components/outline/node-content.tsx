@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Hash, X } from '@phosphor-icons/react'
+import { GearSix, Hash, X } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
 import type { SupertagBadge } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getCaretRect } from '@/lib/caret-utils'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { SupertagAutocomplete } from './supertag-autocomplete'
+import { SupertagConfigPanel } from './supertag-config-panel'
 
 interface NodeContentProps {
   nodeId: string
@@ -279,6 +280,10 @@ function SupertagBadges({
   onRemove?: (supertagId: string, supertagSystemId: string | null) => void
 }) {
   const navigateToNode = useNavigateToNode()
+  const [configTarget, setConfigTarget] = useState<{
+    supertagId: string
+    anchorRect: { top: number; left: number; width: number; height: number }
+  } | null>(null)
 
   return (
     <div className="flex h-6 items-center gap-0.5">
@@ -287,6 +292,7 @@ function SupertagBadges({
         return (
           <span
             key={tag.id}
+            data-supertag-badge={tag.id}
             className={cn(
               'group/tag inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px',
               'text-[11px] font-medium leading-[1.8]',
@@ -322,9 +328,41 @@ function SupertagBadges({
               )}
             </span>
             {tag.name}
+            <button
+              type="button"
+              className={cn(
+                'shrink-0 flex items-center justify-center',
+                'opacity-0 group-hover/tag:opacity-70 hover:!opacity-100',
+                'transition-opacity',
+              )}
+              title="Configure supertag"
+              onClick={(e) => {
+                e.stopPropagation()
+                const rect = e.currentTarget.getBoundingClientRect()
+                setConfigTarget({
+                  supertagId: tag.id,
+                  anchorRect: {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                  },
+                })
+              }}
+            >
+              <GearSix size={9} weight="bold" />
+            </button>
           </span>
         )
       })}
+
+      {configTarget && (
+        <SupertagConfigPanel
+          supertagId={configTarget.supertagId}
+          anchorRect={configTarget.anchorRect}
+          onClose={() => setConfigTarget(null)}
+        />
+      )}
     </div>
   )
 }

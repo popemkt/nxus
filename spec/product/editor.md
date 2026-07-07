@@ -166,10 +166,10 @@ Supertags attach schema to nodes; definitions are themselves nodes tagged `super
 - **Add via `#` autocomplete**: typing `#word` at a word boundary in an active node opens an autocomplete anchored at the caret (`node-content.tsx:105-122`); selecting strips the `#query` text from the content and applies the tag (`node-content.tsx:153-187`).
 - **Add via command palette**: Cmd+K → "Add supertag" → searchable supertag list (§11).
 - **Badges**: compact colored pill after the content text — `text-[11px]`, background at 18% alpha of the tag color (`node-content.tsx:274-330`). Click navigates to the supertag's page; hovering swaps the `#` glyph for an `X` that removes the tag from the node (`node-content.tsx:300-322`). Colors fall back to a deterministic hash of the tag ID when unset (`lib/supertag-colors.ts` via `getSupertagColor`).
-- **Configuration**: zooming into a supertag definition node replaces the outline with `SupertagDetailView` — header (name, color, `Extends` parent pill), a Fields tab (the tag's field schema) and a Settings tab, then a References section listing tagged instances (`supertag-detail-view.tsx:85-187`; dispatch `outline-editor.tsx:456-459,471`). Field definition nodes get the analogous `FieldDetailView` (`outline-editor.tsx:458-459,474`).
-- `supertag-config-panel.tsx` (1,019 lines, includes the hover-gear affordance the e2e "Supertag Configuration" suite probes via `[data-supertag-badge]`) currently has **zero importers** — the gear-on-badge affordance is unwired; the e2e test passes vacuously because the attribute never matches.
+- **Configuration (full page)**: zooming into a supertag definition node replaces the outline with `SupertagDetailView` — header (name, color, `Extends` parent pill), a Fields tab (the tag's field schema) and a Settings tab, then a References section listing tagged instances (`supertag-detail-view.tsx:85-187`; dispatch `outline-editor.tsx:456-459,471`). Field definition nodes get the analogous `FieldDetailView` (`outline-editor.tsx:458-459,474`).
+- **Configuration (inline popover)**: every supertag badge (`node-content.tsx` `SupertagBadges`) carries `data-supertag-badge={supertagId}` and a hover-revealed gear icon alongside the existing hover-`X` remove affordance. Clicking the gear opens `SupertagConfigPanel` (`supertag-config-panel.tsx`) as a portal-rendered popover anchored at the badge — a compact Fields/Settings tabbed editor (add/remove/retype fields, constraints, color, extends, default child, content template) backed by the same `supertag.server.ts` functions `SupertagDetailView` uses, so edits from either surface stay consistent. This gives quick in-place configuration without leaving the outline, while `SupertagDetailView` remains the full-page editor for deeper work.
 
-Proof: `outline-editor.spec.ts` — "Supertag Display" (:254-270), "Supertag Configuration" (:675-695), command-palette supertag step (:555-579).
+Proof: `outline-editor.spec.ts` — "Supertag Display" (:254-270), "Supertag Configuration" (:675-695, now exercises real badges/gear rather than vacuously passing), command-palette supertag step (:555-579).
 
 ## 7. Inline Queries & Query Builder
 
@@ -281,7 +281,7 @@ Proof: `outline-editor.spec.ts` — "View Switching" (:582-614).
 | View toolbar / field bullets | : View Switching | passing |
 | **Move down** | : Keyboard Shortcuts (move, undo) | **failing (move) — DRIFT §4** |
 | Undo | : Keyboard Shortcuts (move, undo) | passing client-side; persistence drift owned by [../tech/editor-sync.md](../tech/editor-sync.md) |
-| Supertag config gear | : Supertag Configuration | vacuously passing (`data-supertag-badge` unwired, §6) |
+| Supertag config gear | : Supertag Configuration | passing (wired, §6) |
 | **Backlinks** | : Backlinks (3) | **failing — DRIFT §8** |
 | Empty node → Enter | : Empty Node — Press Enter to Write | passing |
 | **Query persistence** | `query-persistence.spec.ts` (2) | **failing — DRIFT §7** |
