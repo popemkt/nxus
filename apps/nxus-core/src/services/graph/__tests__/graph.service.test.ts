@@ -986,7 +986,7 @@ describe('Search and Property Queries', () => {
     })
 
     it('should exclude soft-deleted nodes from search', async () => {
-      const active = await createNode({ content: 'Active searchable' })
+      await createNode({ content: 'Active searchable' })
       const deleted = await createNode({ content: 'Deleted searchable' })
 
       await deleteNode(deleted.id)
@@ -1000,7 +1000,7 @@ describe('Search and Property Queries', () => {
     it('should order results by updated_at DESC', async () => {
       const first = await createNode({ content: 'First match' })
       await new Promise((r) => setTimeout(r, 10))
-      const second = await createNode({ content: 'Second match' })
+      await createNode({ content: 'Second match' })
       await new Promise((r) => setTimeout(r, 10))
 
       // Update the first node so it becomes the most recently updated
@@ -1078,7 +1078,7 @@ describe('Search and Property Queries', () => {
     })
 
     it('should exclude soft-deleted nodes', async () => {
-      const active = await createNode({
+      await createNode({
         content: 'Active',
         props: { status: 'active' },
       })

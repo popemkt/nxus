@@ -238,11 +238,6 @@ export function GalleryView({
 
   // Items appear in ALL applicable groups based on their types array
   const tools = items.filter((app) => app.types?.includes('tool'))
-  const repos = items.filter((app) => app.types?.includes('remote-repo'))
-  const typescriptApps = items.filter((app) =>
-    app.types?.includes('typescript'),
-  )
-  const htmlApps = items.filter((app) => app.types?.includes('html'))
 
   // For now, show Tools vs Applications (combining repos, typescript, html)
   // Items with multiple types will appear in multiple sections

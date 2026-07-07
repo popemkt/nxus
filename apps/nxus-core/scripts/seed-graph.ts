@@ -275,8 +275,7 @@ export async function seedGraph() {
     }
 
     // Create command nodes as part_of the item
-    for (let i = 0; i < (item.commands || []).length; i++) {
-      const cmd = item.commands![i]
+    for (const [i, cmd] of (item.commands ?? []).entries()) {
       const [cmdNodes] = await db.query<[Array<Record<string, unknown>>]>(
         `CREATE node SET
           content = $content,

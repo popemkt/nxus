@@ -53,8 +53,6 @@ export {
   useComboboxAnchor,
 } from './components/combobox'
 
-export { DecodeText } from './components/decode-text'
-
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -85,8 +83,6 @@ export {
   FieldSet,
   FieldTitle,
 } from './components/field'
-
-export { GlitchText } from './components/glitch-text'
 
 export { Input } from './components/input'
 

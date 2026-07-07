@@ -29,8 +29,9 @@ function getProperty<T = unknown>(
   fieldName: FieldContentName,
 ): T | undefined {
   const props = node.properties[fieldName]
-  if (!props || props.length === 0) return undefined
-  return props[0].value as T
+  const first = props?.[0]
+  if (!first) return undefined
+  return first.value as T
 }
 
 function getPropertyValues<T = unknown>(

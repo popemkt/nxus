@@ -173,8 +173,7 @@ describe('seed-nodes', () => {
 
       // Assign supertag (simulating seed-nodes logic)
       const fieldNodeId = getSystemNodeId(SYSTEM_FIELDS.SUPERTAG)
-      for (let i = 0; i < itemTypes.length; i++) {
-        const itemType = itemTypes[i]
+      for (const [i, itemType] of itemTypes.entries()) {
         const supertagSystemId = ITEM_TYPE_TO_SUPERTAG[itemType]
         if (supertagSystemId) {
           const supertagId = getSystemNodeId(supertagSystemId)
@@ -195,8 +194,10 @@ describe('seed-nodes', () => {
         .all(nodeId, fieldNodeId) as Array<{ value: string; order: number }>
 
       expect(rows).toHaveLength(1)
-      expect(JSON.parse(rows[0].value)).toBe('supertag-tool')
-      expect(rows[0].order).toBe(0)
+      const row0 = rows[0]
+      if (!row0) throw new Error('expected row0 to exist')
+      expect(JSON.parse(row0.value)).toBe('supertag-tool')
+      expect(row0.order).toBe(0)
     })
   })
 
@@ -214,8 +215,7 @@ describe('seed-nodes', () => {
 
       // Assign supertags (simulating seed-nodes logic)
       const fieldNodeId = getSystemNodeId(SYSTEM_FIELDS.SUPERTAG)
-      for (let i = 0; i < itemTypes.length; i++) {
-        const itemType = itemTypes[i]
+      for (const [i, itemType] of itemTypes.entries()) {
         const supertagSystemId = ITEM_TYPE_TO_SUPERTAG[itemType]
         if (supertagSystemId) {
           const supertagId = getSystemNodeId(supertagSystemId)
@@ -236,14 +236,16 @@ describe('seed-nodes', () => {
         .all(nodeId, fieldNodeId) as Array<{ value: string; order: number }>
 
       expect(rows).toHaveLength(2)
+      const [row0, row1] = rows
+      if (!row0 || !row1) throw new Error('expected row0 and row1 to exist')
 
       // First supertag should be tool
-      expect(JSON.parse(rows[0].value)).toBe('supertag-tool')
-      expect(rows[0].order).toBe(0)
+      expect(JSON.parse(row0.value)).toBe('supertag-tool')
+      expect(row0.order).toBe(0)
 
       // Second supertag should be repo
-      expect(JSON.parse(rows[1].value)).toBe('supertag-repo')
-      expect(rows[1].order).toBe(1)
+      expect(JSON.parse(row1.value)).toBe('supertag-repo')
+      expect(row1.order).toBe(1)
     })
 
     it('should preserve order from types array', () => {
@@ -257,8 +259,7 @@ describe('seed-nodes', () => {
       `)
 
       const fieldNodeId = getSystemNodeId(SYSTEM_FIELDS.SUPERTAG)
-      for (let i = 0; i < itemTypes.length; i++) {
-        const itemType = itemTypes[i]
+      for (const [i, itemType] of itemTypes.entries()) {
         const supertagSystemId = ITEM_TYPE_TO_SUPERTAG[itemType]
         if (supertagSystemId) {
           const supertagId = getSystemNodeId(supertagSystemId)
@@ -278,15 +279,17 @@ describe('seed-nodes', () => {
         .all(nodeId, fieldNodeId) as Array<{ value: string; order: number }>
 
       expect(rows).toHaveLength(2)
+      const [row0, row1] = rows
+      if (!row0 || !row1) throw new Error('expected row0 and row1 to exist')
       // Order should match types array: repo first, then tool
-      expect(JSON.parse(rows[0].value)).toBe('supertag-repo')
-      expect(JSON.parse(rows[1].value)).toBe('supertag-tool')
+      expect(JSON.parse(row0.value)).toBe('supertag-repo')
+      expect(JSON.parse(row1.value)).toBe('supertag-tool')
     })
   })
 
   describe('type normalization for seeding', () => {
     it('should normalize single type to types array', () => {
-      const rawManifest = {
+      const rawManifest: Record<string, unknown> = {
         id: 'test-app',
         type: 'tool' as ItemType,
       }
@@ -441,7 +444,9 @@ describe('seed-nodes', () => {
       }>
 
       expect(repoNodes).toHaveLength(1)
-      expect(repoNodes[0].id).toBe('node-multi-type')
+      const repoNode0 = repoNodes[0]
+      if (!repoNode0) throw new Error('expected repoNode0 to exist')
+      expect(repoNode0.id).toBe('node-multi-type')
     })
   })
 })

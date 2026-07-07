@@ -258,7 +258,6 @@ function OverviewContent({
   setSelectedInstance,
   handleOpen,
   setGitStatusRefreshKey,
-  onExecuteCommand,
   onRefreshHealth,
 }: {
   app: ReturnType<typeof useAppRegistry>['apps'][0]
@@ -269,7 +268,6 @@ function OverviewContent({
   setSelectedInstance: (instance: InstalledAppRecord | null) => void
   handleOpen: () => void
   setGitStatusRefreshKey: (fn: (k: number) => number) => void
-  onExecuteCommand: (command: string, args: Array<string>) => Promise<void>
   onRefreshHealth: () => void
 }) {
   // State for git validation error message
@@ -687,7 +685,6 @@ function AppDetailPage() {
                   setSelectedInstance={setSelectedInstance}
                   handleOpen={handleOpen}
                   setGitStatusRefreshKey={setGitStatusRefreshKey}
-                  onExecuteCommand={executeInstanceCommand}
                   onRefreshHealth={() =>
                     canCheckHealth && hasCheckCommand(app) && invalidate(app.checkCommand)
                   }
@@ -708,7 +705,7 @@ function AppDetailPage() {
                         app={app}
                         onExecuteCommand={(command) => {
                           const parts = command.split(' ')
-                          const cmd = parts[0]
+                          const cmd = parts[0] ?? ''
                           const args = parts.slice(1)
                           executeInstanceCommand(cmd, args)
                         }}
@@ -730,7 +727,6 @@ function AppDetailPage() {
                 setSelectedInstance={setSelectedInstance}
                 handleOpen={handleOpen}
                 setGitStatusRefreshKey={setGitStatusRefreshKey}
-                onExecuteCommand={executeInstanceCommand}
                 onRefreshHealth={() =>
                   canCheckHealth && hasCheckCommand(app) && invalidate(app.checkCommand)
                 }
@@ -748,7 +744,7 @@ function AppDetailPage() {
               onRunCommand={async (command) => {
                 // Parse command into parts for executeCommand
                 const parts = command.split(' ')
-                const cmd = parts[0]
+                const cmd = parts[0] ?? ''
                 const args = parts.slice(1)
                 await executeInstanceCommand(cmd, args)
               }}
@@ -764,7 +760,7 @@ function AppDetailPage() {
             onRunCommand={async (command, cwd) => {
               // Parse command into parts for executeCommand
               const parts = command.split(' ')
-              const cmd = parts[0]
+              const cmd = parts[0] ?? ''
               const args = parts.slice(1)
               await executeInstanceCommand(cmd, args, { cwd })
             }}

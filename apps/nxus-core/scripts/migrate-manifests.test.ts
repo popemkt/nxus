@@ -38,12 +38,19 @@ function normalizeManifestTypes(manifest: Record<string, unknown>): {
     throw new Error('Manifest must have either "type" or "types" field')
   }
 
+  const firstType = types[0]
+  if (!firstType) {
+    // Unreachable given the branches above (both leave types non-empty),
+    // but proves non-null to the type checker under noUncheckedIndexedAccess.
+    throw new Error('Manifest must have either "type" or "types" field')
+  }
+
   // Determine primary type
   let primaryType: ItemType
   if (rawPrimaryType && types.includes(rawPrimaryType)) {
     primaryType = rawPrimaryType
   } else {
-    primaryType = types[0]
+    primaryType = firstType
   }
 
   return {
@@ -262,9 +269,11 @@ describe('migrate-manifests', () => {
       }>
 
       expect(rows).toHaveLength(1)
-      expect(rows[0].type).toBe('tool')
-      expect(rows[0].is_primary).toBe(1)
-      expect(rows[0].order).toBe(0)
+      const row0 = rows[0]
+      if (!row0) throw new Error('expected row0 to exist')
+      expect(row0.type).toBe('tool')
+      expect(row0.is_primary).toBe(1)
+      expect(row0.order).toBe(0)
     })
 
     it('should insert multiple types with correct primary flag', () => {
@@ -292,16 +301,18 @@ describe('migrate-manifests', () => {
       }>
 
       expect(rows).toHaveLength(2)
+      const [row0, row1] = rows
+      if (!row0 || !row1) throw new Error('expected row0 and row1 to exist')
 
       // First type (tool) should be primary
-      expect(rows[0].type).toBe('tool')
-      expect(rows[0].is_primary).toBe(1)
-      expect(rows[0].order).toBe(0)
+      expect(row0.type).toBe('tool')
+      expect(row0.is_primary).toBe(1)
+      expect(row0.order).toBe(0)
 
       // Second type (remote-repo) should not be primary
-      expect(rows[1].type).toBe('remote-repo')
-      expect(rows[1].is_primary).toBe(0)
-      expect(rows[1].order).toBe(1)
+      expect(row1.type).toBe('remote-repo')
+      expect(row1.is_primary).toBe(0)
+      expect(row1.order).toBe(1)
     })
 
     it('should handle non-first type as primary', () => {
@@ -328,9 +339,13 @@ describe('migrate-manifests', () => {
       }>
 
       expect(rows).toHaveLength(3)
-      expect(rows[0].is_primary).toBe(0) // tool - not primary
-      expect(rows[1].is_primary).toBe(1) // remote-repo - primary
-      expect(rows[2].is_primary).toBe(0) // typescript - not primary
+      const [row0, row1, row2] = rows
+      if (!row0 || !row1 || !row2) {
+        throw new Error('expected row0, row1, and row2 to exist')
+      }
+      expect(row0.is_primary).toBe(0) // tool - not primary
+      expect(row1.is_primary).toBe(1) // remote-repo - primary
+      expect(row2.is_primary).toBe(0) // typescript - not primary
     })
 
     it('should replace existing types on re-migration', () => {
@@ -363,15 +378,16 @@ describe('migrate-manifests', () => {
       }>
 
       expect(rows).toHaveLength(2)
-      expect(rows[0].type).toBe('remote-repo')
-      expect(rows[1].type).toBe('typescript')
+      const [row0, row1] = rows
+      if (!row0 || !row1) throw new Error('expected row0 and row1 to exist')
+      expect(row0.type).toBe('remote-repo')
+      expect(row1.type).toBe('typescript')
     })
   })
 
   describe('backward compatibility', () => {
     it('should set legacy items.type to primaryType', () => {
       const itemId = 'test-backward-compat'
-      const types: Array<ItemType> = ['tool', 'remote-repo']
       const primaryType: ItemType = 'tool'
 
       // Insert into items table with primaryType

@@ -93,7 +93,7 @@ export function DocViewer({
     return parts.map((part, index) => {
       // Try cross-app format first: {{command:app-id:command-id}}
       const crossAppMatch = part.match(/^\{\{command:([\w-]+):([\w-]+)\}\}$/)
-      if (crossAppMatch) {
+      if (crossAppMatch && crossAppMatch[1] && crossAppMatch[2]) {
         const targetAppId = crossAppMatch[1]
         const commandId = crossAppMatch[2]
 
@@ -128,7 +128,7 @@ export function DocViewer({
 
       // Try current-app format: {{command:command-id}}
       const match = part.match(/^\{\{command:([\w-]+)\}\}$/)
-      if (match) {
+      if (match && match[1]) {
         const commandId = match[1]
         const command = commandsById.get(commandId)
 
@@ -156,7 +156,7 @@ export function DocViewer({
 
       // Item mention: {{item:item-id}}
       const itemMatch = part.match(/^\{\{item:([\w-]+)\}\}$/)
-      if (itemMatch) {
+      if (itemMatch && itemMatch[1]) {
         const itemId = itemMatch[1]
         const itemResult = appRegistryService.getAppById(itemId)
 

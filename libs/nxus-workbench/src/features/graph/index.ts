@@ -28,12 +28,6 @@
 export { GraphView, default as GraphViewComponent } from './GraphView'
 export type { GraphViewProps } from './GraphView'
 
-// NOTE: LightweightGraphView and useLightweightGraph are NOT exported here
-// to avoid bundling server dependencies (better-sqlite3) into client code.
-// When you need them, import directly:
-//   import { LightweightGraphView } from '@nxus/workbench/features/graph/LightweightGraphView'
-//   import { useLightweightGraph } from '@nxus/workbench/features/graph/provider/use-lightweight-graph'
-
 // ============================================================================
 // Data Provider
 // ============================================================================
@@ -44,7 +38,7 @@ export {
   transformToGraphData,
   isLargeGraph,
   LARGE_GRAPH_THRESHOLD,
-  // Local graph (NOTE: useLightweightGraph is NOT exported - see comment above)
+  // Local graph
   useLocalGraph,
   useLocalGraphResult,
   filterLocalGraph,

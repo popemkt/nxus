@@ -101,7 +101,8 @@ export const getPendingInboxItemsServerFn = createServerFn({
 
   const pendingNodes = inboxNodes
     .filter(
-      (n) => !n.deletedAt && getProperty<string>(n, 'status') === 'pending',
+      (n) =>
+        !n.deletedAt && getProperty<string>(n, FIELD_NAMES.STATUS) === 'pending',
     )
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 

@@ -15,12 +15,10 @@ import {
 } from '@nxus/db/test-utils'
 import { eventBus } from '@nxus/db/server'
 import {
-  
   addRelation,
   componentsRec,
   createNode,
   deleteNode,
-  getIncomingRelations,
   getNode,
   getNodeBySystemId,
   getNodesBySupertag,
@@ -30,9 +28,8 @@ import {
   searchNodes,
   updateNode
 } from '../graph.service.js'
-import type {GraphNode} from '../graph.service.js';
-import type { EventFilter, MutationEvent } from '@nxus/db/server'
-import type { RecordId, Surreal } from 'surrealdb'
+import type { MutationEvent } from '@nxus/db/server'
+import type { Surreal } from 'surrealdb'
 
 // ============================================================================
 // Test Setup
@@ -63,7 +60,7 @@ afterEach(async () => {
 describe('Graph Service → Event Bus Integration Pipeline', () => {
   it('should deliver node:created event to subscriber when node is created', async () => {
     const received: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => received.push(e), {
+    const unsub = eventBus.subscribe((e) => { received.push(e) }, {
       types: ['node:created'],
     })
 
@@ -87,7 +84,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
 
   it('should deliver supertag:added event when supertag is assigned to a node', async () => {
     const supertagEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => supertagEvents.push(e), {
+    const unsub = eventBus.subscribe((e) => { supertagEvents.push(e) }, {
       types: ['supertag:added'],
     })
 
@@ -108,7 +105,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
     await addRelation('has_supertag', node.id, 'supertag:tag')
 
     const removeEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => removeEvents.push(e), {
+    const unsub = eventBus.subscribe((e) => { removeEvents.push(e) }, {
       types: ['supertag:removed'],
     })
 
@@ -180,7 +177,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
 
   it('should filter events by type for targeted subscribers', async () => {
     const updateOnly: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => updateOnly.push(e), {
+    const unsub = eventBus.subscribe((e) => { updateOnly.push(e) }, {
       types: ['node:updated'],
     })
 
@@ -200,7 +197,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
     const nodeB = await createNode({ content: 'Node B' })
 
     const nodeAEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => nodeAEvents.push(e), {
+    const unsub = eventBus.subscribe((e) => { nodeAEvents.push(e) }, {
       nodeIds: [String(nodeA.id)],
     })
 
@@ -219,11 +216,11 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
     const createdOnly: Array<MutationEvent> = []
     const deletedOnly: Array<MutationEvent> = []
 
-    const unsub1 = eventBus.subscribe((e) => allEvents.push(e))
-    const unsub2 = eventBus.subscribe((e) => createdOnly.push(e), {
+    const unsub1 = eventBus.subscribe((e) => { allEvents.push(e) })
+    const unsub2 = eventBus.subscribe((e) => { createdOnly.push(e) }, {
       types: ['node:created'],
     })
-    const unsub3 = eventBus.subscribe((e) => deletedOnly.push(e), {
+    const unsub3 = eventBus.subscribe((e) => { deletedOnly.push(e) }, {
       types: ['node:deleted'],
     })
 
@@ -249,7 +246,7 @@ describe('Graph Service → Event Bus Integration Pipeline', () => {
 describe('Supertag Lifecycle Events', () => {
   it('should emit supertag:added then verify node appears in getNodesBySupertag', async () => {
     const supertagEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => supertagEvents.push(e), {
+    const unsub = eventBus.subscribe((e) => { supertagEvents.push(e) }, {
       types: ['supertag:added', 'supertag:removed'],
     })
 
@@ -280,7 +277,7 @@ describe('Supertag Lifecycle Events', () => {
     expect(items.some((n) => String(n.id) === String(node.id))).toBe(true)
 
     const removeEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => removeEvents.push(e), {
+    const unsub = eventBus.subscribe((e) => { removeEvents.push(e) }, {
       types: ['supertag:removed'],
     })
 
@@ -304,7 +301,7 @@ describe('Supertag Lifecycle Events', () => {
     })
 
     const supertagEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => supertagEvents.push(e), {
+    const unsub = eventBus.subscribe((e) => { supertagEvents.push(e) }, {
       types: ['supertag:added', 'supertag:removed'],
     })
 
@@ -334,7 +331,7 @@ describe('Supertag Lifecycle Events', () => {
 describe('Complex Graph + Event Bus Workflow', () => {
   it('should handle hierarchical node creation with events', async () => {
     const allEvents: Array<MutationEvent> = []
-    const unsub = eventBus.subscribe((e) => allEvents.push(e))
+    const unsub = eventBus.subscribe((e) => { allEvents.push(e) })
 
     // Create a project hierarchy
     const project = await createNode({
@@ -454,7 +451,7 @@ describe('Type Converter Round-Trip via Graph Service', () => {
       buildCommand: 'npm run build',
     }
 
-    const node = await createNode({
+    await createNode({
       content: 'Test Tool',
       system_id: 'item:test-item-001',
       props: itemProps,
@@ -486,7 +483,7 @@ describe('Type Converter Round-Trip via Graph Service', () => {
 
   it('should round-trip tag data through graph node props', async () => {
     // Simulate what createTagInGraphServerFn does
-    const node = await createNode({
+    await createNode({
       content: 'Development',
       system_id: 'tag:development',
       props: {
@@ -531,7 +528,7 @@ describe('Type Converter Round-Trip via Graph Service', () => {
       dependencies: ['node', 'npm'],
     }
 
-    const node = await createNode({
+    await createNode({
       content: 'Complex Item',
       system_id: 'item:complex',
       props: complexProps,
@@ -577,7 +574,7 @@ describe('Type Converter Round-Trip via Graph Service', () => {
       branch: 'main',
     }
 
-    const node = await createNode({
+    await createNode({
       content: 'Multi-Type App',
       system_id: 'item:multi-type',
       props: multiTypeProps,

@@ -11,7 +11,7 @@
  * - removeRelation('has_supertag', ...) → supertag:removed
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   setupTestGraphDatabase,
   teardownTestGraphDatabase,
@@ -62,7 +62,7 @@ describe('createNode events', () => {
   })
 
   it('should include content and system_id in afterValue', async () => {
-    const node = await createNode({
+    await createNode({
       content: 'My Node',
       system_id: 'item:test-event',
     })
@@ -268,7 +268,7 @@ describe('supertag events', () => {
 
 describe('event ordering and completeness', () => {
   it('should emit events in correct order for create-with-supertag', async () => {
-    const node = await createNode({
+    await createNode({
       content: 'Ordered',
       supertag: 'supertag:item',
     })

@@ -184,8 +184,9 @@ export function TagEditorModal({
       setSelectedIndex((i) => Math.max(i - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      if (suggestions.length > 0) {
-        handleAddTag(suggestions[selectedIndex])
+      const activeSuggestion = suggestions[selectedIndex]
+      if (activeSuggestion) {
+        handleAddTag(activeSuggestion)
       } else if (inputValue.trim()) {
         // Create new tag on Enter
         handleAddTag({ id: '__new__', name: inputValue.trim() })
@@ -196,7 +197,10 @@ export function TagEditorModal({
       selectedTags.length > 0
     ) {
       // Remove last tag on backspace
-      handleRemoveTag(selectedTags[selectedTags.length - 1].id)
+      const lastTag = selectedTags[selectedTags.length - 1]
+      if (lastTag) {
+        handleRemoveTag(lastTag.id)
+      }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false)
     }

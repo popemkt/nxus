@@ -69,9 +69,16 @@ function normalizeManifestTypes(manifest: Record<string, unknown>): {
     throw new Error('Manifest must have either "type" or "types" field')
   }
 
+  const firstType = types[0]
+  if (!firstType) {
+    // Unreachable given the branches above (both leave types non-empty),
+    // but proves non-null to the type checker under noUncheckedIndexedAccess.
+    throw new Error('Manifest must have either "type" or "types" field')
+  }
+
   return {
     types,
-    type: types[0], // Deprecated alias, equals first type
+    type: firstType, // Deprecated alias, equals first type
   }
 }
 
@@ -196,6 +203,7 @@ async function migrate() {
       const typesArray = validatedManifest.types
       for (let i = 0; i < typesArray.length; i++) {
         const itemType = typesArray[i]
+        if (!itemType) continue
         db.insert(itemTypes)
           .values({
             itemId: validatedManifest.id,

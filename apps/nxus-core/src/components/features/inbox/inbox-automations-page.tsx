@@ -23,13 +23,14 @@ import {
 } from '@/services/inbox/inbox-reactive.server'
 import { useInboxAutomationsStore } from '@/stores/inbox-automations.store'
 import { CreateAutomationModal } from '@/components/features/inbox/create-automation-modal'
+import type { AutomationAction, AutomationTrigger } from '@nxus/db'
 
 interface AutomationItem {
   id: string
   name: string
   enabled: boolean
-  trigger: Record<string, unknown>
-  action: Record<string, unknown>
+  trigger: AutomationTrigger
+  action: AutomationAction
   lastTriggered: string | null
 }
 

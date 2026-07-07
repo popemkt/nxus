@@ -128,6 +128,7 @@ export function CommandButton({
           ((cmd) => {
             const parts = cmd.split(' ')
             const cmdName = parts[0]
+            if (!cmdName) return
             const args = parts.slice(1)
             executeCommand(cmdName, args)
           }),

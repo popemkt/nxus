@@ -91,8 +91,9 @@ export function InstanceSelector({
 
   // Update internal state when instances change
   React.useEffect(() => {
-    if (!controlledSelectedId && instances.length > 0 && !selectedInstance) {
-      setInternalSelectedId(instances[0].id)
+    const firstInstance = instances[0]
+    if (!controlledSelectedId && firstInstance && !selectedInstance) {
+      setInternalSelectedId(firstInstance.id)
     }
   }, [instances, controlledSelectedId, selectedInstance])
 

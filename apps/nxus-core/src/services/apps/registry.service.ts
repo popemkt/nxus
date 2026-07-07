@@ -5,7 +5,7 @@
  * The Vite glob import has been removed - SQLite is the only source.
  */
 
-import type { Item, ItemRegistry, ItemStatus, ItemType, Result } from '@nxus/db'
+import type { Item, ItemStatus, ItemType, Result } from '@nxus/db'
 
 /**
  * Service for managing the app registry
@@ -15,7 +15,6 @@ import type { Item, ItemRegistry, ItemStatus, ItemType, Result } from '@nxus/db'
  * This is a client-side cache/service layer.
  */
 export class AppRegistryService {
-  private registry: ItemRegistry | null = null
   private apps: Array<Item> = []
 
   /**
@@ -23,10 +22,6 @@ export class AppRegistryService {
    */
   setApps(apps: Array<Item>): void {
     this.apps = apps
-    this.registry = {
-      version: '1.0.0',
-      items: apps,
-    }
   }
 
   /**

@@ -20,10 +20,10 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_QUERIES,
   SYSTEM_SUPERTAGS,
-  type FieldSystemId,
 } from '@nxus/db'
+import { isSupertagFilter } from '@nxus/db'
 import type { QueryDefinition, AssembledNode } from '@nxus/db'
-import type { AutomationDefinition, ComputedFieldDefinition } from '@nxus/db'
+import type { AutomationDefinition } from '@nxus/db'
 import type { InboxItem } from './inbox.server.js'
 
 // ============================================================================
@@ -51,13 +51,22 @@ export interface InboxMetrics {
 const INBOX_QUERIES = {
   allItems: {
     filters: [
-      { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.INBOX },
+      {
+        type: 'supertag' as const,
+        supertagId: SYSTEM_SUPERTAGS.INBOX,
+        includeInherited: true,
+      },
     ],
+    limit: 500,
   } satisfies QueryDefinition,
 
   pendingItems: {
     filters: [
-      { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.INBOX },
+      {
+        type: 'supertag' as const,
+        supertagId: SYSTEM_SUPERTAGS.INBOX,
+        includeInherited: true,
+      },
       {
         type: 'property' as const,
         fieldId: SYSTEM_FIELDS.STATUS as string,
@@ -65,11 +74,16 @@ const INBOX_QUERIES = {
         value: 'pending',
       },
     ],
+    limit: 500,
   } satisfies QueryDefinition,
 
   processingItems: {
     filters: [
-      { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.INBOX },
+      {
+        type: 'supertag' as const,
+        supertagId: SYSTEM_SUPERTAGS.INBOX,
+        includeInherited: true,
+      },
       {
         type: 'property' as const,
         fieldId: SYSTEM_FIELDS.STATUS as string,
@@ -77,11 +91,16 @@ const INBOX_QUERIES = {
         value: 'processing',
       },
     ],
+    limit: 500,
   } satisfies QueryDefinition,
 
   doneItems: {
     filters: [
-      { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.INBOX },
+      {
+        type: 'supertag' as const,
+        supertagId: SYSTEM_SUPERTAGS.INBOX,
+        includeInherited: true,
+      },
       {
         type: 'property' as const,
         fieldId: SYSTEM_FIELDS.STATUS as string,
@@ -89,6 +108,7 @@ const INBOX_QUERIES = {
         value: 'done',
       },
     ],
+    limit: 500,
   } satisfies QueryDefinition,
 } as const
 
@@ -129,10 +149,30 @@ const INBOX_COMPUTED_FIELD_DEFS: Array<{
 // ============================================================================
 
 /**
+ * Fixed-order tuple of computed field IDs for the 4 inbox metrics.
+ * Order: [totalItems, pendingCount, processingCount, doneCount]
+ */
+type InboxComputedFieldIds = [string, string, string, string]
+
+/**
+ * Narrows a freshly-built ids array to the fixed-length tuple, so downstream
+ * indexed access (ids[0]..ids[3]) is `string`, not `string | undefined`.
+ */
+function assertInboxComputedFieldIds(
+  ids: string[],
+): asserts ids is InboxComputedFieldIds {
+  if (ids.length !== INBOX_COMPUTED_FIELD_DEFS.length) {
+    throw new Error(
+      `Expected ${INBOX_COMPUTED_FIELD_DEFS.length} inbox computed field ids, got ${ids.length}`,
+    )
+  }
+}
+
+/**
  * Cached computed field IDs after initialization.
  * Order: [totalItems, pendingCount, processingCount, doneCount]
  */
-let inboxComputedFieldIds: string[] | null = null
+let inboxComputedFieldIds: InboxComputedFieldIds | null = null
 let reactiveInitialized = false
 let reactiveInitFailed = false
 
@@ -145,7 +185,7 @@ let reactiveInitFailed = false
  * After a failure, subsequent calls immediately throw to avoid
  * hammering a potentially corrupted database.
  */
-async function ensureInboxReactiveInit(): Promise<string[]> {
+async function ensureInboxReactiveInit(): Promise<InboxComputedFieldIds> {
   // If a previous init attempt failed, don't keep retrying
   if (reactiveInitFailed) {
     throw new Error('Reactive init previously failed; skipping retry')
@@ -191,6 +231,7 @@ async function ensureInboxReactiveInit(): Promise<string[]> {
         }
       }
 
+      assertInboxComputedFieldIds(ids)
       inboxComputedFieldIds = ids
     }
 
@@ -231,7 +272,11 @@ export function expandAutomationTemplate(
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.INBOX },
+              {
+                type: 'supertag',
+                supertagId: SYSTEM_SUPERTAGS.INBOX,
+                includeInherited: true,
+              },
               {
                 type: 'property',
                 fieldId: SYSTEM_FIELDS.STATUS as string,
@@ -239,6 +284,7 @@ export function expandAutomationTemplate(
                 value: 'done',
               },
             ],
+            limit: 500,
           },
           event: 'onEnter',
         },
@@ -298,13 +344,18 @@ export function expandAutomationTemplate(
           type: 'query_membership',
           queryDefinition: {
             filters: [
-              { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.INBOX },
+              {
+                type: 'supertag',
+                supertagId: SYSTEM_SUPERTAGS.INBOX,
+                includeInherited: true,
+              },
               {
                 type: 'content',
                 query: keyword,
                 caseSensitive: false,
               },
             ],
+            limit: 500,
           },
           event: 'onEnter',
         },
@@ -584,8 +635,7 @@ export const getInboxAutomationsServerFn = createServerFn({
       const trigger = auto.definition.trigger
       if (trigger.type === 'query_membership') {
         return trigger.queryDefinition.filters?.some(
-          (f: Record<string, unknown>) =>
-            f.type === 'supertag' && f.supertagId === SYSTEM_SUPERTAGS.INBOX,
+          (f) => isSupertagFilter(f) && f.supertagId === SYSTEM_SUPERTAGS.INBOX,
         )
       }
       if (trigger.type === 'threshold') {

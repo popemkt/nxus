@@ -91,7 +91,7 @@ async function exportData() {
     .all()
 
   // Group tags by appId
-  const tagsByApp = new Map<string, Array<{ id: number; name: string }>>()
+  const tagsByApp = new Map<string, Array<{ id: string; name: string }>>()
   for (const r of appTagRecords) {
     const arr = tagsByApp.get(r.appId) ?? []
     arr.push({ id: r.tagId, name: r.tagName })

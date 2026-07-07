@@ -106,9 +106,8 @@ export function useAppRegistry(
     }
 
     if (options.filterType) {
-      filtered = filtered.filter((app) =>
-        app.types?.includes(options.filterType),
-      )
+      const filterType = options.filterType
+      filtered = filtered.filter((app) => app.types?.includes(filterType))
     }
 
     if (options.filterStatus) {

@@ -94,8 +94,9 @@ export function getTypeIcon(type: ItemType): Icon {
  * Returns FileIcon if types array is empty or invalid.
  */
 export function getFirstTypeIcon(item: Pick<Item, 'types'>): Icon {
-  if (item.types && item.types.length > 0) {
-    return APP_TYPE_ICONS[item.types[0]] ?? FileIcon
+  const firstType = item.types?.[0]
+  if (firstType) {
+    return APP_TYPE_ICONS[firstType] ?? FileIcon
   }
   return FileIcon
 }
@@ -121,8 +122,9 @@ export function getTypeLabelLong(type: ItemType): string {
  * Uses `types[0]` as the display type.
  */
 export function getFirstTypeLabel(item: Pick<Item, 'types'>): string {
-  if (item.types && item.types.length > 0) {
-    return APP_TYPE_LABELS_SHORT[item.types[0]] ?? 'Unknown'
+  const firstType = item.types?.[0]
+  if (firstType) {
+    return APP_TYPE_LABELS_SHORT[firstType] ?? 'Unknown'
   }
   return 'Unknown'
 }
@@ -206,8 +208,9 @@ export function getTypeColor(type: ItemType): string {
  * Uses `types[0]` as the display type.
  */
 export function getFirstTypeColor(item: Pick<Item, 'types'>): string {
-  if (item.types && item.types.length > 0) {
-    return APP_TYPE_COLORS[item.types[0]] ?? 'var(--muted-foreground)'
+  const firstType = item.types?.[0]
+  if (firstType) {
+    return APP_TYPE_COLORS[firstType] ?? 'var(--muted-foreground)'
   }
   return 'var(--muted-foreground)'
 }

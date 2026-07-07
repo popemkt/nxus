@@ -21,7 +21,7 @@ import {
 import { motion } from 'framer-motion'
 import * as React from 'react'
 import type { ScriptParam } from '@/services/shell/script-param-adapters/types'
-import type { Item, ItemCommand, ToolItem } from '@nxus/db'
+import type { Item, ItemCommand, ToolItem, WorkflowCommand } from '@nxus/db'
 import { ConfigModal } from '@/components/features/app-detail/modals/config-modal'
 import { ScriptParamsModal } from '@/components/features/app-detail/modals/script-params-modal'
 import { ScriptPreviewModal } from '@/components/features/app-detail/modals/script-preview-modal'
@@ -82,7 +82,7 @@ export function AppActionsPanel({
   const [previewIsInline, setPreviewIsInline] = React.useState(false)
   const [workflowPreviewOpen, setWorkflowPreviewOpen] = React.useState(false)
   const [workflowPreviewCommand, setWorkflowPreviewCommand] =
-    React.useState<ItemCommand | null>(null)
+    React.useState<WorkflowCommand | null>(null)
 
   // Script params modal state
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false)
@@ -114,10 +114,12 @@ export function AppActionsPanel({
   const commandsByCategory = React.useMemo(() => {
     const groups: Record<string, typeof appCommands> = {}
     appCommands.forEach((cmd) => {
-      if (!groups[cmd.category]) {
-        groups[cmd.category] = []
+      const existing = groups[cmd.category]
+      if (existing) {
+        existing.push(cmd)
+      } else {
+        groups[cmd.category] = [cmd]
       }
-      groups[cmd.category].push(cmd)
     })
     return groups
   }, [appCommands])
@@ -393,15 +395,17 @@ export function AppActionsPanel({
                         cmd.mode === 'execute' ||
                         cmd.mode === 'terminal') && (
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="px-2 rounded-l-none"
-                              title="More actions"
-                            >
-                              <DotsThree className="h-4 w-4" weight="bold" />
-                            </Button>
-                          </DropdownMenuTrigger>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="outline"
+                                className="px-2 rounded-l-none"
+                                title="More actions"
+                              >
+                                <DotsThree className="h-4 w-4" weight="bold" />
+                              </Button>
+                            }
+                          />
                           <DropdownMenuContent
                             align="end"
                             className="min-w-[180px]"
@@ -492,7 +496,7 @@ export function AppActionsPanel({
       )}
 
       {/* Workflow Preview Modal */}
-      {workflowPreviewCommand?.workflow && (
+      {workflowPreviewCommand && (
         <WorkflowPreviewModal
           commandName={workflowPreviewCommand.name}
           workflow={workflowPreviewCommand.workflow}

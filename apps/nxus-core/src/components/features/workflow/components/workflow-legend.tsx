@@ -8,7 +8,6 @@ import {
   RowsIcon,
   TerminalIcon,
 } from '@phosphor-icons/react'
-import { cn } from '@nxus/ui'
 import { EDGE_TYPE_STYLES, STEP_TYPE_COLORS } from '../types'
 import type { Icon } from '@phosphor-icons/react'
 import type { WorkflowNodeData } from '../types'

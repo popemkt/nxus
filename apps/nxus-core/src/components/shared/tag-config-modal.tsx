@@ -30,10 +30,6 @@ import {
   setAppTagValuesServerFn
 } from '@/services/tag-config.server'
 
-interface TagConfigSchema {
-  fields: Array<TagConfigField>
-}
-
 export interface TagConfigModalProps {
   /** Tag ID to configure (node UUID) */
   tagId: string

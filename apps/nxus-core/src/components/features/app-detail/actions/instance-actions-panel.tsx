@@ -599,6 +599,10 @@ const TYPE_ACTIONS: Record<
     primary: [],
     secondary: [],
   },
+  concept: {
+    primary: [],
+    secondary: [],
+  },
 }
 
 /**
