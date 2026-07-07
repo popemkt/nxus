@@ -1,8 +1,28 @@
 import { test, expect } from '../fixtures/base.fixture.js'
+import type { Page } from '@playwright/test'
+
+async function waitForSeededEditor(page: Page) {
+  const noNodes = page.getByText('No nodes found')
+  const nodeBlock = page.locator('.node-block').first()
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await Promise.race([
+      nodeBlock.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {}),
+      noNodes.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {}),
+    ])
+
+    if (await nodeBlock.isVisible().catch(() => false)) return
+    if (!(await noNodes.isVisible().catch(() => false))) continue
+
+    await page.waitForTimeout(1500)
+    await page.reload({ waitUntil: 'networkidle' })
+  }
+}
 
 test.describe('Outline Editor', () => {
-  test.beforeEach(async ({ navigateToApp }) => {
+  test.beforeEach(async ({ page, navigateToApp }) => {
     await navigateToApp('editor')
+    await waitForSeededEditor(page)
   })
 
   test.describe('Page Load', () => {
@@ -11,7 +31,7 @@ test.describe('Outline Editor', () => {
     })
 
     test('shows breadcrumbs with Home button', async ({ page }) => {
-      await expect(page.locator('.breadcrumbs').getByText('Home')).toBeVisible({ timeout: 10_000 })
+      await expect(page.locator('.breadcrumbs').getByText('Home')).toBeVisible({ timeout: 20_000 })
     })
 
     test('renders outline body area', async ({ page }) => {
@@ -757,8 +777,21 @@ test.describe('Outline Editor', () => {
         return
       }
 
+      const mentionedSection = page.locator('[data-reference-section="mentioned"]')
+      const referencedSection = page.locator('[data-reference-section="referenced"]')
+      await expect(mentionedSection.getByRole('button').first()).toContainText(/Mentioned\s*\(0\)/)
+      await expect(mentionedSection).toContainText('No inline mentions')
+      await expect(referencedSection.getByRole('button').first()).toContainText(/Referenced\s*\(\d+\)/)
+
       // The key regression test: "Appears as ... in..." group headers should be visible
       const appearsAs = page.getByText(/Appears as/)
+      await expect(appearsAs.first()).toBeVisible({ timeout: 5_000 })
+
+      // The Referenced subsection is independently collapsible
+      await referencedSection.getByRole('button').first().click()
+      await page.waitForTimeout(300)
+      await expect(appearsAs.first()).not.toBeVisible()
+      await referencedSection.getByRole('button').first().click()
       await expect(appearsAs.first()).toBeVisible({ timeout: 5_000 })
 
       // And actual referenced node rows (with role="button" and "Go to:" title) should render

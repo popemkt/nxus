@@ -543,7 +543,7 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Get backlinks grouped by field name — "Appears as [fieldName] in..."
+ * Get backlinks grouped by origin and field name — "Appears as [fieldName] in..."
  * Uses the facade's evaluateQuery with linksTo for architecture portability,
  * then post-processes assembled nodes' properties to extract field grouping.
  */
@@ -582,10 +582,18 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
       childCount: number
       supertags: { id: string; content: string; systemId: string | null }[]
     }
+    type BacklinkOriginKind = 'field-value' | 'supertag' | 'inline-mention'
 
-    // Post-process: group nodes by which field references the target
+    // Post-process: group nodes by which field references the target.
+    // Inline content mentions are not part of the current data model, so only
+    // property-backed origins can be classified here.
     // Use fieldSystemId (or fieldNodeId as fallback) for identity, not display name
-    const fieldGroups = new Map<string, { fieldName: string; nodeIds: Set<string> }>()
+    const fieldGroups = new Map<string, {
+      fieldKey: string
+      fieldName: string
+      originKind: BacklinkOriginKind
+      nodeIds: Set<string>
+    }>()
 
     for (const assembled of result.nodes) {
       // Scan properties to find which fields reference the target
@@ -596,6 +604,9 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
         const first = propValues[0]!
         const fieldKey = first.fieldSystemId ?? first.fieldNodeId ?? first.fieldName
         if (first.fieldSystemId && systemFieldSystemIds.has(first.fieldSystemId)) continue
+        const originKind: BacklinkOriginKind = first.fieldSystemId === 'field:supertag'
+          ? 'supertag'
+          : 'field-value'
 
         const referencesTarget = propValues.some((pv) => {
           if (pv.value === targetNodeId) return true
@@ -605,7 +616,12 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
 
         if (referencesTarget) {
           if (!fieldGroups.has(fieldKey)) {
-            fieldGroups.set(fieldKey, { fieldName: first.fieldName, nodeIds: new Set() })
+            fieldGroups.set(fieldKey, {
+              fieldKey,
+              fieldName: first.fieldName,
+              originKind,
+              nodeIds: new Set(),
+            })
           }
           fieldGroups.get(fieldKey)!.nodeIds.add(assembled.id)
         }
@@ -648,6 +664,8 @@ export const getBacklinksServerFn = createServerFn({ method: 'POST' })
 
     const groups = Array.from(fieldGroups.values())
       .map((group) => ({
+        fieldKey: group.fieldKey,
+        originKind: group.originKind,
         fieldName: group.fieldName,
         nodes: Array.from(group.nodeIds)
           .map((id) => nodeDataMap.get(id))

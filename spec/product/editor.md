@@ -194,19 +194,22 @@ DRIFT: query definition edits don't survive collapse/expand
 
 Every zoomed-in node view and every supertag detail view ends with a collapsible **References** section (`outline-editor.tsx:504-506`, `supertag-detail-view.tsx:184-187`; component `backlinks-section.tsx`).
 
-- Header: caret + "References (N)" total count; clicking toggles the whole section (`backlinks-section.tsx:44-63`).
-- Backlinks are grouped by the field through which the reference occurs, each group headed "Appears as *fieldName* in…" and independently collapsible (`backlinks-section.tsx:103-120`). Supertag assignment itself is a group ("Appears as supertag in…").
-- Groups show 3 rows initially with "Show N more" / "Show less" (`backlinks-section.tsx:95-98,133-150`).
-- Each backlink renders as a full reference node row: dashed-circle bullet, node content, supertag pills; click or Enter navigates (`backlinks-section.tsx:161-217`).
-- Data: `getBacklinksServerFn` (grouping in `services/outline.server.ts:529-640`), cached 30s per node.
+- Header: caret + "References (N)" total count; clicking toggles the whole section (`backlinks-section.tsx:49-69`).
+- The section body has two independently collapsible top-level groups with counts: **Mentioned (N)** and **Referenced (N)** (`backlinks-section.tsx:78-91,100-151`).
+- **Mentioned** is for inline content references. Current storage has no inline-reference relation; the data model only defines supertag assignments and node/nodes field values as reference-bearing properties (`data-model.md:39-44`). Until that model exists, Mentioned renders as an empty subsection (see DRIFT below).
+- **Referenced** contains property-backed references. `getBacklinksServerFn` classifies each backlink as `field-value` or `supertag` by inspecting the referencing property's field (`outline.server.ts:585-609`) and returns grouped node rows (`outline.server.ts:665-678`).
+- Referenced groups preserve the field-level heading "Appears as *fieldName* in…" with a per-field count; supertag assignment itself is a field group ("Appears as supertag in…") (`backlinks-section.tsx:155-190`).
+- Groups show 3 rows initially with "Show N more" / "Show less" (`backlinks-section.tsx:162-219`).
+- Each backlink renders as a full reference node row: dashed-circle bullet, node content, supertag pills; click or Enter navigates (`backlinks-section.tsx:231-287`).
+- Data is cached 30s per node by the References query (`backlinks-section.tsx:35-39`).
 
-Proof: `outline-editor.spec.ts` — "Backlinks" (:697-846).
+Proof: `outline-editor.spec.ts` — "Backlinks" (`outline-editor.spec.ts:718-880`), especially split-section assertions and Referenced collapse (`outline-editor.spec.ts:780-795`).
 
-DRIFT: backlinks rows/pills fail e2e
-- canonical: zooming into a supertag with tagged instances shows "Appears as …" group headers and actual clickable node rows (`[role="button"][title^="Go to:"]`) with non-empty names and supertag pills — not just a count (`outline-editor.spec.ts:737-846`, all three tests).
-- current: the tests fail — the References section renders its count, but the grouped rows with names/pills do not materialize as the tests require (render path `backlinks-section.tsx:73-217`; server grouping `outline.server.ts:529-640`).
-- impact: backlinks — a headline feature of a graph editor — are unverified; users may see counts with empty or missing reference lists.
-- closes: fix the group/row rendering (or the server grouping payload) until the three Backlinks tests pass.
+DRIFT: inline mentions not representable
+- canonical: References.Mentioned lists inline content references where a node's rich/text content contains a reference to the target node.
+- current: node references are only property-backed: `field:supertag` assignments and `node`/`nodes` field values (`data-model.md:39-44`). `getBacklinksServerFn` can classify `field-value` and `supertag`, but has no inline mention relation to query (`outline.server.ts:585-609`). The editor renders Mentioned as an empty subsection (`backlinks-section.tsx:78-84,136-140`).
+- impact: users see the Tana-style top-level split, but inline mentions cannot appear until the core model can store or derive them.
+- closes: define and implement inline content node references in the data model and have `getBacklinksServerFn` emit `inline-mention` groups.
 
 ## 9. Zoomed-In Node View (detail screen)
 

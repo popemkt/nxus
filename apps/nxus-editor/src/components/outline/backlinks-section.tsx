@@ -16,6 +16,8 @@ interface BacklinkNode {
 }
 
 interface BacklinkGroup {
+  fieldKey: string
+  originKind: 'field-value' | 'supertag' | 'inline-mention'
   fieldName: string
   nodes: BacklinkNode[]
 }
@@ -23,6 +25,8 @@ interface BacklinkGroup {
 interface BacklinksSectionProps {
   nodeId: string
 }
+
+type ReferenceSectionKind = 'mentioned' | 'referenced'
 
 export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
   const [collapsed, setCollapsed] = useState(false)
@@ -37,6 +41,8 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
   const groups: BacklinkGroup[] = data?.success ? data.groups : []
   const totalCount = data?.success ? data.totalCount : 0
   const hasError = data && !data.success
+  const mentionedGroups = groups.filter((group) => group.originKind === 'inline-mention')
+  const referencedGroups = groups.filter((group) => group.originKind !== 'inline-mention')
 
   return (
     <div className="mt-3 mb-1">
@@ -67,16 +73,79 @@ export function BacklinksSection({ nodeId }: BacklinksSectionProps) {
           {hasError && (
             <div className="pl-4 py-1 text-[11px] text-foreground/25">References unavailable</div>
           )}
-          {!isLoading && !hasError && totalCount === 0 && (
-            <div className="pl-4 py-1 text-[11px] text-foreground/20 italic">No references</div>
+          {!isLoading && !hasError && (
+            <>
+              <ReferenceSubsection
+                kind="mentioned"
+                label="Mentioned"
+                groups={mentionedGroups}
+                emptyLabel="No inline mentions"
+                navigateToNode={navigateToNode}
+              />
+              <ReferenceSubsection
+                kind="referenced"
+                label="Referenced"
+                groups={referencedGroups}
+                emptyLabel="No field references"
+                navigateToNode={navigateToNode}
+              />
+            </>
           )}
-          {groups.map((group) => (
-            <FieldGroup
-              key={group.fieldName}
-              group={group}
-              navigateToNode={navigateToNode}
-            />
-          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReferenceSubsection({
+  kind,
+  label,
+  groups,
+  emptyLabel,
+  navigateToNode,
+}: {
+  kind: ReferenceSectionKind
+  label: string
+  groups: BacklinkGroup[]
+  emptyLabel: string
+  navigateToNode: (nodeId: string) => void
+}) {
+  const [expanded, setExpanded] = useState(true)
+  const count = groups.reduce((sum, group) => sum + group.nodes.length, 0)
+
+  return (
+    <div className="mb-1" data-reference-section={kind}>
+      <button
+        type="button"
+        className={cn(
+          'flex items-center gap-1 pl-2 py-0.5',
+          'text-[11px] text-foreground/30 uppercase tracking-wide',
+          'cursor-pointer hover:text-foreground/45 transition-colors',
+        )}
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <CaretRight
+          size={8}
+          weight="bold"
+          className={cn('transition-transform', expanded && 'rotate-90')}
+        />
+        {label}
+        <span className="text-foreground/20 ml-0.5">({count})</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-0.5">
+          {count === 0 ? (
+            <div className="pl-6 py-1 text-[11px] text-foreground/20 italic">{emptyLabel}</div>
+          ) : (
+            groups.map((group) => (
+              <FieldGroup
+                key={`${group.originKind}:${group.fieldKey}`}
+                group={group}
+                navigateToNode={navigateToNode}
+              />
+            ))
+          )}
         </div>
       )}
     </div>
@@ -117,6 +186,7 @@ function FieldGroup({
         <span>
           Appears as <span className="font-medium text-foreground/35">{group.fieldName}</span> in…
         </span>
+        <span className="text-foreground/20 ml-0.5">({group.nodes.length})</span>
       </button>
 
       {expanded && (
