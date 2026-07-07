@@ -41,7 +41,6 @@ export function WorkflowPreviewModal({
           </div>
           <AlertDialogDescription className="text-xs">
             {stepCount} step{stepCount !== 1 ? 's' : ''}
-            {workflow.description && ` · ${workflow.description}`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 

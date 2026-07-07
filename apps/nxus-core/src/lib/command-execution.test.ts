@@ -72,7 +72,9 @@ describe('executeGenericCommandById', () => {
     )
 
     // Simulate modal completion
-    const onComplete = mockOpen.mock.calls[0][0].onComplete
+    const firstCall = mockOpen.mock.calls[0]
+    if (!firstCall) throw new Error('expected modal open to have been called')
+    const onComplete = firstCall[0].onComplete
     onComplete({
       requirements: { tool: { appId: 'tool-1', value: { x: 1 } } },
       params: {},

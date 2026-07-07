@@ -21,7 +21,7 @@ import {
   evaluateExpression,
   setStepResult,
 } from './workflow-context'
-import type {CommandStep, Item, ItemCommand, NotifyStep, StepResult, WorkflowCommand, WorkflowContext, WorkflowStep} from '@nxus/db';
+import type {CommandStep, Item, ItemCommand, JsonValue, NotifyStep, StepResult, WorkflowCommand, WorkflowContext, WorkflowStep} from '@nxus/db';
 import { appRegistryService } from '@/services/apps/registry.service'
 
 // ============================================================================
@@ -41,7 +41,7 @@ export interface WorkflowExecutionOptions {
   /** The workflow command being executed */
   command: WorkflowCommand
   /** Optional parameters passed to the workflow */
-  params?: Record<string, unknown>
+  params?: Record<string, JsonValue>
   /** Callback for notify steps */
   onNotify?: (
     message: string,

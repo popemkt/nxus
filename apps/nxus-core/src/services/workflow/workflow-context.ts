@@ -1,10 +1,10 @@
-import type { StepResult, WorkflowContext } from '@nxus/db'
+import type { JsonValue, StepResult, WorkflowContext } from '@nxus/db'
 
 /**
  * Create a new workflow context with default values
  */
 export function createWorkflowContext(
-  params: Record<string, unknown> = {},
+  params: Record<string, JsonValue> = {},
 ): WorkflowContext {
   return {
     env: { ...process.env } as Record<string, string>,
@@ -41,7 +41,7 @@ export function getStepResult(
 export function setVariable(
   context: WorkflowContext,
   name: string,
-  value: unknown,
+  value: JsonValue,
 ): void {
   context.variables[name] = value
 }

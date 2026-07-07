@@ -170,7 +170,9 @@ export function ScriptParamsModal({
                 {param.type === 'select' && param.options && (
                   <Select
                     value={String(values[param.name] ?? '')}
-                    onValueChange={(val) => updateValue(param.name, val)}
+                    onValueChange={(val) =>
+                      updateValue(param.name, val ?? '')
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue

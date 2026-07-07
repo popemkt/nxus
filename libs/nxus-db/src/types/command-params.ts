@@ -30,13 +30,13 @@ import { z } from 'zod'
 
 /**
  * A requirement selects an app/item that has a specific tag
- * Example: { name: 'provider', tagId: 14 } selects an AI provider
+ * Example: { name: 'provider', tagId: 'system:ai-provider' } selects an AI provider
  */
 export const CommandRequirementSchema = z.object({
   /** Key for this requirement in execution context */
   name: z.string(),
-  /** Tag ID to filter items by */
-  tagId: z.number(),
+  /** Tag ID to filter items by (tag node UUID or system tag ID) */
+  tagId: z.string(),
   /** Label shown in UI selector */
   label: z.string().optional(),
   /** Help text */

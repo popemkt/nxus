@@ -9,9 +9,12 @@ import type {
   AssembledNode,
   ExecuteCommand,
   ItemCommand,
+  JsonValue,
+  PropertyValue,
   TagRef,
   WorkflowCommand,
 } from '@nxus/db'
+import { FIELD_NAMES } from '@nxus/db'
 import { describe, expect, it } from 'vitest'
 import { nodeToCommand, nodeToItem } from './node-items.server'
 
@@ -33,11 +36,11 @@ function createMockNode(overrides: Partial<AssembledNode> = {}): AssembledNode {
 
 // Helper to create a property array
 function createProperty(
-  value: unknown,
+  value: JsonValue,
   fieldName: string,
   fieldSystemId: string | null = null,
   order = 0,
-) {
+): Array<PropertyValue> {
   return [
     {
       value,
@@ -59,8 +62,11 @@ describe('nodeToItem', () => {
         { id: 'st-1', content: '#Tool', systemId: 'supertag:tool' },
       ],
       properties: {
-        description: createProperty('A helpful tool', 'description'),
-        path: createProperty('/usr/bin/mytool', 'path'),
+        [FIELD_NAMES.DESCRIPTION]: createProperty(
+          'A helpful tool',
+          'description',
+        ),
+        [FIELD_NAMES.PATH]: createProperty('/usr/bin/mytool', 'path'),
       },
     })
 
@@ -81,7 +87,7 @@ describe('nodeToItem', () => {
         { id: 'st-1', content: '#Tool', systemId: 'supertag:tool' },
       ],
       properties: {
-        legacyId: createProperty('old-legacy-id', 'legacyId'),
+        [FIELD_NAMES.LEGACY_ID]: createProperty('old-legacy-id', 'legacyId'),
       },
     })
 
@@ -111,11 +117,11 @@ describe('nodeToItem', () => {
         { id: 'st-1', content: '#Item', systemId: 'supertag:item' },
       ],
       properties: {
-        tags: createProperty('tag-node-1', 'tags'),
+        [FIELD_NAMES.TAGS]: createProperty('tag-node-1', 'tags'),
       },
     })
 
-    const mockTagRefs: Array<TagRef> = [{ id: 1, name: 'Resolved Tag' }]
+    const mockTagRefs: Array<TagRef> = [{ id: 'tag-1', name: 'Resolved Tag' }]
     const item = nodeToItem(node, {
       resolveTagRefs: () => mockTagRefs,
     })
@@ -171,17 +177,17 @@ describe('nodeToCommand', () => {
     const node = createMockNode({
       content: 'Build Project',
       properties: {
-        commandId: createProperty('cmd-build', 'commandId'),
-        description: createProperty(
+        [FIELD_NAMES.COMMAND_ID]: createProperty('cmd-build', 'commandId'),
+        [FIELD_NAMES.DESCRIPTION]: createProperty(
           'Build the entire project',
           'description',
         ),
-        icon: createProperty('hammer', 'icon'),
-        category: createProperty('build', 'category'),
-        target: createProperty('item', 'target'),
-        mode: createProperty('execute', 'mode'),
-        command: createProperty('npm run build', 'command'),
-        cwd: createProperty('/project', 'cwd'),
+        [FIELD_NAMES.ICON]: createProperty('hammer', 'icon'),
+        [FIELD_NAMES.CATEGORY]: createProperty('build', 'category'),
+        [FIELD_NAMES.TARGET]: createProperty('item', 'target'),
+        [FIELD_NAMES.MODE]: createProperty('execute', 'mode'),
+        [FIELD_NAMES.COMMAND]: createProperty('npm run build', 'command'),
+        [FIELD_NAMES.CWD]: createProperty('/project', 'cwd'),
       },
     })
 
@@ -210,8 +216,8 @@ describe('nodeToCommand', () => {
     const node = createMockNode({
       content: 'Deploy Pipeline',
       properties: {
-        mode: createProperty('workflow', 'mode'),
-        workflow: createProperty(workflowDefinition, 'workflow'),
+        [FIELD_NAMES.MODE]: createProperty('workflow', 'mode'),
+        [FIELD_NAMES.WORKFLOW]: createProperty(workflowDefinition, 'workflow'),
       },
     })
 
@@ -239,7 +245,7 @@ describe('nodeToCommand', () => {
     const node = createMockNode({
       content: 'Linux-only Command',
       properties: {
-        platforms: createProperty(['linux', 'macos'], 'platforms'),
+        [FIELD_NAMES.PLATFORMS]: createProperty(['linux', 'macos'], 'platforms'),
       },
     })
 

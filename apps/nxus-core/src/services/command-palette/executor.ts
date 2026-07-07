@@ -22,7 +22,7 @@
  */
 
 import type { LogEntry } from '@/services/shell/command.schema'
-import type { ItemType } from '@nxus/db'
+import type { ItemType, JsonValue } from '@nxus/db'
 import { queryClient } from '@/lib/query-client'
 import { appRegistryService } from '@/services/apps/registry.service'
 import { streamCommandServerFn } from '@/services/shell/command-stream.server'
@@ -87,11 +87,10 @@ function parseCommand(command: string): [string, Array<string>] {
     args.push(currentArg)
   }
 
-  if (args.length === 0) {
+  const [cmd, ...rest] = args
+  if (cmd === undefined) {
     return ['', []]
   }
-
-  const [cmd, ...rest] = args
   return [cmd, rest]
 }
 
@@ -650,7 +649,7 @@ export const commandExecutor = {
   async executeWorkflowCommand(options: {
     appId: string
     commandId: string
-    params?: Record<string, unknown>
+    params?: Record<string, JsonValue>
     terminalStore?: TerminalStore
     onNotify?: (
       message: string,

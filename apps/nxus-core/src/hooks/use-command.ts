@@ -48,7 +48,11 @@ import { useTerminalStore } from '@/stores/terminal.store'
  */
 function getCheckCommandForTool(toolId: string): string {
   const appResult = appRegistryService.getAppById(toolId)
-  if (appResult.success && appResult.data.type === 'tool') {
+  if (
+    appResult.success &&
+    appResult.data.type === 'tool' &&
+    appResult.data.checkCommand !== undefined
+  ) {
     return appResult.data.checkCommand
   }
   // Tool not found in registry or not a tool type - log warning but don't crash
@@ -56,7 +60,7 @@ function getCheckCommandForTool(toolId: string): string {
   console.warn(
     `Cannot resolve checkCommand for tool "${toolId}": ${
       appResult.success
-        ? 'item is not a tool type'
+        ? 'item is not a tool type or has no checkCommand'
         : 'item not found in registry'
     }. Using fallback: ${fallback}`,
   )

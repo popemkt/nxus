@@ -132,7 +132,10 @@ function ActionPanel({
       setSelectedIndex((prev) => (prev - 1 + actions.length) % actions.length)
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      onAction(actions[selectedIndex].id)
+      const action = actions[selectedIndex]
+      if (action) {
+        onAction(action.id)
+      }
     } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
       e.preventDefault()
       onBack()
@@ -314,6 +317,7 @@ export function CommandPalette() {
 
     while (iterations < maxIterations) {
       const item = items[currentIndex]
+      if (!item) return startIndex
       // Check if it's an app command and if it's disabled
       if ('app' in item) {
         const availability = getCommandAvailability(item as PaletteCommand)
@@ -407,6 +411,7 @@ export function CommandPalette() {
       if (step !== 'command' || items.length === 0) return
 
       const selectedItem = items[selectedIndex]
+      if (!selectedItem) return
       // Only app commands have auxiliary actions, not generic commands
       if (!('target' in selectedItem) && 'command' in selectedItem) {
         const cmd = selectedItem as PaletteCommand
@@ -424,6 +429,7 @@ export function CommandPalette() {
       if (items.length === 0) return
 
       const selectedItem = items[selectedIndex]
+      if (!selectedItem) return
       if (step === 'target') {
         executeGenericCommand((selectedItem as any).id)
       } else if (step === 'actions') {
@@ -460,11 +466,7 @@ export function CommandPalette() {
       : undefined
 
     return checkCommandAvailability(
-      {
-        ...cmd.command,
-        mode: cmd.command.mode ?? 'execute',
-        category: '',
-      },
+      cmd.command,
       {
         appId: cmd.app.id,
         appType: cmd.app.type,
@@ -581,7 +583,7 @@ export function CommandPalette() {
           .search('')
           .appCommands.find(
             (c) =>
-              c.appId === actionPanelCommand.appId &&
+              c.app.id === actionPanelCommand.appId &&
               c.id === actionPanelCommand.id,
           )
         if (cmd) {
