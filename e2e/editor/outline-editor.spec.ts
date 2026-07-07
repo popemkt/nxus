@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 
@@ -637,31 +639,37 @@ test.describe('Outline Editor', () => {
 
   test.describe('Keyboard Shortcuts (move, undo)', () => {
     test('Cmd+Shift+Down moves selected node down', async ({ page }) => {
+      // Own the nodes under test: other workers create root nodes
+      // concurrently, so any assertion about the shared root's order races.
+      // Seed an isolated parent with two children and zoom into it
+      // (?node=<id>), same pattern as formula-fields.spec.ts.
+      const { parentId, nameA, nameB } = await seedMovePair()
+
+      await page.goto(`/editor?node=${parentId}`)
+      await page.waitForLoadState('networkidle')
       await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
-      const nodeBlocks = page.locator('.node-block')
-      const count = await nodeBlocks.count()
+      await expect(page.getByText(nameA)).toBeVisible({ timeout: 10_000 })
+      await expect(page.getByText(nameB)).toBeVisible()
 
-      if (count >= 2) {
-        // Get first two node texts
-        const firstContent = page.locator('.node-content .editable').first()
-        const firstText = await firstContent.textContent()
+      // Select nameA and move it below nameB. Click the node's content
+      // element specifically — a bare text click can hit a navigation
+      // affordance and zoom into the node instead of activating editing.
+      const rowA = page.locator('.node-block', { hasText: nameA }).first()
+      await rowA.locator('.node-content .editable').first().click()
+      await expect(page.locator('[contenteditable="true"]')).toBeVisible({ timeout: 3000 })
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(200)
+      await page.keyboard.press('Meta+Shift+ArrowDown')
 
-        // Enter selection mode on first node
-        await firstContent.click()
-        await page.waitForTimeout(200)
-        await page.keyboard.press('Escape')
-        await page.waitForTimeout(200)
-
-        // Move down
-        await page.keyboard.press('Meta+Shift+ArrowDown')
-        await page.waitForTimeout(300)
-
-        // The first node should now be at position 2
-        const newFirstText = await page.locator('.node-content .editable').first().textContent()
-        if (firstText && newFirstText) {
-          expect(newFirstText).not.toBe(firstText)
-        }
-      }
+      // Relative order flips: nameB now precedes nameA
+      await expect
+        .poll(async () => {
+          const texts = await page.locator('.node-content .editable').allTextContents()
+          const posA = texts.findIndex((t) => t.includes(nameA))
+          const posB = texts.findIndex((t) => t.includes(nameB))
+          return posA >= 0 && posB >= 0 ? posB < posA : null
+        }, { timeout: 5000 })
+        .toBe(true)
     })
 
     test('Cmd+Z undoes last action', async ({ page }) => {
@@ -972,3 +980,31 @@ test.describe('Outline Editor', () => {
     })
   })
 })
+
+/**
+ * Seeds an isolated parent node with two ordered children directly in the
+ * e2e database (same direct-DB pattern as formula-fields.spec.ts), so the
+ * move test never depends on the shared workspace root's contents.
+ */
+async function seedMovePair(): Promise<{ parentId: string; nameA: string; nameB: string }> {
+  process.env.NXUS_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
+  const { initDatabaseWithBootstrap, createNode, setProperty, SYSTEM_FIELDS } = await import(
+    '../../libs/nxus-db/src/server.js'
+  )
+
+  const db = await initDatabaseWithBootstrap()
+  const suffix = Date.now().toString(36)
+  const nameA = `move-a-${suffix}`
+  const nameB = `move-b-${suffix}`
+
+  // Parent/child is the nodes.ownerId column (see createOutlineNode in
+  // @nxus/node-api operations.ts) — NOT a field:parent property, which
+  // would render as a backlink reference instead of an outline child.
+  const parentId = createNode(db, { content: `Move test parent ${suffix}` })
+  const childA = createNode(db, { content: nameA, ownerId: parentId })
+  const childB = createNode(db, { content: nameB, ownerId: parentId })
+  setProperty(db, childA, SYSTEM_FIELDS.ORDER, '00000000')
+  setProperty(db, childB, SYSTEM_FIELDS.ORDER, '00001000')
+
+  return { parentId, nameA, nameB }
+}
