@@ -52,6 +52,7 @@ export {
   getSupertags,
   searchNodes,
   setNodeProperties,
+  swapOrder,
   updateNodeContent,
 } from './operations.js'
 
@@ -79,6 +80,8 @@ export type {
   SearchNodesResult,
   SetNodePropertiesInput,
   SetNodePropertiesResult,
+  SwapOrderInput,
+  SwapOrderResult,
   OutlineAppliedField,
   OutlineAppliedSupertag,
   SupertagsResult,

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { orderKeyToNumber } from '@nxus/db'
 import {
   createNodeServerFn,
   updateNodeContentServerFn,
@@ -7,6 +8,7 @@ import {
   restoreNodeServerFn,
   reparentNodeServerFn,
   reorderNodeServerFn,
+  swapOrderServerFn,
   setFieldValueServerFn,
 } from '@/services/outline.server'
 import {
@@ -37,6 +39,10 @@ import { WORKSPACE_ROOT_ID } from '@/types/outline'
 function toServerParentId(parentId: string | null): string | null {
   if (parentId === WORKSPACE_ROOT_ID) return null
   return parentId
+}
+
+function toPersistedOrder(order: string): number {
+  return orderKeyToNumber(order)
 }
 
 /**
@@ -112,7 +118,7 @@ export function useOutlineSync() {
           data: {
             content: initialContent ?? '',
             parentId: serverParentId,
-            order: parseInt(node.order, 10) || 0,
+            order: toPersistedOrder(node.order),
           },
         })
           .then((_result: unknown) => {
@@ -226,7 +232,7 @@ export function useOutlineSync() {
           data: {
             content: '',
             parentId: serverParentId,
-            order: parseInt(node.order, 10) || 0,
+            order: toPersistedOrder(node.order),
           },
         })
           .then((_result: unknown) => {
@@ -350,7 +356,7 @@ export function useOutlineSync() {
         data: {
           nodeId,
           newParentId: toServerParentId(node.parentId),
-          order: parseInt(node.order, 10) || 0,
+          order: toPersistedOrder(node.order),
         },
       })
         .then(() => invalidateQueries())
@@ -373,7 +379,7 @@ export function useOutlineSync() {
         data: {
           nodeId,
           newParentId: toServerParentId(node.parentId),
-          order: parseInt(node.order, 10) || 0,
+          order: toPersistedOrder(node.order),
         },
       })
         .then(() => invalidateQueries())
@@ -411,13 +417,14 @@ export function useOutlineSync() {
     )
     if (changed.length === 0) return // no-op (already at boundary)
 
-    Promise.all(
-      changed.map(([id]) =>
-        reorderNodeServerFn({
-          data: { nodeId: id, order: parseInt(nodes.get(id)!.order, 10) || 0 },
-        }),
-      ),
-    )
+    swapOrderServerFn({
+      data: {
+        updates: changed.map(([id]) => ({
+          nodeId: id,
+          order: toPersistedOrder(nodes.get(id)!.order),
+        })),
+      },
+    })
       .then(() => invalidateQueries())
       .catch((err) => {
         console.error('[sync] Failed to reorder nodes:', err)
@@ -449,13 +456,14 @@ export function useOutlineSync() {
     )
     if (changed.length === 0) return // no-op (already at boundary)
 
-    Promise.all(
-      changed.map(([id]) =>
-        reorderNodeServerFn({
-          data: { nodeId: id, order: parseInt(nodes.get(id)!.order, 10) || 0 },
-        }),
-      ),
-    )
+    swapOrderServerFn({
+      data: {
+        updates: changed.map(([id]) => ({
+          nodeId: id,
+          order: toPersistedOrder(nodes.get(id)!.order),
+        })),
+      },
+    })
       .then(() => invalidateQueries())
       .catch((err) => {
         console.error('[sync] Failed to reorder nodes:', err)
@@ -560,7 +568,7 @@ export function useOutlineSync() {
         data: {
           nodeId,
           newParentId: toServerParentId(newParentId),
-          order: parseInt(node.order, 10) || 0,
+          order: toPersistedOrder(node.order),
         },
       })
         .then(() => invalidateQueries())
@@ -597,7 +605,7 @@ export function useOutlineSync() {
           case 'reorder':
             return [
               reorderNodeServerFn({
-                data: { nodeId: op.nodeId, order: parseInt(op.order, 10) || 0 },
+                data: { nodeId: op.nodeId, order: toPersistedOrder(op.order) },
               }),
             ]
           case 'reparent':
@@ -606,7 +614,7 @@ export function useOutlineSync() {
                 data: {
                   nodeId: op.nodeId,
                   newParentId: toServerParentId(op.parentId),
-                  order: parseInt(op.order, 10) || 0,
+                  order: toPersistedOrder(op.order),
                 },
               }),
             ]

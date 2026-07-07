@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { QueryDefinitionSchema } from '@nxus/db'
+import { QueryDefinitionSchema, formatOrderKey } from '@nxus/db'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
 import type { FieldType } from '@/types/outline'
@@ -210,7 +210,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         content: assembled.content ?? '',
         parentId: assembled.ownerId,
         children: [],
-        order: String(orderValue ?? 0).padStart(8, '0'),
+        order: formatOrderKey(orderValue),
         createdAt: assembled.createdAt?.getTime() ?? 0,
         collapsed: false,
         supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => {
@@ -415,6 +415,26 @@ export const reorderNodeServerFn = createServerFn({ method: 'POST' })
     const db = await initDatabaseSeeded()
     setProperty(db, ctx.data.nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
     return { success: true as const }
+  })
+
+export const swapOrderServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      updates: z.array(z.object({ nodeId: z.string(), order: z.number() })).min(1),
+    }),
+  )
+  .handler(async (ctx) => {
+    try {
+      await initDatabaseSeeded()
+      const { swapOrder } = await import('@nxus/node-api/server')
+      const data = await swapOrder(ctx.data)
+      return { success: true as const, data }
+    } catch (error) {
+      return {
+        success: false as const,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
   })
 
 /**

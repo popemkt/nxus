@@ -77,7 +77,7 @@ DRIFT: bootstrap check-then-insert races across processes
 - canonical: bootstrapping the same DB file from two processes is safe — the upsert is atomic.
 - current: `upsertSystemNode` (`bootstrap.ts:42-73`) is an unlocked SELECT-then-INSERT on `nodes.system_id`; two processes bootstrapping one fresh DB (dev server + an e2e worker seeding directly) race, and the loser throws `SQLITE_CONSTRAINT_UNIQUE` — observed crashing both a test seed and a `getSupertags` server fn (500) mid-run.
 - impact: any multi-process scenario against one DB file can crash at init; e2e specs must gate on the server's bootstrap finishing first (`learnings/e2e-autoseed-suppression.md`).
-- closes: make the insert atomic (`INSERT ... ON CONFLICT(system_id) DO NOTHING`, then read back), or wrap bootstrap in an IMMEDIATE transaction.
+- closes: closed 2026-07-07 — `upsertSystemNode` now issues `INSERT ... ON CONFLICT(system_id) DO NOTHING`, then reads back the row before returning (`libs/nxus-db/src/services/bootstrap.ts:42`).
 
 ## 4. Architecture modes
 
@@ -129,8 +129,18 @@ DRIFT: no versioned migrations
 
 ## 8. Transactions
 
+Logical node writes MUST be atomic at the SQLite boundary. Any mutation that issues more than one SQL statement, including node creation with derived properties, mention reconciliation, property upserts, supertag replacement, and order batches, MUST run inside a Drizzle/better-sqlite3 transaction. Reactive mutation events MUST be collected during the transaction and emitted only after commit; observers MUST NOT see uncommitted state or re-enter the write path inside an open transaction.
+
+The canonical transaction helper for sync node-mode writes is `withNodeMutationTransaction` / `runMutationTransaction` in `libs/nxus-db/src/services/node.service.ts`. Nested node-service helpers participate in the outer transaction and append to its post-commit event queue.
+
 DRIFT: no transaction boundaries on multi-step writes
 - canonical: each logical mutation (createNode + supertag assignment + default fields; setNodeSupertags; multi-row reorders) is atomic; reactive events fire only after commit.
 - current: no writes are wrapped in transactions (`node.service.ts:607-655` createNode+tag; editor moveUp/moveDown issues two separate reorder calls). Events are emitted synchronously mid-mutation, so automation listeners can observe half-applied state.
 - impact: crash or error mid-mutation leaves orphaned/partial rows; automations act on inconsistent snapshots; editor reorder failure leaves duplicate orders.
-- closes: better-sqlite3 transactions around each `node.service` mutation + emit-after-commit; the atomicity *invariant* itself is owned by [../product/data-model.md](../product/data-model.md), the editor-side ordering contract by [editor-sync.md](./editor-sync.md).
+- closes: closed 2026-07-07 — `node.service.ts` multi-statement mutations now use a transaction with post-commit event replay, editor outline creation uses the same transaction helper for node/order/default-child writes, and move order batches use one transactional `setNodeOrderProperties` call.
+
+DRIFT: order keys still persisted as numeric field values
+- canonical: the editor's sibling order key is an opaque string that round-trips bit-for-bit through persistence.
+- current: persisted `field:order` values remain JSON numbers for compatibility with existing rows and the `field:order` bootstrap type. New editor writes normalize through the shared `@nxus/db` order helper instead of ad hoc `parseInt(... ) || 0`, and reads format numeric values back to padded keys (`libs/nxus-db/src/types/order.ts:1`; `apps/nxus-editor/src/hooks/use-outline-sync.ts:41`; `apps/nxus-editor/src/services/outline.server.ts:213`).
+- impact: true future fractional/string keys still require a migration or a field-type change; old numeric rows are tolerated, but the persisted value is not yet the exact client key.
+- closes: migrate `field:order` to an opaque string value (or introduce a new string order field), backfill existing numeric rows, and remove numeric normalization from the write boundary.

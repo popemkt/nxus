@@ -45,18 +45,6 @@ function upsertSystemNode(
   content: string,
   verbose = false,
 ): string {
-  const existing = db
-    .select()
-    .from(nodes)
-    .where(eq(nodes.systemId, systemId))
-    .get();
-
-  if (existing) {
-    systemNodeIds.set(systemId, existing.id);
-    if (verbose) console.log(`  ✓ Found existing: ${content}`);
-    return existing.id;
-  }
-
   const id = getSystemNodeId(systemId);
   db.insert(nodes)
     .values({
@@ -67,9 +55,24 @@ function upsertSystemNode(
       createdAt: new Date(),
       updatedAt: new Date(),
     })
+    .onConflictDoNothing({ target: nodes.systemId })
     .run();
-  if (verbose) console.log(`  + Created: ${content}`);
-  return id;
+
+  const row = db
+    .select()
+    .from(nodes)
+    .where(eq(nodes.systemId, systemId))
+    .get();
+
+  if (!row) {
+    throw new Error(`Failed to upsert system node: ${systemId}`);
+  }
+
+  systemNodeIds.set(systemId, row.id);
+  if (verbose) {
+    console.log(row.id === id ? `  + Created: ${content}` : `  ✓ Found existing: ${content}`);
+  }
+  return row.id;
 }
 
 /**

@@ -6,6 +6,7 @@ export * from './command-params.js'
 export * from './common.js'
 export * from './query.js'
 export * from './node.js'
+export * from './order.js'
 export * from './recall.js'
 
 // Reactive system types (Zod schemas and TypeScript types)

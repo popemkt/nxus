@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { compareOrderKeys, formatOrderKey, parseOrderKey } from '@nxus/db'
 import type { NodeMap, OutlineField, OutlineNode, SupertagBadge } from '@/types/outline'
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
@@ -46,13 +47,11 @@ function generateId(): string {
 }
 
 function generateOrder(index: number): string {
-  return String(index).padStart(8, '0')
+  return formatOrderKey(index)
 }
 
 function parseOrder(order: string | null): number | null {
-  if (!order) return null
-  const parsed = Number.parseInt(order, 10)
-  return Number.isNaN(parsed) ? null : parsed
+  return parseOrderKey(order)
 }
 
 /**
@@ -99,7 +98,7 @@ function sortNodeIds(nodeIds: string[], nodes: NodeMap): string[] {
   return [...nodeIds].sort((a, b) => {
     const na = nodes.get(a)
     const nb = nodes.get(b)
-    const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
+    const orderCmp = compareOrderKeys(na?.order, nb?.order)
     if (orderCmp !== 0) return orderCmp
     return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
   })

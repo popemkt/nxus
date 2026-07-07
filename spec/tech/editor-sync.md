@@ -46,7 +46,7 @@ Every row: optimistic store mutation first (instant UI), then server call. `hook
 | Delete node/subtree | `deleteNode` (hook:328) | `deleteNodeServerFn` (outline.server.ts:443, soft delete) | immediate | yes |
 | Tab indent | `indentNode` (hook:341) | `reparentNodeServerFn` (outline.server.ts:455) | immediate | yes |
 | Shift+Tab outdent | `outdentNode` (hook:364) | `reparentNodeServerFn` | immediate | yes |
-| Move up/down | `moveNodeUp`/`moveNodeDown` (hook:387/429) | `reorderNodeServerFn` ×2 (outline.server.ts:490) | immediate, two calls | yes |
+| Move up/down | `moveNodeUp`/`moveNodeDown` (hook:387/429) | `swapOrderServerFn` (outline.server.ts) | immediate, one transactional order batch | yes |
 | Drag/move under node | `moveNodeTo` (hook:555) | `reparentNodeServerFn` | immediate | **no** (drift, §6) |
 | Add supertag | `addSupertag` (hook:472) | `addSupertagServerFn` (supertag.server.ts:46); server-returned inherited fields merged back (hook:479-494) | immediate | **no** |
 | Remove supertag | `removeSupertag` (hook:508) | `removeSupertagServerFn` (supertag.server.ts:150); fields kept — Tana behavior (outline.store.ts:263) | immediate | **no** |
@@ -78,9 +78,9 @@ DRIFT: unvalidated-server-results
 
 DRIFT: order-model-string-number-mismatch
 - canonical: one order representation end-to-end; the persisted value round-trips to the client key bit-for-bit.
-- current: store uses padded strings; server stores a **number** in the `field:order` property (`reorderNodeServerFn`, outline.server.ts:490-497); every sync call does `parseInt(node.order, 10) || 0` (9 sites, e.g. use-outline-sync.ts:113, 351, 402); load re-pads with `String(orderValue ?? 0).padStart(8, '0')` (outline.server.ts:213).
-- impact: any future non-integer fractional key (true midpoint strings) silently truncates; `|| 0` maps unparseable keys to 0, reordering nodes to the front on reload.
-- closes: persist the order key as an opaque string; delete all `parseInt` sites.
+- current: store uses padded strings; server still stores a **number** in the `field:order` property. The ad hoc parse/pad sites were centralized into `@nxus/db` helpers (`parseOrderKey`, `orderKeyToNumber`, `formatOrderKey`, `compareOrderKeys`), and write paths now fail fast on invalid order keys instead of `|| 0` coercion (`libs/nxus-db/src/types/order.ts`; `apps/nxus-editor/src/hooks/use-outline-sync.ts`).
+- impact: any future non-integer fractional key still requires a persistence migration; old numeric rows are tolerated but do not bit-for-bit round-trip as the canonical string representation.
+- closes: persist the order key as an opaque string and delete numeric order normalization.
 
 DRIFT: rebalance-not-persisted
 - canonical: INV-5 — rebalanced sibling keys persist atomically with the triggering mutation.
@@ -92,7 +92,7 @@ DRIFT: move-swap-two-calls-non-atomic
 - canonical: INV-6 — one atomic swap operation.
 - current: `moveNodeUp/Down` issue two independent `reorderNodeServerFn` calls — moved node (use-outline-sync.ts:401-407) then a linear sibling scan to find and persist the swapped sibling (:410-426; mirror at :441-466). Each call has its own `.catch`.
 - impact: failure (or process exit) between the calls leaves two siblings with the same order in DB; reload order then depends on the `createdAt` tie-break, not the user's intent.
-- closes: single `swapOrderServerFn(nodeIdA, nodeIdB)` or the batch reorder fn above, transactional.
+- closes: closed 2026-07-07 — `moveNodeUp/Down` now compute changed sibling order keys and call one `swapOrderServerFn` request; the node API persists the batch with `setNodeOrderProperties` in one node-service transaction.
 
 ## 5. Undo / redo
 
@@ -119,8 +119,8 @@ DRIFT: inconsistent-undo-snapshot-coverage
 
 DRIFT: fire-and-forget-sync-no-rollback
 - canonical: INV-1, INV-3, INV-8.
-- current: the hook's own doc comment declares the policy — "If the server call fails, we log but don't roll back" (use-outline-sync.ts:41-48). All 14 mutation paths end in `.catch(console.error)` (e.g. :88-90, :201-203, :333-335). No retry, no queue, no ordering between overlapping calls, no user-visible error.
-- impact: any failed write silently diverges client from DB until reload discards the user's work; concurrent calls can be applied out of order server-side.
+- current: the hook's own doc comment declares the policy — "If the server call fails, we log but don't roll back" (use-outline-sync.ts:41-48). Most mutation paths still end in `.catch(console.error)` with no retry, no queue, no ordering between overlapping calls, and no user-visible error. Move up/down is narrower than before because it is one transactional `swapOrderServerFn` request, but it is still dispatched fire-and-forget from the client's perspective.
+- impact: any failed write can still silently diverge client from DB until reload discards the user's work; concurrent calls can be applied out of order server-side. Move up/down no longer has the specific two-call partial-swap failure mode.
 - closes: per-node FIFO write queue with retry/backoff, rollback-on-terminal-failure using the captured pre-mutation state, and an error toast/status surface. This is the core of the sync-layer fix; INV-1/3/7/8/9 are its acceptance tests.
 
 ## 7. Temp-ID lifecycle
