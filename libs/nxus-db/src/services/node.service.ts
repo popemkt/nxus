@@ -42,6 +42,42 @@ type NodeDatabase = ReturnType<typeof getDatabase>
 
 const transactionEventStack: MutationEvent[][] = []
 
+type FieldNodeInfo = { content: string; systemId: string | null }
+type SupertagNodeInfo = { id: string; content: string; systemId: string | null }
+type SupertagFieldDefinition = {
+  fieldNodeId: string
+  fieldName: string
+  defaultValue?: unknown
+}
+type FormulaFieldDefinition = {
+  fieldSystemId: string
+  fieldNodeId: string
+  fieldName: string
+  expression: string
+}
+
+export interface AssemblyCache {
+  fieldNodes: Map<string, FieldNodeInfo>
+  supertagNodes: Map<string, SupertagNodeInfo>
+  supertagFieldDefinitions: Map<string, Map<string, SupertagFieldDefinition>>
+  ancestorSupertags: Map<string, string[]>
+  fieldDefinitionTypes: Map<string, string>
+  fieldDefinitionFormulas: Map<string, string>
+  formulaDefinitions: Map<string, FormulaFieldDefinition[]>
+}
+
+export function createAssemblyCache(): AssemblyCache {
+  return {
+    fieldNodes: new Map(),
+    supertagNodes: new Map(),
+    supertagFieldDefinitions: new Map(),
+    ancestorSupertags: new Map(),
+    fieldDefinitionTypes: new Map(),
+    fieldDefinitionFormulas: new Map(),
+    formulaDefinitions: new Map(),
+  }
+}
+
 function emitMutation(event: MutationEvent): void {
   const currentEvents = transactionEventStack.at(-1)
   if (currentEvents) {
@@ -202,7 +238,12 @@ export function getAncestorSupertags(
   db: ReturnType<typeof getDatabase>,
   supertagId: string,
   maxDepth: number = 10,
+  cache?: AssemblyCache,
 ): string[] {
+  const cacheKey = `${supertagId}:${maxDepth}`
+  const cached = cache?.ancestorSupertags.get(cacheKey)
+  if (cached) return cached
+
   const extendsField = getSystemNode(db, SYSTEM_FIELDS.EXTENDS)
   if (!extendsField) return []
 
@@ -227,16 +268,18 @@ export function getAncestorSupertags(
     frontier = nextFrontier
   }
 
+  cache?.ancestorSupertags.set(cacheKey, ancestors)
   return ancestors
 }
 
 function getSupertagInheritanceMergeOrder(
   db: ReturnType<typeof getDatabase>,
   supertagId: string,
+  cache?: AssemblyCache,
 ): string[] {
   return [
     supertagId,
-    ...getAncestorSupertags(db, supertagId),
+    ...getAncestorSupertags(db, supertagId, 10, cache),
   ]
 }
 
@@ -247,10 +290,14 @@ function getSupertagInheritanceMergeOrder(
 export function getSupertagFieldDefinitions(
   db: ReturnType<typeof getDatabase>,
   supertagId: string,
+  cache?: AssemblyCache,
 ): Map<
   string,
   { fieldNodeId: string; fieldName: string; defaultValue?: unknown }
 > {
+  const cached = cache?.supertagFieldDefinitions.get(supertagId)
+  if (cached) return cached
+
   const fieldDefs = new Map<
     string,
     { fieldNodeId: string; fieldName: string; defaultValue?: unknown }
@@ -280,13 +327,25 @@ export function getSupertagFieldDefinitions(
   for (const prop of props) {
     if (systemFieldIds.has(prop.fieldNodeId)) continue
 
-    const fieldNode = db
-      .select()
-      .from(nodes)
-      .where(eq(nodes.id, prop.fieldNodeId))
-      .get()
+    const cachedFieldNode = cache?.fieldNodes.get(prop.fieldNodeId)
+    const fieldNode = cachedFieldNode
+      ? {
+          id: prop.fieldNodeId,
+          content: cachedFieldNode.content,
+          systemId: cachedFieldNode.systemId,
+        }
+      : db
+          .select()
+          .from(nodes)
+          .where(eq(nodes.id, prop.fieldNodeId))
+          .get()
 
     if (fieldNode && fieldNode.systemId) {
+      cache?.fieldNodes.set(prop.fieldNodeId, {
+        content: fieldNode.content || '',
+        systemId: fieldNode.systemId,
+      })
+
       let defaultValue: unknown
       try {
         defaultValue = JSON.parse(prop.value || 'null')
@@ -302,6 +361,7 @@ export function getSupertagFieldDefinitions(
     }
   }
 
+  cache?.supertagFieldDefinitions.set(supertagId, fieldDefs)
   return fieldDefs
 }
 
@@ -369,6 +429,7 @@ export function findNode(
 export function assembleNode(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
+  cache?: AssemblyCache,
 ): AssembledNode | null {
   const node = db.select().from(nodes).where(eq(nodes.id, nodeId)).get()
   if (!node) return null
@@ -380,12 +441,12 @@ export function assembleNode(
     .all()
 
   // Build field info cache
-  const fieldCache = new Map<
-    string,
-    { content: string; systemId: string | null }
-  >()
+  const fieldCache = new Map<string, FieldNodeInfo>()
   for (const prop of props) {
-    if (!fieldCache.has(prop.fieldNodeId)) {
+    const cachedField = cache?.fieldNodes.get(prop.fieldNodeId)
+    if (cachedField) {
+      fieldCache.set(prop.fieldNodeId, cachedField)
+    } else if (!fieldCache.has(prop.fieldNodeId)) {
       const fieldNode = db
         .select()
         .from(nodes)
@@ -393,6 +454,10 @@ export function assembleNode(
         .get()
       if (fieldNode) {
         fieldCache.set(prop.fieldNodeId, {
+          content: fieldNode.content || '',
+          systemId: fieldNode.systemId,
+        })
+        cache?.fieldNodes.set(prop.fieldNodeId, {
           content: fieldNode.content || '',
           systemId: fieldNode.systemId,
         })
@@ -445,12 +510,20 @@ export function assembleNode(
       prop.fieldNodeId === supertagFieldId &&
       typeof parsedValue === 'string'
     ) {
-      const stNode = db
-        .select()
-        .from(nodes)
-        .where(eq(nodes.id, parsedValue))
-        .get()
+      const cachedSupertag = cache?.supertagNodes.get(parsedValue)
+      const stNode = cachedSupertag
+        ? cachedSupertag
+        : db
+            .select()
+            .from(nodes)
+            .where(eq(nodes.id, parsedValue))
+            .get()
       if (stNode) {
+        cache?.supertagNodes.set(parsedValue, {
+          id: stNode.id,
+          content: stNode.content || '',
+          systemId: stNode.systemId,
+        })
         assembled.supertags.push({
           id: stNode.id,
           content: stNode.content || '',
@@ -460,7 +533,7 @@ export function assembleNode(
     }
   }
 
-  applyFormulaFields(db, assembled)
+  applyFormulaFields(db, assembled, cache)
   return assembled
 }
 
@@ -471,6 +544,7 @@ export function assembleNode(
 export function assembleNodes(
   db: ReturnType<typeof getDatabase>,
   nodeIds: string[],
+  cache?: AssemblyCache,
 ): AssembledNode[] {
   if (nodeIds.length === 0) return []
 
@@ -491,13 +565,20 @@ export function assembleNodes(
     fieldNodeIdSet.add(prop.fieldNodeId)
   }
   const fieldNodeIds = [...fieldNodeIdSet]
+  const missingFieldNodeIds = fieldNodeIds.filter((id) => !cache?.fieldNodes.has(id))
   const fieldRows =
-    fieldNodeIds.length > 0
-      ? db.select().from(nodes).where(inArray(nodes.id, fieldNodeIds)).all()
+    missingFieldNodeIds.length > 0
+      ? db.select().from(nodes).where(inArray(nodes.id, missingFieldNodeIds)).all()
       : []
-  const fieldCache = new Map<string, { content: string; systemId: string | null }>()
+  const fieldCache = new Map<string, FieldNodeInfo>()
+  for (const fieldNodeId of fieldNodeIds) {
+    const cached = cache?.fieldNodes.get(fieldNodeId)
+    if (cached) fieldCache.set(fieldNodeId, cached)
+  }
   for (const fn of fieldRows) {
-    fieldCache.set(fn.id, { content: fn.content || '', systemId: fn.systemId })
+    const info = { content: fn.content || '', systemId: fn.systemId }
+    fieldCache.set(fn.id, info)
+    cache?.fieldNodes.set(fn.id, info)
   }
 
   // 4. Identify supertag property values and batch fetch supertag nodes
@@ -516,20 +597,26 @@ export function assembleNodes(
     }
   }
   const supertagNodeIds = [...supertagNodeIdSet]
+  const missingSupertagNodeIds = supertagNodeIds.filter(
+    (id) => !cache?.supertagNodes.has(id),
+  )
   const supertagRows =
-    supertagNodeIds.length > 0
-      ? db.select().from(nodes).where(inArray(nodes.id, supertagNodeIds)).all()
+    missingSupertagNodeIds.length > 0
+      ? db.select().from(nodes).where(inArray(nodes.id, missingSupertagNodeIds)).all()
       : []
-  const supertagCache = new Map<
-    string,
-    { id: string; content: string; systemId: string | null }
-  >()
+  const supertagCache = new Map<string, SupertagNodeInfo>()
+  for (const supertagNodeId of supertagNodeIds) {
+    const cached = cache?.supertagNodes.get(supertagNodeId)
+    if (cached) supertagCache.set(supertagNodeId, cached)
+  }
   for (const sn of supertagRows) {
-    supertagCache.set(sn.id, {
+    const info = {
       id: sn.id,
       content: sn.content || '',
       systemId: sn.systemId,
-    })
+    }
+    supertagCache.set(sn.id, info)
+    cache?.supertagNodes.set(sn.id, info)
   }
 
   // 5. Group properties by nodeId
@@ -600,7 +687,7 @@ export function assembleNodes(
       }
     }
 
-    applyFormulaFields(db, assembled)
+    applyFormulaFields(db, assembled, cache)
     results.push(assembled)
   }
 
@@ -610,8 +697,9 @@ export function assembleNodes(
 function applyFormulaFields(
   db: ReturnType<typeof getDatabase>,
   assembled: AssembledNode,
+  cache?: AssemblyCache,
 ): void {
-  const formulaDefs = getFormulaFieldDefinitionsForNode(db, assembled)
+  const formulaDefs = getFormulaFieldDefinitionsForNode(db, assembled, cache)
   if (formulaDefs.length === 0) return
 
   const formulaFieldNames = new Set(formulaDefs.map((def) => def.fieldName))
@@ -644,23 +732,23 @@ function applyFormulaFields(
 function getFormulaFieldDefinitionsForNode(
   db: ReturnType<typeof getDatabase>,
   assembled: AssembledNode,
-): Array<{
-  fieldSystemId: string
-  fieldNodeId: string
-  fieldName: string
-  expression: string
-}> {
+  cache?: AssemblyCache,
+): FormulaFieldDefinition[] {
+  const cacheKey = assembled.supertags.map((st) => st.id).join('|')
+  const cached = cache?.formulaDefinitions.get(cacheKey)
+  if (cached) return cached
+
   const definitions = new Map<
     string,
     { fieldSystemId: string; fieldNodeId: string; fieldName: string; expression: string }
   >()
 
   for (const supertag of assembled.supertags) {
-    for (const stId of getSupertagInheritanceMergeOrder(db, supertag.id)) {
-      const fieldDefs = getSupertagFieldDefinitions(db, stId)
+    for (const stId of getSupertagInheritanceMergeOrder(db, supertag.id, cache)) {
+      const fieldDefs = getSupertagFieldDefinitions(db, stId, cache)
       for (const [fieldSystemId, def] of fieldDefs) {
-        if (getFieldDefinitionType(db, def.fieldNodeId) !== 'formula') continue
-        const expression = getFieldDefinitionFormula(db, def.fieldNodeId)
+        if (getFieldDefinitionType(db, def.fieldNodeId, cache) !== 'formula') continue
+        const expression = getFieldDefinitionFormula(db, def.fieldNodeId, cache)
         definitions.set(fieldSystemId, {
           fieldSystemId,
           fieldNodeId: def.fieldNodeId,
@@ -671,21 +759,33 @@ function getFormulaFieldDefinitionsForNode(
     }
   }
 
-  return [...definitions.values()]
+  const result = [...definitions.values()]
+  cache?.formulaDefinitions.set(cacheKey, result)
+  return result
 }
 
 function getFieldDefinitionType(
   db: ReturnType<typeof getDatabase>,
   fieldNodeId: string,
+  cache?: AssemblyCache,
 ): string {
-  return getNodePropertyBySystemField(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE) ?? 'text'
+  const cached = cache?.fieldDefinitionTypes.get(fieldNodeId)
+  if (cached) return cached
+  const result = getNodePropertyBySystemField(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE) ?? 'text'
+  cache?.fieldDefinitionTypes.set(fieldNodeId, result)
+  return result
 }
 
 function getFieldDefinitionFormula(
   db: ReturnType<typeof getDatabase>,
   fieldNodeId: string,
+  cache?: AssemblyCache,
 ): string {
-  return getNodePropertyBySystemField(db, fieldNodeId, SYSTEM_FIELDS.FORMULA) ?? ''
+  const cached = cache?.fieldDefinitionFormulas.get(fieldNodeId)
+  if (cached !== undefined) return cached
+  const result = getNodePropertyBySystemField(db, fieldNodeId, SYSTEM_FIELDS.FORMULA) ?? ''
+  cache?.fieldDefinitionFormulas.set(fieldNodeId, result)
+  return result
 }
 
 function getNodePropertyBySystemField(
@@ -724,9 +824,10 @@ function getNodePropertyBySystemField(
 export function assembleNodeWithInheritance(
   db: ReturnType<typeof getDatabase>,
   nodeId: string,
+  cache?: AssemblyCache,
 ): AssembledNode | null {
   // Start with base assembled node
-  const node = assembleNode(db, nodeId)
+  const node = assembleNode(db, nodeId, cache)
   if (!node) return null
 
   // Track which fields we already have (don't override)
@@ -741,8 +842,8 @@ export function assembleNodeWithInheritance(
 
   // For each supertag, collect inherited fields
   for (const supertag of node.supertags) {
-    for (const stId of getSupertagInheritanceMergeOrder(db, supertag.id)) {
-      const fieldDefs = getSupertagFieldDefinitions(db, stId)
+    for (const stId of getSupertagInheritanceMergeOrder(db, supertag.id, cache)) {
+      const fieldDefs = getSupertagFieldDefinitions(db, stId, cache)
 
       for (const [fieldSystemId, def] of fieldDefs) {
         // Skip if node already has this field

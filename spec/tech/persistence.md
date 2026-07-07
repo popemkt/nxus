@@ -144,3 +144,13 @@ DRIFT: order keys still persisted as numeric field values
 - current: persisted `field:order` values remain JSON numbers for compatibility with existing rows and the `field:order` bootstrap type. New editor writes normalize through the shared `@nxus/db` order helper instead of ad hoc `parseInt(... ) || 0`, and reads format numeric values back to padded keys (`libs/nxus-db/src/types/order.ts:1`; `apps/nxus-editor/src/hooks/use-outline-sync.ts:41`; `apps/nxus-editor/src/services/outline.server.ts:213`).
 - impact: true future fractional/string keys still require a migration or a field-type change; old numeric rows are tolerated, but the persisted value is not yet the exact client key.
 - closes: migrate `field:order` to an opaque string value (or introduce a new string order field), backfill existing numeric rows, and remove numeric normalization from the write boundary.
+
+## 9. Assembly cost
+
+Node assembly (`assembleNode`/`assembleNodes` and every definition lookup they trigger) MUST scale with tree depth and distinct-definition count, not node count. The mechanism is the **request-scoped assembly cache**: `createAssemblyCache()` (`libs/nxus-db/src/services/node.service.ts`) returns an explicit cache object that callers thread through `assembleNode`/`assembleNodes`/`getSupertagFieldDefinitions`/`getAncestorSupertags`/`assembleNodeWithInheritance` as an optional trailing parameter. Rules:
+
+- The cache is **caller-owned and request-scoped** — created per server-fn invocation, dropped when it returns. Module-level definition caching is forbidden: the reactive layer mutates definitions at runtime, and a process-lifetime cache would serve stale supertag/field/formula definitions.
+- Omitting the parameter is always correct (uncached per-call behavior); passing it is a pure read-path optimization and MUST NOT change results. The equivalence + statement-count contract is enforced by `libs/nxus-db/src/services/assembly-cache.performance.test.ts`, which asserts the frontier+cache path beats per-node uncached assembly by ≥10× in SQL statement count.
+- Tree loads iterate a **depth frontier** (one children query per level via `inArray`, batch assembly per level) instead of per-node recursion — see `getNodeTreeServerFn` (`apps/nxus-editor/src/services/outline.server.ts`).
+
+Measured on the seeded benchmark shape (1011 nodes, depth 4, 3 supertags × 4 fields incl. one formula field, 2026-07-08, local M-series): per-node uncached assembly 39,507 SQL statements / ~1040ms; frontier + cache 52 statements / ~21ms.

@@ -4,6 +4,7 @@ import { QueryDefinitionSchema, formatOrderKey } from '@nxus/db'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
 import type { FieldType } from '@/types/outline'
+import type { AssembledNode } from '@nxus/db'
 import { initDatabaseSeeded } from './ensure-seeded.server'
 
 /**
@@ -15,8 +16,10 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
   .handler(async (ctx) => {
     const {
       assembleNode,
+      assembleNodes,
+      createAssemblyCache,
       nodes,
-      eq,
+      inArray,
       isNull,
       and,
       getProperty,
@@ -27,6 +30,8 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     const db = await initDatabaseSeeded()
 
     const maxDepth = ctx.data.depth ?? Number.MAX_SAFE_INTEGER
+
+    const assemblyCache = createAssemblyCache()
 
     type OutlineNodeResult = {
       id: string
@@ -41,6 +46,8 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     }
 
     const nodeMap = new Map<string, OutlineNodeResult>()
+    const childIdsByParent = new Map<string, string[]>()
+    const supertagDisplayCache = new Map<string, { name: string; color: string | null; systemId: string | null }>()
     // Cache field types and constraints to avoid redundant lookups
     const fieldTypeCache = new Map<string, FieldType>()
     const fieldConstraintCache = new Map<string, { required?: boolean; hideWhen?: string; pinned?: boolean }>()
@@ -51,7 +58,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       const cached = fieldTypeCache.get(fieldNodeId)
       if (cached) return cached
 
-      const fieldNode = assembleNode(db, fieldNodeId)
+      const fieldNode = assembleNode(db, fieldNodeId, assemblyCache)
       const ft = fieldNode
         ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
         : 'text'
@@ -132,15 +139,15 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       const priorityMap = new Map<string, number>()
       let priority = 0
       for (const st of assembled.supertags) {
-        const defs = getSupertagFieldDefinitions(db, st.id)
-        const ancestors = getAncestorSupertags(db, st.id)
+        const defs = getSupertagFieldDefinitions(db, st.id, assemblyCache)
+        const ancestors = getAncestorSupertags(db, st.id, undefined, assemblyCache)
         // Own fields first
         for (const [systemId] of defs) {
           if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
         }
         // Then inherited
         for (const ancestorId of ancestors) {
-          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId, assemblyCache)
           for (const [systemId] of ancestorDefs) {
             if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
           }
@@ -151,11 +158,11 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       // Without this, fields from a supertag only appear after the user sets a value.
       const existingFieldSystemIds = new Set(fields.map((f) => f.fieldSystemId).filter(Boolean))
       for (const st of assembled.supertags) {
-        const defs = getSupertagFieldDefinitions(db, st.id)
-        const ancestors = getAncestorSupertags(db, st.id)
+        const defs = getSupertagFieldDefinitions(db, st.id, assemblyCache)
+        const ancestors = getAncestorSupertags(db, st.id, undefined, assemblyCache)
         const allDefs = new Map(defs)
         for (const ancestorId of ancestors) {
-          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId, assemblyCache)
           for (const [key, val] of ancestorDefs) {
             if (!allDefs.has(key)) allDefs.set(key, val)
           }
@@ -197,12 +204,24 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       return fields
     }
 
-    function loadNode(nodeId: string, currentDepth: number): void {
-      if (nodeMap.has(nodeId)) return
+    function getSupertagDisplay(st: { id: string; content: string; systemId: string | null }) {
+      const cached = supertagDisplayCache.get(st.id)
+      if (cached) return { id: st.id, ...cached }
+      const stNode = assembleNode(db, st.id, assemblyCache)
+      const dbColor = stNode
+        ? (getProperty(stNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+        : null
+      const display = {
+        name: stNode?.content ?? st.content,
+        color: dbColor ?? getSupertagColor(st.id),
+        systemId: stNode?.systemId ?? st.systemId,
+      }
+      supertagDisplayCache.set(st.id, display)
+      return { id: st.id, ...display }
+    }
 
-      const assembled = assembleNode(db, nodeId)
-      if (!assembled || assembled.deletedAt) return
-
+    function addOutlineNode(assembled: AssembledNode): void {
+      if (nodeMap.has(assembled.id) || assembled.deletedAt) return
       const orderValue = getProperty(assembled, FIELD_NAMES.ORDER) as number | undefined
 
       const outlineNode: OutlineNodeResult = {
@@ -213,44 +232,61 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         order: formatOrderKey(orderValue),
         createdAt: assembled.createdAt?.getTime() ?? 0,
         collapsed: false,
-        supertags: assembled.supertags.map((st: { id: string; content: string; systemId: string | null }) => {
-          const stNode = assembleNode(db, st.id)
-          const dbColor = stNode
-            ? (getProperty(stNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
-            : null
-          return { id: st.id, name: st.content, color: dbColor ?? getSupertagColor(st.id), systemId: st.systemId }
-        }),
+        supertags: assembled.supertags.map(getSupertagDisplay),
         fields: extractFields(assembled),
       }
 
-      nodeMap.set(nodeId, outlineNode)
+      nodeMap.set(assembled.id, outlineNode)
+    }
 
-      if (currentDepth < maxDepth) {
-        const childRows = db
-          .select()
-          .from(nodes)
-          .where(and(eq(nodes.ownerId, nodeId), isNull(nodes.deletedAt)))
-          .all()
+    let frontier = [ctx.data.nodeId]
+    let currentDepth = 0
+    while (frontier.length > 0) {
+      const uniqueFrontier = [...new Set(frontier)].filter((id) => !nodeMap.has(id))
+      if (uniqueFrontier.length === 0) break
 
-        const childIds: string[] = []
-        for (const child of childRows) {
-          childIds.push(child.id)
-          loadNode(child.id, currentDepth + 1)
-        }
+      const assembledNodes = assembleNodes(db, uniqueFrontier, assemblyCache)
+      const loadedIds: string[] = []
+      for (const assembled of assembledNodes) {
+        if (assembled.deletedAt) continue
+        addOutlineNode(assembled)
+        loadedIds.push(assembled.id)
+      }
 
-        childIds.sort((a, b) => {
+      if (currentDepth >= maxDepth || loadedIds.length === 0) break
+
+      const childRows = db
+        .select()
+        .from(nodes)
+        .where(and(inArray(nodes.ownerId, loadedIds), isNull(nodes.deletedAt)))
+        .all()
+
+      const nextFrontier: string[] = []
+      for (const child of childRows) {
+        if (!child.ownerId) continue
+        const existing = childIdsByParent.get(child.ownerId) ?? []
+        existing.push(child.id)
+        childIdsByParent.set(child.ownerId, existing)
+        nextFrontier.push(child.id)
+      }
+
+      frontier = nextFrontier
+      currentDepth++
+    }
+
+    for (const [parentId, childIds] of childIdsByParent) {
+      const parent = nodeMap.get(parentId)
+      if (!parent) continue
+      parent.children = childIds
+        .filter((childId) => nodeMap.has(childId))
+        .sort((a, b) => {
           const na = nodeMap.get(a)
           const nb = nodeMap.get(b)
           const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
           if (orderCmp !== 0) return orderCmp
           return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
         })
-
-        outlineNode.children = childIds
-      }
     }
-
-    loadNode(ctx.data.nodeId, 0)
 
     const nodesArray = Array.from(nodeMap.values())
     return { success: true as const, nodes: nodesArray, rootId: ctx.data.nodeId }
