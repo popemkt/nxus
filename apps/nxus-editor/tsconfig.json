@@ -28,6 +28,9 @@
       "path": "../../libs/nxus-workbench"
     },
     {
+      "path": "../../libs/nxus-node-api"
+    },
+    {
       "path": "../../libs/nxus-ui"
     },
     {

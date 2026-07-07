@@ -39,6 +39,9 @@
       "path": "../../libs/nxus-ui"
     },
     {
+      "path": "../../libs/nxus-node-api"
+    },
+    {
       "path": "../../libs/nxus-db"
     }
   ]

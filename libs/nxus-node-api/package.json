@@ -1,5 +1,5 @@
 {
-  "name": "@nxus/workbench",
+  "name": "@nxus/node-api",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -24,31 +24,14 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "3d-force-graph": "^1.79.0",
     "@nxus/db": "workspace:*",
-    "@nxus/node-api": "workspace:*",
-    "@nxus/ui": "workspace:*",
-    "@phosphor-icons/react": "^2.1.10",
-    "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-start": "^1.132.0",
-    "@xyflow/react": "^12.10.0",
-    "d3-force": "^3.0.0",
-    "d3-polygon": "^3.0.1",
-    "dagre": "^0.8.5",
-    "drizzle-orm": "^0.45.1",
-    "react-force-graph-2d": "^1.29.1",
-    "three": "^0.182.0",
-    "three-forcegraph": "^1.43.0",
-    "zod": "^4.2.1",
-    "zustand": "^5.0.9"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
-    "@types/d3-force": "^3.0.10",
-    "@types/d3-polygon": "^3.0.2",
-    "@types/dagre": "^0.7.53",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@types/three": "^0.182.0",
+    "typescript": "^5.7.2",
     "vitest": "^3.0.5"
   },
   "peerDependencies": {

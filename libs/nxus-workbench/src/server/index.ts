@@ -12,7 +12,7 @@ export {
   createNodeServerFn,
   deleteNodeServerFn,
   setNodePropertiesServerFn,
-} from './nodes.server.js'
+} from '@nxus/node-api/server'
 
 // Search server functions
 export {
@@ -22,7 +22,7 @@ export {
   getBacklinksServerFn,
   getOwnerChainServerFn,
   getChildNodesServerFn,
-} from './search-nodes.server.js'
+} from '@nxus/node-api/server'
 
 // Graph server functions (optimized for visualization)
 export {
@@ -50,4 +50,4 @@ export {
   executeSavedQueryServerFn,
   getQuerySupertagsServerFn,
   getQueryFieldsServerFn,
-} from './query.server.js'
+} from '@nxus/node-api/server'

@@ -178,6 +178,9 @@ importers:
       '@nxus/db':
         specifier: workspace:*
         version: link:../../libs/nxus-db
+      '@nxus/node-api':
+        specifier: workspace:*
+        version: link:../../libs/nxus-node-api
       '@nxus/ui':
         specifier: workspace:*
         version: link:../../libs/nxus-ui
@@ -368,6 +371,9 @@ importers:
       '@nxus/db':
         specifier: workspace:*
         version: link:../../libs/nxus-db
+      '@nxus/node-api':
+        specifier: workspace:*
+        version: link:../../libs/nxus-node-api
       '@nxus/ui':
         specifier: workspace:*
         version: link:../../libs/nxus-ui
@@ -850,6 +856,37 @@ importers:
         specifier: ^3.2.1
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.3.0)(lightningcss@1.30.2)(msw@2.12.4(@types/node@22.19.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
+  libs/nxus-node-api:
+    dependencies:
+      '@nxus/db':
+        specifier: workspace:*
+        version: link:../nxus-db
+      '@tanstack/react-start':
+        specifier: ^1.132.0
+        version: 1.143.3(crossws@0.4.9(srvx@0.11.21))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.5.29(@swc/helpers@0.5.17))(esbuild@0.27.2))
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3(react@19.2.3)
+      zod:
+        specifier: ^4.2.1
+        version: 4.2.1
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.7)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.3.0)(lightningcss@1.30.2)(msw@2.12.4(@types/node@22.19.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
   libs/nxus-ui:
     dependencies:
       '@base-ui/react':
@@ -895,6 +932,9 @@ importers:
       '@nxus/db':
         specifier: workspace:*
         version: link:../nxus-db
+      '@nxus/node-api':
+        specifier: workspace:*
+        version: link:../nxus-node-api
       '@nxus/ui':
         specifier: workspace:*
         version: link:../nxus-ui

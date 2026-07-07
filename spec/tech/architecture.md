@@ -114,10 +114,14 @@ DRIFT: WS upgrade replay stringifies array headers
 
 ### DR-1: Converge on a single node-API surface
 
-**Status: accepted, not started.**
-Node CRUD/search/query server functions exist in **three** parallel, drifting stacks: editor (`apps/nxus-editor/src/services/outline.server.ts` — create `:298`, update `:431`, delete `:443`, query `:503`, backlinks `:529`; search `apps/nxus-editor/src/services/search.server.ts:9`), workbench (`libs/nxus-workbench/src/server/{nodes,query,search-nodes}.server.ts`), and a third search in `apps/nxus-core/src/services/graph/graph.server.ts:568`. Spec-as-source cannot hold while one contract has three implementations.
-**Decision**: extract a canonical node-API surface — either a new `@nxus/node-api` lib or bless `libs/nxus-workbench/src/server/` and move it out of the workbench lib — and delete the other stacks. The editor already imports workbench's `QueryBuilder` (`apps/nxus-editor/src/components/outline/query-results.tsx:5`), proving the dependency direction works. Longer-term option (not yet decided): merge the editor and workbench apps (the workbench app is a 5-file shell).
-The consolidated surface MUST go through `nodeFacade` (see persistence.md), which simultaneously retires the editor's facade bypass.
+**Status: implemented for node CRUD/search/query; remaining facade bypass outside this DR is recorded in persistence.md.**
+Node CRUD/search/query server functions have one canonical hand-written home: `@nxus/node-api` (`libs/nxus-node-api`). Its generic CRUD server wrappers delegate into `operations.ts` (`libs/nxus-node-api/src/server/nodes.server.ts:13-20`, `:52-63`, `:72-94`, `:101-113`), its search/list/backlink wrappers delegate into the same facade-backed operations (`libs/nxus-node-api/src/server/search-nodes.server.ts:13-20`, `:44-49`, `:68-79`, `:85-90`), and its saved-query wrappers use `nodeFacade` behind dynamic imports (`libs/nxus-node-api/src/server/query.server.ts:36-57`, `:62-92`, `:97-157`).
+
+The concrete access path is `nodeFacade`: `operations.ts` initializes and returns the facade (`libs/nxus-node-api/src/server/operations.ts:171-175`), then implements create/update/delete/search/list/backlinks/children through facade methods and facade query evaluation (`:193-240`, `:263-329`, `:362-382`). Editor-specific response adapters for default-child-supertag creation, inline query results, and grouped backlinks also live in the same package and use `nodeFacade` (`libs/nxus-node-api/src/server/operations.ts:384-507`, `:510-521`, `:524-629`).
+
+The former workbench stack is now a compatibility layer that re-exports `@nxus/node-api/server` for CRUD/search/query (`libs/nxus-workbench/src/server/index.ts:7-25`, `:43-53`; shims at `libs/nxus-workbench/src/server/nodes.server.ts:1-8`, `query.server.ts:1-10`, `search-nodes.server.ts:1-8`). Editor server functions keep their exported names and response shapes but dynamically import `@nxus/node-api/server` inside handlers (`apps/nxus-editor/src/services/outline.server.ts:305-357`, `:424-455`; `apps/nxus-editor/src/services/search.server.ts:9-35`). Core's legacy graph search server function delegates to the same search operation (`apps/nxus-core/src/services/graph/graph.server.ts:567-589`). The editor still imports workbench's `QueryBuilder` (`apps/nxus-editor/src/components/outline/query-results.tsx:5`), so the app→lib dependency direction remains valid.
+
+Longer-term option (not yet decided): merge the editor and workbench apps (the workbench app is a 5-file shell). The workbench graph-visualization endpoints remain local to `@nxus/workbench`; they are graph-rendering APIs, not the node CRUD/search/query surface covered by DR-1.
 
 ### DR-2: Theme system lives in `@nxus/ui`
 

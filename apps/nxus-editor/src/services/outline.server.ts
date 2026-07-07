@@ -311,124 +311,24 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const {
-      createNode,
-      setProperty,
-      addNodeSupertag,
-      assembleNode,
-      getProperty,
-      getSupertagFieldDefinitions,
-      getAncestorSupertags,
-      SYSTEM_FIELDS,
-      FIELD_NAMES,
-    } = await import('@nxus/db/server')
-    const { getSupertagColor } = await import('@/lib/supertag-colors')
-    const db = await initDatabaseSeeded()
-
-    const nodeId = createNode(db, {
-      content: ctx.data.content,
-      ...(ctx.data.parentId ? { ownerId: ctx.data.parentId } : {}),
+    await initDatabaseSeeded()
+    const { createOutlineNode } = await import('@nxus/node-api/server')
+    const result = await createOutlineNode({
+      ...ctx.data,
+      hiddenFieldSystemIds: Array.from(HIDDEN_FIELD_SYSTEM_IDS),
     })
-
-    if (ctx.data.order !== undefined) {
-      setProperty(db, nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
-    }
-
-    // Check parent's supertags for a default_child_supertag
-    let appliedSupertag: { id: string; name: string; systemId: string; color: string | null } | null = null
-    const appliedFields: Array<{
-      fieldId: string
-      fieldName: string
-      fieldNodeId: string
-      fieldSystemId: string | null
-      fieldType: string
-      values: { value: {}; order: number }[]
-    }> = []
-
-    if (ctx.data.parentId) {
-      const parentAssembled = assembleNode(db, ctx.data.parentId)
-      if (parentAssembled) {
-        for (const parentTag of parentAssembled.supertags) {
-          if (!parentTag.id) continue
-          const tagAssembled = assembleNode(db, parentTag.id)
-          if (!tagAssembled) continue
-
-          // defaultChildSupertag field stores a node UUID reference
-          const defaultChildRef = getProperty(tagAssembled, FIELD_NAMES.DEFAULT_CHILD_SUPERTAG) as string | undefined
-          if (!defaultChildRef) continue
-
-          // Resolve the referenced supertag node to get its systemId
-          const childTagNode = assembleNode(db, defaultChildRef)
-          if (!childTagNode?.systemId) continue
-
-          // Apply the default child supertag to the new node
-          const added = addNodeSupertag(db, nodeId, childTagNode.systemId)
-          if (!added) break
-
-          const dbColor = (getProperty(childTagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
-          appliedSupertag = {
-            id: childTagNode.id,
-            name: childTagNode.content ?? '',
-            systemId: childTagNode.systemId,
-            color: dbColor ?? getSupertagColor(childTagNode.id),
-          }
-
-          // Collect field definitions from this supertag + ancestors
-          const fieldDefs = getSupertagFieldDefinitions(db, childTagNode.id)
-          const ancestors = getAncestorSupertags(db, childTagNode.id)
-          for (const ancestorId of ancestors) {
-            const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
-            for (const [key, val] of ancestorDefs) {
-              if (!fieldDefs.has(key)) fieldDefs.set(key, val)
-            }
-          }
-
-          for (const [systemId, def] of fieldDefs) {
-            if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
-            let fieldType = 'text'
-            const fieldNode = assembleNode(db, def.fieldNodeId)
-            if (fieldNode) {
-              fieldType = (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
-            }
-            appliedFields.push({
-              fieldId: systemId,
-              fieldName: def.fieldName,
-              fieldNodeId: def.fieldNodeId,
-              fieldSystemId: systemId,
-              fieldType,
-              values: [],
-            })
-          }
-
-          // Apply content template if one exists on the child supertag (not the parent's)
-          const templateRaw = getProperty(childTagNode, FIELD_NAMES.CONTENT_TEMPLATE) as string | undefined
-          if (templateRaw) {
-            try {
-              const template = typeof templateRaw === 'string' ? JSON.parse(templateRaw) : templateRaw
-              if (template && Array.isArray(template.children)) {
-                for (const childDef of template.children) {
-                  if (!childDef || typeof childDef.content !== 'string') continue
-                  createNode(db, {
-                    content: childDef.content,
-                    ownerId: nodeId,
-                  })
-                }
-              }
-            } catch {
-              // Invalid template JSON — skip silently
-            }
-          }
-
-          break // Only apply first default child supertag found
+    const appliedSupertag = result.appliedSupertag
+      ? {
+          ...result.appliedSupertag,
+          color: result.appliedSupertag.color ?? getSupertagColor(result.appliedSupertag.id),
         }
-      }
-    }
+      : null
 
     return {
       success: true as const,
-      nodeId,
+      nodeId: result.nodeId,
       appliedSupertag,
-      appliedFields,
+      appliedFields: result.appliedFields,
     }
   })
 
@@ -438,9 +338,9 @@ export const createNodeServerFn = createServerFn({ method: 'POST' })
 export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), content: z.string() }))
   .handler(async (ctx) => {
-    const { updateNodeContent } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    updateNodeContent(db, ctx.data.nodeId, ctx.data.content)
+    await initDatabaseSeeded()
+    const { updateNodeContent } = await import('@nxus/node-api/server')
+    await updateNodeContent(ctx.data)
     return { success: true as const }
   })
 
@@ -450,9 +350,9 @@ export const updateNodeContentServerFn = createServerFn({ method: 'POST' })
 export const deleteNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
-    const { deleteNode } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    deleteNode(db, ctx.data.nodeId)
+    await initDatabaseSeeded()
+    const { deleteNode } = await import('@nxus/node-api/server')
+    await deleteNode(ctx.data.nodeId)
     return { success: true as const }
   })
 
@@ -524,20 +424,13 @@ export const reorderNodeServerFn = createServerFn({ method: 'POST' })
 export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ definition: QueryDefinitionSchema }))
   .handler(async (ctx) => {
-    // Ensure seeded first, then use nodeFacade for query evaluation
     await initDatabaseSeeded()
-    const { nodeFacade } = await import('@nxus/db/server')
-    await nodeFacade.init()
-
-    const result = await nodeFacade.evaluateQuery(ctx.data.definition)
+    const { evaluateEditorQuery } = await import('@nxus/node-api/server')
+    const result = await evaluateEditorQuery(ctx.data.definition)
 
     return {
       success: true as const,
-      nodes: result.nodes.map((n) => ({
-        id: n.id,
-        content: n.content ?? '',
-        supertags: n.supertags,
-      })),
+      nodes: result.nodes,
       totalCount: result.totalCount,
     }
   })
@@ -550,132 +443,15 @@ export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
 export const getBacklinksServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
-    const { nodeFacade } = await import('@nxus/db/server')
     await initDatabaseSeeded()
-    await nodeFacade.init()
+    const { getGroupedBacklinks } = await import('@nxus/node-api/server')
+    const result = await getGroupedBacklinks(ctx.data.nodeId)
 
-    const targetNodeId = ctx.data.nodeId
-
-    // Use facade evaluateQuery with linksTo filter (architecture-portable)
-    const result = await nodeFacade.evaluateQuery({
-      filters: [{ type: 'relation', relationType: 'linksTo', targetNodeId }],
-      limit: Number.MAX_SAFE_INTEGER,
-    })
-
-    // Skip system fields used for internal wiring (by systemId, not display name).
-    // NOTE: field:supertag and field:extends are NOT excluded — they are the
-    // primary way nodes reference supertag/field definition nodes and should
-    // appear as backlinks.
-    const systemFieldSystemIds = new Set([
-      'field:order', 'field:field_type',
-      'field:query_definition', 'field:color',
-    ])
-    type BacklinkPropertyValue = {
-      value: unknown
-      fieldName: string
-      fieldSystemId?: string | null
-      fieldNodeId?: string
+    return {
+      success: true as const,
+      groups: result.groups,
+      totalCount: result.totalCount,
     }
-    type BacklinkNodeSummary = {
-      id: string
-      content: string
-      childCount: number
-      supertags: { id: string; content: string; systemId: string | null }[]
-    }
-    type BacklinkOriginKind = 'field-value' | 'supertag' | 'inline-mention'
-
-    // Post-process: group nodes by which field references the target.
-    // Inline content mentions are not part of the current data model, so only
-    // property-backed origins can be classified here.
-    // Use fieldSystemId (or fieldNodeId as fallback) for identity, not display name
-    const fieldGroups = new Map<string, {
-      fieldKey: string
-      fieldName: string
-      originKind: BacklinkOriginKind
-      nodeIds: Set<string>
-    }>()
-
-    for (const assembled of result.nodes) {
-      // Scan properties to find which fields reference the target
-      for (const [, propValues] of Object.entries(
-        assembled.properties,
-      ) as [string, BacklinkPropertyValue[]][]) {
-        if (!propValues || propValues.length === 0) continue
-        const first = propValues[0]!
-        const fieldKey = first.fieldSystemId ?? first.fieldNodeId ?? first.fieldName
-        if (first.fieldSystemId && systemFieldSystemIds.has(first.fieldSystemId)) continue
-        const originKind: BacklinkOriginKind = first.fieldSystemId === 'field:supertag'
-          ? 'supertag'
-          : 'field-value'
-
-        const referencesTarget = propValues.some((pv) => {
-          if (pv.value === targetNodeId) return true
-          if (Array.isArray(pv.value) && pv.value.includes(targetNodeId)) return true
-          return false
-        })
-
-        if (referencesTarget) {
-          if (!fieldGroups.has(fieldKey)) {
-            fieldGroups.set(fieldKey, {
-              fieldKey,
-              fieldName: first.fieldName,
-              originKind,
-              nodeIds: new Set(),
-            })
-          }
-          fieldGroups.get(fieldKey)!.nodeIds.add(assembled.id)
-        }
-      }
-    }
-
-    // Count children for each linking node (for bullet rendering)
-    const { nodes: nodesTable, isNull, eq, and } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    const childCountMap = new Map<string, number>()
-    for (const assembled of result.nodes) {
-      const childRows = db
-        .select()
-        .from(nodesTable)
-        .where(and(eq(nodesTable.ownerId, assembled.id), isNull(nodesTable.deletedAt)))
-        .all()
-      childCountMap.set(assembled.id, childRows.length)
-    }
-
-    // Build grouped result with node data
-    const nodeDataMap = new Map<string, BacklinkNodeSummary>(
-      result.nodes.map((n: {
-        id: string
-        content: string | null
-        supertags: { id: string; content: string; systemId: string | null }[]
-      }) => [
-        n.id,
-        {
-          id: n.id,
-          content: n.content ?? '',
-          childCount: childCountMap.get(n.id) ?? 0,
-          supertags: n.supertags.map((st: { id: string; content: string; systemId: string | null }) => ({
-            id: st.id,
-            content: st.content,
-            systemId: st.systemId,
-          })),
-        },
-      ]),
-    )
-
-    const groups = Array.from(fieldGroups.values())
-      .map((group) => ({
-        fieldKey: group.fieldKey,
-        originKind: group.originKind,
-        fieldName: group.fieldName,
-        nodes: Array.from(group.nodeIds)
-          .map((id) => nodeDataMap.get(id))
-          .filter((n): n is BacklinkNodeSummary => n !== undefined),
-      }))
-      .filter((g) => g.nodes.length > 0)
-
-    const totalCount = result.totalCount
-
-    return { success: true as const, groups, totalCount }
   })
 
 /**

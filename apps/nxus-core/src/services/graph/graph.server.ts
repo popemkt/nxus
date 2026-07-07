@@ -14,7 +14,6 @@ import {
   getNodeBySystemId,
   getNodesBySupertag,
   removeRelation,
-  searchNodes,
   updateNode,
 } from './graph.service'
 import type { GraphNode } from './graph.service'
@@ -569,9 +568,21 @@ export const searchNodesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ query: z.string() }))
   .handler(async (ctx) => {
     try {
-      const nodes = await searchNodes(ctx.data.query)
-      // Serialize for transport
-      return { success: true as const, nodes: nodes.map(serializeGraphNode) }
+      const { searchNodes } = await import('@nxus/node-api/server')
+      const result = await searchNodes({ query: ctx.data.query })
+      return {
+        success: true as const,
+        nodes: result.nodes.map((node) => ({
+          id: node.id,
+          content: node.content ?? undefined,
+          content_plain: node.content?.toLowerCase(),
+          system_id: node.systemId ?? undefined,
+          props: {},
+          created_at: node.createdAt?.toISOString() || new Date().toISOString(),
+          updated_at: node.updatedAt?.toISOString() || new Date().toISOString(),
+          deleted_at: node.deletedAt?.toISOString(),
+        })),
+      }
     } catch (error) {
       return { success: false as const, error: String(error) }
     }

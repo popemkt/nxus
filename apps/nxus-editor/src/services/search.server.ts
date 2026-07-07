@@ -12,15 +12,11 @@ export const searchNodesServerFn = createServerFn({ method: 'POST' })
     limit: z.number().int().positive().max(50).optional(),
   }))
   .handler(async (ctx) => {
-    const { nodeFacade } = await import('@nxus/db/server')
     await initDatabaseSeeded()
-    await nodeFacade.init()
-
-    const limit = ctx.data.limit ?? 20
-
-    const result = await nodeFacade.evaluateQuery({
-      filters: [{ type: 'content', query: ctx.data.query, caseSensitive: false }],
-      limit,
+    const { searchNodes } = await import('@nxus/node-api/server')
+    const result = await searchNodes({
+      query: ctx.data.query,
+      limit: ctx.data.limit ?? 20,
     })
 
     return {

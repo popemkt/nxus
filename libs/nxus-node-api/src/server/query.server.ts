@@ -1,0 +1,339 @@
+/**
+ * query.server.ts - TanStack server functions for query and node operations
+ *
+ * This file creates server functions that wrap the NodeFacade API
+ * from @nxus/db. The dynamic imports inside handlers prevent Vite from
+ * bundling better-sqlite3 into the client.
+ *
+ * Architecture:
+ * - @nxus/db/server: NodeFacade API (evaluateQuery, createNode, etc.)
+ * - This file: TanStack createServerFn wrappers with validation
+ */
+
+import { createServerFn } from '@tanstack/react-start'
+import {
+  CreateQueryInputSchema,
+  EvaluateQueryInputSchema,
+  FIELD_NAMES,
+  QueryDefinitionSchema,
+  SavedQuerySchema,
+  UpdateQueryInputSchema,
+} from '@nxus/db'
+import { z } from 'zod'
+
+function formatInvalidSavedQueryError(queryId: string, error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  return `[Query] Invalid saved query ${queryId}: ${message}`
+}
+
+// ============================================================================
+// Query Evaluation Server Functions
+// ============================================================================
+
+/**
+ * Evaluate a query definition and return matching nodes
+ */
+export const evaluateQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(EvaluateQueryInputSchema)
+  .handler(async (ctx) => {
+    const { nodeFacade } = await import('@nxus/db/server')
+    const { definition, limit } = ctx.data
+
+    await nodeFacade.init()
+
+    const effectiveDefinition = {
+      ...definition,
+      limit: limit ?? definition.limit ?? 500,
+    }
+
+    const result = await nodeFacade.evaluateQuery(effectiveDefinition)
+
+    return {
+      success: true as const,
+      nodes: result.nodes,
+      totalCount: result.totalCount,
+      evaluatedAt: result.evaluatedAt,
+    }
+  })
+
+/**
+ * Create a new saved query (stored as a node with supertag:query)
+ */
+export const createQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(CreateQueryInputSchema)
+  .handler(async (ctx) => {
+    const { nodeFacade, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } = await import(
+      '@nxus/db/server'
+    )
+    const { name, definition, ownerId } = ctx.data
+
+    await nodeFacade.init()
+
+    const queryId = await nodeFacade.createNode({
+      content: name,
+      supertagId: SYSTEM_SUPERTAGS.QUERY,
+      ownerId,
+    })
+
+    await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_DEFINITION, definition)
+
+    if (definition.sort) {
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_SORT, definition.sort)
+    }
+
+    if (definition.limit !== undefined) {
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_LIMIT, definition.limit)
+    }
+
+    return {
+      success: true as const,
+      queryId,
+    }
+  })
+
+/**
+ * Update an existing saved query
+ */
+export const updateQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(UpdateQueryInputSchema)
+  .handler(async (ctx) => {
+    const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const { queryId, name, definition } = ctx.data
+
+    await nodeFacade.init()
+
+    const existingNode = await nodeFacade.findNodeById(queryId)
+    if (!existingNode) {
+      throw new Error(`Query not found: ${queryId}`)
+    }
+
+    if (name !== undefined) {
+      await nodeFacade.updateNodeContent(queryId, name)
+    }
+
+    if (definition !== undefined) {
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_DEFINITION, definition)
+
+      if (definition.sort) {
+        await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_SORT, definition.sort)
+      }
+
+      if (definition.limit !== undefined) {
+        await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_LIMIT, definition.limit)
+      }
+
+      // Clear cached results when definition changes
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_RESULT_CACHE, null)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_EVALUATED_AT, null)
+    }
+
+    return {
+      success: true as const,
+      queryId,
+    }
+  })
+
+/**
+ * Delete a saved query (soft delete)
+ */
+export const deleteQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ queryId: z.string() }))
+  .handler(async (ctx) => {
+    const { nodeFacade } = await import('@nxus/db/server')
+    const { queryId } = ctx.data
+
+    await nodeFacade.init()
+
+    const existingNode = await nodeFacade.findNodeById(queryId)
+    if (!existingNode) {
+      throw new Error(`Query not found: ${queryId}`)
+    }
+
+    await nodeFacade.deleteNode(queryId)
+
+    return {
+      success: true as const,
+    }
+  })
+
+/**
+ * Get all saved queries
+ */
+export const getSavedQueriesServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { nodeFacade, getProperty, SYSTEM_SUPERTAGS } = await import(
+      '@nxus/db/server'
+    )
+
+    await nodeFacade.init()
+
+    const queryNodes = await nodeFacade.getNodesBySupertagWithInheritance(
+      SYSTEM_SUPERTAGS.QUERY
+    )
+
+    const queries: Array<z.infer<typeof SavedQuerySchema>> = []
+
+    for (const node of queryNodes) {
+      try {
+        // Field names must match the 'content' property in bootstrap.ts
+        // (e.g., 'queryDefinition' not 'query_definition')
+        const definition = QueryDefinitionSchema.parse(
+          getProperty(node, FIELD_NAMES.QUERY_DEFINITION) ?? {},
+        )
+        const resultCache = getProperty<string[]>(
+          node,
+          FIELD_NAMES.QUERY_RESULT_CACHE,
+        )
+        const evaluatedAtStr = getProperty<string>(
+          node,
+          FIELD_NAMES.QUERY_EVALUATED_AT,
+        )
+
+        queries.push(
+          SavedQuerySchema.parse({
+            id: node.id,
+            content: node.content || 'Untitled Query',
+            definition,
+            resultCache: resultCache ?? undefined,
+            evaluatedAt: evaluatedAtStr ? new Date(evaluatedAtStr) : undefined,
+            createdAt: node.createdAt,
+            updatedAt: node.updatedAt,
+          }),
+        )
+      } catch (error) {
+        console.warn(formatInvalidSavedQueryError(node.id, error))
+      }
+    }
+
+    return {
+      success: true as const,
+      queries,
+    }
+  }
+)
+
+/**
+ * Execute a saved query by ID
+ */
+export const executeSavedQueryServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      queryId: z.string(),
+      cacheResults: z.boolean().optional(),
+    })
+  )
+  .handler(async (ctx) => {
+    const { nodeFacade, getProperty, SYSTEM_FIELDS, FIELD_NAMES } = await import(
+      '@nxus/db/server'
+    )
+    const { queryId, cacheResults } = ctx.data
+
+    await nodeFacade.init()
+
+    const queryNode = await nodeFacade.findNodeById(queryId)
+    if (!queryNode) {
+      throw new Error(`Query not found: ${queryId}`)
+    }
+
+    // Get query definition - ensure it has required fields for evaluateQuery
+    // Field names must match the 'content' property in bootstrap.ts
+    let definition: z.infer<typeof QueryDefinitionSchema>
+    let query: z.infer<typeof SavedQuerySchema>
+    try {
+      definition = QueryDefinitionSchema.parse(
+        getProperty(queryNode, FIELD_NAMES.QUERY_DEFINITION) ?? {},
+      )
+      const resultCache = getProperty<string[]>(
+        queryNode,
+        FIELD_NAMES.QUERY_RESULT_CACHE,
+      )
+      const evaluatedAtStr = getProperty<string>(
+        queryNode,
+        FIELD_NAMES.QUERY_EVALUATED_AT,
+      )
+
+      query = SavedQuerySchema.parse({
+        id: queryNode.id,
+        content: queryNode.content || 'Untitled Query',
+        definition,
+        resultCache: resultCache ?? undefined,
+        evaluatedAt: evaluatedAtStr ? new Date(evaluatedAtStr) : undefined,
+        createdAt: queryNode.createdAt,
+        updatedAt: queryNode.updatedAt,
+      })
+    } catch (error) {
+      return {
+        success: false as const,
+        error: formatInvalidSavedQueryError(queryNode.id, error),
+      }
+    }
+
+    // Evaluate the query
+    const result = await nodeFacade.evaluateQuery(definition)
+
+    // Optionally cache results
+    if (cacheResults) {
+      const cachedIds = result.nodes.map((n: { id: string }) => n.id)
+      await nodeFacade.setProperty(queryId, SYSTEM_FIELDS.QUERY_RESULT_CACHE, cachedIds)
+      await nodeFacade.setProperty(
+        queryId,
+        SYSTEM_FIELDS.QUERY_EVALUATED_AT,
+        result.evaluatedAt.toISOString()
+      )
+    }
+
+    return {
+      success: true as const,
+      query,
+      nodes: result.nodes,
+      totalCount: result.totalCount,
+      evaluatedAt: result.evaluatedAt,
+    }
+  })
+
+/**
+ * Get all fields (for filter editor)
+ */
+export const getQueryFieldsServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { nodeFacade, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
+
+    await nodeFacade.init()
+
+    const fieldNodes = await nodeFacade.getNodesBySupertagWithInheritance(
+      SYSTEM_SUPERTAGS.FIELD
+    )
+
+    const fields = fieldNodes
+      .map((node) => ({
+        systemId: node.systemId || node.id,
+        label: node.content || node.systemId || node.id,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+
+    return {
+      success: true as const,
+      fields,
+    }
+  }
+)
+
+/**
+ * Get all supertags (for filter editor)
+ */
+export const getQuerySupertagsServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { nodeFacade, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
+
+    await nodeFacade.init()
+
+    const supertags = await nodeFacade.getNodesBySupertagWithInheritance(
+      SYSTEM_SUPERTAGS.SUPERTAG
+    )
+
+    return {
+      success: true as const,
+      supertags,
+    }
+  }
+)

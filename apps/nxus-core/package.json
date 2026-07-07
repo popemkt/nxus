@@ -23,6 +23,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/outfit": "^5.2.8",
     "@nxus/db": "workspace:*",
+    "@nxus/node-api": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.0.6",
