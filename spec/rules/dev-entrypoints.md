@@ -4,6 +4,7 @@ scope: workflow
 principle: Single source of truth
 enforcement: prose
 gate: package.json
+guards: runtime-world
 ---
 
 # Dev entrypoints rule

@@ -4,6 +4,7 @@ scope: docs
 principle: Single source of truth
 enforcement: prose
 gate: scripts/agent-hub-sync.mjs
+guards: record
 ---
 
 # Generated registries rule

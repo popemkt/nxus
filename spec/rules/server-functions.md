@@ -4,6 +4,7 @@ scope: runtime
 principle: Separation of concerns
 enforcement: lint
 gate: .oxlintrc.json
+guards: runtime-world
 ---
 
 # Server functions rule

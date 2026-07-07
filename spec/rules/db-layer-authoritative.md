@@ -4,6 +4,7 @@ scope: architecture
 principle: Separation of concerns
 enforcement: prose
 gate: —
+guards: runtime-world
 ---
 
 # DB layer authoritative rule

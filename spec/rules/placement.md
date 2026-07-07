@@ -4,6 +4,7 @@ scope: docs
 principle: Separation of concerns
 enforcement: prose
 gate: —
+guards: record
 ---
 
 # Placement rule

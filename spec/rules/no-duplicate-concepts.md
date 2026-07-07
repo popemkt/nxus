@@ -4,6 +4,7 @@ scope: architecture
 principle: Minimizing accidental complexity
 enforcement: prose
 gate: —
+guards: validation (affordability)
 ---
 
 # No duplicate concepts rule

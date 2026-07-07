@@ -4,6 +4,7 @@ scope: docs
 principle: Traceability
 enforcement: prose
 gate: —
+guards: record
 ---
 
 # Learnings rule

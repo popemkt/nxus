@@ -4,6 +4,7 @@ scope: docs
 principle: Traceability
 enforcement: prose
 gate: —
+guards: I6 (verdict updates record, not spec)
 ---
 
 # Drift rule

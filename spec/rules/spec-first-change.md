@@ -4,6 +4,7 @@ scope: workflow
 principle: Single source of truth
 enforcement: prose
 gate: —
+guards: I4 (generation consumes specification)
 ---
 
 # Spec-first change rule

@@ -4,7 +4,7 @@ Nxus is a local-first, "everything is a node" personal knowledge ecosystem: one 
 
 ## Principles (canonical home)
 
-Every rule in `spec/rules/` traces to one of these six:
+Layer 0 is the typed harness model — two membranes, the actor/process/artifact loop, invariants I1–I6 ([spec/rules/harness-model.md](spec/rules/harness-model.md)); every rule names the typed-model element it guards (`guards:` frontmatter). The six principles below are layer 1, derived lenses of that model; every rule in `spec/rules/` also traces to one of them:
 
 1. **Separation of concerns** — one module, one reason to change; boundaries are explicit (client/server, product/tech, app/lib).
 2. **Single source of truth** — every fact has exactly one hand-written home; duplicates are either generated or drift.

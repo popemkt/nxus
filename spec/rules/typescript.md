@@ -4,6 +4,7 @@ scope: domain-typing
 principle: Fail-fast
 enforcement: lint
 gate: .oxlintrc.json
+guards: observation (compiler as pre-paid evidence)
 ---
 
 # TypeScript rule

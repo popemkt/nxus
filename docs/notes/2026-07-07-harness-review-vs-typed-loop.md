@@ -1,5 +1,7 @@
 # Harness review: nxus vs the typed-loop model — 2026-07-07
 
+> **Addendum (same day):** the intent holder flagged the stabilizer framing as the weak link — stabilizers are explicitly "more to come" in the essays and must not become a tagging vocabulary. The implemented design (spec/rules/harness-model.md) therefore roots `guards:` in the **typed model itself** (nodes, processes, invariants I1–I6), and demotes stabilizers to a non-normative derived lens. §3's stabilizer-derivation table stands as analysis, not as the vocabulary.
+
 Date: 2026-07-07
 Verdict: the nxus harness is a correct *materialization layer* but its principle layer is rooted one level too low. The typed loop (harness-model-graphs.html, 1d) is the right axiom set; the six nxus principles are derivable from its stabilizers and should be re-rooted as such. Everything else is gap-filling, listed below.
 

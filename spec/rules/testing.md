@@ -4,6 +4,7 @@ scope: tests
 principle: Traceability
 enforcement: ci
 gate: .github/workflows/ci.yml
+guards: observation, I5
 ---
 
 # Testing rule
