@@ -11,6 +11,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./theme": {
+      "types": "./src/theme/theme.tsx",
+      "import": "./src/theme/theme.tsx",
+      "default": "./src/theme/theme.tsx"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

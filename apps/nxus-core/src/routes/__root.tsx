@@ -9,7 +9,7 @@ import {
   getThemeHeadScript,
   useTheme,
   useThemeHydrated,
-} from '@nxus/ui'
+} from '@nxus/ui/theme'
 import appCss from '../styles.css?url'
 import { useSystemInfo } from '@/hooks/use-system-info'
 import { CommandPalette } from '@/components/features/command-palette/command-palette'

@@ -126,7 +126,7 @@ Longer-term option (not yet decided): merge the editor and workbench apps (the w
 ### DR-2: Theme system lives in `@nxus/ui`
 
 **Status: implemented.**
-The theme system is a shared UI capability and MUST have one hand-written implementation in `@nxus/ui`: the persisted `useTheme` store, `ThemeProvider`, palette constants, stored-theme applier, head bootstrap-script helper, and scrollbar manager. Apps MUST import these named exports instead of defining local palette unions, localStorage appliers, inline bootstrap bodies, or scroll handlers in `src/routes/__root.tsx`.
+The theme system is a shared UI capability and MUST have one hand-written implementation in `@nxus/ui`: the persisted `useTheme` store, `ThemeProvider`, palette constants, stored-theme applier, head bootstrap-script helper, and scrollbar manager. Apps MUST import these named exports **via the `@nxus/ui/theme` subpath** — never the package barrel — instead of defining local palette unions, localStorage appliers, inline bootstrap bodies, or scroll handlers in `src/routes/__root.tsx`. Why the subpath is load-bearing: `__root.tsx` is every app's hydration critical path; the barrel re-exports the entire component library (base-ui, phosphor icons), and importing it there measurably delayed hydration — clicks landed on dead SSR buttons (regression caught by workbench e2e W7, fixed same day the dedup landed).
 
 Contract:
 
