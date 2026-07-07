@@ -9,7 +9,7 @@ One rule per file. Format: frontmatter (`id`/`scope`/`principle`/`enforcement`/`
 | Rule | Scope | Principle | Guards (typed model) | Enforcement | Gate |
 |---|---|---|---|---|---|
 | [harness-model](harness-model.md) | meta | — (layer 0) | — | prose | — |
-| [spec-first-change](spec-first-change.md) | workflow | Single source of truth | I4 (generation consumes specification) | prose | — |
+| [spec-first-change](spec-first-change.md) | workflow | Single source of truth | I4 (generation consumes specification) | ci | `scripts/check-spec-first.mjs` |
 | [drift](drift.md) | docs | Traceability | I6 (verdict updates record, not spec) | prose | — |
 | [placement](placement.md) | docs | Separation of concerns | record | prose | — |
 | [learnings](learnings.md) | docs | Traceability | record | prose | — |

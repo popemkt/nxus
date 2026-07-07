@@ -1,4 +1,19 @@
 {
   "schemaVersion": 1,
-  "servers": []
+  "servers": [
+    {
+      "name": "playwright",
+      "description": "Browser automation for live-app diagnosis and Tana reference visits",
+      "enabled": true,
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "@playwright/mcp@latest",
+          "--user-data-dir",
+          "/Volumes/Data/workspace/_temp/playwright-mcp-profile"
+        ]
+      }
+    }
+  ]
 }

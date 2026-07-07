@@ -26,20 +26,40 @@ jobs:
 
       - run: pnpm lint
 
-  # TODO: Enable typecheck step once @nxus/db test type errors are fixed
-  # (stale test types in libs/nxus-db/src/reactive/__tests__/automation.test.ts)
-  # typecheck:
-  #   name: Typecheck
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: pnpm/action-setup@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: pnpm
-  #     - run: pnpm install --frozen-lockfile
-  #     - run: pnpm typecheck
+      - run: pnpm agent:check
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+        env:
+          NX_DAEMON: 'false'
+
+  spec-first:
+    name: Spec-first gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: node scripts/check-spec-first.mjs "origin/${{ github.base_ref }}...HEAD"
 
   unit-tests:
     name: Unit Tests

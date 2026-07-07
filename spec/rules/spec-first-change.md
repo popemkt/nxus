@@ -2,8 +2,8 @@
 id: spec-first-change
 scope: workflow
 principle: Single source of truth
-enforcement: prose
-gate: —
+enforcement: ci
+gate: scripts/check-spec-first.mjs (.github/workflows/ci.yml spec-first job)
 guards: I4 (generation consumes specification)
 ---
 
@@ -20,4 +20,4 @@ The spec is the artifact of record; code is a materialization. Therefore:
 
 Why: without this ordering the spec decays into documentation-after-the-fact, which is exactly the state the pre-spec `docs/` tree reached (multiple contradictory app lists, a removed `table` mode still mandated by session-loaded rules). Spec-first is the only mechanism that keeps `spec/` reimplementation-complete.
 
-**Drift mode:** violations are commits that change behavior without touching `spec/`. Detection is human/agent review today (no CI diff-coupling check exists). When found, the remedy is a retroactive spec edit or `DRIFT:` block — not deletion of the offending code.
+**Drift mode:** violations are commits that change behavior without touching `spec/`. Detection is mechanical: `scripts/check-spec-first.mjs` runs on every PR (`.github/workflows/ci.yml`, `spec-first` job) and fails a range that touches non-test `apps/|libs/` TypeScript without touching `spec/`, unless the range carries a `DRIFT:` marker (in a commit message or the diff) or a commit is marked `spec-exempt: <reason>` (the rule-4 pure-refactor escape hatch — the reason is mandatory). The check gates coupling, not content; whether the spec edit is *correct* remains review. When a violation is found after merge, the remedy is a retroactive spec edit or `DRIFT:` block — not deletion of the offending code.

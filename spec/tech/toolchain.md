@@ -89,19 +89,9 @@ DRIFT: ARCHITECTURE_TYPE=graph matrix tests an app that cannot honor it
 
 ## 7. CI gates
 
-`.github/workflows/ci.yml` runs on PRs to `main` (`ci.yml:3-5`), with per-ref concurrency cancellation. Active jobs: **Lint** (`pnpm lint`, `:12-27`), **Unit Tests** (`pnpm test:coverage` + coverage artifact, `:44-68`), **E2E** (matrix `[node, graph]`, seeds via `db:seed`, uploads Playwright artifacts on failure, `:70-107`). Because there are no git hooks (§3), this workflow is the entire enforcement surface.
+`.github/workflows/ci.yml` runs on PRs to `main` (`ci.yml:3-5`), with per-ref concurrency cancellation. Active jobs: **Lint** (`pnpm lint` + `pnpm agent:check`, `ci.yml:12-29`), **Typecheck** (`pnpm typecheck`, `ci.yml:31-48`), **Spec-first gate** (`scripts/check-spec-first.mjs` over the PR range, `ci.yml:50-62` — see [spec-first-change](../rules/spec-first-change.md)), **Unit Tests** (`pnpm test:coverage` + coverage artifact), **E2E** (matrix `[node, graph]`, seeds via `db:seed`, uploads Playwright artifacts on failure). Because there are no git hooks (§3), this workflow is the entire enforcement surface.
 
-DRIFT: CI typecheck is disabled
-- canonical: `pnpm typecheck` gates every PR — the strict tsconfig in §3 is meaningless unenforced.
-- current: the typecheck job is commented out (`ci.yml:29-42`) pending "stale test types in `libs/nxus-db/src/reactive/__tests__/automation.test.ts`".
-- impact: type errors merge freely; the longer it stays off, the larger the fix-forward debt (this is how the blocking file went stale in the first place).
-- closes: fix the one named test file, uncomment `ci.yml:31-42`.
-
-DRIFT: agent:check not wired into CI
-- canonical: generated agent configs (`.mcp.json`, synced skill dirs) are drift-checked on every PR — the `agent-hub-sync` `--check` mode exists precisely for this.
-- current: `pnpm agent:check` (`package.json:7`) appears nowhere in `ci.yml`; `.mcp.json` is already locally modified relative to its source of truth.
-- impact: hand-edits to generated files persist until the next manual `agent:sync` silently reverts them.
-- closes: add a CI step `pnpm agent:check` (fast, no install beyond node) to the lint job.
+(Closed 2026-07-07: the "CI typecheck is disabled" DRIFT — every app now has a real `tsc --noEmit` target and the workspace is green, so the job is live; and the "agent:check not wired into CI" DRIFT — the check runs in the lint job, and `.mcp.json`'s playwright server now flows from `agent-hub/mcp/servers.json` instead of a hand edit.)
 
 Known non-gates, for completeness: tests unlinted (DRIFT §4), no Nx caching so every job pays full cost (§3), and a stale nested `apps/nxus-core/pnpm-lock.yaml` that contradicts single-lockfile workspace semantics and SHOULD be deleted.
 
