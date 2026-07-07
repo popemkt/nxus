@@ -47,7 +47,7 @@ apps/*  →  libs/*  →  (external deps)
 
 ## 4. App registry (canonical table)
 
-**This table is the sole authoritative home for app/port/basePath data.** Every other occurrence (README, AGENTS.md, gateway config, `mini-apps.ts`) is a downstream copy and MUST be reconciled to this table. Generation of this table (and drift-checking the copies in CI) from `apps/*/package.json` + gateway config is **planned, not implemented** — until then, edits happen here first.
+**This table is the sole authoritative home for app/port/basePath data.** Every other occurrence (README, AGENTS.md, gateway config, `mini-apps.ts`) is a downstream copy and MUST be reconciled to this table. Drift-checking is implemented: `scripts/check-app-registry.mjs` parses this table and fails CI (lint job, `.github/workflows/ci.yml`) when `apps/*/package.json` dev-script ports, `apps/*/vite.config.ts` base paths, or the gateway route map disagree with it. Generation of the table itself remains planned — edits happen here first, the check keeps the copies honest.
 
 | app            | package               | port | basePath     | role                                                                                             |
 | -------------- | --------------------- | ---- | ------------ | ------------------------------------------------------------------------------------------------ |
