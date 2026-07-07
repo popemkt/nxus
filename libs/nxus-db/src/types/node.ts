@@ -29,8 +29,13 @@ export interface AssembledNode {
 /**
  * A single property value attached to a node
  */
+// PropertyValue.value is parsed JSON (node_properties.value TEXT column).
+// Precise typing matters: server functions serialize AssembledNode over the
+// wire, and TanStack Start's serialization types reject `unknown`.
+import type { JsonValue } from './common.js'
+
 export interface PropertyValue {
-  value: unknown
+  value: JsonValue
   rawValue: string
   fieldNodeId: string
   fieldName: string

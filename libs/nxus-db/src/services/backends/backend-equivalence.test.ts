@@ -7,9 +7,8 @@
  * (not IDs, since formats differ: UUID vs RecordId string).
  */
 
-import type { Surreal } from 'surrealdb'
 import Database from 'better-sqlite3'
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
 import {

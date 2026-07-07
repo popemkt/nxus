@@ -338,7 +338,8 @@ export function use3DGraph(options: Use3DGraphOptions): Use3DGraphResult {
       // Dispose scene objects (geometries, materials, textures)
       try {
         const scene = graph.scene()
-        scene.traverse((obj: { geometry?: { dispose: () => void }; material?: { dispose: () => void } | Array<{ dispose: () => void }> }) => {
+        scene.traverse((object3d) => {
+          const obj = object3d as unknown as { geometry?: { dispose: () => void }; material?: { dispose: () => void } | Array<{ dispose: () => void }> }
           if (obj.geometry) obj.geometry.dispose()
           if (obj.material) {
             if (Array.isArray(obj.material)) {

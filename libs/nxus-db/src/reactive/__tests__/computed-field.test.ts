@@ -12,7 +12,7 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../../schemas/node-schema.js'
 import {
   addNodeSupertag,
   clearSystemNodeCache,
@@ -178,7 +178,8 @@ describe('ComputedFieldService', () => {
   describe('create()', () => {
     it('should create computed field node and return its ID', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -199,7 +200,8 @@ describe('ComputedFieldService', () => {
       createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -218,7 +220,8 @@ describe('ComputedFieldService', () => {
       expect(service.activeCount()).toBe(0)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       service.create(db, {
@@ -241,12 +244,13 @@ describe('ComputedFieldService', () => {
 
   describe('COUNT aggregation', () => {
     it('should count matching nodes correctly', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -259,7 +263,8 @@ describe('ComputedFieldService', () => {
 
     it('should return 0 for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -272,7 +277,8 @@ describe('ComputedFieldService', () => {
 
     it('should update when matching node is added', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -292,7 +298,8 @@ describe('ComputedFieldService', () => {
       const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -319,12 +326,13 @@ describe('ComputedFieldService', () => {
       const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       const sub3 = createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
 
-      setProperty(db, sub1, 'field:price', 10)
-      setProperty(db, sub2, 'field:price', 25)
-      setProperty(db, sub3, 'field:price', 15)
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 10)
+      setProperty(db, sub2, 'field:price' as FieldSystemId, 25)
+      setProperty(db, sub3, 'field:price' as FieldSystemId, 15)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -341,7 +349,8 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -358,13 +367,14 @@ describe('ComputedFieldService', () => {
 
     it('should handle nodes without the field (skip them)', () => {
       const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
-      setProperty(db, sub1, 'field:price', 30)
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 30)
       // sub2 has no price
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -382,10 +392,11 @@ describe('ComputedFieldService', () => {
     it('should handle string numeric values', () => {
       const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
 
-      setProperty(db, sub1, 'field:price', '42.5')
+      setProperty(db, sub1, 'field:price' as FieldSystemId, '42.5')
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -402,10 +413,11 @@ describe('ComputedFieldService', () => {
 
     it('should update when matching node field value changes', () => {
       const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      setProperty(db, subId, 'field:price', 20)
+      setProperty(db, subId, 'field:price' as FieldSystemId, 20)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -420,7 +432,7 @@ describe('ComputedFieldService', () => {
       expect(service.getValue(db, id)).toBe(20)
 
       // Change the price
-      setProperty(db, subId, 'field:price', 50)
+      setProperty(db, subId, 'field:price' as FieldSystemId, 50)
 
       expect(service.getValue(db, id)).toBe(50)
     })
@@ -436,12 +448,13 @@ describe('ComputedFieldService', () => {
       const p2 = createNode(db, { content: 'Product 2', supertagId: 'supertag:product' })
       const p3 = createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
 
-      setProperty(db, p1, 'field:rating', 3)
-      setProperty(db, p2, 'field:rating', 4)
-      setProperty(db, p3, 'field:rating', 5)
+      setProperty(db, p1, 'field:rating' as FieldSystemId, 3)
+      setProperty(db, p2, 'field:rating' as FieldSystemId, 4)
+      setProperty(db, p3, 'field:rating' as FieldSystemId, 5)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:product', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -458,7 +471,8 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:product', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -476,14 +490,15 @@ describe('ComputedFieldService', () => {
     it('should only average nodes with the field', () => {
       const p1 = createNode(db, { content: 'Product 1', supertagId: 'supertag:product' })
       const p2 = createNode(db, { content: 'Product 2', supertagId: 'supertag:product' })
-      const p3 = createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
+      createNode(db, { content: 'Product 3', supertagId: 'supertag:product' })
 
-      setProperty(db, p1, 'field:rating', 2)
-      setProperty(db, p2, 'field:rating', 4)
+      setProperty(db, p1, 'field:rating' as FieldSystemId, 2)
+      setProperty(db, p2, 'field:rating' as FieldSystemId, 4)
       // p3 has no rating
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:product' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:product', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -509,12 +524,13 @@ describe('ComputedFieldService', () => {
       const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
       const o3 = createNode(db, { content: 'Order 3', supertagId: 'supertag:order' })
 
-      setProperty(db, o1, 'field:amount', 100)
-      setProperty(db, o2, 'field:amount', 50)
-      setProperty(db, o3, 'field:amount', 75)
+      setProperty(db, o1, 'field:amount' as FieldSystemId, 100)
+      setProperty(db, o2, 'field:amount' as FieldSystemId, 50)
+      setProperty(db, o3, 'field:amount' as FieldSystemId, 75)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -531,7 +547,8 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -548,10 +565,11 @@ describe('ComputedFieldService', () => {
 
     it('should update when smaller value is added', () => {
       const o1 = createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
-      setProperty(db, o1, 'field:amount', 100)
+      setProperty(db, o1, 'field:amount' as FieldSystemId, 100)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -567,7 +585,7 @@ describe('ComputedFieldService', () => {
 
       // Add smaller order
       const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
-      setProperty(db, o2, 'field:amount', 25)
+      setProperty(db, o2, 'field:amount' as FieldSystemId, 25)
 
       expect(service.getValue(db, id)).toBe(25)
     })
@@ -583,12 +601,13 @@ describe('ComputedFieldService', () => {
       const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
       const o3 = createNode(db, { content: 'Order 3', supertagId: 'supertag:order' })
 
-      setProperty(db, o1, 'field:amount', 100)
-      setProperty(db, o2, 'field:amount', 250)
-      setProperty(db, o3, 'field:amount', 75)
+      setProperty(db, o1, 'field:amount' as FieldSystemId, 100)
+      setProperty(db, o2, 'field:amount' as FieldSystemId, 250)
+      setProperty(db, o3, 'field:amount' as FieldSystemId, 75)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -605,7 +624,8 @@ describe('ComputedFieldService', () => {
 
     it('should return null for empty result set', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -622,10 +642,11 @@ describe('ComputedFieldService', () => {
 
     it('should update when larger value is added', () => {
       const o1 = createNode(db, { content: 'Order 1', supertagId: 'supertag:order' })
-      setProperty(db, o1, 'field:amount', 100)
+      setProperty(db, o1, 'field:amount' as FieldSystemId, 100)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:order' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:order', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -641,7 +662,7 @@ describe('ComputedFieldService', () => {
 
       // Add larger order
       const o2 = createNode(db, { content: 'Order 2', supertagId: 'supertag:order' })
-      setProperty(db, o2, 'field:amount', 500)
+      setProperty(db, o2, 'field:amount' as FieldSystemId, 500)
 
       expect(service.getValue(db, id)).toBe(500)
     })
@@ -654,7 +675,8 @@ describe('ComputedFieldService', () => {
   describe('value updates on data changes', () => {
     it('should update when node added to query results', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -678,7 +700,8 @@ describe('ComputedFieldService', () => {
       const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -699,10 +722,11 @@ describe('ComputedFieldService', () => {
 
     it('should update when node property changes (affects aggregation)', () => {
       const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      setProperty(db, sub1, 'field:price', 20)
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 20)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -717,17 +741,18 @@ describe('ComputedFieldService', () => {
       expect(service.getValue(db, id)).toBe(20)
 
       // Update price
-      setProperty(db, sub1, 'field:price', 35)
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 35)
       expect(service.getValue(db, id)).toBe(35)
     })
 
     it('should update when supertag added makes node match', () => {
       // Create node without the supertag initially
       const nodeId = createNode(db, { content: 'Future Sub' })
-      setProperty(db, nodeId, 'field:price', 15)
+      setProperty(db, nodeId, 'field:price' as FieldSystemId, 15)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -754,7 +779,8 @@ describe('ComputedFieldService', () => {
   describe('onValueChange()', () => {
     it('should notify listener when value changes', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -778,7 +804,8 @@ describe('ComputedFieldService', () => {
 
     it('should not notify listener when value stays the same', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -797,7 +824,8 @@ describe('ComputedFieldService', () => {
 
     it('should return unsubscribe function', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -822,7 +850,8 @@ describe('ComputedFieldService', () => {
 
     it('should support multiple listeners for same computed field', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -845,7 +874,8 @@ describe('ComputedFieldService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -878,10 +908,11 @@ describe('ComputedFieldService', () => {
   describe('recompute()', () => {
     it('should return current computed value', () => {
       const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      setProperty(db, subId, 'field:price', 100)
+      setProperty(db, subId, 'field:price' as FieldSystemId, 100)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -896,7 +927,7 @@ describe('ComputedFieldService', () => {
       expect(service.getValue(db, id)).toBe(100)
 
       // Use normal setProperty to change value (which triggers event bus)
-      setProperty(db, subId, 'field:price', 200)
+      setProperty(db, subId, 'field:price' as FieldSystemId, 200)
 
       // Value should already be updated via reactive subscription
       expect(service.getValue(db, id)).toBe(200)
@@ -908,10 +939,11 @@ describe('ComputedFieldService', () => {
 
     it('should trigger value change listener when value actually changes', () => {
       const subId = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      setProperty(db, subId, 'field:price', 50)
+      setProperty(db, subId, 'field:price' as FieldSystemId, 50)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -927,7 +959,7 @@ describe('ComputedFieldService', () => {
       service.onValueChange(id, callback)
 
       // Change value via setProperty (triggers event bus)
-      setProperty(db, subId, 'field:price', 150)
+      setProperty(db, subId, 'field:price' as FieldSystemId, 150)
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as ComputedFieldValueChangeEvent
@@ -945,7 +977,8 @@ describe('ComputedFieldService', () => {
   describe.skip('getAll()', () => {
     it('should return all computed fields with values', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id1 = service.create(db, {
@@ -982,7 +1015,8 @@ describe('ComputedFieldService', () => {
   describe('delete()', () => {
     it('should remove computed field and stop tracking', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -1001,7 +1035,8 @@ describe('ComputedFieldService', () => {
 
     it('should stop value change notifications after delete', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -1032,7 +1067,8 @@ describe('ComputedFieldService', () => {
   describe('clear()', () => {
     it('should remove all computed fields', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       service.create(db, { name: 'CF1', definition: { aggregation: 'COUNT', query } })
@@ -1047,7 +1083,8 @@ describe('ComputedFieldService', () => {
 
     it('should stop all value change notifications', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -1075,7 +1112,8 @@ describe('ComputedFieldService', () => {
   describe.skip('initialize()', () => {
     it('should load computed fields from database on initialize', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       // Create a computed field
@@ -1102,7 +1140,8 @@ describe('ComputedFieldService', () => {
 
     it('should track changes after initialize', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -1133,11 +1172,12 @@ describe('ComputedFieldService', () => {
       const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
-      setProperty(db, sub1, 'field:price', 'not-a-number')
-      setProperty(db, sub2, 'field:price', 30)
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 'not-a-number')
+      setProperty(db, sub2, 'field:price' as FieldSystemId, 30)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -1154,12 +1194,13 @@ describe('ComputedFieldService', () => {
     })
 
     it('should return null for SUM/AVG/MIN/MAX when all nodes lack the field', () => {
-      const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
-      const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
+      createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       // Neither has the price field
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const sumId = service.create(db, {
@@ -1181,19 +1222,20 @@ describe('ComputedFieldService', () => {
       const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
       const sub3 = createNode(db, { content: 'Sub 3', supertagId: 'supertag:subscription' })
 
-      setProperty(db, sub1, 'field:status', 'active')
-      setProperty(db, sub1, 'field:price', 10)
-      setProperty(db, sub2, 'field:status', 'active')
-      setProperty(db, sub2, 'field:price', 20)
-      setProperty(db, sub3, 'field:status', 'cancelled')
-      setProperty(db, sub3, 'field:price', 30)
+      setProperty(db, sub1, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 10)
+      setProperty(db, sub2, 'field:status' as FieldSystemId, 'active')
+      setProperty(db, sub2, 'field:price' as FieldSystemId, 20)
+      setProperty(db, sub3, 'field:status' as FieldSystemId, 'cancelled')
+      setProperty(db, sub3, 'field:price' as FieldSystemId, 30)
 
       // Query for active subscriptions only
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:subscription' },
+          { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
         ],
+        limit: 500,
       }
 
       const id = service.create(db, {
@@ -1217,11 +1259,12 @@ describe('ComputedFieldService', () => {
       const sub1 = createNode(db, { content: 'Sub 1', supertagId: 'supertag:subscription' })
       const sub2 = createNode(db, { content: 'Sub 2', supertagId: 'supertag:subscription' })
 
-      setProperty(db, sub1, 'field:price', 10.5)
-      setProperty(db, sub2, 'field:price', 20.75)
+      setProperty(db, sub1, 'field:price' as FieldSystemId, 10.5)
+      setProperty(db, sub2, 'field:price' as FieldSystemId, 20.75)
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:subscription' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true }],
+        limit: 500,
       }
 
       const id = service.create(db, {

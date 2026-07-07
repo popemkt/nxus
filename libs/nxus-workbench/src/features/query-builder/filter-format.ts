@@ -111,7 +111,7 @@ export function formatPathFilterLabel(
   const prefix = includeWhere ? 'where ' : ''
   const path = formatPathSegments(filter.path)
 
-  if (filter.op === 'isEmpty' || filter.op === 'isNotEmpty') {
+  if (!('value' in filter)) {
     return `${prefix}${path} ${formatFilterOperator(filter.op, { ascii })}`
   }
 

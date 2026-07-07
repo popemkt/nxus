@@ -34,6 +34,7 @@ export { isSystemId } from '../schemas/node-schema.js'
 
 // Import types for use in this file
 import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
+import type { JsonValue } from '../types/common.js'
 
 // ============================================================================
 // System Node Cache (runtime cache for field/supertag lookups)
@@ -350,7 +351,7 @@ export function assembleNode(
     }
 
     const pv: PropertyValue = {
-      value: parsedValue,
+      value: parsedValue as JsonValue, // JSON.parse output is JsonValue by construction
       rawValue: prop.value || '',
       fieldNodeId: prop.fieldNodeId,
       fieldName,
@@ -496,7 +497,7 @@ export function assembleNodes(
       }
 
       const pv: PropertyValue = {
-        value: parsedValue,
+        value: parsedValue as JsonValue, // JSON.parse output is JsonValue by construction
         rawValue: prop.value || '',
         fieldNodeId: prop.fieldNodeId,
         fieldName,
@@ -575,7 +576,7 @@ export function assembleNodeWithInheritance(
         // Add inherited field with default value
         if (def.defaultValue !== undefined && def.defaultValue !== null) {
           const inheritedPv: PropertyValue = {
-            value: def.defaultValue,
+            value: def.defaultValue as JsonValue,
             rawValue: JSON.stringify(def.defaultValue),
             fieldNodeId: def.fieldNodeId,
             fieldName: def.fieldName,
@@ -1451,13 +1452,13 @@ export function syncNodeSupertagsToItemTypes(
   db.delete(itemTypes).where(eq(itemTypes.itemId, itemId)).run()
 
   // Insert new itemTypes entries
-  // First type is primary by default
+  // order=0 is the primary/display type (isPrimary column was removed; see
+  // item-schema.ts - order now encodes the same "first = primary" concept)
   for (let i = 0; i < types.length; i++) {
     db.insert(itemTypes)
       .values({
         itemId,
         type: types[i],
-        isPrimary: i === 0,
         order: i,
       })
       .run()
@@ -1492,12 +1493,8 @@ export function syncItemTypesToNodeSupertags(
 
   if (typeEntries.length === 0) return false
 
-  // Sort by order, primary first
-  typeEntries.sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1
-    if (!a.isPrimary && b.isPrimary) return 1
-    return (a.order ?? 0) - (b.order ?? 0)
-  })
+  // Sort by order (order=0 is the primary/display type)
+  typeEntries.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
   // Convert to supertag systemIds
   const types = typeEntries.map((e) => e.type)

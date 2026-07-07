@@ -310,6 +310,7 @@ describe('extractQueryDependencies', () => {
   it('should always include NODE_MEMBERSHIP', () => {
     const query: QueryDefinition = {
       filters: [],
+      limit: 500,
     }
 
     const deps = extractQueryDependencies(query)
@@ -324,6 +325,7 @@ describe('extractQueryDependencies', () => {
         { type: 'property', fieldId: 'field:status', op: 'eq', value: 'pending' },
         { type: 'content', query: 'urgent', caseSensitive: false },
       ],
+      limit: 500,
     }
 
     const deps = extractQueryDependencies(query)
@@ -337,6 +339,7 @@ describe('extractQueryDependencies', () => {
   it('should include sort field as dependency', () => {
     const query: QueryDefinition = {
       filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+      limit: 500,
       sort: { field: 'field:dueDate', direction: 'asc' },
     }
 
@@ -348,6 +351,7 @@ describe('extractQueryDependencies', () => {
   it('should handle content sort field', () => {
     const query: QueryDefinition = {
       filters: [],
+      limit: 500,
       sort: { field: 'content', direction: 'asc' },
     }
 
@@ -359,6 +363,7 @@ describe('extractQueryDependencies', () => {
   it('should handle createdAt sort field', () => {
     const query: QueryDefinition = {
       filters: [],
+      limit: 500,
       sort: { field: 'createdAt', direction: 'desc' },
     }
 
@@ -370,6 +375,7 @@ describe('extractQueryDependencies', () => {
   it('should handle updatedAt sort field', () => {
     const query: QueryDefinition = {
       filters: [],
+      limit: 500,
       sort: { field: 'updatedAt', direction: 'desc' },
     }
 
@@ -573,6 +579,7 @@ describe('DependencyTracker', () => {
         filters: [
           { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
         ],
+        limit: 500,
       }
 
       tracker.register('sub-1', query)
@@ -585,9 +592,11 @@ describe('DependencyTracker', () => {
     it('should update dependencies when re-registering', () => {
       const query1: QueryDefinition = {
         filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'a' }],
+        limit: 500,
       }
       const query2: QueryDefinition = {
         filters: [{ type: 'property', fieldId: 'field:priority', op: 'eq', value: 'b' }],
+        limit: 500,
       }
 
       tracker.register('sub-1', query1)
@@ -600,7 +609,7 @@ describe('DependencyTracker', () => {
     })
 
     it('should track subscription count', () => {
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
 
       expect(tracker.size()).toBe(0)
       tracker.register('sub-1', query)
@@ -614,6 +623,7 @@ describe('DependencyTracker', () => {
     it('should remove subscription from tracking', () => {
       const query: QueryDefinition = {
         filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'a' }],
+        limit: 500,
       }
 
       tracker.register('sub-1', query)
@@ -633,12 +643,15 @@ describe('DependencyTracker', () => {
       // Register several subscriptions with different dependencies
       tracker.register('task-query', {
         filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       })
       tracker.register('status-query', {
         filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' }],
+        limit: 500,
       })
       tracker.register('content-query', {
         filters: [{ type: 'content', query: 'urgent', caseSensitive: false }],
+        limit: 500,
       })
     })
 
@@ -754,9 +767,9 @@ describe('DependencyTracker', () => {
 
   describe('getSubscriptionIds()', () => {
     it('should return all registered subscription IDs', () => {
-      tracker.register('sub-1', { filters: [] })
-      tracker.register('sub-2', { filters: [] })
-      tracker.register('sub-3', { filters: [] })
+      tracker.register('sub-1', { filters: [], limit: 500 })
+      tracker.register('sub-2', { filters: [], limit: 500 })
+      tracker.register('sub-3', { filters: [], limit: 500 })
 
       const ids = tracker.getSubscriptionIds()
 
@@ -769,8 +782,8 @@ describe('DependencyTracker', () => {
 
   describe('clear()', () => {
     it('should remove all subscriptions', () => {
-      tracker.register('sub-1', { filters: [] })
-      tracker.register('sub-2', { filters: [] })
+      tracker.register('sub-1', { filters: [], limit: 500 })
+      tracker.register('sub-2', { filters: [], limit: 500 })
 
       tracker.clear()
 
@@ -781,6 +794,7 @@ describe('DependencyTracker', () => {
     it('should clear reverse index as well', () => {
       tracker.register('sub-1', {
         filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'a' }],
+        limit: 500,
       })
 
       tracker.clear()
@@ -788,6 +802,7 @@ describe('DependencyTracker', () => {
       // Register new subscription and verify it's tracked properly
       tracker.register('sub-2', {
         filters: [{ type: 'property', fieldId: 'field:status', op: 'eq', value: 'b' }],
+        limit: 500,
       })
 
       const event: MutationEvent = {

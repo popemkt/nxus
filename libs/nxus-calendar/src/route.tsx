@@ -168,7 +168,6 @@ export function CalendarRoute({
     nextPeriod,
     prevPeriod,
     setView,
-    periodLabel,
   } = useCalendarNavigation()
 
   // Events data

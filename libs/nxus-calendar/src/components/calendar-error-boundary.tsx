@@ -114,7 +114,7 @@ export class CalendarErrorBoundary extends Component<
     }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log the error
     console.error('Calendar Error:', error, errorInfo)
 
@@ -137,7 +137,7 @@ export class CalendarErrorBoundary extends Component<
     this.props.onRetry?.()
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError) {
       // If a custom fallback is provided, render it
       if (this.props.fallback) {

@@ -385,9 +385,9 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
         if (nextOccurrence) {
           // Create a new task node for the next occurrence
           const nextTaskId = await nodeFacade.createNode({
-            content: node.content,
+            content: node.content ?? '',
             supertagId: SYSTEM_SUPERTAGS.TASK,
-            ownerId: node.ownerId,
+            ownerId: node.ownerId ?? undefined,
           })
 
           // Set the dates for the next occurrence

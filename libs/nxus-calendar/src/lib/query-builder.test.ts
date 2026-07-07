@@ -12,7 +12,7 @@ import {
   DEFAULT_DONE_STATUSES,
   DEFAULT_CALENDAR_QUERY_LIMIT,
 } from './query-builder.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '@nxus/db'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type PropertyFilter } from '@nxus/db'
 
 const dateRange = {
   start: new Date(2026, 0, 1),
@@ -159,7 +159,7 @@ describe('buildTasksQuery', () => {
   it('includes date range filters (gte and lte)', () => {
     const query = buildTasksQuery({ dateRange })
     const propFilters = query.filters.filter(
-      (f: any) => f.type === 'property' && f.fieldId === SYSTEM_FIELDS.START_DATE,
+      (f): f is PropertyFilter => f.type === 'property' && f.fieldId === SYSTEM_FIELDS.START_DATE,
     )
     expect(propFilters).toHaveLength(2) // gte + lte
     const ops = propFilters.map((f: any) => f.op)
@@ -195,7 +195,7 @@ describe('buildEventsOnlyQuery', () => {
   it('uses lte filter only (no gte for broad retrieval)', () => {
     const query = buildEventsOnlyQuery({ dateRange })
     const propFilters = query.filters.filter(
-      (f: any) => f.type === 'property' && f.fieldId === SYSTEM_FIELDS.START_DATE,
+      (f): f is PropertyFilter => f.type === 'property' && f.fieldId === SYSTEM_FIELDS.START_DATE,
     )
     expect(propFilters).toHaveLength(1)
     expect(propFilters[0].op).toBe('lte')

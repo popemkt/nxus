@@ -13,7 +13,7 @@ import { FIELD_NAMES } from '@nxus/db'
 import type { EdgeExtractionContext, GraphEdge } from '../types.js'
 
 /** Fields that create explicit relationships (excluded from backlink detection) */
-const EXPLICIT_RELATIONSHIP_FIELDS = new Set([
+const EXPLICIT_RELATIONSHIP_FIELDS = new Set<string>([
   FIELD_NAMES.DEPENDENCIES,
   FIELD_NAMES.PARENT,
   FIELD_NAMES.TAGS,

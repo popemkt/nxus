@@ -8,7 +8,7 @@
  */
 
 import { z } from 'zod'
-import { UUID_REGEX } from './common.js'
+import { UUID_REGEX, JsonValueSchema } from './common.js'
 
 // ============================================================================
 // Filter Operators
@@ -64,7 +64,7 @@ export const PropertyFilterSchema = BaseFilterSchema.extend({
   type: z.literal('property'),
   fieldId: z.string(), // UUID of the field node (or systemId for system fields)
   op: FilterOpSchema,
-  value: z.unknown().optional(), // Value to compare (not needed for isEmpty/isNotEmpty)
+  value: JsonValueSchema.optional(), // Value to compare (not needed for isEmpty/isNotEmpty); JSON-serializable so query definitions survive the server-fn wire format
 })
 export type PropertyFilter = z.infer<typeof PropertyFilterSchema>
 
@@ -111,7 +111,7 @@ export const PathValueFilterSchema = BaseFilterSchema.extend({
   type: z.literal('path'),
   path: z.array(PathSegmentSchema).min(1),
   op: PathValueOpSchema,
-  value: z.unknown(),
+  value: JsonValueSchema,
 })
 export type PathValueFilter = z.infer<typeof PathValueFilterSchema>
 

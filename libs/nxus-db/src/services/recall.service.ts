@@ -123,7 +123,12 @@ function assembleConcept(
 ): RecallConcept {
   // Resolve bloomsLevel — stored as Bloom's node ID, return as string
   const rawBlooms = getProperty<string>(node, FIELD_NAMES.RECALL_BLOOMS_LEVEL)
-  const bloomsLevel = rawBlooms ? (resolveBloomsNodeId(db, rawBlooms) ?? rawBlooms) : null
+  // Fallback to the raw stored value if it can't be resolved to a known
+  // Bloom's level node - mirrors the legacy-string fallback in
+  // resolveBloomsNodeId (line below casts a plain string the same way).
+  const bloomsLevel = rawBlooms
+    ? (resolveBloomsNodeId(db, rawBlooms) ?? (rawBlooms as BloomsLevel))
+    : null
 
   // Resolve related concepts — stored as node IDs, return both IDs and titles
   const relatedIds = getPropertyValues<string>(node, FIELD_NAMES.RECALL_RELATED_CONCEPTS)
@@ -157,7 +162,10 @@ function assembleReviewLog(node: AssembledNode): ReviewLog {
     aiFeedback: getProperty<string>(node, FIELD_NAMES.RECALL_AI_FEEDBACK) ?? '',
     rating: getProperty<number>(node, FIELD_NAMES.RECALL_RATING) ?? 0,
     reviewedAt: node.createdAt,
-    reviewState: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_STATE) ?? undefined,
+    reviewState:
+      (getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_STATE) as
+        | FsrsCardState
+        | undefined) ?? undefined,
     reviewScore: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_SCORE) ?? undefined,
     timeSpentMs: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_TIME_SPENT_MS) ?? undefined,
     stabilityBefore: getProperty<number>(node, FIELD_NAMES.RECALL_REVIEW_STABILITY_BEFORE) ?? undefined,
@@ -604,7 +612,6 @@ export function getRecallStats(db: DatabaseInstance): RecallStats {
     reviewDates.add(log.createdAt.toISOString().slice(0, 10))
   }
   const sortedDates = Array.from(reviewDates).sort().reverse()
-  const todayStr = new Date().toISOString().slice(0, 10)
 
   let currentStreak = 0
   let longestStreak = 0

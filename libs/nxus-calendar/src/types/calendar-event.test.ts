@@ -4,7 +4,6 @@ import {
   TimeFormatSchema,
   WeekStartSchema,
   CompletedTaskStyleSchema,
-  CalendarEventSchema,
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
   CompleteTaskInputSchema,

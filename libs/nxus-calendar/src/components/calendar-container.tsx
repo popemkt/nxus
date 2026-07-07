@@ -24,7 +24,7 @@ import { useCallback, useMemo, useState, useEffect } from 'react'
  * Vite will use the ESM version during both SSR and client bundling, so we use named imports.
  */
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar'
-import type { View, SlotInfo, CalendarProps } from 'react-big-calendar'
+import type { View, SlotInfo, CalendarProps, EventProps } from 'react-big-calendar'
 /**
  * Type-only import for the drag-and-drop addon.
  * The actual module is loaded dynamically on the client to avoid SSR issues
@@ -442,7 +442,7 @@ export function CalendarContainer({
             />
           )
         : () => null,
-      event: (props: { event: BigCalendarEvent; title: string }) => (
+      event: (props: EventProps<BigCalendarEvent>) => (
         <EventBlock
           {...props}
           onTaskToggle={onTaskToggle}

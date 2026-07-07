@@ -163,7 +163,6 @@ export function useTouchGestures(
 
       // Calculate velocity (pixels per millisecond)
       const velocityX = Math.abs(deltaX) / deltaTime
-      const velocityY = Math.abs(deltaY) / deltaTime
 
       // Check if this is a horizontal swipe (more horizontal than vertical)
       const isHorizontalSwipe =

@@ -313,7 +313,8 @@ export function CalendarSettings({
               >
                 <Select
                   value={display.defaultView}
-                  onValueChange={(value: string) => setDefaultView(value as CalendarView)}
+                  onValueChange={(value: string | null) =>
+                    value !== null && setDefaultView(value as CalendarView)}
                 >
                   <SelectTrigger id="settings-default-view" className="w-32 h-8 text-sm">
                     <SelectValue />
@@ -335,7 +336,8 @@ export function CalendarSettings({
               >
                 <Select
                   value={display.weekStartsOn.toString()}
-                  onValueChange={(value: string) =>
+                  onValueChange={(value: string | null) =>
+                    value !== null &&
                     setWeekStartsOn(parseInt(value, 10) as WeekStart)
                   }
                 >
@@ -359,7 +361,8 @@ export function CalendarSettings({
               >
                 <Select
                   value={display.timeFormat}
-                  onValueChange={(value: string) => setTimeFormat(value as TimeFormat)}
+                  onValueChange={(value: string | null) =>
+                    value !== null && setTimeFormat(value as TimeFormat)}
                 >
                   <SelectTrigger id="settings-time-format" className="w-32 h-8 text-sm">
                     <SelectValue />
@@ -381,7 +384,8 @@ export function CalendarSettings({
                 <div className="flex items-center gap-1">
                   <Select
                     value={display.workingHoursStart.toString()}
-                    onValueChange={(value: string) =>
+                    onValueChange={(value: string | null) =>
+                    value !== null &&
                       setWorkingHours(parseInt(value, 10), display.workingHoursEnd)
                     }
                   >
@@ -399,7 +403,8 @@ export function CalendarSettings({
                   <span className="text-muted-foreground text-sm">to</span>
                   <Select
                     value={display.workingHoursEnd.toString()}
-                    onValueChange={(value: string) =>
+                    onValueChange={(value: string | null) =>
+                    value !== null &&
                       setWorkingHours(display.workingHoursStart, parseInt(value, 10))
                     }
                   >
@@ -444,7 +449,8 @@ export function CalendarSettings({
               >
                 <Select
                   value={display.completedTaskStyle}
-                  onValueChange={(value: string) =>
+                  onValueChange={(value: string | null) =>
+                    value !== null &&
                     setCompletedTaskStyle(value as CompletedTaskStyle)
                   }
                 >
@@ -552,10 +558,10 @@ export function CalendarSettings({
               <TrashIcon className="size-3.5 mr-1.5" />
               Reset to defaults
             </Button>
-            <DialogPrimitive.Close asChild>
-              <Button type="button" variant="default" size="sm">
-                Done
-              </Button>
+            <DialogPrimitive.Close
+              render={<Button type="button" variant="default" size="sm" />}
+            >
+              Done
             </DialogPrimitive.Close>
           </div>
         </DialogPrimitive.Popup>

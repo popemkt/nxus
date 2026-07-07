@@ -2,7 +2,7 @@
  * Graph Data Provider - Unit Tests
  */
 
-import type { AssembledNode } from '@nxus/db'
+import type { AssembledNode, PropertyValue, JsonValue } from '@nxus/db'
 import { FIELD_NAMES } from '@nxus/db'
 import { describe, expect, it } from 'vitest'
 import {
@@ -32,11 +32,11 @@ function createMockNode(overrides: Partial<AssembledNode> = {}): AssembledNode {
 }
 
 function createProperty(
-  value: unknown,
+  value: JsonValue,
   fieldName: string,
   fieldSystemId: string | null = null,
   order = 0,
-) {
+): PropertyValue[] {
   return [
     {
       value,

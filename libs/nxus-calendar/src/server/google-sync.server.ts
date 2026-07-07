@@ -41,6 +41,7 @@ import {
   type GetGoogleCalendarsResponse,
 } from '../types/google-sync.js'
 import type { CalendarEvent, ServerResponse } from '../types/calendar-event.js'
+import type { QueryDefinition } from '@nxus/db'
 import { buildPendingSyncQuery } from '../lib/query-builder.js'
 
 // ============================================================================
@@ -399,17 +400,17 @@ export const syncToGoogleCalendarServerFn = createServerFn({ method: 'POST' })
         // If force, include already synced events too
         if (force) {
           // Query for synced events as well (have gcal_event_id)
-          const syncedQuery = {
+          const syncedQuery: QueryDefinition = {
             filters: [
               {
                 type: 'or' as const,
                 filters: [
-                  { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.TASK },
-                  { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.EVENT },
+                  { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.TASK, includeInherited: false },
+                  { type: 'supertag' as const, supertagId: SYSTEM_SUPERTAGS.EVENT, includeInherited: false },
                 ],
               },
-              { type: 'hasField' as const, fieldId: SYSTEM_FIELDS.START_DATE },
-              { type: 'hasField' as const, fieldId: SYSTEM_FIELDS.GCAL_EVENT_ID },
+              { type: 'hasField' as const, fieldId: SYSTEM_FIELDS.START_DATE, negate: false },
+              { type: 'hasField' as const, fieldId: SYSTEM_FIELDS.GCAL_EVENT_ID, negate: false },
             ],
             limit: 1000,
           }

@@ -20,7 +20,7 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../../schemas/node-schema.js'
 import {
   addNodeSupertag,
   clearSystemNodeCache,
@@ -178,8 +178,8 @@ function createSubscription(name: string, monthlyPrice: number): string {
     content: name,
     supertagId: 'supertag:subscription',
   })
-  setProperty(db, nodeId, 'field:monthly_price', monthlyPrice)
-  setProperty(db, nodeId, 'field:subscription_name', name)
+  setProperty(db, nodeId, 'field:monthly_price' as FieldSystemId, monthlyPrice)
+  setProperty(db, nodeId, 'field:subscription_name' as FieldSystemId, name)
   return nodeId
 }
 
@@ -244,8 +244,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
         fieldId: 'field:monthly_price',
       }
@@ -286,10 +287,10 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
       automationService.create(db, automationDefinition)
 
       // Step 3: Add subscriptions totaling $95
-      const netflix = createSubscription('Netflix', 15.99)
-      const spotify = createSubscription('Spotify', 9.99)
-      const youtube = createSubscription('YouTube Premium', 13.99)
-      const github = createSubscription('GitHub Pro', 4.00)
+      createSubscription('Netflix', 15.99)
+      createSubscription('Spotify', 9.99)
+      createSubscription('YouTube Premium', 13.99)
+      createSubscription('GitHub Pro', 4.00)
       const aws = createSubscription('AWS', 51.03) // Total: $95
 
       // Wait for webhooks to process
@@ -323,7 +324,7 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
       expect(parseFloat(requestBody.total)).toBeCloseTo(106.99, 1)
 
       // Step 5: Add more subscriptions - should NOT trigger again (fireOnce)
-      const slack = createSubscription('Slack', 12.50) // Total: ~$119.49
+      createSubscription('Slack', 12.50) // Total: ~$119.49
 
       // Wait for webhooks to process
       await processWebhooks()
@@ -376,8 +377,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
         fieldId: 'field:monthly_price',
       }
@@ -409,7 +411,7 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
 
       // Add subscriptions totaling $60
       const sub1 = createSubscription('Service A', 30)
-      const sub2 = createSubscription('Service B', 30)
+      createSubscription('Service B', 30)
 
       await processWebhooks()
 
@@ -440,8 +442,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
         fieldId: 'field:monthly_price',
       }
@@ -481,7 +484,7 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
       expect(computedFieldService.getValue(db, computedFieldId)).toBe(50)
 
       // Update price to $150 (crosses threshold)
-      setProperty(db, sub1, 'field:monthly_price', 150)
+      setProperty(db, sub1, 'field:monthly_price' as FieldSystemId, 150)
 
       await processWebhooks()
 
@@ -490,7 +493,7 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
       expect(computedFieldService.getValue(db, computedFieldId)).toBe(150)
 
       // Lower price back to $90 (below threshold)
-      setProperty(db, sub1, 'field:monthly_price', 90)
+      setProperty(db, sub1, 'field:monthly_price' as FieldSystemId, 90)
 
       await processWebhooks()
 
@@ -499,7 +502,7 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
       expect(webhookCalls.length).toBe(1)
 
       // Raise price again to $110 (crosses threshold again)
-      setProperty(db, sub1, 'field:monthly_price', 110)
+      setProperty(db, sub1, 'field:monthly_price' as FieldSystemId, 110)
 
       await processWebhooks()
 
@@ -513,8 +516,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'COUNT',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
       }
 
@@ -573,8 +577,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'AVG',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
         fieldId: 'field:monthly_price',
       }
@@ -631,8 +636,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
         fieldId: 'field:monthly_price',
       }
@@ -705,8 +711,9 @@ describe('Subscription Tracker Integration Test (Phase 2 Acceptance)', () => {
         aggregation: 'SUM',
         query: {
           filters: [
-            { type: 'supertag', supertagId: 'supertag:subscription' },
+            { type: 'supertag', supertagId: 'supertag:subscription', includeInherited: true },
           ],
+          limit: 500,
         },
         fieldId: 'field:monthly_price',
       }

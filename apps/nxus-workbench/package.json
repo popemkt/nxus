@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite dev --port 3002",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@nxus/db": "workspace:*",

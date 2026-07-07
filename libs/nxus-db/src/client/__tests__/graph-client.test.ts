@@ -488,7 +488,7 @@ describe('Schema initialization', () => {
   })
 
   it('should allow querying by deleted_at index', async () => {
-    const alive = await createTestNode(db, { content: 'Alive' })
+    await createTestNode(db, { content: 'Alive' })
     const deleted = await createTestNode(db, { content: 'Deleted' })
 
     await db.query(`UPDATE $id SET deleted_at = time::now()`, {

@@ -291,7 +291,7 @@ export function RecurrenceSelector({
       {/* Preset Selector */}
       <Select
         value={selectedPreset}
-        onValueChange={handlePresetChange}
+        onValueChange={(value) => value !== null && handlePresetChange(value)}
         disabled={disabled}
       >
         <SelectTrigger className="w-full">
@@ -339,8 +339,9 @@ export function RecurrenceSelector({
               <Select
                 value={customPattern.frequency}
                 onValueChange={(
-                  value: 'daily' | 'weekly' | 'monthly' | 'yearly'
+                  value: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
                 ) =>
+                  value !== null &&
                   setCustomPattern((prev) => ({
                     ...prev,
                     frequency: value,
@@ -405,8 +406,8 @@ export function RecurrenceSelector({
             <Label className="text-xs">Ends</Label>
             <Select
               value={endType}
-              onValueChange={(value: 'never' | 'count' | 'until') =>
-                setEndType(value)
+              onValueChange={(value: 'never' | 'count' | 'until' | null) =>
+                value !== null && setEndType(value)
               }
               disabled={disabled}
             >

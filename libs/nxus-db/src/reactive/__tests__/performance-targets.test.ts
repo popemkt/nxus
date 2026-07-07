@@ -17,10 +17,9 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../../schemas/node-schema.js'
 import {
   clearSystemNodeCache,
-  createNode,
   setProperty,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'
@@ -207,17 +206,19 @@ function createDiverseSubscriptions(count: number): void {
       case 0:
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagId: supertags[i % supertags.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
           ],
+          limit: 500,
         }
         break
 
       case 1:
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagId: supertags[i % supertags.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
             { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
           ],
+          limit: 500,
         }
         break
 
@@ -226,6 +227,7 @@ function createDiverseSubscriptions(count: number): void {
           filters: [
             { type: 'property', fieldId: 'field:priority', op: 'eq', value: priorities[i % priorities.length] },
           ],
+          limit: 500,
         }
         break
 
@@ -235,11 +237,12 @@ function createDiverseSubscriptions(count: number): void {
             {
               type: 'or',
               filters: [
-                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
                 { type: 'property', fieldId: 'field:active', op: 'eq', value: true },
               ],
             },
           ],
+          limit: 500,
         }
         break
 
@@ -250,11 +253,12 @@ function createDiverseSubscriptions(count: number): void {
             {
               type: 'and',
               filters: [
-                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
                 { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
               ],
             },
           ],
+          limit: 500,
         }
         break
     }
@@ -303,7 +307,7 @@ describe('Performance Targets', () => {
       for (let trial = 0; trial < 10; trial++) {
         const randomIndex = Math.floor(Math.random() * nodeIds.length)
         const start = performance.now()
-        setProperty(db, nodeIds[randomIndex], 'field:status', `status_${trial}`)
+        setProperty(db, nodeIds[randomIndex], 'field:status' as FieldSystemId, `status_${trial}`)
         const latency = performance.now() - start
         latencies.push(latency)
       }
@@ -341,7 +345,7 @@ describe('Performance Targets', () => {
       for (let trial = 0; trial < 10; trial++) {
         const randomIndex = Math.floor(Math.random() * nodeIds.length)
         const start = performance.now()
-        setProperty(db, nodeIds[randomIndex], 'field:status', `status_${trial}`)
+        setProperty(db, nodeIds[randomIndex], 'field:status' as FieldSystemId, `status_${trial}`)
         const latency = performance.now() - start
         latencies.push(latency)
       }
@@ -377,7 +381,7 @@ describe('Performance Targets', () => {
       // Perform mutations
       for (let i = 0; i < 10; i++) {
         const randomIndex = Math.floor(Math.random() * nodeIds.length)
-        setProperty(db, nodeIds[randomIndex], 'field:count', i)
+        setProperty(db, nodeIds[randomIndex], 'field:count' as FieldSystemId, i)
       }
 
       const bruteForceEvaluations = reactiveMetrics.getMetrics().evaluationCount
@@ -390,7 +394,7 @@ describe('Performance Targets', () => {
       // Perform same number of mutations
       for (let i = 0; i < 10; i++) {
         const randomIndex = Math.floor(Math.random() * nodeIds.length)
-        setProperty(db, nodeIds[randomIndex], 'field:score', i)
+        setProperty(db, nodeIds[randomIndex], 'field:score' as FieldSystemId, i)
       }
 
       const smartEvaluations = reactiveMetrics.getMetrics().evaluationCount
@@ -424,7 +428,7 @@ describe('Performance Targets', () => {
 
       for (let i = 0; i < 100; i++) {
         const nodeId = nodeIds[i % nodeIds.length]
-        setProperty(db, nodeId, 'field:count', i)
+        setProperty(db, nodeId, 'field:count' as FieldSystemId, i)
       }
 
       const withoutBatching = reactiveMetrics.getMetrics().evaluationCount
@@ -435,7 +439,7 @@ describe('Performance Targets', () => {
 
       for (let i = 0; i < 100; i++) {
         const nodeId = nodeIds[i % nodeIds.length]
-        setProperty(db, nodeId, 'field:score', i)
+        setProperty(db, nodeId, 'field:score' as FieldSystemId, i)
       }
 
       // Wait for debounce and flush

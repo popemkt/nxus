@@ -377,7 +377,16 @@ export function evaluatePathFilter(
       continue
     }
 
-    if (values?.some((value) => compareValues(value, filter.op, filter.value))) {
+    // At this point filter must be a PathValueFilter (isEmpty/isNotEmpty were
+    // handled above). TS can't narrow this via `filter.op` alone because each
+    // union member's `op` is itself a union of literals, so we narrow via the
+    // `value` property instead.
+    if (!('value' in filter)) {
+      continue
+    }
+    const { op, value: filterValue } = filter
+
+    if (values?.some((value) => compareValues(value, op, filterValue))) {
       for (const rootId of roots) {
         result.add(rootId)
       }

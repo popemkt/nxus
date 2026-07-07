@@ -20,6 +20,7 @@ import { StringRecordId } from 'surrealdb'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
 import { SYSTEM_FIELDS } from '../../schemas/node-schema.js'
 import type { AssembledNode, CreateNodeOptions, PropertyValue } from '../../types/node.js'
+import type { JsonValue } from '../../types/common.js'
 import type {
   QueryDefinition,
   SupertagFilter,
@@ -370,7 +371,7 @@ export class SurrealBackend implements NodeBackend {
 
           if (def.defaultValue !== undefined && def.defaultValue !== null) {
             const inheritedPv: PropertyValue = {
-              value: def.defaultValue,
+              value: def.defaultValue as JsonValue,
               rawValue: JSON.stringify(def.defaultValue),
               fieldNodeId: def.fieldNodeId,
               fieldName: def.fieldName,
@@ -431,7 +432,7 @@ export class SurrealBackend implements NodeBackend {
       }
 
       const pv: PropertyValue = {
-        value,
+        value: value as JsonValue, // parsed from Surreal edge payload
         rawValue,
         fieldNodeId: fieldId,
         fieldName,
@@ -1260,7 +1261,16 @@ export class SurrealBackend implements NodeBackend {
         continue
       }
 
-      if (values?.some((value) => compareValues(value, filter.op, filter.value))) {
+      // At this point filter must be a PathValueFilter (isEmpty/isNotEmpty
+      // were handled above). TS can't narrow this via `filter.op` alone
+      // because each union member's `op` is itself a union of literals, so
+      // we narrow via the `value` property instead.
+      if (!('value' in filter)) {
+        continue
+      }
+      const { op, value: filterValue } = filter
+
+      if (values?.some((value) => compareValues(value, op, filterValue))) {
         for (const rootId of roots) {
           result.add(rootId)
         }

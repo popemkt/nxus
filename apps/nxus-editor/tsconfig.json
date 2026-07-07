@@ -1,9 +1,5 @@
 {
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "vite.config.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "vite.config.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -28,6 +24,9 @@
     }
   },
   "references": [
+    {
+      "path": "../../libs/nxus-workbench"
+    },
     {
       "path": "../../libs/nxus-ui"
     },

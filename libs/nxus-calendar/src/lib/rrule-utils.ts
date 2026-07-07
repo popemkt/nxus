@@ -6,7 +6,7 @@
  */
 
 // Named imports work when Vite is configured to resolve rrule to its ESM entry
-import { RRule, RRuleSet, rrulestr } from 'rrule'
+import { RRule, rrulestr, Weekday as RRuleWeekday, type Options as RRuleOptions } from 'rrule'
 import type { DateRange } from '../types/calendar-event.js'
 
 // ============================================================================
@@ -73,7 +73,7 @@ const REVERSE_FREQ_MAP: Record<number, RecurrenceFrequency> = {
 /**
  * Map weekday strings to RRule weekday objects
  */
-const WEEKDAY_MAP: Record<Weekday, InstanceType<typeof RRule>['options']['byweekday'][0]> = {
+const WEEKDAY_MAP: Record<Weekday, RRuleWeekday> = {
   MO: RRule.MO,
   TU: RRule.TU,
   WE: RRule.WE,
@@ -81,19 +81,6 @@ const WEEKDAY_MAP: Record<Weekday, InstanceType<typeof RRule>['options']['byweek
   FR: RRule.FR,
   SA: RRule.SA,
   SU: RRule.SU,
-}
-
-/**
- * Weekday abbreviations for display
- */
-const WEEKDAY_LABELS: Record<Weekday, string> = {
-  MO: 'Monday',
-  TU: 'Tuesday',
-  WE: 'Wednesday',
-  TH: 'Thursday',
-  FR: 'Friday',
-  SA: 'Saturday',
-  SU: 'Sunday',
 }
 
 /**
@@ -152,16 +139,9 @@ export function parseToPattern(rruleStr: string): RecurrencePattern | null {
 
   // Handle weekdays for weekly recurrence
   if (options.byweekday && options.byweekday.length > 0) {
-    pattern.weekdays = options.byweekday.map((wd) => {
-      // RRule weekday can be a number or Weekday object
-      if (typeof wd === 'number') {
-        const weekdays: Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
-        return weekdays[wd]
-      }
-      const weekdayNum = wd.weekday ?? wd
-      const weekdays: Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
-      return weekdays[typeof weekdayNum === 'number' ? weekdayNum : 0]
-    })
+    const weekdays: Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+    // rule.options is ParsedOptions: byweekday is normalized to number[] (0=MO)
+    pattern.weekdays = options.byweekday.map((wd) => weekdays[wd])
   }
 
   // Handle monthly day
@@ -192,7 +172,7 @@ export function parseToPattern(rruleStr: string): RecurrencePattern | null {
  * @returns RFC 5545 RRULE string
  */
 export function buildRRule(pattern: RecurrencePattern, dtstart: Date): string {
-  const options: Partial<InstanceType<typeof RRule>['options']> = {
+  const options: Partial<RRuleOptions> = {
     freq: FREQ_MAP[pattern.frequency],
     interval: pattern.interval,
     dtstart,

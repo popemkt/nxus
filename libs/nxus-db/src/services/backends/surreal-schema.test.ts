@@ -11,7 +11,6 @@
  */
 
 import type { Surreal } from 'surrealdb'
-import { StringRecordId } from 'surrealdb'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   setupTestGraphDatabase,

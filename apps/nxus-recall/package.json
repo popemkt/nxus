@@ -6,7 +6,8 @@
     "dev": "vite dev --port 3004",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "oxlint src/"
+    "lint": "oxlint src/",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@fontsource-variable/outfit": "^5.2.8",

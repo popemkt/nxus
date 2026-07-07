@@ -9,6 +9,5 @@ export {
   calendarSettingsService,
   type TaskCompletionConfig,
   type SupertagConfig,
-  type GoogleSyncConfig,
   type DisplayConfig,
 } from './calendar-settings.store.js'

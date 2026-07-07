@@ -9,7 +9,6 @@ import type { Surreal } from 'surrealdb'
 import { RecordId, StringRecordId } from 'surrealdb'
 import {
   createEmbeddedGraphDatabase,
-  initGraphSchema,
   setGraphDatabase,
   resetGraphDatabase,
 } from '../graph-client.js'

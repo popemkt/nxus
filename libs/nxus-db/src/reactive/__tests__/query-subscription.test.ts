@@ -15,7 +15,7 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../../schemas/node-schema.js'
 import {
   addNodeSupertag,
   clearSystemNodeCache,
@@ -26,7 +26,7 @@ import {
   updateNodeContent,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'
-import { createEventBus, eventBus } from '../event-bus.js'
+import { eventBus } from '../event-bus.js'
 import {
   createQuerySubscriptionService,
   type QueryResultChangeCallback,
@@ -173,7 +173,8 @@ describe('QuerySubscriptionService', () => {
   describe('subscribe() - initial results', () => {
     it('should return subscription handle with id', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const handle = service.subscribe(db, query, vi.fn())
@@ -191,7 +192,8 @@ describe('QuerySubscriptionService', () => {
       createNode(db, { content: 'Project 1', supertagId: 'supertag:project' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -208,7 +210,8 @@ describe('QuerySubscriptionService', () => {
 
     it('should handle empty initial results', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -222,7 +225,7 @@ describe('QuerySubscriptionService', () => {
     it('should increment subscription count', () => {
       expect(service.subscriptionCount()).toBe(0)
 
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
       service.subscribe(db, query, vi.fn())
       expect(service.subscriptionCount()).toBe(1)
 
@@ -232,10 +235,12 @@ describe('QuerySubscriptionService', () => {
 
     it('should track active subscriptions', () => {
       const query1: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
       const query2: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:project', includeInherited: true }],
+        limit: 500,
       }
 
       service.subscribe(db, query1, vi.fn())
@@ -255,7 +260,8 @@ describe('QuerySubscriptionService', () => {
   describe('detect node added to query results', () => {
     it('should detect when node created matches filter', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -277,7 +283,8 @@ describe('QuerySubscriptionService', () => {
       const nodeId = createNode(db, { content: 'Plain Node' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -299,14 +306,15 @@ describe('QuerySubscriptionService', () => {
     it('should detect when property change makes node match filter', () => {
       // Create task with status 'pending'
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
-      setProperty(db, taskId, 'field:status', 'pending')
+      setProperty(db, taskId, 'field:status' as FieldSystemId, 'pending')
 
       // Query for tasks with status 'done'
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -316,7 +324,7 @@ describe('QuerySubscriptionService', () => {
       expect(callback).not.toHaveBeenCalled()
 
       // Change status to 'done' - should now match
-      setProperty(db, taskId, 'field:status', 'done')
+      setProperty(db, taskId, 'field:status' as FieldSystemId, 'done')
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as QueryResultChangeEvent
@@ -326,7 +334,8 @@ describe('QuerySubscriptionService', () => {
 
     it('should not trigger for nodes not matching filter', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -348,7 +357,8 @@ describe('QuerySubscriptionService', () => {
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -371,7 +381,8 @@ describe('QuerySubscriptionService', () => {
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -389,14 +400,15 @@ describe('QuerySubscriptionService', () => {
 
     it('should detect when property change makes node not match filter', () => {
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
-      setProperty(db, taskId, 'field:status', 'done')
+      setProperty(db, taskId, 'field:status' as FieldSystemId, 'done')
 
       // Query for done tasks
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -406,7 +418,7 @@ describe('QuerySubscriptionService', () => {
       expect(handle.getLastResults().length).toBe(1)
 
       // Change status to 'pending' - should no longer match
-      setProperty(db, taskId, 'field:status', 'pending')
+      setProperty(db, taskId, 'field:status' as FieldSystemId, 'pending')
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as QueryResultChangeEvent
@@ -424,7 +436,8 @@ describe('QuerySubscriptionService', () => {
       const taskId = createNode(db, { content: 'Original content', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -444,17 +457,18 @@ describe('QuerySubscriptionService', () => {
 
     it('should detect when matching node property changes (not in filter)', () => {
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
-      setProperty(db, taskId, 'field:priority', 'low')
+      setProperty(db, taskId, 'field:priority' as FieldSystemId, 'low')
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
       service.subscribe(db, query, callback)
 
       // Change priority (not in filter) - node still matches but changed
-      setProperty(db, taskId, 'field:priority', 'high')
+      setProperty(db, taskId, 'field:priority' as FieldSystemId, 'high')
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as QueryResultChangeEvent
@@ -466,7 +480,8 @@ describe('QuerySubscriptionService', () => {
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -489,7 +504,8 @@ describe('QuerySubscriptionService', () => {
   describe('multiple subscriptions', () => {
     it('should deliver same events to multiple subscriptions of same query', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback1 = vi.fn()
@@ -511,10 +527,12 @@ describe('QuerySubscriptionService', () => {
 
     it('should handle different queries independently', () => {
       const taskQuery: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
       const projectQuery: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:project', includeInherited: true }],
+        limit: 500,
       }
 
       const taskCallback = vi.fn()
@@ -543,7 +561,8 @@ describe('QuerySubscriptionService', () => {
   describe('unsubscribe()', () => {
     it('should stop receiving events after unsubscribe via handle', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -563,7 +582,8 @@ describe('QuerySubscriptionService', () => {
 
     it('should stop receiving events after unsubscribe via service', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -582,7 +602,7 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should decrement subscription count after unsubscribe', () => {
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
 
       const handle1 = service.subscribe(db, query, vi.fn())
       const handle2 = service.subscribe(db, query, vi.fn())
@@ -596,10 +616,11 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should return empty array from getLastResults after unsubscribe', () => {
-      const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
+      createNode(db, { content: 'Task', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const handle = service.subscribe(db, query, vi.fn())
@@ -617,7 +638,8 @@ describe('QuerySubscriptionService', () => {
   describe('rapid mutations (no batching in Phase 1)', () => {
     it('should trigger multiple callbacks for rapid mutations', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -634,7 +656,8 @@ describe('QuerySubscriptionService', () => {
 
     it('should provide accurate results for each rapid mutation', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -667,6 +690,7 @@ describe('QuerySubscriptionService', () => {
       // Query for Item (parent of Task)
       const query: QueryDefinition = {
         filters: [{ type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -683,6 +707,7 @@ describe('QuerySubscriptionService', () => {
       // Query for Item without inheritance
       const query: QueryDefinition = {
         filters: [{ type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -702,14 +727,15 @@ describe('QuerySubscriptionService', () => {
     it('should filter by property value with eq operator', () => {
       const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
-      setProperty(db, task1, 'field:status', 'done')
-      setProperty(db, task2, 'field:status', 'pending')
+      setProperty(db, task1, 'field:status' as FieldSystemId, 'done')
+      setProperty(db, task2, 'field:status' as FieldSystemId, 'pending')
 
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           { type: 'property', fieldId: 'field:status', op: 'eq', value: 'done' },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -723,14 +749,15 @@ describe('QuerySubscriptionService', () => {
     it('should filter by numeric property value', () => {
       const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
-      setProperty(db, task1, 'field:count', 10)
-      setProperty(db, task2, 'field:count', 5)
+      setProperty(db, task1, 'field:count' as FieldSystemId, 10)
+      setProperty(db, task2, 'field:count' as FieldSystemId, 5)
 
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           { type: 'property', fieldId: 'field:count', op: 'gt', value: 7 },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -750,15 +777,15 @@ describe('QuerySubscriptionService', () => {
     it('should handle AND filter correctly', () => {
       const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
-      setProperty(db, task1, 'field:status', 'done')
-      setProperty(db, task1, 'field:priority', 'high')
-      setProperty(db, task2, 'field:status', 'done')
-      setProperty(db, task2, 'field:priority', 'low')
+      setProperty(db, task1, 'field:status' as FieldSystemId, 'done')
+      setProperty(db, task1, 'field:priority' as FieldSystemId, 'high')
+      setProperty(db, task2, 'field:status' as FieldSystemId, 'done')
+      setProperty(db, task2, 'field:priority' as FieldSystemId, 'low')
 
       // Query: done AND high priority
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           {
             type: 'and',
             filters: [
@@ -767,6 +794,7 @@ describe('QuerySubscriptionService', () => {
             ],
           },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -781,15 +809,15 @@ describe('QuerySubscriptionService', () => {
       const task1 = createNode(db, { content: 'Task 1', supertagId: 'supertag:task' })
       const task2 = createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
       const task3 = createNode(db, { content: 'Task 3', supertagId: 'supertag:task' })
-      setProperty(db, task1, 'field:status', 'done')
-      setProperty(db, task2, 'field:priority', 'high')
-      setProperty(db, task3, 'field:status', 'pending')
-      setProperty(db, task3, 'field:priority', 'low')
+      setProperty(db, task1, 'field:status' as FieldSystemId, 'done')
+      setProperty(db, task2, 'field:priority' as FieldSystemId, 'high')
+      setProperty(db, task3, 'field:status' as FieldSystemId, 'pending')
+      setProperty(db, task3, 'field:priority' as FieldSystemId, 'low')
 
       // Query: done OR high priority
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           {
             type: 'or',
             filters: [
@@ -798,6 +826,7 @@ describe('QuerySubscriptionService', () => {
             ],
           },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -812,13 +841,13 @@ describe('QuerySubscriptionService', () => {
 
     it('should detect changes with OR filter', () => {
       const taskId = createNode(db, { content: 'Task', supertagId: 'supertag:task' })
-      setProperty(db, taskId, 'field:status', 'pending')
-      setProperty(db, taskId, 'field:priority', 'low')
+      setProperty(db, taskId, 'field:status' as FieldSystemId, 'pending')
+      setProperty(db, taskId, 'field:priority' as FieldSystemId, 'low')
 
       // Query: done OR high priority
       const query: QueryDefinition = {
         filters: [
-          { type: 'supertag', supertagId: 'supertag:task' },
+          { type: 'supertag', supertagId: 'supertag:task', includeInherited: true },
           {
             type: 'or',
             filters: [
@@ -827,6 +856,7 @@ describe('QuerySubscriptionService', () => {
             ],
           },
         ],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -836,7 +866,7 @@ describe('QuerySubscriptionService', () => {
       expect(handle.getLastResults().length).toBe(0)
 
       // Change priority to high - should now match
-      setProperty(db, taskId, 'field:priority', 'high')
+      setProperty(db, taskId, 'field:priority' as FieldSystemId, 'high')
 
       expect(callback).toHaveBeenCalledTimes(1)
       const event = callback.mock.calls[0][0] as QueryResultChangeEvent
@@ -852,7 +882,8 @@ describe('QuerySubscriptionService', () => {
   describe('refreshAll()', () => {
     it('should force re-evaluate all subscriptions', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -884,7 +915,8 @@ describe('QuerySubscriptionService', () => {
 
     it('should not trigger callback if no changes', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -903,7 +935,7 @@ describe('QuerySubscriptionService', () => {
 
   describe('clear()', () => {
     it('should remove all subscriptions', () => {
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
 
       service.subscribe(db, query, vi.fn())
       service.subscribe(db, query, vi.fn())
@@ -917,7 +949,8 @@ describe('QuerySubscriptionService', () => {
 
     it('should stop all event delivery after clear', () => {
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -941,7 +974,8 @@ describe('QuerySubscriptionService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const failingCallback: QueryResultChangeCallback = () => {
@@ -973,14 +1007,14 @@ describe('QuerySubscriptionService', () => {
     it('should subscribe to event bus when first subscription added', () => {
       expect(eventBus.listenerCount()).toBe(0)
 
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
       service.subscribe(db, query, vi.fn())
 
       expect(eventBus.listenerCount()).toBe(1)
     })
 
     it('should unsubscribe from event bus when last subscription removed', () => {
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
 
       const handle1 = service.subscribe(db, query, vi.fn())
       const handle2 = service.subscribe(db, query, vi.fn())
@@ -994,7 +1028,7 @@ describe('QuerySubscriptionService', () => {
     })
 
     it('should re-subscribe to event bus if new subscription after all cleared', () => {
-      const query: QueryDefinition = { filters: [] }
+      const query: QueryDefinition = { filters: [], limit: 500 }
 
       const handle = service.subscribe(db, query, vi.fn())
       expect(eventBus.listenerCount()).toBe(1)
@@ -1017,7 +1051,8 @@ describe('QuerySubscriptionService', () => {
       createNode(db, { content: 'Task 2', supertagId: 'supertag:task' })
 
       const query: QueryDefinition = {
-        filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+        filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+        limit: 500,
       }
 
       const callback = vi.fn()
@@ -1067,7 +1102,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(0)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1090,7 +1126,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1117,7 +1154,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1150,7 +1188,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1186,7 +1225,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1211,7 +1251,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1244,7 +1285,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(1000) // Long debounce
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1267,7 +1309,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1284,7 +1327,8 @@ describe('QuerySubscriptionService', () => {
 
       it('should be no-op when no pending mutations', () => {
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()
@@ -1301,10 +1345,12 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(50)
 
         const taskQuery: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
         const projectQuery: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:project' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:project', includeInherited: true }],
+          limit: 500,
         }
 
         const taskCallback = vi.fn()
@@ -1337,7 +1383,8 @@ describe('QuerySubscriptionService', () => {
         service.setDebounceMs(100)
 
         const query: QueryDefinition = {
-          filters: [{ type: 'supertag', supertagId: 'supertag:task' }],
+          filters: [{ type: 'supertag', supertagId: 'supertag:task', includeInherited: true }],
+          limit: 500,
         }
 
         const callback = vi.fn()

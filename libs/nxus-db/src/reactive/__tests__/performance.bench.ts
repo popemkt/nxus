@@ -14,14 +14,15 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { bench, describe, beforeAll, afterAll } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../../schemas/node-schema.js'
 import {
   clearSystemNodeCache,
   createNode,
   setProperty,
 } from '../../services/node.service.js'
 import type { QueryDefinition } from '../../types/query.js'
-import { createEventBus, eventBus as singletonEventBus, type EventBus } from '../event-bus.js'
+import { eventBus as singletonEventBus } from '../event-bus.js'
+import type { EventBus } from '../types.js'
 import {
   createQuerySubscriptionService,
   type QuerySubscriptionService,
@@ -167,8 +168,9 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
         // Simple supertag filter
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagId: supertags[i % supertags.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
           ],
+          limit: 500,
         }
         break
 
@@ -176,9 +178,10 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
         // Supertag + property filter
         queryDefinition = {
           filters: [
-            { type: 'supertag', supertagId: supertags[i % supertags.length] },
+            { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
             { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
           ],
+          limit: 500,
         }
         break
 
@@ -188,6 +191,7 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
           filters: [
             { type: 'property', fieldId: 'field:priority', op: 'eq', value: priorities[i % priorities.length] },
           ],
+          limit: 500,
         }
         break
 
@@ -198,11 +202,12 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
             {
               type: 'or',
               filters: [
-                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
                 { type: 'property', fieldId: 'field:active', op: 'eq', value: true },
               ],
             },
           ],
+          limit: 500,
         }
         break
 
@@ -214,11 +219,12 @@ function createDiverseSubscriptions(service: QuerySubscriptionService, db: Bette
             {
               type: 'and',
               filters: [
-                { type: 'supertag', supertagId: supertags[i % supertags.length] },
+                { type: 'supertag', supertagId: supertags[i % supertags.length], includeInherited: true },
                 { type: 'property', fieldId: 'field:status', op: 'eq', value: statuses[i % statuses.length] },
               ],
             },
           ],
+          limit: 500,
         }
         break
     }
@@ -256,10 +262,10 @@ function createBenchContext(nodeCount: number, subscriptionCount: number): Bench
     nodeIds.push(nodeId)
     // Set some properties to make queries more realistic
     if (i % 3 === 0) {
-      setProperty(db, nodeId, 'field:status', 'active')
+      setProperty(db, nodeId, 'field:status' as FieldSystemId, 'active')
     }
     if (i % 5 === 0) {
-      setProperty(db, nodeId, 'field:priority', 'high')
+      setProperty(db, nodeId, 'field:priority' as FieldSystemId, 'high')
     }
   }
 
@@ -303,7 +309,7 @@ describe('Performance: 50 subscriptions + 10k nodes', () => {
     const nodeId = ctx.nodeIds[randomIndex]
 
     // Perform a mutation that affects subscriptions
-    setProperty(ctx.db, nodeId, 'field:status', 'completed')
+    setProperty(ctx.db, nodeId, 'field:status' as FieldSystemId, 'completed')
   })
 
   bench('mutation latency - smart invalidation (Phase 3)', () => {
@@ -315,7 +321,7 @@ describe('Performance: 50 subscriptions + 10k nodes', () => {
     const nodeId = ctx.nodeIds[randomIndex]
 
     // Perform a mutation that affects subscriptions
-    setProperty(ctx.db, nodeId, 'field:status', 'completed')
+    setProperty(ctx.db, nodeId, 'field:status' as FieldSystemId, 'completed')
   })
 })
 
@@ -343,7 +349,7 @@ describe('Performance: 100 subscriptions + 50k nodes', () => {
     const nodeId = ctx.nodeIds[randomIndex]
 
     // Perform a mutation that affects subscriptions
-    setProperty(ctx.db, nodeId, 'field:status', 'completed')
+    setProperty(ctx.db, nodeId, 'field:status' as FieldSystemId, 'completed')
   })
 
   bench('mutation latency - brute force (comparison)', () => {
@@ -355,7 +361,7 @@ describe('Performance: 100 subscriptions + 50k nodes', () => {
     const nodeId = ctx.nodeIds[randomIndex]
 
     // Perform a mutation that affects subscriptions
-    setProperty(ctx.db, nodeId, 'field:status', 'completed')
+    setProperty(ctx.db, nodeId, 'field:status' as FieldSystemId, 'completed')
   })
 })
 
@@ -382,7 +388,7 @@ describe('Performance: Rapid mutations with batching', () => {
     // Perform 100 rapid mutations
     for (let i = 0; i < 100; i++) {
       const nodeId = ctx.nodeIds[i % ctx.nodeIds.length]
-      setProperty(ctx.db, nodeId, 'field:count', i)
+      setProperty(ctx.db, nodeId, 'field:count' as FieldSystemId, i)
     }
   })
 
@@ -394,7 +400,7 @@ describe('Performance: Rapid mutations with batching', () => {
     // Perform 100 rapid mutations
     for (let i = 0; i < 100; i++) {
       const nodeId = ctx.nodeIds[i % ctx.nodeIds.length]
-      setProperty(ctx.db, nodeId, 'field:score', i)
+      setProperty(ctx.db, nodeId, 'field:score' as FieldSystemId, i)
     }
 
     // Flush pending mutations

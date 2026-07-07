@@ -12,6 +12,8 @@
 
 import { z } from 'zod'
 import type { QueryDefinition } from '../types/query.js'
+import { QueryDefinitionSchema } from '../types/query.js'
+import { JsonValueSchema } from '../types/common.js'
 import type { AssembledNode } from '../types/node.js'
 
 // ============================================================================
@@ -112,13 +114,7 @@ export type AggregationType = z.infer<typeof AggregationTypeSchema>
  */
 export const ComputedFieldDefinitionSchema = z.object({
   aggregation: AggregationTypeSchema,
-  query: z.lazy(() =>
-    z.object({
-      filters: z.array(z.unknown()),
-      sort: z.unknown().optional(),
-      limit: z.number().optional(),
-    }),
-  ) as z.ZodType<QueryDefinition>, // Which nodes to aggregate
+  query: z.lazy(() => QueryDefinitionSchema) as unknown as z.ZodType<QueryDefinition>, // Which nodes to aggregate
   fieldId: z.string().optional(), // UUID of the field to aggregate (for SUM, AVG, etc.)
   parentNodeId: z.string().optional(), // Optional parent (null = global)
 })
@@ -159,13 +155,7 @@ export type QueryMembershipEvent = z.infer<typeof QueryMembershipEventSchema>
  */
 export const QueryMembershipTriggerSchema = z.object({
   type: z.literal('query_membership'),
-  queryDefinition: z.lazy(() =>
-    z.object({
-      filters: z.array(z.unknown()),
-      sort: z.unknown().optional(),
-      limit: z.number().optional(),
-    }),
-  ) as z.ZodType<QueryDefinition>,
+  queryDefinition: z.lazy(() => QueryDefinitionSchema) as unknown as z.ZodType<QueryDefinition>,
   event: QueryMembershipEventSchema,
 })
 export type QueryMembershipTrigger = z.infer<typeof QueryMembershipTriggerSchema>
@@ -227,7 +217,7 @@ export type NowMarker = z.infer<typeof NowMarkerSchema>
 export const SetPropertyActionSchema = z.object({
   type: z.literal('set_property'),
   fieldId: z.string(), // UUID of the field node
-  value: z.union([z.unknown(), NowMarkerSchema]), // Value or { $now: true } for timestamp
+  value: z.union([JsonValueSchema, NowMarkerSchema]), // Value or { $now: true } for timestamp
 })
 export type SetPropertyAction = z.infer<typeof SetPropertyActionSchema>
 
@@ -275,7 +265,7 @@ export const WebhookActionSchema = z.object({
   url: z.string().url(),
   method: WebhookMethodSchema,
   headers: z.record(z.string(), z.string()).optional(),
-  body: z.record(z.string(), z.unknown()).optional(),
+  body: z.record(z.string(), JsonValueSchema).optional(),
 })
 export type WebhookAction = z.infer<typeof WebhookActionSchema>
 

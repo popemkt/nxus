@@ -2,7 +2,7 @@
  * Edge Extractors - Unit Tests
  */
 
-import type { AssembledNode } from '@nxus/db'
+import type { AssembledNode, PropertyValue, JsonValue, FieldContentName } from '@nxus/db'
 import { FIELD_NAMES } from '@nxus/db'
 import { describe, expect, it } from 'vitest'
 import type { EdgeExtractionContext, GraphNode } from '../types.js'
@@ -62,11 +62,11 @@ function createContext(nodeIds: string[]): EdgeExtractionContext {
 }
 
 function createProperty(
-  value: unknown,
+  value: JsonValue,
   fieldName: string,
   fieldSystemId: string | null = null,
   order = 0,
-) {
+): PropertyValue[] {
   return [
     {
       value,
@@ -167,7 +167,7 @@ describe('buildBacklinkMap', () => {
     const nodeA = createMockNode({
       id: 'node-a',
       properties: {
-        'field:custom': createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
+        ['field:custom' as FieldContentName]: createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
       },
     })
     const nodeB = createMockNode({
@@ -200,7 +200,7 @@ describe('buildBacklinkMap', () => {
     const nodeA = createMockNode({
       id: '11111111-1111-1111-1111-111111111111',
       properties: {
-        'field:custom': createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
+        ['field:custom' as FieldContentName]: createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
       },
     })
 
@@ -252,7 +252,7 @@ describe('extractReferenceEdges', () => {
     const node = createMockNode({
       id: 'node-a',
       properties: {
-        'field:custom': createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
+        ['field:custom' as FieldContentName]: createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
       },
     })
 
@@ -287,7 +287,7 @@ describe('extractReferenceEdges', () => {
     const node = createMockNode({
       id: '11111111-1111-1111-1111-111111111111',
       properties: {
-        'field:custom': createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
+        ['field:custom' as FieldContentName]: createProperty('11111111-1111-1111-1111-111111111111', 'custom'),
       },
     })
 
@@ -420,7 +420,7 @@ describe('extractAllEdges', () => {
         id: '22222222-2222-2222-2222-222222222222',
         ownerId: '11111111-1111-1111-1111-111111111111',
         properties: {
-          'field:custom': createProperty('33333333-3333-3333-3333-333333333333', 'custom'),
+          ['field:custom' as FieldContentName]: createProperty('33333333-3333-3333-3333-333333333333', 'custom'),
         },
       }),
       createMockNode({
@@ -495,7 +495,7 @@ describe('extractAllEdges', () => {
       createMockNode({
         id: '11111111-1111-1111-1111-111111111111',
         properties: {
-          'field:custom': createProperty('22222222-2222-2222-2222-222222222222', 'custom'),
+          ['field:custom' as FieldContentName]: createProperty('22222222-2222-2222-2222-222222222222', 'custom'),
         },
       }),
       createMockNode({

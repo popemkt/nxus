@@ -485,7 +485,7 @@ export function CreateEventModal({
               </Label>
               <Select
                 value={formData.reminder}
-                onValueChange={(value: string) => updateField('reminder', value)}
+                onValueChange={(value: string | null) => value !== null && updateField('reminder', value)}
                 disabled={isCreating}
               >
                 <SelectTrigger className="w-full">

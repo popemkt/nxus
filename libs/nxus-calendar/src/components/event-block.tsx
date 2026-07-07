@@ -11,7 +11,7 @@
 import { useMemo } from 'react'
 import type { EventProps } from 'react-big-calendar'
 import { cn } from '@nxus/ui'
-import type { BigCalendarEvent, CalendarEvent, CompletedTaskStyle } from '../types/calendar-event.js'
+import type { BigCalendarEvent, CalendarEvent } from '../types/calendar-event.js'
 import { isTaskEvent, isRecurringEvent, isSyncedToGoogle } from '../types/calendar-event.js'
 import { useCalendarSettingsStore } from '../stores/calendar-settings.store.js'
 import { TaskCheckbox } from './task-checkbox.js'
@@ -84,25 +84,6 @@ function SyncedIcon({ className }: { className?: string }) {
 /**
  * Format a time range for display
  */
-function formatTimeRange(
-  start: Date,
-  end: Date,
-  allDay: boolean,
-  timeFormat: '12h' | '24h'
-): string {
-  if (allDay) return 'All day'
-
-  const formatOptions: Intl.DateTimeFormatOptions = {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: timeFormat === '12h',
-  }
-
-  const startStr = start.toLocaleTimeString(undefined, formatOptions)
-  const endStr = end.toLocaleTimeString(undefined, formatOptions)
-
-  return `${startStr} - ${endStr}`
-}
 
 // ============================================================================
 // Component
@@ -144,19 +125,12 @@ export function EventBlock({
   const completedTaskStyle = useCalendarSettingsStore(
     (state) => state.display.completedTaskStyle
   )
-  const timeFormat = useCalendarSettingsStore((state) => state.display.timeFormat)
 
   // Compute event characteristics
   const isTask = isTaskEvent(event)
   const isRecurring = isRecurringEvent(event)
   const isSynced = isSyncedToGoogle(event)
   const isCompleted = event.isCompleted
-
-  // Time display
-  const timeDisplay = useMemo(
-    () => formatTimeRange(event.start, event.end, event.allDay, timeFormat),
-    [event.start, event.end, event.allDay, timeFormat]
-  )
 
   // Build data attributes for CSS styling
   const dataAttributes = useMemo(
