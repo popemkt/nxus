@@ -187,6 +187,14 @@ nodes:
               spec/rules/testing.md)
           (d) the user explicitly signed off on the resolved plan
 
+        Before emitting DONE, append a final section to the intake doc:
+          ## Sign-off
+          Intent holder approved this plan: <today's date>, quoting the
+          user's sign-off words verbatim.
+        This line is the durable elicitation verdict (harness-model.md I5/I6:
+        validation produces a verdict; the verdict updates the record) — the
+        approval must survive this session, not evaporate with it.
+
         Do NOT exit because patience ran out. One more question is always
         cheaper than building the wrong thing.
 
