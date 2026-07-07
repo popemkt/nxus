@@ -33,6 +33,7 @@ interface SupertagConfig {
   inheritedFields: InheritedField[]
   defaultChildSupertag: SupertagBadge | null
   contentTemplate: string | null
+  extendsSupertags: SupertagBadge[]
   extendsSupertag: SupertagBadge | null
 }
 
@@ -134,15 +135,18 @@ export function SupertagDetailView({ node }: SupertagDetailViewProps) {
           </h1>
         </div>
 
-        {config.extendsSupertag && (
-          <div className="flex items-center gap-1.5 text-[12px] text-foreground/30 ml-7">
+        {config.extendsSupertags.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[12px] text-foreground/30 ml-7 flex-wrap">
             <TreeStructure size={12} />
             <span>Extends</span>
-            <SupertagPill
-              tag={config.extendsSupertag}
-              size="sm"
-              onClick={() => navigateToNode(config.extendsSupertag!.id)}
-            />
+            {config.extendsSupertags.map((parent) => (
+              <SupertagPill
+                key={parent.id}
+                tag={parent}
+                size="sm"
+                onClick={() => navigateToNode(parent.id)}
+              />
+            ))}
           </div>
         )}
       </div>

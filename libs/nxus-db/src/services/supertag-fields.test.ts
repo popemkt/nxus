@@ -17,15 +17,19 @@ import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   FIELD_NAMES,
+  type FieldContentName,
   type FieldSystemId,
 } from '../schemas/node-schema.js'
 import {
+  addPropertyValue,
   addNodeSupertag,
   assembleNode,
+  assembleNodeWithInheritance,
   clearProperty,
   clearSystemNodeCache,
   createNode,
   getAncestorSupertags,
+  getNodeIdsBySupertagWithInheritance,
   getProperty,
   getSupertagFieldDefinitions,
   setProperty,
@@ -118,6 +122,25 @@ function seedSystemNodes() {
   `)
 }
 
+function createTestSupertag(name: string): { id: string; systemId: string } {
+  const suffix = name.toLowerCase().replace(/[^a-z0-9]+/g, '_')
+  const systemId = `supertag:test_${suffix}`
+  const id = createNode(db, { content: `#${name}`, systemId })
+  addNodeSupertag(db, id, SYSTEM_SUPERTAGS.SUPERTAG)
+  return { id, systemId }
+}
+
+function createTestField(
+  name: string,
+  slug: string,
+): { id: string; systemId: FieldSystemId; fieldName: FieldContentName } {
+  const systemId = `field:test_${slug}` as FieldSystemId
+  const id = createNode(db, { content: name, systemId })
+  addNodeSupertag(db, id, SYSTEM_SUPERTAGS.FIELD)
+  setProperty(db, id, SYSTEM_FIELDS.FIELD_TYPE, 'text')
+  return { id, systemId, fieldName: name as FieldContentName }
+}
+
 describe('supertag field definitions & constraints', () => {
   beforeEach(() => {
     setupTestDatabase()
@@ -181,6 +204,110 @@ describe('supertag field definitions & constraints', () => {
       // supertag-tool extends supertag-item (from seed)
       const ancestors = getAncestorSupertags(db, 'supertag-tool')
       expect(ancestors).toContain('supertag-item')
+    })
+
+    it('diamond story: walks every parent once in deterministic BFS order', () => {
+      const root = createTestSupertag('Root')
+      const left = createTestSupertag('Left')
+      const right = createTestSupertag('Right')
+      const child = createTestSupertag('Child')
+
+      addPropertyValue(db, left.id, SYSTEM_FIELDS.EXTENDS, root.id)
+      addPropertyValue(db, right.id, SYSTEM_FIELDS.EXTENDS, root.id)
+      addPropertyValue(db, child.id, SYSTEM_FIELDS.EXTENDS, left.id)
+      addPropertyValue(db, child.id, SYSTEM_FIELDS.EXTENDS, right.id)
+
+      expect(getAncestorSupertags(db, child.id)).toEqual([left.id, right.id, root.id])
+    })
+
+    it('cycle story: self-extension and two-node cycles terminate', () => {
+      const self = createTestSupertag('SelfCycle')
+      const a = createTestSupertag('CycleA')
+      const b = createTestSupertag('CycleB')
+
+      addPropertyValue(db, self.id, SYSTEM_FIELDS.EXTENDS, self.id)
+      addPropertyValue(db, a.id, SYSTEM_FIELDS.EXTENDS, b.id)
+      addPropertyValue(db, b.id, SYSTEM_FIELDS.EXTENDS, a.id)
+
+      expect(getAncestorSupertags(db, self.id)).toEqual([])
+      expect(getAncestorSupertags(db, a.id)).toEqual([b.id])
+    })
+  })
+
+  describe('multi-parent inheritance assembly', () => {
+    it('diamond story: inherits root fields once and fields from both parents', () => {
+      const root = createTestSupertag('DiamondRoot')
+      const left = createTestSupertag('DiamondLeft')
+      const right = createTestSupertag('DiamondRight')
+      const child = createTestSupertag('DiamondChild')
+      const rootField = createTestField('Root Field', 'diamond_root')
+      const leftField = createTestField('Left Field', 'diamond_left')
+      const rightField = createTestField('Right Field', 'diamond_right')
+
+      setProperty(db, root.id, rootField.systemId, 'root default')
+      setProperty(db, left.id, leftField.systemId, 'left default')
+      setProperty(db, right.id, rightField.systemId, 'right default')
+      addPropertyValue(db, left.id, SYSTEM_FIELDS.EXTENDS, root.id)
+      addPropertyValue(db, right.id, SYSTEM_FIELDS.EXTENDS, root.id)
+      addPropertyValue(db, child.id, SYSTEM_FIELDS.EXTENDS, left.id)
+      addPropertyValue(db, child.id, SYSTEM_FIELDS.EXTENDS, right.id)
+
+      const nodeId = createNode(db, { content: 'Diamond instance' })
+      addNodeSupertag(db, nodeId, child.systemId)
+
+      const assembled = assembleNodeWithInheritance(db, nodeId)
+      if (!assembled) throw new Error('Expected assembled diamond instance')
+      expect(getProperty(assembled, rootField.fieldName)).toBe('root default')
+      expect(getProperty(assembled, leftField.fieldName)).toBe('left default')
+      expect(getProperty(assembled, rightField.fieldName)).toBe('right default')
+    })
+
+    it('deterministic order story: earlier direct parent wins same-field diamond ties', () => {
+      const left = createTestSupertag('OrderLeft')
+      const right = createTestSupertag('OrderRight')
+      const child = createTestSupertag('OrderChild')
+      const sharedField = createTestField('Shared Field', 'shared_order')
+
+      setProperty(db, left.id, sharedField.systemId, 'left default')
+      setProperty(db, right.id, sharedField.systemId, 'right default')
+      addPropertyValue(db, child.id, SYSTEM_FIELDS.EXTENDS, left.id)
+      addPropertyValue(db, child.id, SYSTEM_FIELDS.EXTENDS, right.id)
+
+      const nodeId = createNode(db, { content: 'Order instance' })
+      addNodeSupertag(db, nodeId, child.systemId)
+
+      const assembled = assembleNodeWithInheritance(db, nodeId)
+      if (!assembled) throw new Error('Expected assembled order instance')
+      expect(getProperty(assembled, sharedField.fieldName)).toBe('left default')
+    })
+
+    it('single-parent seed story: existing #Tool inherits #Item unchanged', () => {
+      const itemField = createTestField('Seed Field', 'seed_field')
+      setProperty(db, 'supertag-item', itemField.systemId, 'seed default')
+
+      const nodeId = createNode(db, { content: 'Tool instance' })
+      addNodeSupertag(db, nodeId, 'supertag:tool')
+
+      const assembled = assembleNodeWithInheritance(db, nodeId)
+      if (!assembled) throw new Error('Expected assembled tool instance')
+      expect(getProperty(assembled, itemField.fieldName)).toBe('seed default')
+    })
+  })
+
+  describe('supertag query inheritance', () => {
+    it('symmetry story: descendant expansion follows the same DAG depth as ancestors', () => {
+      const root = createTestSupertag('QueryRoot')
+      const middle = createTestSupertag('QueryMiddle')
+      const leaf = createTestSupertag('QueryLeaf')
+
+      addPropertyValue(db, middle.id, SYSTEM_FIELDS.EXTENDS, root.id)
+      addPropertyValue(db, leaf.id, SYSTEM_FIELDS.EXTENDS, middle.id)
+
+      const nodeId = createNode(db, { content: 'Leaf instance' })
+      addNodeSupertag(db, nodeId, leaf.systemId)
+
+      expect(getAncestorSupertags(db, leaf.id)).toEqual([middle.id, root.id])
+      expect(getNodeIdsBySupertagWithInheritance(db, root.id)).toContain(nodeId)
     })
   })
 

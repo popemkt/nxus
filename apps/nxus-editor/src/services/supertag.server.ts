@@ -172,6 +172,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
     const {
       assembleNode,
       getProperty,
+      getPropertyValues,
       getSupertagFieldDefinitions,
       getAncestorSupertags,
       FIELD_NAMES,
@@ -270,20 +271,23 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
       contentTemplate = typeof templateRaw === 'string' ? templateRaw : JSON.stringify(templateRaw)
     }
 
-    // Extends (parent supertag)
+    // Extends (parent supertags)
     let extendsSupertag: { id: string; name: string; systemId: string | null; color: string | null } | null = null
-    if (ancestors.length > 0) {
-      const parentNode = assembleNode(db, ancestors[0]!)
+    const extendsSupertags: { id: string; name: string; systemId: string | null; color: string | null }[] = []
+    const directParentIds = getPropertyValues<string>(supertagNode, FIELD_NAMES.EXTENDS)
+    for (const parentId of directParentIds) {
+      const parentNode = assembleNode(db, parentId)
       if (parentNode) {
         const dbColor = (getProperty(parentNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
-        extendsSupertag = {
+        extendsSupertags.push({
           id: parentNode.id,
           name: parentNode.content ?? '',
           systemId: parentNode.systemId,
           color: dbColor ?? getSupertagColor(parentNode.id),
-        }
+        })
       }
     }
+    extendsSupertag = extendsSupertags[0] ?? null
 
     // Color
     const color = (getProperty(supertagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
@@ -299,6 +303,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
         inheritedFields,
         defaultChildSupertag,
         contentTemplate,
+        extendsSupertags,
         extendsSupertag,
       },
     }
@@ -561,11 +566,19 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
       defaultChildSupertagId: z.string().nullable().optional(),
       contentTemplate: z.string().nullable().optional(),
       extendsId: z.string().nullable().optional(),
+      extendsIds: z.array(z.string()).optional(),
       color: z.string().nullable().optional(),
     }),
   )
   .handler(async (ctx) => {
-    const { setProperty, clearProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    const {
+      addPropertyValue,
+      assembleNode,
+      clearProperty,
+      getAncestorSupertags,
+      setProperty,
+      SYSTEM_FIELDS,
+    } = await import('@nxus/db/server')
     const db = await initDatabaseSeeded()
 
     if (ctx.data.defaultChildSupertagId !== undefined) {
@@ -584,11 +597,37 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
       }
     }
 
-    if (ctx.data.extendsId !== undefined) {
-      if (ctx.data.extendsId) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, ctx.data.extendsId)
-      } else {
-        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS)
+    const nextExtendsIds = ctx.data.extendsIds
+      ?? (ctx.data.extendsId !== undefined
+        ? (ctx.data.extendsId ? [ctx.data.extendsId] : [])
+        : undefined)
+
+    if (nextExtendsIds !== undefined) {
+      const seen = new Set<string>()
+      const orderedExtendsIds: string[] = []
+      for (const parentId of nextExtendsIds) {
+        if (seen.has(parentId)) continue
+        seen.add(parentId)
+        orderedExtendsIds.push(parentId)
+      }
+
+      for (const parentId of orderedExtendsIds) {
+        if (parentId === ctx.data.supertagId) {
+          return { success: false as const, error: 'A supertag cannot extend itself' }
+        }
+        const parentNode = assembleNode(db, parentId)
+        if (!parentNode) {
+          return { success: false as const, error: 'Parent supertag not found' }
+        }
+        const parentAncestors = getAncestorSupertags(db, parentId)
+        if (parentAncestors.includes(ctx.data.supertagId)) {
+          return { success: false as const, error: 'Extends cycle rejected' }
+        }
+      }
+
+      clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS)
+      for (const parentId of orderedExtendsIds) {
+        addPropertyValue(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, parentId)
       }
     }
 

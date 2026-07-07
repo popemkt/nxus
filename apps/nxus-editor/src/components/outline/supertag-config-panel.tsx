@@ -33,6 +33,7 @@ interface SupertagConfig {
   inheritedFields: InheritedField[]
   defaultChildSupertag: SupertagBadge | null
   contentTemplate: string | null
+  extendsSupertags: SupertagBadge[]
   extendsSupertag: SupertagBadge | null
 }
 
@@ -705,6 +706,7 @@ function SettingsTab({
 }) {
   const [supertags, setSupertags] = useState<SupertagBadge[]>([])
   const [supertagsLoaded, setSupertagsLoaded] = useState(false)
+  const [extendsError, setExtendsError] = useState<string | null>(null)
 
   // Fetch supertag list for pickers
   useEffect(() => {
@@ -738,17 +740,23 @@ function SettingsTab({
   )
 
   const handleChangeExtends = useCallback(
-    async (supertagNodeId: string | null) => {
+    async (nextParentIds: string[]) => {
       const { updateSupertagConfigServerFn } = await import('@/services/supertag.server')
-      await updateSupertagConfigServerFn({
-        data: { supertagId: config.id, extendsId: supertagNodeId },
+      const result = await updateSupertagConfigServerFn({
+        data: { supertagId: config.id, extendsIds: nextParentIds },
       })
-      const newParent = supertagNodeId
-        ? supertags.find((s) => s.id === supertagNodeId) ?? null
-        : null
+      if (result && typeof result === 'object' && 'success' in result && !result.success) {
+        setExtendsError('error' in result ? result.error : 'Unable to update parents')
+        return
+      }
+      const newParents = nextParentIds
+        .map((id) => supertags.find((s) => s.id === id) ?? null)
+        .filter((s): s is SupertagBadge => s !== null)
+      setExtendsError(null)
       onConfigChange({
         ...config,
-        extendsSupertag: newParent,
+        extendsSupertags: newParents,
+        extendsSupertag: newParents[0] ?? null,
       })
     },
     [config, onConfigChange, supertags],
@@ -782,6 +790,8 @@ function SettingsTab({
     [config, onConfigChange],
   )
 
+  const selectedExtends = config.extendsSupertags ?? (config.extendsSupertag ? [config.extendsSupertag] : [])
+
   // Filter out self from supertag options
   const otherSupertags = supertags.filter((s) => s.id !== config.id)
 
@@ -809,13 +819,16 @@ function SettingsTab({
 
       {/* Extends */}
       <SettingRow icon={<TreeStructure size={13} weight="bold" />} label="Extends">
-        <SupertagPicker
-          value={config.extendsSupertag}
+        <MultiSupertagPicker
+          value={selectedExtends}
           options={otherSupertags}
           loaded={supertagsLoaded}
-          placeholder="None"
+          placeholder="Add parent"
           onChange={handleChangeExtends}
         />
+        {extendsError && (
+          <div className="mt-1 text-[11px] text-red-500/80">{extendsError}</div>
+        )}
       </SettingRow>
 
       {/* Default child supertag */}
@@ -856,6 +869,131 @@ function SettingRow({
         {label}
       </div>
       <div className="pl-4">{children}</div>
+    </div>
+  )
+}
+
+function MultiSupertagPicker({
+  value,
+  options,
+  loaded,
+  placeholder,
+  onChange,
+}: {
+  value: SupertagBadge[]
+  options: SupertagBadge[]
+  loaded: boolean
+  placeholder: string
+  onChange: (ids: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const selectedIds = new Set(value.map((s) => s.id))
+  const available = options.filter((s) => !selectedIds.has(s.id))
+  const filtered = available.filter(
+    (s) => !query || s.name.toLowerCase().includes(query.toLowerCase()),
+  )
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  return (
+    <div ref={containerRef} className="relative">
+      {value.length > 0 && (
+        <div className="mb-1 flex flex-wrap gap-1">
+          {value.map((parent) => (
+            <span
+              key={parent.id}
+              className="inline-flex items-center gap-1 rounded-md border border-foreground/[0.06] px-1.5 py-0.5 text-[11px] text-foreground/60"
+            >
+              <Hash
+                size={9}
+                weight="bold"
+                style={parent.color ? { color: parent.color } : undefined}
+                className={!parent.color ? 'text-foreground/30' : ''}
+              />
+              <span className="max-w-[150px] truncate">{parent.name}</span>
+              <button
+                type="button"
+                className="p-0.5 text-foreground/20 hover:text-foreground/50"
+                onClick={() => onChange(value.filter((s) => s.id !== parent.id).map((s) => s.id))}
+              >
+                <X size={9} weight="bold" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        className={cn(
+          'flex items-center gap-1 w-full px-2 py-1 rounded-md text-[12px] text-left',
+          'border border-foreground/[0.06] hover:border-foreground/10 transition-colors',
+          available.length > 0 ? 'text-foreground/45' : 'text-foreground/20 italic',
+        )}
+        onClick={() => {
+          if (available.length > 0 || !loaded) setOpen(!open)
+        }}
+      >
+        <span className="flex-1">{available.length > 0 ? placeholder : 'No more parents'}</span>
+        <CaretDown size={10} weight="bold" className="text-foreground/20" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-foreground/10 bg-popover shadow-lg overflow-hidden">
+          {loaded && available.length > 5 && (
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full px-2 py-1 text-[11px] bg-transparent border-b border-foreground/[0.06] text-foreground/60 outline-none"
+              placeholder="Search..."
+              autoFocus
+            />
+          )}
+          <div className="max-h-[160px] overflow-y-auto p-0.5">
+            {!loaded ? (
+              <div className="px-2 py-2 text-[11px] text-foreground/25">Loading...</div>
+            ) : filtered.length === 0 ? (
+              <div className="px-2 py-2 text-[11px] text-foreground/25">
+                {query ? 'No matches' : 'No supertags available'}
+              </div>
+            ) : (
+              filtered.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="flex items-center gap-1.5 w-full px-2 py-1 rounded-md text-[12px] text-left hover:bg-accent hover:text-accent-foreground transition-colors"
+                  onClick={() => {
+                    onChange([...value.map((parent) => parent.id), s.id])
+                    setOpen(false)
+                    setQuery('')
+                  }}
+                >
+                  <Hash
+                    size={10}
+                    weight="bold"
+                    style={s.color ? { color: s.color } : undefined}
+                    className={!s.color ? 'text-foreground/30' : ''}
+                  />
+                  <span className="truncate">{s.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

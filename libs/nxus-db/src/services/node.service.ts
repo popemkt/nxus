@@ -117,9 +117,42 @@ export function clearSystemNodeCache(): void {
   nodeIdCache.clear()
 }
 
+function getDirectParentSupertagIds(
+  db: ReturnType<typeof getDatabase>,
+  supertagId: string,
+  extendsFieldId: string,
+): string[] {
+  const props = db
+    .select()
+    .from(nodeProperties)
+    .where(and(
+      eq(nodeProperties.nodeId, supertagId),
+      eq(nodeProperties.fieldNodeId, extendsFieldId),
+    ))
+    .all()
+    .sort((a, b) => {
+      const orderDiff = (a.order ?? 0) - (b.order ?? 0)
+      return orderDiff !== 0 ? orderDiff : a.nodeId.localeCompare(b.nodeId)
+    })
+
+  const parentIds: string[] = []
+  for (const prop of props) {
+    try {
+      const parentId = JSON.parse(prop.value || '')
+      if (typeof parentId === 'string' && parentId) {
+        parentIds.push(parentId)
+      }
+    } catch {
+      // skip malformed extends values
+    }
+  }
+
+  return parentIds
+}
+
 /**
- * Get all ancestor supertags by walking the field:extends chain
- * Returns IDs in order from immediate parent to root ancestor
+ * Get all ancestor supertags by walking the field:extends DAG breadth-first.
+ * Returns IDs in BFS discovery order from direct parents outward.
  */
 export function getAncestorSupertags(
   db: ReturnType<typeof getDatabase>,
@@ -130,39 +163,37 @@ export function getAncestorSupertags(
   if (!extendsField) return []
 
   const ancestors: string[] = []
-  const visited = new Set<string>()
-  let currentId = supertagId
+  const visited = new Set<string>([supertagId])
+  let frontier = [supertagId]
 
   for (let depth = 0; depth < maxDepth; depth++) {
-    if (visited.has(currentId)) break // Prevent cycles
-    visited.add(currentId)
+    if (frontier.length === 0) break
+    const nextFrontier: string[] = []
 
-    // Find the extends property of the current supertag
-    const extendsProp = db
-      .select()
-      .from(nodeProperties)
-      .where(and(
-        eq(nodeProperties.nodeId, currentId),
-        eq(nodeProperties.fieldNodeId, extendsField.id),
-      ))
-      .get()
-
-    if (!extendsProp) break
-
-    try {
-      const parentId = JSON.parse(extendsProp.value || '')
-      if (typeof parentId === 'string' && parentId) {
+    for (const currentId of frontier) {
+      const parentIds = getDirectParentSupertagIds(db, currentId, extendsField.id)
+      for (const parentId of parentIds) {
+        if (visited.has(parentId)) continue
+        visited.add(parentId)
         ancestors.push(parentId)
-        currentId = parentId
-      } else {
-        break
+        nextFrontier.push(parentId)
       }
-    } catch {
-      break
     }
+
+    frontier = nextFrontier
   }
 
   return ancestors
+}
+
+function getSupertagInheritanceMergeOrder(
+  db: ReturnType<typeof getDatabase>,
+  supertagId: string,
+): string[] {
+  return [
+    supertagId,
+    ...getAncestorSupertags(db, supertagId),
+  ]
 }
 
 /**
@@ -581,12 +612,7 @@ function getFormulaFieldDefinitionsForNode(
   >()
 
   for (const supertag of assembled.supertags) {
-    const supertagChain = [
-      supertag.id,
-      ...getAncestorSupertags(db, supertag.id),
-    ].reverse()
-
-    for (const stId of supertagChain) {
+    for (const stId of getSupertagInheritanceMergeOrder(db, supertag.id)) {
       const fieldDefs = getSupertagFieldDefinitions(db, stId)
       for (const [fieldSystemId, def] of fieldDefs) {
         if (getFieldDefinitionType(db, def.fieldNodeId) !== 'formula') continue
@@ -671,16 +697,7 @@ export function assembleNodeWithInheritance(
 
   // For each supertag, collect inherited fields
   for (const supertag of node.supertags) {
-    // Get all ancestors (immediate supertag + its parents)
-    const supertagChain = [
-      supertag.id,
-      ...getAncestorSupertags(db, supertag.id),
-    ]
-
-    // Process from root to leaf (so child supertag values override parent values)
-    const reversedChain = [...supertagChain].reverse()
-
-    for (const stId of reversedChain) {
+    for (const stId of getSupertagInheritanceMergeOrder(db, supertag.id)) {
       const fieldDefs = getSupertagFieldDefinitions(db, stId)
 
       for (const [fieldSystemId, def] of fieldDefs) {
@@ -1048,6 +1065,7 @@ export function linkNodes(
 export function getNodeIdsBySupertagWithInheritance(
   db: ReturnType<typeof getDatabase>,
   supertagId: string,
+  maxDepth: number = 10,
 ): string[] {
   const targetSupertag = getFieldOrSupertagNode(db, supertagId)
   if (!targetSupertag) return []
@@ -1057,18 +1075,45 @@ export function getNodeIdsBySupertagWithInheritance(
 
   const allSupertagIds = new Set<string>([targetSupertag.id])
 
-  // Find child supertags that extend the target (single level)
-  const childSupertags = db
+  const extendsProps = db
     .select()
     .from(nodeProperties)
-    .where(and(
-      eq(nodeProperties.fieldNodeId, extendsField.id),
-      eq(nodeProperties.value, JSON.stringify(targetSupertag.id)),
-    ))
+    .where(eq(nodeProperties.fieldNodeId, extendsField.id))
     .all()
 
-  for (const child of childSupertags) {
-    allSupertagIds.add(child.nodeId)
+  const childrenByParent = new Map<string, string[]>()
+  const sortedExtendsProps = [...extendsProps].sort((a, b) => {
+    const orderDiff = (a.order ?? 0) - (b.order ?? 0)
+    return orderDiff !== 0 ? orderDiff : a.nodeId.localeCompare(b.nodeId)
+  })
+
+  for (const prop of sortedExtendsProps) {
+    try {
+      const parentId = JSON.parse(prop.value || '')
+      if (typeof parentId !== 'string' || !parentId) continue
+      const children = childrenByParent.get(parentId) ?? []
+      children.push(prop.nodeId)
+      childrenByParent.set(parentId, children)
+    } catch {
+      // skip malformed extends values
+    }
+  }
+
+  let frontier = [targetSupertag.id]
+  for (let depth = 0; depth < maxDepth; depth++) {
+    if (frontier.length === 0) break
+    const nextFrontier: string[] = []
+
+    for (const currentId of frontier) {
+      const childIds = childrenByParent.get(currentId) ?? []
+      for (const childId of childIds) {
+        if (allSupertagIds.has(childId)) continue
+        allSupertagIds.add(childId)
+        nextFrontier.push(childId)
+      }
+    }
+
+    frontier = nextFrontier
   }
 
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
