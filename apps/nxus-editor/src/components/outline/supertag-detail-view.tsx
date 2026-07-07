@@ -45,6 +45,7 @@ interface ConfigField {
   hideWhen?: string
   pinned?: boolean
   description?: string
+  formula?: string
 }
 
 interface InheritedField extends ConfigField {
@@ -63,6 +64,8 @@ const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: 'email', label: 'Email' },
   { value: 'node', label: 'Node ref' },
   { value: 'nodes', label: 'Node refs' },
+  { value: 'json', label: 'JSON' },
+  { value: 'formula', label: 'Formula' },
 ]
 
 const HIDE_WHEN_OPTIONS: { value: HideWhen; label: string }[] = [
@@ -200,6 +203,8 @@ function FieldsTab({
 }) {
   const [addingField, setAddingField] = useState(false)
   const [newFieldName, setNewFieldName] = useState('')
+  const [newFieldType, setNewFieldType] = useState<FieldType>('text')
+  const [newFieldFormula, setNewFieldFormula] = useState('')
 
   const handleAddField = useCallback(() => {
     if (!newFieldName.trim()) return
@@ -208,7 +213,8 @@ function FieldsTab({
         data: {
           supertagId: config.id,
           fieldName: newFieldName.trim(),
-          fieldType: 'text',
+          fieldType: newFieldType,
+          formula: newFieldType === 'formula' ? newFieldFormula.trim() : undefined,
         },
       })
         .then((result) => {
@@ -220,11 +226,13 @@ function FieldsTab({
             })
           }
           setNewFieldName('')
+          setNewFieldType('text')
+          setNewFieldFormula('')
           setAddingField(false)
         })
         .catch(() => {})
     })
-  }, [config, newFieldName, setConfig])
+  }, [config, newFieldFormula, newFieldName, newFieldType, setConfig])
 
   const handleRemoveField = useCallback(
     (fieldNodeId: string) => {
@@ -248,15 +256,27 @@ function FieldsTab({
 
   const handleChangeConstraints = useCallback(
     (fieldNodeId: string, updates: Record<string, unknown>) => {
-      import('@/services/supertag.server').then(({ updateFieldConstraintsServerFn }) => {
-        updateFieldConstraintsServerFn({
-          data: { fieldNodeId, ...updates },
-        }).catch(() => {})
+      import('@/services/supertag.server').then(({ updateFieldConstraintsServerFn, updateFieldFormulaServerFn, updateFieldTypeServerFn }) => {
+        if (typeof updates.fieldType === 'string') {
+          updateFieldTypeServerFn({
+            data: { fieldNodeId, fieldType: updates.fieldType },
+          }).catch(() => {})
+        } else if (typeof updates.formula === 'string' || updates.formula === null) {
+          updateFieldFormulaServerFn({
+            data: { fieldNodeId, formula: updates.formula as string | null },
+          }).catch(() => {})
+        } else {
+          updateFieldConstraintsServerFn({
+            data: { fieldNodeId, ...updates },
+          }).catch(() => {})
+        }
       })
       setConfig({
         ...config,
         ownFields: config.ownFields.map((f) =>
-          f.fieldNodeId === fieldNodeId ? { ...f, ...updates } : f,
+          f.fieldNodeId === fieldNodeId
+            ? { ...f, ...updates, ...(updates.fieldType && updates.fieldType !== 'formula' ? { formula: undefined } : {}) }
+            : f,
         ),
       })
     },
@@ -287,7 +307,7 @@ function FieldsTab({
         ))}
 
         {addingField ? (
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <input
               type="text"
               className="flex-1 text-[12px] bg-transparent outline-none border-b border-foreground/10 px-1 py-0.5 text-foreground/70 placeholder:text-foreground/25"
@@ -299,10 +319,23 @@ function FieldsTab({
                 if (e.key === 'Escape') {
                   setAddingField(false)
                   setNewFieldName('')
+                  setNewFieldType('text')
+                  setNewFieldFormula('')
                 }
               }}
               autoFocus
             />
+            <select
+              className="text-[10px] bg-transparent text-foreground/40 outline-none cursor-pointer"
+              value={newFieldType}
+              onChange={(e) => setNewFieldType(e.target.value as FieldType)}
+            >
+              {FIELD_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               className="text-[10px] text-foreground/30 hover:text-foreground/50 px-1"
@@ -310,6 +343,18 @@ function FieldsTab({
             >
               Add
             </button>
+            {newFieldType === 'formula' && (
+              <input
+                type="text"
+                className="basis-full text-[11px] bg-transparent outline-none border-b border-foreground/10 px-1 py-0.5 text-foreground/60 placeholder:text-foreground/25"
+                placeholder="{Price} * {Quantity}"
+                value={newFieldFormula}
+                onChange={(e) => setNewFieldFormula(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddField()
+                }}
+              />
+            )}
           </div>
         ) : (
           <button
@@ -548,6 +593,24 @@ function FieldConfigRow({
               ))}
             </select>
           </div>
+
+          {field.fieldType === 'formula' && (
+            <div className="flex items-start gap-1.5">
+              <Hash size={10} className="shrink-0 text-foreground/20 mt-0.5" />
+              <input
+                type="text"
+                className="flex-1 text-[11px] bg-transparent outline-none text-foreground/50 placeholder:text-foreground/20 border-b border-foreground/[0.05]"
+                placeholder="{Price} * {Quantity}"
+                defaultValue={field.formula ?? ''}
+                onBlur={(e) => {
+                  const formula = e.target.value.trim() || null
+                  if (formula !== (field.formula ?? null)) {
+                    onChangeConstraints({ formula })
+                  }
+                }}
+              />
+            </div>
+          )}
 
           {/* Required toggle */}
           <label className="flex items-center gap-1.5 cursor-pointer">

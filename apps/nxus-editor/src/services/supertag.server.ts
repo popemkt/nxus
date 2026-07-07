@@ -190,17 +190,19 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
       const hideWhen = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
       const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
       const description = getProperty(fieldNode, FIELD_NAMES.DESCRIPTION) as string | undefined
+      const formula = getProperty(fieldNode, FIELD_NAMES.FORMULA) as string | undefined
       return {
         ...(requiredRaw === true || requiredRaw === 'true' ? { required: true } : {}),
         ...(hideWhen ? { hideWhen } : {}),
         ...(pinnedRaw === true || pinnedRaw === 'true' ? { pinned: true } : {}),
         ...(description ? { description } : {}),
+        ...(formula ? { formula } : {}),
       }
     }
 
     // Own field definitions (not inherited)
     const ownDefs = getSupertagFieldDefinitions(db, ctx.data.supertagId)
-    const ownFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string }[] = []
+    const ownFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string; formula?: string }[] = []
 
     for (const [systemId, def] of ownDefs) {
       if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
@@ -219,7 +221,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
 
     // Inherited fields from ancestors
     const ancestors = getAncestorSupertags(db, ctx.data.supertagId)
-    const inheritedFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; fromSupertagId: string; fromSupertagName: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string }[] = []
+    const inheritedFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; fromSupertagId: string; fromSupertagName: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string; formula?: string }[] = []
     const ownFieldIds = new Set(ownFields.map((f) => f.fieldSystemId))
 
     for (const ancestorId of ancestors) {
@@ -312,6 +314,7 @@ export const addSupertagFieldServerFn = createServerFn({ method: 'POST' })
       supertagId: z.string(),
       fieldName: z.string(),
       fieldType: z.string().optional(),
+      formula: z.string().optional(),
     }),
   )
   .handler(async (ctx) => {
@@ -335,6 +338,9 @@ export const addSupertagFieldServerFn = createServerFn({ method: 'POST' })
     // Set field type
     if (ctx.data.fieldType && ctx.data.fieldType !== 'text') {
       setProperty(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
+    }
+    if (ctx.data.fieldType === 'formula' && ctx.data.formula) {
+      setProperty(db, fieldNodeId, SYSTEM_FIELDS.FORMULA, ctx.data.formula)
     }
 
     // Generate a system ID for the field using 12 UUID chars to reduce collision risk
@@ -368,6 +374,7 @@ export const addSupertagFieldServerFn = createServerFn({ method: 'POST' })
         fieldName: ctx.data.fieldName,
         fieldSystemId: systemId,
         fieldType: ctx.data.fieldType ?? 'text',
+        ...(ctx.data.fieldType === 'formula' && ctx.data.formula ? { formula: ctx.data.formula } : {}),
       },
     }
   })
@@ -416,6 +423,36 @@ export const updateFieldTypeServerFn = createServerFn({ method: 'POST' })
 
     setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
     return { success: true as const }
+  })
+
+/**
+ * Update a formula expression on a field definition node.
+ */
+export const updateFieldFormulaServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      fieldNodeId: z.string(),
+      formula: z.string().nullable(),
+    }),
+  )
+  .handler(async (ctx) => {
+    try {
+      const { setProperty, clearProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
+      const db = await initDatabaseSeeded()
+
+      if (ctx.data.formula && ctx.data.formula.trim()) {
+        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FORMULA, ctx.data.formula)
+      } else {
+        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FORMULA)
+      }
+
+      return { success: true as const, data: null }
+    } catch (error) {
+      return {
+        success: false as const,
+        error: error instanceof Error ? error.message : 'Failed to update formula',
+      }
+    }
   })
 
 /**

@@ -68,13 +68,9 @@ afterEach(() => {
 })
 
 describe('bootstrap seeds the content that FIELD_NAMES reads', () => {
-  it('a freshly bootstrapped database resolves every core meta-field read through FIELD_NAMES', () => {
-    const cases: Array<[keyof typeof SYSTEM_FIELDS & keyof typeof FIELD_NAMES]> = [
-      ['SUPERTAG'],
-      ['EXTENDS'],
-      ['FIELD_TYPE'],
-    ]
-    for (const [key] of cases) {
+  it('a freshly bootstrapped database resolves every system field read through FIELD_NAMES', () => {
+    const cases = Object.keys(SYSTEM_FIELDS) as Array<keyof typeof SYSTEM_FIELDS & keyof typeof FIELD_NAMES>
+    for (const key of cases) {
       const fieldNode = getSystemNode(db, SYSTEM_FIELDS[key])
       expect(fieldNode, `system node for ${key} exists`).not.toBeNull()
       expect(

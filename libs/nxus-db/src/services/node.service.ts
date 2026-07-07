@@ -21,6 +21,7 @@ import {
 } from '../schemas/node-schema.js'
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
 import { eventBus } from '../reactive/event-bus.js'
+import { evaluateFormulaExpression } from './formula-evaluator.js'
 
 // Re-export types from the shared types file (for backward compatibility)
 export type {
@@ -384,6 +385,7 @@ export function assembleNode(
     }
   }
 
+  applyFormulaFields(db, assembled)
   return assembled
 }
 
@@ -523,10 +525,122 @@ export function assembleNodes(
       }
     }
 
+    applyFormulaFields(db, assembled)
     results.push(assembled)
   }
 
   return results
+}
+
+function applyFormulaFields(
+  db: ReturnType<typeof getDatabase>,
+  assembled: AssembledNode,
+): void {
+  const formulaDefs = getFormulaFieldDefinitionsForNode(db, assembled)
+  if (formulaDefs.length === 0) return
+
+  const formulaFieldNames = new Set(formulaDefs.map((def) => def.fieldName))
+  const values = new Map<string, JsonValue>()
+  for (const [fieldName, propValues] of Object.entries(assembled.properties)) {
+    if (formulaFieldNames.has(fieldName)) continue
+    const sorted = [...propValues].sort((a, b) => a.order - b.order)
+    const first = sorted[0]
+    if (first) values.set(fieldName, first.value)
+  }
+
+  for (const def of formulaDefs) {
+    const result = evaluateFormulaExpression(def.expression, {
+      values,
+      formulaFieldNames,
+    })
+    const pv: PropertyValue = {
+      value: result,
+      rawValue: JSON.stringify(result),
+      fieldNodeId: def.fieldNodeId,
+      fieldName: def.fieldName,
+      fieldSystemId: def.fieldSystemId,
+      order: 0,
+    }
+    const key = def.fieldName as FieldContentName
+    assembled.properties[key] = [pv]
+  }
+}
+
+function getFormulaFieldDefinitionsForNode(
+  db: ReturnType<typeof getDatabase>,
+  assembled: AssembledNode,
+): Array<{
+  fieldSystemId: string
+  fieldNodeId: string
+  fieldName: string
+  expression: string
+}> {
+  const definitions = new Map<
+    string,
+    { fieldSystemId: string; fieldNodeId: string; fieldName: string; expression: string }
+  >()
+
+  for (const supertag of assembled.supertags) {
+    const supertagChain = [
+      supertag.id,
+      ...getAncestorSupertags(db, supertag.id),
+    ].reverse()
+
+    for (const stId of supertagChain) {
+      const fieldDefs = getSupertagFieldDefinitions(db, stId)
+      for (const [fieldSystemId, def] of fieldDefs) {
+        if (getFieldDefinitionType(db, def.fieldNodeId) !== 'formula') continue
+        const expression = getFieldDefinitionFormula(db, def.fieldNodeId)
+        definitions.set(fieldSystemId, {
+          fieldSystemId,
+          fieldNodeId: def.fieldNodeId,
+          fieldName: def.fieldName,
+          expression,
+        })
+      }
+    }
+  }
+
+  return [...definitions.values()]
+}
+
+function getFieldDefinitionType(
+  db: ReturnType<typeof getDatabase>,
+  fieldNodeId: string,
+): string {
+  return getNodePropertyBySystemField(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE) ?? 'text'
+}
+
+function getFieldDefinitionFormula(
+  db: ReturnType<typeof getDatabase>,
+  fieldNodeId: string,
+): string {
+  return getNodePropertyBySystemField(db, fieldNodeId, SYSTEM_FIELDS.FORMULA) ?? ''
+}
+
+function getNodePropertyBySystemField(
+  db: ReturnType<typeof getDatabase>,
+  nodeId: string,
+  fieldSystemId: FieldSystemId,
+): string | undefined {
+  const field = getSystemNode(db, fieldSystemId)
+  if (!field) return undefined
+  const prop = db
+    .select()
+    .from(nodeProperties)
+    .where(and(
+      eq(nodeProperties.nodeId, nodeId),
+      eq(nodeProperties.fieldNodeId, field.id),
+      eq(nodeProperties.order, 0),
+    ))
+    .get()
+  if (!prop) return undefined
+  try {
+    const parsed = JSON.parse(prop.value || 'null')
+    return typeof parsed === 'string' ? parsed : undefined
+  } catch {
+    return prop.value ?? undefined
+  }
 }
 
 /**

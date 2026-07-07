@@ -126,7 +126,7 @@ Fields render in a `FieldsSection` between the node's content row and its childr
 
 ### Field-type icons
 
-Each field type has a distinct Phosphor icon as its "bullet" (`bullet.tsx:136-148`): text → TextT, number → Hash, boolean → ToggleRight, date → CalendarBlank, select → CaretCircleDown, url → LinkSimple, email → At, node → ArrowSquareOut, nodes → TreeStructure, json → BracketsAngle, instance → UsersThree.
+Each field type has a distinct Phosphor icon as its "bullet" (`bullet.tsx:137-150`): text → TextT, number → Hash, boolean → ToggleRight, date → CalendarBlank, select → CaretCircleDown, url → LinkSimple, email → At, node → ArrowSquareOut, nodes → TreeStructure, json → BracketsAngle, instance → UsersThree, formula → ApproximateEquals.
 
 ### Per-type value editors (`field-value.tsx:17-48` dispatch)
 
@@ -143,6 +143,7 @@ Each field type has a distinct Phosphor icon as its "bullet" (`bullet.tsx:136-14
 | node | full reference row: dashed-circle bullet + content + supertag pills; click navigates | read-only display (no `@`-picker yet) | `:1028-1085` |
 | nodes | vertical stack of reference rows | read-only display | `:1087-1099` |
 | json | collapsed monospace preview (≤40 chars), full JSON in tooltip | read-only | `:1125-1147` |
+| formula | computed scalar or `{ error: string }` from the assembly layer | read-only display; no edit affordance in field rows; errors render as quiet muted text | `field-value.tsx:17-83` |
 
 Unresolved node references render a compact pill with the truncated node ID; clicking still navigates (`field-value.tsx:1101-1123`). Any object value on a non-reference type falls back to the JSON display (`:19-21`).
 
@@ -150,6 +151,7 @@ Unresolved node references render a compact pill with the truncated node ID; cli
 
 - Typing `>` as the sole content of an active node clears the text and opens a **pending field row**: an inline autocomplete (auto-focused label cell) listing available fields for the node minus fields it already has, filtered as you type; ArrowUp/Down + Enter commit, Escape or Backspace-on-empty dismiss (`node-content.tsx:95-100`, `node-block.tsx:166-171`, `fields-section.tsx:204-371`).
 - Per-field visibility rules (`hideWhen`): `never` | `always` | `when_empty` | `when_not_empty`, applied at render (`fields-section.tsx:35-44`). Unit proof: `field-visibility.test.ts`.
+- Supertag configuration surfaces that create or retype fields MUST offer `formula` as a field type. When the selected type is `formula`, the field's settings include a plain text expression input stored on the field definition node's `field:formula` property (`supertag-config-panel.tsx:39-68`). This input is configuration metadata and MAY use a plain input control; instance field rows remain read-only computed output on the unified plane.
 
 Proof: `outline-editor.spec.ts` — "Fields Display" (:272-289), "field rows display with field bullet icons" (:598-614).
 

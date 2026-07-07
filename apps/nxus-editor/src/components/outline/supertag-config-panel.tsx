@@ -45,6 +45,7 @@ interface ConfigField {
   hideWhen?: string
   pinned?: boolean
   description?: string
+  formula?: string
 }
 
 interface InheritedField extends ConfigField {
@@ -63,6 +64,8 @@ const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: 'email', label: 'Email' },
   { value: 'node', label: 'Node ref' },
   { value: 'nodes', label: 'Node refs' },
+  { value: 'json', label: 'JSON' },
+  { value: 'formula', label: 'Formula' },
 ]
 
 const HIDE_WHEN_OPTIONS: { value: HideWhen; label: string }[] = [
@@ -230,6 +233,7 @@ function FieldsTab({
   const [addingField, setAddingField] = useState(false)
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState<FieldType>('text')
+  const [newFieldFormula, setNewFieldFormula] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -248,6 +252,7 @@ function FieldsTab({
         supertagId: config.id,
         fieldName: trimmed,
         fieldType: newFieldType,
+        formula: newFieldType === 'formula' ? newFieldFormula.trim() : undefined,
       },
     })
     if (result && typeof result === 'object' && 'success' in result && result.success && 'field' in result && result.field) {
@@ -258,9 +263,10 @@ function FieldsTab({
       })
       setNewFieldName('')
       setNewFieldType('text')
+      setNewFieldFormula('')
       setAddingField(false)
     }
-  }, [config, newFieldName, newFieldType, onConfigChange])
+  }, [config, newFieldFormula, newFieldName, newFieldType, onConfigChange])
 
   const handleRemoveField = useCallback(
     async (fieldNodeId: string) => {
@@ -283,7 +289,24 @@ function FieldsTab({
       onConfigChange({
         ...config,
         ownFields: config.ownFields.map((f) =>
-          f.fieldNodeId === fieldNodeId ? { ...f, fieldType } : f,
+          f.fieldNodeId === fieldNodeId
+            ? { ...f, fieldType, ...(fieldType !== 'formula' ? { formula: undefined } : {}) }
+            : f,
+        ),
+      })
+    },
+    [config, onConfigChange],
+  )
+
+  const handleChangeFormula = useCallback(
+    async (fieldNodeId: string, formula: string | null) => {
+      const { updateFieldFormulaServerFn } = await import('@/services/supertag.server')
+      const result = await updateFieldFormulaServerFn({ data: { fieldNodeId, formula } })
+      if (result && typeof result === 'object' && 'success' in result && !result.success) return
+      onConfigChange({
+        ...config,
+        ownFields: config.ownFields.map((f) =>
+          f.fieldNodeId === fieldNodeId ? { ...f, formula: formula ?? undefined } : f,
         ),
       })
     },
@@ -331,6 +354,7 @@ function FieldsTab({
               onRemove={() => handleRemoveField(field.fieldNodeId)}
               onChangeType={(type) => handleChangeFieldType(field.fieldNodeId, type)}
               onChangeConstraints={(c) => handleChangeConstraints(field.fieldNodeId, c)}
+              onChangeFormula={(formula) => handleChangeFormula(field.fieldNodeId, formula)}
             />
           ))}
         </div>
@@ -357,7 +381,7 @@ function FieldsTab({
 
       {/* Add field form */}
       {addingField ? (
-        <div className="flex items-center gap-1 px-2 py-1">
+        <div className="flex flex-wrap items-center gap-1 px-2 py-1">
           <input
             ref={nameInputRef}
             type="text"
@@ -368,6 +392,7 @@ function FieldsTab({
               if (e.key === 'Escape') {
                 setAddingField(false)
                 setNewFieldName('')
+                setNewFieldFormula('')
               }
             }}
             className="flex-1 bg-transparent text-[12px] text-foreground/70 outline-none border-b border-foreground/10 px-1 py-0.5"
@@ -383,10 +408,23 @@ function FieldsTab({
             onClick={() => {
               setAddingField(false)
               setNewFieldName('')
+              setNewFieldFormula('')
             }}
           >
             <X size={12} weight="bold" />
           </button>
+          {newFieldType === 'formula' && (
+            <input
+              type="text"
+              value={newFieldFormula}
+              onChange={(e) => setNewFieldFormula(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddField()
+              }}
+              className="basis-full bg-transparent text-[11px] text-foreground/60 outline-none border-b border-foreground/10 px-1 py-0.5"
+              placeholder="{Price} * {Quantity}"
+            />
+          )}
         </div>
       ) : (
         <button
@@ -415,6 +453,7 @@ function FieldConfigRow({
   onRemove,
   onChangeType,
   onChangeConstraints,
+  onChangeFormula,
 }: {
   field: ConfigField
   inherited: boolean
@@ -422,11 +461,14 @@ function FieldConfigRow({
   onRemove: () => void
   onChangeType: (type: FieldType) => void
   onChangeConstraints?: (constraints: { required?: boolean | null; hideWhen?: HideWhen | null; pinned?: boolean | null; description?: string | null }) => void
+  onChangeFormula?: (formula: string | null) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [usageStats, setUsageStats] = useState<{ nodeCount: number; supertagCount: number } | null>(null)
   const [descDraft, setDescDraft] = useState(field.description ?? '')
+  const [formulaDraft, setFormulaDraft] = useState(field.formula ?? '')
   const descTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const formulaTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load usage stats when expanded
   useEffect(() => {
@@ -454,6 +496,19 @@ function FieldConfigRow({
       }, 500)
     },
     [onChangeConstraints],
+  )
+
+  const handleFormulaChange = useCallback(
+    (value: string) => {
+      setFormulaDraft(value)
+      if (!onChangeFormula) return
+      if (formulaTimerRef.current) clearTimeout(formulaTimerRef.current)
+      formulaTimerRef.current = setTimeout(() => {
+        formulaTimerRef.current = null
+        onChangeFormula(value.trim() || null)
+      }, 500)
+    },
+    [onChangeFormula],
   )
 
   return (
@@ -527,6 +582,19 @@ function FieldConfigRow({
               className="flex-1 bg-transparent text-[10px] text-foreground/50 outline-none border-b border-foreground/[0.06] px-0.5 py-0.5 focus:border-foreground/15"
             />
           </div>
+
+          {field.fieldType === 'formula' && (
+            <div className="flex items-start gap-1.5 text-[11px] text-foreground/40">
+              <Hash size={9} weight="bold" className="text-foreground/30 shrink-0 mt-1" />
+              <input
+                type="text"
+                value={formulaDraft}
+                onChange={(e) => handleFormulaChange(e.target.value)}
+                placeholder="{Price} * {Quantity}"
+                className="flex-1 bg-transparent text-[10px] text-foreground/50 outline-none border-b border-foreground/[0.06] px-0.5 py-0.5 focus:border-foreground/15"
+              />
+            </div>
+          )}
 
           {/* Required toggle */}
           <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-foreground/40 hover:text-foreground/60">

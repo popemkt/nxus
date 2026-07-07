@@ -16,11 +16,19 @@ interface FieldValueProps {
 
 export function FieldValue({ fieldType, fieldNodeId, value, onChange }: FieldValueProps) {
   // Safety: if value is an object/array and not a reference type, render as JSON
-  if (value !== null && value !== undefined && typeof value === 'object' && fieldType !== 'nodes') {
+  if (
+    value !== null &&
+    value !== undefined &&
+    typeof value === 'object' &&
+    fieldType !== 'nodes' &&
+    fieldType !== 'formula'
+  ) {
     return <JsonField value={value} />
   }
 
   switch (fieldType) {
+    case 'formula':
+      return <FormulaField value={value} />
     case 'boolean':
       return <BooleanField value={Boolean(value)} onChange={onChange} />
     case 'date':
@@ -45,6 +53,33 @@ export function FieldValue({ fieldType, fieldNodeId, value, onChange }: FieldVal
     default:
       return <EditableField value={String(value ?? '')} onChange={onChange} />
   }
+}
+
+function FormulaField({ value }: { value: unknown }) {
+  if (isFormulaError(value)) {
+    return (
+      <span className="rounded-sm px-1 text-[14.5px] leading-[1.6] text-foreground/35 italic">
+        {value.error}
+      </span>
+    )
+  }
+  if (value === null || value === undefined || value === '') {
+    return <span className={emptyTextClass}>Empty</span>
+  }
+  return (
+    <span className="rounded-sm px-1 text-[14.5px] leading-[1.6] text-foreground/75">
+      {String(value)}
+    </span>
+  )
+}
+
+function isFormulaError(value: unknown): value is { error: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof (value as { error?: unknown }).error === 'string'
+  )
 }
 
 /* ─── Shared styles ─── */

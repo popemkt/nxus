@@ -10,6 +10,7 @@ export type FieldType =
   | 'node'
   | 'nodes'
   | 'json'
+  | 'formula'
 
 export type HideWhen = 'never' | 'when_empty' | 'when_not_empty' | 'always'
 
@@ -103,6 +104,7 @@ export const HIDDEN_FIELD_SYSTEM_IDS = new Set([
   'field:supertag',
   'field:extends',
   'field:field_type',
+  'field:formula',
   'field:order',
   'field:parent',
   'field:query_result_cache',
