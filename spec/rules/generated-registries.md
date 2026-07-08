@@ -3,7 +3,7 @@ id: generated-registries
 scope: docs
 principle: Single source of truth
 enforcement: prose
-gate: scripts/agent-hub-sync.mjs
+gate: scripts/agent-hub-sync.mjs + scripts/generate-rules-index.mjs
 guards: record
 ---
 
@@ -20,8 +20,8 @@ Per the placement question ([placement.md](placement.md)), text invalidated by *
 
 DRIFT: registries still hand-written, checks not in CI
 - canonical: app registry and rules index are generated with CI-enforced `--check`; consumers (README, AGENTS.md) embed generated output.
-- current: no generator exists for either; `spec/rules/README.md` is a hand-authored temporary index; app/port/path facts are still mirrored in code (`mini-apps.ts:9-50`, gateway `vite.config.ts:16-22`, per-app vite configs) and legacy docs; even the proven `pnpm agent:check` is not wired into `.github/workflows/ci.yml`.
-- impact: each mirror drifts independently; agents ingest whichever copy they find first.
-- closes: write the two generators, add their `--check` plus `agent:check` to CI, replace mirrors with generated includes or links.
+- current: partially closed. Rules index: GENERATED (2026-07-08) — `scripts/generate-rules-index.mjs` writes the table in `spec/rules/README.md` between markers; `pnpm rules:check` is in the CI lint job. App registry: `scripts/check-app-registry.mjs` drift-CHECKS `spec/tech/architecture.md` §4 against package.json ports/vite base paths/gateway routes in CI, but the table is still hand-written (check, not generate) and `mini-apps.ts` remains a hand-maintained mirror.
+- impact: remaining exposure is the app-registry mirrors (`mini-apps.ts`), which the checker only partially covers.
+- closes: promote the app-registry checker to a generator (single source emitting the §4 table and `mini-apps.ts`).
 
 **Drift mode:** this rule drifts when someone hand-edits a generated file or hand-copies a derivable table into prose. Detection: `--check` scripts where they exist; review for new tables of ports/paths/rule-lists elsewhere.
