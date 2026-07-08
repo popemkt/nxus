@@ -31,6 +31,14 @@ interface CreateNodeResult {
 }
 import { WORKSPACE_ROOT_ID } from '@/types/outline'
 
+type CachedOutlineNode = { id: string; content: string }
+type CachedOutlineQueryData = {
+  success: true
+  nodes: CachedOutlineNode[]
+  rootId?: string
+  totalCount?: number
+}
+
 /**
  * Map store parentId to server parentId.
  * The workspace root is a local-only virtual node — in the DB,
@@ -57,6 +65,7 @@ function toPersistedOrder(order: string): number {
  */
 export function useOutlineSync() {
   const contentTimers = useRef(new Map<string, NodeJS.Timeout>())
+  const contentConvergenceTimer = useRef<NodeJS.Timeout | null>(null)
   const queryClient = useQueryClient()
 
   // Clear pending content debounce timers on unmount
@@ -65,6 +74,10 @@ export function useOutlineSync() {
     return () => {
       for (const timer of timers.values()) clearTimeout(timer)
       timers.clear()
+      if (contentConvergenceTimer.current) {
+        clearTimeout(contentConvergenceTimer.current)
+        contentConvergenceTimer.current = null
+      }
     }
   }, [])
 
@@ -72,6 +85,35 @@ export function useOutlineSync() {
   const invalidateQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: outlineQueryKeys.all })
   }, [queryClient])
+
+  const patchCachedNodeContent = useCallback((nodeId: string, content: string) => {
+    queryClient.setQueriesData<CachedOutlineQueryData>(
+      { queryKey: outlineQueryKeys.all },
+      (oldData) => {
+        if (!oldData?.success || !Array.isArray(oldData.nodes)) return oldData
+
+        let changed = false
+        const nodes = oldData.nodes.map((node) => {
+          if (node.id !== nodeId || node.content === content) return node
+          changed = true
+          return { ...node, content }
+        })
+
+        return changed ? { ...oldData, nodes } : oldData
+      },
+    )
+  }, [queryClient])
+
+  const scheduleContentConvergenceInvalidation = useCallback(() => {
+    if (contentConvergenceTimer.current) {
+      clearTimeout(contentConvergenceTimer.current)
+    }
+
+    contentConvergenceTimer.current = setTimeout(() => {
+      contentConvergenceTimer.current = null
+      invalidateQueries()
+    }, 2_000)
+  }, [invalidateQueries])
 
   /** Capture the current node map state before a mutation for undo support */
   const captureUndoSnapshot = useCallback(() => {
@@ -92,13 +134,16 @@ export function useOutlineSync() {
       setTimeout(() => {
         timers.delete(nodeId)
         updateNodeContentServerFn({ data: { nodeId, content } })
-          .then(() => invalidateQueries())
+          .then(() => {
+            patchCachedNodeContent(nodeId, content)
+            scheduleContentConvergenceInvalidation()
+          })
           .catch((err) => {
             console.error('[sync] Failed to update content:', err)
           })
       }, 500),
     )
-  }, [invalidateQueries])
+  }, [patchCachedNodeContent, scheduleContentConvergenceInvalidation])
 
   /**
    * Create node — optimistic in store, then persist.

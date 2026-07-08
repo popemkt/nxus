@@ -76,8 +76,9 @@ export function evaluateQuery(
 ): QueryEvaluationResult {
   const evaluatedAt = new Date()
 
-  // 1. Start with all non-deleted node IDs
-  let candidateIds = getAllNonDeletedNodeIds(db)
+  // 1. Start from the narrowest sound seed we can prove from top-level
+  // conjunctions. Fall back to all non-deleted nodes for OR/NOT roots.
+  let candidateIds = getInitialCandidateIds(db, definition.filters)
 
   // 2. Apply each filter (top-level filters are AND'd together)
   for (const filter of definition.filters) {
@@ -1032,4 +1033,46 @@ function getAllNonDeletedNodeIds(db: Database): Set<string> {
     .all()
 
   return new Set(allNodes.map((n) => n.id))
+}
+
+function getInitialCandidateIds(
+  db: Database,
+  filters: QueryFilter[],
+): Set<string> {
+  const requiredSupertag = findRequiredSupertagFilter(filters)
+  if (!requiredSupertag) {
+    return getAllNonDeletedNodeIds(db)
+  }
+
+  const matchingIds = requiredSupertag.includeInherited === false
+    ? getNodeIdsByDirectSupertag(db, requiredSupertag.supertagId)
+    : getNodeIdsBySupertagWithInheritance(db, requiredSupertag.supertagId)
+
+  return getExistingNodeIds(db, new Set(matchingIds))
+}
+
+function findRequiredSupertagFilter(filters: QueryFilter[]): SupertagFilter | null {
+  for (const filter of filters) {
+    const required = findRequiredSupertagInConjunction(filter)
+    if (required) return required
+  }
+
+  return null
+}
+
+function findRequiredSupertagInConjunction(filter: QueryFilter): SupertagFilter | null {
+  if (filter.type === 'supertag') {
+    return filter
+  }
+
+  if (filter.type !== 'and') {
+    return null
+  }
+
+  for (const subFilter of filter.filters) {
+    const required = findRequiredSupertagInConjunction(subFilter)
+    if (required) return required
+  }
+
+  return null
 }

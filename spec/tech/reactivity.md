@@ -154,7 +154,7 @@ DRIFT: singleton wiring is disjoint — threshold automations can't see the comp
 
 ## 8. Performance model
 
-The system optimizes **number of query evaluations per mutation**, not evaluation cost (the evaluator full-scans; see ./persistence.md). Targets are encoded as tests in `libs/nxus-db/src/reactive/__tests__/performance-targets.test.ts` (header :4-11; CI runs scaled-down node counts):
+The system primarily optimizes **number of query evaluations per mutation**, while the evaluator owns per-evaluation seed cost (supertag-required queries seed from indexed supertag membership; unconstrained/OR/NOT queries still full-scan — see ./persistence.md). Targets are encoded as tests in `libs/nxus-db/src/reactive/__tests__/performance-targets.test.ts` (header :4-11; CI runs scaled-down node counts):
 
 | Target | Assertion |
 |---|---|

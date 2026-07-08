@@ -143,6 +143,33 @@ function seedSystemNodes() {
   `)
 }
 
+function capturePreparedSql<T>(fn: () => T): { result: T; statements: string[] } {
+  const statements: string[] = []
+  const originalPrepare = sqlite.prepare.bind(sqlite)
+  const sqliteWithPatchedPrepare = sqlite as typeof sqlite & {
+    prepare: (source: string) => ReturnType<typeof sqlite.prepare>
+  }
+
+  sqliteWithPatchedPrepare.prepare = ((source: string) => {
+    statements.push(source)
+    return originalPrepare(source)
+  }) as typeof sqlite.prepare
+
+  try {
+    return { result: fn(), statements }
+  } finally {
+    sqliteWithPatchedPrepare.prepare = originalPrepare as typeof sqlite.prepare
+  }
+}
+
+function ranAllNonDeletedSeed(statements: string[]): boolean {
+  return statements.some((statement) =>
+    statement.includes('from "nodes"') &&
+    statement.includes('"nodes"."deleted_at" is null') &&
+    !statement.includes('"nodes"."id" in'),
+  )
+}
+
 // ============================================================================
 // Test Suite
 // ============================================================================
@@ -875,6 +902,78 @@ describe('query-evaluator.service', () => {
       expect(result.nodes.length).toBe(1)
       expect(result.nodes[0].id).toBe(item1)
       expect(result.totalCount).toBe(1)
+    })
+
+    it('should seed from a required direct supertag without changing results', () => {
+      const match = createNode(db, { content: 'Matching Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Other Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Matching Command', supertagId: SYSTEM_SUPERTAGS.COMMAND })
+      for (let i = 0; i < 25; i++) {
+        createNode(db, { content: `Untagged Matching ${i}` })
+      }
+
+      const { result, statements } = capturePreparedSql(() =>
+        evaluateQuery(db, {
+          filters: [
+            { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+            { type: 'content', query: 'Matching', caseSensitive: false },
+          ],
+          limit: 500,
+        }),
+      )
+
+      expect(result.nodes.map((n) => n.id)).toEqual([match])
+      expect(result.totalCount).toBe(1)
+      expect(ranAllNonDeletedSeed(statements)).toBe(false)
+    })
+
+    it('should seed from a supertag required inside a root AND branch', () => {
+      const activeTool = createNode(db, { content: 'Active Tool', supertagId: 'supertag:tool' })
+      createNode(db, { content: 'Inactive Tool', supertagId: 'supertag:tool' })
+      createNode(db, { content: 'Active Command', supertagId: SYSTEM_SUPERTAGS.COMMAND })
+      setProperty(db, activeTool, 'field:status' as FieldSystemId, 'active')
+
+      const { result, statements } = capturePreparedSql(() =>
+        evaluateQuery(db, {
+          filters: [
+            {
+              type: 'and',
+              filters: [
+                { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: true },
+                { type: 'property', fieldId: 'field:status', op: 'eq', value: 'active' },
+              ],
+            },
+          ],
+          limit: 500,
+        }),
+      )
+
+      expect(result.nodes.map((n) => n.id)).toEqual([activeTool])
+      expect(result.totalCount).toBe(1)
+      expect(ranAllNonDeletedSeed(statements)).toBe(false)
+    })
+
+    it('should keep full-scan seeding for OR roots because no supertag is required', () => {
+      createNode(db, { content: 'Item', supertagId: SYSTEM_SUPERTAGS.ITEM })
+      createNode(db, { content: 'Command', supertagId: SYSTEM_SUPERTAGS.COMMAND })
+
+      const { result, statements } = capturePreparedSql(() =>
+        evaluateQuery(db, {
+          filters: [
+            {
+              type: 'or',
+              filters: [
+                { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.ITEM, includeInherited: false },
+                { type: 'supertag', supertagId: SYSTEM_SUPERTAGS.COMMAND, includeInherited: false },
+              ],
+            },
+          ],
+          limit: 500,
+        }),
+      )
+
+      expect(result.nodes).toHaveLength(2)
+      expect(ranAllNonDeletedSeed(statements)).toBe(true)
     })
 
     it('should respect limit', () => {

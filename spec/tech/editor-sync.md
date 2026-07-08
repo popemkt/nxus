@@ -149,11 +149,15 @@ DRIFT: debounce-discarded-on-unmount
 
 **Canonical.** After a persisted mutation, live query results visible in the outline refresh. Invalidation is scoped (INV-11): the reactive layer ([./reactivity.md](./reactivity.md)) owns dependency tracking; this contract only requires the editor to notify it of the changed node/field, not to nuke the cache.
 
-DRIFT: query-invalidation-storm-on-save
-- canonical: INV-11.
-- current: `invalidateQueries` invalidates `outlineQueryKeys.all` (use-outline-sync.ts:64-66) and is called after **every** mutation, including every 500ms debounced content save while typing (:87).
-- impact: each typing pause re-evaluates every mounted query node; the server evaluator full-scans per evaluation (see [./persistence.md](./persistence.md)), so cost is O(queries × nodes) per pause — the dominant editor scaling cliff.
-- closes: pass the mutated nodeId/field to a scoped invalidation (per-query keys + reactive dependency check); content-only saves skip queries that don't filter on content.
+Content saves (`updateNodeContentServerFn`) MUST NOT invalidate all outline query caches on the success path. The client already has the confirmed content value, so it MUST patch every cached outline-query result containing the saved node in place (`queryClient.setQueriesData` over `outlineQueryKeys.all`) and then schedule one trailing convergence invalidation after 2 seconds without another confirmed content save. That trailing invalidation is the bounded convergence point for derived views whose output may change from content (mentions/backlinks, formula fields reading content, query blocks whose predicates or sorts depend on content). Repeated typing bursts therefore produce immediate row-content convergence and at most one namespace invalidation after the burst.
+
+Structural mutations — create, delete, restore, reparent, reorder/swap, supertag changes, and field changes — MAY keep immediate `outlineQueryKeys.all` invalidation. They change tree shape or membership and are lower-frequency than debounced content writes; narrowing them is owned by the broader INV-11 reactive dependency fix.
+
+DRIFT: query-invalidation-storm-structural-and-derived
+- canonical: INV-11 — persisted changes invalidate only live queries whose dependencies can change.
+- current: content saves patch cached query rows and schedule one 2s trailing invalidation (`use-outline-sync.ts`); structural mutations and query-definition saves still invalidate `outlineQueryKeys.all` immediately.
+- impact: high-frequency typing no longer refetches/re-evaluates every query on every 500ms save, but lower-frequency structural edits and the trailing content convergence pass still fan out to all mounted outline queries.
+- closes: pass the mutated nodeId/field to a scoped invalidation API (per-query keys + reactive dependency check); content-only convergence skips queries that do not depend on content/mentions/formulas.
 
 ## 10. Acceptance checklist for the sync-layer fix
 

@@ -154,3 +154,16 @@ Node assembly (`assembleNode`/`assembleNodes` and every definition lookup they t
 - Tree loads iterate a **depth frontier** (one children query per level via `inArray`, batch assembly per level) instead of per-node recursion — see `getNodeTreeServerFn` (`apps/nxus-editor/src/services/outline.server.ts`).
 
 Measured on the seeded benchmark shape (1011 nodes, depth 4, 3 supertags × 4 fields incl. one formula field, 2026-07-08, local M-series): per-node uncached assembly 39,507 SQL statements / ~1040ms; frontier + cache 52 statements / ~21ms.
+
+## 10. Query evaluator seeding
+
+`evaluateQuery` (`libs/nxus-db/src/services/query-evaluator.service.ts`) MUST choose an initial candidate set that is sound before applying filters:
+
+- If the top-level filter list contains a required `supertag` filter, seed from nodes with that supertag instead of all non-deleted nodes.
+- Because top-level `QueryDefinition.filters` are ANDed, a top-level `supertag` filter is required. A `supertag` nested under a top-level `and` branch is also required, including nested `and` branches.
+- A `supertag` under `or` or `not` is NOT required and MUST NOT narrow the seed; those cases fall back to all non-deleted nodes.
+- `includeInherited: false` seeds from the exact `field:supertag` property assignment (`node_properties.field_node_id = field:supertag` and `value = JSON.stringify(targetSupertag.id)`).
+- `includeInherited: true` seeds from direct assignments to the target supertag and descendants in the `field:extends` inheritance graph. If a backend cannot answer inherited membership from its index/materialization, it MUST fall back to all non-deleted nodes rather than risk false negatives.
+- The seed is only an optimization: the evaluator still applies the original filter tree after seeding, and the seeded IDs MUST be intersected with existing non-deleted nodes before assembly.
+
+This changes the dominant query-evaluation cost for common query blocks from O(all nodes) seed + filter to O(nodes with required supertag) seed + filter. The remaining scaling cliff is live-query invalidation breadth: `node:created` and `node:deleted` still map to `NODE_MEMBERSHIP`/affects-all in the dependency tracker, so membership-changing writes can still re-evaluate many subscriptions even though each supertag-constrained evaluation now starts narrower.
