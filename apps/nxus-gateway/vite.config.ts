@@ -108,6 +108,9 @@ const config = defineConfig({
   server: {
     port: 3001,
     strictPort: true,
+    // e2e runs set NXUS_E2E: the error overlay intercepts pointer events and
+    // turns any transient dev-server hiccup into unrelated test failures.
+    hmr: process.env.NXUS_E2E ? { overlay: false } : undefined,
     watch: {
       ignored: [
         '**/packages/repos/**',

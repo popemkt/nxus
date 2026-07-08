@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test'
-import { rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -8,24 +7,25 @@ import { join } from 'node:path'
 // servers the webServer block boots inherit NXUS_DB_PATH and seed demo data
 // into it on first request. See spec/tech/toolchain.md.
 //
-// The rm below UNLINKS the db; a still-running dev server keeps the open
-// inode, so server and test process silently operate on two different
-// databases at the same path (split brain: direct-DB-seeded specs fail,
-// demo-data specs pass). Server reuse is therefore OFF by default — the rm
-// and the reuse flag must stay coupled; never re-enable reuse while the rm
-// runs unconditionally. PW_REUSE_SERVER=1 opts back in for fast iteration
-// (skips the rm; the DB then accumulates across runs — specs must tolerate
-// pre-existing data). See learnings/e2e-db-split-brain.md.
+// The delete MUST happen inside the webServer command, nowhere else: this
+// config file is re-evaluated by EVERY worker process, so a module-scope
+// rmSync unlinks the db mid-run under the live servers — server and test
+// process then silently operate on two different databases at the same path
+// (split brain: direct-DB-seeded specs fail, demo-data specs pass). Putting
+// it in the command runs it exactly once, before the apps boot, in the same
+// shell. Server reuse stays OFF for the same reason: reused servers hold the
+// inode a later run's delete would orphan. PW_REUSE_SERVER=1 opts back in for
+// fast local iteration (no fresh delete — the DB accumulates across runs).
+// See learnings/e2e-db-split-brain.md.
 const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
 const REUSE_SERVER = !!process.env.PW_REUSE_SERVER && !process.env.CI
-if (!REUSE_SERVER) {
-  for (const suffix of ['', '-wal', '-shm']) {
-    rmSync(E2E_DB_PATH + suffix, { force: true })
-  }
-}
+const RM_DB = `rm -f '${E2E_DB_PATH}' '${E2E_DB_PATH}-wal' '${E2E_DB_PATH}-shm'`
 
 export default defineConfig({
   testDir: './e2e',
+  // Triggers + awaits the server's demo auto-seed before any spec runs, so
+  // seed presence never depends on spec execution order (e2e/global-setup.ts).
+  globalSetup: './e2e/global-setup.cjs',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -47,8 +47,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm dev',
-    env: { ...process.env, NXUS_DB_PATH: E2E_DB_PATH },
+    command: `${RM_DB} && pnpm dev`,
+    env: { ...process.env, NXUS_DB_PATH: E2E_DB_PATH, NXUS_E2E: '1' },
     url: 'http://localhost:3001/__health',
     reuseExistingServer: REUSE_SERVER,
     timeout: 120_000,

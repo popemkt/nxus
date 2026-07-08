@@ -20,8 +20,12 @@ Direct-DB-seeded e2e specs (inline-mentions, formula-fields, Cmd+Shift+Down move
 - `lsof -p <server pid> | grep nxus-e2e` shows `.db`/`.db-wal` handles whose sizes disagree with the on-disk files (or whose files are missing).
 - Zoomed editor URL for a seeded node renders "No nodes found" while the same URL works after a server restart.
 
+## Second mechanism (found hours later)
+
+Turning reuse off was NOT sufficient: `playwright.config.ts` is re-evaluated by **every worker process**, so a module-scope `rmSync` still unlinked the db mid-run under the servers the run itself had just booted. The delete must live where it can run exactly once, before the apps boot: inside the `webServer.command` (`rm -f … && pnpm dev`).
+
 ## Rule
 
-The config-time rm and server reuse are mutually exclusive. `playwright.config.ts` now defaults `reuseExistingServer` OFF (fresh servers every run, rm safe); `PW_REUSE_SERVER=1` re-enables reuse and skips the rm (DB accumulates; specs must tolerate pre-existing data). Never separate these two flags.
+The db delete lives ONLY in `webServer.command` (once, pre-boot, same shell). Never at config module scope — config runs per worker. Server reuse stays OFF by default (`reuseExistingServer`); `PW_REUSE_SERVER=1` re-enables reuse and skips the fresh delete (DB accumulates; specs must tolerate pre-existing data).
 
 Corollary for agents: an e2e verification run made against reused servers proves nothing about the commit under test if server code changed — the server may be executing pre-commit code on a pre-rm database. When a gate matters, kill ports 3000-3005 first or rely on the new default.

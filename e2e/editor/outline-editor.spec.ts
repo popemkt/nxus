@@ -480,16 +480,19 @@ test.describe('Outline Editor', () => {
 
       // Type a search query
       await searchInput.fill('a')
-      await page.waitForTimeout(500) // Wait for debounced search
 
-      // Results list should appear (or "No results" message)
+      // Results list (or "No results") appears after the debounced search —
+      // poll for the eventual state instead of sampling once mid-loading.
       const resultsList = page.locator('button.flex.w-full')
       const noResults = page.getByText('No results')
-
-      const hasResults = await resultsList.count() > 0
-      const hasNoResults = await noResults.isVisible().catch(() => false)
-
-      expect(hasResults || hasNoResults).toBe(true)
+      await expect
+        .poll(
+          async () =>
+            (await resultsList.count()) > 0 ||
+            (await noResults.isVisible().catch(() => false)),
+          { timeout: 10_000 },
+        )
+        .toBe(true)
     })
 
     test('Escape closes search palette', async ({ page }) => {
