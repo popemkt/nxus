@@ -241,7 +241,9 @@ function loadTreePerNode(rootId: string): number {
 }
 
 describe('request-scoped assembly cache performance', () => {
-  it('assembles a depth-4 1000-node tree with bounded read queries', () => {
+  // The uncached baseline alone takes seconds under parallel suite load;
+  // the contract is the statement-count ratio, not wall-clock.
+  it('assembles a depth-4 1000-node tree with bounded read queries', { timeout: 30_000 }, () => {
     const { rootId, nodeCount } = seedAssemblyFixture()
     clearSystemNodeCache()
 
