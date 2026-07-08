@@ -7,7 +7,7 @@
  * For LEGACY migration: Use adapters from ./adapters.ts
  */
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { getDatabase } from '../client/master-client.js'
 import {
@@ -1547,7 +1547,17 @@ export function getNodeIdsBySupertagBaseType(
     }
   }
 
-  const result = [...nodeIds]
+  // Property rows survive soft deletion — exclude deleted nodes here so no
+  // caller can resurface them (a deleted event re-appearing on the calendar).
+  let result: string[] = []
+  if (nodeIds.size > 0) {
+    const liveRows = db
+      .select({ id: nodes.id })
+      .from(nodes)
+      .where(and(inArray(nodes.id, [...nodeIds]), isNull(nodes.deletedAt)))
+      .all()
+    result = liveRows.map((row) => row.id)
+  }
   cache?.nodeIdsByBaseType.set(baseType, result)
   return result
 }

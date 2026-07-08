@@ -33,12 +33,14 @@ test.describe.serial('Supertag base type calendar behavior', () => {
     await gotoEditorWithRetry(page, '/editor')
     const story = await seedBaseTypeCalendarStory()
 
-    await gotoEditorWithRetry(page, `/editor?node=${story.nodeId}`)
+    await gotoEditorWithRetry(page, `/editor?node=${story.zoomNodeId}`)
     const badge = page.locator(`[data-supertag-badge="${story.supertagId}"]`).first()
     await expect(badge).toBeVisible({ timeout: 10_000 })
     await badge.hover()
     await badge.getByRole('button', { name: 'Configure supertag' }).click()
 
+    // The base-type select lives in the panel's Settings tab.
+    await page.getByRole('button', { name: 'Settings' }).click()
     const baseTypeSelect = page.getByTestId('supertag-base-type-select')
     await expect(baseTypeSelect).toBeVisible({ timeout: 10_000 })
     await baseTypeSelect.click()
@@ -54,7 +56,7 @@ test.describe.serial('Supertag base type calendar behavior', () => {
 })
 
 async function seedBaseTypeCalendarStory(): Promise<{
-  nodeId: string
+  zoomNodeId: string
   supertagId: string
   title: string
 }> {
@@ -88,9 +90,13 @@ async function seedBaseTypeCalendarStory(): Promise<{
   addNodeSupertag(db, supertagId, SYSTEM_SUPERTAGS.SUPERTAG)
 
   const title = `Base type calendar story ${suffix}`
-  const nodeId = createNode(db, { content: title, supertagId: supertagSystemId })
+  // The tagged node needs a parent: supertag badges render on node ROWS, and a
+  // zoomed node's own badges don't appear in the zoomed header — the test
+  // zooms the parent and interacts with the child row's badge.
+  const parentId = createNode(db, { content: `Base type story parent ${suffix}` })
+  const nodeId = createNode(db, { content: title, ownerId: parentId, supertagId: supertagSystemId })
   setProperty(db, nodeId, SYSTEM_FIELDS.START_DATE, new Date().toISOString())
   setProperty(db, nodeId, SYSTEM_FIELDS.END_DATE, new Date(Date.now() + 60 * 60 * 1000).toISOString())
 
-  return { nodeId, supertagId, title }
+  return { zoomNodeId: parentId, supertagId, title }
 }

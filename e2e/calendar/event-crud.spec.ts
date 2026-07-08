@@ -91,12 +91,14 @@ test.describe.serial('Calendar Event CRUD (CA4-CA7)', () => {
     const startDateInput = page.locator('#event-start-date')
     await startDateInput.fill(today)
 
-    // Set start time (10:00) and end time (11:00)
+    // 14:00-15:00 on purpose: event-create.spec's "Test Event" occupies the
+    // 10:00 slot in the shared day; overlapping rbc events stack and the
+    // covered one intercepts clicks (CA5 flake under parallel workers).
     const startTimeInput = page.locator('#event-start-time')
     const endTimeInput = page.locator('#event-end-time')
 
-    await startTimeInput.fill('10:00')
-    await endTimeInput.fill('11:00')
+    await startTimeInput.fill('14:00')
+    await endTimeInput.fill('15:00')
 
     // Click the "Create Event" submit button
     const submitButton = page.getByRole('button', { name: /Create Event/i })
@@ -138,7 +140,7 @@ test.describe.serial('Calendar Event CRUD (CA4-CA7)', () => {
 
     // Verify the modal shows time information (clock icon + date range text)
     // The date range format is "EEE, MMM d, yyyy · h:mm a - h:mm a"
-    await expect(page.getByText(/10:00\s*AM\s*-\s*11:00\s*AM/i)).toBeVisible()
+    await expect(page.getByText(/2:00\s*PM\s*-\s*3:00\s*PM/i)).toBeVisible()
 
     // Verify action buttons are present
     await expect(

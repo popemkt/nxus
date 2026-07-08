@@ -123,12 +123,17 @@ export function SupertagConfigPanel({
     })
   }, [supertagId])
 
-  // Close on outside click
+  // Close on outside click. Base UI Selects render their popup in a portal
+  // OUTSIDE panelRef — clicking an option must not dismiss the panel, so
+  // anything inside a popover/select popup ([data-slot=select-content] or a
+  // base-ui positioner) counts as inside.
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose()
-      }
+      const target = e.target as Element | null
+      if (!panelRef.current || !target) return
+      if (panelRef.current.contains(target)) return
+      if (target.closest('[data-slot="select-content"], [role="listbox"], [role="option"]')) return
+      onClose()
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)

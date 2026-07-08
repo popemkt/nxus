@@ -95,7 +95,10 @@ function SelectContent({
         align={align}
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
-        className="isolate z-50"
+        // z-[150]: Select popups are transient and must layer above panel
+        // portals (config panel/palettes render at z-100). A popup opening
+        // UNDER its host panel makes options unclickable.
+        className="isolate z-[150]"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
