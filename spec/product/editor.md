@@ -102,15 +102,15 @@ Proof: `outline-editor.spec.ts` — "Keyboard Operations" (:106-164), "Multi-Nod
 
 DRIFT: multi-select visual selection fails e2e
 - canonical: after Escape into selection mode, Shift+ArrowDown extends the selection so ≥2 node rows carry selection styling (`bg-primary/5`); plain ArrowDown collapses back to exactly 1; Delete removes all selected nodes (`outline-editor.spec.ts:360-433`).
-- current: all three "Multi-Node Selection" tests fail — the extended selection does not manifest as ≥2 styled rows (styling path `node-block.tsx:34,340,359`; extension logic `outline.store.ts:169-181`).
-- impact: multi-select (bulk move/indent/delete) is unverified and likely broken in-browser; the keyboard table above overstates reality.
-- closes: fix `extendSelection`/selection styling so the tests pass (root-cause first: does `selectedNodeIds` actually gain members after Escape→Shift+ArrowDown?).
+- current: closed 2026-07-08 — all three "Multi-Node Selection" tests pass in the fully green full-suite run (86 passed / 0 failed, 1 worker); the earlier failures were the e2e infra split-brain/seed defects recorded in `spec/tech/toolchain.md` §6, not a product bug.
+- impact: none remaining.
+- closes: closed as above.
 
 DRIFT: Cmd+Shift+Down move fails e2e
 - canonical: in selection mode, Cmd+Shift+ArrowDown moves the selected node below its next sibling — the first visible node's text changes (`outline-editor.spec.ts:618-644`).
-- current: test fails. Move-down is implemented as two separate `reorderNodeServerFn` calls with a linear sibling scan (`hooks/use-outline-sync.ts:401-426`); the optimistic swap and/or its persistence does not take effect.
-- impact: keyboard reordering is unreliable; a failure between the two reorder calls leaves duplicate orders in the DB (see [../tech/editor-sync.md](../tech/editor-sync.md)).
-- closes: atomic swap (single server call) + passing test.
+- current: closed 2026-07-08 — move-down is now one atomic `swapOrderServerFn` batch inside a single transaction (see [../tech/editor-sync.md](../tech/editor-sync.md)); the test passes in the fully green full-suite run.
+- impact: none remaining.
+- closes: closed as above (atomic swap + green test).
 
 ## 5. Field Rows & Field Editing
 
@@ -158,9 +158,9 @@ Proof: `outline-editor.spec.ts` — "Fields Display" (:272-289), "field rows dis
 
 DRIFT: fields-display e2e expects legacy `›` indicator
 - canonical: field rows are visible and carry a visible per-type indicator, and the e2e proof passes (`outline-editor.spec.ts:272-289` asserts a `›` glyph inside the first field row).
-- current: the implementation renders `FieldBullet` type icons (`bullet.tsx:154-161`) — the design this spec declares canonical — so the test's `text=›` locator finds nothing and the test fails. The test predates the icon design.
-- impact: the proof layer is red for a behavior that is (visually) correct; genuine fields-display regressions would be indistinguishable from this stale assertion.
-- closes: update the test to assert the `FieldBullet` icon / `data-field-name` instead of `›`. This is the one DRIFT where the fix is to the test, not the code.
+- current: closed 2026-07-08 — the test now asserts the `FieldBullet` icon and `data-field-name` (`outline-editor.spec.ts:306-307,624-637`; the `›` remains only in a comment) and passes in the fully green full-suite run.
+- impact: none remaining.
+- closes: closed as above (test updated to the canonical design).
 
 ## 6. Supertag Interactions
 
@@ -189,9 +189,9 @@ Proof: `e2e/editor/query-persistence.spec.ts` (both tests).
 
 DRIFT: query definition edits don't survive collapse/expand
 - canonical: change a filter in the inline QueryBuilder → the pill reflects the new filter, results re-evaluate immediately, and after collapsing and re-expanding the query node the changed filter is still shown (`query-persistence.spec.ts:8-105,107-165`).
-- current: both tests fail. The write path exists (`query-results.tsx:65-83` mirrors into local state, store, and server), but the round-trip through collapse (which unmounts `QueryResults` and re-derives the definition from `node.fields` via `extractQueryDefinition`) loses the edit — the dual source of truth (`localDef` vs store field vs DB) diverges.
-- impact: users lose query edits on collapse; saved query nodes silently revert.
-- closes: single source of truth for the definition (store field), verified by the persistence spec passing.
+- current: closed 2026-07-08 — both `query-persistence.spec.ts` tests pass in the fully green full-suite run; the earlier failures traced to the e2e infra defects in `spec/tech/toolchain.md` §6.
+- impact: none remaining.
+- closes: closed as above.
 
 ## 8. Backlinks ("References") Panel
 
@@ -258,9 +258,9 @@ Proof: `outline-editor.spec.ts` — "Search Palette (Ctrl+S)" (:436-486), "Comma
 
 DRIFT: command palette fails e2e
 - canonical: with a node selected, Cmd+K opens the inline palette (input `placeholder*="command"` visible) showing "Add supertag" and "Delete node"; Escape closes it; selecting "Add supertag" advances to the supertag step with its breadcrumb and `placeholder*="supertag"` input (`outline-editor.spec.ts:489-579`, all four tests).
-- current: the four tests fail. The open path requires an `anchorRect` resolved from `[data-node-id] .node-row` after the capture-phase handler flips state (`node-command-palette.tsx:89-121,375`); the palette does not become visible/focused under the tests' selection-mode flow.
-- impact: the palette — the primary mouse-free entry to supertags, move, and delete — is unverified and likely broken from selection mode.
-- closes: make Cmd+K from selection mode reliably render + focus the palette; four green tests.
+- current: closed 2026-07-08 — all four "Command Palette (Ctrl+K)" tests pass in the fully green full-suite run (86 passed / 0 failed, 1 worker).
+- impact: none remaining.
+- closes: closed as above.
 
 ## 12. Views (view-as)
 
