@@ -144,6 +144,12 @@ Evidence: shared implementation in `libs/nxus-ui/src/theme/theme.tsx:53`, `libs/
 The app/port/basePath list is hand-duplicated in ≥4 code locations and ≥3 docs (§4 DRIFT).
 **Decision**: one machine-readable registry source; `mini-apps.ts`, the gateway route map, and the §4 table are generated or drift-checked from it in CI (the `agent-hub-sync` script, `scripts/agent-hub-sync.mjs`, already demonstrates the sync+check mechanism). Until implemented, §4 in this file is the single hand-maintained source.
 
+### DR-4: Select popups open beside the trigger, never under the pointer
+
+**Status: accepted, implemented (2026-07-08).**
+Base UI's `alignItemWithTrigger` positions the popup so the selected item sits directly under the trigger — i.e. under the pointer. A slow click (press opens the popup, release lands on the item) then **silently selects** whatever is under the cursor. Found via e2e traces on the workbench query builder; affects every Select product-wide.
+**Decision**: `@nxus/ui`'s `SelectContent` defaults `alignItemWithTrigger={false}` (`libs/nxus-ui/src/components/select.tsx`) so the popup opens as an ordinary dropdown beside the trigger. Callers MAY opt back in per-instance only for pointerless/keyboard-driven surfaces; any opt-in must state why the press-release hazard doesn't apply.
+
 ### Related (owned elsewhere)
 
 - Facade-vs-sync-API split and the graph-mode keep/delete decision: [persistence.md](./persistence.md).

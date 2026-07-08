@@ -78,7 +78,9 @@ function SelectContent({
   sideOffset = 4,
   align = 'center',
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  // Default OFF: with item-aligned positioning the popup opens with an item
+  // under the pointer, so press-on-trigger + release silently selects it.
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
