@@ -9,7 +9,11 @@ import { createServerFn } from '@tanstack/react-start'
 import {
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
+  createAssemblyCache,
+  getDatabase,
   getProperty,
+  getNodesBySupertagBaseType,
+  getSupertagIdsByBaseType,
   nodeFacade,
   FIELD_NAMES,
   type AssembledNode,
@@ -35,7 +39,7 @@ import { getNextInstance } from '../lib/rrule-utils.js'
 /**
  * Convert an assembled node to a CalendarEvent
  */
-function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
+function nodeToCalendarEvent(node: AssembledNode, taskSupertagIds: Set<string>): CalendarEvent {
   const startDateStr = getProperty<string>(node, FIELD_NAMES.START_DATE)
   const endDateStr = getProperty<string>(node, FIELD_NAMES.END_DATE)
   const allDay = getProperty<boolean>(node, FIELD_NAMES.ALL_DAY) ?? false
@@ -47,9 +51,7 @@ function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
   const description = getProperty<string>(node, FIELD_NAMES.DESCRIPTION)
 
   // Determine if this is a task by checking supertags
-  const isTask = node.supertags.some(
-    (st) => st.systemId === SYSTEM_SUPERTAGS.TASK,
-  )
+  const isTask = node.supertags.some((st) => taskSupertagIds.has(st.id))
 
   // Determine if completed (for tasks)
   const doneStatuses = ['done', 'completed', 'finished', 'closed']
@@ -87,6 +89,36 @@ function nodeToCalendarEvent(node: AssembledNode): CalendarEvent {
   }
 }
 
+function isCalendarCandidateForRange(node: AssembledNode, rangeEnd: Date): boolean {
+  const startDateStr = getProperty<string>(node, FIELD_NAMES.START_DATE)
+  return startDateStr ? new Date(startDateStr) <= rangeEnd : false
+}
+
+function getCalendarBaseTypeNodes(): {
+  nodes: AssembledNode[]
+  taskSupertagIds: Set<string>
+  calendarSupertagIds: Set<string>
+} {
+  const db = getDatabase()
+  const cache = createAssemblyCache()
+  const taskSupertagIds = new Set(getSupertagIdsByBaseType(db, 'task', cache))
+  const eventSupertagIds = new Set(getSupertagIdsByBaseType(db, 'event', cache))
+  const nodesById = new Map<string, AssembledNode>()
+
+  for (const node of getNodesBySupertagBaseType(db, 'task', cache)) {
+    nodesById.set(node.id, node)
+  }
+  for (const node of getNodesBySupertagBaseType(db, 'event', cache)) {
+    nodesById.set(node.id, node)
+  }
+
+  return {
+    nodes: [...nodesById.values()],
+    taskSupertagIds,
+    calendarSupertagIds: new Set([...taskSupertagIds, ...eventSupertagIds]),
+  }
+}
+
 // ============================================================================
 // Server Functions
 // ============================================================================
@@ -111,6 +143,7 @@ export const getCalendarEventsServerFn = createServerFn({ method: 'POST' })
       } = data
 
       await nodeFacade.init()
+      const baseTypeContext = getCalendarBaseTypeNodes()
 
       // Build the query for calendar events
       const query = buildCalendarQuery({
@@ -128,7 +161,18 @@ export const getCalendarEventsServerFn = createServerFn({ method: 'POST' })
       console.log('[getCalendarEventsServerFn] Found:', result.totalCount, 'events')
 
       // Convert nodes to CalendarEvent objects
-      const events: CalendarEvent[] = result.nodes.map(nodeToCalendarEvent)
+      const nodesById = new Map<string, AssembledNode>()
+      for (const node of result.nodes) {
+        nodesById.set(node.id, node)
+      }
+      for (const node of baseTypeContext.nodes) {
+        if (isCalendarCandidateForRange(node, new Date(endDate))) {
+          nodesById.set(node.id, node)
+        }
+      }
+      const events: CalendarEvent[] = [...nodesById.values()].map((node) =>
+        nodeToCalendarEvent(node, baseTypeContext.taskSupertagIds),
+      )
 
       // Additional client-side filtering: filter out events that end before the range starts
       const rangeStart = new Date(startDate)
@@ -216,7 +260,7 @@ export const createCalendarEventServerFn = createServerFn({ method: 'POST' })
         return { success: false, error: 'Failed to assemble created node' }
       }
 
-      const event = nodeToCalendarEvent(node)
+      const event = nodeToCalendarEvent(node, getCalendarBaseTypeNodes().taskSupertagIds)
       console.log('[createCalendarEventServerFn] Created:', nodeId)
       return { success: true, data: event }
     } catch (error) {
@@ -288,7 +332,7 @@ export const updateCalendarEventServerFn = createServerFn({ method: 'POST' })
         return { success: false, error: 'Event not found' }
       }
 
-      const event = nodeToCalendarEvent(node)
+      const event = nodeToCalendarEvent(node, getCalendarBaseTypeNodes().taskSupertagIds)
       console.log('[updateCalendarEventServerFn] Updated:', nodeId)
       return { success: true, data: event }
     } catch (error) {
@@ -350,9 +394,8 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
       }
 
       // Verify it's a task
-      const isTask = node.supertags.some(
-        (st) => st.systemId === SYSTEM_SUPERTAGS.TASK,
-      )
+      const baseTypeContext = getCalendarBaseTypeNodes()
+      const isTask = node.supertags.some((st) => baseTypeContext.taskSupertagIds.has(st.id))
       if (!isTask) {
         return { success: false, error: 'Node is not a task' }
       }
@@ -423,7 +466,7 @@ export const completeTaskServerFn = createServerFn({ method: 'POST' })
         return { success: false, error: 'Failed to assemble updated task' }
       }
 
-      const event = nodeToCalendarEvent(updatedNode)
+      const event = nodeToCalendarEvent(updatedNode, baseTypeContext.taskSupertagIds)
       console.log('[completeTaskServerFn] Task marked as:', newStatus)
       return { success: true, data: event }
     } catch (error) {
@@ -450,16 +493,13 @@ export const getCalendarEventServerFn = createServerFn({ method: 'POST' })
       }
 
       // Verify it's a calendar event or task
-      const isCalendarNode = node.supertags.some(
-        (st) =>
-          st.systemId === SYSTEM_SUPERTAGS.TASK ||
-          st.systemId === SYSTEM_SUPERTAGS.EVENT,
-      )
+      const baseTypeContext = getCalendarBaseTypeNodes()
+      const isCalendarNode = node.supertags.some((st) => baseTypeContext.calendarSupertagIds.has(st.id))
       if (!isCalendarNode) {
         return { success: false, error: 'Node is not a calendar event or task' }
       }
 
-      const event = nodeToCalendarEvent(node)
+      const event = nodeToCalendarEvent(node, baseTypeContext.taskSupertagIds)
       return { success: true, data: event }
     } catch (error) {
       console.error('[getCalendarEventServerFn] Error:', error)

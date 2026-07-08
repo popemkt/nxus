@@ -13,7 +13,15 @@ import {
   TextAlignLeft,
   ChartBar,
 } from '@phosphor-icons/react'
-import { cn } from '@nxus/ui'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from '@nxus/ui'
+import type { BaseType } from '@nxus/db'
 import type { FieldType, HideWhen, SupertagBadge, OutlineNode } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getSupertagColor } from '@/lib/supertag-colors'
@@ -29,6 +37,7 @@ interface SupertagConfig {
   name: string
   systemId: string | null
   color: string | null
+  baseType: BaseType | null
   ownFields: ConfigField[]
   inheritedFields: InheritedField[]
   defaultChildSupertag: SupertagBadge | null
@@ -80,6 +89,14 @@ const PRESET_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#84cc16',
   '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
   '#6366f1', '#8b5cf6', '#a855f7', '#ec4899',
+]
+
+const BASE_TYPE_OPTIONS: { value: BaseType; label: string }[] = [
+  { value: 'task', label: 'Task' },
+  { value: 'person', label: 'Person' },
+  { value: 'event', label: 'Event' },
+  { value: 'day', label: 'Day' },
+  { value: 'flashcard', label: 'Flashcard' },
 ]
 
 /**
@@ -446,6 +463,38 @@ function SettingsTab({
             />
           ))}
         </div>
+      </div>
+
+      {/* Base type */}
+      <div>
+        <h3 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground/30 mb-2">
+          <ChartBar size={12} />
+          Base Type
+        </h3>
+        <Select
+          value={config.baseType ?? 'none'}
+          onValueChange={(value) => {
+            const baseType = value === 'none' ? null : (value as BaseType)
+            handleUpdateConfig({ baseType })
+            setConfig({ ...config, baseType })
+          }}
+        >
+          <SelectTrigger className="w-48" data-testid="supertag-base-type-select">
+            <SelectValue>
+              {config.baseType
+                ? BASE_TYPE_OPTIONS.find((option) => option.value === config.baseType)?.label
+                : 'None'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            {BASE_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Content template */}

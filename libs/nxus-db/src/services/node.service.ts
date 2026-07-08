@@ -37,6 +37,7 @@ export { isSystemId } from '../schemas/node-schema.js'
 import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
 import type { JsonValue } from '../types/common.js'
 import type { MutationEvent } from '../reactive/types.js'
+import type { BaseType } from '../types/base-type.js'
 
 type NodeDatabase = ReturnType<typeof getDatabase>
 
@@ -64,6 +65,8 @@ export interface AssemblyCache {
   fieldDefinitionTypes: Map<string, string>
   fieldDefinitionFormulas: Map<string, string>
   formulaDefinitions: Map<string, FormulaFieldDefinition[]>
+  supertagsByBaseType: Map<BaseType, string[]>
+  nodeIdsByBaseType: Map<BaseType, string[]>
 }
 
 export function createAssemblyCache(): AssemblyCache {
@@ -75,6 +78,8 @@ export function createAssemblyCache(): AssemblyCache {
     fieldDefinitionTypes: new Map(),
     fieldDefinitionFormulas: new Map(),
     formulaDefinitions: new Map(),
+    supertagsByBaseType: new Map(),
+    nodeIdsByBaseType: new Map(),
   }
 }
 
@@ -318,6 +323,7 @@ export function getSupertagFieldDefinitions(
     SYSTEM_FIELDS.SUPERTAG,
     SYSTEM_FIELDS.EXTENDS,
     SYSTEM_FIELDS.FIELD_TYPE,
+    SYSTEM_FIELDS.BASE_TYPE,
   ]
   for (const sf of systemFields) {
     const node = getSystemNode(db, sf)
@@ -1445,6 +1451,113 @@ export function getNodesBySupertagWithInheritance(
 ): AssembledNode[] {
   const nodeIds = getNodeIdsBySupertagWithInheritance(db, supertagId)
   return assembleNodes(db, nodeIds)
+}
+
+/**
+ * Get supertag definition node IDs whose own baseType, or any inherited
+ * ancestor's baseType, matches the requested engine base type.
+ */
+export function getSupertagIdsByBaseType(
+  db: ReturnType<typeof getDatabase>,
+  baseType: BaseType,
+  cache?: AssemblyCache,
+): string[] {
+  const cached = cache?.supertagsByBaseType.get(baseType)
+  if (cached) return cached
+
+  const baseTypeField = getSystemNode(db, SYSTEM_FIELDS.BASE_TYPE)
+  if (!baseTypeField) return []
+
+  const rows = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, baseTypeField.id))
+    .all()
+
+  const directBaseTypeSupertags = new Set<string>()
+  for (const row of rows) {
+    try {
+      if (JSON.parse(row.value || 'null') === baseType) {
+        directBaseTypeSupertags.add(row.nodeId)
+      }
+    } catch {
+      // skip malformed baseType values
+    }
+  }
+
+  const resolved = new Set<string>(directBaseTypeSupertags)
+  const extendsField = getSystemNode(db, SYSTEM_FIELDS.EXTENDS)
+  if (extendsField) {
+    const childRows = db
+      .select()
+      .from(nodeProperties)
+      .where(eq(nodeProperties.fieldNodeId, extendsField.id))
+      .all()
+
+    for (const row of childRows) {
+      const ancestors = getAncestorSupertags(db, row.nodeId, 10, cache)
+      if (ancestors.some((ancestorId) => directBaseTypeSupertags.has(ancestorId))) {
+        resolved.add(row.nodeId)
+      }
+    }
+  }
+
+  const result = [...resolved]
+  cache?.supertagsByBaseType.set(baseType, result)
+  return result
+}
+
+/**
+ * Get node IDs whose assigned supertag, or that supertag's inherited ancestors,
+ * carries the requested engine base type.
+ */
+export function getNodeIdsBySupertagBaseType(
+  db: ReturnType<typeof getDatabase>,
+  baseType: BaseType,
+  cache?: AssemblyCache,
+): string[] {
+  const cached = cache?.nodeIdsByBaseType.get(baseType)
+  if (cached) return cached
+
+  const supertagIds = getSupertagIdsByBaseType(db, baseType, cache)
+  if (supertagIds.length === 0) {
+    cache?.nodeIdsByBaseType.set(baseType, [])
+    return []
+  }
+
+  const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
+  if (!supertagField) return []
+
+  const targetSupertags = new Set(supertagIds)
+  const supertagProps = db
+    .select()
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
+    .all()
+
+  const nodeIds = new Set<string>()
+  for (const prop of supertagProps) {
+    try {
+      const value = JSON.parse(prop.value || 'null')
+      if (typeof value === 'string' && targetSupertags.has(value)) {
+        nodeIds.add(prop.nodeId)
+      }
+    } catch {
+      // skip malformed supertag assignments
+    }
+  }
+
+  const result = [...nodeIds]
+  cache?.nodeIdsByBaseType.set(baseType, result)
+  return result
+}
+
+export function getNodesBySupertagBaseType(
+  db: ReturnType<typeof getDatabase>,
+  baseType: BaseType,
+  cache?: AssemblyCache,
+): AssembledNode[] {
+  return assembleNodes(db, getNodeIdsBySupertagBaseType(db, baseType, cache), cache)
 }
 
 // ============================================================================

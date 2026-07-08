@@ -214,6 +214,12 @@ export function bootstrapSystemNodesSync(
     'fieldType',
     verbose,
   );
+  const baseTypeFieldId = upsertSystemNode(
+    db,
+    SYSTEM_FIELDS.BASE_TYPE,
+    'baseType',
+    verbose,
+  );
   const formulaFieldId = upsertSystemNode(
     db,
     SYSTEM_FIELDS.FORMULA,
@@ -262,6 +268,8 @@ export function bootstrapSystemNodesSync(
   assignSupertag(db, extendsFieldId, systemId, supertagFieldId, 1);
   assignSupertag(db, fieldTypeFieldId, fieldId, supertagFieldId);
   assignSupertag(db, fieldTypeFieldId, systemId, supertagFieldId, 1);
+  assignSupertag(db, baseTypeFieldId, fieldId, supertagFieldId);
+  assignSupertag(db, baseTypeFieldId, systemId, supertagFieldId, 1);
   assignSupertag(db, formulaFieldId, fieldId, supertagFieldId);
   assignSupertag(db, formulaFieldId, systemId, supertagFieldId, 1);
 
@@ -269,6 +277,7 @@ export function bootstrapSystemNodesSync(
   setProperty(db, supertagFieldId, fieldTypeFieldId, JSON.stringify('nodes'));
   setProperty(db, extendsFieldId, fieldTypeFieldId, JSON.stringify('node'));
   setProperty(db, fieldTypeFieldId, fieldTypeFieldId, JSON.stringify('select'));
+  setProperty(db, baseTypeFieldId, fieldTypeFieldId, JSON.stringify('select'));
   setProperty(db, formulaFieldId, fieldTypeFieldId, JSON.stringify('text'));
 
   // ============================================================================
@@ -306,8 +315,8 @@ export function bootstrapSystemNodesSync(
     { systemId: SYSTEM_SUPERTAGS.AUTOMATION, content: '#Automation', extends: null },
     { systemId: SYSTEM_SUPERTAGS.COMPUTED_FIELD, content: '#ComputedField', extends: null },
     // Calendar supertags (independent from Item - should NOT appear in gallery)
-    { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null },
-    { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null },
+    { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null, baseType: 'task' },
+    { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null, baseType: 'event' },
     // Recall training supertags
     { systemId: SYSTEM_SUPERTAGS.RECALL_TOPIC, content: '#RecallTopic', extends: null },
     { systemId: SYSTEM_SUPERTAGS.RECALL_CONCEPT, content: '#RecallConcept', extends: null },
@@ -325,6 +334,9 @@ export function bootstrapSystemNodesSync(
       if (parentId) {
         setProperty(db, id, extendsFieldId, JSON.stringify(parentId));
       }
+    }
+    if ('baseType' in st && st.baseType) {
+      setProperty(db, id, baseTypeFieldId, JSON.stringify(st.baseType));
     }
   }
 
@@ -450,6 +462,11 @@ export function bootstrapSystemNodesSync(
       systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT,
       content: 'queryEvaluatedAt',
       fieldType: 'text',
+    },
+    {
+      systemId: SYSTEM_FIELDS.BASE_TYPE,
+      content: 'baseType',
+      fieldType: 'select',
     },
     // Automation-specific fields
     {

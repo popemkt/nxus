@@ -182,6 +182,7 @@ export const SYSTEM_FIELDS = {
   SUPERTAG: 'field:supertag' as FieldSystemId, // Links node to its supertag(s)
   EXTENDS: 'field:extends' as FieldSystemId, // Supertag inheritance
   FIELD_TYPE: 'field:field_type' as FieldSystemId, // Type of a field (text, node, nodes, etc.)
+  BASE_TYPE: 'field:base_type' as FieldSystemId, // Optional engine-recognized base type for supertag definitions
   FORMULA: 'field:formula' as FieldSystemId, // Formula expression stored on formula field definitions
   MENTIONS: 'field:mentions' as FieldSystemId, // Inline [[node:<uuid>]] references extracted from content
 
@@ -319,6 +320,7 @@ export const FIELD_NAMES = {
   SUPERTAG: 'supertag' as FieldContentName,
   EXTENDS: 'extends' as FieldContentName,
   FIELD_TYPE: 'fieldType' as FieldContentName,
+  BASE_TYPE: 'baseType' as FieldContentName,
   FORMULA: 'formula' as FieldContentName,
   MENTIONS: 'mentions' as FieldContentName,
 

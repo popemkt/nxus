@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { BaseTypeSchema } from '@nxus/db'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import type { FieldType } from '@/types/outline'
 import { HIDDEN_FIELD_SYSTEM_IDS, SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
@@ -291,6 +292,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
 
     // Color
     const color = (getProperty(supertagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
+    const baseType = (getProperty(supertagNode, FIELD_NAMES.BASE_TYPE) as string | undefined) ?? null
 
     return {
       success: true as const,
@@ -299,6 +301,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
         name: supertagNode.content ?? '',
         systemId: supertagNode.systemId,
         color: color ?? getSupertagColor(supertagNode.id),
+        baseType,
         ownFields,
         inheritedFields,
         defaultChildSupertag,
@@ -568,6 +571,7 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
       extendsId: z.string().nullable().optional(),
       extendsIds: z.array(z.string()).optional(),
       color: z.string().nullable().optional(),
+      baseType: BaseTypeSchema.nullable().optional(),
     }),
   )
   .handler(async (ctx) => {
@@ -636,6 +640,14 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
         setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.COLOR, ctx.data.color)
       } else {
         clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.COLOR)
+      }
+    }
+
+    if (ctx.data.baseType !== undefined) {
+      if (ctx.data.baseType) {
+        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.BASE_TYPE, ctx.data.baseType)
+      } else {
+        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.BASE_TYPE)
       }
     }
 

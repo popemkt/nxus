@@ -11,7 +11,7 @@ Calendar (port 3003, base `/calendar`) is the **scheduling lens**: events and ta
 
 ## Nodes-as-events contract
 
-- An event is any node tagged `SYSTEM_SUPERTAGS.EVENT`; a task is any node tagged `SYSTEM_SUPERTAGS.TASK`. Date-range fetches are pure `QueryDefinition` builders over these supertags and `SYSTEM_FIELDS` date properties (`libs/nxus-calendar/src/lib/query-builder.ts:9-11,89-94`). The calendar MUST NOT bypass the query system for reads.
+- An event is any node tagged `SYSTEM_SUPERTAGS.EVENT` or tagged with a supertag whose own or inherited `field:base_type` is `event`; a task is the analogous `SYSTEM_SUPERTAGS.TASK` / `task` base type. Date-range fetches still build the legacy `QueryDefinition` over the system task/event supertags, then merge request-scoped base-type resolver results before date-overlap filtering (`libs/nxus-calendar/src/lib/query-builder.ts:9-11,89-94`; `libs/nxus-calendar/src/server/calendar.server.ts:97-121,145-175`). This base-type expansion is the only sanctioned non-query read in the calendar lens until the query evaluator can express base-type predicates.
 - Nodes created/edited in any other lens (editor, workbench) with the right supertag+dates MUST appear on the calendar without ceremony, and vice versa.
 
 ## Google Calendar sync

@@ -29,8 +29,10 @@ import {
   clearSystemNodeCache,
   createNode,
   getAncestorSupertags,
+  getNodeIdsBySupertagBaseType,
   getNodeIdsBySupertagWithInheritance,
   getProperty,
+  getSupertagIdsByBaseType,
   getSupertagFieldDefinitions,
   setProperty,
   type AssembledNode,
@@ -81,6 +83,7 @@ function seedSystemNodes() {
     { id: 'field-supertag', systemId: SYSTEM_FIELDS.SUPERTAG, content: 'supertag' },
     { id: 'field-extends', systemId: SYSTEM_FIELDS.EXTENDS, content: 'extends' },
     { id: 'field-type', systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'fieldType' },
+    { id: 'field-base-type', systemId: SYSTEM_FIELDS.BASE_TYPE, content: 'baseType' },
     { id: 'field-required', systemId: SYSTEM_FIELDS.REQUIRED, content: 'required' },
     { id: 'field-hide-when', systemId: SYSTEM_FIELDS.HIDE_WHEN, content: 'hideWhen' },
     { id: 'field-pinned', systemId: SYSTEM_FIELDS.PINNED, content: 'pinned' },
@@ -308,6 +311,41 @@ describe('supertag field definitions & constraints', () => {
 
       expect(getAncestorSupertags(db, leaf.id)).toEqual([middle.id, root.id])
       expect(getNodeIdsBySupertagWithInheritance(db, root.id)).toContain(nodeId)
+    })
+  })
+
+  describe('supertag base types', () => {
+    it('stores baseType on a supertag definition node', () => {
+      const eventTag = createTestSupertag('Milestone')
+
+      setProperty(db, eventTag.id, SYSTEM_FIELDS.BASE_TYPE, 'event')
+
+      const assembled = assembleNode(db, eventTag.id)
+      expect(assembled).not.toBeNull()
+      expect(getProperty(assembled!, FIELD_NAMES.BASE_TYPE)).toBe('event')
+    })
+
+    it('resolves nodes by direct supertag baseType', () => {
+      const eventTag = createTestSupertag('Release')
+      setProperty(db, eventTag.id, SYSTEM_FIELDS.BASE_TYPE, 'event')
+      const release = createNode(db, { content: 'Ship v1', supertagId: eventTag.systemId })
+
+      expect(getSupertagIdsByBaseType(db, 'event')).toContain(eventTag.id)
+      expect(getNodeIdsBySupertagBaseType(db, 'event')).toContain(release)
+      expect(getNodeIdsBySupertagBaseType(db, 'task')).not.toContain(release)
+    })
+
+    it('resolves nodes whose supertag inherits baseType from an ancestor', () => {
+      const eventParent = createTestSupertag('Calendar Event')
+      const incidentChild = createTestSupertag('Incident')
+      setProperty(db, eventParent.id, SYSTEM_FIELDS.BASE_TYPE, 'event')
+      addPropertyValue(db, incidentChild.id, SYSTEM_FIELDS.EXTENDS, eventParent.id)
+      const incident = createNode(db, { content: 'Production incident', supertagId: incidentChild.systemId })
+
+      expect(getSupertagIdsByBaseType(db, 'event')).toEqual(
+        expect.arrayContaining([eventParent.id, incidentChild.id]),
+      )
+      expect(getNodeIdsBySupertagBaseType(db, 'event')).toContain(incident)
     })
   })
 
