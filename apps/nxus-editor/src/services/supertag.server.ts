@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { BaseTypeSchema } from '@nxus/db'
+import type { AssembledNode } from '@nxus/db'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import type { FieldType } from '@/types/outline'
 import { HIDDEN_FIELD_SYSTEM_IDS, SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
@@ -12,16 +13,15 @@ import { initDatabaseSeeded } from './ensure-seeded.server'
  */
 export const listSupertagsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
+    await initDatabaseSeeded()
     const {
-      getNodeIdsBySupertagWithInheritance,
-      assembleNodes,
+      nodeFacade,
       getProperty,
       FIELD_NAMES,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
 
-    const ids = getNodeIdsBySupertagWithInheritance(db, SUPERTAG_DEFINITION_SYSTEM_ID)
-    const assembled = assembleNodes(db, ids)
+    const assembled = await nodeFacade.getNodesBySupertagWithInheritance(SUPERTAG_DEFINITION_SYSTEM_ID)
 
     const supertags: { id: string; name: string; systemId: string | null; color: string | null }[] = []
 
@@ -52,20 +52,18 @@ export const addSupertagServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
+    await initDatabaseSeeded()
     const {
-      addNodeSupertag,
-      assembleNode,
-      getSupertagFieldDefinitions,
-      getAncestorSupertags,
+      nodeFacade,
       getProperty,
       FIELD_NAMES,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
 
-    const added = addNodeSupertag(db, ctx.data.nodeId, ctx.data.supertagSystemId)
+    const added = await nodeFacade.addNodeSupertag(ctx.data.nodeId, ctx.data.supertagSystemId)
 
     // Always re-assemble to get the current state
-    const supertagNode = (await import('@nxus/db/server')).findNodeBySystemId(db, ctx.data.supertagSystemId)
+    const supertagNode = await nodeFacade.findNodeBySystemId(ctx.data.supertagSystemId)
     if (!supertagNode) {
       return { success: false as const, error: 'Supertag not found' }
     }
@@ -79,10 +77,10 @@ export const addSupertagServerFn = createServerFn({ method: 'POST' })
     }
 
     // Collect field definitions from this supertag + ancestors
-    const fieldDefs = getSupertagFieldDefinitions(db, supertagNode.id)
-    const ancestors = getAncestorSupertags(db, supertagNode.id)
+    const fieldDefs = await nodeFacade.getSupertagFieldDefinitions(supertagNode.id)
+    const ancestors = await nodeFacade.getAncestorSupertags(supertagNode.id)
     for (const ancestorId of ancestors) {
-      const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+      const ancestorDefs = await nodeFacade.getSupertagFieldDefinitions(ancestorId)
       for (const [key, val] of ancestorDefs) {
         if (!fieldDefs.has(key)) fieldDefs.set(key, val)
       }
@@ -97,7 +95,7 @@ export const addSupertagServerFn = createServerFn({ method: 'POST' })
 
       let fieldType: FieldType = 'text'
       if (!fieldTypeCache.has(def.fieldNodeId)) {
-        const fieldNode = assembleNode(db, def.fieldNodeId)
+        const fieldNode = await nodeFacade.assembleNode(def.fieldNodeId)
         if (fieldNode) {
           const ft = (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
           fieldType = ft as FieldType
@@ -133,15 +131,16 @@ export const addSupertagByNodeIdServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { addNodeSupertag, assembleNode } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
-    const supertagNode = assembleNode(db, ctx.data.supertagNodeId)
+    const supertagNode = await nodeFacade.assembleNode(ctx.data.supertagNodeId)
     if (!supertagNode || !supertagNode.systemId) {
       return { success: false as const, error: 'Supertag not found or has no system ID' }
     }
 
-    const added = addNodeSupertag(db, ctx.data.nodeId, supertagNode.systemId)
+    const added = await nodeFacade.addNodeSupertag(ctx.data.nodeId, supertagNode.systemId)
     return { success: true as const, added }
   })
 
@@ -156,9 +155,10 @@ export const removeSupertagServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { removeNodeSupertag } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    const removed = removeNodeSupertag(db, ctx.data.nodeId, ctx.data.supertagSystemId)
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    const removed = await nodeFacade.removeNodeSupertag(ctx.data.nodeId, ctx.data.supertagSystemId)
     return { success: true as const, removed }
   })
 
@@ -170,23 +170,22 @@ export const removeSupertagServerFn = createServerFn({ method: 'POST' })
 export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ supertagId: z.string() }))
   .handler(async (ctx) => {
+    await initDatabaseSeeded()
     const {
-      assembleNode,
+      nodeFacade,
       getProperty,
       getPropertyValues,
-      getSupertagFieldDefinitions,
-      getAncestorSupertags,
       FIELD_NAMES,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
 
-    const supertagNode = assembleNode(db, ctx.data.supertagId)
+    const supertagNode = await nodeFacade.assembleNode(ctx.data.supertagId)
     if (!supertagNode) {
       return { success: false as const, error: 'Supertag not found' }
     }
 
     // Read constraint properties, normalizing string 'true' → boolean at the read boundary
-    function readFieldConstraints(fieldNode: ReturnType<typeof assembleNode>) {
+    function readFieldConstraints(fieldNode: AssembledNode | null) {
       if (!fieldNode) return {}
       const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
       const hideWhen = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
@@ -203,12 +202,12 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
     }
 
     // Own field definitions (not inherited)
-    const ownDefs = getSupertagFieldDefinitions(db, ctx.data.supertagId)
+    const ownDefs = await nodeFacade.getSupertagFieldDefinitions(ctx.data.supertagId)
     const ownFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string; formula?: string }[] = []
 
     for (const [systemId, def] of ownDefs) {
       if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
-      const fieldNode = assembleNode(db, def.fieldNodeId)
+      const fieldNode = await nodeFacade.assembleNode(def.fieldNodeId)
       const fieldType = fieldNode
         ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
         : 'text'
@@ -222,18 +221,18 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
     }
 
     // Inherited fields from ancestors
-    const ancestors = getAncestorSupertags(db, ctx.data.supertagId)
+    const ancestors = await nodeFacade.getAncestorSupertags(ctx.data.supertagId)
     const inheritedFields: { fieldNodeId: string; fieldName: string; fieldSystemId: string; fieldType: string; fromSupertagId: string; fromSupertagName: string; required?: boolean; hideWhen?: string; pinned?: boolean; description?: string; formula?: string }[] = []
     const ownFieldIds = new Set(ownFields.map((f) => f.fieldSystemId))
 
     for (const ancestorId of ancestors) {
-      const ancestorNode = assembleNode(db, ancestorId)
-      const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+      const ancestorNode = await nodeFacade.assembleNode(ancestorId)
+      const ancestorDefs = await nodeFacade.getSupertagFieldDefinitions(ancestorId)
       for (const [systemId, def] of ancestorDefs) {
         if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
         if (ownFieldIds.has(systemId)) continue
         if (inheritedFields.some((f) => f.fieldSystemId === systemId)) continue
-        const fieldNode = assembleNode(db, def.fieldNodeId)
+        const fieldNode = await nodeFacade.assembleNode(def.fieldNodeId)
         const fieldType = fieldNode
           ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
           : 'text'
@@ -253,7 +252,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
     const defaultChildRef = getProperty(supertagNode, FIELD_NAMES.DEFAULT_CHILD_SUPERTAG) as string | undefined
     let defaultChildSupertag: { id: string; name: string; systemId: string | null; color: string | null } | null = null
     if (defaultChildRef) {
-      const childTagNode = assembleNode(db, defaultChildRef)
+      const childTagNode = await nodeFacade.assembleNode(defaultChildRef)
       if (childTagNode) {
         const dbColor = (getProperty(childTagNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
         defaultChildSupertag = {
@@ -277,7 +276,7 @@ export const getSupertagConfigServerFn = createServerFn({ method: 'GET' })
     const extendsSupertags: { id: string; name: string; systemId: string | null; color: string | null }[] = []
     const directParentIds = getPropertyValues<string>(supertagNode, FIELD_NAMES.EXTENDS)
     for (const parentId of directParentIds) {
-      const parentNode = assembleNode(db, parentId)
+      const parentNode = await nodeFacade.assembleNode(parentId)
       if (parentNode) {
         const dbColor = (getProperty(parentNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
         extendsSupertags.push({
@@ -426,10 +425,11 @@ export const updateFieldTypeServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { setProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await initDatabaseSeeded()
+    const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
-    setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
+    await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
     return { success: true as const }
   })
 
@@ -445,13 +445,14 @@ export const updateFieldFormulaServerFn = createServerFn({ method: 'POST' })
   )
   .handler(async (ctx) => {
     try {
-      const { setProperty, clearProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
-      const db = await initDatabaseSeeded()
+      await initDatabaseSeeded()
+      const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
+      await nodeFacade.init()
 
       if (ctx.data.formula && ctx.data.formula.trim()) {
-        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FORMULA, ctx.data.formula)
+        await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.FORMULA, ctx.data.formula)
       } else {
-        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.FORMULA)
+        await nodeFacade.clearProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.FORMULA)
       }
 
       return { success: true as const, data: null }
@@ -477,38 +478,39 @@ export const updateFieldConstraintsServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { setProperty, clearProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await initDatabaseSeeded()
+    const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
     if (ctx.data.required !== undefined) {
       if (ctx.data.required) {
-        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.REQUIRED, 'true')
+        await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.REQUIRED, 'true')
       } else {
-        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.REQUIRED)
+        await nodeFacade.clearProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.REQUIRED)
       }
     }
 
     if (ctx.data.hideWhen !== undefined) {
       if (ctx.data.hideWhen && ctx.data.hideWhen !== 'never') {
-        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.HIDE_WHEN, ctx.data.hideWhen)
+        await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.HIDE_WHEN, ctx.data.hideWhen)
       } else {
-        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.HIDE_WHEN)
+        await nodeFacade.clearProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.HIDE_WHEN)
       }
     }
 
     if (ctx.data.pinned !== undefined) {
       if (ctx.data.pinned) {
-        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.PINNED, 'true')
+        await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.PINNED, 'true')
       } else {
-        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.PINNED)
+        await nodeFacade.clearProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.PINNED)
       }
     }
 
     if (ctx.data.description !== undefined) {
       if (ctx.data.description) {
-        setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.DESCRIPTION, ctx.data.description)
+        await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.DESCRIPTION, ctx.data.description)
       } else {
-        clearProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.DESCRIPTION)
+        await nodeFacade.clearProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.DESCRIPTION)
       }
     }
 
@@ -575,29 +577,26 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
+    await initDatabaseSeeded()
     const {
-      addPropertyValue,
-      assembleNode,
-      clearProperty,
-      getAncestorSupertags,
-      setProperty,
+      nodeFacade,
       SYSTEM_FIELDS,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
 
     if (ctx.data.defaultChildSupertagId !== undefined) {
       if (ctx.data.defaultChildSupertagId) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG, ctx.data.defaultChildSupertagId)
+        await nodeFacade.setProperty(ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG, ctx.data.defaultChildSupertagId)
       } else {
-        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG)
+        await nodeFacade.clearProperty(ctx.data.supertagId, SYSTEM_FIELDS.DEFAULT_CHILD_SUPERTAG)
       }
     }
 
     if (ctx.data.contentTemplate !== undefined) {
       if (ctx.data.contentTemplate) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.CONTENT_TEMPLATE, ctx.data.contentTemplate)
+        await nodeFacade.setProperty(ctx.data.supertagId, SYSTEM_FIELDS.CONTENT_TEMPLATE, ctx.data.contentTemplate)
       } else {
-        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.CONTENT_TEMPLATE)
+        await nodeFacade.clearProperty(ctx.data.supertagId, SYSTEM_FIELDS.CONTENT_TEMPLATE)
       }
     }
 
@@ -619,35 +618,35 @@ export const updateSupertagConfigServerFn = createServerFn({ method: 'POST' })
         if (parentId === ctx.data.supertagId) {
           return { success: false as const, error: 'A supertag cannot extend itself' }
         }
-        const parentNode = assembleNode(db, parentId)
+        const parentNode = await nodeFacade.assembleNode(parentId)
         if (!parentNode) {
           return { success: false as const, error: 'Parent supertag not found' }
         }
-        const parentAncestors = getAncestorSupertags(db, parentId)
+        const parentAncestors = await nodeFacade.getAncestorSupertags(parentId)
         if (parentAncestors.includes(ctx.data.supertagId)) {
           return { success: false as const, error: 'Extends cycle rejected' }
         }
       }
 
-      clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS)
+      await nodeFacade.clearProperty(ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS)
       for (const parentId of orderedExtendsIds) {
-        addPropertyValue(db, ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, parentId)
+        await nodeFacade.addPropertyValue(ctx.data.supertagId, SYSTEM_FIELDS.EXTENDS, parentId)
       }
     }
 
     if (ctx.data.color !== undefined) {
       if (ctx.data.color) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.COLOR, ctx.data.color)
+        await nodeFacade.setProperty(ctx.data.supertagId, SYSTEM_FIELDS.COLOR, ctx.data.color)
       } else {
-        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.COLOR)
+        await nodeFacade.clearProperty(ctx.data.supertagId, SYSTEM_FIELDS.COLOR)
       }
     }
 
     if (ctx.data.baseType !== undefined) {
       if (ctx.data.baseType) {
-        setProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.BASE_TYPE, ctx.data.baseType)
+        await nodeFacade.setProperty(ctx.data.supertagId, SYSTEM_FIELDS.BASE_TYPE, ctx.data.baseType)
       } else {
-        clearProperty(db, ctx.data.supertagId, SYSTEM_FIELDS.BASE_TYPE)
+        await nodeFacade.clearProperty(ctx.data.supertagId, SYSTEM_FIELDS.BASE_TYPE)
       }
     }
 

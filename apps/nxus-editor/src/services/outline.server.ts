@@ -447,9 +447,10 @@ export const reparentNodeServerFn = createServerFn({ method: 'POST' })
 export const reorderNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), order: z.number() }))
   .handler(async (ctx) => {
-    const { setProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    setProperty(db, ctx.data.nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
+    await initDatabaseSeeded()
+    const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.setProperty(ctx.data.nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
     return { success: true as const }
   })
 
@@ -522,10 +523,10 @@ export const updateQueryDefinitionServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { setProperty, SYSTEM_FIELDS } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    setProperty(
-      db,
+    await initDatabaseSeeded()
+    const { nodeFacade, SYSTEM_FIELDS } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.setProperty(
       ctx.data.nodeId,
       SYSTEM_FIELDS.QUERY_DEFINITION,
       ctx.data.definition,
@@ -545,10 +546,10 @@ export const setFieldValueServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { setProperty } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    setProperty(
-      db,
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.setProperty(
       ctx.data.nodeId,
       ctx.data.fieldId as import('@nxus/db/server').FieldSystemId,
       ctx.data.value,

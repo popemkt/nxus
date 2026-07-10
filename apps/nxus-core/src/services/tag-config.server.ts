@@ -15,7 +15,7 @@ import {
   and,
   eq,
   initDatabase,
-  itemTagConfigs, nodes, nodeFacade, saveDatabase, tagSchemas
+  itemTagConfigs, nodeFacade, saveDatabase, tagSchemas
 } from '@nxus/db/server'
 import { getAllSystemTags, type TagConfigField } from '@/lib/system-tags'
 
@@ -87,7 +87,8 @@ export const getTagConfigServerFn = createServerFn({ method: 'GET' })
     // If not found, the tagId might be a node UUID while the DB stores a system tag ID.
     // Resolve the node UUID to a tag name and find the system tag by name.
     if (!config) {
-      const tagNode = db.select().from(nodes).where(eq(nodes.id, ctx.data.tagId)).get()
+      await nodeFacade.init()
+      const tagNode = await nodeFacade.findNodeById(ctx.data.tagId)
       if (tagNode?.content) {
         const systemTag = getAllSystemTags().find(
           (t) => t.name === tagNode.content && t.configurable,
@@ -312,7 +313,8 @@ export const setAppTagValuesServerFn = createServerFn({ method: 'POST' })
     // Resolve node UUID to system tag name if direct lookup fails
     let resolvedSystemTag: ReturnType<typeof getAllSystemTags>[number] | undefined
     if (!tagConfig) {
-      const tagNode = db.select().from(nodes).where(eq(nodes.id, ctx.data.tagId)).get()
+      await nodeFacade.init()
+      const tagNode = await nodeFacade.findNodeById(ctx.data.tagId)
       if (tagNode?.content) {
         resolvedSystemTag = getAllSystemTags().find(
           (t) => t.name === tagNode.content && t.configurable,

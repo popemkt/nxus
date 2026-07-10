@@ -10,10 +10,11 @@ import { initDatabaseSeeded } from './ensure-seeded.server'
 export const getFieldOptionsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fieldNodeId: z.string() }))
   .handler(async (ctx) => {
-    const { assembleNode, getProperty, FIELD_NAMES } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await initDatabaseSeeded()
+    const { nodeFacade, getProperty, FIELD_NAMES } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
-    const fieldNode = assembleNode(db, ctx.data.fieldNodeId)
+    const fieldNode = await nodeFacade.assembleNode(ctx.data.fieldNodeId)
     if (!fieldNode) return { success: true as const, options: [] as string[] }
 
     const optionsRaw = getProperty(fieldNode, FIELD_NAMES.OPTIONS)
@@ -40,24 +41,23 @@ export const getFieldOptionsServerFn = createServerFn({ method: 'GET' })
 export const getAvailableFieldsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
+    await initDatabaseSeeded()
     const {
-      assembleNode,
-      getSupertagFieldDefinitions,
-      getAncestorSupertags,
+      nodeFacade,
       getProperty,
       FIELD_NAMES,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
 
-    const node = assembleNode(db, ctx.data.nodeId)
+    const node = await nodeFacade.assembleNode(ctx.data.nodeId)
     if (!node) return { success: true as const, fields: [] }
 
     const allDefs = new Map<string, { fieldNodeId: string; fieldName: string; fieldType: FieldType; fieldSystemId: string }>()
     const fieldTypeCache = new Map<string, FieldType>()
 
-    function resolveFieldType(fieldNodeId: string): FieldType {
+    async function resolveFieldType(fieldNodeId: string): Promise<FieldType> {
       if (fieldTypeCache.has(fieldNodeId)) return fieldTypeCache.get(fieldNodeId)!
-      const fNode = assembleNode(db, fieldNodeId)
+      const fNode = await nodeFacade.assembleNode(fieldNodeId)
       const ft = fNode ? (getProperty(fNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text' : 'text'
       const result = ft as FieldType
       fieldTypeCache.set(fieldNodeId, result)
@@ -65,8 +65,8 @@ export const getAvailableFieldsServerFn = createServerFn({ method: 'GET' })
     }
 
     for (const st of node.supertags) {
-      const defs = getSupertagFieldDefinitions(db, st.id)
-      const ancestors = getAncestorSupertags(db, st.id)
+      const defs = await nodeFacade.getSupertagFieldDefinitions(st.id)
+      const ancestors = await nodeFacade.getAncestorSupertags(st.id)
 
       for (const [systemId, def] of defs) {
         if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
@@ -74,21 +74,21 @@ export const getAvailableFieldsServerFn = createServerFn({ method: 'GET' })
           allDefs.set(systemId, {
             fieldNodeId: def.fieldNodeId,
             fieldName: def.fieldName,
-            fieldType: resolveFieldType(def.fieldNodeId),
+            fieldType: await resolveFieldType(def.fieldNodeId),
             fieldSystemId: systemId,
           })
         }
       }
 
       for (const ancestorId of ancestors) {
-        const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId)
+        const ancestorDefs = await nodeFacade.getSupertagFieldDefinitions(ancestorId)
         for (const [systemId, def] of ancestorDefs) {
           if (HIDDEN_FIELD_SYSTEM_IDS.has(systemId)) continue
           if (!allDefs.has(systemId)) {
             allDefs.set(systemId, {
               fieldNodeId: def.fieldNodeId,
               fieldName: def.fieldName,
-              fieldType: resolveFieldType(def.fieldNodeId),
+              fieldType: await resolveFieldType(def.fieldNodeId),
               fieldSystemId: systemId,
             })
           }
@@ -145,12 +145,13 @@ export const getUsedFieldValuesServerFn = createServerFn({ method: 'GET' })
 export const addFieldOptionServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ fieldNodeId: z.string(), option: z.string() }))
   .handler(async (ctx) => {
-    const { assembleNode, getProperty, setProperty, FIELD_NAMES, SYSTEM_FIELDS } = await import(
+    await initDatabaseSeeded()
+    const { nodeFacade, getProperty, FIELD_NAMES, SYSTEM_FIELDS } = await import(
       '@nxus/db/server'
     )
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
 
-    const fieldNode = assembleNode(db, ctx.data.fieldNodeId)
+    const fieldNode = await nodeFacade.assembleNode(ctx.data.fieldNodeId)
     if (!fieldNode) return { success: false as const, error: 'Field not found' }
 
     // Read existing options
@@ -177,7 +178,7 @@ export const addFieldOptionServerFn = createServerFn({ method: 'POST' })
     }
 
     options.push(newOption)
-    setProperty(db, ctx.data.fieldNodeId, SYSTEM_FIELDS.OPTIONS, JSON.stringify(options))
+    await nodeFacade.setProperty(ctx.data.fieldNodeId, SYSTEM_FIELDS.OPTIONS, JSON.stringify(options))
 
     return { success: true as const, options }
   })
@@ -189,18 +190,14 @@ export const addFieldOptionServerFn = createServerFn({ method: 'POST' })
 export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ supertagId: z.string() }))
   .handler(async (ctx) => {
-    const { getNodeIdsBySupertagWithInheritance, assembleNode } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
-    const nodeIds = getNodeIdsBySupertagWithInheritance(db, ctx.data.supertagId)
-    const results: { id: string; content: string }[] = []
-
-    for (const nodeId of nodeIds) {
-      const node = assembleNode(db, nodeId)
-      if (node && !node.deletedAt) {
-        results.push({ id: node.id, content: node.content ?? '' })
-      }
-    }
+    const nodes = await nodeFacade.getNodesBySupertagWithInheritance(ctx.data.supertagId)
+    const results = nodes
+      .filter((node) => !node.deletedAt)
+      .map((node) => ({ id: node.id, content: node.content ?? '' }))
 
     return { success: true as const, nodes: results }
   })
@@ -211,10 +208,10 @@ export const getNodesBySupertagServerFn = createServerFn({ method: 'GET' })
 export const clearFieldServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string(), fieldId: z.string() }))
   .handler(async (ctx) => {
-    const { clearProperty } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    clearProperty(
-      db,
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.clearProperty(
       ctx.data.nodeId,
       ctx.data.fieldId as import('@nxus/db/server').FieldSystemId,
     )

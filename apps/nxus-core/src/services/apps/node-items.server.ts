@@ -232,13 +232,6 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
     const {
       nodeFacade,
       getProperty: dbGetProperty,
-      // Keep Drizzle imports for legacy ID fallback lookup
-      initDatabase,
-      getDatabase,
-      nodes,
-      nodeProperties,
-      eq,
-      assembleNode,
       SYSTEM_SUPERTAGS,
       SYSTEM_FIELDS,
       FIELD_NAMES: SERVER_FIELD_NAMES,
@@ -249,36 +242,14 @@ export const getItemByIdFromNodesServerFn = createServerFn({ method: 'GET' })
 
     let node = await nodeFacade.findNodeBySystemId(`item:${id}`)
 
-    // Fallback: search by legacy ID using raw Drizzle queries
-    // (the facade doesn't expose raw table access needed for this)
+    // Fallback: search by legacy ID via the facade's query evaluator
+    // (replaces the previous raw Drizzle scan over nodeProperties).
     if (!node) {
-      initDatabase()
-      const db = getDatabase()
-
-      const legacyIdField = db
-        .select()
-        .from(nodes)
-        .where(eq(nodes.systemId, SYSTEM_FIELDS.LEGACY_ID))
-        .get()
-
-      if (legacyIdField) {
-        const prop = db
-          .select()
-          .from(nodeProperties)
-          .where(eq(nodeProperties.fieldNodeId, legacyIdField.id))
-          .all()
-          .find((p: { value: string | null }) => {
-            try {
-              return JSON.parse(p.value || '') === id
-            } catch {
-              return false
-            }
-          })
-
-        if (prop) {
-          node = assembleNode(db, prop.nodeId)
-        }
-      }
+      const result = await nodeFacade.evaluateQuery({
+        filters: [{ type: 'property', fieldId: SYSTEM_FIELDS.LEGACY_ID, op: 'eq', value: id }],
+        limit: 1,
+      })
+      node = result.nodes[0] ?? null
     }
 
     if (!node) {
