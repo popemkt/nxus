@@ -83,8 +83,8 @@ DRIFT: bootstrap check-then-insert races across processes
 
 `ArchitectureType = 'node' | 'graph'` (`apps/nxus-core/src/config/feature-flags.ts:11`), selected by `process.env.ARCHITECTURE_TYPE`, defaulting to `'node'`.
 
-- **`node`** — primary, supported. SQLite 2-table materialization via `SqliteBackend` (thin async wrapper over sync `node.service.ts`; `libs/nxus-db/src/services/backends/sqlite-backend.ts:24-33` inits via `initDatabaseWithBootstrap`).
-- **`graph`** — **experimental, retained** (decision record §6). SurrealDB via `SurrealBackend` (`services/backends/surreal-backend.ts`, ~1.7k lines): nodes and fields as records, property values carried on `has_field` edges, `has_supertag`/`extends` edges. One-shot SQLite→Surreal migration in `services/backends/migration.ts` (read-only source, with validation diff).
+- **`node`** — **working default**, fully supported. SQLite 2-table materialization via `SqliteBackend` (thin async wrapper over sync `node.service.ts`; `libs/nxus-db/src/services/backends/sqlite-backend.ts:24-33` inits via `initDatabaseWithBootstrap`).
+- **`graph`** — **canonical target** (decision record §6). SurrealDB via `SurrealBackend` (`services/backends/surreal-backend.ts`): nodes and fields as records, property values carried on `has_field` edges, `has_supertag`/`extends` edges. Currently behind node mode on features (see §6 provenance note); one-shot SQLite→Surreal migration in `services/backends/migration.ts` (read-only source, with validation diff).
 - **`table` — REMOVED.** There is no table mode. `feature-flags.ts:8` states it explicitly; `isTableArchitecture()` does not exist. **Any document, rule file, or code comment claiming a `table` mode or mandating tri-mode support is wrong.** The only remnants are the dead legacy tables in §2.
 
 DRIFT: mode selection duplicated
@@ -103,19 +103,21 @@ Pure helpers operating on already-assembled nodes (`getProperty`, `getPropertyVa
 
 DRIFT: some consumers still bypass the facade
 - canonical: features call `nodeFacade` only; sync SQLite functions are backend-internal.
-- current: DR-1 closed the named node CRUD/search/query stacks by routing them through `@nxus/node-api` and `nodeFacade`: core operations initialize `nodeFacade` in `libs/nxus-node-api/src/server/operations.ts:171-175` and implement CRUD/search/query/backlink operations through it (`:193-240`, `:263-329`, `:384-507`, `:510-629`); editor create/update/delete/query/backlink/search wrappers now dynamically import that API inside handlers (`apps/nxus-editor/src/services/outline.server.ts:305-357`, `:424-455`; `apps/nxus-editor/src/services/search.server.ts:9-35`); core graph search delegates to the same API (`apps/nxus-core/src/services/graph/graph.server.ts:567-589`). Remaining bypasses are outside the DR-1 CRUD/search/query consolidation: editor tree/root/restore/reparent/reorder/query-definition/field-value helpers still import the sync SQLite API directly (`apps/nxus-editor/src/services/outline.server.ts:16-27`, `:246-296`, `:364-417`, `:461-500`); `apps/nxus-core/src/services/nodes/index.ts:16-35` re-exports the whole sync API "for backward compatibility"; the reactive layer is SQLite-hard-wired (`reactive/query-subscription.service.ts` takes `type Database = any`).
-- impact: the consolidated node API is backend-portable, but the editor as a whole and most of core can still break under `ARCHITECTURE_TYPE=graph`; the CI graph e2e matrix leg (`.github/workflows/ci.yml:74-78`) still cannot actually exercise those remaining app paths.
-- closes: converge the remaining editor helpers and core node-service compatibility exports onto `nodeFacade`; abstract or explicitly scope the reactive layer to node mode.
+- current: DR-1 closed the named node CRUD/search/query stacks through `@nxus/node-api` + `nodeFacade`, and the 2026-07-11 S1 rewire closed the mechanical remainder: editor field/supertag/property server-fn handlers (`apps/nxus-editor/src/services/field.server.ts`, `supertag.server.ts`, and `outline.server.ts` reorder/query-definition/field-value handlers) now call `nodeFacade`; core's sync re-export barrel `apps/nxus-core/src/services/nodes/index.ts` is deleted; core `tag-config.server.ts` and `node-items.server.ts` raw drizzle lookups route through the facade. Remaining bypasses (mapped exhaustively in the 2026-07-10 facade-convergence recon): editor tree/root/restore/reparent helpers need new facade methods or backend-native composite reads (`outline.server.ts` — `getNodeTreeServerFn`'s request-scoped AssemblyCache/frontier read is the hard one); both apps' `ensure-seeded.server.ts` seed SQLite regardless of mode; core's `graph.service.ts`/`graph.server.ts` carry a duplicate hand-rolled Surreal layer bypassing `SurrealBackend`; the reactive layer is SQLite-hard-wired (`reactive/query-subscription.service.ts` takes `type Database = any`) and is explicitly scoped to node mode for now.
+- impact: editor read paths and seeding can still break or silently fall back to SQLite under `ARCHITECTURE_TYPE=graph` (observed live 2026-07-10: editor renders from SQLite in graph mode); the CI graph e2e matrix leg (`.github/workflows/ci.yml:74-78`) still cannot exercise those paths.
+- closes: S2 — add the 8 missing facade methods (`getWorkspaceRoots`, `restoreNode`, `reparentNode`, `reorderNodes`, `getDistinctPropertyValues`, `removePropertyRow`, `getFieldUsageStats`, `getNodesBySupertagBaseType`) to `NodeBackend` + both backends; S3 — facade-level seed dispatch; then the composite tree read; consolidate core's duplicate Surreal layer into `SurrealBackend`.
 
 ## 6. Decision record: modes and the facade
 
 Decided (do not relitigate without a new decision):
 
-1. **`node` mode is primary.** All features MUST work in node mode.
-2. **`graph` mode is retained as experimental — do not delete.** It is the pressure that keeps `NodeBackend` honest. It is not required to be feature-complete; the CI graph matrix leg is aspirational until the facade DRIFT closes.
+1. **`graph` (SurrealDB) is the canonical target backend** — intent holder's decision, 2026-07-10, resuming the human-authored Feb–Mar 2026 migration (PR #45 `node-assembly-to-use-surrealdb`, PR #58 `graph-relations-apps`). `node` mode is the **working default** only until graph reaches feature parity; every app must stay green on node mode throughout the transition.
+2. **`node` mode stays fully supported during the transition — do not degrade it.** New engine features land on the shared `NodeBackend` surface (both backends) wherever feasible; node-only landings are recorded DRIFT against graph parity, not precedent.
 3. **The facade is the goal state.** New data-access code MUST go through `nodeFacade`. Existing direct sync imports are recorded drift, not precedent.
 4. **The editor must converge onto the facade** rather than the facade being abandoned. Priority order: editor server fns → core `services/nodes` → reactive layer.
 5. **`table` mode stays removed**; its DDL and any doc references are cleanup targets, not compatibility surface.
+
+Provenance note (honesty record): from 2026-07-07 to 2026-07-10 this section asserted "`node` mode is primary" — a decision **introduced by an overnight agent session**, not by the intent holder, and contradicting the human git trail (the last human-authored work was the Surreal migration; `main` froze 2026-04-12). The 2026-07-07/08 core-mechanism hardening (transactions, post-commit events, assembly cache/frontier loads) therefore landed on the SQLite path only; porting it to `SurrealBackend` is the parity backlog, tracked as DRIFTs here and in [editor.md](../product/editor.md).
 
 ## 7. Migrations
 
@@ -129,9 +131,10 @@ DRIFT: no versioned migrations
 
 ## 8. Transactions
 
-Logical node writes MUST be atomic at the SQLite boundary. Any mutation that issues more than one SQL statement, including node creation with derived properties, mention reconciliation, property upserts, supertag replacement, and order batches, MUST run inside a Drizzle/better-sqlite3 transaction. Reactive mutation events MUST be collected during the transaction and emitted only after commit; observers MUST NOT see uncommitted state or re-enter the write path inside an open transaction.
+Logical node writes MUST be atomic at the storage boundary — both backends. Any mutation that issues more than one statement, including node creation with derived properties, mention reconciliation, property upserts, supertag replacement, and order batches, MUST run inside a transaction. Reactive mutation events MUST be collected during the transaction and emitted only after commit; observers MUST NOT see uncommitted state or re-enter the write path inside an open transaction.
 
-The canonical transaction helper for sync node-mode writes is `withNodeMutationTransaction` / `runMutationTransaction` in `libs/nxus-db/src/services/node.service.ts`. Nested node-service helpers participate in the outer transaction and append to its post-commit event queue.
+- **node mode**: `withNodeMutationTransaction` / `runMutationTransaction` in `libs/nxus-db/src/services/node.service.ts` (Drizzle/better-sqlite3). Nested node-service helpers participate in the outer transaction and append to its post-commit event queue.
+- **graph mode**: `runMutationTransaction` + `runSurrealTransaction` in `services/backends/surreal-backend.ts` (closed 2026-07-11). The embedded driver's `db.beginTransaction()` API throws under `@surrealdb/node` (verified empirically), so each logical mutation batches its statements into a single `BEGIN TRANSACTION; …; COMMIT TRANSACTION;` SurrealQL query — atomic server-side, rolled back as a unit on error. Events buffer on a `transactionEventStack` and flush only after the batched query returns; a throwing mutation emits nothing. Atomicity and event-once semantics are proven by tests in `surreal-backend.test.ts`.
 
 DRIFT: no transaction boundaries on multi-step writes
 - canonical: each logical mutation (createNode + supertag assignment + default fields; setNodeSupertags; multi-row reorders) is atomic; reactive events fire only after commit.

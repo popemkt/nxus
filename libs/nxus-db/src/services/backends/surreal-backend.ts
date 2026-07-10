@@ -36,6 +36,7 @@ import type {
 import type { NodeBackend } from './types.js'
 import type { SupertagInfo } from '../node.service.js'
 import type { QueryEvaluationResult } from '../query-evaluator.service.js'
+import type { MutationEvent } from '../../reactive/types.js'
 import { eventBus } from '../../reactive/event-bus.js'
 
 // ---------------------------------------------------------------------------
@@ -86,6 +87,107 @@ function toDate(value: string | Date | null | undefined): Date {
   if (!value) return new Date()
   if (value instanceof Date) return value
   return new Date(value)
+}
+
+// ---------------------------------------------------------------------------
+// Transactions & post-commit event buffering
+//
+// Mirrors node.service.ts's runMutationTransaction / emitMutation pattern,
+// adapted to SurrealDB's driver:
+//
+// - DRIFT (driver limitation, see spec/tech/persistence.md §8): the embedded
+//   `@surrealdb/node` engine does NOT support the driver-native
+//   `db.beginTransaction()` API — calling it throws
+//   `UnsupportedFeatureError: The configured engine does not support the
+//   feature: transactions` (verified empirically against a `mem://` instance).
+// - SurrealQL's string-based `BEGIN TRANSACTION; ...; COMMIT TRANSACTION;`
+//   block DOES work on the embedded engine and gives real all-or-nothing
+//   atomicity: any statement failure inside the block rolls back every write
+//   in it (verified: a CREATE+RELATE followed by a unique-index-violating
+//   CREATE, all in one block, leaves NEITHER the CREATE nor the RELATE
+//   persisted). Multi-statement mutations are therefore batched into a
+//   single query string — sent as one round trip — rather than issued as
+//   separate `db.query()` calls.
+// ---------------------------------------------------------------------------
+
+interface SurrealStatement {
+  query: string
+  params?: Record<string, unknown>
+}
+
+/**
+ * Execute one or more write statements as a single atomic SurrealQL
+ * transaction (`BEGIN TRANSACTION; ...; COMMIT TRANSACTION;`).
+ *
+ * All statements' bound params are merged into one shared params object for
+ * the batched query — safe because within a single mutation, statements
+ * that share a param name (e.g. `$nodeId`) always share the same value.
+ */
+async function runSurrealTransaction(
+  db: Surreal,
+  statements: SurrealStatement[],
+): Promise<unknown[]> {
+  if (statements.length === 0) return []
+
+  const mergedParams: Record<string, unknown> = {}
+  for (const statement of statements) {
+    Object.assign(mergedParams, statement.params ?? {})
+  }
+
+  const body = statements
+    .map((statement) => {
+      const trimmed = statement.query.trim()
+      return trimmed.endsWith(';') ? trimmed : `${trimmed};`
+    })
+    .join('\n    ')
+
+  const fullQuery = `BEGIN TRANSACTION;\n    ${body}\n    COMMIT TRANSACTION;`
+  return db.query(fullQuery, mergedParams)
+}
+
+// Stack of in-flight event buffers. Non-empty while a mutation's batched
+// transaction query is executing; emitMutation() pushes onto the innermost
+// buffer instead of the live eventBus so nothing is observable on the bus
+// until the transaction has actually committed.
+const transactionEventStack: MutationEvent[][] = []
+
+function emitMutation(event: MutationEvent): void {
+  const currentEvents = transactionEventStack.at(-1)
+  if (currentEvents) {
+    currentEvents.push(event)
+    return
+  }
+  eventBus.emit(event)
+}
+
+/**
+ * Run a mutation with post-commit event emission: events raised via
+ * `emitMutation()` while `mutate()` is in flight are buffered and only
+ * dispatched to the shared `eventBus` after `mutate()` resolves — i.e. after
+ * the batched `BEGIN/COMMIT TRANSACTION` query has actually committed. If
+ * `mutate()` throws (the transaction failed and SurrealDB rolled it back
+ * server-side), buffered events are discarded — never emitted for a
+ * mutation that didn't commit.
+ */
+async function runMutationTransaction<T>(mutate: () => Promise<T>): Promise<T> {
+  if (transactionEventStack.length > 0) {
+    // Already nested inside an outer mutation's buffer (e.g. linkNodes
+    // delegating to setProperty/addPropertyValue) — reuse it so the
+    // outermost caller controls the flush.
+    return mutate()
+  }
+
+  const events: MutationEvent[] = []
+  transactionEventStack.push(events)
+  try {
+    const result = await mutate()
+    for (const event of events) {
+      eventBus.emit(event)
+    }
+    return result
+  } finally {
+    transactionEventStack.pop()
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -230,75 +332,90 @@ export class SurrealBackend implements NodeBackend {
       params.ownerId = options.ownerId
     }
 
-    const [result] = await db.query<[Array<{ id: RecordId }>]>(
-      `CREATE node SET ${setClauses.join(', ')}`,
-      params,
-    )
+    // Resolve the supertag record BEFORE the transaction — this is a
+    // read-only cache lookup, not part of the write set.
+    const supertagRecordId = options.supertagId
+      ? await this.resolveSupertagId(options.supertagId)
+      : null
 
-    const nodeId = rid(result[0].id)
+    return runMutationTransaction(async () => {
+      // `LET $newNode = (CREATE ...)` binds the created record so the
+      // supertag RELATE (if any) can reference its freshly-generated id
+      // within the SAME atomic transaction, and the trailing RETURN
+      // extracts that id as the query's sole result.
+      const statements: SurrealStatement[] = [
+        {
+          query: `LET $newNode = (CREATE node SET ${setClauses.join(', ')})`,
+          params,
+        },
+      ]
 
-    // Emit node:created event
-    eventBus.emit({
-      type: 'node:created',
-      timestamp: now,
-      nodeId,
-      afterValue: {
-        id: nodeId,
-        content: options.content,
-        ownerId: options.ownerId,
-      },
-    })
-
-    // Assign supertag if provided
-    if (options.supertagId) {
-      const supertagRecordId = await this.resolveSupertagId(options.supertagId)
       if (supertagRecordId) {
-        await db.query(
-          'RELATE $from->has_supertag->$to SET `order` = 0, created_at = time::now()',
-          {
-            from: new StringRecordId(nodeId),
-            to: new StringRecordId(supertagRecordId),
-          },
-        )
+        statements.push({
+          query: 'RELATE ($newNode[0].id)->has_supertag->$stId SET `order` = 0, created_at = time::now()',
+          params: { stId: new StringRecordId(supertagRecordId) },
+        })
+      }
 
-        eventBus.emit({
+      statements.push({ query: 'RETURN $newNode[0].id' })
+
+      const [nodeIdResult] = await runSurrealTransaction(db, statements)
+      const nodeId = rid(nodeIdResult)
+
+      emitMutation({
+        type: 'node:created',
+        timestamp: now,
+        nodeId,
+        afterValue: {
+          id: nodeId,
+          content: options.content,
+          ownerId: options.ownerId,
+        },
+      })
+
+      if (supertagRecordId) {
+        emitMutation({
           type: 'supertag:added',
           timestamp: now,
           nodeId,
           supertagId: supertagRecordId,
         })
       }
-    }
 
-    return nodeId
+      return nodeId
+    })
   }
 
   async updateNodeContent(nodeId: string, content: string): Promise<void> {
     const db = this.ensureInitialized()
 
-    // Get current content for beforeValue
+    // Get current content for beforeValue (read-only, outside the transaction)
     const [current] = await db.query<[SurrealNode[]]>(
       `SELECT content FROM $nodeId`,
       { nodeId: new StringRecordId(nodeId) },
     )
     const beforeContent = current?.[0]?.content ?? null
-
     const now = new Date()
-    await db.query(
-      `UPDATE $nodeId SET content = $content, content_plain = $contentPlain, updated_at = time::now()`,
-      {
-        nodeId: new StringRecordId(nodeId),
-        content,
-        contentPlain: content.toLowerCase(),
-      },
-    )
 
-    eventBus.emit({
-      type: 'node:updated',
-      timestamp: now,
-      nodeId,
-      beforeValue: beforeContent,
-      afterValue: content,
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: `UPDATE $nodeId SET content = $content, content_plain = $contentPlain, updated_at = time::now()`,
+          params: {
+            nodeId: new StringRecordId(nodeId),
+            content,
+            contentPlain: content.toLowerCase(),
+          },
+        },
+      ])
+
+      emitMutation({
+        type: 'node:updated',
+        timestamp: now,
+        nodeId,
+        beforeValue: beforeContent,
+        afterValue: content,
+      })
     })
   }
 
@@ -306,15 +423,19 @@ export class SurrealBackend implements NodeBackend {
     const db = this.ensureInitialized()
     const now = new Date()
 
-    await db.query(
-      `UPDATE $nodeId SET deleted_at = time::now()`,
-      { nodeId: new StringRecordId(nodeId) },
-    )
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: `UPDATE $nodeId SET deleted_at = time::now()`,
+          params: { nodeId: new StringRecordId(nodeId) },
+        },
+      ])
 
-    eventBus.emit({
-      type: 'node:deleted',
-      timestamp: now,
-      nodeId,
+      emitMutation({
+        type: 'node:deleted',
+        timestamp: now,
+        nodeId,
+      })
     })
   }
 
@@ -480,7 +601,7 @@ export class SurrealBackend implements NodeBackend {
     const fieldRecordId = await this.resolveFieldId(fieldId)
     const now = new Date()
 
-    // Get existing value for beforeValue event
+    // Get existing value for beforeValue event (read-only, outside the transaction)
     const [existing] = await db.query<[Array<{ value: unknown }>]>(
       'SELECT `value` FROM has_field WHERE in = $nodeId AND out = $fieldId',
       {
@@ -490,40 +611,42 @@ export class SurrealBackend implements NodeBackend {
     )
     const beforeValue = existing?.[0]?.value
 
-    // Delete existing edges for this field
-    await db.query(
-      'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
-      {
-        nodeId: new StringRecordId(nodeId),
-        fieldId: new StringRecordId(fieldRecordId),
-      },
-    )
+    return runMutationTransaction(async () => {
+      // DELETE + RELATE + UPDATE must all commit together, or none of them —
+      // otherwise a mid-mutation failure could leave a field with no value
+      // (stale DELETE) or a stale node.updated_at.
+      await runSurrealTransaction(db, [
+        {
+          query: 'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
+          params: {
+            nodeId: new StringRecordId(nodeId),
+            fieldId: new StringRecordId(fieldRecordId),
+          },
+        },
+        {
+          query: 'RELATE $from->has_field->$to SET `value` = $value, `order` = $order, created_at = time::now(), updated_at = time::now()',
+          params: {
+            from: new StringRecordId(nodeId),
+            to: new StringRecordId(fieldRecordId),
+            value,
+            order,
+          },
+        },
+        {
+          query: 'UPDATE $nodeId SET updated_at = time::now()',
+          params: { nodeId: new StringRecordId(nodeId) },
+        },
+      ])
 
-    // Create new edge with value
-    await db.query(
-      'RELATE $from->has_field->$to SET `value` = $value, `order` = $order, created_at = time::now(), updated_at = time::now()',
-      {
-        from: new StringRecordId(nodeId),
-        to: new StringRecordId(fieldRecordId),
-        value,
-        order,
-      },
-    )
-
-    // Update node's updated_at timestamp
-    await db.query(
-      'UPDATE $nodeId SET updated_at = time::now()',
-      { nodeId: new StringRecordId(nodeId) },
-    )
-
-    eventBus.emit({
-      type: 'property:set',
-      timestamp: now,
-      nodeId,
-      fieldId: fieldRecordId,
-      fieldSystemId: fieldId as string,
-      beforeValue,
-      afterValue: value,
+      emitMutation({
+        type: 'property:set',
+        timestamp: now,
+        nodeId,
+        fieldId: fieldRecordId,
+        fieldSystemId: fieldId as string,
+        beforeValue,
+        afterValue: value,
+      })
     })
   }
 
@@ -536,7 +659,7 @@ export class SurrealBackend implements NodeBackend {
     const fieldRecordId = await this.resolveFieldId(fieldId)
     const now = new Date()
 
-    // Find max order for existing edges of this field
+    // Find max order for existing edges of this field (read-only, outside the transaction)
     const [existingEdges] = await db.query<[Array<{ order: number }>]>(
       'SELECT `order` FROM has_field WHERE in = $nodeId AND out = $fieldId ORDER BY `order` DESC LIMIT 1',
       {
@@ -546,24 +669,27 @@ export class SurrealBackend implements NodeBackend {
     )
     const maxOrder = existingEdges?.[0]?.order ?? -1
 
-    // Create new edge
-    await db.query(
-      'RELATE $from->has_field->$to SET `value` = $value, `order` = $order, created_at = time::now(), updated_at = time::now()',
-      {
-        from: new StringRecordId(nodeId),
-        to: new StringRecordId(fieldRecordId),
-        value,
-        order: maxOrder + 1,
-      },
-    )
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: 'RELATE $from->has_field->$to SET `value` = $value, `order` = $order, created_at = time::now(), updated_at = time::now()',
+          params: {
+            from: new StringRecordId(nodeId),
+            to: new StringRecordId(fieldRecordId),
+            value,
+            order: maxOrder + 1,
+          },
+        },
+      ])
 
-    eventBus.emit({
-      type: 'property:added',
-      timestamp: now,
-      nodeId,
-      fieldId: fieldRecordId,
-      fieldSystemId: fieldId as string,
-      afterValue: value,
+      emitMutation({
+        type: 'property:added',
+        timestamp: now,
+        nodeId,
+        fieldId: fieldRecordId,
+        fieldSystemId: fieldId as string,
+        afterValue: value,
+      })
     })
   }
 
@@ -581,7 +707,7 @@ export class SurrealBackend implements NodeBackend {
 
     const now = new Date()
 
-    // Get existing values for event emission
+    // Get existing values for event emission (read-only, outside the transaction)
     const [existing] = await db.query<[Array<{ value: unknown }>]>(
       'SELECT `value` FROM has_field WHERE in = $nodeId AND out = $fieldId',
       {
@@ -590,26 +716,29 @@ export class SurrealBackend implements NodeBackend {
       },
     )
 
-    // Delete all edges for this field
-    await db.query(
-      'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
-      {
-        nodeId: new StringRecordId(nodeId),
-        fieldId: new StringRecordId(fieldRecordId),
-      },
-    )
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: 'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
+          params: {
+            nodeId: new StringRecordId(nodeId),
+            fieldId: new StringRecordId(fieldRecordId),
+          },
+        },
+      ])
 
-    // Emit events for each removed value
-    for (const edge of (existing || [])) {
-      eventBus.emit({
-        type: 'property:removed',
-        timestamp: now,
-        nodeId,
-        fieldId: fieldRecordId,
-        fieldSystemId: fieldId as string,
-        beforeValue: edge.value,
-      })
-    }
+      // Emit events for each removed value
+      for (const edge of (existing || [])) {
+        emitMutation({
+          type: 'property:removed',
+          timestamp: now,
+          nodeId,
+          fieldId: fieldRecordId,
+          fieldSystemId: fieldId as string,
+          beforeValue: edge.value,
+        })
+      }
+    })
   }
 
   async linkNodes(
@@ -640,7 +769,7 @@ export class SurrealBackend implements NodeBackend {
       throw new Error(`Supertag not found: ${supertagSystemId}`)
     }
 
-    // Check if already has this supertag
+    // Check if already has this supertag (read-only, outside the transaction)
     const [existing] = await db.query<[Array<{ id: RecordId }>]>(
       'SELECT id FROM has_supertag WHERE in = $nodeId AND out = $stId',
       {
@@ -651,37 +780,39 @@ export class SurrealBackend implements NodeBackend {
 
     if (existing && existing.length > 0) return false
 
-    // Get current max order
+    // Get current max order (read-only, outside the transaction)
     const [orderResults] = await db.query<[Array<{ order: number }>]>(
       'SELECT `order` FROM has_supertag WHERE in = $nodeId ORDER BY `order` DESC LIMIT 1',
       { nodeId: new StringRecordId(nodeId) },
     )
     const maxOrder = orderResults?.[0]?.order ?? -1
-
-    await db.query(
-      'RELATE $from->has_supertag->$to SET `order` = $order, created_at = time::now()',
-      {
-        from: new StringRecordId(nodeId),
-        to: new StringRecordId(supertagRecordId),
-        order: maxOrder + 1,
-      },
-    )
-
-    // Update node timestamp
-    await db.query(
-      'UPDATE $nodeId SET updated_at = time::now()',
-      { nodeId: new StringRecordId(nodeId) },
-    )
-
     const now = new Date()
-    eventBus.emit({
-      type: 'supertag:added',
-      timestamp: now,
-      nodeId,
-      supertagId: supertagRecordId,
-    })
 
-    return true
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: 'RELATE $from->has_supertag->$to SET `order` = $order, created_at = time::now()',
+          params: {
+            from: new StringRecordId(nodeId),
+            to: new StringRecordId(supertagRecordId),
+            order: maxOrder + 1,
+          },
+        },
+        {
+          query: 'UPDATE $nodeId SET updated_at = time::now()',
+          params: { nodeId: new StringRecordId(nodeId) },
+        },
+      ])
+
+      emitMutation({
+        type: 'supertag:added',
+        timestamp: now,
+        nodeId,
+        supertagId: supertagRecordId,
+      })
+
+      return true
+    })
   }
 
   async removeNodeSupertag(
@@ -693,7 +824,7 @@ export class SurrealBackend implements NodeBackend {
     const supertagRecordId = await this.resolveSupertagId(supertagSystemId)
     if (!supertagRecordId) return false
 
-    // Check if the edge exists
+    // Check if the edge exists (read-only, outside the transaction)
     const [existing] = await db.query<[Array<{ id: RecordId }>]>(
       'SELECT id FROM has_supertag WHERE in = $nodeId AND out = $stId',
       {
@@ -704,30 +835,32 @@ export class SurrealBackend implements NodeBackend {
 
     if (!existing || existing.length === 0) return false
 
-    // Delete the supertag edge
-    await db.query(
-      'DELETE has_supertag WHERE in = $nodeId AND out = $stId',
-      {
-        nodeId: new StringRecordId(nodeId),
-        stId: new StringRecordId(supertagRecordId),
-      },
-    )
-
-    // Update node timestamp
-    await db.query(
-      'UPDATE $nodeId SET updated_at = time::now()',
-      { nodeId: new StringRecordId(nodeId) },
-    )
-
     const now = new Date()
-    eventBus.emit({
-      type: 'supertag:removed',
-      timestamp: now,
-      nodeId,
-      supertagId: supertagRecordId,
-    })
 
-    return true
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: 'DELETE has_supertag WHERE in = $nodeId AND out = $stId',
+          params: {
+            nodeId: new StringRecordId(nodeId),
+            stId: new StringRecordId(supertagRecordId),
+          },
+        },
+        {
+          query: 'UPDATE $nodeId SET updated_at = time::now()',
+          params: { nodeId: new StringRecordId(nodeId) },
+        },
+      ])
+
+      emitMutation({
+        type: 'supertag:removed',
+        timestamp: now,
+        nodeId,
+        supertagId: supertagRecordId,
+      })
+
+      return true
+    })
   }
 
   async getNodeSupertags(nodeId: string): Promise<SupertagInfo[]> {

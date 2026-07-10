@@ -865,6 +865,128 @@ describe('Event emission', () => {
 })
 
 // =============================================================================
+// Transactions & atomicity
+//
+// The embedded `@surrealdb/node` engine doesn't support the driver-native
+// `db.beginTransaction()` API (throws `UnsupportedFeatureError`), so
+// SurrealBackend batches each mutation's write statements into one
+// `BEGIN TRANSACTION; ...; COMMIT TRANSACTION;` query string instead. These
+// tests force a genuine mid-batch failure (an out-of-table RELATE target,
+// which SurrealDB's relation type-checking rejects) to prove: (1) an
+// earlier statement in the same batch that already "ran" (a CREATE, an
+// UPDATE) does NOT persist when a later statement in the batch fails, and
+// (2) no event is emitted for a mutation whose transaction didn't commit,
+// while a successful mutation still emits its event(s) exactly once, after
+// commit.
+// =============================================================================
+
+describe('Transactions & atomicity', () => {
+  it('rolls back the CREATE when the supertag RELATE fails, and emits no events for the failed mutation', async () => {
+    // Grab a real `field` record id — used as a deliberately wrong-table
+    // RELATE target. `has_supertag` is declared `TYPE RELATION IN node OUT
+    // supertag`, so relating to a `field` record must be rejected.
+    const [fieldRows] = await db.query<[Array<{ id: RecordId }>]>(
+      'SELECT id FROM field LIMIT 1',
+    )
+    expect(fieldRows.length).toBeGreaterThan(0)
+    const wrongTableRecordId = fieldRows[0].id.toString()
+
+    interface BackendInternals {
+      supertagIdCache: Map<string, string | null>
+    }
+    ;(backend as unknown as BackendInternals).supertagIdCache.set(
+      'supertag:item',
+      wrongTableRecordId,
+    )
+
+    const events: Array<{ type: string }> = []
+    eventBus.subscribe((e) => { events.push({ type: e.type }) })
+
+    await expect(
+      backend.createNode({ content: 'atomic-rollback-probe', supertagId: 'supertag:item' }),
+    ).rejects.toThrow()
+
+    // No node:created or supertag:added event for the failed mutation.
+    expect(events.filter((e) => e.type === 'node:created')).toHaveLength(0)
+    expect(events.filter((e) => e.type === 'supertag:added')).toHaveLength(0)
+
+    // The CREATE (which unconditionally writes a new row) must not have
+    // persisted — proving the whole batch, including the already-attempted
+    // CREATE, rolled back together with the failed RELATE.
+    const [leaked] = await db.query<[Array<{ id: RecordId }>]>(
+      "SELECT id FROM node WHERE content = 'atomic-rollback-probe'",
+    )
+    expect(leaked).toHaveLength(0)
+
+    // Restore the cache so a legitimate follow-up call resolves correctly.
+    ;(backend as unknown as BackendInternals).supertagIdCache.delete('supertag:item')
+
+    const nodeId = await backend.createNode({ content: 'legit-node', supertagId: 'supertag:item' })
+    expect(events.filter((e) => e.type === 'node:created')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'supertag:added')).toHaveLength(1)
+    const node = await backend.assembleNode(nodeId)
+    expect(node!.supertags.some((st) => st.systemId === 'supertag:item')).toBe(true)
+  })
+
+  it('rolls back the whole DELETE+RELATE+UPDATE group when setProperty\'s RELATE fails', async () => {
+    const nodeId = await backend.createNode({ content: 'Atomic Prop Node' })
+    const before = await backend.assembleNode(nodeId)
+    const beforeUpdatedAt = before!.updatedAt.getTime()
+
+    // Poison the PATH field's cached record id to point at the `supertag`
+    // table instead of `field`. `has_field` is declared `TYPE RELATION IN
+    // node OUT field`, so the RELATE inside setProperty's batch must fail.
+    interface BackendInternals {
+      fieldIdCache: Map<string, string>
+    }
+    ;(backend as unknown as BackendInternals).fieldIdCache.set(
+      SYSTEM_FIELDS.PATH as string,
+      'supertag:item',
+    )
+
+    const events: Array<{ type: string }> = []
+    eventBus.subscribe((e) => {
+      events.push({ type: e.type })
+    })
+
+    await expect(
+      backend.setProperty(nodeId, SYSTEM_FIELDS.PATH, '/should-not-persist'),
+    ).rejects.toThrow()
+
+    // No property:set event for the failed mutation.
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(0)
+
+    // The UPDATE statement (node.updated_at) never committed — it always
+    // unconditionally writes when it runs, so an unchanged timestamp proves
+    // the entire DELETE+RELATE+UPDATE batch rolled back together.
+    const after = await backend.assembleNode(nodeId)
+    expect(after!.updatedAt.getTime()).toBe(beforeUpdatedAt)
+
+    // Restore the cache and prove the successful path still emits once.
+    ;(backend as unknown as BackendInternals).fieldIdCache.delete(SYSTEM_FIELDS.PATH as string)
+    await backend.setProperty(nodeId, SYSTEM_FIELDS.PATH, '/ok')
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(1)
+  })
+
+  it('emits each event exactly once, only after commit, for successful mutations', async () => {
+    const nodeId = await backend.createNode({ content: 'Count Node' })
+
+    const events: Array<{ type: string }> = []
+    eventBus.subscribe((e) => {
+      events.push({ type: e.type })
+    })
+
+    await backend.setProperty(nodeId, SYSTEM_FIELDS.PATH, '/a')
+    await backend.addNodeSupertag(nodeId, 'supertag:item')
+    await backend.removeNodeSupertag(nodeId, 'supertag:item')
+
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'supertag:added')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'supertag:removed')).toHaveLength(1)
+  })
+})
+
+// =============================================================================
 // Persistence (no-op)
 // =============================================================================
 
