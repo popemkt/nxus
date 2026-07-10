@@ -3,6 +3,7 @@ export * from './node.service.js'
 export * from './bootstrap.js'
 export * from './query-evaluator.service.js'
 export * from './recall.service.js'
+export * from './tif/index.js'
 
 // Facade and backend types
 export * from './facade.js'
