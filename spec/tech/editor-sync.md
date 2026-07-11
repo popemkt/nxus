@@ -142,11 +142,22 @@ DRIFT: inconsistent-undo-snapshot-coverage
 
 **Canonical.** Every mutation applies optimistically to the store, then persists. Persistence MUST be reconciling, not fire-and-forget: transient failures retry with backoff; terminal failures roll back the optimistic change and notify (INV-3). Writes are ordered per node (INV-8) — a per-node (or single) FIFO queue is the simplest conforming design and also provides the INV-7 deferral point and the INV-9 flush point.
 
+**Current materialization (INV-8, closed 2026-07-11).** Every server write in the hook dispatches through a per-node FIFO queue (`createWriteQueueRegistry`, `apps/nxus-editor/src/lib/write-queue.ts`; `enqueueNodeWrite` in the hook). Queue keys are node ids canonicalized through `idRemaps`; a multi-node write (sibling order swap, `swapOrderServerFn`) barriers on every touched node's tail and becomes the new tail for all of them; on temp→server id remap the chain migrates keys so pre-remap writes stay ahead of post-remap ones. A failed write surfaces to its own `.catch` but never blocks the next write to the same node.
+
+Behavior clauses (BDD pilot — each clause has a stable code; the guarding test carries the code in its title, `write-queue.test.ts`):
+
+- **INV8-B1** — Given writes W1 then W2 issued for the same node, when both dispatch, then W2 MUST NOT start before W1 settles.
+- **INV8-B2** — Given writes for two different nodes, when both dispatch, then they MAY run concurrently (no global serialization).
+- **INV8-B3** — Given W1 rejects, when W2 for the same node is queued, then W1's failure surfaces to its caller AND W2 still runs (failure isolation).
+- **INV8-B4** — Given a multi-node write M touching nodes A and B, when writes exist in flight for A, then M waits for A's tail, and a later write for B waits for M.
+- **INV8-B5** — Given writes queued under a temp id, when the create resolves and the id remaps, then writes later queued under the server id MUST run after the temp-id chain (INV-7 ordering clause).
+- **INV8-B6** — Given chains exist under both temp and server ids at remap time, when they merge, then a subsequent write waits for both.
+
 DRIFT: fire-and-forget-sync-no-rollback
-- canonical: INV-1, INV-3, INV-8.
-- current: the hook's own doc comment declares the policy — "If the server call fails, we log but don't roll back" (use-outline-sync.ts:41-48). Most mutation paths still end in `.catch(console.error)` with no retry, no queue, no ordering between overlapping calls, and no user-visible error. Move up/down is narrower than before because it is one transactional `swapOrderServerFn` request, but it is still dispatched fire-and-forget from the client's perspective.
-- impact: any failed write can still silently diverge client from DB until reload discards the user's work; concurrent calls can be applied out of order server-side. Move up/down no longer has the specific two-call partial-swap failure mode.
-- closes: per-node FIFO write queue with retry/backoff, rollback-on-terminal-failure using the captured pre-mutation state, and an error toast/status surface. This is the core of the sync-layer fix; INV-1/3/7/8/9 are its acceptance tests.
+- canonical: INV-1, INV-3.
+- current: writes are now ordered per node (INV-8 closed above), but persistence is still fire-and-forget in failure handling — mutation paths end in `.catch(console.error)` with no retry, no rollback of the optimistic store change, and no user-visible error.
+- impact: a failed write silently diverges client from DB until reload discards the user's work. Out-of-order application is no longer a failure mode.
+- closes: retry/backoff on transient failures, rollback-on-terminal-failure using the captured pre-mutation state, and an error toast/status surface (a saved/saving/offline/error state machine). INV-1/3/9 are its acceptance tests.
 
 ## 7. Temp-ID lifecycle
 
@@ -157,7 +168,7 @@ DRIFT: fire-and-forget-sync-no-rollback
 Resolved note: temp-id-race-window (closed 2026-07-11)
 - previous: nothing deferred mutations during the create round-trip — indent/outdent/reorder/delete/setFieldValue on the just-created node, or Enter creating a *child* of it, sent the temp ID straight to the server; worst case a child row persisted under a nonexistent `ownerId` (wrong tree on reload), surfaced only as swallowed `Node not found` server-fn errors.
 - fixed: `persistCreate` registers the in-flight create in `pendingCreates` (temp ID → promise of server ID) and `applyServerCreateResult` installs the durable mapping in `idRemaps`. Every server-call path resolves node IDs through `resolveNodeId` (and parent refs through `resolveServerParentId`) before dispatch — content saves at timer fire, delete, indent/outdent, move up/down order swaps, moveNodeTo, supertag add/remove, field add/remove, and undo/redo snapshot diffs. Callbacks awaiting the same create dispatch in registration (issue) order when it resolves.
-- remaining: per-node request serialization (a strict issue-order write queue) is not implemented for any ID class — resolved-ID requests race on the network exactly as non-temp requests always have; INV-7's barrier clause is satisfied, its ordering clause is only as strong as the status quo.
+- remaining (closed 2026-07-11): per-node request serialization landed as the INV-8 write queue (§6) — resolved-ID requests no longer race on the network; INV-7's ordering clause is guarded by INV8-B5/B6.
 
 ## 8. Debounce semantics
 

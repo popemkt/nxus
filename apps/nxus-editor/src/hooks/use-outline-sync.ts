@@ -21,6 +21,7 @@ import { outlineQueryKeys } from '@/components/outline/query-helpers'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useUndoStore } from '@/stores/undo.store'
 import { diffOutlineSnapshots } from '@/lib/outline-diff'
+import { createWriteQueueRegistry } from '@/lib/write-queue'
 import type { NodeMap, OutlineField, SupertagBadge } from '@/types/outline'
 
 /** Parse-layer schema for createNodeServerFn results (INV-12): a server
@@ -105,6 +106,9 @@ export function useOutlineSync() {
   // under a nonexistent parent (wrong tree on reload).
   const pendingCreates = useRef(new Map<string, Promise<string>>())
   const idRemaps = useRef(new Map<string, string>())
+  // INV-7 ordering clause: writes touching the same node dispatch in issue
+  // order — resolved-id requests must not overtake each other on the network.
+  const writeQueue = useRef(createWriteQueueRegistry())
   const queryClient = useQueryClient()
 
   /** Resolve a possibly-temp node id to its server id (awaits in-flight creates). */
@@ -124,6 +128,22 @@ export function useOutlineSync() {
       return resolveNodeId(serverParentId)
     },
     [resolveNodeId],
+  )
+
+  /**
+   * Queue a server write behind all in-flight writes for the same node(s).
+   * Keys are canonicalized through idRemaps so a write issued with a stale
+   * temp id (a closure captured before the remap) joins the server-id chain
+   * instead of forking a parallel one.
+   */
+  const enqueueNodeWrite = useCallback(
+    <T,>(ids: string | readonly string[], task: () => Promise<T>): Promise<T> => {
+      const keys = (typeof ids === 'string' ? [ids] : ids).map(
+        (id) => idRemaps.current.get(id) ?? id,
+      )
+      return writeQueue.current.enqueue(keys, task)
+    },
+    [],
   )
 
   // Clear pending content debounce timers on unmount
@@ -201,21 +221,19 @@ export function useOutlineSync() {
       nodeId,
       setTimeout(() => {
         timers.delete(nodeId)
-        resolveNodeId(nodeId)
-          .then((resolvedId) =>
-            updateNodeContentServerFn({
-              data: { nodeId: resolvedId, content },
-            }).then(() => {
-              patchCachedNodeContent(resolvedId, content)
-              scheduleContentConvergenceInvalidation()
-            }),
-          )
-          .catch((err) => {
-            console.error('[sync] Failed to update content:', err)
+        enqueueNodeWrite(nodeId, async () => {
+          const resolvedId = await resolveNodeId(nodeId)
+          await updateNodeContentServerFn({
+            data: { nodeId: resolvedId, content },
           })
+          patchCachedNodeContent(resolvedId, content)
+          scheduleContentConvergenceInvalidation()
+        }).catch((err) => {
+          console.error('[sync] Failed to update content:', err)
+        })
       }, 500),
     )
-  }, [patchCachedNodeContent, resolveNodeId, scheduleContentConvergenceInvalidation])
+  }, [enqueueNodeWrite, patchCachedNodeContent, resolveNodeId, scheduleContentConvergenceInvalidation])
 
   /**
    * Apply a create result: replace the temp id with the server id in the
@@ -229,6 +247,9 @@ export function useOutlineSync() {
 
       if (result.nodeId !== tempId) {
         idRemaps.current.set(tempId, result.nodeId)
+        // Writes already queued under the temp id keep their slot; later
+        // writes keyed by the server id chain behind them.
+        writeQueue.current.migrate(tempId, result.nodeId)
 
         // Cancel any pending content debounce for the temp ID; current
         // content is re-synced under the server id below.
@@ -410,13 +431,14 @@ export function useOutlineSync() {
   const deleteNode = useCallback((nodeId: string) => {
     captureUndoSnapshot()
     useOutlineStore.getState().deleteNode(nodeId)
-    resolveNodeId(nodeId)
-      .then((resolvedId) => deleteNodeServerFn({ data: { nodeId: resolvedId } }))
-      .then(() => scheduleConvergenceInvalidation())
-      .catch((err) => {
-        console.error('[sync] Failed to delete node:', err)
-      })
-  }, [resolveNodeId, scheduleConvergenceInvalidation, captureUndoSnapshot])
+    enqueueNodeWrite(nodeId, async () => {
+      const resolvedId = await resolveNodeId(nodeId)
+      await deleteNodeServerFn({ data: { nodeId: resolvedId } })
+      scheduleConvergenceInvalidation()
+    }).catch((err) => {
+      console.error('[sync] Failed to delete node:', err)
+    })
+  }, [enqueueNodeWrite, resolveNodeId, scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Indent node — optimistic + persist reparent.
@@ -427,22 +449,25 @@ export function useOutlineSync() {
     const { nodes } = useOutlineStore.getState()
     const node = nodes.get(nodeId)
     if (node && node.parentId) {
-      Promise.all([resolveNodeId(nodeId), resolveServerParentId(node.parentId)])
-        .then(([resolvedId, newParentId]) =>
-          reparentNodeServerFn({
-            data: {
-              nodeId: resolvedId,
-              newParentId,
-              order: toPersistedOrder(node.order),
-            },
-          }),
-        )
-        .then(() => scheduleConvergenceInvalidation())
-        .catch((err) => {
-          console.error('[sync] Failed to indent node:', err)
+      const parentId = node.parentId
+      enqueueNodeWrite(nodeId, async () => {
+        const [resolvedId, newParentId] = await Promise.all([
+          resolveNodeId(nodeId),
+          resolveServerParentId(parentId),
+        ])
+        await reparentNodeServerFn({
+          data: {
+            nodeId: resolvedId,
+            newParentId,
+            order: toPersistedOrder(node.order),
+          },
         })
+        scheduleConvergenceInvalidation()
+      }).catch((err) => {
+        console.error('[sync] Failed to indent node:', err)
+      })
     }
-  }, [resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation, captureUndoSnapshot])
+  }, [enqueueNodeWrite, resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Outdent node — optimistic + persist reparent.
@@ -453,22 +478,25 @@ export function useOutlineSync() {
     const { nodes } = useOutlineStore.getState()
     const node = nodes.get(nodeId)
     if (node && node.parentId) {
-      Promise.all([resolveNodeId(nodeId), resolveServerParentId(node.parentId)])
-        .then(([resolvedId, newParentId]) =>
-          reparentNodeServerFn({
-            data: {
-              nodeId: resolvedId,
-              newParentId,
-              order: toPersistedOrder(node.order),
-            },
-          }),
-        )
-        .then(() => scheduleConvergenceInvalidation())
-        .catch((err) => {
-          console.error('[sync] Failed to outdent node:', err)
+      const parentId = node.parentId
+      enqueueNodeWrite(nodeId, async () => {
+        const [resolvedId, newParentId] = await Promise.all([
+          resolveNodeId(nodeId),
+          resolveServerParentId(parentId),
+        ])
+        await reparentNodeServerFn({
+          data: {
+            nodeId: resolvedId,
+            newParentId,
+            order: toPersistedOrder(node.order),
+          },
         })
+        scheduleConvergenceInvalidation()
+      }).catch((err) => {
+        console.error('[sync] Failed to outdent node:', err)
+      })
     }
-  }, [resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation, captureUndoSnapshot])
+  }, [enqueueNodeWrite, resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Move up/down — optimistic + persist both sides of order swap.
@@ -498,18 +526,19 @@ export function useOutlineSync() {
     )
     if (changed.length === 0) return // no-op (already at boundary)
 
-    Promise.all(
-      changed.map(async ([id]) => ({
-        nodeId: await resolveNodeId(id),
-        order: toPersistedOrder(nodes.get(id)!.order),
-      })),
-    )
-      .then((updates) => swapOrderServerFn({ data: { updates } }))
-      .then(() => scheduleConvergenceInvalidation())
-      .catch((err) => {
-        console.error('[sync] Failed to reorder nodes:', err)
-      })
-  }, [resolveNodeId, scheduleConvergenceInvalidation, captureUndoSnapshot])
+    enqueueNodeWrite(changed.map(([id]) => id), async () => {
+      const updates = await Promise.all(
+        changed.map(async ([id]) => ({
+          nodeId: await resolveNodeId(id),
+          order: toPersistedOrder(nodes.get(id)!.order),
+        })),
+      )
+      await swapOrderServerFn({ data: { updates } })
+      scheduleConvergenceInvalidation()
+    }).catch((err) => {
+      console.error('[sync] Failed to reorder nodes:', err)
+    })
+  }, [enqueueNodeWrite, resolveNodeId, scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   const moveNodeDown = useCallback((nodeId: string) => {
     captureUndoSnapshot()
@@ -536,18 +565,19 @@ export function useOutlineSync() {
     )
     if (changed.length === 0) return // no-op (already at boundary)
 
-    Promise.all(
-      changed.map(async ([id]) => ({
-        nodeId: await resolveNodeId(id),
-        order: toPersistedOrder(nodes.get(id)!.order),
-      })),
-    )
-      .then((updates) => swapOrderServerFn({ data: { updates } }))
-      .then(() => scheduleConvergenceInvalidation())
-      .catch((err) => {
-        console.error('[sync] Failed to reorder nodes:', err)
-      })
-  }, [resolveNodeId, scheduleConvergenceInvalidation, captureUndoSnapshot])
+    enqueueNodeWrite(changed.map(([id]) => id), async () => {
+      const updates = await Promise.all(
+        changed.map(async ([id]) => ({
+          nodeId: await resolveNodeId(id),
+          order: toPersistedOrder(nodes.get(id)!.order),
+        })),
+      )
+      await swapOrderServerFn({ data: { updates } })
+      scheduleConvergenceInvalidation()
+    }).catch((err) => {
+      console.error('[sync] Failed to reorder nodes:', err)
+    })
+  }, [enqueueNodeWrite, resolveNodeId, scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Add supertag — optimistic add to store, then persist via server.
@@ -559,10 +589,10 @@ export function useOutlineSync() {
 
       if (!supertag.systemId) return
       const supertagSystemId = supertag.systemId
-      resolveNodeId(nodeId)
-        .then((resolvedId) =>
-          addSupertagServerFn({ data: { nodeId: resolvedId, supertagSystemId } }),
-        )
+      enqueueNodeWrite(nodeId, async () => {
+        const resolvedId = await resolveNodeId(nodeId)
+        return addSupertagServerFn({ data: { nodeId: resolvedId, supertagSystemId } })
+      })
         .then((result) => {
           if (result.success && result.newFields) {
             // Merge any additional fields from server that weren't in the optimistic set
@@ -586,7 +616,7 @@ export function useOutlineSync() {
           console.error('[sync] Failed to add supertag:', err)
         })
     },
-    [resolveNodeId, scheduleConvergenceInvalidation],
+    [enqueueNodeWrite, resolveNodeId, scheduleConvergenceInvalidation],
   )
 
   /**
@@ -597,16 +627,15 @@ export function useOutlineSync() {
     (nodeId: string, supertagId: string, supertagSystemId: string | null) => {
       useOutlineStore.getState().removeSupertag(nodeId, supertagId)
       if (!supertagSystemId) return
-      resolveNodeId(nodeId)
-        .then((resolvedId) =>
-          removeSupertagServerFn({ data: { nodeId: resolvedId, supertagSystemId } }),
-        )
-        .then(() => scheduleConvergenceInvalidation())
-        .catch((err) => {
-          console.error('[sync] Failed to remove supertag:', err)
-        })
+      enqueueNodeWrite(nodeId, async () => {
+        const resolvedId = await resolveNodeId(nodeId)
+        await removeSupertagServerFn({ data: { nodeId: resolvedId, supertagSystemId } })
+        scheduleConvergenceInvalidation()
+      }).catch((err) => {
+        console.error('[sync] Failed to remove supertag:', err)
+      })
     },
-    [resolveNodeId, scheduleConvergenceInvalidation],
+    [enqueueNodeWrite, resolveNodeId, scheduleConvergenceInvalidation],
   )
 
   /**
@@ -616,17 +645,16 @@ export function useOutlineSync() {
     (nodeId: string, field: OutlineField) => {
       useOutlineStore.getState().addField(nodeId, field)
       // Persist with empty value to materialize the field
-      resolveNodeId(nodeId)
-        .then((resolvedId) =>
-          setFieldValueServerFn({
-            data: { nodeId: resolvedId, fieldId: field.fieldId, value: '' },
-          }),
-        )
-        .catch((err) => {
-          console.error('[sync] Failed to add field:', err)
+      enqueueNodeWrite(nodeId, async () => {
+        const resolvedId = await resolveNodeId(nodeId)
+        await setFieldValueServerFn({
+          data: { nodeId: resolvedId, fieldId: field.fieldId, value: '' },
         })
+      }).catch((err) => {
+        console.error('[sync] Failed to add field:', err)
+      })
     },
-    [resolveNodeId],
+    [enqueueNodeWrite, resolveNodeId],
   )
 
   /**
@@ -635,16 +663,15 @@ export function useOutlineSync() {
   const removeField = useCallback(
     (nodeId: string, fieldId: string) => {
       useOutlineStore.getState().removeField(nodeId, fieldId)
-      resolveNodeId(nodeId)
-        .then((resolvedId) =>
-          clearFieldServerFn({ data: { nodeId: resolvedId, fieldId } }),
-        )
-        .then(() => scheduleConvergenceInvalidation())
-        .catch((err) => {
-          console.error('[sync] Failed to remove field:', err)
-        })
+      enqueueNodeWrite(nodeId, async () => {
+        const resolvedId = await resolveNodeId(nodeId)
+        await clearFieldServerFn({ data: { nodeId: resolvedId, fieldId } })
+        scheduleConvergenceInvalidation()
+      }).catch((err) => {
+        console.error('[sync] Failed to remove field:', err)
+      })
     },
-    [resolveNodeId, scheduleConvergenceInvalidation],
+    [enqueueNodeWrite, resolveNodeId, scheduleConvergenceInvalidation],
   )
 
   /**
@@ -657,22 +684,24 @@ export function useOutlineSync() {
       const node = nodes.get(nodeId)
       if (!node) return
 
-      Promise.all([resolveNodeId(nodeId), resolveServerParentId(newParentId)])
-        .then(([resolvedId, resolvedParentId]) =>
-          reparentNodeServerFn({
-            data: {
-              nodeId: resolvedId,
-              newParentId: resolvedParentId,
-              order: toPersistedOrder(node.order),
-            },
-          }),
-        )
-        .then(() => scheduleConvergenceInvalidation())
-        .catch((err) => {
-          console.error('[sync] Failed to move node:', err)
+      enqueueNodeWrite(nodeId, async () => {
+        const [resolvedId, resolvedParentId] = await Promise.all([
+          resolveNodeId(nodeId),
+          resolveServerParentId(newParentId),
+        ])
+        await reparentNodeServerFn({
+          data: {
+            nodeId: resolvedId,
+            newParentId: resolvedParentId,
+            order: toPersistedOrder(node.order),
+          },
         })
+        scheduleConvergenceInvalidation()
+      }).catch((err) => {
+        console.error('[sync] Failed to move node:', err)
+      })
     },
-    [resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation],
+    [enqueueNodeWrite, resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation],
   )
 
   /**
@@ -690,46 +719,51 @@ export function useOutlineSync() {
         switch (op.type) {
           case 'delete':
             return [
-              resolveNodeId(op.nodeId).then((nodeId) =>
-                deleteNodeServerFn({ data: { nodeId } }),
-              ),
+              enqueueNodeWrite(op.nodeId, async () => {
+                const nodeId = await resolveNodeId(op.nodeId)
+                return deleteNodeServerFn({ data: { nodeId } })
+              }),
             ]
           case 'restore':
             return [
-              resolveNodeId(op.nodeId).then((nodeId) =>
-                restoreNodeServerFn({ data: { nodeId } }),
-              ),
+              enqueueNodeWrite(op.nodeId, async () => {
+                const nodeId = await resolveNodeId(op.nodeId)
+                return restoreNodeServerFn({ data: { nodeId } })
+              }),
             ]
           case 'content':
             return [
-              resolveNodeId(op.nodeId).then((nodeId) =>
-                updateNodeContentServerFn({
+              enqueueNodeWrite(op.nodeId, async () => {
+                const nodeId = await resolveNodeId(op.nodeId)
+                return updateNodeContentServerFn({
                   data: { nodeId, content: op.content },
-                }),
-              ),
+                })
+              }),
             ]
           case 'reorder':
             return [
-              resolveNodeId(op.nodeId).then((nodeId) =>
-                reorderNodeServerFn({
+              enqueueNodeWrite(op.nodeId, async () => {
+                const nodeId = await resolveNodeId(op.nodeId)
+                return reorderNodeServerFn({
                   data: { nodeId, order: toPersistedOrder(op.order) },
-                }),
-              ),
+                })
+              }),
             ]
           case 'reparent':
             return [
-              Promise.all([
-                resolveNodeId(op.nodeId),
-                resolveServerParentId(op.parentId),
-              ]).then(([nodeId, newParentId]) =>
-                reparentNodeServerFn({
+              enqueueNodeWrite(op.nodeId, async () => {
+                const [nodeId, newParentId] = await Promise.all([
+                  resolveNodeId(op.nodeId),
+                  resolveServerParentId(op.parentId),
+                ])
+                return reparentNodeServerFn({
                   data: {
                     nodeId,
                     newParentId,
                     order: toPersistedOrder(op.order),
                   },
-                }),
-              ),
+                })
+              }),
             ]
           case 'fieldsOrSupertagsChanged':
             console.warn('[sync] undo: field/supertag changes not yet persisted', op.nodeId)
@@ -744,7 +778,7 @@ export function useOutlineSync() {
           console.error('[sync] Failed to persist undo/redo diff:', err)
         })
     },
-    [resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation],
+    [enqueueNodeWrite, resolveNodeId, resolveServerParentId, scheduleConvergenceInvalidation],
   )
 
   /**
