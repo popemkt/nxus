@@ -46,9 +46,24 @@ Current materialization: `libs/nxus-actions/src/define-action.ts`, `libs/nxus-ac
 
 ## Adapters
 
-MCP is the current adapter. `@nxus/mcp` iterates `nxusActions`, registers each action as an MCP tool, passes the action input schema through the MCP SDK's Zod support, calls `action.handler`, and serializes the action output into MCP `structuredContent` plus the text JSON body used by the original MCP implementation.
+MCP is the first adapter. `@nxus/mcp` iterates `nxusActions`, registers each action as an MCP tool, passes the action input schema through the MCP SDK's Zod support, calls `action.handler`, and serializes the action output into MCP `structuredContent` plus the text JSON body used by the original MCP implementation.
 
-Future REST or agent-native adapters MUST consume the same `nxusActions` registry. They MUST NOT re-declare capability names, schemas, or behavior in parallel.
+Future adapters (agent-native, etc.) MUST consume the same `nxusActions` registry. They MUST NOT re-declare capability names, schemas, or behavior in parallel.
+
+### REST adapter (2026-07-11)
+
+`@nxus/rest` (`libs/nxus-rest`) is the registry-driven HTTP adapter. Adapter code MUST NOT declare action-specific routes, schemas, or handlers — a newly registered action appears in REST with zero adapter edits. The core is framework-agnostic (`{method, path, body}` → result) with a Fetch-style `Request → Response` handler for host mounting. Responses everywhere use the repo's server-fn envelope `{ success: true, data } | { success: false, error }`. Input JSON schemas come from Zod v4 native `toJSONSchema()` (no conversion dependency).
+
+Behavior clauses (each coded clause is guarded by a same-code test title in `libs/nxus-rest/src/index.test.ts`):
+
+- **REST-B1** — Given the registry, when `GET /actions`, then every registered action is returned with machine `name`, `description`, and input JSON schema.
+- **REST-B2** — Given a registered action, when `POST /actions/:actionId` with a valid JSON body, then the body dispatches through the registry and returns `200` with `{ success: true, data }`.
+- **REST-B3** — Given a malformed JSON body or an input-schema failure (including `.strict()` unknown keys), when dispatched, then the response is `400` with `{ success: false, error }`.
+- **REST-B4** — Given an unknown action, unroutable path, or malformed percent-encoding in the action id, when dispatched, then the response is `404` — never an unhandled exception.
+- **REST-B5** — Given an execution failure, when the error is a distinguishable missing reference (`Node not found: …`, `Supertag not found: …`), then `404`; otherwise `422`.
+- **REST-B6** — Given an action path, when the method is not POST, then `405`.
+
+**Unmounted** as of 2026-07-11 — the gateway is a static proxy with no sanctioned API surface; choosing a host (and its authn/authz, which are host concerns, not registry concerns) is open.
 
 ## fastmcp-ts Deferral
 
