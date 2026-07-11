@@ -38,7 +38,7 @@ describe('nxus action edge cases', () => {
     await expect(action.handler(malformedByActionName[action.name])).rejects.toThrow()
   })
 
-  it('rejects extra unknown keys directly at action schemas', async () => {
+  it('ACT-B1: rejects extra unknown keys directly at action schemas', async () => {
     const createNode = getAction('create_node')
     if (!createNode) {
       throw new Error('Expected create_node action to exist')

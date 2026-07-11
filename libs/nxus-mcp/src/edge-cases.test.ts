@@ -199,7 +199,7 @@ describe('nxus MCP edge cases', () => {
     { actionName: 'export_subtree', argumentsValue: { rootNodeId: '' } },
     { actionName: 'export_subtree', argumentsValue: { rootNodeId: null } },
     { actionName: 'export_subtree', argumentsValue: { extra: true } },
-  ])('surfaces malformed input as MCP isError for $actionName', async ({ actionName, argumentsValue }) => {
+  ])('ACT-B1: surfaces malformed input as MCP isError for $actionName', async ({ actionName, argumentsValue }) => {
     const { client, server } = await createClient()
     try {
       await expectToolError(client, actionName, argumentsValue, /expected|invalid|too small|unrecognized|required/i)
@@ -209,7 +209,7 @@ describe('nxus MCP edge cases', () => {
     }
   })
 
-  it('returns clean errors for nonexistent node and tag references', async () => {
+  it('ACT-B2: returns clean errors for nonexistent node and tag references', async () => {
     const { client, server } = await createClient()
     try {
       const missingNodeId = 'node:does-not-exist'
@@ -251,7 +251,7 @@ describe('nxus MCP edge cases', () => {
     }
   })
 
-  it('returns clean import_tif errors for malformed JSON and unsupported versions', async () => {
+  it('ACT-B3: returns clean import_tif errors for malformed JSON and unsupported versions', async () => {
     const { client, server } = await createClient()
     try {
       await expectToolError(client, 'import_tif', { json: '{' }, /Invalid TIF JSON/)
@@ -298,7 +298,7 @@ describe('nxus MCP edge cases', () => {
     }
   })
 
-  it('keeps every registered action error envelope explicit and non-empty', async () => {
+  it('ACT-B4: keeps every registered action error envelope explicit and non-empty', async () => {
     const malformedByActionName = new Map<string, Record<string, unknown>>([
       ['create_node', {}],
       ['read_node', {}],

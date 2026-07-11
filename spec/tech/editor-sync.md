@@ -34,6 +34,14 @@ Each invariant is a claim a test can assert. "Quiescence" = all in-flight reques
 - **INV-11 (scoped invalidation).** A persisted change MUST NOT force re-evaluation of live queries whose results it cannot affect (dependency-driven invalidation per [./reactivity.md](./reactivity.md)).
 - **INV-12 (validated boundary).** Server fn results consumed by the client MUST be validated (Zod parse), not asserted (`as`), per `.claude/rules/typescript-rules.md`.
 
+Behavior clauses (retrofit wave 1 — checked against `apps/nxus-editor/src/stores/*.test.ts` and `src/lib/outline-diff.test.ts` only; the mechanisms below live mostly in `use-outline-sync.ts`, out of scope for this wave, so coverage is honest-`(unguarded)` rather than forced):
+
+- **INV4-B1** — Given sibling order keys, when compared for sort order, then the comparator MUST be lexicographic on `order` and MUST produce identical ordering on client and server-loaded state. (unguarded)
+- **INV4-B2** — Given two siblings with an equal (transient duplicate) order key, when the sibling list is sorted, then the comparator MUST tie-break by `createdAt` ascending. (unguarded)
+- **INV10-B1** — Given a single user action that mutates the outline, when it completes, then exactly one undo entry MUST be pushed — a continuous typing burst in one node coalesces into one entry. (unguarded)
+- **INV10-B2** — Given any mutation exposed by the sync hook, when it executes, then it MUST participate in undo — none are exempt. (unguarded)
+- **INV12-B1** — Given a server fn result consumed by the client, when it is used, then it MUST be validated via Zod parse, not asserted with `as`. (unguarded)
+
 ## 3. Mutation catalog (current materialization)
 
 Every row: optimistic store mutation first (instant UI), then server call. `hook:` lines cite `use-outline-sync.ts`.

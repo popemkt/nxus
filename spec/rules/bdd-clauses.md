@@ -2,8 +2,8 @@
 id: bdd-clauses
 scope: spec + tests
 principle: Traceability
-enforcement: prose
-gate: —
+enforcement: ci
+gate: scripts/check-bdd-clauses.mjs (.github/workflows/ci.yml lint job)
 guards: artifact, I5
 ---
 
@@ -22,4 +22,4 @@ Prose specs say why; behavior clauses say exactly what is guaranteed, one testab
 
 Precedents: `INV8-B1..B6` in [../tech/editor-sync.md](../tech/editor-sync.md) §6 guarded by `apps/nxus-editor/src/lib/write-queue.test.ts`; `REST-B1..B6` in [../tech/actions.md](../tech/actions.md) guarded by `libs/nxus-rest/src/index.test.ts`.
 
-Planned (not yet built): a `clauses:check` script that greps clause codes and test titles and fails on a clause that is neither guarded nor marked `(unguarded)` — same shape as `rules:check`.
+Gate: `pnpm clauses:check` (`scripts/check-bdd-clauses.mjs`, CI lint job) fails on any clause that is neither guarded by a same-code test title nor marked `(unguarded)`, and on any orphan test-title code with no spec clause.

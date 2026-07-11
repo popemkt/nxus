@@ -72,8 +72,17 @@ Bootstrap invariants:
 - MUST be idempotent (re-run on every process start).
 - `upsertSystemNode` (`bootstrap.ts:42-73`) matches by `systemId` and **never updates content of an existing node** — renaming a system node in code silently does nothing to existing DBs, so any seed-content rename requires a data migration. This behavior is what let the (now-fixed, commit 60d0741) FIELD_NAMES/bootstrap content mismatch persist across re-bootstraps; the parity invariant (I5) and its test are owned by [../product/data-model.md](../product/data-model.md).
 
+Behavior clauses (bootstrap idempotency/parity; guarding tests in `libs/nxus-db/src/services/bootstrap-parity.test.ts` unless marked unguarded):
+
+- **BOOT-B1** — Given a DB where `bootstrapSystemNodesSync` has already run, when it runs again, then it MUST NOT duplicate or alter existing system nodes/properties (idempotent, systemId-matched upsert). (unguarded — no test re-runs bootstrap against an already-bootstrapped DB and asserts no duplication/no content change)
+- **BOOT-B2** — Given a freshly bootstrapped database, when a system field is read through `FIELD_NAMES[K]` for any `SYSTEM_FIELDS` key `K`, then the assembled content MUST equal `FIELD_NAMES[K]` (FIELD_NAMES ↔ bootstrap parity, I5).
+
 Seed input invariants (2026-07-11):
 - Seed inputs (app `manifest.json` files, `tags.json`, `inbox.json`) are checked-in repo data; an invalid one is a repo defect, not a runtime condition. Both seeders (`apps/nxus-core/scripts/seed-nodes.ts`, `seed-graph.ts`) MUST fail the whole seed (throw, non-zero exit) on any manifest/JSON validation failure, listing every failing input — never skip-and-continue. Historical behavior (skip with a console line, exit 0) shipped seeded DBs silently missing apps (the `evidence` manifest was invisible for months) and kept CI green through data loss.
+
+Behavior clauses:
+
+- **SEED-B1** — Given a manifest/JSON seed input that fails validation, when either seeder (`seed-nodes.ts`, `seed-graph.ts`) runs, then it MUST throw (non-zero exit) listing every failing input — never skip-and-continue. (unguarded — `apps/nxus-core/scripts/seed-nodes.test.ts` covers supertag-assignment and type-normalization logic extracted from `seed-nodes.ts`, not the fail-fast/list-all-failures path; there is no `seed-graph.test.ts`)
 
 DRIFT: bootstrap check-then-insert races across processes
 

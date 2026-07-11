@@ -68,7 +68,7 @@ afterEach(() => {
 })
 
 describe('bootstrap seeds the content that FIELD_NAMES reads', () => {
-  it('a freshly bootstrapped database resolves every system field read through FIELD_NAMES', () => {
+  it('BOOT-B2: a freshly bootstrapped database resolves every system field read through FIELD_NAMES', () => {
     const cases = Object.keys(SYSTEM_FIELDS) as Array<keyof typeof SYSTEM_FIELDS & keyof typeof FIELD_NAMES>
     for (const key of cases) {
       const fieldNode = getSystemNode(db, SYSTEM_FIELDS[key])
@@ -81,7 +81,7 @@ describe('bootstrap seeds the content that FIELD_NAMES reads', () => {
     }
   })
 
-  it('a field node created against the bootstrapped DB is readable via FIELD_NAMES.FIELD_TYPE', () => {
+  it('BOOT-B2: a field node created against the bootstrapped DB is readable via FIELD_NAMES.FIELD_TYPE', () => {
     const fieldTypeNode = getSystemNode(db, SYSTEM_FIELDS.FIELD_TYPE)
     expect(fieldTypeNode).not.toBeNull()
 

@@ -24,6 +24,13 @@ Error contract (2026-07-11, guarded by `libs/nxus-mcp/src/edge-cases.test.ts` an
 - `tag_node`/`untag_node` verify a `supertag:*` system id exists before writing; `export_subtree` verifies `rootNodeId`; `import_tif` rejects malformed JSON (`Invalid TIF JSON: …`) and unsupported versions (`Unsupported TIF version: …`) before delegating.
 - Through MCP, every handler failure surfaces as `isError: true` with non-empty text; no action may swallow an exception into a success envelope.
 
+Behavior clauses (each coded clause is guarded by a same-code test title in `libs/nxus-actions/src/edge-cases.test.ts` and/or `libs/nxus-mcp/src/edge-cases.test.ts`):
+
+- **ACT-B1** — Given an action input, when it contains an unknown (`.strict()`-violating) key or an empty required string reference, then input parsing MUST reject it rather than ignore or coerce it.
+- **ACT-B2** — Given a reference to a nonexistent node or supertag (across `read_node`, `tag_node`, `untag_node`, `set_field`, `export_subtree`, `get_tag_schema`), when the action dispatches, then it MUST verify the reference before writing and fail with a message naming the specific id: `Node not found: <id>` / `Supertag not found: <id>`.
+- **ACT-B3** — Given `import_tif`, when the input is malformed JSON or an unsupported TIF version string, then the action MUST reject it before delegating, with `Invalid TIF JSON: …` or `Unsupported TIF version: …` respectively.
+- **ACT-B4** — Given any registered action's handler failure, when it surfaces through the MCP adapter, then the result MUST be `isError: true` with non-empty text — no action may swallow an exception into a success envelope.
+
 The registry package MUST NOT depend on an exposure framework. It may depend on domain libraries such as `@nxus/db` and `@nxus/node-api`; adapters depend on the registry, not the other way around. New agent/API capabilities land as actions first; MCP, REST, or agent-native surfaces adapt the registry.
 
 Current materialization: `libs/nxus-actions/src/define-action.ts`, `libs/nxus-actions/src/registry.ts`, and one action module under `libs/nxus-actions/src/actions/` per capability.

@@ -19,6 +19,11 @@ Recall (port 3004, base `/recall`) is the **learning lens**: concepts stored as 
 - Each concept card tracks a `currentBloomsLevel` ∈ remember/understand/apply/analyze/evaluate/create; levels are themselves nodes (`BLOOM_LEVEL_NODES` mapping, `recall.service.ts:50-56`).
 - On a successful review, the level MAY advance via `nextBloomsLevel(current, ceiling, rating)` from the AI lib (`review.server.ts:115-118`) — progression is capped by a per-concept ceiling. Question generation MUST target the card's current Bloom level (`src/services/generate-question.server.ts:9-10`, `BloomsLevelSchema` from `@nxus/db`).
 
+Behavior clauses (Bloom level storage; guarded by `libs/nxus-db/src/services/recall-blooms.test.ts`):
+
+- **RECALL-B1** — Given a concept's Bloom's level saved via `saveConcept` (stored internally as the Bloom node's UUID), when the concept is read back via `getConceptById`, then `bloomsLevel` MUST resolve to the level label (e.g. `remember`/`understand`/…), never the raw stored node id.
+- **RECALL-B2** — Given a stored `bloomsLevel` value that does not resolve to any known Bloom node, when the concept is read, then `bloomsLevel` MUST be `null` — the raw unresolvable value MUST NOT leak into the assembled concept.
+
 ## AI layer (`libs/nxus-mastra`)
 
 - All generation/evaluation (concept extraction, question generation, answer evaluation, explain-further, Bloom progression) goes through `@nxus/mastra`: schema-first agents (`src/schemas/`, `src/agents/`) behind an `AiClient` facade exposing `generateStructured({schema, system, prompt, model?, effort?})` (`src/lib/ai-client.ts:25-29`; default model claude-haiku-4-5, `:19`).

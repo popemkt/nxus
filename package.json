@@ -9,6 +9,7 @@
     "agent:sync:codex-home": "node scripts/agent-hub-sync.mjs --apply-codex-home",
     "rules:index": "node scripts/generate-rules-index.mjs",
     "rules:check": "node scripts/generate-rules-index.mjs --check",
+    "clauses:check": "node scripts/check-bdd-clauses.mjs",
     "predev": "for port in 3000 3001 3002 3003 3004 3005; do lsof -ti :$port | xargs kill -9 2>/dev/null; done || true",
     "dev": "nx run-many --target=dev --projects=@nxus/gateway,@nxus/core-app,@nxus/workbench-app,@nxus/calendar-app,@nxus/recall-app,@nxus/editor-app --parallel=6",
     "dev:gateway": "nx run @nxus/gateway:dev",

@@ -60,7 +60,7 @@ afterEach(() => {
 })
 
 describe('Bloom level round-trip through saveConcept/getConceptById', () => {
-  it.each(BLOOMS_LEVELS)('stores and reads back %s as the label, never a node id', (level) => {
+  it.each(BLOOMS_LEVELS)('RECALL-B1: stores and reads back %s as the label, never a node id', (level) => {
     const topicId = createTopic(db, 'Distributed Systems')
     const conceptId = saveConcept(db, {
       topicId,
@@ -74,7 +74,7 @@ describe('Bloom level round-trip through saveConcept/getConceptById', () => {
     expect(concept?.bloomsLevel).toBe(level)
   })
 
-  it('returns null (not the raw stored value) for an unresolvable bloomsLevel', () => {
+  it('RECALL-B2: returns null (not the raw stored value) for an unresolvable bloomsLevel', () => {
     const topicId = createTopic(db, 'Distributed Systems')
     const conceptId = saveConcept(db, {
       topicId,

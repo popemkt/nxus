@@ -30,6 +30,7 @@ jobs:
 
       - run: node scripts/check-app-registry.mjs
       - run: pnpm rules:check
+      - run: pnpm clauses:check
 
   typecheck:
     name: Typecheck
