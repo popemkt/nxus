@@ -35,8 +35,6 @@ async function ensureCalendarVisible(page: Page) {
 }
 
 test.describe('Calendar Views & Navigation', () => {
-  test.skip(isGraphMode, 'Calendar events not yet supported in graph mode')
-
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('calendar')
   })

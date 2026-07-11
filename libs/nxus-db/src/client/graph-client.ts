@@ -22,7 +22,11 @@
 import { Surreal, RecordId, StringRecordId } from 'surrealdb'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { initFieldSchema, bootstrapSurrealFields } from '../services/backends/surreal-schema.js'
+import {
+  initFieldSchema,
+  bootstrapSurrealFields,
+  bootstrapCalendarEntitySupertags,
+} from '../services/backends/surreal-schema.js'
 
 export { RecordId, StringRecordId }
 
@@ -416,6 +420,12 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
   // ============================================================================
   await initFieldSchema(db)
   await bootstrapSurrealFields(db)
+
+  // ============================================================================
+  // Calendar Entity Supertags (bootstrap parity with SQLite's entitySupertags)
+  // ============================================================================
+  // Must run after field bootstrap above — depends on field:base_type existing.
+  await bootstrapCalendarEntitySupertags(db)
 
   console.log('[GraphDB] Schema initialized')
 }

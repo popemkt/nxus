@@ -11,7 +11,7 @@
  */
 
 import type { Surreal } from 'surrealdb'
-import { SYSTEM_FIELDS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
 
 /**
  * All common fields that should be bootstrapped in SurrealDB.
@@ -159,5 +159,69 @@ export async function bootstrapSurrealFields(db: Surreal): Promise<void> {
   }
 }
 
+/**
+ * Calendar entity supertags that must exist as first-class `node` records
+ * (not just `supertag` catalog rows) — mirrors bootstrap.ts's
+ * `entitySupertags` list (SQLite side) for #Task/#Event/#Day. These
+ * supertags are "independent from Item" (SQLite comment) and carry a
+ * `field:base_type` value so `getNodesBySupertagBaseType` can find them.
+ *
+ * Without a `node` row here, `resolveSupertagId`'s self-heal fallback has
+ * nothing to mirror into the `supertag` catalog table, and calendar
+ * CRUD (which resolves supertag:task/event by system_id) silently no-ops.
+ */
+const CALENDAR_ENTITY_SUPERTAGS: Array<{
+  systemId: string
+  content: string
+  baseType: string
+}> = [
+  { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', baseType: 'task' },
+  { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', baseType: 'event' },
+  { systemId: SYSTEM_SUPERTAGS.DAY, content: '#Day', baseType: 'day' },
+]
+
+/**
+ * Bootstrap calendar entity supertag definitions as `node` records with a
+ * `field:base_type` edge. Must run AFTER `initFieldSchema` +
+ * `bootstrapSurrealFields` (needs `field:base_type` to already exist).
+ * Idempotent — UPSERT for the node row, DELETE+RELATE for the has_field edge.
+ */
+export async function bootstrapCalendarEntitySupertags(db: Surreal): Promise<void> {
+  const baseTypeFieldRecordKey = SYSTEM_FIELDS.BASE_TYPE.replace(':', '_')
+  const baseTypeFieldRecordId = `field:${baseTypeFieldRecordKey}`
+
+  for (const def of CALENDAR_ENTITY_SUPERTAGS) {
+    const recordKey = def.systemId.replace(':', '_')
+    const nodeRecordId = `node:${recordKey}`
+
+    await db.query(
+      `UPSERT ${nodeRecordId} SET
+        content = $content,
+        content_plain = $contentPlain,
+        system_id = $systemId,
+        props = {},
+        created_at = time::now(),
+        updated_at = time::now()`,
+      {
+        content: def.content,
+        contentPlain: def.content.toLowerCase(),
+        systemId: def.systemId,
+      },
+    )
+
+    // DELETE + RELATE keeps this idempotent across repeated bootstrap runs
+    // (RELATE always inserts a new edge; UPSERT semantics don't apply to
+    // relation tables the same way they do to normal tables).
+    await db.query(
+      `DELETE has_field WHERE in = ${nodeRecordId} AND out = ${baseTypeFieldRecordId}`,
+    )
+    await db.query(
+      `RELATE ${nodeRecordId}->has_field->${baseTypeFieldRecordId} SET
+        \`value\` = $baseType, \`order\` = 0, created_at = time::now(), updated_at = time::now()`,
+      { baseType: def.baseType },
+    )
+  }
+}
+
 /** Exported for testing and reuse */
-export { SURREAL_FIELD_DEFINITIONS }
+export { SURREAL_FIELD_DEFINITIONS, CALENDAR_ENTITY_SUPERTAGS }

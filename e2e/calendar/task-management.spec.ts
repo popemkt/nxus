@@ -59,8 +59,6 @@ function todayDateString(): string {
 }
 
 test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
-  test.skip(isGraphMode, 'Calendar events not yet supported in graph mode')
-
   const taskTitle = `E2E Task ${Date.now()}`
 
   test.beforeEach(async ({ navigateToApp }) => {
@@ -185,8 +183,6 @@ test.describe.serial('Calendar Task Management (CA8-CA9)', () => {
 })
 
 test.describe('Calendar Recurring Events (CA10)', () => {
-  test.skip(isGraphMode, 'Calendar events not yet supported in graph mode')
-
   const recurringTitle = `E2E Recurring ${Date.now()}`
 
   test.beforeEach(async ({ navigateToApp }) => {

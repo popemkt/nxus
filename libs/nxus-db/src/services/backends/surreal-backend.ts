@@ -445,6 +445,13 @@ export class SurrealBackend implements NodeBackend {
 
   /**
    * Resolve a supertag system_id (e.g., 'supertag:item') to its SurrealDB record ID string.
+   *
+   * Self-heals from the `node` table on a catalog miss: a supertag
+   * definition (e.g. #Task, #Event) is itself a node tagged #Supertag, so if
+   * no `supertag` catalog row exists yet (bootstrap gap, or a user-created
+   * supertag), we look it up by system_id on `node` and mirror a catalog row
+   * into `supertag` — the same fallback shape `resolveFieldId` already uses
+   * for fields.
    */
   private async resolveSupertagId(supertagSystemId: string): Promise<string | null> {
     if (this.supertagIdCache.has(supertagSystemId)) {
@@ -457,12 +464,38 @@ export class SurrealBackend implements NodeBackend {
       { systemId: supertagSystemId },
     )
 
-    if (!results || results.length === 0) {
+    if (results && results.length > 0) {
+      const resolved = rid(results[0].id)
+      this.supertagIdCache.set(supertagSystemId, resolved)
+      return resolved
+    }
+
+    const [nodeResults] = await db.query<[Array<{ id: RecordId; content: string | null }>]>(
+      'SELECT id, content FROM node WHERE system_id = $systemId AND deleted_at IS NONE LIMIT 1',
+      { systemId: supertagSystemId },
+    )
+    const supertagNode = nodeResults[0]
+    if (!supertagNode) {
       return null
     }
-    const resolved = rid(results[0].id)
-    this.supertagIdCache.set(supertagSystemId, resolved)
-    return resolved
+
+    const recordKey = rid(supertagNode.id).replace(/^node:/, '').replace(/[^A-Za-z0-9_]/g, '_')
+    const supertagRecordId = `supertag:${recordKey}`
+    await runSurrealTransaction(db, [
+      {
+        query: `UPSERT $supertagRecordId SET
+          name = $name,
+          system_id = $systemId,
+          created_at = time::now()`,
+        params: {
+          supertagRecordId: new StringRecordId(supertagRecordId),
+          name: supertagNode.content ?? supertagSystemId.replace(/^supertag:/, ''),
+          systemId: supertagSystemId,
+        },
+      },
+    ])
+    this.supertagIdCache.set(supertagSystemId, supertagRecordId)
+    return supertagRecordId
   }
 
   // ---------------------------------------------------------------------------
@@ -521,10 +554,17 @@ export class SurrealBackend implements NodeBackend {
     }
 
     // Resolve the supertag record BEFORE the transaction — this is a
-    // read-only cache lookup, not part of the write set.
-    const supertagRecordId = options.supertagId
-      ? await this.resolveSupertagId(options.supertagId)
-      : null
+    // read-only cache lookup, not part of the write set. A supertagId that
+    // still fails to resolve (even after resolveSupertagId's self-heal) must
+    // fail fast rather than silently create an untagged node — matching
+    // addNodeSupertag's contract for the same condition.
+    let supertagRecordId: string | null = null
+    if (options.supertagId) {
+      supertagRecordId = await this.resolveSupertagId(options.supertagId)
+      if (!supertagRecordId) {
+        throw new Error(`Supertag not found: ${options.supertagId}`)
+      }
+    }
     const mentionsFieldId = await this.resolveFieldId(SYSTEM_FIELDS.MENTIONS)
     const mentionReconciliation = this.buildMentionReconciliationStatements({
       nodeExpression: '($newNode[0].id)',

@@ -60,8 +60,6 @@ function todayDateString(): string {
 }
 
 test.describe.serial('Calendar Event CRUD (CA4-CA7)', () => {
-  test.skip(isGraphMode, 'Calendar events not yet supported in graph mode')
-
   const eventTitle = `E2E CRUD Event ${Date.now()}`
   const editedTitle = `${eventTitle} (edited)`
 

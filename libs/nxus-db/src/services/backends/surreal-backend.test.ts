@@ -149,6 +149,47 @@ describe('createNode → assembleNode round-trip', () => {
     const node = await backend.assembleNode('node:nonexistent')
     expect(node).toBeNull()
   })
+
+  it('STAG-B1: self-heals the supertag catalog from a supertag definition node', async () => {
+    // A user-created supertag exists only as a node tagged #Supertag —
+    // no `supertag` catalog row. Resolution must mirror one, not no-op.
+    // (The #Supertag meta-tag itself isn't bootstrapped in graph mode —
+    // self-heal keys off the definition node's system_id, so the bare
+    // definition node is sufficient and matches what user creation produces.)
+    await backend.createNode({
+      content: 'CustomTest',
+      systemId: 'supertag:custom_test',
+    })
+
+    const nodeId = await backend.createNode({
+      content: 'tagged via self-healed catalog',
+      supertagId: 'supertag:custom_test',
+    })
+
+    const node = await backend.assembleNode(nodeId)
+    expect(node!.supertags).toHaveLength(1)
+    expect(node!.supertags[0].systemId).toBe('supertag:custom_test')
+  })
+
+  it('STAG-B1: resolves calendar entity supertags bootstrapped for base-type reads', async () => {
+    const nodeId = await backend.createNode({
+      content: 'Standup',
+      supertagId: 'supertag:event',
+    })
+
+    const node = await backend.assembleNode(nodeId)
+    expect(node!.supertags).toHaveLength(1)
+    expect(node!.supertags[0].systemId).toBe('supertag:event')
+  })
+
+  it('STAG-B2: createNode throws (never silently untags) for an unresolvable supertag', async () => {
+    await expect(
+      backend.createNode({
+        content: 'orphan',
+        supertagId: 'supertag:does_not_exist',
+      }),
+    ).rejects.toThrow('Supertag not found: supertag:does_not_exist')
+  })
 })
 
 describe('findNodeById', () => {
