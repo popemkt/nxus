@@ -15,30 +15,14 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ nodeId: z.string(), depth: z.number().optional() }))
   .handler(async (ctx) => {
     const {
-      assembleNode,
-      assembleNodes,
-      createAssemblyCache,
-      nodes,
-      inArray,
-      isNull,
-      and,
-      sql,
       getProperty,
       FIELD_NAMES,
-      getSupertagFieldDefinitions,
-      getAncestorSupertags,
+      nodeFacade,
     } = await import('@nxus/db/server')
-    const seededDb = await initDatabaseSeeded()
-    if (!seededDb) {
-      // Graph mode has no SQLite handle; this raw frontier read is node-mode
-      // only until the facade composite tree read (S3) replaces it.
-      throw new Error('getNodeTreeServerFn requires node mode (SQLite)')
-    }
-    const db = seededDb
+    await initDatabaseSeeded()
+    await nodeFacade.init()
 
     const maxDepth = ctx.data.depth ?? Number.MAX_SAFE_INTEGER
-
-    const assemblyCache = createAssemblyCache()
 
     type OutlineNodeResult = {
       id: string
@@ -62,11 +46,11 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-    function resolveFieldType(fieldNodeId: string): FieldType {
+    async function resolveFieldType(fieldNodeId: string): Promise<FieldType> {
       const cached = fieldTypeCache.get(fieldNodeId)
       if (cached) return cached
 
-      const fieldNode = assembleNode(db, fieldNodeId, assemblyCache)
+      const fieldNode = await nodeFacade.assembleNode(fieldNodeId)
       const ft = fieldNode
         ? (getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) as string | undefined) ?? 'text'
         : 'text'
@@ -121,10 +105,10 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       return declared
     }
 
-    function extractFields(assembled: {
+    async function extractFields(assembled: {
       properties: Record<string, { value: unknown; rawValue: string; fieldNodeId: string; fieldName: string; fieldSystemId: string | null; order: number }[]>
       supertags: { id: string }[]
-    }): OutlineNodeResult['fields'] {
+    }): Promise<OutlineNodeResult['fields']> {
       const fields: OutlineNodeResult['fields'] = []
 
       for (const [, propValues] of Object.entries(assembled.properties)) {
@@ -138,7 +122,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
           .sort((a, b) => a.order - b.order)
           .map((pv) => ({ value: pv.value ?? null, order: pv.order }))
 
-        const declaredType = resolveFieldType(first.fieldNodeId)
+        const declaredType = await resolveFieldType(first.fieldNodeId)
         const fieldType = inferFieldType(declaredType, sortedValues)
 
         const constraints = fieldConstraintCache.get(first.fieldNodeId)
@@ -159,15 +143,15 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       const priorityMap = new Map<string, number>()
       let priority = 0
       for (const st of assembled.supertags) {
-        const defs = getSupertagFieldDefinitions(db, st.id, assemblyCache)
-        const ancestors = getAncestorSupertags(db, st.id, undefined, assemblyCache)
+        const defs = await nodeFacade.getSupertagFieldDefinitions(st.id)
+        const ancestors = await nodeFacade.getAncestorSupertags(st.id)
         // Own fields first
         for (const [systemId] of defs) {
           if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
         }
         // Then inherited
         for (const ancestorId of ancestors) {
-          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId, assemblyCache)
+          const ancestorDefs = await nodeFacade.getSupertagFieldDefinitions(ancestorId)
           for (const [systemId] of ancestorDefs) {
             if (!priorityMap.has(systemId)) priorityMap.set(systemId, priority++)
           }
@@ -178,11 +162,11 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       // Without this, fields from a supertag only appear after the user sets a value.
       const existingFieldSystemIds = new Set(fields.map((f) => f.fieldSystemId).filter(Boolean))
       for (const st of assembled.supertags) {
-        const defs = getSupertagFieldDefinitions(db, st.id, assemblyCache)
-        const ancestors = getAncestorSupertags(db, st.id, undefined, assemblyCache)
+        const defs = await nodeFacade.getSupertagFieldDefinitions(st.id)
+        const ancestors = await nodeFacade.getAncestorSupertags(st.id)
         const allDefs = new Map(defs)
         for (const ancestorId of ancestors) {
-          const ancestorDefs = getSupertagFieldDefinitions(db, ancestorId, assemblyCache)
+          const ancestorDefs = await nodeFacade.getSupertagFieldDefinitions(ancestorId)
           for (const [key, val] of ancestorDefs) {
             if (!allDefs.has(key)) allDefs.set(key, val)
           }
@@ -192,7 +176,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
           if (existingFieldSystemIds.has(systemId)) continue
           existingFieldSystemIds.add(systemId)
 
-          const declaredType = resolveFieldType(def.fieldNodeId)
+          const declaredType = await resolveFieldType(def.fieldNodeId)
           const constraints = fieldConstraintCache.get(def.fieldNodeId)
           fields.push({
             fieldId: systemId,
@@ -224,10 +208,10 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       return fields
     }
 
-    function getSupertagDisplay(st: { id: string; content: string; systemId: string | null }) {
+    async function getSupertagDisplay(st: { id: string; content: string; systemId: string | null }) {
       const cached = supertagDisplayCache.get(st.id)
       if (cached) return { id: st.id, ...cached }
-      const stNode = assembleNode(db, st.id, assemblyCache)
+      const stNode = await nodeFacade.assembleNode(st.id)
       const dbColor = stNode
         ? (getProperty(stNode, FIELD_NAMES.COLOR) as string | undefined) ?? null
         : null
@@ -240,7 +224,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       return { id: st.id, ...display }
     }
 
-    function addOutlineNode(assembled: AssembledNode): void {
+    async function addOutlineNode(assembled: AssembledNode): Promise<void> {
       if (nodeMap.has(assembled.id) || assembled.deletedAt) return
       const orderValue = getProperty(assembled, FIELD_NAMES.ORDER) as number | undefined
 
@@ -253,25 +237,30 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         order: formatOrderKey(orderValue),
         createdAt: assembled.createdAt?.getTime() ?? 0,
         collapsed: false,
-        supertags: assembled.supertags.map(getSupertagDisplay),
-        fields: extractFields(assembled),
+        supertags: await Promise.all(assembled.supertags.map(getSupertagDisplay)),
+        fields: await extractFields(assembled),
       }
 
       nodeMap.set(assembled.id, outlineNode)
     }
 
-    let frontier = [ctx.data.nodeId]
+    const rootNode = await nodeFacade.assembleNode(ctx.data.nodeId)
+    let frontier = rootNode ? [rootNode] : []
     let currentDepth = 0
     let depthBoundaryIds: string[] = []
     while (frontier.length > 0) {
-      const uniqueFrontier = [...new Set(frontier)].filter((id) => !nodeMap.has(id))
+      const seenFrontier = new Set<string>()
+      const uniqueFrontier = frontier.filter((node) => {
+        if (seenFrontier.has(node.id) || nodeMap.has(node.id)) return false
+        seenFrontier.add(node.id)
+        return true
+      })
       if (uniqueFrontier.length === 0) break
 
-      const assembledNodes = assembleNodes(db, uniqueFrontier, assemblyCache)
       const loadedIds: string[] = []
-      for (const assembled of assembledNodes) {
+      for (const assembled of uniqueFrontier) {
         if (assembled.deletedAt) continue
-        addOutlineNode(assembled)
+        await addOutlineNode(assembled)
         loadedIds.push(assembled.id)
       }
 
@@ -280,19 +269,13 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         break
       }
 
-      const childRows = db
-        .select()
-        .from(nodes)
-        .where(and(inArray(nodes.ownerId, loadedIds), isNull(nodes.deletedAt)))
-        .all()
+      const childrenByParent = await nodeFacade.getChildrenByParents(loadedIds)
 
-      const nextFrontier: string[] = []
-      for (const child of childRows) {
-        if (!child.ownerId) continue
-        const existing = childIdsByParent.get(child.ownerId) ?? []
-        existing.push(child.id)
-        childIdsByParent.set(child.ownerId, existing)
-        nextFrontier.push(child.id)
+      const nextFrontier: AssembledNode[] = []
+      for (const parentId of loadedIds) {
+        const children = childrenByParent.get(parentId) ?? []
+        childIdsByParent.set(parentId, children.map((child) => child.id))
+        nextFrontier.push(...children)
       }
 
       frontier = nextFrontier
@@ -300,19 +283,10 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     }
 
     if (depthBoundaryIds.length > 0 && maxDepth < Number.MAX_SAFE_INTEGER) {
-      const childCounts = db
-        .select({
-          ownerId: nodes.ownerId,
-          count: sql<number>`count(*)`,
-        })
-        .from(nodes)
-        .where(and(inArray(nodes.ownerId, depthBoundaryIds), isNull(nodes.deletedAt)))
-        .groupBy(nodes.ownerId)
-        .all()
-
-      for (const row of childCounts) {
-        if (!row.ownerId || row.count <= 0) continue
-        const node = nodeMap.get(row.ownerId)
+      const childPresence = await nodeFacade.hasChildren(depthBoundaryIds)
+      for (const [nodeId, hasChild] of childPresence) {
+        if (!hasChild) continue
+        const node = nodeMap.get(nodeId)
         if (node) node.hasUnloadedChildren = true
       }
     }
@@ -320,15 +294,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     for (const [parentId, childIds] of childIdsByParent) {
       const parent = nodeMap.get(parentId)
       if (!parent) continue
-      parent.children = childIds
-        .filter((childId) => nodeMap.has(childId))
-        .sort((a, b) => {
-          const na = nodeMap.get(a)
-          const nb = nodeMap.get(b)
-          const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
-          if (orderCmp !== 0) return orderCmp
-          return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
-        })
+      parent.children = childIds.filter((childId) => nodeMap.has(childId))
     }
 
     const nodesArray = Array.from(nodeMap.values())

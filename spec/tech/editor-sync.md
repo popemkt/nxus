@@ -60,7 +60,7 @@ Load path: `getWorkspaceRootServerFn` (outline.server.ts:263) → `getNodeTreeSe
 
 The outline editor MUST NOT load the full workspace tree at boot. Workspace mount passes `INITIAL_TREE_DEPTH = 3` to `getNodeTreeServerFn`; subtree fetches use `SUBTREE_FETCH_DEPTH = 3` (`apps/nxus-editor/src/lib/tree-loading.ts`). The server function keeps its unbounded default for backwards-compatible callers, but finite-depth callers receive an explicit boundary marker.
 
-`OutlineNode.hasUnloadedChildren` is the client/server contract for a depth boundary. When `getNodeTreeServerFn` stops at `maxDepth`, it MUST run one grouped child-count query over the final loaded frontier and mark only boundary nodes with at least one non-deleted DB child (`apps/nxus-editor/src/services/outline.server.ts`). Boundary nodes MAY have `children: []`; the bullet/expand affordance is driven by `children.length > 0 || hasUnloadedChildren === true`, not loaded child IDs alone.
+`OutlineNode.hasUnloadedChildren` is the client/server contract for a depth boundary. When `getNodeTreeServerFn` stops at `maxDepth`, it MUST batch-check child presence over the final loaded frontier in one call (`nodeFacade.hasChildren`) and mark only boundary nodes with at least one non-deleted child (`apps/nxus-editor/src/services/outline.server.ts`). Boundary nodes MAY have `children: []`; the bullet/expand affordance is driven by `children.length > 0 || hasUnloadedChildren === true`, not loaded child IDs alone.
 
 Server-loaded node batches merge into the Zustand map through `mergeServerNodes` (`apps/nxus-editor/src/stores/outline.store.ts`). Merge semantics:
 

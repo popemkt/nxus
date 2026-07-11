@@ -34,6 +34,12 @@ function measureMs(run: () => void): number {
   return performance.now() - start
 }
 
+async function measureMsAsync(run: () => Promise<void>): Promise<number> {
+  const start = performance.now()
+  await run()
+  return performance.now() - start
+}
+
 function measureSupertagQuery(graph: SeededGraph): number {
   return measureMs(() => {
     evaluateQuery(graph.db, {
@@ -48,11 +54,11 @@ describe.skipIf(process.env.NXUS_PERF !== '1')('env-gated @nxus/db performance b
     cleanupGraphs()
   })
 
-  it('keeps 10k API-level costs within deliberately loose absolute budgets', () => {
+  it('keeps 10k API-level costs within deliberately loose absolute budgets', async () => {
     const { graph, seedMs } = timedSeed(10_000)
     const rootId = graph.rootIds[0]!
-    const fullTreeMs = measureMs(() => {
-      readTreeBFS(graph.db, rootId)
+    const fullTreeMs = await measureMsAsync(async () => {
+      await readTreeBFS(graph.db, rootId)
     })
     const supertagQueryMs = measureSupertagQuery(graph)
     const createNodeMs = measureMs(() => {
@@ -66,26 +72,26 @@ describe.skipIf(process.env.NXUS_PERF !== '1')('env-gated @nxus/db performance b
     expect(createNodeMs).toBeLessThan(100)
   }, 120_000)
 
-  it('keeps full-tree read growth sub-quadratic from 10k to 20k', () => {
+  it('keeps full-tree read growth sub-quadratic from 10k to 20k', async () => {
     const ten = timedSeed(10_000)
     const twenty = timedSeed(20_000)
 
-    const tenReadMs = measureMs(() => {
-      readTreeBFS(ten.graph.db, ten.graph.rootIds[0]!)
+    const tenReadMs = await measureMsAsync(async () => {
+      await readTreeBFS(ten.graph.db, ten.graph.rootIds[0]!)
     })
-    const twentyReadMs = measureMs(() => {
-      readTreeBFS(twenty.graph.db, twenty.graph.rootIds[0]!)
+    const twentyReadMs = await measureMsAsync(async () => {
+      await readTreeBFS(twenty.graph.db, twenty.graph.rootIds[0]!)
     })
     const ratio = twentyReadMs / Math.max(tenReadMs, 1)
 
     expect(ratio).toBeLessThan(3.5)
   }, 180_000)
 
-  it.skipIf(process.env.NXUS_PERF_50K !== '1')('smokes 50k seed, tree read, and query with scaled budgets', () => {
+  it.skipIf(process.env.NXUS_PERF_50K !== '1')('smokes 50k seed, tree read, and query with scaled budgets', async () => {
     const { graph, seedMs } = timedSeed(50_000)
     const rootId = graph.rootIds[0]!
-    const fullTreeMs = measureMs(() => {
-      readTreeBFS(graph.db, rootId)
+    const fullTreeMs = await measureMsAsync(async () => {
+      await readTreeBFS(graph.db, rootId)
     })
     const queryMs = measureSupertagQuery(graph)
 

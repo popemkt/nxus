@@ -88,11 +88,11 @@ DRIFT: 502-retry fixture papers over readiness
 - impact: readiness is re-solved per-test instead of once at the gate; slow starts surface as timeouts in whichever spec ran first; `networkidle` breaks silently if any app adds long-polling/SSE.
 - closes: make `/__health` fan out to all 6 upstreams (return 503 until each responds), delete the retry loop, replace `networkidle` with app-specific ready selectors.
 
-DRIFT: ARCHITECTURE_TYPE=graph matrix tests an app that cannot honor it
+DRIFT: ARCHITECTURE_TYPE=graph matrix leg is unproven
 - canonical: every CI matrix leg exercises the mode it names; the editor reaches storage exclusively through `nodeFacade` ([persistence.md](./persistence.md)).
-- current: CI runs the full e2e suite under `ARCHITECTURE_TYPE: [node, graph]` (`ci.yml:73-78`), but the editor's server functions import the sync SQLite API (`assembleNode`, drizzle `nodes`/`eq`) directly from `@nxus/db/server` (`apps/nxus-editor/src/services/outline.server.ts:16-27`), bypassing the facade — so the `graph` leg's editor specs still read/write SQLite. A green `graph` matrix proves nothing about SurrealDB for the flagship app.
-- impact: false confidence in graph mode; the matrix doubles CI cost while its discriminating power is limited to the few facade-honoring paths.
-- closes: either route editor server fns through `nodeFacade` (then the matrix is meaningful) or shrink the `graph` leg to the specs that exercise facade-backed surfaces until the mode decision in [persistence.md](./persistence.md) lands.
+- current: the underlying bypass is closed 2026-07-11 — editor server functions (including `getNodeTreeServerFn`'s composite tree read) route through `nodeFacade`, and graph-mode seeding writes the facade's read model — but the `graph` e2e leg has not since been run and verified to confirm the editor specs actually pass against Surreal-backed reads.
+- impact: the matrix leg's verdict is stale; until a verified green run exists, graph-mode confidence rests on backend equivalence tests and facade smoke checks, not e2e.
+- closes: run the full e2e suite under `ARCHITECTURE_TYPE=graph` locally, fix or honestly `isGraphMode`-skip what fails, and record the verdict.
 
 ## 7. CI gates
 

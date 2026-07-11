@@ -28,7 +28,7 @@ const textFieldSystemId = graph.fieldSystemIds[0]!
 const textField = getSystemNode(graph.db, textFieldSystemId)
 if (!textField) throw new Error(`missing benchmark field: ${textFieldSystemId}`)
 const textFieldNodeId = textField.id
-const sampleIds = readTreeBFS(graph.db, rootId, 2).nodes.slice(0, 100).map((node) => node.id)
+const sampleIds = (await readTreeBFS(graph.db, rootId, 2)).nodes.slice(0, 100).map((node) => node.id)
 const mutationNodeId = sampleIds[sampleIds.length - 1] ?? rootId
 const importDoc = makeImportDoc(1_000)
 let cleanupDone = false
@@ -75,12 +75,12 @@ function makeImportDoc(nodeCount: number): TanaIntermediateFile {
 }
 
 describe(`@nxus/db API performance (${scale.toLocaleString()} nodes)`, () => {
-  bench('tree full read BFS from workspace root', () => {
-    readTreeBFS(graph.db, rootId)
+  bench('tree full read BFS from workspace root', async () => {
+    await readTreeBFS(graph.db, rootId)
   }, { iterations: 5, warmupIterations: 1 })
 
-  bench('tree depth-2 read BFS from workspace root', () => {
-    readTreeBFS(graph.db, rootId, 2)
+  bench('tree depth-2 read BFS from workspace root', async () => {
+    await readTreeBFS(graph.db, rootId, 2)
   }, { iterations: 20, warmupIterations: 2 })
 
   bench('assembleNodes batch 100 cold cache', () => {

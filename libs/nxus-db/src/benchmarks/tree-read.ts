@@ -1,15 +1,26 @@
-import { and, inArray, isNull } from 'drizzle-orm'
 import type { getDatabase } from '../client/master-client.js'
-import { FIELD_NAMES, nodes } from '../schemas/node-schema.js'
+import { FIELD_NAMES } from '../schemas/node-schema.js'
 import { formatOrderKey } from '../types/order.js'
 import {
-  assembleNodes,
-  createAssemblyCache,
   getProperty,
   type AssembledNode,
 } from '../services/node.service.js'
+import { SqliteBackend } from '../services/backends/sqlite-backend.js'
+import type { NodeBackend } from '../services/backends/types.js'
 
 type Db = ReturnType<typeof getDatabase>
+
+const backendsByDb = new WeakMap<Db, NodeBackend>()
+
+function getBackend(db: Db): NodeBackend {
+  const cached = backendsByDb.get(db)
+  if (cached) return cached
+
+  const backend = new SqliteBackend()
+  backend.initWithDb(db)
+  backendsByDb.set(db, backend)
+  return backend
+}
 
 export interface BfsTreeNode {
   id: string
@@ -28,12 +39,12 @@ export interface BfsTreeReadResult {
 }
 
 // MIRROR of apps/nxus-editor/src/services/outline.server.ts getNodeTreeServerFn data-access pattern — keep in sync until the tree read is extracted into the lib (planned P1).
-export function readTreeBFS(
+export async function readTreeBFS(
   db: Db,
   rootId: string,
   maxDepth: number = Number.MAX_SAFE_INTEGER,
-): BfsTreeReadResult {
-  const assemblyCache = createAssemblyCache()
+): Promise<BfsTreeReadResult> {
+  const backend = getBackend(db)
   const nodeMap = new Map<string, BfsTreeNode>()
   const childIdsByParent = new Map<string, string[]>()
 
@@ -52,15 +63,20 @@ export function readTreeBFS(
     })
   }
 
-  let frontier = [rootId]
+  const rootNode = await backend.assembleNode(rootId)
+  let frontier = rootNode ? [rootNode] : []
   let currentDepth = 0
   while (frontier.length > 0) {
-    const uniqueFrontier = [...new Set(frontier)].filter((id) => !nodeMap.has(id))
+    const seenFrontier = new Set<string>()
+    const uniqueFrontier = frontier.filter((node) => {
+      if (seenFrontier.has(node.id) || nodeMap.has(node.id)) return false
+      seenFrontier.add(node.id)
+      return true
+    })
     if (uniqueFrontier.length === 0) break
 
-    const assembledNodes = assembleNodes(db, uniqueFrontier, assemblyCache)
     const loadedIds: string[] = []
-    for (const assembled of assembledNodes) {
+    for (const assembled of uniqueFrontier) {
       if (assembled.deletedAt) continue
       addTreeNode(assembled)
       loadedIds.push(assembled.id)
@@ -68,19 +84,13 @@ export function readTreeBFS(
 
     if (currentDepth >= maxDepth || loadedIds.length === 0) break
 
-    const childRows = db
-      .select()
-      .from(nodes)
-      .where(and(inArray(nodes.ownerId, loadedIds), isNull(nodes.deletedAt)))
-      .all()
+    const childrenByParent = await backend.getChildrenByParents(loadedIds)
 
-    const nextFrontier: string[] = []
-    for (const child of childRows) {
-      if (!child.ownerId) continue
-      const existing = childIdsByParent.get(child.ownerId) ?? []
-      existing.push(child.id)
-      childIdsByParent.set(child.ownerId, existing)
-      nextFrontier.push(child.id)
+    const nextFrontier: AssembledNode[] = []
+    for (const parentId of loadedIds) {
+      const children = childrenByParent.get(parentId) ?? []
+      childIdsByParent.set(parentId, children.map((child) => child.id))
+      nextFrontier.push(...children)
     }
 
     frontier = nextFrontier
@@ -90,15 +100,7 @@ export function readTreeBFS(
   for (const [parentId, childIds] of childIdsByParent) {
     const parent = nodeMap.get(parentId)
     if (!parent) continue
-    parent.children = childIds
-      .filter((childId) => nodeMap.has(childId))
-      .sort((a, b) => {
-        const na = nodeMap.get(a)
-        const nb = nodeMap.get(b)
-        const orderCmp = (na?.order ?? '').localeCompare(nb?.order ?? '')
-        if (orderCmp !== 0) return orderCmp
-        return (na?.createdAt ?? 0) - (nb?.createdAt ?? 0)
-      })
+    parent.children = childIds.filter((childId) => nodeMap.has(childId))
   }
 
   return {
