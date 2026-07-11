@@ -66,16 +66,23 @@ const BLOOMS_SYSTEM_ID_TO_STRING: Record<string, BloomsLevel> = {
 }
 
 /** Resolve a Bloom's node ID to its string label, or null */
-function resolveBloomsNodeId(db: DatabaseInstance, nodeId: string): BloomsLevel | null {
-  // Fast path: check if the stored value is a system ID (e.g. 'bloom:remember')
-  if (BLOOMS_SYSTEM_ID_TO_STRING[nodeId]) {
-    return BLOOMS_SYSTEM_ID_TO_STRING[nodeId]
+function resolveBloomsNodeId(db: DatabaseInstance, stored: string): BloomsLevel | null {
+  // Stored value may be a system ID (e.g. 'bloom:remember')...
+  if (BLOOMS_SYSTEM_ID_TO_STRING[stored]) {
+    return BLOOMS_SYSTEM_ID_TO_STRING[stored]
   }
-  // Slow path: look up the node by UUID and check its systemId
-  const node = getSystemNode(db, nodeId)
-  if (node) return null // getSystemNode looks up by systemId, not useful here
-  // Fallback: it might be a plain string from before migration
-  if (nodeId in BLOOMS_STRING_TO_SYSTEM_ID) return nodeId as BloomsLevel
+  // ...a plain level string from before the node-ID migration...
+  if (stored in BLOOMS_STRING_TO_SYSTEM_ID) return stored as BloomsLevel
+  // ...or the Bloom's node UUID (what getBloomsNodeId writes): look the node
+  // up by ID and map its systemId back to the level label.
+  const row = db
+    .select({ systemId: nodes.systemId })
+    .from(nodes)
+    .where(eq(nodes.id, stored))
+    .get()
+  if (row?.systemId && BLOOMS_SYSTEM_ID_TO_STRING[row.systemId]) {
+    return BLOOMS_SYSTEM_ID_TO_STRING[row.systemId]
+  }
   return null
 }
 
@@ -121,14 +128,11 @@ function assembleConcept(
   topicId: string,
   topicName: string,
 ): RecallConcept {
-  // Resolve bloomsLevel — stored as Bloom's node ID, return as string
+  // Resolve bloomsLevel — stored as Bloom's node ID, return as string.
+  // Unresolvable values become null rather than leaking a raw node ID
+  // into BloomsLevel-typed fields.
   const rawBlooms = getProperty<string>(node, FIELD_NAMES.RECALL_BLOOMS_LEVEL)
-  // Fallback to the raw stored value if it can't be resolved to a known
-  // Bloom's level node - mirrors the legacy-string fallback in
-  // resolveBloomsNodeId (line below casts a plain string the same way).
-  const bloomsLevel = rawBlooms
-    ? (resolveBloomsNodeId(db, rawBlooms) ?? (rawBlooms as BloomsLevel))
-    : null
+  const bloomsLevel = rawBlooms ? resolveBloomsNodeId(db, rawBlooms) : null
 
   // Resolve related concepts — stored as node IDs, return both IDs and titles
   const relatedIds = getPropertyValues<string>(node, FIELD_NAMES.RECALL_RELATED_CONCEPTS)

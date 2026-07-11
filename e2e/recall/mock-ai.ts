@@ -70,7 +70,7 @@ export const MOCK_CONCEPTS = [
 export const MOCK_QUESTION = {
   questionText:
     'A social media platform needs to display user feeds across multiple regions. During a network partition between US and EU data centers, users in both regions continue posting. How would you apply the CAP theorem to decide whether to show potentially stale feeds or return errors?',
-  questionType: 'application' as const,
+  questionType: 'free-response' as const,
   modelAnswer:
     'During a network partition, the CAP theorem forces a choice between consistency and availability. For a social media feed, availability is typically preferred — users should see content even if slightly stale. The system should favor AP (Availability + Partition tolerance), accepting eventual consistency. Once the partition heals, feeds converge. Critical operations like payments should favor CP instead.',
   hints: [
