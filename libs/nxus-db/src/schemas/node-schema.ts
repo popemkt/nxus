@@ -129,6 +129,7 @@ export const SYSTEM_SUPERTAGS = {
   // Calendar supertags - for schedule management
   TASK: 'supertag:task', // Nodes that are tasks (completable items)
   EVENT: 'supertag:event', // Nodes that are calendar events
+  DAY: 'supertag:day', // Daily-note nodes — one per calendar date (field:date)
 
   // Recall training supertags
   RECALL_TOPIC: 'supertag:recall-topic',

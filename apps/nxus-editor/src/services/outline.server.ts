@@ -497,6 +497,62 @@ export const updateQueryDefinitionServerFn = createServerFn({ method: 'POST' })
 /**
  * Set a field value on a node.
  */
+/**
+ * Daily note: find (or create) the #Day node for a calendar date.
+ * Deterministic per date — one #Day node per YYYY-MM-DD, keyed by
+ * field:start_date. Content is the ISO date; display formatting is a
+ * lens concern (spec/product/data-model.md, day nodes).
+ */
+export const getOrCreateDayNodeServerFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD required'),
+    }),
+  )
+  .handler(async (ctx) => {
+    await initDatabaseSeeded()
+    const { nodeFacade, SYSTEM_FIELDS, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
+    await nodeFacade.init()
+
+    // Deterministic per-date identity via the UNIQUE systemId column —
+    // a concurrent double-create races into the constraint instead of
+    // minting two day nodes (fail-fast over query-then-create).
+    const daySystemId = `item:day-${ctx.data.date}`
+    const existing = await nodeFacade.findNodeBySystemId(daySystemId)
+    if (existing) {
+      // A deleted daily note resurrects on revisit — the date identity is
+      // permanent, and leaving it soft-deleted would brick the Today button
+      // for that date (unique systemId blocks re-creation).
+      if (existing.deletedAt !== null) {
+        await nodeFacade.restoreNode(existing.id)
+      }
+      return { success: true as const, nodeId: existing.id, created: false }
+    }
+
+    let nodeId: string
+    try {
+      nodeId = await nodeFacade.createNode({
+        content: ctx.data.date,
+        systemId: daySystemId,
+        supertagId: SYSTEM_SUPERTAGS.DAY,
+      })
+    } catch (err) {
+      // Lost the race: the other request created it between our lookup and
+      // insert. The unique constraint guarantees exactly one — fetch it.
+      const winner = await nodeFacade.findNodeBySystemId(daySystemId)
+      if (winner) {
+        return { success: true as const, nodeId: winner.id, created: false }
+      }
+      throw err
+    }
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.START_DATE, ctx.data.date)
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.ALL_DAY, true)
+    // Seed one empty child so the zoomed daily page opens ready to type
+    // (a zoomed node with zero children renders the empty-outline state).
+    await nodeFacade.createNode({ content: '', ownerId: nodeId })
+    return { success: true as const, nodeId, created: true }
+  })
+
 export const setFieldValueServerFn = createServerFn({ method: 'POST' })
   .inputValidator(
     z.object({

@@ -326,6 +326,7 @@ export function bootstrapSystemNodesSync(
     // Calendar supertags (independent from Item - should NOT appear in gallery)
     { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', extends: null, baseType: 'task' },
     { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', extends: null, baseType: 'event' },
+    { systemId: SYSTEM_SUPERTAGS.DAY, content: '#Day', extends: null, baseType: 'day' },
     // Recall training supertags
     { systemId: SYSTEM_SUPERTAGS.RECALL_TOPIC, content: '#RecallTopic', extends: null },
     { systemId: SYSTEM_SUPERTAGS.RECALL_CONCEPT, content: '#RecallConcept', extends: null },
