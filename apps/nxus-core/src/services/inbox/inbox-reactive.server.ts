@@ -175,6 +175,8 @@ function assertInboxComputedFieldIds(
 let inboxComputedFieldIds: InboxComputedFieldIds | null = null
 let reactiveInitialized = false
 let reactiveInitFailed = false
+let reactiveDisabledReason: Error | null = null
+let reactiveUnsupportedWarningLogged = false
 
 /**
  * Ensure reactive services are initialized and inbox computed fields exist.
@@ -188,15 +190,18 @@ let reactiveInitFailed = false
 async function ensureInboxReactiveInit(): Promise<InboxComputedFieldIds> {
   // If a previous init attempt failed, don't keep retrying
   if (reactiveInitFailed) {
-    throw new Error('Reactive init previously failed; skipping retry')
+    throw reactiveDisabledReason ?? new Error('Reactive init previously failed; skipping retry')
   }
 
   try {
     const { ensureDatabaseReady } = await import('../db/ensure-seeded.server.js')
     await ensureDatabaseReady()
 
-    const { initDatabaseWithBootstrap, computedFieldService, automationService } =
-      await import('@nxus/db/server')
+    const {
+      initDatabaseWithBootstrap,
+      computedFieldService,
+      automationService,
+    } = await import('@nxus/db/server')
 
     const db = await initDatabaseWithBootstrap()
 
@@ -241,8 +246,25 @@ async function ensureInboxReactiveInit(): Promise<InboxComputedFieldIds> {
     reactiveInitFailed = true
     reactiveInitialized = false
     inboxComputedFieldIds = null
+    reactiveDisabledReason = err instanceof Error ? err : new Error(String(err))
+
+    if (
+      err instanceof Error &&
+      err.name === 'ReactiveUnsupportedArchitectureError' &&
+      !reactiveUnsupportedWarningLogged
+    ) {
+      console.warn(err.message)
+      reactiveUnsupportedWarningLogged = true
+    }
     throw err
   }
+}
+
+function logReactiveFeatureError(context: string, err: unknown): void {
+  if (err instanceof Error && err.name === 'ReactiveUnsupportedArchitectureError') {
+    return
+  }
+  console.error(context, err)
 }
 
 // ============================================================================
@@ -544,12 +566,12 @@ export const initInboxReactiveServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   try {
+    const ids = await ensureInboxReactiveInit()
+
     const { initDatabaseWithBootstrap, computedFieldService } = await import(
       '@nxus/db/server'
     )
     const db = await initDatabaseWithBootstrap()
-
-    const ids = await ensureInboxReactiveInit()
 
     const metrics: InboxMetrics = {
       totalItems: computedFieldService.getValue(db, ids[0]) ?? 0,
@@ -570,7 +592,10 @@ export const initInboxReactiveServerFn = createServerFn({
       metrics,
     }
   } catch (err) {
-    console.error('[initInboxReactiveServerFn] Failed to initialize reactive system:', err)
+    logReactiveFeatureError(
+      '[initInboxReactiveServerFn] Failed to initialize reactive system:',
+      err,
+    )
     return {
       success: false as const,
       computedFieldIds: null,
@@ -586,12 +611,12 @@ export const getInboxMetricsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   try {
+    const ids = await ensureInboxReactiveInit()
+
     const { initDatabaseWithBootstrap, computedFieldService } = await import(
       '@nxus/db/server'
     )
     const db = await initDatabaseWithBootstrap()
-
-    const ids = await ensureInboxReactiveInit()
 
     const metrics: InboxMetrics = {
       totalItems: computedFieldService.getValue(db, ids[0]) ?? 0,
@@ -606,7 +631,7 @@ export const getInboxMetricsServerFn = createServerFn({
       metrics,
     }
   } catch (err) {
-    console.error('[getInboxMetricsServerFn] Failed to fetch metrics:', err)
+    logReactiveFeatureError('[getInboxMetricsServerFn] Failed to fetch metrics:', err)
     return {
       success: false as const,
       metrics: EMPTY_METRICS,
@@ -621,12 +646,12 @@ export const getInboxAutomationsServerFn = createServerFn({
   method: 'GET',
 }).handler(async () => {
   try {
+    await ensureInboxReactiveInit()
+
     const { initDatabaseWithBootstrap, automationService } = await import(
       '@nxus/db/server'
     )
     const db = await initDatabaseWithBootstrap()
-
-    await ensureInboxReactiveInit()
 
     const allAutomations = automationService.getAll(db)
 
@@ -657,7 +682,10 @@ export const getInboxAutomationsServerFn = createServerFn({
       })),
     }
   } catch (err) {
-    console.error('[getInboxAutomationsServerFn] Failed to fetch automations:', err)
+    logReactiveFeatureError(
+      '[getInboxAutomationsServerFn] Failed to fetch automations:',
+      err,
+    )
     return {
       success: false as const,
       automations: [],
@@ -684,21 +712,22 @@ export const createInboxAutomationServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, automationService } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
+    try {
+      const ids = await ensureInboxReactiveInit()
+      const { initDatabaseWithBootstrap, automationService } = await import(
+        '@nxus/db/server'
+      )
+      const db = await initDatabaseWithBootstrap()
+      const { template, config } = ctx.data
 
-    const ids = await ensureInboxReactiveInit()
-    const { template, config } = ctx.data
+      // ids[1] is the pending count computed field
+      const definition = expandAutomationTemplate(template, config, ids[1])
+      const automationId = automationService.create(db, definition)
 
-    // ids[1] is the pending count computed field
-    const definition = expandAutomationTemplate(template, config, ids[1])
-    const automationId = automationService.create(db, definition)
-
-    return {
-      success: true as const,
-      automationId,
+      return { success: true as const, automationId }
+    } catch (err) {
+      logReactiveFeatureError('[createInboxAutomationServerFn] Failed:', err)
+      return { success: false as const, automationId: null }
     }
   })
 
@@ -713,17 +742,19 @@ export const toggleInboxAutomationServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, automationService } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
-
-    await ensureInboxReactiveInit()
-
-    const { automationId, enabled } = ctx.data
-    automationService.setEnabled(db, automationId, enabled)
-
-    return { success: true as const }
+    try {
+      await ensureInboxReactiveInit()
+      const { initDatabaseWithBootstrap, automationService } = await import(
+        '@nxus/db/server'
+      )
+      const db = await initDatabaseWithBootstrap()
+      const { automationId, enabled } = ctx.data
+      automationService.setEnabled(db, automationId, enabled)
+      return { success: true as const }
+    } catch (err) {
+      logReactiveFeatureError('[toggleInboxAutomationServerFn] Failed:', err)
+      return { success: false as const }
+    }
   })
 
 /**
@@ -732,16 +763,18 @@ export const toggleInboxAutomationServerFn = createServerFn({ method: 'POST' })
 export const deleteInboxAutomationServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ automationId: z.string() }))
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, automationService } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
-
-    await ensureInboxReactiveInit()
-
-    automationService.delete(db, ctx.data.automationId)
-
-    return { success: true as const }
+    try {
+      await ensureInboxReactiveInit()
+      const { initDatabaseWithBootstrap, automationService } = await import(
+        '@nxus/db/server'
+      )
+      const db = await initDatabaseWithBootstrap()
+      automationService.delete(db, ctx.data.automationId)
+      return { success: true as const }
+    } catch (err) {
+      logReactiveFeatureError('[deleteInboxAutomationServerFn] Failed:', err)
+      return { success: false as const }
+    }
   })
 
 /**
@@ -756,15 +789,17 @@ export const triggerInboxAutomationServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { initDatabaseWithBootstrap, automationService } = await import(
-      '@nxus/db/server'
-    )
-    const db = await initDatabaseWithBootstrap()
-
-    await ensureInboxReactiveInit()
-
-    const { automationId, nodeId, computedFieldValue } = ctx.data
-    automationService.trigger(db, automationId, { nodeId, computedFieldValue })
-
-    return { success: true as const }
+    try {
+      await ensureInboxReactiveInit()
+      const { initDatabaseWithBootstrap, automationService } = await import(
+        '@nxus/db/server'
+      )
+      const db = await initDatabaseWithBootstrap()
+      const { automationId, nodeId, computedFieldValue } = ctx.data
+      automationService.trigger(db, automationId, { nodeId, computedFieldValue })
+      return { success: true as const }
+    } catch (err) {
+      logReactiveFeatureError('[triggerInboxAutomationServerFn] Failed:', err)
+      return { success: false as const }
+    }
   })

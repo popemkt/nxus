@@ -38,6 +38,7 @@ import {
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, nodeProperties } from '../schemas/node-schema.js'
 import { eq } from 'drizzle-orm'
 import type { getDatabase } from '../client/master-client.js'
+import { assertReactiveSupported } from './reactive-support.js'
 
 // ============================================================================
 // Constants
@@ -742,6 +743,8 @@ export function createComputedFieldService(
     },
 
     initialize(db: Database): void {
+      assertReactiveSupported()
+
       // Load all computed fields from database
       const allComputedFields = this.getAll(db)
 

@@ -7,6 +7,13 @@
 // Types and Zod schemas
 export * from './types.js'
 
+// Architecture support guard
+export {
+  assertReactiveSupported,
+  REACTIVE_UNSUPPORTED_GRAPH_MESSAGE,
+  ReactiveUnsupportedArchitectureError,
+} from './reactive-support.js'
+
 // Event bus factory and singleton
 export { createEventBus, eventBus } from './event-bus.js'
 

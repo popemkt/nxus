@@ -76,6 +76,7 @@ import {
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId, nodeProperties } from '../schemas/node-schema.js'
 import { eq } from 'drizzle-orm'
 import type { getDatabase } from '../client/master-client.js'
+import { assertReactiveSupported } from './reactive-support.js'
 
 // ============================================================================
 // Constants
@@ -992,6 +993,8 @@ export function createAutomationService(
     },
 
     initialize(db: Database): void {
+      assertReactiveSupported()
+
       // Load all automations from database
       const allAutomations = this.getAll(db)
 

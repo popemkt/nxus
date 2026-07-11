@@ -33,6 +33,7 @@ import {
   type DependencyTracker,
 } from './dependency-tracker.js'
 import { reactiveMetrics } from './metrics.js'
+import { assertReactiveSupported } from './reactive-support.js'
 
 // ============================================================================
 // Types
@@ -433,6 +434,8 @@ export function createQuerySubscriptionService(
       definition: QueryDefinition,
       onResultChange: QueryResultChangeCallback,
     ): SubscriptionHandle {
+      assertReactiveSupported()
+
       const id = `qsub_${nextId++}`
 
       // Initial evaluation
