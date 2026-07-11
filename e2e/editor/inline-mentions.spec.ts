@@ -1,10 +1,6 @@
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
-
-const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+import { openSeedBackend } from '../helpers/seed-backend.js'
 
 /**
  * Navigate with retry-on-cold-boot: on a parallel cold start the editor app
@@ -35,8 +31,6 @@ test.describe('Inline Mention Backlinks', () => {
   test('a [[node:<id>]] token renders as a clickable chip and the target lists it under Mentioned', async ({
     page,
   }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
     // Warm the editor server BEFORE seeding: the server's auto-seed check
     // (initDatabaseWithBootstrap, master-client.ts) only seeds demo data when
     // no non-system node exists yet — writing our story nodes first would
@@ -44,7 +38,7 @@ test.describe('Inline Mention Backlinks', () => {
     // schedule. This also absorbs the cold-boot compile race.
     await gotoEditorWithRetry(page, '/editor')
 
-    const { parentId, targetId, targetContent, sourceId, sourceContent } = await seedMentionStory()
+    const { parentId, targetId, targetRouteId, targetContent, sourceId, sourceContent } = await seedMentionStory()
 
     // 1. Zoom into the parent — both target and source render as sibling rows,
     //    so the source row's content is rendered through NodeContent (chip-aware).
@@ -57,7 +51,7 @@ test.describe('Inline Mention Backlinks', () => {
 
     // 2. Clicking the chip navigates to the target node.
     await chip.click()
-    await page.waitForURL((url) => url.searchParams.get('node') === targetId, { timeout: 10_000 })
+    await page.waitForURL((url) => url.searchParams.get('node') === targetRouteId, { timeout: 10_000 })
     await expect(page.locator('h1')).toContainText(targetContent)
 
     // 3. The target's References panel lists the source under "Mentioned",
@@ -92,41 +86,21 @@ test.describe('Inline Mention Backlinks', () => {
 async function seedMentionStory(): Promise<{
   parentId: string
   targetId: string
+  targetRouteId: string
   targetContent: string
   sourceId: string
   sourceContent: string
 }> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const { initDatabaseWithBootstrap, createNode, sql } = await import(
-    '../../libs/nxus-db/src/server.js'
-  )
-
-  const db = await initDatabaseWithBootstrap()
-
-  // Wait for the SERVER's demo auto-seed before writing any non-system node:
-  // initDatabaseWithBootstrap only auto-seeds demo data while zero non-system
-  // nodes exist (master-client.ts:351-362). If this story's nodes landed
-  // first, demo seeding would be silently skipped for the whole parallel e2e
-  // schedule, starving the search-palette and node-rendering specs. The
-  // warm-up navigation in the test triggers the server's seed; here we just
-  // wait until it is visible. Falls through after the deadline so a solo run
-  // against an intentionally minimal DB still works.
-  const deadline = Date.now() + 30_000
-  while (Date.now() < deadline) {
-    const row = db.get<{ count: number }>(
-      sql`SELECT COUNT(*) as count FROM nodes WHERE system_id LIKE 'item:%'`,
-    )
-    if ((row?.count ?? 0) > 0) break
-    await new Promise((resolve) => setTimeout(resolve, 500))
-  }
+  const { createNode } = await openSeedBackend()
 
   const suffix = Date.now().toString(36)
 
-  const parentId = createNode(db, { content: `Mention story parent ${suffix}` })
+  const parentId = await createNode({ content: `Mention story parent ${suffix}` })
   const targetContent = `Mention target ${suffix}`
-  const targetId = createNode(db, { content: targetContent, ownerId: parentId })
+  const targetPublicId = await createNode({ content: targetContent, ownerId: parentId })
+  const targetId = targetPublicId.replace(/^node:/, '')
   const sourceContent = `Mentions target inline [[node:${targetId}]] — see above`
-  const sourceId = createNode(db, { content: sourceContent, ownerId: parentId })
+  const sourceId = await createNode({ content: sourceContent, ownerId: parentId })
 
-  return { parentId, targetId, targetContent, sourceId, sourceContent }
+  return { parentId, targetId, targetRouteId: targetPublicId, targetContent, sourceId, sourceContent }
 }

@@ -1,15 +1,11 @@
 import { test, expect } from '../fixtures/base.fixture.js'
 
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
-
 test.describe('Core App Detail Page', () => {
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('core')
   })
 
   test('C4 — Navigate to app detail from gallery', async ({ page }) => {
-    test.skip(isGraphMode, 'Graph seed does not yet include gallery app-card items for detail navigation')
-
     // Wait for gallery cards to load
     const appLinks = page.getByRole('link', { name: 'View Details' })
     await expect(appLinks.first()).toBeVisible({ timeout: 15000 })
@@ -30,8 +26,6 @@ test.describe('Core App Detail Page', () => {
   })
 
   test('C5 — App detail content renders correctly', async ({ page }) => {
-    test.skip(isGraphMode, 'Graph seed does not yet include gallery app-card items for detail navigation')
-
     // Wait for gallery cards to load then navigate to first app detail
     const appLinks = page.getByRole('link', { name: 'View Details' })
     await expect(appLinks.first()).toBeVisible({ timeout: 15000 })

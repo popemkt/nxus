@@ -1,7 +1,5 @@
 import { test, expect } from '../fixtures/base.fixture.js'
 
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
-
 test.describe('Core Gallery Page', () => {
   test.beforeEach(async ({ navigateToApp }) => {
     await navigateToApp('core')
@@ -10,8 +8,6 @@ test.describe('Core Gallery Page', () => {
   test('C1 — Gallery page loads with search and app cards', async ({
     page,
   }) => {
-    test.skip(isGraphMode, 'Graph seed does not yet include gallery app-card items')
-
     // Verify search input with correct placeholder
     const searchInput = page.getByPlaceholder('Search apps...')
     await expect(searchInput).toBeVisible()
@@ -32,8 +28,6 @@ test.describe('Core Gallery Page', () => {
   })
 
   test('C2 — Search filtering works', async ({ page }) => {
-    test.skip(isGraphMode, 'Graph seed does not yet include gallery app-card items')
-
     const searchInput = page.getByPlaceholder('Search apps...')
     const viewDetailsLinks = page.getByRole('link', { name: 'View Details' })
 
@@ -72,8 +66,6 @@ test.describe('Core Gallery Page', () => {
   })
 
   test('C3 — View mode switching', async ({ page }) => {
-    test.skip(isGraphMode, 'Graph seed does not yet include gallery app-card items')
-
     // Wait for gallery content to load first
     await expect(
       page.getByRole('link', { name: 'View Details' }).first()

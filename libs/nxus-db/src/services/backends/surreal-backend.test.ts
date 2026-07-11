@@ -85,6 +85,13 @@ describe('init guard', () => {
 // =============================================================================
 
 describe('createNode → assembleNode round-trip', () => {
+  it('allocates UUIDv7 record keys compatible with inline mention tokens', async () => {
+    const nodeId = await backend.createNode({ content: 'Mention target' })
+    expect(nodeId).toMatch(
+      /^node:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    )
+  })
+
   it('should create a node and assemble it back', async () => {
     const nodeId = await backend.createNode({ content: 'Test Node' })
     expect(nodeId).toBeTruthy()

@@ -20,8 +20,6 @@ test.describe('Core Inbox Page', () => {
   })
 
   test('C7 — Add inbox item via modal', async ({ page }) => {
-    test.skip(isGraphMode, 'Inbox item mutation depends on reactive inbox queries that are not yet stable in graph mode')
-
     await page.goto('/core/inbox')
 
     // Wait for page to load
@@ -88,8 +86,7 @@ test.describe('Core Inbox Page', () => {
   })
 
   test('C8 — Edit and delete inbox item', async ({ page }) => {
-    test.skip(isGraphMode, 'Inbox item properties not yet queryable in graph mode')
-
+    test.skip(isGraphMode, 'Graph addInboxItem mutation succeeds, but the inbox query is not invalidated/refetched because the reactive query layer is SQLite-only')
     await page.goto('/core/inbox')
     await page.waitForLoadState('networkidle')
 

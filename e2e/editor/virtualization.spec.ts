@@ -1,10 +1,6 @@
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
-
-const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+import { openSeedBackend } from '../helpers/seed-backend.js'
 
 async function gotoEditorWithRetry(page: Page, path: string) {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -24,8 +20,6 @@ test.describe('Outline child-list virtualization', () => {
   test.setTimeout(120_000)
 
   test('windows wide child lists while preserving interaction', async ({ page }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
     await gotoEditorWithRetry(page, '/editor')
     const seeded = await seedWideChildList()
 
@@ -70,15 +64,11 @@ async function seedWideChildList(): Promise<{
   midChildText: string
   lastChildText: string
 }> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const { initDatabaseWithBootstrap, createNode, setProperty, SYSTEM_FIELDS } =
-    await import('../../libs/nxus-db/src/server.js')
-
-  const db = await initDatabaseWithBootstrap()
+  const { createNode, setProperty, SYSTEM_FIELDS } = await openSeedBackend()
   const suffix = Date.now().toString(36)
   const parentText = `virtual-parent-${suffix}`
-  const parentId = createNode(db, { content: parentText })
-  setProperty(db, parentId, SYSTEM_FIELDS.ORDER, '00001000')
+  const parentId = await createNode({ content: parentText })
+  await setProperty(parentId, SYSTEM_FIELDS.ORDER, '00001000')
 
   let midChildId = ''
   const firstChildText = `virtual-child-000-${suffix}`
@@ -87,9 +77,8 @@ async function seedWideChildList(): Promise<{
 
   for (let index = 0; index < 500; index++) {
     const text = `virtual-child-${String(index).padStart(3, '0')}-${suffix}`
-    const childId = createNode(db, { content: text, ownerId: parentId })
-    setProperty(
-      db,
+    const childId = await createNode({ content: text, ownerId: parentId })
+    await setProperty(
       childId,
       SYSTEM_FIELDS.ORDER,
       String((index + 1) * 1000).padStart(8, '0'),

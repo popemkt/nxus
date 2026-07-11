@@ -1,10 +1,6 @@
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
-
-const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+import { openSeedBackend } from '../helpers/seed-backend.js'
 
 async function gotoEditorWithRetry(page: Page, path = '/editor') {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -27,8 +23,6 @@ test.describe('Outline lazy tree loading', () => {
   test('loads a depth-bounded workspace tree and fetches children on expand', async ({
     page,
   }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
     await gotoEditorWithRetry(page)
     const chain = await seedDeepChain()
 
@@ -55,8 +49,6 @@ test.describe('Outline lazy tree loading', () => {
   test('fetches an unloaded subtree when zooming directly to a boundary node', async ({
     page,
   }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
     await gotoEditorWithRetry(page)
     const chain = await seedDeepChain()
 
@@ -74,23 +66,19 @@ async function seedDeepChain(): Promise<{
   cText: string
   dText: string
 }> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const { initDatabaseWithBootstrap, createNode, setProperty, SYSTEM_FIELDS } =
-    await import('../../libs/nxus-db/src/server.js')
-
-  const db = await initDatabaseWithBootstrap()
+  const { createNode, setProperty, SYSTEM_FIELDS } = await openSeedBackend()
   const suffix = Date.now().toString(36)
 
-  const rootId = createNode(db, { content: `lazy-root-${suffix}` })
-  const aId = createNode(db, { content: `lazy-a-${suffix}`, ownerId: rootId })
-  const bId = createNode(db, { content: `lazy-b-${suffix}`, ownerId: aId })
+  const rootId = await createNode({ content: `lazy-root-${suffix}` })
+  const aId = await createNode({ content: `lazy-a-${suffix}`, ownerId: rootId })
+  const bId = await createNode({ content: `lazy-b-${suffix}`, ownerId: aId })
   const cText = `lazy-c-${suffix}`
-  const cId = createNode(db, { content: cText, ownerId: bId })
+  const cId = await createNode({ content: cText, ownerId: bId })
   const dText = `lazy-d-${suffix}`
-  const dId = createNode(db, { content: dText, ownerId: cId })
+  const dId = await createNode({ content: dText, ownerId: cId })
 
   for (const [index, nodeId] of [rootId, aId, bId, cId, dId].entries()) {
-    setProperty(db, nodeId, SYSTEM_FIELDS.ORDER, String(index).padStart(8, '0'))
+    await setProperty(nodeId, SYSTEM_FIELDS.ORDER, String(index).padStart(8, '0'))
   }
 
   return { cId, cText, dText }

@@ -1,17 +1,14 @@
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { FieldSystemId } from '../../libs/nxus-db/src/server.js'
+import { openSeedBackend } from '../helpers/seed-backend.js'
 
-const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
 const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 test.describe('Formula Fields', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('formula field computes from two number fields and updates after reload', async ({ page }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
+    test.skip(isGraphMode, 'SurrealBackend cannot create supertag records through NodeBackend; fixture requires a custom #FormulaProduct supertag')
     const { nodeId, quantityFieldSystemId } = await seedFormulaStory()
 
     await page.goto(`/editor?node=${nodeId}`)
@@ -30,8 +27,7 @@ test.describe('Formula Fields', () => {
   })
 
   test('multi-parent supertag inheritance shows fields from both parent supertags', async ({ page }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
+    test.skip(isGraphMode, 'SurrealBackend cannot create supertag records or custom extends edges through NodeBackend; fixture requires both')
     const { nodeId } = await seedMultiParentStory()
 
     await page.goto(`/editor?node=${nodeId}`)
@@ -46,58 +42,49 @@ test.describe('Formula Fields', () => {
 })
 
 async function seedFormulaStory(): Promise<{ nodeId: string; quantityFieldSystemId: FieldSystemId }> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const {
-    initDatabaseWithBootstrap,
-    createNode,
-    addNodeSupertag,
-    setProperty,
-    SYSTEM_FIELDS,
-    SYSTEM_SUPERTAGS,
-  } = await import('../../libs/nxus-db/src/server.js')
-
-  const db = await initDatabaseWithBootstrap()
+  const { createNode, addNodeSupertag, setProperty, SYSTEM_FIELDS, SYSTEM_SUPERTAGS } =
+    await openSeedBackend()
   const suffix = Date.now().toString(36)
   const priceFieldSystemId = `field:formula_price_${suffix}` as FieldSystemId
   const quantityFieldSystemId = `field:formula_quantity_${suffix}` as FieldSystemId
   const totalFieldSystemId = `field:formula_total_${suffix}` as FieldSystemId
 
-  const productTag = createNode(db, {
+  const productTag = await createNode({
     content: `#FormulaProduct${suffix}`,
     systemId: `supertag:formula_product_${suffix}`,
   })
-  addNodeSupertag(db, productTag, SYSTEM_SUPERTAGS.SUPERTAG)
+  await addNodeSupertag(productTag, SYSTEM_SUPERTAGS.SUPERTAG)
 
-  const priceField = createNode(db, {
+  const priceField = await createNode({
     content: 'Price',
     systemId: priceFieldSystemId,
   })
-  addNodeSupertag(db, priceField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, priceField, SYSTEM_FIELDS.FIELD_TYPE, 'number')
+  await addNodeSupertag(priceField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(priceField, SYSTEM_FIELDS.FIELD_TYPE, 'number')
 
-  const quantityField = createNode(db, {
+  const quantityField = await createNode({
     content: 'Quantity',
     systemId: quantityFieldSystemId,
   })
-  addNodeSupertag(db, quantityField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, quantityField, SYSTEM_FIELDS.FIELD_TYPE, 'number')
+  await addNodeSupertag(quantityField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(quantityField, SYSTEM_FIELDS.FIELD_TYPE, 'number')
 
-  const totalField = createNode(db, {
+  const totalField = await createNode({
     content: 'Total',
     systemId: totalFieldSystemId,
   })
-  addNodeSupertag(db, totalField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, totalField, SYSTEM_FIELDS.FIELD_TYPE, 'formula')
-  setProperty(db, totalField, SYSTEM_FIELDS.FORMULA, '{Price} * {Quantity}')
+  await addNodeSupertag(totalField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(totalField, SYSTEM_FIELDS.FIELD_TYPE, 'formula')
+  await setProperty(totalField, SYSTEM_FIELDS.FORMULA, '{Price} * {Quantity}')
 
-  setProperty(db, productTag, priceFieldSystemId, null)
-  setProperty(db, productTag, quantityFieldSystemId, null)
-  setProperty(db, productTag, totalFieldSystemId, null)
+  await setProperty(productTag, priceFieldSystemId, null)
+  await setProperty(productTag, quantityFieldSystemId, null)
+  await setProperty(productTag, totalFieldSystemId, null)
 
-  const nodeId = createNode(db, { content: `Formula story ${suffix}` })
-  addNodeSupertag(db, nodeId, `supertag:formula_product_${suffix}`)
-  setProperty(db, nodeId, priceFieldSystemId, 10)
-  setProperty(db, nodeId, quantityFieldSystemId, 3)
+  const nodeId = await createNode({ content: `Formula story ${suffix}` })
+  await addNodeSupertag(nodeId, `supertag:formula_product_${suffix}`)
+  await setProperty(nodeId, priceFieldSystemId, 10)
+  await setProperty(nodeId, quantityFieldSystemId, 3)
 
   return { nodeId, quantityFieldSystemId }
 }
@@ -107,68 +94,57 @@ async function updateQuantity(
   quantityFieldSystemId: FieldSystemId,
   quantity: number,
 ): Promise<void> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const { initDatabaseWithBootstrap, setProperty } = await import('../../libs/nxus-db/src/server.js')
-  const db = await initDatabaseWithBootstrap()
-  setProperty(db, nodeId, quantityFieldSystemId, quantity)
+  const { setProperty } = await openSeedBackend()
+  await setProperty(nodeId, quantityFieldSystemId, quantity)
 }
 
 async function seedMultiParentStory(): Promise<{ nodeId: string }> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
   const {
-    initDatabaseWithBootstrap,
-    createNode,
-    addNodeSupertag,
-    addPropertyValue,
-    setProperty,
-    SYSTEM_FIELDS,
-    SYSTEM_SUPERTAGS,
-  } = await import('../../libs/nxus-db/src/server.js')
-
-  const db = await initDatabaseWithBootstrap()
+    createNode, addNodeSupertag, addPropertyValue, setProperty, SYSTEM_FIELDS, SYSTEM_SUPERTAGS,
+  } = await openSeedBackend()
   const suffix = Date.now().toString(36)
   const alphaFieldSystemId = `field:multi_parent_alpha_${suffix}` as FieldSystemId
   const betaFieldSystemId = `field:multi_parent_beta_${suffix}` as FieldSystemId
 
-  const alphaTag = createNode(db, {
+  const alphaTag = await createNode({
     content: `#MultiParentAlpha${suffix}`,
     systemId: `supertag:multi_parent_alpha_${suffix}`,
   })
-  addNodeSupertag(db, alphaTag, SYSTEM_SUPERTAGS.SUPERTAG)
+  await addNodeSupertag(alphaTag, SYSTEM_SUPERTAGS.SUPERTAG)
 
-  const betaTag = createNode(db, {
+  const betaTag = await createNode({
     content: `#MultiParentBeta${suffix}`,
     systemId: `supertag:multi_parent_beta_${suffix}`,
   })
-  addNodeSupertag(db, betaTag, SYSTEM_SUPERTAGS.SUPERTAG)
+  await addNodeSupertag(betaTag, SYSTEM_SUPERTAGS.SUPERTAG)
 
-  const childTag = createNode(db, {
+  const childTag = await createNode({
     content: `#MultiParentChild${suffix}`,
     systemId: `supertag:multi_parent_child_${suffix}`,
   })
-  addNodeSupertag(db, childTag, SYSTEM_SUPERTAGS.SUPERTAG)
-  addPropertyValue(db, childTag, SYSTEM_FIELDS.EXTENDS, alphaTag)
-  addPropertyValue(db, childTag, SYSTEM_FIELDS.EXTENDS, betaTag)
+  await addNodeSupertag(childTag, SYSTEM_SUPERTAGS.SUPERTAG)
+  await addPropertyValue(childTag, SYSTEM_FIELDS.EXTENDS, alphaTag)
+  await addPropertyValue(childTag, SYSTEM_FIELDS.EXTENDS, betaTag)
 
-  const alphaField = createNode(db, {
+  const alphaField = await createNode({
     content: 'Alpha Code',
     systemId: alphaFieldSystemId,
   })
-  addNodeSupertag(db, alphaField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, alphaField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
+  await addNodeSupertag(alphaField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(alphaField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
 
-  const betaField = createNode(db, {
+  const betaField = await createNode({
     content: 'Beta Code',
     systemId: betaFieldSystemId,
   })
-  addNodeSupertag(db, betaField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, betaField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
+  await addNodeSupertag(betaField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(betaField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
 
-  setProperty(db, alphaTag, alphaFieldSystemId, 'alpha inherited')
-  setProperty(db, betaTag, betaFieldSystemId, 'beta inherited')
+  await setProperty(alphaTag, alphaFieldSystemId, 'alpha inherited')
+  await setProperty(betaTag, betaFieldSystemId, 'beta inherited')
 
-  const nodeId = createNode(db, { content: `Multi-parent story ${suffix}` })
-  addNodeSupertag(db, nodeId, `supertag:multi_parent_child_${suffix}`)
+  const nodeId = await createNode({ content: `Multi-parent story ${suffix}` })
+  await addNodeSupertag(nodeId, `supertag:multi_parent_child_${suffix}`)
 
   return { nodeId }
 }

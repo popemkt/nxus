@@ -15,8 +15,8 @@
  * - Use StringRecordId(str) to pass string IDs back as query params
  */
 
-import type { Surreal, RecordId } from 'surrealdb'
-import { StringRecordId } from 'surrealdb'
+import type { Surreal } from 'surrealdb'
+import { RecordId, StringRecordId } from 'surrealdb'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
 import { FIELD_NAMES, SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
 import type { AssembledNode, CreateNodeOptions, PropertyValue } from '../../types/node.js'
@@ -41,6 +41,7 @@ import type { MutationEvent } from '../../reactive/types.js'
 import { eventBus } from '../../reactive/event-bus.js'
 import { formatOrderKey } from '../../types/order.js'
 import { extractMentionedNodeIds } from '../mentions.js'
+import { uuidv7 } from 'uuidv7'
 
 // ---------------------------------------------------------------------------
 // Internal SurrealDB record types (query results)
@@ -83,10 +84,10 @@ interface MentionEdge {
 // ---------------------------------------------------------------------------
 
 function rid(id: RecordId | string | unknown): string {
-  if (typeof id === 'string') return id
+  if (typeof id === 'string') return id.replace(/^([^:]+):⟨(.+)⟩$/, '$1:$2')
   // RecordId has a toString() that produces "table:id"
   if (id && typeof id === 'object' && typeof (id as RecordId).toString === 'function') {
-    return (id as RecordId).toString()
+    return (id as RecordId).toString().replace(/^([^:]+):⟨(.+)⟩$/, '$1:$2')
   }
   return String(id)
 }
@@ -99,8 +100,12 @@ export function normalizeSurrealRecordId(
   return value.includes(':') ? value : `${table}:${value}`
 }
 
-function nodeRecordId(nodeId: string): StringRecordId {
-  return new StringRecordId(normalizeSurrealRecordId('node', nodeId))
+function nodeRecordId(nodeId: string): RecordId | StringRecordId {
+  const normalized = normalizeSurrealRecordId('node', nodeId)
+  const key = normalized.slice('node:'.length)
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key)
+    ? new RecordId('node', key)
+    : new StringRecordId(normalized)
 }
 
 function toDate(value: string | Date | null | undefined): Date {
@@ -347,7 +352,9 @@ export class SurrealBackend implements NodeBackend {
     content: string | null | undefined
     existingEdges: MentionEdge[]
   }): { statements: SurrealStatement[]; added: string[]; removed: string[] } {
-    const desired = extractMentionedNodeIds(input.content)
+    const desired = extractMentionedNodeIds(input.content).map((nodeId) =>
+      normalizeSurrealRecordId('node', nodeId),
+    )
     const desiredSet = new Set(desired)
     const existingByValue = new Map<string, MentionEdge>()
     for (const edge of input.existingEdges) {
@@ -497,6 +504,7 @@ export class SurrealBackend implements NodeBackend {
       'updated_at = time::now()',
     ]
     const params: Record<string, unknown> = {
+      nodeId: new RecordId('node', uuidv7()),
       content: options.content,
       contentPlain: options.content.toLowerCase(),
       props: {},
@@ -532,7 +540,7 @@ export class SurrealBackend implements NodeBackend {
       // extracts that id as the query's sole result.
       const statements: SurrealStatement[] = [
         {
-          query: `LET $newNode = (CREATE node SET ${setClauses.join(', ')})`,
+          query: `LET $newNode = (CREATE $nodeId SET ${setClauses.join(', ')})`,
           params,
         },
       ]

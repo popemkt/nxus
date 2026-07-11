@@ -1,8 +1,9 @@
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 import type { FieldSystemId } from '../../libs/nxus-db/src/server.js'
+import { openSeedBackend } from '../helpers/seed-backend.js'
+
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 /**
  * Tana-gap #4 — query builder nested groups + path-filter authoring.
@@ -14,8 +15,6 @@ import type { FieldSystemId } from '../../libs/nxus-db/src/server.js'
  * them. See spec/product/apps/workbench.md "Query builder" section.
  */
 
-const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 /**
  * Switch the workbench sidebar to the Query Builder view, retrying on a cold
@@ -145,8 +144,7 @@ test.describe('Workbench Query Builder — nested groups & path filters', () => 
     page,
     navigateToApp,
   }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
+    test.skip(isGraphMode, 'SurrealBackend cannot create custom supertag records through NodeBackend; query fixture requires an isolated supertag')
     // Warm the workbench server BEFORE seeding: initDatabaseWithBootstrap only
     // auto-seeds demo data while the DB has zero non-system nodes
     // (learnings/e2e-autoseed-suppression.md) — seeding first would starve
@@ -214,8 +212,7 @@ test.describe('Workbench Query Builder — nested groups & path filters', () => 
     page,
     navigateToApp,
   }) => {
-    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
-
+    test.skip(isGraphMode, 'SurrealBackend cannot create custom supertag records through NodeBackend; path-query fixture requires an isolated supertag')
     await navigateToApp('workbench')
     await waitForServerBootstrap(page)
 
@@ -290,60 +287,8 @@ function capitalizeLastSegment(systemId: string): string {
 }
 
 // ============================================================================
-// Seed helpers (direct-DB, see learnings/e2e-autoseed-suppression.md)
+// Seed helpers (mode-aware facade writes)
 // ============================================================================
-
-type DbServerModule = typeof import('../../libs/nxus-db/src/server.js')
-
-/**
- * Open the shared e2e DB from the test worker process, safely.
- *
- * Two cross-process hazards, in order:
- *
- * 1. Bootstrap race — `initDatabaseWithBootstrap` does check-then-insert on
- *    `nodes.system_id` with no cross-process lock. The workbench warm-up
- *    navigation triggers the dev server's own bootstrap of the fresh DB, and
- *    the workbench page loads fast enough that this worker's init can run
- *    concurrently and lose the race (`SqliteError: UNIQUE constraint failed:
- *    nodes.system_id` from `bootstrapSystemNodesSync`, bootstrap.ts:45).
- *    Bootstrap is idempotent once the other process finishes, so retry.
- *
- * 2. Auto-seed starvation — writing any non-system node before the server's
- *    demo auto-seed has run would suppress it for the whole parallel schedule
- *    (learnings/e2e-autoseed-suppression.md). Poll for `item:%` demo nodes
- *    before returning; falls through after the deadline so a solo run against
- *    an intentionally minimal DB still works.
- */
-async function openSeededDb(): Promise<{
-  db: Awaited<ReturnType<DbServerModule['initDatabaseWithBootstrap']>>
-  mod: DbServerModule
-}> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const mod = await import('../../libs/nxus-db/src/server.js')
-
-  let db: Awaited<ReturnType<DbServerModule['initDatabaseWithBootstrap']>> | undefined
-  const initDeadline = Date.now() + 30_000
-  for (;;) {
-    try {
-      db = await mod.initDatabaseWithBootstrap()
-      break
-    } catch (error) {
-      if (Date.now() >= initDeadline) throw error
-      await new Promise((resolve) => setTimeout(resolve, 1_000))
-    }
-  }
-
-  const seedDeadline = Date.now() + 30_000
-  while (Date.now() < seedDeadline) {
-    const row = db.get<{ count: number }>(
-      mod.sql`SELECT COUNT(*) as count FROM nodes WHERE system_id LIKE 'item:%'`,
-    )
-    if ((row?.count ?? 0) > 0) break
-    await new Promise((resolve) => setTimeout(resolve, 500))
-  }
-
-  return { db, mod }
-}
 
 async function seedNestedGroupStory(): Promise<{
   supertagSuffix: string
@@ -353,50 +298,50 @@ async function seedNestedGroupStory(): Promise<{
   excluded: string
   untagged: string
 }> {
-  const { db, mod } = await openSeededDb()
-  const { createNode, addNodeSupertag, setProperty, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } = mod
+  const { createNode, addNodeSupertag, setProperty, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } =
+    await openSeedBackend()
 
   const suffix = `qbnest${Date.now().toString(36)}`
   const categoryFieldSystemId = `field:${suffix}_category` as FieldSystemId
   const storySupertagSystemId = `supertag:${suffix}`
 
-  const storyTag = createNode(db, {
+  const storyTag = await createNode({
     content: `QbStory_${suffix}`,
     systemId: storySupertagSystemId,
   })
-  addNodeSupertag(db, storyTag, SYSTEM_SUPERTAGS.SUPERTAG)
+  await addNodeSupertag(storyTag, SYSTEM_SUPERTAGS.SUPERTAG)
 
   const categoryLabel = `QB Category ${suffix}`
-  const categoryField = createNode(db, {
+  const categoryField = await createNode({
     content: categoryLabel,
     systemId: categoryFieldSystemId,
   })
-  addNodeSupertag(db, categoryField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, categoryField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
+  await addNodeSupertag(categoryField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(categoryField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
 
   // Declare the field on the supertag's schema (pure-declaration default).
-  setProperty(db, storyTag, categoryFieldSystemId, null)
+  await setProperty(storyTag, categoryFieldSystemId, null)
 
   const matchA = `QB Nested Match A ${suffix}`
-  const nodeA = createNode(db, { content: matchA })
-  addNodeSupertag(db, nodeA, storySupertagSystemId)
-  setProperty(db, nodeA, categoryFieldSystemId, 'catB')
+  const nodeA = await createNode({ content: matchA })
+  await addNodeSupertag(nodeA, storySupertagSystemId)
+  await setProperty(nodeA, categoryFieldSystemId, 'catB')
 
   const matchB = `QB Nested Match B ${suffix}`
-  const nodeB = createNode(db, { content: matchB })
-  addNodeSupertag(db, nodeB, storySupertagSystemId)
-  setProperty(db, nodeB, categoryFieldSystemId, 'catC')
+  const nodeB = await createNode({ content: matchB })
+  await addNodeSupertag(nodeB, storySupertagSystemId)
+  await setProperty(nodeB, categoryFieldSystemId, 'catC')
 
   const excluded = `QB Nested Excluded ${suffix}`
-  const nodeC = createNode(db, { content: excluded })
-  addNodeSupertag(db, nodeC, storySupertagSystemId)
-  setProperty(db, nodeC, categoryFieldSystemId, 'other')
+  const nodeC = await createNode({ content: excluded })
+  await addNodeSupertag(nodeC, storySupertagSystemId)
+  await setProperty(nodeC, categoryFieldSystemId, 'other')
 
   // Control: right category value, but NOT tagged with the story supertag —
   // must be excluded by the top-level AND.
   const untagged = `QB Nested Untagged ${suffix}`
-  const nodeD = createNode(db, { content: untagged })
-  setProperty(db, nodeD, categoryFieldSystemId, 'catB')
+  const nodeD = await createNode({ content: untagged })
+  await setProperty(nodeD, categoryFieldSystemId, 'catB')
 
   return { supertagSuffix: suffix, categoryLabel, matchA, matchB, excluded, untagged }
 }
@@ -410,47 +355,47 @@ async function seedPathFilterStory(): Promise<{
   matchNode: string
   noMatchNode: string
 }> {
-  const { db, mod } = await openSeededDb()
-  const { createNode, addNodeSupertag, setProperty, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } = mod
+  const { createNode, addNodeSupertag, setProperty, SYSTEM_SUPERTAGS, SYSTEM_FIELDS } =
+    await openSeedBackend()
 
   const suffix = `qbpath${Date.now().toString(36)}`
   const ownerFieldSystemId = `field:${suffix}_owner` as FieldSystemId
   const colorFieldSystemId = `field:${suffix}_color` as FieldSystemId
   const itemSupertagSystemId = `supertag:${suffix}`
 
-  const itemTag = createNode(db, {
+  const itemTag = await createNode({
     content: `QbPathItem_${suffix}`,
     systemId: itemSupertagSystemId,
   })
-  addNodeSupertag(db, itemTag, SYSTEM_SUPERTAGS.SUPERTAG)
+  await addNodeSupertag(itemTag, SYSTEM_SUPERTAGS.SUPERTAG)
 
   const ownerLabel = `QB Owner ${suffix}`
-  const ownerField = createNode(db, { content: ownerLabel, systemId: ownerFieldSystemId })
-  addNodeSupertag(db, ownerField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, ownerField, SYSTEM_FIELDS.FIELD_TYPE, 'node')
+  const ownerField = await createNode({ content: ownerLabel, systemId: ownerFieldSystemId })
+  await addNodeSupertag(ownerField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(ownerField, SYSTEM_FIELDS.FIELD_TYPE, 'node')
 
   const colorLabel = `QB Color ${suffix}`
-  const colorField = createNode(db, { content: colorLabel, systemId: colorFieldSystemId })
-  addNodeSupertag(db, colorField, SYSTEM_SUPERTAGS.FIELD)
-  setProperty(db, colorField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
+  const colorField = await createNode({ content: colorLabel, systemId: colorFieldSystemId })
+  await addNodeSupertag(colorField, SYSTEM_SUPERTAGS.FIELD)
+  await setProperty(colorField, SYSTEM_FIELDS.FIELD_TYPE, 'text')
 
-  setProperty(db, itemTag, ownerFieldSystemId, null)
+  await setProperty(itemTag, ownerFieldSystemId, null)
 
-  const hatRed = createNode(db, { content: `QB Hat Red ${suffix}` })
-  setProperty(db, hatRed, colorFieldSystemId, 'Red')
+  const hatRed = await createNode({ content: `QB Hat Red ${suffix}` })
+  await setProperty(hatRed, colorFieldSystemId, 'Red')
 
-  const hatBlue = createNode(db, { content: `QB Hat Blue ${suffix}` })
-  setProperty(db, hatBlue, colorFieldSystemId, 'Blue')
+  const hatBlue = await createNode({ content: `QB Hat Blue ${suffix}` })
+  await setProperty(hatBlue, colorFieldSystemId, 'Blue')
 
   const matchNode = `QB Path Match ${suffix}`
-  const itemMatch = createNode(db, { content: matchNode })
-  addNodeSupertag(db, itemMatch, itemSupertagSystemId)
-  setProperty(db, itemMatch, ownerFieldSystemId, hatRed)
+  const itemMatch = await createNode({ content: matchNode })
+  await addNodeSupertag(itemMatch, itemSupertagSystemId)
+  await setProperty(itemMatch, ownerFieldSystemId, hatRed)
 
   const noMatchNode = `QB Path NoMatch ${suffix}`
-  const itemNoMatch = createNode(db, { content: noMatchNode })
-  addNodeSupertag(db, itemNoMatch, itemSupertagSystemId)
-  setProperty(db, itemNoMatch, ownerFieldSystemId, hatBlue)
+  const itemNoMatch = await createNode({ content: noMatchNode })
+  await addNodeSupertag(itemNoMatch, itemSupertagSystemId)
+  await setProperty(itemNoMatch, ownerFieldSystemId, hatBlue)
 
   return {
     supertagSuffix: suffix,

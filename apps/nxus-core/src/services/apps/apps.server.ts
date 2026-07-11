@@ -14,7 +14,7 @@ import { z } from 'zod'
 export const getAllAppsServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
     const { getAllItemsFromNodesServerFn } = await import(
-      './node-items.server'
+      './node-items.server.js'
     )
     const result = await getAllItemsFromNodesServerFn()
     if (result.success) {
@@ -37,7 +37,7 @@ export const getAppByIdServerFn = createServerFn({ method: 'GET' })
     const { id } = ctx.data
 
     const { getItemByIdFromNodesServerFn } = await import(
-      './node-items.server'
+      './node-items.server.js'
     )
     const result = await getItemByIdFromNodesServerFn({ data: { id } })
     if (result.success) {
