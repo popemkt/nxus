@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { QueryDefinitionSchema, formatOrderKey } from '@nxus/db'
 import { getSupertagColor } from '@/lib/supertag-colors'
 import { HIDDEN_FIELD_SYSTEM_IDS } from '@/types/outline'
-import type { FieldType } from '@/types/outline'
+import type { FieldType, HideWhen } from '@/types/outline'
 import type { AssembledNode } from '@nxus/db'
 import { initDatabaseSeeded } from './ensure-seeded.server'
 
@@ -22,6 +22,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       inArray,
       isNull,
       and,
+      sql,
       getProperty,
       FIELD_NAMES,
       getSupertagFieldDefinitions,
@@ -38,11 +39,12 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       content: string
       parentId: string | null
       children: string[]
+      hasUnloadedChildren: boolean
       order: string
       createdAt: number
       collapsed: boolean
       supertags: { id: string; name: string; color: string | null; systemId: string | null }[]
-      fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[]; required?: boolean; hideWhen?: string; pinned?: boolean }[]
+      fields: { fieldId: string; fieldName: string; fieldNodeId: string; fieldSystemId: string | null; fieldType: FieldType; values: { value: unknown; order: number }[]; required?: boolean; hideWhen?: HideWhen; pinned?: boolean }[]
     }
 
     const nodeMap = new Map<string, OutlineNodeResult>()
@@ -50,7 +52,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
     const supertagDisplayCache = new Map<string, { name: string; color: string | null; systemId: string | null }>()
     // Cache field types and constraints to avoid redundant lookups
     const fieldTypeCache = new Map<string, FieldType>()
-    const fieldConstraintCache = new Map<string, { required?: boolean; hideWhen?: string; pinned?: boolean }>()
+    const fieldConstraintCache = new Map<string, { required?: boolean; hideWhen?: HideWhen; pinned?: boolean }>()
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -68,16 +70,28 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       // Cache constraints, normalizing string 'true' → boolean true at the read boundary
       if (fieldNode && !fieldConstraintCache.has(fieldNodeId)) {
         const requiredRaw = getProperty(fieldNode, FIELD_NAMES.REQUIRED)
-        const hideWhenRaw = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN) as string | undefined
+        const hideWhenRaw = getProperty(fieldNode, FIELD_NAMES.HIDE_WHEN)
         const pinnedRaw = getProperty(fieldNode, FIELD_NAMES.PINNED)
         fieldConstraintCache.set(fieldNodeId, {
           required: requiredRaw === true || requiredRaw === 'true' ? true : undefined,
-          hideWhen: hideWhenRaw || undefined,
+          hideWhen: parseHideWhen(hideWhenRaw),
           pinned: pinnedRaw === true || pinnedRaw === 'true' ? true : undefined,
         })
       }
 
       return result
+    }
+
+    function parseHideWhen(value: unknown): HideWhen | undefined {
+      if (
+        value === 'never' ||
+        value === 'when_empty' ||
+        value === 'when_not_empty' ||
+        value === 'always'
+      ) {
+        return value
+      }
+      return undefined
     }
 
     /**
@@ -229,6 +243,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         content: assembled.content ?? '',
         parentId: assembled.ownerId,
         children: [],
+        hasUnloadedChildren: false,
         order: formatOrderKey(orderValue),
         createdAt: assembled.createdAt?.getTime() ?? 0,
         collapsed: false,
@@ -241,6 +256,7 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
     let frontier = [ctx.data.nodeId]
     let currentDepth = 0
+    let depthBoundaryIds: string[] = []
     while (frontier.length > 0) {
       const uniqueFrontier = [...new Set(frontier)].filter((id) => !nodeMap.has(id))
       if (uniqueFrontier.length === 0) break
@@ -253,7 +269,10 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
         loadedIds.push(assembled.id)
       }
 
-      if (currentDepth >= maxDepth || loadedIds.length === 0) break
+      if (currentDepth >= maxDepth || loadedIds.length === 0) {
+        if (currentDepth >= maxDepth) depthBoundaryIds = loadedIds
+        break
+      }
 
       const childRows = db
         .select()
@@ -272,6 +291,24 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
 
       frontier = nextFrontier
       currentDepth++
+    }
+
+    if (depthBoundaryIds.length > 0 && maxDepth < Number.MAX_SAFE_INTEGER) {
+      const childCounts = db
+        .select({
+          ownerId: nodes.ownerId,
+          count: sql<number>`count(*)`,
+        })
+        .from(nodes)
+        .where(and(inArray(nodes.ownerId, depthBoundaryIds), isNull(nodes.deletedAt)))
+        .groupBy(nodes.ownerId)
+        .all()
+
+      for (const row of childCounts) {
+        if (!row.ownerId || row.count <= 0) continue
+        const node = nodeMap.get(row.ownerId)
+        if (node) node.hasUnloadedChildren = true
+      }
     }
 
     for (const [parentId, childIds] of childIdsByParent) {

@@ -7,7 +7,6 @@ import {
 } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { useOutlineStore } from '@/stores/outline.store'
-import { WORKSPACE_ROOT_ID, type OutlineNode } from '@/types/outline'
 
 export const Route = createFileRoute('/')({
   component: EditorPage,
@@ -35,31 +34,9 @@ function EditorPage() {
       if (!result.success) return
 
       const tree = await getNodeTreeServerFn({ data: { nodeId: result.nodeId } })
-      if ('success' in tree && tree.success) {
-        useOutlineStore.setState((state) => {
-          const next = new Map(state.nodes)
-          for (const n of tree.nodes as OutlineNode[]) {
-            next.set(n.id, {
-              id: n.id,
-              content: n.content,
-              parentId: n.parentId,
-              children: n.children,
-              order: n.order,
-              createdAt: n.createdAt,
-              collapsed: n.collapsed,
-              supertags: n.supertags,
-              fields: n.fields ?? [],
-            })
-          }
-          // Day nodes are top-level: attach under the virtual workspace root
-          const root = next.get(WORKSPACE_ROOT_ID)
-          if (root && !root.children.includes(result.nodeId)) {
-            next.set(WORKSPACE_ROOT_ID, {
-              ...root,
-              children: [...root.children, result.nodeId],
-            })
-          }
-          return { nodes: next }
+      if (tree.success) {
+        useOutlineStore.getState().mergeServerNodes(tree.nodes, {
+          attachToWorkspaceRoot: result.nodeId,
         })
       }
       navigateToNode(result.nodeId)

@@ -31,6 +31,7 @@ export interface OutlineNode {
   content: string
   parentId: string | null
   children: string[]
+  hasUnloadedChildren?: boolean
   order: string
   createdAt?: number
   collapsed: boolean

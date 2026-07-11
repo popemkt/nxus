@@ -56,6 +56,25 @@ Every row: optimistic store mutation first (instant UI), then server call. `hook
 
 Load path: `getWorkspaceRootServerFn` (outline.server.ts:263) → `getNodeTreeServerFn` (outline.server.ts:13, default `maxDepth = Number.MAX_SAFE_INTEGER` at :29). Assembly cost and N+1 concerns are owned by [./persistence.md](./persistence.md).
 
+## 3a. Lazy Tree Loading
+
+The outline editor MUST NOT load the full workspace tree at boot. Workspace mount passes `INITIAL_TREE_DEPTH = 3` to `getNodeTreeServerFn`; subtree fetches use `SUBTREE_FETCH_DEPTH = 3` (`apps/nxus-editor/src/lib/tree-loading.ts`). The server function keeps its unbounded default for backwards-compatible callers, but finite-depth callers receive an explicit boundary marker.
+
+`OutlineNode.hasUnloadedChildren` is the client/server contract for a depth boundary. When `getNodeTreeServerFn` stops at `maxDepth`, it MUST run one grouped child-count query over the final loaded frontier and mark only boundary nodes with at least one non-deleted DB child (`apps/nxus-editor/src/services/outline.server.ts`). Boundary nodes MAY have `children: []`; the bullet/expand affordance is driven by `children.length > 0 || hasUnloadedChildren === true`, not loaded child IDs alone.
+
+Server-loaded node batches merge into the Zustand map through `mergeServerNodes` (`apps/nxus-editor/src/stores/outline.store.ts`). Merge semantics:
+
+- Existing nodes keep local `collapsed`; server `collapsed` is not persistent state.
+- If the existing node is `activeNodeId`, local `content` wins so an in-flight edit is not clobbered by a lazy read.
+- Fresh server `children` and `hasUnloadedChildren` always replace the old loaded-child boundary state.
+- `attachToWorkspaceRoot` attaches a server-created top-level node under the client-only `WORKSPACE_ROOT_ID` virtual root without inventing a DB parent.
+
+There are three required fetch triggers:
+
+- Mount: fetch every workspace root with `INITIAL_TREE_DEPTH`.
+- Expand: expanding, or clicking an open-but-empty unloaded boundary, calls `ensureSubtreeLoaded(nodeId)`; in-flight subtree fetches are deduped per node ID.
+- Zoom: URL→store sync calls `ensureSubtreeLoaded(urlNodeId)` when the zoom target is absent from the store or is itself an unloaded boundary. Direct `?node=` links must render server-created nodes that were not present at mount.
+
 `createNodeServerFn` is not a plain insert: it sets the order property, may auto-apply the parent's `default_child_supertag` (with inherited field definitions) and instantiate a content template's children (outline.server.ts:326-416), and returns `{ success, nodeId, appliedSupertag, appliedFields }` which the client merges into the optimistic node (hook:135-143). This multi-write runs without a transaction — transaction boundaries are a [./persistence.md](./persistence.md) concern, but INV-1 holds this contract accountable for the user-visible result.
 
 DRIFT: unvalidated-server-results

@@ -12,6 +12,10 @@ interface OutlineState {
   cursorPosition: number
 
   setNodes: (nodes: NodeMap) => void
+  mergeServerNodes: (
+    serverNodes: OutlineNode[],
+    opts?: { attachToWorkspaceRoot?: string },
+  ) => void
   setRootNodeId: (id: string) => void
   activateNode: (id: string, cursorPos?: number) => void
   deactivateNode: () => void
@@ -170,6 +174,41 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
   cursorPosition: 0,
 
   setNodes: (nodes) => set({ nodes }),
+  mergeServerNodes: (serverNodes, opts) => {
+    const { nodes, activeNodeId } = get()
+    const next = new Map(nodes)
+
+    for (const serverNode of serverNodes) {
+      const existing = next.get(serverNode.id)
+      const parentId =
+        opts?.attachToWorkspaceRoot === serverNode.id && serverNode.parentId === null
+          ? WORKSPACE_ROOT_ID
+          : serverNode.parentId
+
+      next.set(serverNode.id, {
+        ...serverNode,
+        parentId,
+        fields: serverNode.fields ?? [],
+        collapsed: existing?.collapsed ?? serverNode.collapsed,
+        content:
+          serverNode.id === activeNodeId && existing
+            ? existing.content
+            : serverNode.content,
+      })
+    }
+
+    if (opts?.attachToWorkspaceRoot) {
+      const root = next.get(WORKSPACE_ROOT_ID)
+      if (root && !root.children.includes(opts.attachToWorkspaceRoot)) {
+        next.set(WORKSPACE_ROOT_ID, {
+          ...root,
+          children: [...root.children, opts.attachToWorkspaceRoot],
+        })
+      }
+    }
+
+    set({ nodes: next })
+  },
   setRootNodeId: (id) => set({ rootNodeId: id }),
 
   activateNode: (id, cursorPos) =>
@@ -210,7 +249,14 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
   toggleCollapse: (id) => {
     const { nodes } = get()
     const node = nodes.get(id)
-    if (!node || (node.children.length === 0 && node.fields.length === 0)) return
+    if (
+      !node ||
+      (node.children.length === 0 &&
+        node.fields.length === 0 &&
+        node.hasUnloadedChildren !== true)
+    ) {
+      return
+    }
     const next = new Map(nodes)
     next.set(id, { ...node, collapsed: !node.collapsed })
     set({ nodes: next })

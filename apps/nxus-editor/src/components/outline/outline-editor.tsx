@@ -18,6 +18,8 @@ import {
   getNodeTreeServerFn,
   setFieldValueServerFn,
 } from '@/services/outline.server'
+import { useEnsureSubtreeLoaded } from '@/hooks/use-ensure-subtree'
+import { INITIAL_TREE_DEPTH } from '@/lib/tree-loading'
 import type { OutlineNode } from '@/types/outline'
 import {
   WORKSPACE_ROOT_ID,
@@ -48,6 +50,7 @@ export function OutlineEditor() {
 
   const { createNodeAfter, createFirstChild, deleteNode, indentNode, outdentNode, moveNodeUp, moveNodeDown, undo, redo } = useOutlineSync()
   const navigateToNode = useNavigateToNode()
+  const ensureSubtreeLoaded = useEnsureSubtreeLoaded()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +65,13 @@ export function OutlineEditor() {
     if (targetId !== useOutlineStore.getState().rootNodeId) {
       setRootNodeId(targetId)
     }
-  }, [urlNodeId, setRootNodeId])
+    if (urlNodeId) {
+      const targetNode = useOutlineStore.getState().nodes.get(urlNodeId)
+      if (!targetNode || targetNode.hasUnloadedChildren === true) {
+        void ensureSubtreeLoaded(urlNodeId)
+      }
+    }
+  }, [urlNodeId, setRootNodeId, ensureSubtreeLoaded, nodes])
 
   // Load real data from DB on mount
   useEffect(() => {
@@ -85,7 +94,9 @@ export function OutlineEditor() {
         const rootIds: string[] = rootResult.rootIds
         const treeResults = await Promise.all(
           rootIds.map((rootId: string) =>
-            getNodeTreeServerFn({ data: { nodeId: rootId } }),
+            getNodeTreeServerFn({
+              data: { nodeId: rootId, depth: INITIAL_TREE_DEPTH },
+            }),
           ),
         )
         if (cancelled) return
@@ -94,13 +105,14 @@ export function OutlineEditor() {
           const treeResult = treeResults[i]!
           const rootId = rootIds[i]!
 
-          if ('success' in treeResult && treeResult.success) {
-            for (const n of (treeResult as { success: true; nodes: OutlineNode[]; rootId: string }).nodes) {
+          if (treeResult.success) {
+            for (const n of treeResult.nodes) {
               nodeMap.set(n.id, {
                 id: n.id,
                 content: n.content,
                 parentId: n.parentId,
                 children: n.children,
+                hasUnloadedChildren: n.hasUnloadedChildren,
                 order: n.order,
                 createdAt: n.createdAt,
                 collapsed: n.collapsed,
@@ -164,6 +176,22 @@ export function OutlineEditor() {
   const handleBackgroundClick = useCallback(() => {
     deactivateNode()
   }, [deactivateNode])
+
+  const toggleOrLoadNode = useCallback(
+    (nodeId: string) => {
+      const node = useOutlineStore.getState().nodes.get(nodeId)
+      if (
+        node?.hasUnloadedChildren === true &&
+        (node.collapsed || node.children.length === 0)
+      ) {
+        if (node.collapsed) toggleCollapse(nodeId)
+        void ensureSubtreeLoaded(nodeId)
+        return
+      }
+      toggleCollapse(nodeId)
+    },
+    [ensureSubtreeLoaded, toggleCollapse],
+  )
 
   const handleGlobalKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -249,7 +277,7 @@ export function OutlineEditor() {
         }
         case ' ': {
           e.preventDefault()
-          toggleCollapse(selectedNodeId)
+          toggleOrLoadNode(selectedNodeId)
           break
         }
         case 'Backspace':
@@ -303,7 +331,10 @@ export function OutlineEditor() {
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault()
             const node = nodes.get(selectedNodeId)
-            if (node && node.children.length > 0) {
+            if (
+              node &&
+              (node.children.length > 0 || node.hasUnloadedChildren === true)
+            ) {
               navigateToNode(selectedNodeId)
             }
           }
@@ -331,7 +362,7 @@ export function OutlineEditor() {
       activateNode,
       selectNode,
       extendSelection,
-      toggleCollapse,
+      toggleOrLoadNode,
       deleteNode,
       createNodeAfter,
       createFirstChild,

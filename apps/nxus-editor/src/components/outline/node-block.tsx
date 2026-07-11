@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
+import { useEnsureSubtreeLoaded } from '@/hooks/use-ensure-subtree'
 import { SUPERTAG_DEFINITION_SYSTEM_ID } from '@/types/outline'
 import type { SupertagBadge, ViewMode, ViewConfig, OutlineField } from '@/types/outline'
 import { isQueryNode, extractQueryDefinition, getVisibleFields } from './query-helpers'
@@ -38,6 +39,7 @@ export const NodeBlock = memo(function NodeBlock({
   const activateNode = useOutlineStore((s) => s.activateNode)
   const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
   const navigateToNode = useNavigateToNode()
+  const ensureSubtreeLoaded = useEnsureSubtreeLoaded()
 
   // 3-state todo: absent = not a todo; 'todo' unchecked; 'done' checked
   // (field:todo_state — spec/product/data-model.md). Rendered as a checkbox
@@ -78,11 +80,17 @@ export const NodeBlock = memo(function NodeBlock({
       if (e.metaKey || e.ctrlKey) {
         // Cmd/Ctrl+click → zoom into this node
         navigateToNode(nodeId)
+      } else if (
+        node?.hasUnloadedChildren === true &&
+        (node.collapsed || node.children.length === 0)
+      ) {
+        if (node.collapsed) toggleCollapse(nodeId)
+        void ensureSubtreeLoaded(nodeId)
       } else {
         toggleCollapse(nodeId)
       }
     },
-    [toggleCollapse, navigateToNode, nodeId],
+    [toggleCollapse, navigateToNode, ensureSubtreeLoaded, node, nodeId],
   )
 
   const handleActivate = useCallback(
@@ -311,8 +319,20 @@ export const NodeBlock = memo(function NodeBlock({
         }
         if (e.metaKey) {
           e.preventDefault()
-          if (node?.children.length && node.collapsed) {
+          if (
+            node &&
+            (node.children.length > 0 || node.hasUnloadedChildren === true) &&
+            node.collapsed
+          ) {
             toggleCollapse(nodeId)
+            if (node.hasUnloadedChildren === true) {
+              void ensureSubtreeLoaded(nodeId)
+            }
+          } else if (
+            node?.hasUnloadedChildren === true &&
+            node.children.length === 0
+          ) {
+            void ensureSubtreeLoaded(nodeId)
           }
           return
         }
@@ -342,6 +362,7 @@ export const NodeBlock = memo(function NodeBlock({
       getPreviousVisibleNode,
       getNextVisibleNode,
       updateNodeContent,
+      ensureSubtreeLoaded,
     ],
   )
 
@@ -382,7 +403,7 @@ export const NodeBlock = memo(function NodeBlock({
 
   const isActive = activeNodeId === nodeId
   const isSelected = selectedNodeId === nodeId || isMultiSelected
-  const hasChildren = node.children.length > 0
+  const hasChildren = node.children.length > 0 || node.hasUnloadedChildren === true
   const primaryTagColor = node.supertags[0]?.color ?? null
   const isSupertag = node.supertags.some((t) => t.systemId === SUPERTAG_DEFINITION_SYSTEM_ID)
   const isQuery = isQueryNode(node)
