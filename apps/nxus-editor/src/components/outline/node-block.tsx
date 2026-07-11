@@ -18,6 +18,7 @@ import { TableView } from './table-view'
 import { KanbanView } from './kanban-view'
 import { CardsView } from './cards-view'
 import { ListView } from './list-view'
+import { ChildNodeList } from './child-node-list'
 import { setFieldValueServerFn } from '@/services/outline.server'
 
 interface NodeBlockProps {
@@ -551,9 +552,13 @@ export const NodeBlock = memo(function NodeBlock({
               config={viewConfig}
             />
           ) : (
-            sortedChildren.map((childId) => (
-              <NodeBlock key={childId} nodeId={childId} depth={depth + 1} />
-            ))
+            <ChildNodeList
+              childIds={sortedChildren}
+              depth={depth + 1}
+              renderNode={(childId, childDepth) => (
+                <NodeBlock key={childId} nodeId={childId} depth={childDepth} />
+              )}
+            />
           )}
         </div>
       )}

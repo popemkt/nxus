@@ -77,6 +77,14 @@ There are three required fetch triggers:
 
 `createNodeServerFn` is not a plain insert: it sets the order property, may auto-apply the parent's `default_child_supertag` (with inherited field definitions) and instantiate a content template's children (outline.server.ts:326-416), and returns `{ success, nodeId, appliedSupertag, appliedFields }` which the client merges into the optimistic node (hook:135-143). This multi-write runs without a transaction — transaction boundaries are a [./persistence.md](./persistence.md) concern, but INV-1 holds this contract accountable for the user-visible result.
 
+## 3b. Virtualized Child Lists
+
+Direct child-list breadth is bounded independently from lazy tree depth. A root-level or nested outline child list MUST render with the existing direct `NodeBlock` map while `sortedChildren.length <= VIRTUALIZE_CHILDREN_THRESHOLD`; above that threshold (`150`, defined in `apps/nxus-editor/src/lib/tree-loading.ts`) the shared child-list renderer MAY window rows with `@tanstack/react-virtual`.
+
+The virtualizer's scroll element MUST be the outline's actual vertical scroller (`.outline-body`, `overflow-y-auto`), not `window` and not a per-list overflow container. Row heights are dynamic: rendered row wrappers are measured with the virtualizer so wrapped content, fields, query controls, and expanded descendants contribute their real height.
+
+Virtualization MUST NOT unmount a live editor. If `activeNodeId` is outside the current virtual range, the direct child containing that active node remains pinned in the DOM, including any ancestor chain needed to keep the active contenteditable mounted. Selection-mode keyboard navigation still walks the store-visible tree (`getNextVisibleNode`/`getPreviousVisibleNode`); when `selectedNodeId` or `activeNodeId` moves to a child outside the mounted range, the child-list virtualizer MUST `scrollToIndex` so the target row mounts before interaction continues.
+
 DRIFT: unvalidated-server-results
 - canonical: INV-12 — client parses `CreateNodeResult` with a Zod schema.
 - current: `_result as CreateNodeResult` on `unknown` (use-outline-sync.ts:116-117, 230-231); the ~100-line create/merge/swap block is also duplicated verbatim between `createNodeAfter` and `createFirstChild`.

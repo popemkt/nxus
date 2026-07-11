@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { X } from '@phosphor-icons/react'
 import { useOutlineStore } from '@/stores/outline.store'
@@ -12,6 +12,7 @@ import { NodeCommandPalette } from './node-command-palette'
 import { SupertagDetailView } from './supertag-detail-view'
 import { FieldDetailView } from './field-detail-view'
 import { SupertagPill } from './supertag-pill'
+import { ChildNodeList } from './child-node-list'
 import type { CommandPaletteFieldContext } from './node-command-palette'
 import {
   getWorkspaceRootServerFn,
@@ -56,6 +57,7 @@ export function OutlineEditor() {
   const [error, setError] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+  const outlineBodyRef = useRef<HTMLDivElement | null>(null)
   const [commandFieldContext, setCommandFieldContext] =
     useState<CommandPaletteFieldContext | null>(null)
 
@@ -514,6 +516,7 @@ export function OutlineEditor() {
 
           {/* Outline body */}
           <div
+            ref={outlineBodyRef}
             className="outline-body flex-1 overflow-y-auto px-2 pb-40"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
@@ -521,9 +524,14 @@ export function OutlineEditor() {
               }
             }}
           >
-            {sortedChildren.map((childId) => (
-              <NodeBlock key={childId} nodeId={childId} depth={0} />
-            ))}
+            <ChildNodeList
+              childIds={sortedChildren}
+              depth={0}
+              scrollElement={outlineBodyRef.current}
+              renderNode={(childId, depth) => (
+                <NodeBlock key={childId} nodeId={childId} depth={depth} />
+              )}
+            />
 
             {sortedChildren.length === 0 && (
               <div className="px-8 py-4 text-sm text-foreground/25">
