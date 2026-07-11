@@ -10,6 +10,7 @@ One rule per file. Format: frontmatter (`id`/`scope`/`principle`/`enforcement`/`
 | Rule | Scope | Principle | Guards (typed model) | Enforcement | Gate |
 |---|---|---|---|---|---|
 | [harness-model](harness-model.md) | meta | — (layer 0 — the six principles derive from this model) | — | prose | — |
+| [bdd-clauses](bdd-clauses.md) | spec + tests | Traceability | artifact, I5 | prose | — |
 | [db-layer-authoritative](db-layer-authoritative.md) | architecture | Separation of concerns | runtime-world | prose | — |
 | [dev-entrypoints](dev-entrypoints.md) | workflow | Single source of truth | runtime-world | prose | `package.json` |
 | [drift](drift.md) | docs | Traceability | I6 (verdict updates record, not spec) | prose | — |
