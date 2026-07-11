@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { CallToolResultSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { nxusActions } from '@nxus/actions'
 import { mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -194,6 +195,19 @@ describe('nxus MCP server', () => {
     rmSync(tempDir, { recursive: true, force: true })
     delete process.env.NXUS_DB_PATH
     delete process.env.ARCHITECTURE_TYPE
+  })
+
+  it('lists exactly the registry actions as MCP tools', async () => {
+    const { client, server } = await createClient()
+    try {
+      const listed = await client.listTools()
+      expect(listed.tools.map((tool) => tool.name).sort()).toEqual(
+        nxusActions.map((action) => action.name).sort(),
+      )
+    } finally {
+      await client.close()
+      await server.close()
+    }
   })
 
   it('runs create -> tag -> set_field -> read -> search and tag schema through MCP', async () => {

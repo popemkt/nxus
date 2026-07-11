@@ -742,6 +742,34 @@ importers:
         specifier: ^7.1.7
         version: 7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
+  libs/nxus-actions:
+    dependencies:
+      '@nxus/db':
+        specifier: workspace:*
+        version: link:../nxus-db
+      '@nxus/node-api':
+        specifier: workspace:*
+        version: link:../nxus-node-api
+      zod:
+        specifier: ^4.2.1
+        version: 4.2.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.3
+      better-sqlite3:
+        specifier: ^12.6.0
+        version: 12.6.0
+      drizzle-orm:
+        specifier: ^0.45.1
+        version: 0.45.1(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.0)(sql.js@1.13.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.3.0)(lightningcss@1.30.2)(msw@2.12.4(@types/node@22.19.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
   libs/nxus-calendar:
     dependencies:
       '@base-ui/react':
@@ -867,6 +895,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.25.1
         version: 1.25.1(hono@4.11.1)(zod@4.2.1)
+      '@nxus/actions':
+        specifier: workspace:*
+        version: link:../nxus-actions
       '@nxus/db':
         specifier: workspace:*
         version: link:../nxus-db

@@ -1,5 +1,5 @@
 {
-  "name": "@nxus/mcp",
+  "name": "@nxus/actions",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -16,16 +16,9 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./http": {
-      "types": "./src/http.ts",
-      "import": "./src/http.ts",
-      "default": "./src/http.ts"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.25.1",
-    "@nxus/actions": "workspace:*",
     "@nxus/db": "workspace:*",
     "@nxus/node-api": "workspace:*",
     "zod": "^4.2.1"

@@ -2,7 +2,7 @@
 
 Invalidated by: implementation decisions about agent access to the node graph.
 
-Nxus exposes its personal knowledge graph to agents through MCP, not bare HTTP. The MCP surface is a tool set over the canonical node access path: tools MUST delegate to `nodeFacade` (`@nxus/db/server`) or to facade-backed `@nxus/node-api/server` operations, and MUST NOT open SQLite directly or import `node.service` internals.
+Nxus exposes its personal knowledge graph to agents through MCP, not bare HTTP. The MCP surface is generated from the action registry in [actions.md](./actions.md): `@nxus/mcp` MUST iterate `nxusActions` and register each action as an MCP tool. Action implementations MUST delegate to `nodeFacade` (`@nxus/db/server`) or to facade-backed `@nxus/node-api/server` operations, and MUST NOT open SQLite directly or import `node.service` internals.
 
 ## Tool Surface
 
@@ -20,7 +20,7 @@ Nxus exposes its personal knowledge graph to agents through MCP, not bare HTTP. 
 | `export_subtree` | optional `rootNodeId` | `@nxus/node-api/server.exportSubtree` -> `exportSubtreeToTif` |
 | `get_day_node` | `date` as `YYYY-MM-DD` | `@nxus/node-api/server.getOrCreateDayNode` |
 
-Tool outputs are structured JSON objects in MCP `structuredContent`. Compact node summaries contain `id`, `content`, `supertags`, and `fields`; full reads include the assembled node, one level of ordered children, field values, and supertag names.
+Tool names, descriptions, input schemas, output schemas, and handlers are owned by [actions.md](./actions.md). MCP is an adapter: it passes registry input schemas through the SDK's Zod support and serializes action outputs as structured JSON objects in MCP `structuredContent`. Compact node summaries contain `id`, `content`, `supertags`, and `fields`; full reads include the assembled node, one level of ordered children, field values, and supertag names.
 
 ## Transport
 

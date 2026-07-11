@@ -21,9 +21,6 @@
   "exclude": ["node_modules", "dist"],
   "references": [
     {
-      "path": "../nxus-actions"
-    },
-    {
       "path": "../nxus-db"
     },
     {
