@@ -137,6 +137,8 @@ DRIFT: temp-id-race-window
 
 ## 8. Debounce semantics
 
+**Canonical (invalidation).** Client query-cache invalidation is TRAILING, not per-op: content saves patch the cache (`patchCachedNodeContent`) and every mutation — content and structural (create/delete/indent/outdent/move/supertag/field/undo-redo) — schedules ONE convergence invalidation ~2s after the last mutation in a burst (`scheduleConvergenceInvalidation`, use-outline-sync.ts). The Zustand store is the optimistic source of truth during a burst; the trailing refetch exists only to converge server-computed state (assigned IDs, applied default supertags/fields, formula fields, live-query membership). No mutation path may call an immediate full `invalidateQueries()` in the hot path (closed 2026-07-11; INV-11's server-side half — dependency-narrowed `node:created`/`node:deleted` — is still open, see reactivity.md DRIFT: membership-affects-all).
+
 **Canonical.** Content saves are debounced 500ms per node — one timer per `nodeId`, keystroke resets it (current: `contentTimers` map, use-outline-sync.ts:51, 77-93). All other mutations dispatch immediately. Debounce is a delay, never a discard: INV-9 flush points (blur, unmount, navigation, undo capture, structural mutation of the same node) MUST fire the pending save synchronously with the triggering event.
 
 DRIFT: debounce-discarded-on-unmount

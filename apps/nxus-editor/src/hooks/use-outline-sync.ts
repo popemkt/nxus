@@ -104,7 +104,15 @@ export function useOutlineSync() {
     )
   }, [queryClient])
 
-  const scheduleContentConvergenceInvalidation = useCallback(() => {
+  /**
+   * Trailing convergence: one invalidation 2s after the last mutation in a
+   * burst, instead of one full outline refetch PER op. The Zustand store is
+   * already optimistic; the query-cache refetch exists only to converge
+   * server-computed state (assigned IDs, applied supertags/fields, formula
+   * fields, live query results). Structural ops share this scheduler with
+   * content saves (spec/tech/editor-sync.md).
+   */
+  const scheduleConvergenceInvalidation = useCallback(() => {
     if (contentConvergenceTimer.current) {
       clearTimeout(contentConvergenceTimer.current)
     }
@@ -114,6 +122,8 @@ export function useOutlineSync() {
       invalidateQueries()
     }, 2_000)
   }, [invalidateQueries])
+  // Back-compat alias for the content path below.
+  const scheduleContentConvergenceInvalidation = scheduleConvergenceInvalidation
 
   /** Capture the current node map state before a mutation for undo support */
   const captureUndoSnapshot = useCallback(() => {
@@ -249,7 +259,7 @@ export function useOutlineSync() {
                 })
               }
             }
-            invalidateQueries()
+            scheduleConvergenceInvalidation()
           })
           .catch((err) => {
             console.error('[sync] Failed to create node:', err)
@@ -257,7 +267,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [syncContent, invalidateQueries, captureUndoSnapshot],
+    [syncContent, scheduleConvergenceInvalidation, captureUndoSnapshot],
   )
 
   /**
@@ -353,7 +363,7 @@ export function useOutlineSync() {
                 })
               }
             }
-            invalidateQueries()
+            scheduleConvergenceInvalidation()
           })
           .catch((err) => {
             console.error('[sync] Failed to create first child:', err)
@@ -361,7 +371,7 @@ export function useOutlineSync() {
       }
       return newId
     },
-    [syncContent, invalidateQueries, captureUndoSnapshot],
+    [syncContent, scheduleConvergenceInvalidation, captureUndoSnapshot],
   )
 
   /**
@@ -382,11 +392,11 @@ export function useOutlineSync() {
     captureUndoSnapshot()
     useOutlineStore.getState().deleteNode(nodeId)
     deleteNodeServerFn({ data: { nodeId } })
-      .then(() => invalidateQueries())
+      .then(() => scheduleConvergenceInvalidation())
       .catch((err) => {
         console.error('[sync] Failed to delete node:', err)
       })
-  }, [invalidateQueries, captureUndoSnapshot])
+  }, [scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Indent node — optimistic + persist reparent.
@@ -404,12 +414,12 @@ export function useOutlineSync() {
           order: toPersistedOrder(node.order),
         },
       })
-        .then(() => invalidateQueries())
+        .then(() => scheduleConvergenceInvalidation())
         .catch((err) => {
           console.error('[sync] Failed to indent node:', err)
         })
     }
-  }, [invalidateQueries, captureUndoSnapshot])
+  }, [scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Outdent node — optimistic + persist reparent.
@@ -427,12 +437,12 @@ export function useOutlineSync() {
           order: toPersistedOrder(node.order),
         },
       })
-        .then(() => invalidateQueries())
+        .then(() => scheduleConvergenceInvalidation())
         .catch((err) => {
           console.error('[sync] Failed to outdent node:', err)
         })
     }
-  }, [invalidateQueries, captureUndoSnapshot])
+  }, [scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Move up/down — optimistic + persist both sides of order swap.
@@ -470,11 +480,11 @@ export function useOutlineSync() {
         })),
       },
     })
-      .then(() => invalidateQueries())
+      .then(() => scheduleConvergenceInvalidation())
       .catch((err) => {
         console.error('[sync] Failed to reorder nodes:', err)
       })
-  }, [invalidateQueries, captureUndoSnapshot])
+  }, [scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   const moveNodeDown = useCallback((nodeId: string) => {
     captureUndoSnapshot()
@@ -509,11 +519,11 @@ export function useOutlineSync() {
         })),
       },
     })
-      .then(() => invalidateQueries())
+      .then(() => scheduleConvergenceInvalidation())
       .catch((err) => {
         console.error('[sync] Failed to reorder nodes:', err)
       })
-  }, [invalidateQueries, captureUndoSnapshot])
+  }, [scheduleConvergenceInvalidation, captureUndoSnapshot])
 
   /**
    * Add supertag — optimistic add to store, then persist via server.
@@ -542,13 +552,13 @@ export function useOutlineSync() {
               }
             }
           }
-          invalidateQueries()
+          scheduleConvergenceInvalidation()
         })
         .catch((err) => {
           console.error('[sync] Failed to add supertag:', err)
         })
     },
-    [invalidateQueries],
+    [scheduleConvergenceInvalidation],
   )
 
   /**
@@ -560,12 +570,12 @@ export function useOutlineSync() {
       useOutlineStore.getState().removeSupertag(nodeId, supertagId)
       if (!supertagSystemId) return
       removeSupertagServerFn({ data: { nodeId, supertagSystemId } })
-        .then(() => invalidateQueries())
+        .then(() => scheduleConvergenceInvalidation())
         .catch((err) => {
           console.error('[sync] Failed to remove supertag:', err)
         })
     },
-    [invalidateQueries],
+    [scheduleConvergenceInvalidation],
   )
 
   /**
@@ -591,12 +601,12 @@ export function useOutlineSync() {
     (nodeId: string, fieldId: string) => {
       useOutlineStore.getState().removeField(nodeId, fieldId)
       clearFieldServerFn({ data: { nodeId, fieldId } })
-        .then(() => invalidateQueries())
+        .then(() => scheduleConvergenceInvalidation())
         .catch((err) => {
           console.error('[sync] Failed to remove field:', err)
         })
     },
-    [invalidateQueries],
+    [scheduleConvergenceInvalidation],
   )
 
   /**
@@ -616,12 +626,12 @@ export function useOutlineSync() {
           order: toPersistedOrder(node.order),
         },
       })
-        .then(() => invalidateQueries())
+        .then(() => scheduleConvergenceInvalidation())
         .catch((err) => {
           console.error('[sync] Failed to move node:', err)
         })
     },
-    [invalidateQueries],
+    [scheduleConvergenceInvalidation],
   )
 
   /**
@@ -671,12 +681,12 @@ export function useOutlineSync() {
 
       if (calls.length === 0) return
       Promise.all(calls)
-        .then(() => invalidateQueries())
+        .then(() => scheduleConvergenceInvalidation())
         .catch((err) => {
           console.error('[sync] Failed to persist undo/redo diff:', err)
         })
     },
-    [invalidateQueries],
+    [scheduleConvergenceInvalidation],
   )
 
   /**
