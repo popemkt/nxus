@@ -321,7 +321,15 @@ export async function seedGraph(): Promise<void> {
   const tagNameToNodeId = new Map<string, string>()
   let tagsCount = 0
 
-  if (tagsParseResult.success) {
+  if (!tagsParseResult.success) {
+    throw new Error(
+      `tags.json failed validation: ${tagsParseResult.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join(', ')}`,
+    )
+  }
+
+  {
     for (const tag of tagsParseResult.data.tags) {
       const nodeId = await nodeFacade.createNode({
         content: tag.name,
@@ -364,19 +372,22 @@ export async function seedGraph(): Promise<void> {
   const itemIdToNodeId = new Map<string, string>()
   let itemsCount = 0
   let commandsCount = 0
+  const manifestFailures: Array<string> = []
 
   for (const appDir of appDirs) {
     const manifestPath = join(appsDir, appDir, 'manifest.json')
     const normalizedManifest = normalizeManifest(loadJsonFile(manifestPath), appDir)
-    if (!normalizedManifest) continue
+    if (!normalizedManifest) {
+      manifestFailures.push(`${appDir}: unparseable manifest or missing type/types field`)
+      continue
+    }
 
     const validationResult = ItemSchema.safeParse(normalizedManifest)
     if (!validationResult.success) {
       const issues = validationResult.error.issues
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ')
-      console.error(`  x Validation failed for ${appDir}, skipping...`)
-      console.error(`    ${issues}`)
+      manifestFailures.push(`${appDir}: ${issues}`)
       continue
     }
 
@@ -412,6 +423,14 @@ export async function seedGraph(): Promise<void> {
 
     itemsCount++
   }
+
+  if (manifestFailures.length > 0) {
+    throw new Error(
+      `Invalid app manifests (fix the manifest or remove the app directory):\n` +
+        manifestFailures.map((f) => `  - ${f}`).join('\n'),
+    )
+  }
+
   console.log(`  Seeded ${itemsCount} items, ${commandsCount} commands`)
 
   console.log('[4/6] Seeding inbox items from inbox.json...')
@@ -419,18 +438,24 @@ export async function seedGraph(): Promise<void> {
   const inboxParseResult = InboxFileSchema.safeParse(loadJsonFile(inboxJsonPath))
   let inboxCount = 0
 
-  if (inboxParseResult.success) {
-    for (const item of inboxParseResult.data.items) {
-      const nodeId = await nodeFacade.createNode({
-        content: item.title,
-        supertagId: SYSTEM_SUPERTAGS.INBOX,
-      })
+  if (!inboxParseResult.success) {
+    throw new Error(
+      `inbox.json failed validation: ${inboxParseResult.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join(', ')}`,
+    )
+  }
 
-      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.LEGACY_ID, item.id)
-      await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.STATUS, item.status)
-      await setPropertyIfPresent(nodeId, SYSTEM_FIELDS.NOTES, item.notes)
-      inboxCount++
-    }
+  for (const item of inboxParseResult.data.items) {
+    const nodeId = await nodeFacade.createNode({
+      content: item.title,
+      supertagId: SYSTEM_SUPERTAGS.INBOX,
+    })
+
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.LEGACY_ID, item.id)
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.STATUS, item.status)
+    await setPropertyIfPresent(nodeId, SYSTEM_FIELDS.NOTES, item.notes)
+    inboxCount++
   }
   console.log(`  Seeded ${inboxCount} inbox items`)
 

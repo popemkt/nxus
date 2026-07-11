@@ -187,7 +187,11 @@ export async function seedNodes() {
   const legacyTagIdToNodeId = new Map<number, string>()
   let tagsCount = 0
 
-  if (tagsData?.tags) {
+  if (!tagsData?.tags) {
+    throw new Error(`tags.json missing or unparseable at ${tagsJsonPath}`)
+  }
+
+  {
     // First pass: create all tag nodes
     for (const tag of tagsData.tags) {
       // Check if tag already exists by content
@@ -259,11 +263,15 @@ export async function seedNodes() {
 
   let itemsCount = 0
   let commandsCount = 0
+  const manifestFailures: Array<string> = []
 
   for (const appDir of appDirs) {
     const manifestPath = join(appsDir, appDir, 'manifest.json')
     const rawManifest = loadJsonFile<Record<string, unknown>>(manifestPath)
-    if (!rawManifest) continue
+    if (!rawManifest) {
+      manifestFailures.push(`${appDir}: manifest.json is not valid JSON`)
+      continue
+    }
 
     // Normalize type fields (old single-type to new multi-type format)
     const rawTypes = rawManifest.types as Array<ItemType> | undefined
@@ -276,7 +284,7 @@ export async function seedNodes() {
     } else if (rawType) {
       types = [rawType]
     } else {
-      console.error(`❌ No type field for ${appDir}, skipping...`)
+      manifestFailures.push(`${appDir}: no type/types field`)
       continue
     }
 
@@ -308,8 +316,10 @@ export async function seedNodes() {
 
     const validationResult = ItemSchema.safeParse(manifest)
     if (!validationResult.success) {
-      console.error(`❌ Validation failed for ${appDir}, skipping...`)
-      console.error(`   ${validationResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`)
+      const issues = validationResult.error.issues
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join(', ')
+      manifestFailures.push(`${appDir}: ${issues}`)
       continue
     }
 
@@ -497,6 +507,13 @@ export async function seedNodes() {
     }
 
     itemsCount++
+  }
+
+  if (manifestFailures.length > 0) {
+    throw new Error(
+      `Invalid app manifests (fix the manifest or remove the app directory):\n` +
+        manifestFailures.map((f) => `  - ${f}`).join('\n'),
+    )
   }
 
   console.log(`  Seeded ${itemsCount} items, ${commandsCount} commands`)

@@ -3,8 +3,7 @@
   "name": "Evidence",
   "description": "Mortgage Evidence sourcing",
   "type": "remote-repo",
-  "path": "random",
-  "homepage": "random",
+  "path": "https://example.com/placeholder/evidence-repo",
   "dependencies": [
     "git"
   ],

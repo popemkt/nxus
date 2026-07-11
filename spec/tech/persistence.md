@@ -72,6 +72,9 @@ Bootstrap invariants:
 - MUST be idempotent (re-run on every process start).
 - `upsertSystemNode` (`bootstrap.ts:42-73`) matches by `systemId` and **never updates content of an existing node** — renaming a system node in code silently does nothing to existing DBs, so any seed-content rename requires a data migration. This behavior is what let the (now-fixed, commit 60d0741) FIELD_NAMES/bootstrap content mismatch persist across re-bootstraps; the parity invariant (I5) and its test are owned by [../product/data-model.md](../product/data-model.md).
 
+Seed input invariants (2026-07-11):
+- Seed inputs (app `manifest.json` files, `tags.json`, `inbox.json`) are checked-in repo data; an invalid one is a repo defect, not a runtime condition. Both seeders (`apps/nxus-core/scripts/seed-nodes.ts`, `seed-graph.ts`) MUST fail the whole seed (throw, non-zero exit) on any manifest/JSON validation failure, listing every failing input — never skip-and-continue. Historical behavior (skip with a console line, exit 0) shipped seeded DBs silently missing apps (the `evidence` manifest was invisible for months) and kept CI green through data loss.
+
 DRIFT: bootstrap check-then-insert races across processes
 
 - canonical: bootstrapping the same DB file from two processes is safe — the upsert is atomic.
