@@ -33,6 +33,13 @@ export async function ensureDatabaseReady(): Promise<void> {
       await initDatabaseWithBootstrap()
       registered = true
     })()
+    // A rejected promise must not be cached: one transient bootstrap
+    // failure would otherwise poison every later request in this process
+    // ("Error loading apps" for the process lifetime).
+    readyPromise = readyPromise.catch((err) => {
+      readyPromise = null
+      throw err
+    })
   }
 
   await readyPromise

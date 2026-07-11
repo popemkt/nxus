@@ -174,6 +174,21 @@ export function bootstrapSystemNodesSync(
   db: DatabaseInstance,
   options: Omit<BootstrapOptions, 'db' | 'skipInit'> = {},
 ): BootstrapResult {
+  // One IMMEDIATE transaction serializes concurrent bootstraps across
+  // processes: the loser's check-then-insert helpers (setProperty,
+  // assignSupertag) see the winner's committed rows and skip, instead of
+  // racing them row-by-row (C4/C1 e2e flake class; upsertSystemNode's
+  // onConflictDoNothing only covered the nodes table, not properties).
+  return db.transaction(
+    (tx) => bootstrapSystemNodesBody(tx as DatabaseInstance, options),
+    { behavior: 'immediate' },
+  );
+}
+
+function bootstrapSystemNodesBody(
+  db: DatabaseInstance,
+  options: Omit<BootstrapOptions, 'db' | 'skipInit'> = {},
+): BootstrapResult {
   const { verbose = false } = options;
 
   // Check if already bootstrapped

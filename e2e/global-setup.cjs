@@ -27,7 +27,11 @@ module.exports = async function globalSetup() {
   const browser = await chromium.launch()
   const page = await browser.newPage()
   const warm = async () => {
+    // Each app is its own Node process with its own module-level bootstrap
+    // state — warming only /editor leaves core's first bootstrap to race
+    // whichever spec hits it first (C4/C1 flake class). Warm both.
     await page.goto('http://localhost:3001/editor', { waitUntil: 'networkidle' }).catch(() => {})
+    await page.goto('http://localhost:3001/core/', { waitUntil: 'networkidle' }).catch(() => {})
   }
   await warm()
 
