@@ -92,7 +92,7 @@ export function TemporalFilterEditor({
   onClose,
 }: TemporalFilterEditorProps) {
   const [field, setField] = useState<'createdAt' | 'updatedAt'>(filter.field || 'createdAt')
-  const [op, setOp] = useState<'within' | 'before' | 'after'>(filter.op || 'within')
+  const [op, setOp] = useState<TemporalFilter['op']>(filter.op || 'within')
   const [days, setDays] = useState(filter.days ?? 7)
   const [date, setDate] = useState(filter.date || '')
 
@@ -118,11 +118,13 @@ export function TemporalFilterEditor({
   // Handle operator change
   const handleOpChange = (value: string | null) => {
     if (!value) return
-    const newOp = value as 'within' | 'before' | 'after'
+    const newOp = value as TemporalFilter['op']
     setOp(newOp)
     // Clear irrelevant values based on new operator
     const opConfig = TEMPORAL_OPERATORS.find((o) => o.value === newOp)
-    if (opConfig?.needsDays) {
+    if (!opConfig) {
+      onUpdate({ op: newOp })
+    } else if (opConfig.needsDays) {
       onUpdate({ op: newOp, days: days || 7, date: undefined })
     } else {
       onUpdate({ op: newOp, date: date || undefined, days: undefined })

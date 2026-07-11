@@ -29,6 +29,7 @@ import type {
   QueryFilter,
   QuerySort,
   RelationFilter,
+  RelativeDateRange,
   SupertagFilter,
   TemporalFilter,
 } from '../types/query.js'
@@ -80,9 +81,12 @@ export function evaluateQuery(
   // conjunctions. Fall back to all non-deleted nodes for OR/NOT roots.
   let candidateIds = getInitialCandidateIds(db, definition.filters)
 
-  // 2. Apply each filter (top-level filters are AND'd together)
+  // 2. Apply each filter (top-level filters are AND'd together). `evaluatedAt`
+  // is threaded through as the single clock for every relative-date filter in
+  // this evaluation, so 'today' resolves identically across the whole query
+  // even if evaluation spans a midnight boundary in wall-clock time.
   for (const filter of definition.filters) {
-    candidateIds = evaluateFilter(db, filter, candidateIds)
+    candidateIds = evaluateFilter(db, filter, candidateIds, evaluatedAt)
     // Short-circuit if no candidates remain
     if (candidateIds.size === 0) {
       return { nodes: [], totalCount: 0, evaluatedAt }
@@ -128,6 +132,7 @@ export function evaluateFilter(
   db: Database,
   filter: QueryFilter,
   candidateIds: Set<string>,
+  now: Date = new Date(),
 ): Set<string> {
   switch (filter.type) {
     case 'supertag':
@@ -141,13 +146,13 @@ export function evaluateFilter(
     case 'hasField':
       return evaluateHasFieldFilter(db, filter, candidateIds)
     case 'temporal':
-      return evaluateTemporalFilter(db, filter, candidateIds)
+      return evaluateTemporalFilter(db, filter, candidateIds, now)
     case 'relation':
       return evaluateRelationFilter(db, filter, candidateIds)
     case 'and':
     case 'or':
     case 'not':
-      return evaluateLogicalFilter(db, filter, candidateIds)
+      return evaluateLogicalFilter(db, filter, candidateIds, now)
     default:
       // Exhaustive check
       const _exhaustive: never = filter
@@ -633,6 +638,122 @@ export function evaluateHasFieldFilter(
 }
 
 // ============================================================================
+// Relative Date Resolution
+// ============================================================================
+
+/**
+ * A resolved date window: half-open interval [start, end) in local time.
+ */
+export interface RelativeDateWindow {
+  start: Date
+  end: Date
+}
+
+/**
+ * Week-start convention: Monday (ISO week), matching
+ * `libs/nxus-calendar/src/stores/calendar-settings.store.ts:142`
+ * (`weekStartsOn: 1` is the calendar app's default). `Date.getDay()` returns
+ * 0=Sun..6=Sat; this is the offset from that scale.
+ */
+const WEEK_STARTS_ON = 1 // Monday
+
+function startOfDay(d: Date): Date {
+  const r = new Date(d)
+  r.setHours(0, 0, 0, 0)
+  return r
+}
+
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(r.getDate() + n)
+  return r
+}
+
+function startOfWeek(d: Date): Date {
+  const day = d.getDay()
+  const diff = (day - WEEK_STARTS_ON + 7) % 7
+  return addDays(startOfDay(d), -diff)
+}
+
+function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1)
+}
+
+function addMonths(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth() + n, 1)
+}
+
+/**
+ * Resolve a `RelativeDateRange` (query.ts) to a concrete `[start, end)`
+ * window, given a clock. Pure function — the clock is ALWAYS injected
+ * (defaults to `new Date()` only at the real call boundary) so this is
+ * deterministically testable and so the same query definition resolves to a
+ * different window on every re-evaluation, never frozen at authoring time.
+ *
+ * Rolling windows ('last N days' / 'next N days') are calendar-day aligned
+ * and exclude today, symmetric with how 'lastWeek'/'nextWeek' exclude the
+ * current week:
+ * - last N days: the N whole days strictly before today
+ * - next N days: the N whole days strictly after today
+ */
+export function resolveRelativeDateRange(
+  range: RelativeDateRange,
+  now: Date = new Date(),
+): RelativeDateWindow {
+  if (range.kind === 'rolling') {
+    const todayStart = startOfDay(now)
+    if (range.direction === 'last') {
+      return { start: addDays(todayStart, -range.days), end: todayStart }
+    }
+    return { start: addDays(todayStart, 1), end: addDays(todayStart, 1 + range.days) }
+  }
+
+  switch (range.keyword) {
+    case 'today': {
+      const start = startOfDay(now)
+      return { start, end: addDays(start, 1) }
+    }
+    case 'yesterday': {
+      const start = addDays(startOfDay(now), -1)
+      return { start, end: addDays(start, 1) }
+    }
+    case 'tomorrow': {
+      const start = addDays(startOfDay(now), 1)
+      return { start, end: addDays(start, 1) }
+    }
+    case 'thisWeek': {
+      const start = startOfWeek(now)
+      return { start, end: addDays(start, 7) }
+    }
+    case 'lastWeek': {
+      const start = addDays(startOfWeek(now), -7)
+      return { start, end: addDays(start, 7) }
+    }
+    case 'nextWeek': {
+      const start = addDays(startOfWeek(now), 7)
+      return { start, end: addDays(start, 7) }
+    }
+    case 'thisMonth': {
+      const start = startOfMonth(now)
+      return { start, end: addMonths(start, 1) }
+    }
+    case 'lastMonth': {
+      const start = addMonths(startOfMonth(now), -1)
+      return { start, end: startOfMonth(now) }
+    }
+    case 'nextMonth': {
+      const start = addMonths(startOfMonth(now), 1)
+      return { start, end: addMonths(start, 1) }
+    }
+    default: {
+      // Exhaustive check
+      const _exhaustive: never = range.keyword
+      throw new Error(`Unknown relative-date keyword: ${String(_exhaustive)}`)
+    }
+  }
+}
+
+// ============================================================================
 // Temporal Filter
 // ============================================================================
 
@@ -640,19 +761,23 @@ export function evaluateHasFieldFilter(
  * Filter nodes by timestamp (createdAt or updatedAt)
  *
  * Supports:
- * - 'within' last N days
+ * - 'within' last N days (fixed window measured from the evaluation instant)
  * - 'before' a specific date
  * - 'after' a specific date
+ * - 'relative' a relative-date keyword or rolling window, re-resolved on
+ *   every evaluation via `resolveRelativeDateRange` (never frozen at
+ *   authoring time)
  */
 export function evaluateTemporalFilter(
   db: Database,
   filter: TemporalFilter,
   candidateIds: Set<string>,
+  now: Date = new Date(),
 ): Set<string> {
   const { field, op, days, date } = filter
 
-  const now = new Date()
   let targetDate: Date
+  let windowEnd: Date | undefined
 
   switch (op) {
     case 'within':
@@ -668,6 +793,15 @@ export function evaluateTemporalFilter(
       }
       targetDate = new Date(date)
       break
+    case 'relative': {
+      if (!filter.relative) {
+        return candidateIds // No relative range specified, match all
+      }
+      const window = resolveRelativeDateRange(filter.relative, now)
+      targetDate = window.start
+      windowEnd = window.end
+      break
+    }
     default:
       return candidateIds
   }
@@ -695,6 +829,9 @@ export function evaluateTemporalFilter(
         break
       case 'after':
         matches = nodeDate > targetDate
+        break
+      case 'relative':
+        matches = nodeDate >= targetDate && (windowEnd === undefined || nodeDate < windowEnd)
         break
     }
 
@@ -885,6 +1022,7 @@ export function evaluateLogicalFilter(
   db: Database,
   filter: LogicalFilter,
   candidateIds: Set<string>,
+  now: Date = new Date(),
 ): Set<string> {
   const { type, filters } = filter
 
@@ -898,7 +1036,7 @@ export function evaluateLogicalFilter(
       // Intersection - all filters must match
       let result = candidateIds
       for (const subFilter of filters) {
-        result = evaluateFilter(db, subFilter, result)
+        result = evaluateFilter(db, subFilter, result, now)
         if (result.size === 0) break // Short-circuit
       }
       return result
@@ -908,7 +1046,7 @@ export function evaluateLogicalFilter(
       // Union - any filter can match
       const result = new Set<string>()
       for (const subFilter of filters) {
-        const matches = evaluateFilter(db, subFilter, candidateIds)
+        const matches = evaluateFilter(db, subFilter, candidateIds, now)
         for (const id of matches) {
           result.add(id)
         }
@@ -921,7 +1059,7 @@ export function evaluateLogicalFilter(
       // First, find all nodes matching the combined sub-filters (OR'd together)
       const excludeSet = new Set<string>()
       for (const subFilter of filters) {
-        const matches = evaluateFilter(db, subFilter, candidateIds)
+        const matches = evaluateFilter(db, subFilter, candidateIds, now)
         for (const id of matches) {
           excludeSet.add(id)
         }

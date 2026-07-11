@@ -96,7 +96,7 @@ A **QueryDefinition** (`libs/nxus-db/src/types/query.ts:269-274`) is `{ filters[
 | `path` | follow a chain of reference fields, compare the terminal field's value (`Hat.Color = "Red"`); unary emptiness ops allowed (:77-126) |
 | `content` | substring search on node content, case-insensitive by default (:133-138) |
 | `relation` | `childOf`/`ownedBy` (ownerId), `linksTo` (node references target), `linkedFrom` (backlinks) (:145-156) |
-| `temporal` | `createdAt`/`updatedAt` within N days / before / after date (:163-174) |
+| `temporal` | `createdAt`/`updatedAt` within N days / before / after date (:163-174); `op:'relative'` carries a `RelativeDateRange` — keyword (`today`/`yesterday`/`tomorrow`/`thisWeek`/`lastWeek`/`nextWeek`/`thisMonth`/`lastMonth`/`nextMonth`) or rolling `last/next N days` — resolved at EVALUATION time against an injected clock (`resolveRelativeDateRange`), never frozen at authoring; weeks start Monday (matches calendar `weekStartsOn: 1`); windows half-open `[start, end)`; rolling windows exclude today (`types/query.ts` `RelativeDateRangeSchema`) |
 | `hasField` | field presence, negatable (:181-186) |
 | `and` / `or` / `not` | recursive logical composition (:195-211) |
 

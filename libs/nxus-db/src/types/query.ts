@@ -156,21 +156,78 @@ export const RelationFilterSchema = BaseFilterSchema.extend({
 export type RelationFilter = z.infer<typeof RelationFilterSchema>
 
 /**
+ * Relative-date keywords — resolved at EVALUATION time, never frozen at
+ * authoring time (a saved query with 'today' returns different nodes
+ * tomorrow). Week/month keywords use the calendar-wide window (e.g.
+ * 'thisWeek' is the full Mon..Sun span, not just "since Monday").
+ *
+ * Week-start convention: Monday (ISO week), matching
+ * `libs/nxus-calendar/src/stores/calendar-settings.store.ts:142` (the
+ * calendar app's default `weekStartsOn: 1`).
+ */
+export const RelativeDateKeywordSchema = z.enum([
+  'today',
+  'yesterday',
+  'tomorrow',
+  'thisWeek',
+  'lastWeek',
+  'nextWeek',
+  'thisMonth',
+  'lastMonth',
+  'nextMonth',
+])
+export type RelativeDateKeyword = z.infer<typeof RelativeDateKeywordSchema>
+
+/**
+ * Relative-date range — a discriminated union so a filter can never carry a
+ * rolling window without its `days` count, or a keyword window with a
+ * dangling `days`/`direction`. Two shapes:
+ *
+ * - `keyword`: one of the fixed calendar keywords above.
+ * - `rolling`: "last/next N days" — a sliding window of `days` whole
+ *   calendar days, NOT including today (`last 7 days` = the 7 days strictly
+ *   before today; `next 7 days` = the 7 days strictly after today). This
+ *   mirrors `lastWeek`/`nextWeek` excluding the current period.
+ */
+export const RelativeDateRangeSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('keyword'),
+    keyword: RelativeDateKeywordSchema,
+  }),
+  z.object({
+    kind: z.literal('rolling'),
+    direction: z.enum(['last', 'next']),
+    days: z.number().int().positive(),
+  }),
+])
+export type RelativeDateRange = z.infer<typeof RelativeDateRangeSchema>
+
+/**
  * Temporal filter - matches based on timestamps
  *
- * Example: Find nodes created in the last 7 days
+ * Example: Find nodes created in the last 7 days (absolute, fixed at
+ * authoring time via `days`), or nodes created 'today' (relative, resolved
+ * fresh on every evaluation via `relative`).
  */
 export const TemporalFilterSchema = BaseFilterSchema.extend({
   type: z.literal('temporal'),
   field: z.enum(['createdAt', 'updatedAt']),
   op: z.enum([
-    'within', // Within last N days
-    'before', // Before a specific date
-    'after', // After a specific date
+    'within', // Within last N days (fixed window from evaluation instant)
+    'before', // Before a specific absolute date
+    'after', // After a specific absolute date
+    'relative', // Within a relative-date window, re-resolved on every evaluation
   ]),
   days: z.number().optional(), // For 'within' - last N days
   date: z.string().optional(), // ISO date string for 'before'/'after'
-})
+  relative: RelativeDateRangeSchema.optional(), // For 'relative'
+}).refine(
+  (filter) =>
+    filter.op === 'relative'
+      ? filter.relative !== undefined
+      : filter.relative === undefined,
+  { message: "'relative' must be set iff op === 'relative'", path: ['relative'] },
+)
 export type TemporalFilter = z.infer<typeof TemporalFilterSchema>
 
 /**
