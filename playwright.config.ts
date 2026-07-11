@@ -26,6 +26,9 @@ export default defineConfig({
   // Triggers + awaits the server's demo auto-seed before any spec runs, so
   // seed presence never depends on spec execution order (e2e/global-setup.ts).
   globalSetup: './e2e/global-setup.cjs',
+  // Reaps orphaned nx/vite grandchildren that survive webServer teardown and
+  // block the next run's ports (skipped under PW_REUSE_SERVER).
+  globalTeardown: './e2e/global-teardown.cjs',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
