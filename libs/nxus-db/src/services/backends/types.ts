@@ -12,11 +12,22 @@
 import type { AssembledNode, CreateNodeOptions } from '../../types/node.js'
 import type { FieldSystemId } from '../../schemas/node-schema.js'
 import type { QueryDefinition } from '../../types/query.js'
+import type { BaseType } from '../../types/base-type.js'
 import type { SupertagInfo } from '../node.service.js'
 import type { QueryEvaluationResult } from '../query-evaluator.service.js'
 
 // Re-export from the canonical definition in query-evaluator.service
 export type { QueryEvaluationResult } from '../query-evaluator.service.js'
+
+export interface FieldUsageStats {
+  nodeCount: number
+  supertagCount: number
+}
+
+export interface ReorderNodeUpdate {
+  nodeId: string
+  order: number
+}
 
 /**
  * The async backend contract. All database backends must implement this.
@@ -46,6 +57,22 @@ export interface NodeBackend {
 
   /** Soft-delete a node */
   deleteNode(nodeId: string): Promise<void>
+
+  /** Restore a soft-deleted node */
+  restoreNode(nodeId: string): Promise<void>
+
+  /** Reparent a node and optionally update its sibling order */
+  reparentNode(
+    nodeId: string,
+    newParentId: string | null,
+    order?: number,
+  ): Promise<void>
+
+  /** Atomically update order properties for multiple nodes */
+  reorderNodes(updates: ReorderNodeUpdate[]): Promise<void>
+
+  /** Get live workspace roots, falling back to any live user node */
+  getWorkspaceRoots(): Promise<string[]>
 
   // ---------------------------------------------------------------------------
   // Node Assembly
@@ -78,6 +105,15 @@ export interface NodeBackend {
 
   /** Remove all values for a field on a node */
   clearProperty(nodeId: string, fieldId: FieldSystemId): Promise<void>
+
+  /** Remove the exact owner/field property row or edge */
+  removePropertyRow(ownerNodeId: string, fieldNodeId: string): Promise<void>
+
+  /** Get distinct property values used by live nodes for a field node */
+  getDistinctPropertyValues(fieldNodeId: string): Promise<unknown[]>
+
+  /** Count live nodes and supertags using a field node */
+  getFieldUsageStats(fieldNodeId: string): Promise<FieldUsageStats>
 
   /** Link two nodes via a field (set or append depending on `append` flag) */
   linkNodes(
@@ -114,6 +150,9 @@ export interface NodeBackend {
   getNodesBySupertagWithInheritance(
     supertagId: string,
   ): Promise<AssembledNode[]>
+
+  /** Get assembled live nodes whose assigned supertag has the requested base type */
+  getNodesBySupertagBaseType(baseType: BaseType): Promise<AssembledNode[]>
 
   /** Walk the extends chain to find ancestor supertags */
   getAncestorSupertags(

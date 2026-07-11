@@ -325,50 +325,37 @@ export const addSupertagFieldServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
+    await initDatabaseSeeded()
     const {
-      createNode,
-      setProperty,
-      addNodeSupertag,
+      nodeFacade,
       SYSTEM_FIELDS,
       SYSTEM_SUPERTAGS,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    await nodeFacade.init()
+    const { randomUUID } = await import('node:crypto')
+
+    const sanitizedName = ctx.data.fieldName.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+    const systemId = `field:${sanitizedName}_${randomUUID().replace(/-/g, '').slice(0, 12)}`
 
     // Create a new field node
-    const fieldNodeId = createNode(db, {
+    const fieldNodeId = await nodeFacade.createNode({
       content: ctx.data.fieldName,
+      systemId,
     })
 
     // Tag it as a field
-    addNodeSupertag(db, fieldNodeId, SYSTEM_SUPERTAGS.FIELD)
+    await nodeFacade.addNodeSupertag(fieldNodeId, SYSTEM_SUPERTAGS.FIELD)
 
     // Set field type
     if (ctx.data.fieldType && ctx.data.fieldType !== 'text') {
-      setProperty(db, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
+      await nodeFacade.setProperty(fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, ctx.data.fieldType)
     }
     if (ctx.data.fieldType === 'formula' && ctx.data.formula) {
-      setProperty(db, fieldNodeId, SYSTEM_FIELDS.FORMULA, ctx.data.formula)
+      await nodeFacade.setProperty(fieldNodeId, SYSTEM_FIELDS.FORMULA, ctx.data.formula)
     }
-
-    // Generate a system ID for the field using 12 UUID chars to reduce collision risk
-    const { nodes: nodesTable, eq } = await import('@nxus/db/server')
-    const sanitizedName = ctx.data.fieldName.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-    let systemId = `field:${sanitizedName}_${fieldNodeId.slice(0, 12)}`
-
-    // Check for collision and regenerate with full UUID if needed
-    const existing = db.select().from(nodesTable).where(eq(nodesTable.systemId, systemId)).get()
-    if (existing) {
-      systemId = `field:${sanitizedName}_${fieldNodeId.replace(/-/g, '')}`
-    }
-
-    db.update(nodesTable)
-      .set({ systemId })
-      .where(eq(nodesTable.id, fieldNodeId))
-      .run()
 
     // Link the field to the supertag as a property (declares the field in the schema)
-    setProperty(
-      db,
+    await nodeFacade.setProperty(
       ctx.data.supertagId,
       systemId as import('@nxus/db/server').FieldSystemId,
       JSON.stringify(null),
@@ -398,18 +385,10 @@ export const removeSupertagFieldServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const { nodeProperties, eq, and } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-
-    // Remove the property linking the field to the supertag
-    db.delete(nodeProperties)
-      .where(
-        and(
-          eq(nodeProperties.nodeId, ctx.data.supertagId),
-          eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId),
-        ),
-      )
-      .run()
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.removePropertyRow(ctx.data.supertagId, ctx.data.fieldNodeId)
 
     return { success: true as const }
   })
@@ -523,41 +502,13 @@ export const updateFieldConstraintsServerFn = createServerFn({ method: 'POST' })
 export const getFieldUsageStatsServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fieldNodeId: z.string() }))
   .handler(async (ctx) => {
-    const { nodeProperties, eq, sql } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-
-    // Count distinct nodes that have a property with this field
-    const nodeCountResult = db
-      .select({ count: sql<number>`count(distinct ${nodeProperties.nodeId})` })
-      .from(nodeProperties)
-      .where(eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId))
-      .get()
-
-    // Count supertags that declare this field in their schema.
-    // A supertag declares a field by having a property row where
-    // fieldNodeId = this field's node ID AND nodeId = the supertag definition node.
-    const {
-      getNodeIdsBySupertagWithInheritance,
-    } = await import('@nxus/db/server')
-
-    const supertagNodeIds = getNodeIdsBySupertagWithInheritance(db, SUPERTAG_DEFINITION_SYSTEM_ID)
-    const supertagIdSet = new Set(supertagNodeIds)
-
-    // Get distinct nodes referencing this field, then filter to supertags
-    const allRefs = db
-      .select({ nodeId: nodeProperties.nodeId })
-      .from(nodeProperties)
-      .where(eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId))
-      .all()
-
-    const supertagCount = new Set(allRefs.filter((r: { nodeId: string }) => supertagIdSet.has(r.nodeId)).map((r: { nodeId: string }) => r.nodeId)).size
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
     return {
       success: true as const,
-      stats: {
-        nodeCount: nodeCountResult?.count ?? 0,
-        supertagCount,
-      },
+      stats: await nodeFacade.getFieldUsageStats(ctx.data.fieldNodeId),
     }
   })
 

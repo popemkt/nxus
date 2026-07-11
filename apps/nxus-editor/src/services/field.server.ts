@@ -110,27 +110,16 @@ export const getAvailableFieldsServerFn = createServerFn({ method: 'GET' })
 export const getUsedFieldValuesServerFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fieldNodeId: z.string() }))
   .handler(async (ctx) => {
-    const { nodeProperties, eq } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-
-    const rows = db
-      .select({ value: nodeProperties.value })
-      .from(nodeProperties)
-      .where(eq(nodeProperties.fieldNodeId, ctx.data.fieldNodeId))
-      .all()
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
 
     // Collect distinct string values (parse JSON where needed)
     const seen = new Set<string>()
-    for (const row of rows) {
-      if (!row.value) continue
-      try {
-        const parsed = JSON.parse(row.value)
-        if (typeof parsed === 'string' && parsed.trim()) {
-          seen.add(parsed.trim())
-        }
-      } catch {
-        // Raw string value
-        if (row.value.trim()) seen.add(row.value.trim())
+    const values = await nodeFacade.getDistinctPropertyValues(ctx.data.fieldNodeId)
+    for (const value of values) {
+      if (typeof value === 'string' && value.trim()) {
+        seen.add(value.trim())
       }
     }
 

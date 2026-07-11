@@ -14,8 +14,14 @@
 import type { AssembledNode, CreateNodeOptions } from '../types/node.js'
 import type { FieldSystemId } from '../schemas/node-schema.js'
 import type { QueryDefinition } from '../types/query.js'
+import type { BaseType } from '../types/base-type.js'
 import type { SupertagInfo } from './node.service.js'
-import type { NodeBackend, QueryEvaluationResult } from './backends/types.js'
+import type {
+  FieldUsageStats,
+  NodeBackend,
+  QueryEvaluationResult,
+  ReorderNodeUpdate,
+} from './backends/types.js'
 
 type ArchitectureType = 'node' | 'graph'
 
@@ -93,6 +99,26 @@ export class NodeFacade implements NodeBackend {
     return this.ensureInitialized().deleteNode(nodeId)
   }
 
+  async restoreNode(nodeId: string): Promise<void> {
+    return this.ensureInitialized().restoreNode(nodeId)
+  }
+
+  async reparentNode(
+    nodeId: string,
+    newParentId: string | null,
+    order?: number,
+  ): Promise<void> {
+    return this.ensureInitialized().reparentNode(nodeId, newParentId, order)
+  }
+
+  async reorderNodes(updates: ReorderNodeUpdate[]): Promise<void> {
+    return this.ensureInitialized().reorderNodes(updates)
+  }
+
+  async getWorkspaceRoots(): Promise<string[]> {
+    return this.ensureInitialized().getWorkspaceRoots()
+  }
+
   // ---------------------------------------------------------------------------
   // Node Assembly
   // ---------------------------------------------------------------------------
@@ -133,6 +159,21 @@ export class NodeFacade implements NodeBackend {
     fieldId: FieldSystemId,
   ): Promise<void> {
     return this.ensureInitialized().clearProperty(nodeId, fieldId)
+  }
+
+  async removePropertyRow(
+    ownerNodeId: string,
+    fieldNodeId: string,
+  ): Promise<void> {
+    return this.ensureInitialized().removePropertyRow(ownerNodeId, fieldNodeId)
+  }
+
+  async getDistinctPropertyValues(fieldNodeId: string): Promise<unknown[]> {
+    return this.ensureInitialized().getDistinctPropertyValues(fieldNodeId)
+  }
+
+  async getFieldUsageStats(fieldNodeId: string): Promise<FieldUsageStats> {
+    return this.ensureInitialized().getFieldUsageStats(fieldNodeId)
   }
 
   async linkNodes(
@@ -189,6 +230,10 @@ export class NodeFacade implements NodeBackend {
     return this.ensureInitialized().getNodesBySupertagWithInheritance(
       supertagId,
     )
+  }
+
+  async getNodesBySupertagBaseType(baseType: BaseType): Promise<AssembledNode[]> {
+    return this.ensureInitialized().getNodesBySupertagBaseType(baseType)
   }
 
   async getAncestorSupertags(

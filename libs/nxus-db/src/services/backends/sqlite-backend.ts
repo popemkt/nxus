@@ -12,7 +12,13 @@ import type * as itemSchema from '../../schemas/item-schema.js'
 import type { FieldSystemId } from '../../schemas/node-schema.js'
 import type { AssembledNode, CreateNodeOptions } from '../../types/node.js'
 import type { QueryDefinition } from '../../types/query.js'
-import type { NodeBackend, QueryEvaluationResult } from './types.js'
+import type { BaseType } from '../../types/base-type.js'
+import type {
+  FieldUsageStats,
+  NodeBackend,
+  QueryEvaluationResult,
+  ReorderNodeUpdate,
+} from './types.js'
 import type { SupertagInfo } from '../node.service.js'
 
 import * as nodeService from '../node.service.js'
@@ -79,6 +85,30 @@ export class SqliteBackend implements NodeBackend {
     nodeService.deleteNode(db, nodeId)
   }
 
+  async restoreNode(nodeId: string): Promise<void> {
+    const db = this.ensureInitialized()
+    nodeService.restoreNode(db, nodeId)
+  }
+
+  async reparentNode(
+    nodeId: string,
+    newParentId: string | null,
+    order?: number,
+  ): Promise<void> {
+    const db = this.ensureInitialized()
+    nodeService.reparentNode(db, nodeId, newParentId, order)
+  }
+
+  async reorderNodes(updates: ReorderNodeUpdate[]): Promise<void> {
+    const db = this.ensureInitialized()
+    nodeService.reorderNodes(db, updates)
+  }
+
+  async getWorkspaceRoots(): Promise<string[]> {
+    const db = this.ensureInitialized()
+    return nodeService.getWorkspaceRoots(db)
+  }
+
   // ---------------------------------------------------------------------------
   // Node Assembly
   // ---------------------------------------------------------------------------
@@ -124,6 +154,24 @@ export class SqliteBackend implements NodeBackend {
   ): Promise<void> {
     const db = this.ensureInitialized()
     nodeService.clearProperty(db, nodeId, fieldId)
+  }
+
+  async removePropertyRow(
+    ownerNodeId: string,
+    fieldNodeId: string,
+  ): Promise<void> {
+    const db = this.ensureInitialized()
+    nodeService.removePropertyRow(db, ownerNodeId, fieldNodeId)
+  }
+
+  async getDistinctPropertyValues(fieldNodeId: string): Promise<unknown[]> {
+    const db = this.ensureInitialized()
+    return nodeService.getDistinctPropertyValues(db, fieldNodeId)
+  }
+
+  async getFieldUsageStats(fieldNodeId: string): Promise<FieldUsageStats> {
+    const db = this.ensureInitialized()
+    return nodeService.getFieldUsageStats(db, fieldNodeId)
   }
 
   async linkNodes(
@@ -178,6 +226,11 @@ export class SqliteBackend implements NodeBackend {
   ): Promise<AssembledNode[]> {
     const db = this.ensureInitialized()
     return nodeService.getNodesBySupertagWithInheritance(db, supertagId)
+  }
+
+  async getNodesBySupertagBaseType(baseType: BaseType): Promise<AssembledNode[]> {
+    const db = this.ensureInitialized()
+    return nodeService.getNodesBySupertagBaseType(db, baseType)
   }
 
   async getAncestorSupertags(

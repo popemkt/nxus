@@ -28,6 +28,7 @@ const SURREAL_FIELD_DEFINITIONS: Array<{
   { systemId: SYSTEM_FIELDS.SUPERTAG, content: 'supertag', valueType: 'nodes' },
   { systemId: SYSTEM_FIELDS.EXTENDS, content: 'extends', valueType: 'node' },
   { systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'fieldType', valueType: 'select' },
+  { systemId: SYSTEM_FIELDS.BASE_TYPE, content: 'baseType', valueType: 'select' },
 
   // Common entity fields
   { systemId: SYSTEM_FIELDS.TYPE, content: 'type', valueType: 'select' },

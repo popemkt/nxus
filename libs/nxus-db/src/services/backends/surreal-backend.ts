@@ -18,9 +18,10 @@
 import type { Surreal, RecordId } from 'surrealdb'
 import { StringRecordId } from 'surrealdb'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
-import { SYSTEM_FIELDS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
 import type { AssembledNode, CreateNodeOptions, PropertyValue } from '../../types/node.js'
 import type { JsonValue } from '../../types/common.js'
+import type { BaseType } from '../../types/base-type.js'
 import type {
   QueryDefinition,
   SupertagFilter,
@@ -33,7 +34,7 @@ import type {
   LogicalFilter,
   FilterOp,
 } from '../../types/query.js'
-import type { NodeBackend } from './types.js'
+import type { FieldUsageStats, NodeBackend, ReorderNodeUpdate } from './types.js'
 import type { SupertagInfo } from '../node.service.js'
 import type { QueryEvaluationResult } from '../query-evaluator.service.js'
 import type { MutationEvent } from '../../reactive/types.js'
@@ -248,12 +249,51 @@ export class SurrealBackend implements NodeBackend {
     )
 
     if (!results || results.length === 0) {
-      throw new Error(`Field not found: ${fieldSystemId}`)
+      const [nodeResults] = await db.query<[Array<{ id: RecordId; content: string | null }>]>(
+        'SELECT id, content FROM node WHERE system_id = $systemId AND deleted_at IS NONE LIMIT 1',
+        { systemId: fieldSystemId },
+      )
+      const fieldNode = nodeResults[0]
+      if (!fieldNode) {
+        throw new Error(`Field not found: ${fieldSystemId}`)
+      }
+
+      const recordKey = rid(fieldNode.id).replace(/^node:/, '').replace(/[^A-Za-z0-9_]/g, '_')
+      const fieldRecordId = `field:${recordKey}`
+      await runSurrealTransaction(db, [
+        {
+          query: `UPSERT $fieldRecordId SET
+            content = $content,
+            system_id = $systemId,
+            value_type = 'text',
+            created_at = time::now()`,
+          params: {
+            fieldRecordId: new StringRecordId(fieldRecordId),
+            content: fieldNode.content ?? fieldSystemId.replace(/^field:/, ''),
+            systemId: fieldSystemId,
+          },
+        },
+      ])
+      this.fieldIdCache.set(fieldSystemId, fieldRecordId)
+      return fieldRecordId
     }
 
     const fieldId = rid(results[0].id)
     this.fieldIdCache.set(fieldSystemId, fieldId)
     return fieldId
+  }
+
+  private async normalizeFieldRecordId(fieldNodeId: string): Promise<string> {
+    if (fieldNodeId.startsWith('field:')) return fieldNodeId
+
+    const db = this.ensureInitialized()
+    const [nodeRows] = await db.query<[Array<{ system_id: string | null }>]>(
+      'SELECT system_id FROM $nodeId LIMIT 1',
+      { nodeId: new StringRecordId(fieldNodeId) },
+    )
+    const systemId = nodeRows[0]?.system_id
+    if (!systemId) return fieldNodeId
+    return this.resolveFieldId(systemId)
   }
 
   /**
@@ -437,6 +477,157 @@ export class SurrealBackend implements NodeBackend {
         nodeId,
       })
     })
+  }
+
+  async restoreNode(nodeId: string): Promise<void> {
+    const db = this.ensureInitialized()
+    const now = new Date()
+
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: 'UPDATE $nodeId SET deleted_at = NONE, updated_at = time::now()',
+          params: { nodeId: new StringRecordId(nodeId) },
+        },
+      ])
+
+      emitMutation({
+        type: 'node:created',
+        timestamp: now,
+        nodeId,
+      })
+    })
+  }
+
+  async reparentNode(
+    nodeId: string,
+    newParentId: string | null,
+    order?: number,
+  ): Promise<void> {
+    const db = this.ensureInitialized()
+    const now = new Date()
+    const statements: SurrealStatement[] = [
+      newParentId === null
+        ? {
+            query: 'UPDATE $nodeId SET owner_id = NONE, updated_at = time::now()',
+            params: { nodeId: new StringRecordId(nodeId) },
+          }
+        : {
+            query: 'UPDATE $nodeId SET owner_id = $ownerId, updated_at = time::now()',
+            params: {
+              nodeId: new StringRecordId(nodeId),
+              ownerId: newParentId,
+            },
+          },
+    ]
+
+    let orderFieldId: string | null = null
+    if (order !== undefined) {
+      orderFieldId = await this.resolveFieldId(SYSTEM_FIELDS.ORDER)
+      statements.push(
+        {
+          query: 'DELETE has_field WHERE in = $orderNodeId AND out = $orderFieldId',
+          params: {
+            orderNodeId: new StringRecordId(nodeId),
+            orderFieldId: new StringRecordId(orderFieldId),
+          },
+        },
+        {
+          query: 'RELATE $orderFrom->has_field->$orderTo SET `value` = $orderValue, `order` = 0, created_at = time::now(), updated_at = time::now()',
+          params: {
+            orderFrom: new StringRecordId(nodeId),
+            orderTo: new StringRecordId(orderFieldId),
+            orderValue: order,
+          },
+        },
+      )
+    }
+
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, statements)
+
+      emitMutation({
+        type: 'node:updated',
+        timestamp: now,
+        nodeId,
+        afterValue: { ownerId: newParentId },
+      })
+
+      if (order !== undefined && orderFieldId) {
+        emitMutation({
+          type: 'property:set',
+          timestamp: now,
+          nodeId,
+          fieldId: orderFieldId,
+          fieldSystemId: SYSTEM_FIELDS.ORDER as string,
+          afterValue: order,
+        })
+      }
+    })
+  }
+
+  async reorderNodes(updates: ReorderNodeUpdate[]): Promise<void> {
+    if (updates.length === 0) return
+
+    const db = this.ensureInitialized()
+    const orderFieldId = await this.resolveFieldId(SYSTEM_FIELDS.ORDER)
+    const now = new Date()
+    const statements: SurrealStatement[] = []
+
+    updates.forEach((update, index) => {
+      statements.push(
+        {
+          query: `DELETE has_field WHERE in = $nodeId${index} AND out = $orderFieldId`,
+          params: {
+            [`nodeId${index}`]: new StringRecordId(update.nodeId),
+            orderFieldId: new StringRecordId(orderFieldId),
+          },
+        },
+        {
+          query: `RELATE $from${index}->has_field->$to${index} SET \`value\` = $order${index}, \`order\` = 0, created_at = time::now(), updated_at = time::now()`,
+          params: {
+            [`from${index}`]: new StringRecordId(update.nodeId),
+            [`to${index}`]: new StringRecordId(orderFieldId),
+            [`order${index}`]: update.order,
+          },
+        },
+      )
+    })
+
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, statements)
+
+      for (const update of updates) {
+        emitMutation({
+          type: 'property:set',
+          timestamp: now,
+          nodeId: update.nodeId,
+          fieldId: orderFieldId,
+          fieldSystemId: SYSTEM_FIELDS.ORDER as string,
+          afterValue: update.order,
+        })
+      }
+    })
+  }
+
+  async getWorkspaceRoots(): Promise<string[]> {
+    const db = this.ensureInitialized()
+    const [liveRows] = await db.query<[Array<SurrealNode>]>(
+      'SELECT * FROM node WHERE deleted_at IS NONE',
+    )
+
+    const rootRows = liveRows.filter(
+      (row) => !row.owner_id && !row.system_id,
+    )
+    if (rootRows.length > 0) {
+      return rootRows.map((row) => rid(row.id))
+    }
+
+    const fallbackRows = liveRows.filter(
+      (row) => !row.system_id,
+    )
+
+    return fallbackRows[0] ? [rid(fallbackRows[0].id)] : []
   }
 
   // ---------------------------------------------------------------------------
@@ -741,6 +932,101 @@ export class SurrealBackend implements NodeBackend {
     })
   }
 
+  async removePropertyRow(
+    ownerNodeId: string,
+    fieldNodeId: string,
+  ): Promise<void> {
+    const db = this.ensureInitialized()
+    const now = new Date()
+    const fieldRecordId = await this.normalizeFieldRecordId(fieldNodeId)
+
+    const [existing] = await db.query<[Array<{ value: unknown }>]>(
+      'SELECT `value` FROM has_field WHERE in = $nodeId AND out = $fieldId',
+      {
+        nodeId: new StringRecordId(ownerNodeId),
+        fieldId: new StringRecordId(fieldRecordId),
+      },
+    )
+
+    if (existing.length === 0) return
+
+    return runMutationTransaction(async () => {
+      await runSurrealTransaction(db, [
+        {
+          query: 'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
+          params: {
+            nodeId: new StringRecordId(ownerNodeId),
+            fieldId: new StringRecordId(fieldRecordId),
+          },
+        },
+      ])
+
+      for (const edge of existing) {
+        emitMutation({
+          type: 'property:removed',
+          timestamp: now,
+          nodeId: ownerNodeId,
+          fieldId: fieldRecordId,
+          beforeValue: edge.value,
+        })
+      }
+    })
+  }
+
+  async getDistinctPropertyValues(fieldNodeId: string): Promise<unknown[]> {
+    const db = this.ensureInitialized()
+    const fieldRecordId = await this.normalizeFieldRecordId(fieldNodeId)
+    const [edges] = await db.query<[Array<{ node_ref: RecordId; value: unknown }>]>(
+      'SELECT in AS node_ref, `value` FROM has_field WHERE out = $fieldId',
+      { fieldId: new StringRecordId(fieldRecordId) },
+    )
+
+    if (edges.length === 0) return []
+
+    const liveNodeIds = await this.getExistingNodeIds(
+      new Set(edges.map((edge) => rid(edge.node_ref))),
+    )
+    const values = new Map<string, unknown>()
+
+    for (const edge of edges) {
+      if (!liveNodeIds.has(rid(edge.node_ref))) continue
+      const key = edge.value === undefined ? '__nxus_undefined__' : JSON.stringify(edge.value)
+      values.set(key, edge.value)
+    }
+
+    return [...values.values()]
+  }
+
+  async getFieldUsageStats(fieldNodeId: string): Promise<FieldUsageStats> {
+    const db = this.ensureInitialized()
+    const fieldRecordId = await this.normalizeFieldRecordId(fieldNodeId)
+    const [edges] = await db.query<[Array<{ node_ref: RecordId }>]>(
+      'SELECT in AS node_ref FROM has_field WHERE out = $fieldId',
+      { fieldId: new StringRecordId(fieldRecordId) },
+    )
+
+    if (edges.length === 0) return { nodeCount: 0, supertagCount: 0 }
+
+    const liveNodeIds = await this.getExistingNodeIds(
+      new Set(edges.map((edge) => rid(edge.node_ref))),
+    )
+    const supertagNodeIds = await this.getNodeIdsBySupertagWithInheritance(
+      SYSTEM_SUPERTAGS.SUPERTAG,
+    )
+
+    let supertagCount = 0
+    for (const nodeId of liveNodeIds) {
+      if (supertagNodeIds.has(nodeId)) {
+        supertagCount++
+      }
+    }
+
+    return {
+      nodeCount: liveNodeIds.size,
+      supertagCount,
+    }
+  }
+
   async linkNodes(
     fromId: string,
     fieldId: FieldSystemId,
@@ -955,6 +1241,85 @@ export class SurrealBackend implements NodeBackend {
       [...nodeIdSet].map((nid) => this.assembleNode(nid)),
     )
     return assembleResults.filter((n): n is AssembledNode => n !== null)
+  }
+
+  async getNodesBySupertagBaseType(baseType: BaseType): Promise<AssembledNode[]> {
+    const db = this.ensureInitialized()
+    const supertagIds = await this.getSupertagRecordIdsByBaseType(baseType)
+    if (supertagIds.size === 0) return []
+
+    const edgeResults = await Promise.all(
+      [...supertagIds].map((supertagId) =>
+        db.query<[Array<{ node_ref: RecordId }>]>(
+          'SELECT in AS node_ref FROM has_supertag WHERE out = $stId',
+          { stId: new StringRecordId(supertagId) },
+        ),
+      ),
+    )
+
+    const nodeIds = new Set<string>()
+    for (const [edges] of edgeResults) {
+      for (const edge of edges) {
+        nodeIds.add(rid(edge.node_ref))
+      }
+    }
+
+    const assembleResults = await Promise.all(
+      [...nodeIds].map((nodeId) => this.assembleNode(nodeId)),
+    )
+    return assembleResults.filter((node): node is AssembledNode => node !== null)
+  }
+
+  private async getSupertagRecordIdsByBaseType(
+    baseType: BaseType,
+  ): Promise<Set<string>> {
+    const db = this.ensureInitialized()
+    const baseTypeFieldId = await this.resolveFieldId(SYSTEM_FIELDS.BASE_TYPE)
+    const [baseTypeEdges] = await db.query<[Array<{ node_ref: RecordId }>]>(
+      'SELECT in AS node_ref FROM has_field WHERE out = $fieldId AND `value` = $baseType',
+      {
+        fieldId: new StringRecordId(baseTypeFieldId),
+        baseType,
+      },
+    )
+
+    if (baseTypeEdges.length === 0) return new Set()
+
+    const directSupertagIds = new Set<string>()
+    for (const edge of baseTypeEdges) {
+      const nodeId = rid(edge.node_ref)
+      const [nodeRows] = await db.query<[Array<{ system_id: string | null }>]>(
+        'SELECT system_id FROM $nodeId WHERE deleted_at IS NONE LIMIT 1',
+        { nodeId: new StringRecordId(nodeId) },
+      )
+      const systemId = nodeRows[0]?.system_id
+      if (!systemId) continue
+
+      const supertagRecordId = await this.resolveSupertagId(systemId)
+      if (supertagRecordId) {
+        directSupertagIds.add(supertagRecordId)
+      }
+    }
+
+    const resolved = new Set(directSupertagIds)
+    const queue = [...directSupertagIds]
+    while (queue.length > 0) {
+      const currentId = queue.shift()
+      if (!currentId) continue
+      const [children] = await db.query<[Array<{ child_ref: RecordId }>]>(
+        'SELECT in AS child_ref FROM extends WHERE out = $stId',
+        { stId: new StringRecordId(currentId) },
+      )
+      for (const child of children) {
+        const childId = rid(child.child_ref)
+        if (!resolved.has(childId)) {
+          resolved.add(childId)
+          queue.push(childId)
+        }
+      }
+    }
+
+    return resolved
   }
 
   async getAncestorSupertags(

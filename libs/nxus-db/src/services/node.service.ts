@@ -1148,6 +1148,56 @@ export function restoreNode(
   })
 }
 
+export function getWorkspaceRoots(db: NodeDatabase): string[] {
+  const rootRows = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(and(isNull(nodes.ownerId), isNull(nodes.deletedAt), isNull(nodes.systemId)))
+    .all()
+
+  if (rootRows.length > 0) {
+    return rootRows.map((row) => row.id)
+  }
+
+  const fallback = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(and(isNull(nodes.deletedAt), isNull(nodes.systemId)))
+    .limit(1)
+    .get()
+
+  return fallback ? [fallback.id] : []
+}
+
+export function reparentNode(
+  db: NodeDatabase,
+  nodeId: string,
+  newParentId: string | null,
+  order?: number,
+): void {
+  runMutationTransaction(db, (tx) => {
+    const now = new Date()
+    tx.update(nodes)
+      .set({
+        ownerId: newParentId,
+        updatedAt: now,
+      })
+      .where(eq(nodes.id, nodeId))
+      .run()
+
+    emitMutation({
+      type: 'node:updated',
+      timestamp: now,
+      nodeId,
+      afterValue: { ownerId: newParentId },
+    })
+
+    if (order !== undefined) {
+      setProperty(tx, nodeId, SYSTEM_FIELDS.ORDER, order)
+    }
+  })
+}
+
 /**
  * Set a property value (creates or updates).
  *
@@ -1354,6 +1404,129 @@ export function setNodeOrderProperties(
       setProperty(tx, update.nodeId, SYSTEM_FIELDS.ORDER, update.order)
     }
   })
+}
+
+export function reorderNodes(
+  db: NodeDatabase,
+  updates: Array<{ nodeId: string; order: number }>,
+): void {
+  setNodeOrderProperties(db, updates)
+}
+
+export function getDistinctPropertyValues(
+  db: NodeDatabase,
+  fieldNodeId: string,
+): unknown[] {
+  const rows = db
+    .select({
+      nodeId: nodeProperties.nodeId,
+      value: nodeProperties.value,
+    })
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, fieldNodeId))
+    .all()
+
+  if (rows.length === 0) return []
+
+  const liveNodeIds = new Set(
+    db
+      .select({ id: nodes.id })
+      .from(nodes)
+      .where(and(inArray(nodes.id, [...new Set(rows.map((row) => row.nodeId))]), isNull(nodes.deletedAt)))
+      .all()
+      .map((row) => row.id),
+  )
+
+  const values = new Map<string, unknown>()
+  for (const row of rows) {
+    if (!liveNodeIds.has(row.nodeId) || row.value === null) continue
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(row.value)
+    } catch {
+      parsed = row.value
+    }
+    const key = parsed === undefined ? '__nxus_undefined__' : JSON.stringify(parsed)
+    values.set(key, parsed)
+  }
+
+  return [...values.values()]
+}
+
+export function removePropertyRow(
+  db: NodeDatabase,
+  ownerNodeId: string,
+  fieldNodeId: string,
+): void {
+  runMutationTransaction(db, (tx) => {
+    const rows = tx
+      .select()
+      .from(nodeProperties)
+      .where(and(
+        eq(nodeProperties.nodeId, ownerNodeId),
+        eq(nodeProperties.fieldNodeId, fieldNodeId),
+      ))
+      .all()
+
+    if (rows.length === 0) return
+
+    tx.delete(nodeProperties)
+      .where(and(
+        eq(nodeProperties.nodeId, ownerNodeId),
+        eq(nodeProperties.fieldNodeId, fieldNodeId),
+      ))
+      .run()
+
+    const now = new Date()
+    for (const row of rows) {
+      let beforeValue: unknown
+      try {
+        beforeValue = JSON.parse(row.value || 'null')
+      } catch {
+        beforeValue = row.value
+      }
+      emitMutation({
+        type: 'property:removed',
+        timestamp: now,
+        nodeId: ownerNodeId,
+        fieldId: fieldNodeId,
+        beforeValue,
+      })
+    }
+  })
+}
+
+export function getFieldUsageStats(
+  db: NodeDatabase,
+  fieldNodeId: string,
+): { nodeCount: number; supertagCount: number } {
+  const rows = db
+    .select({ nodeId: nodeProperties.nodeId })
+    .from(nodeProperties)
+    .where(eq(nodeProperties.fieldNodeId, fieldNodeId))
+    .all()
+
+  if (rows.length === 0) return { nodeCount: 0, supertagCount: 0 }
+
+  const liveNodeIds = new Set(
+    db
+      .select({ id: nodes.id })
+      .from(nodes)
+      .where(and(inArray(nodes.id, [...new Set(rows.map((row) => row.nodeId))]), isNull(nodes.deletedAt)))
+      .all()
+      .map((row) => row.id),
+  )
+  const referencedLiveNodeIds = new Set(
+    rows.map((row) => row.nodeId).filter((nodeId) => liveNodeIds.has(nodeId)),
+  )
+
+  const supertagIds = new Set(getNodeIdsBySupertagWithInheritance(db, SYSTEM_SUPERTAGS.SUPERTAG))
+  const supertagCount = [...referencedLiveNodeIds].filter((nodeId) => supertagIds.has(nodeId)).length
+
+  return {
+    nodeCount: referencedLiveNodeIds.size,
+    supertagCount,
+  }
 }
 
 // ============================================================================

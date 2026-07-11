@@ -530,9 +530,9 @@ export async function createOutlineNode(
 }
 
 export async function swapOrder(input: SwapOrderInput): Promise<SwapOrderResult> {
-  const { initDatabaseWithBootstrap, setNodeOrderProperties } = await import('@nxus/db/server')
-  const db = await initDatabaseWithBootstrap()
-  setNodeOrderProperties(db, input.updates)
+  const { nodeFacade } = await import('@nxus/db/server')
+  await nodeFacade.init()
+  await nodeFacade.reorderNodes(input.updates)
   return { updated: input.updates.length }
 }
 

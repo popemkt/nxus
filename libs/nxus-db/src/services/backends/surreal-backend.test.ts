@@ -984,6 +984,97 @@ describe('Transactions & atomicity', () => {
     expect(events.filter((e) => e.type === 'supertag:added')).toHaveLength(1)
     expect(events.filter((e) => e.type === 'supertag:removed')).toHaveLength(1)
   })
+
+  it('rolls back reparentNode owner changes when the order write fails, and emits no events', async () => {
+    const parentA = await backend.createNode({ content: 'Parent A' })
+    const parentB = await backend.createNode({ content: 'Parent B' })
+    const child = await backend.createNode({ content: 'Child', ownerId: parentA })
+
+    interface BackendInternals {
+      fieldIdCache: Map<string, string>
+    }
+    ;(backend as unknown as BackendInternals).fieldIdCache.set(
+      SYSTEM_FIELDS.ORDER as string,
+      'supertag:item',
+    )
+
+    const events: Array<{ type: string }> = []
+    eventBus.subscribe((e) => {
+      events.push({ type: e.type })
+    })
+
+    await expect(backend.reparentNode(child, parentB, 25)).rejects.toThrow()
+
+    expect(events.filter((e) => e.type === 'node:updated')).toHaveLength(0)
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(0)
+    expect((await backend.assembleNode(child))!.ownerId).toBe(parentA)
+
+    ;(backend as unknown as BackendInternals).fieldIdCache.delete(SYSTEM_FIELDS.ORDER as string)
+    await backend.reparentNode(child, parentB, 25)
+    expect((await backend.assembleNode(child))!.ownerId).toBe(parentB)
+    expect(events.filter((e) => e.type === 'node:updated')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(1)
+  })
+
+  it('rolls back reorderNodes as a batch when one order write fails, and emits no events', async () => {
+    const first = await backend.createNode({ content: 'First' })
+    const second = await backend.createNode({ content: 'Second' })
+    await backend.setProperty(first, SYSTEM_FIELDS.ORDER, 1)
+    await backend.setProperty(second, SYSTEM_FIELDS.ORDER, 2)
+
+    interface BackendInternals {
+      fieldIdCache: Map<string, string>
+    }
+    ;(backend as unknown as BackendInternals).fieldIdCache.set(
+      SYSTEM_FIELDS.ORDER as string,
+      'supertag:item',
+    )
+
+    const events: Array<{ type: string }> = []
+    eventBus.subscribe((e) => {
+      events.push({ type: e.type })
+    })
+
+    await expect(
+      backend.reorderNodes([
+        { nodeId: first, order: 10 },
+        { nodeId: second, order: 20 },
+      ]),
+    ).rejects.toThrow()
+
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(0)
+    expect((await backend.assembleNode(first))!.properties[FIELD_NAMES.ORDER][0].value).toBe(1)
+    expect((await backend.assembleNode(second))!.properties[FIELD_NAMES.ORDER][0].value).toBe(2)
+
+    ;(backend as unknown as BackendInternals).fieldIdCache.delete(SYSTEM_FIELDS.ORDER as string)
+    await backend.reorderNodes([
+      { nodeId: first, order: 10 },
+      { nodeId: second, order: 20 },
+    ])
+    expect(events.filter((e) => e.type === 'property:set')).toHaveLength(2)
+    expect((await backend.assembleNode(first))!.properties[FIELD_NAMES.ORDER][0].value).toBe(10)
+    expect((await backend.assembleNode(second))!.properties[FIELD_NAMES.ORDER][0].value).toBe(20)
+  })
+
+  it('emits exactly once for restoreNode and removePropertyRow after commit', async () => {
+    const nodeId = await backend.createNode({ content: 'Restore Me' })
+    await backend.setProperty(nodeId, SYSTEM_FIELDS.STATUS, 'active')
+    const statusFieldNodeId = (await backend.assembleNode(nodeId))!
+      .properties[FIELD_NAMES.STATUS][0].fieldNodeId
+    await backend.deleteNode(nodeId)
+
+    const events: Array<{ type: string }> = []
+    eventBus.subscribe((e) => {
+      events.push({ type: e.type })
+    })
+
+    await backend.restoreNode(nodeId)
+    await backend.removePropertyRow(nodeId, statusFieldNodeId)
+
+    expect(events.filter((e) => e.type === 'node:created')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'property:removed')).toHaveLength(1)
+    expect((await backend.assembleNode(nodeId))!.properties[FIELD_NAMES.STATUS]).toBeUndefined()
+  })
 })
 
 // =============================================================================

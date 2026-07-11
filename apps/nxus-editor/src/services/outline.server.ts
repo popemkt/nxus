@@ -298,37 +298,12 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
  */
 export const getWorkspaceRootServerFn = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const {
-      nodes,
-      isNull,
-      and,
-    } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-
-    // System nodes (field:*, supertag:*, …) are ownerless too — the workspace
-    // root shows only user content (systemId IS NULL). See spec/product/editor.md.
-    const rootNodes = db
-      .select()
-      .from(nodes)
-      .where(and(isNull(nodes.ownerId), isNull(nodes.deletedAt), isNull(nodes.systemId)))
-      .all()
-
-    if (rootNodes.length === 0) {
-      const anyNode = db
-        .select()
-        .from(nodes)
-        .where(and(isNull(nodes.deletedAt), isNull(nodes.systemId)))
-        .limit(1)
-        .get()
-      return {
-        success: true as const,
-        rootIds: anyNode ? [anyNode.id] : [],
-      }
-    }
-
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
     return {
       success: true as const,
-      rootIds: rootNodes.map((n: { id: string }) => n.id as string),
+      rootIds: await nodeFacade.getWorkspaceRoots(),
     }
   },
 )
@@ -400,9 +375,10 @@ export const deleteNodeServerFn = createServerFn({ method: 'POST' })
 export const restoreNodeServerFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ nodeId: z.string() }))
   .handler(async (ctx) => {
-    const { restoreNode } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-    restoreNode(db, ctx.data.nodeId)
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.restoreNode(ctx.data.nodeId)
     return { success: true as const }
   })
 
@@ -418,26 +394,10 @@ export const reparentNodeServerFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async (ctx) => {
-    const {
-      nodes,
-      eq,
-      setProperty,
-      SYSTEM_FIELDS,
-    } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
-
-    db.update(nodes)
-      .set({
-        ownerId: ctx.data.newParentId,
-        updatedAt: new Date(),
-      })
-      .where(eq(nodes.id, ctx.data.nodeId))
-      .run()
-
-    if (ctx.data.order !== undefined) {
-      setProperty(db, ctx.data.nodeId, SYSTEM_FIELDS.ORDER, ctx.data.order)
-    }
-
+    await initDatabaseSeeded()
+    const { nodeFacade } = await import('@nxus/db/server')
+    await nodeFacade.init()
+    await nodeFacade.reparentNode(ctx.data.nodeId, ctx.data.newParentId, ctx.data.order)
     return { success: true as const }
   })
 

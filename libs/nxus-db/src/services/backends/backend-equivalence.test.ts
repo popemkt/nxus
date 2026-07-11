@@ -77,6 +77,8 @@ async function createTestSqliteBackend(): Promise<TestContext> {
     { id: 'field-description', systemId: 'field:description', content: 'description' },
     { id: 'field-status', systemId: 'field:status', content: 'status' },
     { id: 'field-parent', systemId: 'field:parent', content: 'parent' },
+    { id: 'field-order', systemId: 'field:order', content: 'order' },
+    { id: 'field-base-type', systemId: 'field:base_type', content: 'baseType' },
   ]
 
   for (const field of systemFields) {
@@ -481,6 +483,84 @@ describe.each(['sqlite', 'surreal'] as const)(
         const child = await backend.assembleNode(childId)
         expect(child!.properties[FIELD_NAMES.PARENT]).toBeDefined()
         expect(child!.properties[FIELD_NAMES.PARENT][0].value).toBe(parentId)
+      })
+    })
+
+    // -----------------------------------------------------------------------
+    // S2 facade convergence methods
+    // -----------------------------------------------------------------------
+
+    describe('facade convergence S2 methods', () => {
+      it('should expose workspace roots, restore, reparent, reorder, field reads, row removal, stats, and base-type reads', async () => {
+        const rootId = await backend.createNode({ content: 'Workspace Root' })
+        const childId = await backend.createNode({
+          content: 'Child',
+          ownerId: rootId,
+          supertagId: SYSTEM_SUPERTAGS.ITEM,
+        })
+        const siblingId = await backend.createNode({
+          content: 'Sibling',
+          ownerId: rootId,
+          supertagId: SYSTEM_SUPERTAGS.ITEM,
+        })
+
+        const roots = await backend.getWorkspaceRoots()
+        expect(roots).toContain(rootId)
+        expect(roots).not.toContain(childId)
+
+        await backend.deleteNode(childId)
+        const deletedChild = await backend.findNodeById(childId)
+        expect(deletedChild!.deletedAt).not.toBeNull()
+        await backend.restoreNode(childId)
+        expect((await backend.assembleNode(childId))!.content).toBe('Child')
+
+        await backend.reparentNode(childId, null, 10)
+        const reparented = await backend.assembleNode(childId)
+        expect(reparented!.ownerId).toBeNull()
+        expect(reparented!.properties[FIELD_NAMES.ORDER][0].value).toBe(10)
+
+        await backend.reorderNodes([
+          { nodeId: childId, order: 20 },
+          { nodeId: siblingId, order: 30 },
+        ])
+        expect((await backend.assembleNode(childId))!.properties[FIELD_NAMES.ORDER][0].value).toBe(20)
+        expect((await backend.assembleNode(siblingId))!.properties[FIELD_NAMES.ORDER][0].value).toBe(30)
+
+        await backend.setProperty(childId, SYSTEM_FIELDS.STATUS, 'todo')
+        await backend.setProperty(siblingId, SYSTEM_FIELDS.STATUS, 'todo')
+        const statusFieldNodeId = (await backend.assembleNode(childId))!
+          .properties[FIELD_NAMES.STATUS][0].fieldNodeId
+
+        const distinctValues = await backend.getDistinctPropertyValues(statusFieldNodeId)
+        expect(distinctValues).toEqual(['todo'])
+
+        const beforeStats = await backend.getFieldUsageStats(statusFieldNodeId)
+        expect(beforeStats.nodeCount).toBe(2)
+        expect(beforeStats.supertagCount).toBe(0)
+
+        await backend.removePropertyRow(childId, statusFieldNodeId)
+        expect((await backend.assembleNode(childId))!.properties[FIELD_NAMES.STATUS]).toBeUndefined()
+        const afterStats = await backend.getFieldUsageStats(statusFieldNodeId)
+        expect(afterStats.nodeCount).toBe(1)
+
+        let itemDefinition = await backend.findNodeBySystemId(SYSTEM_SUPERTAGS.ITEM)
+        if (!itemDefinition) {
+          const itemDefinitionId = await backend.createNode({
+            content: '#Item',
+            systemId: SYSTEM_SUPERTAGS.ITEM,
+          })
+          itemDefinition = await backend.assembleNode(itemDefinitionId)
+        }
+        expect(itemDefinition).not.toBeNull()
+        await backend.setProperty(itemDefinition!.id, SYSTEM_FIELDS.BASE_TYPE, 'task')
+
+        const baseTypeNodes = await backend.getNodesBySupertagBaseType('task')
+        const baseTypeNodeContents = baseTypeNodes.map((node) => node.content).sort()
+        expect(baseTypeNodeContents).toEqual(['Child', 'Sibling'])
+
+        await backend.deleteNode(siblingId)
+        const liveBaseTypeNodes = await backend.getNodesBySupertagBaseType('task')
+        expect(liveBaseTypeNodes.map((node) => node.content)).toEqual(['Child'])
       })
     })
 
