@@ -85,11 +85,9 @@ The virtualizer's scroll element MUST be the outline's actual vertical scroller 
 
 Virtualization MUST NOT unmount a live editor. If `activeNodeId` is outside the current virtual range, the direct child containing that active node remains pinned in the DOM, including any ancestor chain needed to keep the active contenteditable mounted. Selection-mode keyboard navigation still walks the store-visible tree (`getNextVisibleNode`/`getPreviousVisibleNode`); when `selectedNodeId` or `activeNodeId` moves to a child outside the mounted range, the child-list virtualizer MUST `scrollToIndex` so the target row mounts before interaction continues.
 
-DRIFT: unvalidated-server-results
-- canonical: INV-12 — client parses `CreateNodeResult` with a Zod schema.
-- current: `_result as CreateNodeResult` on `unknown` (use-outline-sync.ts:116-117, 230-231); the ~100-line create/merge/swap block is also duplicated verbatim between `createNodeAfter` and `createFirstChild`.
-- impact: a server shape change fails silently at runtime; duplicated logic drifts independently.
-- closes: shared `resolveCreatedNode()` helper with `CreateNodeResultSchema.parse`.
+Resolved note: unvalidated-server-results (closed 2026-07-11)
+- previous: `_result as CreateNodeResult` cast on `unknown`, and the ~100-line create/merge/swap block duplicated verbatim between `createNodeAfter` and `createFirstChild`.
+- fixed: `persistCreate` parses the server response with `CreateNodeResultSchema` (discriminated union incl. the `{ success: false, error }` branch; `OutlineFieldSchema` validates applied fields) — a server shape change now throws at the boundary instead of corrupting the store. The create/merge/swap block is factored into the shared `applyServerCreateResult`, used by both create paths (INV-12).
 
 ## 4. Ordering model — fractional keys
 
@@ -154,13 +152,12 @@ DRIFT: fire-and-forget-sync-no-rollback
 
 **Canonical.** Create is optimistic: the store inserts under a client temp ID (`node-<timestamp>-<seq>`, outline.store.ts:44-46) so the UI never waits. When the server returns the durable ID (UUIDv7, see [./persistence.md](./persistence.md)), the client atomically swaps: node key, parent's `children` entry, `activeNodeId`/`selectedNodeId`/`selectedNodeIds`, and any pending debounced content transfers to the new ID. Until the swap resolves, INV-7 defers every mutation that references the temp ID (including creates whose *parent* is the temp node, and undo-snapshot diffs).
 
-**Current materialization** (the swap itself is correct and canonical): cancel pending content timer for the temp ID (use-outline-sync.ts:120-124), atomic `setState` remapping node/parent/selection (:127-172), re-issue content save under the server ID (:174-177); when server ID happens to equal temp ID, still merge `appliedSupertag`/`appliedFields` (:178-198). Duplicated in `createFirstChild` (:232-302).
+**Current materialization** (the swap itself is correct and canonical): one shared `applyServerCreateResult` (use-outline-sync.ts) cancels the pending content timer for the temp ID, atomically remaps node/parent/selection in one `setState`, records the mapping in `idRemaps`, and re-issues the content save under the server ID when content moved past what the create persisted; when the server ID equals the temp ID, it still merges `appliedSupertag`/`appliedFields`. Both create paths (`createNodeAfter`, `createFirstChild`) go through one `persistCreate`.
 
-DRIFT: temp-id-race-window
-- canonical: INV-7 — no request carries a temp ID.
-- current: nothing defers mutations during the create round-trip. Indent/outdent/reorder/delete/setFieldValue on the just-created node, or Enter creating a *child* of it, send the temp ID (`node-…`) as `nodeId`/`parentId` straight to the server (e.g. `indentNode` reads the store and fires immediately, use-outline-sync.ts:341-359; `createNodeServerFn` accepts any string `parentId`, outline.server.ts:302).
-- impact: server writes target a nonexistent node ID or create orphaned rows whose `ownerId` never resolves; fast typists hitting Enter-Tab lose the indent; fire-and-forget (§6) hides the failure.
-- closes: the write queue keys requests by node and holds any request referencing an unresolved temp ID until the create's response installs the `tempId → serverId` mapping; queued payloads are rewritten through the map before dispatch.
+Resolved note: temp-id-race-window (closed 2026-07-11)
+- previous: nothing deferred mutations during the create round-trip — indent/outdent/reorder/delete/setFieldValue on the just-created node, or Enter creating a *child* of it, sent the temp ID straight to the server; worst case a child row persisted under a nonexistent `ownerId` (wrong tree on reload), surfaced only as swallowed `Node not found` server-fn errors.
+- fixed: `persistCreate` registers the in-flight create in `pendingCreates` (temp ID → promise of server ID) and `applyServerCreateResult` installs the durable mapping in `idRemaps`. Every server-call path resolves node IDs through `resolveNodeId` (and parent refs through `resolveServerParentId`) before dispatch — content saves at timer fire, delete, indent/outdent, move up/down order swaps, moveNodeTo, supertag add/remove, field add/remove, and undo/redo snapshot diffs. Callbacks awaiting the same create dispatch in registration (issue) order when it resolves.
+- remaining: per-node request serialization (a strict issue-order write queue) is not implemented for any ID class — resolved-ID requests race on the network exactly as non-temp requests always have; INV-7's barrier clause is satisfied, its ordering clause is only as strong as the status quo.
 
 ## 8. Debounce semantics
 
