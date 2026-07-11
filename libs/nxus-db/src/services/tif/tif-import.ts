@@ -397,12 +397,10 @@ export function importTanaIntermediateFile(
         const codeField = ensureMarkerField(tx, markerFieldCache, 'field:tif_code_language', 'TIF code language', 'text')
         setProperty(tx, newId, codeField, tifNode.codeLanguage ?? '')
       }
-      // No first-class checkbox/todo mechanism exists on the node engine yet
-      // (see spec/product/tif-interchange.md) — fall back to a TIF-specific
-      // marker field rather than inventing engine behavior here.
+      // TIF todoState maps onto the engine's canonical checkbox field
+      // (field:todo_state, 'todo' | 'done' — spec/product/data-model.md).
       if (tifNode.todoState) {
-        const todoField = ensureMarkerField(tx, markerFieldCache, 'field:tif_todo_state', 'TIF todo state', 'text')
-        setProperty(tx, newId, todoField, tifNode.todoState)
+        setProperty(tx, newId, SYSTEM_FIELDS.TODO_STATE, tifNode.todoState)
       }
       if (tifNode.flags && tifNode.flags.length > 0) {
         const flagsField = ensureMarkerField(tx, markerFieldCache, 'field:tif_flags', 'TIF flags', 'json')

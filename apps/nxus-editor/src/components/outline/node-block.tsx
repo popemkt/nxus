@@ -38,6 +38,23 @@ export const NodeBlock = memo(function NodeBlock({
   const activateNode = useOutlineStore((s) => s.activateNode)
   const toggleCollapse = useOutlineStore((s) => s.toggleCollapse)
   const navigateToNode = useNavigateToNode()
+
+  // 3-state todo: absent = not a todo; 'todo' unchecked; 'done' checked
+  // (field:todo_state — spec/product/data-model.md). Rendered as a checkbox
+  // between bullet and content; hidden from field rows.
+  const todoField = node?.fields.find((f) => f.fieldSystemId === 'field:todo_state')
+  const todoState = todoField?.values[0]?.value
+  const isTodo = todoState === 'todo' || todoState === 'done'
+  const toggleTodo = useCallback(() => {
+    if (!node || !todoField) return
+    const next = todoState === 'done' ? 'todo' : 'done'
+    useOutlineStore.getState().updateFieldValue(nodeId, todoField.fieldId, next)
+    setFieldValueServerFn({
+      data: { nodeId, fieldId: todoField.fieldId, value: next },
+    }).catch((err) => {
+      console.error('[todo] Failed to persist todo state:', err)
+    })
+  }, [node, todoField, todoState, nodeId])
   const getPreviousVisibleNode = useOutlineStore(
     (s) => s.getPreviousVisibleNode,
   )
@@ -77,9 +94,31 @@ export const NodeBlock = memo(function NodeBlock({
 
   const handleContentChange = useCallback(
     (content: string) => {
+      // Tana-style conversion: typing '[] ' / '[x] ' at the start of a node
+      // turns it into a todo (checked for [x]) and strips the marker.
+      const todoPrefix = /^\[( |x)?\] /.exec(content)
+      if (todoPrefix && !todoField) {
+        const state = todoPrefix[1] === 'x' ? 'done' : 'todo'
+        const stripped = content.slice(todoPrefix[0].length)
+        updateNodeContent(nodeId, stripped)
+        useOutlineStore.getState().addField(nodeId, {
+          fieldId: 'field:todo_state',
+          fieldName: 'todoState',
+          fieldNodeId: 'field:todo_state',
+          fieldSystemId: 'field:todo_state',
+          fieldType: 'select',
+          values: [{ value: state, order: 0 }],
+        })
+        setFieldValueServerFn({
+          data: { nodeId, fieldId: 'field:todo_state', value: state },
+        }).catch((err) => {
+          console.error('[todo] Failed to persist todo conversion:', err)
+        })
+        return
+      }
       updateNodeContent(nodeId, content)
     },
-    [updateNodeContent, nodeId],
+    [updateNodeContent, nodeId, todoField],
   )
 
   const handleRemoveSupertag = useCallback(
@@ -362,6 +401,9 @@ export const NodeBlock = memo(function NodeBlock({
           'node-row group/node flex items-start',
           'rounded-sm transition-colors duration-75',
           isSelected && !isActive && 'bg-primary/5',
+          // Done todos: struck-through, dimmed content (checkbox stays crisp)
+          todoState === 'done' &&
+            '[&_[contenteditable]]:line-through [&_[contenteditable]]:opacity-60',
         )}
         style={{ paddingLeft: `${depth * 24}px` }}
       >
@@ -374,6 +416,16 @@ export const NodeBlock = memo(function NodeBlock({
           isQuery={isQuery}
           onClick={handleBulletClick}
         />
+        {isTodo && (
+          <input
+            type="checkbox"
+            checked={todoState === 'done'}
+            onChange={toggleTodo}
+            aria-label={todoState === 'done' ? 'Mark as todo' : 'Mark as done'}
+            data-testid="todo-checkbox"
+            className="mt-[7px] mr-1.5 size-3.5 shrink-0 accent-primary cursor-pointer"
+          />
+        )}
         <NodeContent
           nodeId={nodeId}
           content={node.content}

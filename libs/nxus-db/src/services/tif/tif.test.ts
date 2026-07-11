@@ -12,7 +12,7 @@ import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { and, eq, isNull } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../../schemas/item-schema.js'
-import { nodes as nodesTable, type FieldContentName } from '../../schemas/node-schema.js'
+import { nodes as nodesTable, FIELD_NAMES, type FieldContentName } from '../../schemas/node-schema.js'
 import { assembleNodes, clearSystemNodeCache, createNode, findNodeById, getProperty, getPropertyValues } from '../node.service.js'
 import { bootstrapSystemNodesSync } from '../bootstrap.js'
 import { importTanaIntermediateFile } from './tif-import.js'
@@ -187,7 +187,7 @@ describe('TIF import', () => {
     expect(rootChildren).toHaveLength(1)
     const childNode = rootChildren[0]
     expect(childNode.content).toBe(`See also [[node:${linkedId}]]`)
-    expect(getProperty(childNode, 'TIF todo state' as FieldContentName)).toBe('todo')
+    expect(getProperty(childNode, FIELD_NAMES.TODO_STATE)).toBe('todo')
 
     const grandchildren = childrenOf(ctx.db, childNode.id)
     expect(grandchildren).toHaveLength(1)

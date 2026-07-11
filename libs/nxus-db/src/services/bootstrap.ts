@@ -226,6 +226,12 @@ export function bootstrapSystemNodesSync(
     'formula',
     verbose,
   );
+  const todoStateFieldId = upsertSystemNode(
+    db,
+    SYSTEM_FIELDS.TODO_STATE,
+    'todoState',
+    verbose,
+  );
 
   // ============================================================================
   // Step 2: Create meta-supertags
@@ -272,6 +278,8 @@ export function bootstrapSystemNodesSync(
   assignSupertag(db, baseTypeFieldId, systemId, supertagFieldId, 1);
   assignSupertag(db, formulaFieldId, fieldId, supertagFieldId);
   assignSupertag(db, formulaFieldId, systemId, supertagFieldId, 1);
+  assignSupertag(db, todoStateFieldId, fieldId, supertagFieldId);
+  assignSupertag(db, todoStateFieldId, systemId, supertagFieldId, 1);
 
   // Set field types
   setProperty(db, supertagFieldId, fieldTypeFieldId, JSON.stringify('nodes'));
@@ -279,6 +287,7 @@ export function bootstrapSystemNodesSync(
   setProperty(db, fieldTypeFieldId, fieldTypeFieldId, JSON.stringify('select'));
   setProperty(db, baseTypeFieldId, fieldTypeFieldId, JSON.stringify('select'));
   setProperty(db, formulaFieldId, fieldTypeFieldId, JSON.stringify('text'));
+  setProperty(db, todoStateFieldId, fieldTypeFieldId, JSON.stringify('select'));
 
   // ============================================================================
   // Step 3: Create entity supertags

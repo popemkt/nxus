@@ -9,6 +9,7 @@ export * from './node.js'
 export * from './order.js'
 export * from './recall.js'
 export * from './base-type.js'
+export * from './todo-state.js'
 
 // Reactive system types (Zod schemas and TypeScript types)
 // These are safe for client use - no runtime database imports

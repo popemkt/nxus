@@ -51,7 +51,6 @@ const TIF_MARKER_CONTENT = {
   NODE_TYPE: 'TIF node type' as FieldContentName,
   MEDIA_URL: 'TIF media URL' as FieldContentName,
   CODE_LANGUAGE: 'TIF code language' as FieldContentName,
-  TODO_STATE: 'TIF todo state' as FieldContentName,
   FLAGS: 'TIF flags' as FieldContentName,
 }
 
@@ -64,11 +63,11 @@ const EXCLUDED_FIELD_NAMES = new Set<string>([
   FIELD_NAMES.MENTIONS,
   FIELD_NAMES.ORDER,
   FIELD_NAMES.VIEW_AS,
+  FIELD_NAMES.TODO_STATE,
   FIELD_NAMES.DESCRIPTION,
   TIF_MARKER_CONTENT.NODE_TYPE,
   TIF_MARKER_CONTENT.MEDIA_URL,
   TIF_MARKER_CONTENT.CODE_LANGUAGE,
-  TIF_MARKER_CONTENT.TODO_STATE,
   TIF_MARKER_CONTENT.FLAGS,
 ])
 
@@ -215,7 +214,7 @@ function buildTifNode(db: Db, assembled: AssembledNode, ctx: ExportContext): Tan
   const mediaUrl = type === 'image' ? getProperty<string>(assembled, TIF_MARKER_CONTENT.MEDIA_URL) : undefined
   const codeLanguage = type === 'codeblock' ? getProperty<string>(assembled, TIF_MARKER_CONTENT.CODE_LANGUAGE) : undefined
 
-  const rawTodoState = getProperty<string>(assembled, TIF_MARKER_CONTENT.TODO_STATE)
+  const rawTodoState = getProperty<string>(assembled, FIELD_NAMES.TODO_STATE)
   const todoState: TifTodoState | undefined =
     rawTodoState === 'todo' || rawTodoState === 'done' ? rawTodoState : undefined
 

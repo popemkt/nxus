@@ -49,9 +49,14 @@ function nodeToCalendarEvent(node: AssembledNode, taskNodeIds: Set<string>): Cal
   // Determine if this is a task by checking supertags
   const isTask = taskNodeIds.has(node.id)
 
-  // Determine if completed (for tasks)
+  // Determine if completed (for tasks): canonical field:todo_state wins,
+  // legacy free-string status heuristic kept for pre-todo-state data.
+  const todoState = getProperty<string>(node, FIELD_NAMES.TODO_STATE)
   const doneStatuses = ['done', 'completed', 'finished', 'closed']
-  const isCompleted = isTask && status ? doneStatuses.includes(status.toLowerCase()) : false
+  const isCompleted = isTask
+    ? todoState === 'done' ||
+      (todoState === undefined && !!status && doneStatuses.includes(status.toLowerCase()))
+    : false
 
   // Parse dates
   const start = startDateStr ? new Date(startDateStr) : new Date()
