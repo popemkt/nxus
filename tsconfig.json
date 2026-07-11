@@ -20,6 +20,9 @@
     },
     {
       "path": "./libs/nxus-node-api"
+    },
+    {
+      "path": "./libs/nxus-mcp"
     }
   ]
 }

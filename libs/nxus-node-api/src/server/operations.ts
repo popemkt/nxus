@@ -169,6 +169,25 @@ export interface GroupedBacklinksResult {
   totalCount: number
 }
 
+export interface GetOrCreateDayNodeInput {
+  date: string
+}
+
+export interface GetOrCreateDayNodeResult {
+  success: true
+  nodeId: string
+  created: boolean
+}
+
+export interface ImportTifInput {
+  json: string
+  ownerId?: string
+}
+
+export interface ExportSubtreeInput {
+  rootNodeId?: string
+}
+
 function toFieldSystemId(value: string): FieldSystemId {
   if (!value.startsWith('field:')) {
     throw new Error(`Expected field system ID, received: ${value}`)
@@ -658,4 +677,58 @@ export async function getGroupedBacklinks(
     .filter((group) => group.nodes.length > 0)
 
   return { groups, totalCount: result.totalCount }
+}
+
+export async function getOrCreateDayNode(
+  input: GetOrCreateDayNodeInput,
+): Promise<GetOrCreateDayNodeResult> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    throw new Error('YYYY-MM-DD required')
+  }
+
+  const nodeFacade = await getFacade()
+  const { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
+  const daySystemId = `item:day-${input.date}`
+  const existing = await nodeFacade.findNodeBySystemId(daySystemId)
+  if (existing) {
+    if (existing.deletedAt !== null) {
+      await nodeFacade.restoreNode(existing.id)
+    }
+    return { success: true, nodeId: existing.id, created: false }
+  }
+
+  let nodeId: string
+  try {
+    nodeId = await nodeFacade.createNode({
+      content: input.date,
+      systemId: daySystemId,
+      supertagId: SYSTEM_SUPERTAGS.DAY,
+    })
+  } catch (err) {
+    const winner = await nodeFacade.findNodeBySystemId(daySystemId)
+    if (winner) {
+      return { success: true, nodeId: winner.id, created: false }
+    }
+    throw err
+  }
+
+  await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.START_DATE, input.date)
+  await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.ALL_DAY, true)
+  await nodeFacade.createNode({ content: '', ownerId: nodeId })
+  return { success: true, nodeId, created: true }
+}
+
+export async function importTif(input: ImportTifInput) {
+  const parsed: unknown = JSON.parse(input.json)
+  const { importTanaIntermediateFile, initDatabaseWithBootstrap } =
+    await import('@nxus/db/server')
+  const db = await initDatabaseWithBootstrap()
+  return importTanaIntermediateFile(db, parsed, { ownerId: input.ownerId })
+}
+
+export async function exportSubtree(input: ExportSubtreeInput) {
+  const { exportSubtreeToTif, initDatabaseWithBootstrap } =
+    await import('@nxus/db/server')
+  const db = await initDatabaseWithBootstrap()
+  return exportSubtreeToTif(db, input.rootNodeId ?? null)
 }

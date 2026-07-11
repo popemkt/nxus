@@ -28,10 +28,13 @@
       "path": "../../libs/nxus-workbench"
     },
     {
+      "path": "../../libs/nxus-ui"
+    },
+    {
       "path": "../../libs/nxus-node-api"
     },
     {
-      "path": "../../libs/nxus-ui"
+      "path": "../../libs/nxus-mcp"
     },
     {
       "path": "../../libs/nxus-db"

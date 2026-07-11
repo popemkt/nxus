@@ -14,6 +14,7 @@
   "dependencies": {
     "@fontsource-variable/outfit": "^5.2.8",
     "@nxus/db": "workspace:*",
+    "@nxus/mcp": "workspace:*",
     "@nxus/node-api": "workspace:*",
     "@nxus/ui": "workspace:*",
     "@nxus/workbench": "workspace:*",
@@ -43,6 +44,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
     "vitest": "^3.0.5"

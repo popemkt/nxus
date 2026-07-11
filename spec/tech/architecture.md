@@ -2,7 +2,7 @@
 
 Invalidated by: implementation decisions about monorepo layout, app/port topology, module boundaries, or the server-function transport.
 
-Scope: repo shape, dependency rules, the app registry, the gateway/proxy design, the server-function pattern, and open consolidation decisions. Storage modes and the `nodeFacade` contract live in [persistence.md](./persistence.md); build/test/dev entrypoints live in [toolchain.md](./toolchain.md); per-app product briefs live in [../product/apps/](../product/apps/).
+Scope: repo shape, dependency rules, the app registry, the gateway/proxy design, the server-function pattern, and open consolidation decisions. Storage modes and the `nodeFacade` contract live in [persistence.md](./persistence.md); the agent MCP surface lives in [mcp.md](./mcp.md); build/test/dev entrypoints live in [toolchain.md](./toolchain.md); per-app product briefs live in [../product/apps/](../product/apps/).
 
 ## 1. Monorepo shape
 
@@ -11,7 +11,7 @@ Nx monorepo (Nx 22.x, pnpm workspaces) with three top-level source directories:
 | dir         | contains                                                                                                            | status |
 | ----------- | ------------------------------------------------------------------------------------------------------------------- | ------ |
 | `apps/`     | Runnable TanStack Start applications. Thin where a paired lib exists (workbench, calendar apps are ~5-file shells). | active |
-| `libs/`     | Shared libraries: `@nxus/db`, `@nxus/ui`, `@nxus/workbench`, `@nxus/calendar`, `@nxus/mastra`.                      | active |
+| `libs/`     | Shared libraries: `@nxus/db`, `@nxus/ui`, `@nxus/workbench`, `@nxus/calendar`, `@nxus/mastra`, `@nxus/node-api`, `@nxus/mcp`. | active |
 | `packages/` | **Legacy. Dead. MUST NOT gain new code.**                                                                           | dead   |
 
 `packages/` reality: `packages/_commands/` is a self-described "NOT TYPE-SAFE" Vite-glob command registry (`packages/_commands/index.ts:27-30`) with zero dependents and no `package.json` (not a real workspace member despite `pnpm-workspace.yaml:4`). `packages/repos/*` are 5 phantom gitlinks (mode `160000`, no `.gitmodules`) that break fresh clones. Both are excluded from Nx (`.nxignore:1-2`) and from every app's Vite watch.

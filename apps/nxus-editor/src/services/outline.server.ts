@@ -511,46 +511,8 @@ export const getOrCreateDayNodeServerFn = createServerFn({ method: 'POST' })
   )
   .handler(async (ctx) => {
     await initDatabaseSeeded()
-    const { nodeFacade, SYSTEM_FIELDS, SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
-    await nodeFacade.init()
-
-    // Deterministic per-date identity via the UNIQUE systemId column —
-    // a concurrent double-create races into the constraint instead of
-    // minting two day nodes (fail-fast over query-then-create).
-    const daySystemId = `item:day-${ctx.data.date}`
-    const existing = await nodeFacade.findNodeBySystemId(daySystemId)
-    if (existing) {
-      // A deleted daily note resurrects on revisit — the date identity is
-      // permanent, and leaving it soft-deleted would brick the Today button
-      // for that date (unique systemId blocks re-creation).
-      if (existing.deletedAt !== null) {
-        await nodeFacade.restoreNode(existing.id)
-      }
-      return { success: true as const, nodeId: existing.id, created: false }
-    }
-
-    let nodeId: string
-    try {
-      nodeId = await nodeFacade.createNode({
-        content: ctx.data.date,
-        systemId: daySystemId,
-        supertagId: SYSTEM_SUPERTAGS.DAY,
-      })
-    } catch (err) {
-      // Lost the race: the other request created it between our lookup and
-      // insert. The unique constraint guarantees exactly one — fetch it.
-      const winner = await nodeFacade.findNodeBySystemId(daySystemId)
-      if (winner) {
-        return { success: true as const, nodeId: winner.id, created: false }
-      }
-      throw err
-    }
-    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.START_DATE, ctx.data.date)
-    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.ALL_DAY, true)
-    // Seed one empty child so the zoomed daily page opens ready to type
-    // (a zoomed node with zero children renders the empty-outline state).
-    await nodeFacade.createNode({ content: '', ownerId: nodeId })
-    return { success: true as const, nodeId, created: true }
+    const { getOrCreateDayNode } = await import('@nxus/node-api/server')
+    return getOrCreateDayNode({ date: ctx.data.date })
   })
 
 export const setFieldValueServerFn = createServerFn({ method: 'POST' })
