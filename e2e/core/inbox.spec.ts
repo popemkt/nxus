@@ -93,7 +93,6 @@ test.describe('Core Inbox Page', () => {
     await page.goto('/core/inbox')
     await page.waitForLoadState('networkidle')
 
-    // Wait for items to load — there should be existing pending items
     await expect(
       page.getByRole('heading', { name: 'Inbox', level: 1 })
     ).toBeVisible()
@@ -105,7 +104,25 @@ test.describe('Core Inbox Page', () => {
     // Wait for full client-side hydration
     await expect(page.getByRole('button', { name: 'Open TanStack Devtools' })).toBeVisible({ timeout: 5000 })
 
-    // Wait for at least one edit button to appear (items fully rendered)
+    // Seed our own pending item via the Add Item modal — the demo seed creates
+    // no inbox items, and tests run fully parallel, so C8 must not depend on
+    // leftovers from other specs (this was an order-dependent flake).
+    const addItemBtn = page.getByRole('button', { name: /Add Item/ })
+    const addModalHeading = page.getByRole('heading', { name: 'Add to Inbox' })
+    await addItemBtn.click()
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await addModalHeading.isVisible({ timeout: 2000 }).catch(() => false)) break
+      await addItemBtn.click()
+    }
+    await expect(addModalHeading).toBeVisible({ timeout: 5000 })
+    const c8Title = `C8 Edit-Delete Item ${Date.now()}`
+    await page.locator('#inbox-title').fill(c8Title)
+    await page.getByRole('button', { name: 'Add to Inbox' }).click()
+    await expect(addModalHeading).toBeHidden({ timeout: 5000 })
+
+    // Wait for our item to render — at least one editable pending item is now
+    // guaranteed regardless of what other specs did to the shared DB
+    await expect(page.getByText(c8Title)).toBeVisible({ timeout: 10000 })
     const editButtons = page.getByRole('button', { name: 'Edit item' })
     await expect(editButtons.first()).toBeVisible({ timeout: 10000 })
 
