@@ -79,6 +79,7 @@ async function createTestSqliteBackend(): Promise<TestContext> {
     { id: 'field-parent', systemId: 'field:parent', content: 'parent' },
     { id: 'field-order', systemId: 'field:order', content: 'order' },
     { id: 'field-base-type', systemId: 'field:base_type', content: 'baseType' },
+    { id: 'field-mentions', systemId: SYSTEM_FIELDS.MENTIONS, content: 'mentions' },
   ]
 
   for (const field of systemFields) {
@@ -369,6 +370,24 @@ describe.each(['sqlite', 'surreal'] as const)(
         const node = await backend.assembleNode(nodeId)
         expect(node!.content).toBe('Updated')
       })
+
+      it('should reconcile inline mentions on create and update', async () => {
+        const targetId = await backend.createNode({ content: 'Mention target' })
+        const sourceId = await backend.createNode({
+          content: `Mentions [[node:${targetId}]] inline`,
+        })
+
+        const created = await backend.assembleNode(sourceId)
+        expect(created!.properties[FIELD_NAMES.MENTIONS]).toBeDefined()
+        expect(created!.properties[FIELD_NAMES.MENTIONS].map((prop) => prop.value)).toEqual([
+          targetId,
+        ])
+
+        await backend.updateNodeContent(sourceId, 'Mention removed')
+
+        const updated = await backend.assembleNode(sourceId)
+        expect(updated!.properties[FIELD_NAMES.MENTIONS]).toBeUndefined()
+      })
     })
 
     // -----------------------------------------------------------------------
@@ -561,6 +580,59 @@ describe.each(['sqlite', 'surreal'] as const)(
         await backend.deleteNode(siblingId)
         const liveBaseTypeNodes = await backend.getNodesBySupertagBaseType('task')
         expect(liveBaseTypeNodes.map((node) => node.content)).toEqual(['Child'])
+      })
+    })
+
+    // -----------------------------------------------------------------------
+    // Facade tree-read batch methods
+    // -----------------------------------------------------------------------
+
+    describe('facade tree-read batch methods', () => {
+      it('should batch children by parents in outline order and exclude deleted children', async () => {
+        const parentA = await backend.createNode({ content: 'Parent A' })
+        const parentB = await backend.createNode({ content: 'Parent B' })
+        const lateChild = await backend.createNode({
+          content: 'A child order 20',
+          ownerId: parentA,
+        })
+        const earlyChild = await backend.createNode({
+          content: 'A child order 10',
+          ownerId: parentA,
+        })
+        const deletedChild = await backend.createNode({
+          content: 'A deleted child',
+          ownerId: parentA,
+        })
+        const onlyChild = await backend.createNode({
+          content: 'B child',
+          ownerId: parentB,
+        })
+
+        await backend.setProperty(lateChild, SYSTEM_FIELDS.ORDER, 20)
+        await backend.setProperty(earlyChild, SYSTEM_FIELDS.ORDER, 10)
+        await backend.setProperty(deletedChild, SYSTEM_FIELDS.ORDER, 0)
+        await backend.setProperty(onlyChild, SYSTEM_FIELDS.ORDER, 0)
+        await backend.deleteNode(deletedChild)
+
+        const childrenByParent = await backend.getChildrenByParents([parentA, parentB])
+        expect(childrenByParent.get(parentA)?.map((node) => node.id)).toEqual([
+          earlyChild,
+          lateChild,
+        ])
+        expect(childrenByParent.get(parentB)?.map((node) => node.id)).toEqual([
+          onlyChild,
+        ])
+
+        const childPresence = await backend.hasChildren([
+          parentA,
+          parentB,
+          lateChild,
+          deletedChild,
+        ])
+        expect(childPresence.get(parentA)).toBe(true)
+        expect(childPresence.get(parentB)).toBe(true)
+        expect(childPresence.get(lateChild)).toBe(false)
+        expect(childPresence.get(deletedChild)).toBe(false)
       })
     })
 

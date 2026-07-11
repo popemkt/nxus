@@ -13,6 +13,7 @@ import { getDatabase } from '../client/master-client.js'
 import {
   nodeProperties,
   nodes,
+  FIELD_NAMES,
   SYSTEM_FIELDS,
   SYSTEM_SUPERTAGS,
   isSystemId,
@@ -22,6 +23,8 @@ import {
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
 import { eventBus } from '../reactive/event-bus.js'
 import { evaluateFormulaExpression } from './formula-evaluator.js'
+import { formatOrderKey } from '../types/order.js'
+import { extractMentionedNodeIds } from './mentions.js'
 
 // Re-export types from the shared types file (for backward compatibility)
 export type {
@@ -700,6 +703,73 @@ export function assembleNodes(
   return results
 }
 
+function compareAssembledOutlineSiblings(a: AssembledNode, b: AssembledNode): number {
+  const aOrder = formatOrderKey(getProperty(a, FIELD_NAMES.ORDER))
+  const bOrder = formatOrderKey(getProperty(b, FIELD_NAMES.ORDER))
+  const orderCmp = aOrder.localeCompare(bOrder)
+  if (orderCmp !== 0) return orderCmp
+  return (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)
+}
+
+/**
+ * Batch-assemble live children for one tree level, grouped by parent.
+ */
+export function getChildrenByParents(
+  db: ReturnType<typeof getDatabase>,
+  parentIds: string[],
+): Map<string, AssembledNode[]> {
+  const childrenByParent = new Map<string, AssembledNode[]>()
+  const uniqueParentIds = [...new Set(parentIds)]
+  for (const parentId of uniqueParentIds) childrenByParent.set(parentId, [])
+  if (uniqueParentIds.length === 0) return childrenByParent
+
+  const childRows = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(and(inArray(nodes.ownerId, uniqueParentIds), isNull(nodes.deletedAt)))
+    .all()
+
+  const childIds = childRows.map((row) => row.id)
+  const assembledChildren = assembleNodes(db, childIds, createAssemblyCache())
+  for (const child of assembledChildren) {
+    if (child.deletedAt || !child.ownerId) continue
+    const siblings = childrenByParent.get(child.ownerId)
+    if (siblings) siblings.push(child)
+  }
+
+  for (const siblings of childrenByParent.values()) {
+    siblings.sort(compareAssembledOutlineSiblings)
+  }
+
+  return childrenByParent
+}
+
+/**
+ * Batch-check whether each candidate parent has at least one live child.
+ */
+export function hasChildren(
+  db: ReturnType<typeof getDatabase>,
+  parentIds: string[],
+): Map<string, boolean> {
+  const result = new Map<string, boolean>()
+  const uniqueParentIds = [...new Set(parentIds)]
+  for (const parentId of uniqueParentIds) result.set(parentId, false)
+  if (uniqueParentIds.length === 0) return result
+
+  const childRows = db
+    .select({ ownerId: nodes.ownerId })
+    .from(nodes)
+    .where(and(inArray(nodes.ownerId, uniqueParentIds), isNull(nodes.deletedAt)))
+    .groupBy(nodes.ownerId)
+    .all()
+
+  for (const row of childRows) {
+    if (row.ownerId) result.set(row.ownerId, true)
+  }
+
+  return result
+}
+
 function applyFormulaFields(
   db: ReturnType<typeof getDatabase>,
   assembled: AssembledNode,
@@ -884,30 +954,7 @@ export function assembleNodeWithInheritance(
 // Inline mentions - extraction and reconciliation
 // ============================================================================
 
-/**
- * Inline mention token grammar: `[[node:<uuid>]]`.
- * The uuid group matches any RFC-4122-shaped id (nodes use uuidv7).
- */
-const INLINE_MENTION_TOKEN_PATTERN =
-  /\[\[node:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\]\]/g
-
-/**
- * Extract the set of node ids referenced via `[[node:<uuid>]]` tokens in
- * `content`, deduplicated, in first-occurrence order.
- */
-export function extractMentionedNodeIds(content: string | null | undefined): string[] {
-  if (!content) return []
-  const ids: string[] = []
-  const seen = new Set<string>()
-  for (const match of content.matchAll(INLINE_MENTION_TOKEN_PATTERN)) {
-    const id = match[1]
-    if (id && !seen.has(id)) {
-      seen.add(id)
-      ids.push(id)
-    }
-  }
-  return ids
-}
+export { extractMentionedNodeIds } from './mentions.js'
 
 /**
  * Reconcile a node's `field:mentions` property rows against the inline

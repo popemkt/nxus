@@ -210,11 +210,7 @@ Proof: `outline-editor.spec.ts` — "Backlinks" (`outline-editor.spec.ts:718-880
 
 (Closed 2026-07-07: the "inline mentions not representable" DRIFT — `field:mentions` extraction/reconciliation landed in `libs/nxus-db` (`node.service.ts:740-836`), `getGroupedBacklinks` emits `inline-mention` groups, and the editor renders `[[node:<uuid>]]` tokens as clickable chips with a `[[`-triggered insertion popover. Graph-mode (`ARCHITECTURE_TYPE=graph`) extraction is not implemented — see DRIFT below.)
 
-DRIFT: inline mention extraction is node-mode only
-- canonical: `field:mentions` is reconciled on every content write regardless of architecture mode (`data-model.md §3.5`).
-- current: reconciliation is implemented in `node.service.ts`'s `createNode`/`updateNodeContent`, which only the SQLite/node-mode backend calls (`backends/sqlite-backend.ts:67-75`); the SurrealDB/graph-mode backend's `createNode`/`updateNodeContent` (`backends/surreal-backend.ts:205,276`) do not call it.
-- impact: under `ARCHITECTURE_TYPE=graph` (experimental, non-default), inline mention tokens render as chips but never populate `field:mentions`, so the target's Mentioned subsection stays empty.
-- closes: port `extractMentionedNodeIds`/reconciliation into the SurrealDB backend's content-write path, or hoist reconciliation into the shared `NodeFacade` layer so both backends get it for free.
+(Closed 2026-07-11: the "inline mention extraction is node-mode only" DRIFT — the mention-token parser is shared (`libs/nxus-db/src/services/mentions.ts`), SQLite keeps reconciliation inside its existing node-service transaction, and SurrealDB reconciles `field:mentions` inside its native `createNode`/`updateNodeContent` transaction path. Backend equivalence tests cover create-with-token and update-removes-token for both backends.)
 
 ## 9. Zoomed-In Node View (detail screen)
 

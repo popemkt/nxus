@@ -18,7 +18,7 @@
 import type { Surreal, RecordId } from 'surrealdb'
 import { StringRecordId } from 'surrealdb'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { FIELD_NAMES, SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
 import type { AssembledNode, CreateNodeOptions, PropertyValue } from '../../types/node.js'
 import type { JsonValue } from '../../types/common.js'
 import type { BaseType } from '../../types/base-type.js'
@@ -39,6 +39,8 @@ import type { SupertagInfo } from '../node.service.js'
 import type { QueryEvaluationResult } from '../query-evaluator.service.js'
 import type { MutationEvent } from '../../reactive/types.js'
 import { eventBus } from '../../reactive/event-bus.js'
+import { formatOrderKey } from '../../types/order.js'
+import { extractMentionedNodeIds } from '../mentions.js'
 
 // ---------------------------------------------------------------------------
 // Internal SurrealDB record types (query results)
@@ -68,6 +70,11 @@ interface SupertagEdge {
   name: string
   system_id: string | null
   supertag_record: RecordId // the `out` RecordId of the supertag
+  order: number
+}
+
+interface MentionEdge {
+  value: unknown
   order: number
 }
 
@@ -296,6 +303,117 @@ export class SurrealBackend implements NodeBackend {
     return this.resolveFieldId(systemId)
   }
 
+  private async readMentionEdges(
+    nodeId: string,
+    mentionsFieldId: string,
+  ): Promise<MentionEdge[]> {
+    const db = this.ensureInitialized()
+    const [existing] = await db.query<[MentionEdge[]]>(
+      'SELECT `value`, `order` FROM has_field WHERE in = $nodeId AND out = $fieldId',
+      {
+        nodeId: new StringRecordId(nodeId),
+        fieldId: new StringRecordId(mentionsFieldId),
+      },
+    )
+    return existing ?? []
+  }
+
+  private buildMentionReconciliationStatements(input: {
+    nodeId?: string
+    nodeExpression?: string
+    mentionsFieldId: string
+    content: string | null | undefined
+    existingEdges: MentionEdge[]
+  }): { statements: SurrealStatement[]; added: string[]; removed: string[] } {
+    const desired = extractMentionedNodeIds(input.content)
+    const desiredSet = new Set(desired)
+    const existingByValue = new Map<string, MentionEdge>()
+    for (const edge of input.existingEdges) {
+      if (typeof edge.value === 'string') existingByValue.set(edge.value, edge)
+    }
+
+    const statements: SurrealStatement[] = []
+    const removed: string[] = []
+    const added: string[] = []
+
+    let removeIndex = 0
+    for (const value of existingByValue.keys()) {
+      if (desiredSet.has(value)) continue
+      removed.push(value)
+      const params: Record<string, unknown> = {
+        [`removedMentionValue${removeIndex}`]: value,
+        mentionsFieldId: new StringRecordId(input.mentionsFieldId),
+      }
+      const nodePredicate = input.nodeExpression
+        ? `in = ${input.nodeExpression}`
+        : `in = $mentionNodeId${removeIndex}`
+      if (!input.nodeExpression && input.nodeId) {
+        params[`mentionNodeId${removeIndex}`] = new StringRecordId(input.nodeId)
+      }
+      statements.push({
+        query: `DELETE has_field WHERE ${nodePredicate} AND out = $mentionsFieldId AND \`value\` = $removedMentionValue${removeIndex}`,
+        params,
+      })
+      removeIndex += 1
+    }
+
+    let maxOrder = input.existingEdges.reduce(
+      (max, edge) => Math.max(max, edge.order ?? 0),
+      -1,
+    )
+    let addIndex = 0
+    for (const value of desired) {
+      if (existingByValue.has(value)) continue
+      maxOrder += 1
+      added.push(value)
+      const params: Record<string, unknown> = {
+        [`mentionTo${addIndex}`]: new StringRecordId(input.mentionsFieldId),
+        [`mentionValue${addIndex}`]: value,
+        [`mentionOrder${addIndex}`]: maxOrder,
+      }
+      const fromExpression = input.nodeExpression ?? `$mentionFrom${addIndex}`
+      if (!input.nodeExpression && input.nodeId) {
+        params[`mentionFrom${addIndex}`] = new StringRecordId(input.nodeId)
+      }
+      statements.push({
+        query: `RELATE ${fromExpression}->has_field->$mentionTo${addIndex} SET \`value\` = $mentionValue${addIndex}, \`order\` = $mentionOrder${addIndex}, created_at = time::now(), updated_at = time::now()`,
+        params,
+      })
+      addIndex += 1
+    }
+
+    return { statements, added, removed }
+  }
+
+  private emitMentionReconciliationEvents(input: {
+    nodeId: string
+    mentionsFieldId: string
+    added: string[]
+    removed: string[]
+    timestamp: Date
+  }): void {
+    for (const value of input.removed) {
+      emitMutation({
+        type: 'property:removed',
+        timestamp: input.timestamp,
+        nodeId: input.nodeId,
+        fieldId: input.mentionsFieldId,
+        fieldSystemId: SYSTEM_FIELDS.MENTIONS as string,
+        beforeValue: value,
+      })
+    }
+    for (const value of input.added) {
+      emitMutation({
+        type: 'property:added',
+        timestamp: input.timestamp,
+        nodeId: input.nodeId,
+        fieldId: input.mentionsFieldId,
+        fieldSystemId: SYSTEM_FIELDS.MENTIONS as string,
+        afterValue: value,
+      })
+    }
+  }
+
   /**
    * Resolve a supertag system_id (e.g., 'supertag:item') to its SurrealDB record ID string.
    */
@@ -377,6 +495,13 @@ export class SurrealBackend implements NodeBackend {
     const supertagRecordId = options.supertagId
       ? await this.resolveSupertagId(options.supertagId)
       : null
+    const mentionsFieldId = await this.resolveFieldId(SYSTEM_FIELDS.MENTIONS)
+    const mentionReconciliation = this.buildMentionReconciliationStatements({
+      nodeExpression: '($newNode[0].id)',
+      mentionsFieldId,
+      content: options.content,
+      existingEdges: [],
+    })
 
     return runMutationTransaction(async () => {
       // `LET $newNode = (CREATE ...)` binds the created record so the
@@ -396,6 +521,7 @@ export class SurrealBackend implements NodeBackend {
           params: { stId: new StringRecordId(supertagRecordId) },
         })
       }
+      statements.push(...mentionReconciliation.statements)
 
       statements.push({ query: 'RETURN $newNode[0].id' })
 
@@ -421,6 +547,13 @@ export class SurrealBackend implements NodeBackend {
           supertagId: supertagRecordId,
         })
       }
+      this.emitMentionReconciliationEvents({
+        nodeId,
+        mentionsFieldId,
+        added: mentionReconciliation.added,
+        removed: mentionReconciliation.removed,
+        timestamp: now,
+      })
 
       return nodeId
     })
@@ -436,6 +569,13 @@ export class SurrealBackend implements NodeBackend {
     )
     const beforeContent = current?.[0]?.content ?? null
     const now = new Date()
+    const mentionsFieldId = await this.resolveFieldId(SYSTEM_FIELDS.MENTIONS)
+    const mentionReconciliation = this.buildMentionReconciliationStatements({
+      nodeId,
+      mentionsFieldId,
+      content,
+      existingEdges: await this.readMentionEdges(nodeId, mentionsFieldId),
+    })
 
     return runMutationTransaction(async () => {
       await runSurrealTransaction(db, [
@@ -447,6 +587,7 @@ export class SurrealBackend implements NodeBackend {
             contentPlain: content.toLowerCase(),
           },
         },
+        ...mentionReconciliation.statements,
       ])
 
       emitMutation({
@@ -455,6 +596,13 @@ export class SurrealBackend implements NodeBackend {
         nodeId,
         beforeValue: beforeContent,
         afterValue: content,
+      })
+      this.emitMentionReconciliationEvents({
+        nodeId,
+        mentionsFieldId,
+        added: mentionReconciliation.added,
+        removed: mentionReconciliation.removed,
+        timestamp: now,
       })
     })
   }
@@ -703,6 +851,68 @@ export class SurrealBackend implements NodeBackend {
     }
 
     return node
+  }
+
+  async getChildrenByParents(
+    parentIds: string[],
+  ): Promise<Map<string, AssembledNode[]>> {
+    const childrenByParent = new Map<string, AssembledNode[]>()
+    const uniqueParentIds = [...new Set(parentIds)]
+    for (const parentId of uniqueParentIds) childrenByParent.set(parentId, [])
+    if (uniqueParentIds.length === 0) return childrenByParent
+
+    const db = this.ensureInitialized()
+    const [childRows] = await db.query<[SurrealNode[]]>(
+      'SELECT * FROM node WHERE owner_id IN $parentIds AND deleted_at IS NONE',
+      { parentIds: uniqueParentIds },
+    )
+
+    const assembledChildren = await Promise.all(
+      (childRows ?? []).map((row) => this.assembleFromRecord(row)),
+    )
+    for (const child of assembledChildren) {
+      if (child.deletedAt || !child.ownerId) continue
+      const siblings = childrenByParent.get(child.ownerId)
+      if (siblings) siblings.push(child)
+    }
+
+    for (const siblings of childrenByParent.values()) {
+      siblings.sort((a, b) => this.compareOutlineSiblings(a, b))
+    }
+
+    return childrenByParent
+  }
+
+  async hasChildren(parentIds: string[]): Promise<Map<string, boolean>> {
+    const result = new Map<string, boolean>()
+    const uniqueParentIds = [...new Set(parentIds)]
+    for (const parentId of uniqueParentIds) result.set(parentId, false)
+    if (uniqueParentIds.length === 0) return result
+
+    const db = this.ensureInitialized()
+    const [childRows] = await db.query<[Array<{ owner_id: string | null }>]>(
+      'SELECT owner_id FROM node WHERE owner_id IN $parentIds AND deleted_at IS NONE GROUP BY owner_id',
+      { parentIds: uniqueParentIds },
+    )
+
+    for (const row of childRows ?? []) {
+      if (row.owner_id) result.set(row.owner_id, true)
+    }
+
+    return result
+  }
+
+  private compareOutlineSiblings(a: AssembledNode, b: AssembledNode): number {
+    const aOrder = formatOrderKey(this.getSortableOrderValue(a))
+    const bOrder = formatOrderKey(this.getSortableOrderValue(b))
+    const orderCmp = aOrder.localeCompare(bOrder)
+    if (orderCmp !== 0) return orderCmp
+    return (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)
+  }
+
+  private getSortableOrderValue(node: AssembledNode): string | number | null {
+    const value = node.properties[FIELD_NAMES.ORDER]?.[0]?.value
+    return typeof value === 'string' || typeof value === 'number' ? value : null
   }
 
   /**

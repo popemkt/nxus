@@ -84,6 +84,12 @@ describe('extractMentionedNodeIds', () => {
     ])
   })
 
+  it('extracts graph-mode node record ids', () => {
+    expect(extractMentionedNodeIds('see [[node:node:bznp3cj48q1rzjyovhky]]')).toEqual([
+      'node:bznp3cj48q1rzjyovhky',
+    ])
+  })
+
   it('returns empty for content with no tokens', () => {
     expect(extractMentionedNodeIds('plain text, no tokens here')).toEqual([])
     expect(extractMentionedNodeIds(null)).toEqual([])

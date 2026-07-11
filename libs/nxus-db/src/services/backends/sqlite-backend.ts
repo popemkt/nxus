@@ -125,6 +125,18 @@ export class SqliteBackend implements NodeBackend {
     return nodeService.assembleNodeWithInheritance(db, nodeId)
   }
 
+  async getChildrenByParents(
+    parentIds: string[],
+  ): Promise<Map<string, AssembledNode[]>> {
+    const db = this.ensureInitialized()
+    return nodeService.getChildrenByParents(db, parentIds)
+  }
+
+  async hasChildren(parentIds: string[]): Promise<Map<string, boolean>> {
+    const db = this.ensureInitialized()
+    return nodeService.hasChildren(db, parentIds)
+  }
+
   // ---------------------------------------------------------------------------
   // Property Operations
   // ---------------------------------------------------------------------------

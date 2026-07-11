@@ -84,6 +84,12 @@ export interface NodeBackend {
   /** Assemble a node with inherited field defaults from supertag chain */
   assembleNodeWithInheritance(nodeId: string): Promise<AssembledNode | null>
 
+  /** Batch-assemble children of the given parents, one level. */
+  getChildrenByParents(parentIds: string[]): Promise<Map<string, AssembledNode[]>>
+
+  /** For each candidate parent, whether it has any non-deleted children. */
+  hasChildren(parentIds: string[]): Promise<Map<string, boolean>>
+
   // ---------------------------------------------------------------------------
   // Property Operations
   // ---------------------------------------------------------------------------

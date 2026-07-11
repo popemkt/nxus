@@ -133,6 +133,16 @@ export class NodeFacade implements NodeBackend {
     return this.ensureInitialized().assembleNodeWithInheritance(nodeId)
   }
 
+  async getChildrenByParents(
+    parentIds: string[],
+  ): Promise<Map<string, AssembledNode[]>> {
+    return this.ensureInitialized().getChildrenByParents(parentIds)
+  }
+
+  async hasChildren(parentIds: string[]): Promise<Map<string, boolean>> {
+    return this.ensureInitialized().hasChildren(parentIds)
+  }
+
   // ---------------------------------------------------------------------------
   // Property Operations
   // ---------------------------------------------------------------------------

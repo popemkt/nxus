@@ -48,6 +48,7 @@ const SURREAL_FIELD_DEFINITIONS: Array<{
   { systemId: SYSTEM_FIELDS.COMMANDS, content: 'commands', valueType: 'nodes' },
   { systemId: SYSTEM_FIELDS.PARENT, content: 'parent', valueType: 'node' },
   { systemId: SYSTEM_FIELDS.ORDER, content: 'order', valueType: 'number' },
+  { systemId: SYSTEM_FIELDS.MENTIONS, content: 'mentions', valueType: 'nodes' },
 
   // Tool-specific
   { systemId: SYSTEM_FIELDS.CHECK_COMMAND, content: 'checkCommand', valueType: 'text' },
