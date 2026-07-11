@@ -5,8 +5,9 @@
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import * as schema from '../schemas/item-schema.js'
-import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId } from '../schemas/node-schema.js'
+import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS, nodes, type FieldSystemId } from '../schemas/node-schema.js'
 import {
   clearSystemNodeCache,
   createNode,
@@ -686,6 +687,40 @@ describe('query-evaluator.service', () => {
 
       expect(result.size).toBe(1)
       expect(result.has(node)).toBe(true)
+    })
+
+    it('treats the boundary instant as exclusive for after and before', () => {
+      const node = createNode(db, { content: 'Boundary Node' })
+      const row = db.select({ createdAt: nodes.createdAt }).from(nodes)
+        .where(eq(nodes.id, node)).get()
+      expect(row).toBeDefined()
+      const exactDate = row!.createdAt.toISOString()
+      const candidates = new Set([node])
+
+      // 'after' is strictly greater-than: the boundary instant itself must not match
+      const afterAtBoundary = evaluateTemporalFilter(
+        db,
+        { type: 'temporal', field: 'createdAt', op: 'after', date: exactDate },
+        candidates,
+      )
+      expect(afterAtBoundary.size).toBe(0)
+
+      // 'before' is strictly less-than: same exclusion at the boundary
+      const beforeAtBoundary = evaluateTemporalFilter(
+        db,
+        { type: 'temporal', field: 'createdAt', op: 'before', date: exactDate },
+        candidates,
+      )
+      expect(beforeAtBoundary.size).toBe(0)
+
+      // one millisecond earlier, 'after' matches again
+      const justBefore = new Date(row!.createdAt.getTime() - 1).toISOString()
+      const afterJustBefore = evaluateTemporalFilter(
+        db,
+        { type: 'temporal', field: 'createdAt', op: 'after', date: justBefore },
+        candidates,
+      )
+      expect(afterJustBefore.size).toBe(1)
     })
   })
 

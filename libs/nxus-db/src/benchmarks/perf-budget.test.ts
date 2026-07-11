@@ -62,7 +62,7 @@ describe.skipIf(process.env.NXUS_PERF !== '1')('env-gated @nxus/db performance b
 
     expect(seedMs).toBeLessThan(60_000)
     expect(fullTreeMs).toBeLessThan(5_000)
-    expect(supertagQueryMs).toBeLessThan(1_000)
+    expect(supertagQueryMs).toBeLessThan(100)
     expect(createNodeMs).toBeLessThan(100)
   }, 120_000)
 

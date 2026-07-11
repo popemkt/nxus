@@ -1626,23 +1626,21 @@ export function getNodeIdsBySupertagWithInheritance(
   const supertagField = getSystemNode(db, SYSTEM_FIELDS.SUPERTAG)
   if (!supertagField) return []
 
-  // Single query: get all supertag property assignments, then filter in memory
-  const allSupertagProps = db
-    .select()
+  const supertagValues = [...allSupertagIds].map((id) => JSON.stringify(id))
+  if (supertagValues.length === 0) return []
+
+  const matchingSupertagProps = db
+    .select({ nodeId: nodeProperties.nodeId })
     .from(nodeProperties)
-    .where(eq(nodeProperties.fieldNodeId, supertagField.id))
+    .where(and(
+      eq(nodeProperties.fieldNodeId, supertagField.id),
+      inArray(nodeProperties.value, supertagValues),
+    ))
     .all()
 
   const nodeIdSet = new Set<string>()
-  for (const p of allSupertagProps) {
-    try {
-      const value = JSON.parse(p.value || '')
-      if (allSupertagIds.has(value)) {
-        nodeIdSet.add(p.nodeId)
-      }
-    } catch {
-      // skip malformed
-    }
+  for (const p of matchingSupertagProps) {
+    nodeIdSet.add(p.nodeId)
   }
 
   return [...nodeIdSet]

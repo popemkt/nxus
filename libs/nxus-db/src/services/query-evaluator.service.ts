@@ -15,7 +15,8 @@
  * All filters are pure functions with no side effects.
  */
 
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, gt, gte, inArray, isNull, lt } from 'drizzle-orm'
+import type { SQL } from 'drizzle-orm'
 import { getDatabase } from '../client/master-client.js'
 import { nodeProperties, nodes, SYSTEM_FIELDS } from '../schemas/node-schema.js'
 import type {
@@ -36,6 +37,7 @@ import type {
 import { UUID_REGEX } from '../types/common.js'
 import {
   assembleNodes,
+  createAssemblyCache,
   getFieldOrSupertagNode,
   getNodeIdsBySupertagWithInheritance,
   getSystemNode,
@@ -50,6 +52,10 @@ import {
  * Database type used throughout the evaluator
  */
 type Database = ReturnType<typeof getDatabase>
+
+interface QueryEvaluationContext {
+  supertagMembership: Map<string, string[]>
+}
 
 /**
  * Query evaluation result
@@ -76,17 +82,20 @@ export function evaluateQuery(
   definition: QueryDefinition,
 ): QueryEvaluationResult {
   const evaluatedAt = new Date()
+  const context: QueryEvaluationContext = {
+    supertagMembership: new Map(),
+  }
 
   // 1. Start from the narrowest sound seed we can prove from top-level
   // conjunctions. Fall back to all non-deleted nodes for OR/NOT roots.
-  let candidateIds = getInitialCandidateIds(db, definition.filters)
+  let candidateIds = getInitialCandidateIds(db, definition.filters, context)
 
   // 2. Apply each filter (top-level filters are AND'd together). `evaluatedAt`
   // is threaded through as the single clock for every relative-date filter in
   // this evaluation, so 'today' resolves identically across the whole query
   // even if evaluation spans a midnight boundary in wall-clock time.
   for (const filter of definition.filters) {
-    candidateIds = evaluateFilter(db, filter, candidateIds, evaluatedAt)
+    candidateIds = evaluateFilter(db, filter, candidateIds, evaluatedAt, context)
     // Short-circuit if no candidates remain
     if (candidateIds.size === 0) {
       return { nodes: [], totalCount: 0, evaluatedAt }
@@ -95,16 +104,20 @@ export function evaluateQuery(
 
   const totalCount = candidateIds.size
 
-  // 3. Assemble nodes (batch — 4 queries instead of N * (2+M+K))
-  let assembledNodes = assembleNodes(db, Array.from(candidateIds))
+  // 3. Select the exact result page before assembly. totalCount remains the
+  // full filtered count; only losing rows skip expensive property/formula work.
+  const limit = definition.limit ?? 500
+  const candidateIdArray = Array.from(candidateIds)
+  const pageIds = getPageNodeIds(db, candidateIdArray, definition.sort, limit)
 
-  // 4. Apply sorting
-  if (definition.sort) {
+  // 4. Assemble only the page nodes, with one evaluation-scoped cache.
+  let assembledNodes = assembleNodes(db, pageIds, createAssemblyCache())
+
+  // 5. Property-value sorts need assembled properties to preserve existing
+  // first-property sorting semantics. Built-in sorts were already applied by ID.
+  if (definition.sort && !isBuiltinSortField(definition.sort.field)) {
     assembledNodes = sortNodes(db, assembledNodes, definition.sort)
   }
-
-  // 5. Apply limit
-  const limit = definition.limit ?? 500
   if (assembledNodes.length > limit) {
     assembledNodes = assembledNodes.slice(0, limit)
   }
@@ -133,10 +146,11 @@ export function evaluateFilter(
   filter: QueryFilter,
   candidateIds: Set<string>,
   now: Date = new Date(),
+  context?: QueryEvaluationContext,
 ): Set<string> {
   switch (filter.type) {
     case 'supertag':
-      return evaluateSupertagFilter(db, filter, candidateIds)
+      return evaluateSupertagFilter(db, filter, candidateIds, context)
     case 'property':
       return evaluatePropertyFilter(db, filter, candidateIds)
     case 'path':
@@ -152,7 +166,7 @@ export function evaluateFilter(
     case 'and':
     case 'or':
     case 'not':
-      return evaluateLogicalFilter(db, filter, candidateIds, now)
+      return evaluateLogicalFilter(db, filter, candidateIds, now, context)
     default:
       // Exhaustive check
       const _exhaustive: never = filter
@@ -174,16 +188,17 @@ export function evaluateSupertagFilter(
   db: Database,
   filter: SupertagFilter,
   candidateIds: Set<string>,
+  context?: QueryEvaluationContext,
 ): Set<string> {
   const { supertagId, includeInherited = true } = filter
 
   // Get all node IDs with this supertag (optionally with inheritance)
   let matchingIds: string[]
   if (includeInherited) {
-    matchingIds = getNodeIdsBySupertagWithInheritance(db, supertagId)
+    matchingIds = getMemoizedSupertagMembership(db, context, supertagId, true)
   } else {
     // Direct match only - no inheritance
-    matchingIds = getNodeIdsByDirectSupertag(db, supertagId)
+    matchingIds = getMemoizedSupertagMembership(db, context, supertagId, false)
   }
 
   // Intersect with candidates
@@ -806,36 +821,40 @@ export function evaluateTemporalFilter(
       return candidateIds
   }
 
-  // Batch fetch all candidate nodes instead of N+1 queries
-  const candidateArray = [...candidateIds]
-  const candidateNodes = candidateArray.length > 0
-    ? db.select({ id: nodes.id, createdAt: nodes.createdAt, updatedAt: nodes.updatedAt })
-        .from(nodes)
-        .where(inArray(nodes.id, candidateArray))
-        .all()
-    : []
+  if (candidateIds.size === 0) {
+    return new Set()
+  }
+
+  const dateColumn = field === 'createdAt' ? nodes.createdAt : nodes.updatedAt
+  const predicates: SQL[] = []
+  switch (op) {
+    case 'within':
+      predicates.push(gte(dateColumn, targetDate))
+      break
+    // 'after' is exclusive of the boundary instant; 'within' includes it.
+    case 'after':
+      predicates.push(gt(dateColumn, targetDate))
+      break
+    case 'before':
+      predicates.push(lt(dateColumn, targetDate))
+      break
+    case 'relative':
+      predicates.push(gte(dateColumn, targetDate))
+      if (windowEnd !== undefined) {
+        predicates.push(lt(dateColumn, windowEnd))
+      }
+      break
+  }
+
+  const candidateNodes = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(and(...predicates))
+    .all()
 
   const result = new Set<string>()
   for (const node of candidateNodes) {
-    const nodeDate = field === 'createdAt' ? node.createdAt : node.updatedAt
-
-    let matches = false
-    switch (op) {
-      case 'within':
-        matches = nodeDate >= targetDate
-        break
-      case 'before':
-        matches = nodeDate < targetDate
-        break
-      case 'after':
-        matches = nodeDate > targetDate
-        break
-      case 'relative':
-        matches = nodeDate >= targetDate && (windowEnd === undefined || nodeDate < windowEnd)
-        break
-    }
-
-    if (matches) {
+    if (candidateIds.has(node.id)) {
       result.add(node.id)
     }
   }
@@ -1023,6 +1042,7 @@ export function evaluateLogicalFilter(
   filter: LogicalFilter,
   candidateIds: Set<string>,
   now: Date = new Date(),
+  context?: QueryEvaluationContext,
 ): Set<string> {
   const { type, filters } = filter
 
@@ -1036,7 +1056,7 @@ export function evaluateLogicalFilter(
       // Intersection - all filters must match
       let result = candidateIds
       for (const subFilter of filters) {
-        result = evaluateFilter(db, subFilter, result, now)
+        result = evaluateFilter(db, subFilter, result, now, context)
         if (result.size === 0) break // Short-circuit
       }
       return result
@@ -1046,7 +1066,7 @@ export function evaluateLogicalFilter(
       // Union - any filter can match
       const result = new Set<string>()
       for (const subFilter of filters) {
-        const matches = evaluateFilter(db, subFilter, candidateIds, now)
+        const matches = evaluateFilter(db, subFilter, candidateIds, now, context)
         for (const id of matches) {
           result.add(id)
         }
@@ -1059,7 +1079,7 @@ export function evaluateLogicalFilter(
       // First, find all nodes matching the combined sub-filters (OR'd together)
       const excludeSet = new Set<string>()
       for (const subFilter of filters) {
-        const matches = evaluateFilter(db, subFilter, candidateIds, now)
+        const matches = evaluateFilter(db, subFilter, candidateIds, now, context)
         for (const id of matches) {
           excludeSet.add(id)
         }
@@ -1125,6 +1145,110 @@ function sortNodes(
   })
 }
 
+function getPageNodeIds(
+  db: Database,
+  candidateIds: string[],
+  sort: QuerySort | undefined,
+  limit: number,
+): string[] {
+  if (candidateIds.length <= limit && !sort) {
+    return candidateIds
+  }
+
+  if (!sort) {
+    return candidateIds.slice(0, limit)
+  }
+
+  if (!isBuiltinSortField(sort.field)) {
+    return candidateIds
+  }
+
+  const sortRows = db
+    .select({
+      id: nodes.id,
+      content: nodes.content,
+      createdAt: nodes.createdAt,
+      updatedAt: nodes.updatedAt,
+      systemId: nodes.systemId,
+    })
+    .from(nodes)
+    .where(inArray(nodes.id, candidateIds))
+    .all()
+
+  const rowById = new Map(sortRows.map((row) => [row.id, row]))
+  return [...candidateIds]
+    .sort((a, b) => compareSortValues(
+      getBuiltinSortValue(rowById.get(a), sort.field),
+      getBuiltinSortValue(rowById.get(b), sort.field),
+      sort.direction,
+    ))
+    .slice(0, limit)
+}
+
+function isBuiltinSortField(field: string): boolean {
+  return field === 'content' ||
+    field === 'createdAt' ||
+    field === 'updatedAt' ||
+    field === 'systemId'
+}
+
+function getBuiltinSortValue(
+  row: {
+    content: string | null
+    createdAt: Date
+    updatedAt: Date
+    systemId: string | null
+  } | undefined,
+  field: string,
+): string | Date | null {
+  if (!row) return null
+
+  switch (field) {
+    case 'content':
+      return row.content
+    case 'createdAt':
+      return row.createdAt
+    case 'updatedAt':
+      return row.updatedAt
+    case 'systemId':
+      return row.systemId
+    default:
+      return null
+  }
+}
+
+function compareSortValues(
+  aValue: string | number | Date | null | undefined,
+  bValue: string | number | Date | null | undefined,
+  direction: QuerySort['direction'],
+): number {
+  const multiplier = direction === 'asc' ? 1 : -1
+
+  // Handle null/undefined - put them at the end
+  if (aValue === null || aValue === undefined) {
+    return bValue === null || bValue === undefined ? 0 : 1
+  }
+  if (bValue === null || bValue === undefined) {
+    return -1
+  }
+
+  // Compare based on type
+  if (typeof aValue === 'string' && typeof bValue === 'string') {
+    return multiplier * aValue.localeCompare(bValue)
+  }
+
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    return multiplier * (aValue - bValue)
+  }
+
+  if (aValue instanceof Date && bValue instanceof Date) {
+    return multiplier * (aValue.getTime() - bValue.getTime())
+  }
+
+  // Fallback: string comparison
+  return multiplier * String(aValue).localeCompare(String(bValue))
+}
+
 /**
  * Get the value to sort by from an assembled node
  */
@@ -1176,6 +1300,7 @@ function getAllNonDeletedNodeIds(db: Database): Set<string> {
 function getInitialCandidateIds(
   db: Database,
   filters: QueryFilter[],
+  context: QueryEvaluationContext,
 ): Set<string> {
   const requiredSupertag = findRequiredSupertagFilter(filters)
   if (!requiredSupertag) {
@@ -1183,10 +1308,33 @@ function getInitialCandidateIds(
   }
 
   const matchingIds = requiredSupertag.includeInherited === false
-    ? getNodeIdsByDirectSupertag(db, requiredSupertag.supertagId)
-    : getNodeIdsBySupertagWithInheritance(db, requiredSupertag.supertagId)
+    ? getMemoizedSupertagMembership(db, context, requiredSupertag.supertagId, false)
+    : getMemoizedSupertagMembership(db, context, requiredSupertag.supertagId, true)
 
   return getExistingNodeIds(db, new Set(matchingIds))
+}
+
+function getMemoizedSupertagMembership(
+  db: Database,
+  context: QueryEvaluationContext | undefined,
+  supertagId: string,
+  includeInherited: boolean,
+): string[] {
+  if (!context) {
+    return includeInherited
+      ? getNodeIdsBySupertagWithInheritance(db, supertagId)
+      : getNodeIdsByDirectSupertag(db, supertagId)
+  }
+
+  const key = `${includeInherited ? 'inherited' : 'direct'}:${supertagId}`
+  const cached = context.supertagMembership.get(key)
+  if (cached) return cached
+
+  const matchingIds = includeInherited
+    ? getNodeIdsBySupertagWithInheritance(db, supertagId)
+    : getNodeIdsByDirectSupertag(db, supertagId)
+  context.supertagMembership.set(key, matchingIds)
+  return matchingIds
 }
 
 function findRequiredSupertagFilter(filters: QueryFilter[]): SupertagFilter | null {
