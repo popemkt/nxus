@@ -91,6 +91,18 @@ function rid(id: RecordId | string | unknown): string {
   return String(id)
 }
 
+export function normalizeSurrealRecordId(
+  table: string,
+  id: RecordId | string | unknown,
+): string {
+  const value = rid(id)
+  return value.includes(':') ? value : `${table}:${value}`
+}
+
+function nodeRecordId(nodeId: string): StringRecordId {
+  return new StringRecordId(normalizeSurrealRecordId('node', nodeId))
+}
+
 function toDate(value: string | Date | null | undefined): Date {
   if (!value) return new Date()
   if (value instanceof Date) return value
@@ -306,7 +318,7 @@ export class SurrealBackend implements NodeBackend {
     const db = this.ensureInitialized()
     const [nodeRows] = await db.query<[Array<{ system_id: string | null }>]>(
       'SELECT system_id FROM $nodeId LIMIT 1',
-      { nodeId: new StringRecordId(fieldNodeId) },
+      { nodeId: nodeRecordId(fieldNodeId) },
     )
     const systemId = nodeRows[0]?.system_id
     if (!systemId) return fieldNodeId
@@ -321,7 +333,7 @@ export class SurrealBackend implements NodeBackend {
     const [existing] = await db.query<[MentionEdge[]]>(
       'SELECT `value`, `order` FROM has_field WHERE in = $nodeId AND out = $fieldId',
       {
-        nodeId: new StringRecordId(nodeId),
+        nodeId: nodeRecordId(nodeId),
         fieldId: new StringRecordId(mentionsFieldId),
       },
     )
@@ -358,7 +370,7 @@ export class SurrealBackend implements NodeBackend {
         ? `in = ${input.nodeExpression}`
         : `in = $mentionNodeId${removeIndex}`
       if (!input.nodeExpression && input.nodeId) {
-        params[`mentionNodeId${removeIndex}`] = new StringRecordId(input.nodeId)
+        params[`mentionNodeId${removeIndex}`] = nodeRecordId(input.nodeId)
       }
       statements.push({
         query: `DELETE has_field WHERE ${nodePredicate} AND out = $mentionsFieldId AND \`value\` = $removedMentionValue${removeIndex}`,
@@ -383,7 +395,7 @@ export class SurrealBackend implements NodeBackend {
       }
       const fromExpression = input.nodeExpression ?? `$mentionFrom${addIndex}`
       if (!input.nodeExpression && input.nodeId) {
-        params[`mentionFrom${addIndex}`] = new StringRecordId(input.nodeId)
+        params[`mentionFrom${addIndex}`] = nodeRecordId(input.nodeId)
       }
       statements.push({
         query: `RELATE ${fromExpression}->has_field->$mentionTo${addIndex} SET \`value\` = $mentionValue${addIndex}, \`order\` = $mentionOrder${addIndex}, created_at = time::now(), updated_at = time::now()`,
@@ -454,7 +466,7 @@ export class SurrealBackend implements NodeBackend {
     const db = this.ensureInitialized()
     const [results] = await db.query<[SurrealNode[]]>(
       `SELECT * FROM $nodeId`,
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
 
     if (!results || results.length === 0) return null
@@ -537,7 +549,7 @@ export class SurrealBackend implements NodeBackend {
 
       const transactionResults = await runSurrealTransaction(db, statements)
       const nodeIdResult = transactionResults.at(-1)
-      const nodeId = rid(nodeIdResult)
+      const nodeId = normalizeSurrealRecordId('node', nodeIdResult)
 
       emitMutation({
         type: 'node:created',
@@ -576,7 +588,7 @@ export class SurrealBackend implements NodeBackend {
     // Get current content for beforeValue (read-only, outside the transaction)
     const [current] = await db.query<[SurrealNode[]]>(
       `SELECT content FROM $nodeId`,
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
     const beforeContent = current?.[0]?.content ?? null
     const now = new Date()
@@ -593,7 +605,7 @@ export class SurrealBackend implements NodeBackend {
         {
           query: `UPDATE $nodeId SET content = $content, content_plain = $contentPlain, updated_at = time::now()`,
           params: {
-            nodeId: new StringRecordId(nodeId),
+            nodeId: nodeRecordId(nodeId),
             content,
             contentPlain: content.toLowerCase(),
           },
@@ -626,7 +638,7 @@ export class SurrealBackend implements NodeBackend {
       await runSurrealTransaction(db, [
         {
           query: `UPDATE $nodeId SET deleted_at = time::now()`,
-          params: { nodeId: new StringRecordId(nodeId) },
+          params: { nodeId: nodeRecordId(nodeId) },
         },
       ])
 
@@ -646,7 +658,7 @@ export class SurrealBackend implements NodeBackend {
       await runSurrealTransaction(db, [
         {
           query: 'UPDATE $nodeId SET deleted_at = NONE, updated_at = time::now()',
-          params: { nodeId: new StringRecordId(nodeId) },
+          params: { nodeId: nodeRecordId(nodeId) },
         },
       ])
 
@@ -669,12 +681,12 @@ export class SurrealBackend implements NodeBackend {
       newParentId === null
         ? {
             query: 'UPDATE $nodeId SET owner_id = NONE, updated_at = time::now()',
-            params: { nodeId: new StringRecordId(nodeId) },
+            params: { nodeId: nodeRecordId(nodeId) },
           }
         : {
             query: 'UPDATE $nodeId SET owner_id = $ownerId, updated_at = time::now()',
             params: {
-              nodeId: new StringRecordId(nodeId),
+              nodeId: nodeRecordId(nodeId),
               ownerId: newParentId,
             },
           },
@@ -687,14 +699,14 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'DELETE has_field WHERE in = $orderNodeId AND out = $orderFieldId',
           params: {
-            orderNodeId: new StringRecordId(nodeId),
+            orderNodeId: nodeRecordId(nodeId),
             orderFieldId: new StringRecordId(orderFieldId),
           },
         },
         {
           query: 'RELATE $orderFrom->has_field->$orderTo SET `value` = $orderValue, `order` = 0, created_at = time::now(), updated_at = time::now()',
           params: {
-            orderFrom: new StringRecordId(nodeId),
+            orderFrom: nodeRecordId(nodeId),
             orderTo: new StringRecordId(orderFieldId),
             orderValue: order,
           },
@@ -738,14 +750,14 @@ export class SurrealBackend implements NodeBackend {
         {
           query: `DELETE has_field WHERE in = $nodeId${index} AND out = $orderFieldId`,
           params: {
-            [`nodeId${index}`]: new StringRecordId(update.nodeId),
+            [`nodeId${index}`]: nodeRecordId(update.nodeId),
             orderFieldId: new StringRecordId(orderFieldId),
           },
         },
         {
           query: `RELATE $from${index}->has_field->$to${index} SET \`value\` = $order${index}, \`order\` = 0, created_at = time::now(), updated_at = time::now()`,
           params: {
-            [`from${index}`]: new StringRecordId(update.nodeId),
+            [`from${index}`]: nodeRecordId(update.nodeId),
             [`to${index}`]: new StringRecordId(orderFieldId),
             [`order${index}`]: update.order,
           },
@@ -799,7 +811,7 @@ export class SurrealBackend implements NodeBackend {
     // Fetch the node (non-deleted)
     const [nodeResults] = await db.query<[SurrealNode[]]>(
       `SELECT * FROM $nodeId WHERE deleted_at IS NONE`,
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
 
     if (!nodeResults || nodeResults.length === 0) return null
@@ -938,13 +950,13 @@ export class SurrealBackend implements NodeBackend {
     // Note: `value` and `order` are reserved words — backtick-escape them
     const [fieldEdges] = await db.query<[FieldEdge[]]>(
       'SELECT `value`, `order`, out.content AS field_content, out.system_id AS field_system_id, out AS field_record FROM has_field WHERE in = $nodeId ORDER BY out.content, `order`',
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
 
     // Fetch all has_supertag edges with supertag metadata
     const [supertagEdges] = await db.query<[SupertagEdge[]]>(
       'SELECT out.name AS name, out.system_id AS system_id, out AS supertag_record, `order` FROM has_supertag WHERE in = $nodeId ORDER BY `order`',
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
 
     // Build properties map
@@ -1017,7 +1029,7 @@ export class SurrealBackend implements NodeBackend {
     const [existing] = await db.query<[Array<{ value: unknown }>]>(
       'SELECT `value` FROM has_field WHERE in = $nodeId AND out = $fieldId',
       {
-        nodeId: new StringRecordId(nodeId),
+        nodeId: nodeRecordId(nodeId),
         fieldId: new StringRecordId(fieldRecordId),
       },
     )
@@ -1031,14 +1043,14 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
           params: {
-            nodeId: new StringRecordId(nodeId),
+            nodeId: nodeRecordId(nodeId),
             fieldId: new StringRecordId(fieldRecordId),
           },
         },
         {
           query: 'RELATE $from->has_field->$to SET `value` = $value, `order` = $order, created_at = time::now(), updated_at = time::now()',
           params: {
-            from: new StringRecordId(nodeId),
+            from: nodeRecordId(nodeId),
             to: new StringRecordId(fieldRecordId),
             value,
             order,
@@ -1046,7 +1058,7 @@ export class SurrealBackend implements NodeBackend {
         },
         {
           query: 'UPDATE $nodeId SET updated_at = time::now()',
-          params: { nodeId: new StringRecordId(nodeId) },
+          params: { nodeId: nodeRecordId(nodeId) },
         },
       ])
 
@@ -1075,7 +1087,7 @@ export class SurrealBackend implements NodeBackend {
     const [existingEdges] = await db.query<[Array<{ order: number }>]>(
       'SELECT `order` FROM has_field WHERE in = $nodeId AND out = $fieldId ORDER BY `order` DESC LIMIT 1',
       {
-        nodeId: new StringRecordId(nodeId),
+        nodeId: nodeRecordId(nodeId),
         fieldId: new StringRecordId(fieldRecordId),
       },
     )
@@ -1086,7 +1098,7 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'RELATE $from->has_field->$to SET `value` = $value, `order` = $order, created_at = time::now(), updated_at = time::now()',
           params: {
-            from: new StringRecordId(nodeId),
+            from: nodeRecordId(nodeId),
             to: new StringRecordId(fieldRecordId),
             value,
             order: maxOrder + 1,
@@ -1123,7 +1135,7 @@ export class SurrealBackend implements NodeBackend {
     const [existing] = await db.query<[Array<{ value: unknown }>]>(
       'SELECT `value` FROM has_field WHERE in = $nodeId AND out = $fieldId',
       {
-        nodeId: new StringRecordId(nodeId),
+        nodeId: nodeRecordId(nodeId),
         fieldId: new StringRecordId(fieldRecordId),
       },
     )
@@ -1133,7 +1145,7 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
           params: {
-            nodeId: new StringRecordId(nodeId),
+            nodeId: nodeRecordId(nodeId),
             fieldId: new StringRecordId(fieldRecordId),
           },
         },
@@ -1164,7 +1176,7 @@ export class SurrealBackend implements NodeBackend {
     const [existing] = await db.query<[Array<{ value: unknown }>]>(
       'SELECT `value` FROM has_field WHERE in = $nodeId AND out = $fieldId',
       {
-        nodeId: new StringRecordId(ownerNodeId),
+        nodeId: nodeRecordId(ownerNodeId),
         fieldId: new StringRecordId(fieldRecordId),
       },
     )
@@ -1176,7 +1188,7 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'DELETE has_field WHERE in = $nodeId AND out = $fieldId',
           params: {
-            nodeId: new StringRecordId(ownerNodeId),
+            nodeId: nodeRecordId(ownerNodeId),
             fieldId: new StringRecordId(fieldRecordId),
           },
         },
@@ -1280,7 +1292,7 @@ export class SurrealBackend implements NodeBackend {
     const [existing] = await db.query<[Array<{ id: RecordId }>]>(
       'SELECT id FROM has_supertag WHERE in = $nodeId AND out = $stId',
       {
-        nodeId: new StringRecordId(nodeId),
+        nodeId: nodeRecordId(nodeId),
         stId: new StringRecordId(supertagRecordId),
       },
     )
@@ -1290,7 +1302,7 @@ export class SurrealBackend implements NodeBackend {
     // Get current max order (read-only, outside the transaction)
     const [orderResults] = await db.query<[Array<{ order: number }>]>(
       'SELECT `order` FROM has_supertag WHERE in = $nodeId ORDER BY `order` DESC LIMIT 1',
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
     const maxOrder = orderResults?.[0]?.order ?? -1
     const now = new Date()
@@ -1300,14 +1312,14 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'RELATE $from->has_supertag->$to SET `order` = $order, created_at = time::now()',
           params: {
-            from: new StringRecordId(nodeId),
+            from: nodeRecordId(nodeId),
             to: new StringRecordId(supertagRecordId),
             order: maxOrder + 1,
           },
         },
         {
           query: 'UPDATE $nodeId SET updated_at = time::now()',
-          params: { nodeId: new StringRecordId(nodeId) },
+          params: { nodeId: nodeRecordId(nodeId) },
         },
       ])
 
@@ -1335,7 +1347,7 @@ export class SurrealBackend implements NodeBackend {
     const [existing] = await db.query<[Array<{ id: RecordId }>]>(
       'SELECT id FROM has_supertag WHERE in = $nodeId AND out = $stId',
       {
-        nodeId: new StringRecordId(nodeId),
+        nodeId: nodeRecordId(nodeId),
         stId: new StringRecordId(supertagRecordId),
       },
     )
@@ -1349,13 +1361,13 @@ export class SurrealBackend implements NodeBackend {
         {
           query: 'DELETE has_supertag WHERE in = $nodeId AND out = $stId',
           params: {
-            nodeId: new StringRecordId(nodeId),
+            nodeId: nodeRecordId(nodeId),
             stId: new StringRecordId(supertagRecordId),
           },
         },
         {
           query: 'UPDATE $nodeId SET updated_at = time::now()',
-          params: { nodeId: new StringRecordId(nodeId) },
+          params: { nodeId: nodeRecordId(nodeId) },
         },
       ])
 
@@ -1375,7 +1387,7 @@ export class SurrealBackend implements NodeBackend {
 
     const [results] = await db.query<[SupertagEdge[]]>(
       'SELECT out.name AS name, out.system_id AS system_id, out AS supertag_record, `order` FROM has_supertag WHERE in = $nodeId ORDER BY `order`',
-      { nodeId: new StringRecordId(nodeId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
 
     return (results || []).map((st) => ({
@@ -1511,7 +1523,7 @@ export class SurrealBackend implements NodeBackend {
       const nodeId = rid(edge.node_ref)
       const [nodeRows] = await db.query<[Array<{ system_id: string | null }>]>(
         'SELECT system_id FROM $nodeId WHERE deleted_at IS NONE LIMIT 1',
-        { nodeId: new StringRecordId(nodeId) },
+        { nodeId: nodeRecordId(nodeId) },
       )
       const systemId = nodeRows[0]?.system_id
       if (!systemId) continue
@@ -1637,12 +1649,12 @@ export class SurrealBackend implements NodeBackend {
 
     if (!nodeResults || nodeResults.length === 0) return fieldDefs
 
-    const nodeRecordId = rid(nodeResults[0].id)
+    const nodeId = rid(nodeResults[0].id)
 
     // Query has_field edges from this node
     const [edges] = await db.query<[FieldEdge[]]>(
       'SELECT `value`, `order`, out.content AS field_content, out.system_id AS field_system_id, out AS field_record FROM has_field WHERE in = $nodeId',
-      { nodeId: new StringRecordId(nodeRecordId) },
+      { nodeId: nodeRecordId(nodeId) },
     )
 
     for (const edge of (edges || [])) {
@@ -2182,7 +2194,7 @@ export class SurrealBackend implements NodeBackend {
 
         let query = 'SELECT `value` FROM has_field WHERE in = $targetNodeId'
         const params: Record<string, unknown> = {
-          targetNodeId: new StringRecordId(targetNodeId),
+          targetNodeId: nodeRecordId(targetNodeId),
         }
 
         if (fieldRecordId) {
@@ -2190,7 +2202,10 @@ export class SurrealBackend implements NodeBackend {
           params.fieldId = new StringRecordId(fieldRecordId)
         }
 
-        const [edges] = await db.query<[Array<{ value: unknown }>]>(query, params)
+        const [edges] = await db.query<[Array<{ value: unknown }>]>(
+          query,
+          params,
+        )
 
         const result = new Set<string>()
         for (const edge of (edges || [])) {
@@ -2269,7 +2284,7 @@ export class SurrealBackend implements NodeBackend {
     }
 
     const db = this.ensureInitialized()
-    const nodeRefs = [...nodeIds].map((nodeId) => new StringRecordId(nodeId))
+    const nodeRefs = [...nodeIds].map((nodeId) => nodeRecordId(nodeId))
     const [edges] = await db.query<[Array<{ node_ref: RecordId; value: unknown }>]>(
       'SELECT in AS node_ref, `value` FROM has_field WHERE out = $fieldId AND in IN $nodeRefs',
       {
@@ -2316,7 +2331,7 @@ export class SurrealBackend implements NodeBackend {
     }
 
     const db = this.ensureInitialized()
-    const nodeRefs = [...nodeIds].map((nodeId) => new StringRecordId(nodeId))
+    const nodeRefs = [...nodeIds].map((nodeId) => nodeRecordId(nodeId))
     const [rows] = await db.query<[Array<{ id: RecordId }>]>(
       'SELECT id FROM node WHERE deleted_at IS NONE AND id IN $nodeRefs',
       { nodeRefs },

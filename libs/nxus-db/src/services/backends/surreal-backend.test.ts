@@ -24,7 +24,10 @@ import {
   FIELD_NAMES,
 } from '../../schemas/node-schema.js'
 import { eventBus } from '../../reactive/event-bus.js'
-import { SurrealBackend } from './surreal-backend.js'
+import {
+  normalizeSurrealRecordId,
+  SurrealBackend,
+} from './surreal-backend.js'
 
 let db: Surreal
 let backend: SurrealBackend
@@ -50,6 +53,23 @@ afterEach(async () => {
 // =============================================================================
 // Init guard
 // =============================================================================
+
+describe('normalizeSurrealRecordId', () => {
+  it('should prefix bare remote record ids with the expected table', () => {
+    expect(
+      normalizeSurrealRecordId(
+        'node',
+        '019f517a-c266-7ec1-ab03-56fc9f771952',
+      ),
+    ).toBe('node:019f517a-c266-7ec1-ab03-56fc9f771952')
+  })
+
+  it('should keep already-qualified record ids unchanged', () => {
+    expect(normalizeSurrealRecordId('node', 'node:seed-root')).toBe(
+      'node:seed-root',
+    )
+  })
+})
 
 describe('init guard', () => {
   it('should throw when calling methods before init', async () => {
