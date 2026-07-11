@@ -28,7 +28,13 @@ export const getNodeTreeServerFn = createServerFn({ method: 'GET' })
       getSupertagFieldDefinitions,
       getAncestorSupertags,
     } = await import('@nxus/db/server')
-    const db = await initDatabaseSeeded()
+    const seededDb = await initDatabaseSeeded()
+    if (!seededDb) {
+      // Graph mode has no SQLite handle; this raw frontier read is node-mode
+      // only until the facade composite tree read (S3) replaces it.
+      throw new Error('getNodeTreeServerFn requires node mode (SQLite)')
+    }
+    const db = seededDb
 
     const maxDepth = ctx.data.depth ?? Number.MAX_SAFE_INTEGER
 

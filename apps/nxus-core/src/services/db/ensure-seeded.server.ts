@@ -1,9 +1,9 @@
 /**
  * ensure-seeded.server.ts - Auto-seed database from manifests on first access
  *
- * Registers a seed callback with @nxus/db that runs seedNodes() when the
- * database is empty. Call ensureDatabaseReady() before any db access to
- * guarantee items are seeded.
+ * Initializes the active architecture's database before first access. In node
+ * mode it registers the SQLite manifest seed callback; in graph mode it
+ * initializes the embedded SurrealDB schema/bootstrap directly.
  *
  * IMPORTANT: All @nxus/db/server imports are dynamic to prevent Vite from
  * bundling better-sqlite3 into the client bundle.
@@ -21,8 +21,16 @@ export async function ensureDatabaseReady(): Promise<void> {
 
   if (!readyPromise) {
     readyPromise = (async () => {
-      const { registerSeedCallback, initDatabaseWithBootstrap } =
-        await import('@nxus/db/server')
+      if (process.env.ARCHITECTURE_TYPE === 'graph') {
+        const { initGraphDatabase } = await import('@nxus/db/server')
+        await initGraphDatabase()
+        registered = true
+        return
+      }
+
+      const { registerSeedCallback, initDatabaseWithBootstrap } = await import(
+        '@nxus/db/server'
+      )
 
       registerSeedCallback(async () => {
         const { seedNodes } = await import('../../../scripts/seed-nodes.js')

@@ -1,9 +1,9 @@
 /**
  * ensure-seeded.server.ts - Auto-seed database from nxus-core manifests on first access
  *
- * Registers a seed callback with @nxus/db that runs seedNodes() when the
- * database is empty. Call initDatabaseSeeded() in place of initDatabaseWithBootstrap()
- * to guarantee items are seeded.
+ * Initializes the active architecture's database before first access. In node
+ * mode it registers the SQLite manifest seed callback; in graph mode it
+ * initializes the embedded SurrealDB schema/bootstrap directly.
  *
  * IMPORTANT: All @nxus/db/server imports are dynamic to prevent Vite from
  * bundling better-sqlite3 into the client bundle.
@@ -12,11 +12,16 @@
 let registered = false
 
 /**
- * Initialize the database with bootstrap AND full data seeding.
- * Registers the nxus-core seed callback on first call, then delegates
- * to initDatabaseWithBootstrap() which auto-seeds if db is empty.
+ * Initialize the database with bootstrap and seed dispatch for the active mode.
  */
 export async function initDatabaseSeeded() {
+  if (process.env.ARCHITECTURE_TYPE === 'graph') {
+    const { initGraphDatabase } = await import('@nxus/db/server')
+    await initGraphDatabase()
+    registered = true
+    return
+  }
+
   const { registerSeedCallback, initDatabaseWithBootstrap } = await import(
     '@nxus/db/server'
   )
