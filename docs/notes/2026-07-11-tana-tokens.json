@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "meta": {
+    "product": "Tana app UI",
+    "capturedAt": "2026-07-11",
+    "primarySource": "https://app.tana.inc/static/index-C-G03e_Z.css",
+    "desktopVersion": "1.523.0",
+    "note": "Token entries are objects so every machine-readable value carries provenance. resolved is the effective primitive/fallback where useful."
+  },
+  "colors": {
+    "light": {
+      "editorText": {"value": "var(--colorGray775)", "resolved": "oklch(0.2829848486 0.0026932907 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorEditorText)"},
+      "editorTextMuted": {"value": "var(--colorGray500)", "resolved": "oklch(0.6059889025 0.0002744385 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "uiText": {"value": "var(--colorGray625)", "resolved": "oklch(0.4442892988 0.0008825375 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "uiTextMuted": {"value": "var(--colorGray475)", "resolved": "oklch(0.6388597706 0.0002094303 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "panel": {"value": "white", "resolved": "#ffffff", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorPanelBackground)"},
+      "panelDimmed": {"value": "var(--colorGray150)", "resolved": "oklch(0.9662315822 0.0000003464 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "canvas": {"value": "var(--colorGray150)", "resolved": "oklch(0.9662315822 0.0000003464 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorCanvasBackground)"},
+      "contextMenu": {"value": "var(--colorGray50)", "resolved": "oklch(0.9976721177 0.0000000001 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "stroke": {"value": "var(--colorGray250)", "resolved": "oklch(0.8960151514 0.0000065447 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorUIStroke)"},
+      "strokeSoft": {"value": "var(--colorGray175)", "resolved": "oklch(0.9520942425 0.0000008619 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "focus": {"value": "var(--colorBlue400)", "resolved": "#5c97e5", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "selected": {"value": "var(--colorBlue100)", "resolved": "#d7e6fa", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "link": {"value": "var(--colorBlue500)", "resolved": "#297dd9", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode)"},
+      "success": {"value": "var(--colorGreen600)", "resolved": "#3c6e54", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--colorUISuccessText)"},
+      "warning": {"value": "var(--colorYellow600)", "resolved": "#6e6619", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--colorUIWarningText)"},
+      "error": {"value": "var(--colorRed600)", "resolved": "#ad3934", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--colorUIErrorText)"},
+      "ai": {"value": "var(--colorPurple150)", "resolved": "#eacff7", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorAIResponse)"},
+      "bulletFill": {"value": "var(--colorGray500)", "resolved": "oklch(0.6059889025 0.0002744385 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorBulletDefaultFill)"},
+      "bulletOutline": {"value": "var(--colorGray225)", "resolved": "oklch(0.9168718116 0.0000036318 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorBulletDefaultOutline)"},
+      "indentGuide": {"value": "var(--colorGray150)", "resolved": "oklch(0.9662315822 0.0000003464 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --colorBulletExpandLine)"}
+    },
+    "dark": {
+      "editorText": {"value": "var(--colorGray300)", "resolved": "oklch(0.8484863813 0.0000178501 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorEditorText)"},
+      "editorTextMuted": {"value": "var(--colorGray450)", "resolved": "oklch(0.6714105216 0.0001573699 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "uiText": {"value": "var(--colorGray375)", "resolved": "oklch(0.7650496039 0.0000596097 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorUIText)"},
+      "uiTextMuted": {"value": "var(--colorGray500)", "resolved": "oklch(0.6059889025 0.0002744385 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "panel": {"value": "var(--colorGray850)", "resolved": "oklch(0.2269057575 0.0043375717 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorPanelBackground)"},
+      "panelDimmed": {"value": "var(--colorGray825)", "resolved": "oklch(0.24339466 0.0037190058 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "canvas": {"value": "var(--colorGray800)", "resolved": "oklch(0.2621281884 0.0031731122 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorCanvasBackground)"},
+      "contextMenu": {"value": "var(--colorGray825)", "resolved": "oklch(0.24339466 0.0037190058 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "stroke": {"value": "var(--colorGray700)", "resolved": "oklch(0.3568774862 0.0015903613 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorUIStroke)"},
+      "strokeSoft": {"value": "var(--colorGray750)", "resolved": "oklch(0.3058293772 0.0022733534 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "focus": {"value": "var(--colorBlue500)", "resolved": "#297dd9", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "selected": {"value": "var(--colorBlue750)", "resolved": "#25416e", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "link": {"value": "var(--colorBlue400)", "resolved": "#5c97e5", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode)"},
+      "success": {"value": "var(--colorGreen300)", "resolved": "#7ac090", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorUISuccessText)"},
+      "warning": {"value": "var(--colorYellow300)", "resolved": "#cbaf0d", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorUIWarningText)"},
+      "error": {"value": "var(--colorRed300)", "resolved": "#ef9778", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorUIErrorText)"},
+      "ai": {"value": "var(--colorPurple800)", "resolved": "#442957", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorAIResponse)"},
+      "bulletFill": {"value": "var(--colorGray500)", "resolved": "oklch(0.6059889025 0.0002744385 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorBulletDefaultFill)"},
+      "bulletOutline": {"value": "var(--colorGray675)", "resolved": "oklch(0.38475 0.0013168724 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorBulletDefaultOutline)"},
+      "indentGuide": {"value": "var(--colorGray750)", "resolved": "oklch(0.3058293772 0.0022733534 240)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --colorBulletExpandLine)"}
+    }
+  },
+  "typography": {
+    "families": {
+      "appSans": {"value": "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--fontStackNormal)"},
+      "appSansVariable": {"value": "InterVariable, -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--fontStackNormalVariable)"},
+      "appMono": {"value": "ui-monospace, Cascadia Mono, Segoe UI Mono, Ubuntu Mono, Roboto Mono, Menlo, Monaco, Consolas, monospace", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--fontStackMonospace)"},
+      "appHandwritten": {"value": "Shantell Sans", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--fontStackHandwritten)"},
+      "marketingHeading": {"value": "Source Serif 4, Georgia, Times New Roman, serif", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--serif-font-family)"},
+      "marketingBody": {"value": "Inter, system-ui, sans-serif", "source": "https://tana.inc/_next/static/css/060dd72b4465f61b.css (--font-family-body)"}
+    },
+    "sizes": {
+      "baseDesktop": {"value": "15px", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html --baseFontSize)"},
+      "baseMobile": {"value": "16px", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.mobile --baseFontSize)"},
+      "100": {"value": "0.534rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size100)"},
+      "200": {"value": "0.667rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size200)"},
+      "300": {"value": "0.8rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size300)"},
+      "350": {"value": "0.934rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size350)"},
+      "400": {"value": "1rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size400)"},
+      "450": {"value": "1.117rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size450)"},
+      "500": {"value": "1.267rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size500)"},
+      "600": {"value": "1.535rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size600)"},
+      "700": {"value": "1.934rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size700)"},
+      "800": {"value": "2.4rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size800)"},
+      "900": {"value": "3rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--size900)"}
+    },
+    "weights": {
+      "normal": {"value": 400, "source": "https://app.tana.inc/static/index-C-G03e_Z.css ([data-weight=normal])"},
+      "medium": {"value": 500, "source": "https://app.tana.inc/static/index-C-G03e_Z.css ([data-weight=medium])"},
+      "semibold": {"value": 600, "source": "https://app.tana.inc/static/index-C-G03e_Z.css ([data-weight=semibold])"},
+      "headingBold": {"value": 650, "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--fontWeightHeading and [data-weight=bold])"},
+      "darkBody": {"value": 375, "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode font-weight)"}
+    },
+    "lineHeights": {
+      "compact": {"value": 1.15, "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--compactLineHeight)"},
+      "default": {"value": 1.4, "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--defaultLineHeight)"},
+      "marketingBody": {"value": 1.5, "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--type-body-md)"}
+    }
+  },
+  "spacing": [
+    {"name": "listItemVertical", "value": "0.25rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--listItemVerticalSpacing)"},
+    {"name": "listItemHorizontal", "value": "0.4rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--listItemHorizontalSpacing)"},
+    {"name": "panelInset", "value": "6px", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--panelsLayoutInset)"},
+    {"name": "marketing1", "value": "4px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-1)"},
+    {"name": "marketing2", "value": "8px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-2)"},
+    {"name": "marketing3", "value": "12px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-3)"},
+    {"name": "marketing4", "value": "16px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-4)"},
+    {"name": "marketing5", "value": "24px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-5)"},
+    {"name": "marketing6", "value": "32px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-6)"},
+    {"name": "marketing7", "value": "40px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-7)"},
+    {"name": "marketing9", "value": "64px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--space-9)"},
+    {"name": "outlineIndent", "value": "2.1rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--levelIndent)"}
+  ],
+  "radii": {
+    "100": {"value": "0.125rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--radius100)"},
+    "200": {"value": "0.25rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--radius200)"},
+    "300": {"value": "0.375rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--radius300)"},
+    "400": {"value": "0.5rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--radius400)"},
+    "500": {"value": "0.7rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--radius500)"},
+    "600": {"value": "0.8rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--radius600)"},
+    "panel": {"value": "0.75rem", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--panelBorderRadius)"},
+    "pill": {"value": "9999px", "source": "https://tana.inc/_next/static/css/956aba1feccece75.css (--radius-full)"}
+  },
+  "shadows": {
+    "lightSoft": {"value": "0 0.1rem 0.1rem rgba(0,0,0,0.03), 0 0.75rem 1.5rem rgba(0,0,0,0.04)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --shadowSoft)"},
+    "lightHard": {"value": "0 0.1rem 0.1rem rgba(0,0,0,0.05)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isLightMode --shadowHard)"},
+    "darkSoft": {"value": "0 0.1rem 0.1rem rgba(0,0,0,0.25), 0 0.75rem 1.5rem rgba(0,0,0,0.3)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --shadowSoft)"},
+    "darkHard": {"value": "0 0.1rem 0.1rem rgba(0,0,0,0.2)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (html.isDarkMode --shadowHard)"},
+    "popover": {"value": "var(--shadowHard), var(--shadowSoft)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--shadowPopover)"}
+  },
+  "motion": {
+    "durations": {
+      "micro": {"value": "50ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (button/bullet transitions)"},
+      "bullet": {"value": "75ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (.bullet transitions)"},
+      "enter": {"value": "60ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--transitionDurationEnter)"},
+      "fast": {"value": "150ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (repeated transitions)"},
+      "standard": {"value": "200ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (dominant transition duration; --transitionDurationLeave)"},
+      "slow": {"value": "300ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (transform/opacity transitions)"},
+      "delay": {"value": "400ms", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (--transitionDelay)"}
+    },
+    "easings": {
+      "standard": {"value": "ease", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (dominant transition easing)"},
+      "out": {"value": "ease-out", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (.bullet and opacity transitions)"},
+      "inOut": {"value": "ease-in-out", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (height/transform transitions)"},
+      "material": {"value": "cubic-bezier(0.4, 0, 0.2, 1)", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (width transition)"},
+      "linear": {"value": "linear", "source": "https://app.tana.inc/static/index-C-G03e_Z.css (opacity transitions)"}
+    }
+  }
+}
