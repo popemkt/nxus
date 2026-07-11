@@ -1024,32 +1024,41 @@ export function createNode(
       })
       .run()
 
-    // Emit node:created event
+    // Assign supertag if provided (accepts UUID or systemId)
+    let assignedSupertagId: string | null = null
+    if (options.supertagId) {
+      const supertag = getFieldOrSupertagNode(tx, options.supertagId)
+      const supertagField = getSystemNode(tx, SYSTEM_FIELDS.SUPERTAG)
+      if (supertag && supertagField) {
+        setProperty(tx, nodeId, SYSTEM_FIELDS.SUPERTAG, supertag.id)
+        assignedSupertagId = supertag.id
+      }
+    }
+
+    // Emit node:created AFTER supertag assignment so the membership event
+    // carries the ancestor-expanded supertag set (invalidation narrowing).
+    const createdSupertagIds = assignedSupertagId
+      ? [assignedSupertagId, ...getAncestorSupertags(tx, assignedSupertagId)]
+      : []
     emitMutation({
       type: 'node:created',
       timestamp: now,
       nodeId,
+      supertagIds: [...new Set(createdSupertagIds)],
       afterValue: {
         id: nodeId,
         content: options.content,
         ownerId: options.ownerId,
       },
     })
-
-    // Assign supertag if provided (accepts UUID or systemId)
-    if (options.supertagId) {
-      const supertag = getFieldOrSupertagNode(tx, options.supertagId)
-      const supertagField = getSystemNode(tx, SYSTEM_FIELDS.SUPERTAG)
-      if (supertag && supertagField) {
-        setProperty(tx, nodeId, SYSTEM_FIELDS.SUPERTAG, supertag.id)
-        // Emit supertag:added event so supertag-based queries re-evaluate
-        emitMutation({
-          type: 'supertag:added',
-          timestamp: now,
-          nodeId,
-          supertagId: supertag.id,
-        })
-      }
+    if (assignedSupertagId) {
+      // supertag:added still fires for supertag-change listeners
+      emitMutation({
+        type: 'supertag:added',
+        timestamp: now,
+        nodeId,
+        supertagId: assignedSupertagId,
+      })
     }
 
     // Extract [[node:<uuid>]] tokens from the initial content into field:mentions
@@ -1106,6 +1115,9 @@ export function deleteNode(
 ): void {
   runMutationTransaction(db, (tx) => {
     const now = new Date()
+    // Read supertags BEFORE the delete: enrichment must reflect what the
+    // node was when it left query results.
+    const supertagIds = expandNodeSupertagIds(tx, nodeId)
     tx.update(nodes)
       .set({ deletedAt: now })
       .where(eq(nodes.id, nodeId))
@@ -1116,6 +1128,7 @@ export function deleteNode(
       type: 'node:deleted',
       timestamp: now,
       nodeId,
+      supertagIds,
     })
   })
 }
@@ -1144,8 +1157,28 @@ export function restoreNode(
       type: 'node:created',
       timestamp: new Date(),
       nodeId,
+      supertagIds: expandNodeSupertagIds(tx, nodeId),
     })
   })
+}
+
+/**
+ * Ancestor-expanded supertag UUIDs for membership-event enrichment
+ * (spec/tech/reactivity.md, membership narrowing): the returned list is the
+ * node's assigned supertags plus every ancestor reached through
+ * field:extends, deduped. Expansion happens at EMISSION time so it can
+ * never go stale when tags re-extend.
+ */
+function expandNodeSupertagIds(db: NodeDatabase, nodeId: string): string[] {
+  const assigned = getNodeSupertags(db, nodeId)
+  const expanded = new Set<string>()
+  for (const st of assigned) {
+    expanded.add(st.id)
+    for (const ancestor of getAncestorSupertags(db, st.id)) {
+      expanded.add(ancestor)
+    }
+  }
+  return [...expanded]
 }
 
 export function getWorkspaceRoots(db: NodeDatabase): string[] {

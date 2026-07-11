@@ -39,8 +39,10 @@ import type {
 export const DEPENDENCY_MARKERS = {
   /** Any node content change */
   CONTENT: '__content__',
-  /** Node creation/deletion (affects all queries) */
+  /** Membership dependency: creations/deletions of nodes this query could match */
   NODE_MEMBERSHIP: '__node_membership__',
+  /** Legacy unenriched membership event — affects every subscription */
+  AFFECTS_ALL: '__affects_all__',
   /** Any supertag change (for queries that filter by supertag) */
   ANY_SUPERTAG: '__any_supertag__',
   /** Owner/parent relationship changes */
@@ -241,11 +243,34 @@ export function extractFilterDependencies(filter: QueryFilter): DependencySet {
  * @param definition - Query definition to analyze
  * @returns Set of all dependencies for this query
  */
+/**
+ * True when some top-level filter (or AND-conjunct, recursively) REQUIRES a
+ * supertag — such a query's membership can only change via nodes carrying
+ * that supertag (or a descendant, handled by emission-time ancestor
+ * expansion). Mirrors the evaluator's candidate-seeding rule
+ * (query-evaluator.service.ts findRequiredSupertagFilter).
+ */
+function hasRequiredSupertagConjunct(filters: QueryFilter[]): boolean {
+  const check = (filter: QueryFilter): boolean => {
+    if (filter.type === 'supertag') return true
+    if (filter.type === 'and') return filter.filters.some(check)
+    return false
+  }
+  return filters.some(check)
+}
+
 export function extractQueryDependencies(definition: QueryDefinition): DependencySet {
   const deps = new Set<string>()
 
-  // All queries implicitly depend on node membership (creation/deletion)
-  deps.add(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)
+  // Membership dependency: queries WITHOUT a required supertag conjunct can
+  // gain/lose members on ANY node creation/deletion. Queries WITH one can
+  // only change via nodes carrying that supertag — their `supertag:<id>`
+  // dependency (added by the filter walk below) covers enriched membership
+  // events, so the broad marker is omitted (invalidation narrowing,
+  // spec/tech/reactivity.md).
+  if (!hasRequiredSupertagConjunct(definition.filters)) {
+    deps.add(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)
+  }
 
   // Extract dependencies from each filter
   for (const filter of definition.filters) {
@@ -294,11 +319,21 @@ const MEMBERSHIP_MUTATION_TYPES: Set<MutationType> = new Set([
 export function getMutationAffectedDependencies(event: MutationEvent): Set<string> {
   const affected = new Set<string>()
 
-  // Node creation/deletion affects all queries
   if (MEMBERSHIP_MUTATION_TYPES.has(event.type)) {
-    affected.add(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)
-    // Also potentially affects any supertag queries (new node might have supertags)
-    affected.add(DEPENDENCY_MARKERS.ANY_SUPERTAG)
+    if (event.supertagIds !== undefined) {
+      // Enriched event: affects membership-dependent subscriptions plus
+      // subscriptions filtering on any of the node's (ancestor-expanded)
+      // supertags. NOT ANY_SUPERTAG — that marker compensates for
+      // unexpanded supertag:added events; expansion already happened here.
+      affected.add(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)
+      for (const id of event.supertagIds) {
+        affected.add(`supertag:${id}`)
+      }
+      return affected
+    }
+    // Legacy unenriched event — no way to know what the node was; every
+    // subscription must re-evaluate.
+    affected.add(DEPENDENCY_MARKERS.AFFECTS_ALL)
     return affected
   }
 
@@ -415,8 +450,9 @@ export function createDependencyTracker(): DependencyTracker {
       const affectedIds = new Set<string>()
       let affectsAll = false
 
-      // Check if this is a node membership change (affects all)
-      if (affectedDeps.has(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)) {
+      // Only a legacy UNenriched membership event affects everything;
+      // enriched ones resolve through the reverse index like any other.
+      if (affectedDeps.has(DEPENDENCY_MARKERS.AFFECTS_ALL)) {
         affectsAll = true
         // Return all subscriptions
         for (const id of subscriptionDeps.keys()) {

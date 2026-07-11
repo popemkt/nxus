@@ -52,6 +52,15 @@ export interface MutationEvent {
   // Supertag-specific fields
   supertagId?: string // UUID of the supertag node
   supertagSystemId?: string // SystemId of the supertag node
+
+  // Membership-event enrichment (node:created / node:deleted only):
+  // the node's supertag UUIDs EXPANDED through field:extends ancestors at
+  // emission time. Present (possibly empty = untagged node) ⇒ the
+  // dependency tracker can narrow invalidation to subscriptions whose
+  // filters could match; absent ⇒ legacy affects-all behavior. Expansion
+  // happens at EMISSION, not registration — descendant sets change when
+  // tags re-extend, so registration-time expansion would go stale.
+  supertagIds?: string[]
 }
 
 /**

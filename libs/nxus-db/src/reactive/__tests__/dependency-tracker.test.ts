@@ -330,7 +330,8 @@ describe('extractQueryDependencies', () => {
 
     const deps = extractQueryDependencies(query)
 
-    expect(deps.has(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)).toBe(true)
+    // Required supertag conjunct → membership narrowing drops the broad marker
+    expect(deps.has(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)).toBe(false)
     expect(deps.has('supertag:supertag:task')).toBe(true)
     expect(deps.has('field:status')).toBe(true)
     expect(deps.has(DEPENDENCY_MARKERS.CONTENT)).toBe(true)
@@ -391,7 +392,7 @@ describe('extractQueryDependencies', () => {
 
 describe('getMutationAffectedDependencies', () => {
   describe('node membership events', () => {
-    it('should include NODE_MEMBERSHIP for node:created', () => {
+    it('unenriched node:created resolves to AFFECTS_ALL (legacy fallback)', () => {
       const event: MutationEvent = {
         type: 'node:created',
         timestamp: new Date(),
@@ -400,10 +401,24 @@ describe('getMutationAffectedDependencies', () => {
 
       const affected = getMutationAffectedDependencies(event)
 
-      expect(affected.has(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)).toBe(true)
+      expect(affected.has(DEPENDENCY_MARKERS.AFFECTS_ALL)).toBe(true)
     })
 
-    it('should include NODE_MEMBERSHIP for node:deleted', () => {
+    it('enriched node:created resolves to membership + the expanded supertag keys', () => {
+      const affected = getMutationAffectedDependencies({
+        type: 'node:created',
+        timestamp: new Date(),
+        nodeId: 'new-node-id',
+        supertagIds: ['st-1'],
+      })
+
+      expect(affected.has(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)).toBe(true)
+      expect(affected.has('supertag:st-1')).toBe(true)
+      expect(affected.has(DEPENDENCY_MARKERS.AFFECTS_ALL)).toBe(false)
+      expect(affected.has(DEPENDENCY_MARKERS.ANY_SUPERTAG)).toBe(false)
+    })
+
+    it('unenriched node:deleted resolves to AFFECTS_ALL (legacy fallback)', () => {
       const event: MutationEvent = {
         type: 'node:deleted',
         timestamp: new Date(),
@@ -412,19 +427,18 @@ describe('getMutationAffectedDependencies', () => {
 
       const affected = getMutationAffectedDependencies(event)
 
-      expect(affected.has(DEPENDENCY_MARKERS.NODE_MEMBERSHIP)).toBe(true)
+      expect(affected.has(DEPENDENCY_MARKERS.AFFECTS_ALL)).toBe(true)
     })
 
-    it('should include ANY_SUPERTAG for node creation', () => {
-      const event: MutationEvent = {
+    it('does not add ANY_SUPERTAG for enriched creations — expansion already happened', () => {
+      const affected = getMutationAffectedDependencies({
         type: 'node:created',
         timestamp: new Date(),
         nodeId: 'new-node-id',
-      }
+        supertagIds: [],
+      })
 
-      const affected = getMutationAffectedDependencies(event)
-
-      expect(affected.has(DEPENDENCY_MARKERS.ANY_SUPERTAG)).toBe(true)
+      expect(affected.has(DEPENDENCY_MARKERS.ANY_SUPERTAG)).toBe(false)
     })
   })
 
