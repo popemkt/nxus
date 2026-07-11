@@ -4,6 +4,7 @@ import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 
 const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 async function gotoEditorWithRetry(page: Page, path: string) {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -23,6 +24,8 @@ test.describe('Outline child-list virtualization', () => {
   test.setTimeout(120_000)
 
   test('windows wide child lists while preserving interaction', async ({ page }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     await gotoEditorWithRetry(page, '/editor')
     const seeded = await seedWideChildList()
 

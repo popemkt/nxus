@@ -4,6 +4,7 @@ import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 
 const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 /**
  * Navigate with retry-on-cold-boot: on a parallel cold start the editor app
@@ -34,6 +35,8 @@ test.describe('Inline Mention Backlinks', () => {
   test('a [[node:<id>]] token renders as a clickable chip and the target lists it under Mentioned', async ({
     page,
   }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     // Warm the editor server BEFORE seeding: the server's auto-seed check
     // (initDatabaseWithBootstrap, master-client.ts) only seeds demo data when
     // no non-system node exists yet — writing our story nodes first would

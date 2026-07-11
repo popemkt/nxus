@@ -88,11 +88,10 @@ DRIFT: 502-retry fixture papers over readiness
 - impact: readiness is re-solved per-test instead of once at the gate; slow starts surface as timeouts in whichever spec ran first; `networkidle` breaks silently if any app adds long-polling/SSE.
 - closes: make `/__health` fan out to all 6 upstreams (return 503 until each responds), delete the retry loop, replace `networkidle` with app-specific ready selectors.
 
-DRIFT: ARCHITECTURE_TYPE=graph matrix leg is unproven
-- canonical: every CI matrix leg exercises the mode it names; the editor reaches storage exclusively through `nodeFacade` ([persistence.md](./persistence.md)).
-- current: the underlying bypass is closed 2026-07-11 — editor server functions (including `getNodeTreeServerFn`'s composite tree read) route through `nodeFacade`, and graph-mode seeding writes the facade's read model — but the `graph` e2e leg has not since been run and verified to confirm the editor specs actually pass against Surreal-backed reads.
-- impact: the matrix leg's verdict is stale; until a verified green run exists, graph-mode confidence rests on backend equivalence tests and facade smoke checks, not e2e.
-- closes: run the full e2e suite under `ARCHITECTURE_TYPE=graph` locally, fix or honestly `isGraphMode`-skip what fails, and record the verdict.
+Resolved note: ARCHITECTURE_TYPE=graph matrix leg (verified 2026-07-11)
+- previous: the graph leg was green while the editor silently read SQLite — "a green graph matrix proves nothing about SurrealDB for the flagship app."
+- now: the leg runs against a real SurrealDB **server** (embedded surrealkv corrupts under the six-app multi-process topology — [learnings/surrealkv-multiprocess.md](../../learnings/surrealkv-multiprocess.md)); `ci.yml` starts `surreal v2.3.7` with the `memory` engine and sets `SURREAL_EMBEDDED=false`/`SURREAL_URL` before seed + suite. Verified locally 2026-07-11: graph leg 61 passed / 0 failed / exit 0 (1.4 min), node leg unchanged.
+- honest residue: graph-mode skips are per-test with reasons (`grep -rn "test.skip(isGraphMode" e2e/`): direct-SQLite fixture seeding (formula-fields, inline-mentions, lazy-load, virtualization, query-builder ×2, move-down), features not yet stable on the graph backend (inbox C7 reactive queries, supertag backlink grouping ×2, empty-node child creation, multi-select shared-root count), and demo-seed shape gaps (gallery ×3, app-detail ×2 — graph seed has no app-card items). Closing those is feature work, tracked in [persistence.md](./persistence.md) §5 and the graph seed script.
 
 ## 7. CI gates
 

@@ -113,6 +113,23 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
+      # Graph leg runs against a SurrealDB SERVER, not the embedded engine:
+      # surrealkv is single-process, and the six app dev-servers sharing one
+      # embedded file corrupt it under concurrent access (invalid-revision
+      # deserialization errors — learnings/surrealkv-multiprocess.md). Server
+      # version pinned to the 2.x dialect the SDK (^2.0.0-alpha.18) speaks.
+      - name: Start SurrealDB server (graph leg)
+        if: matrix.architecture == 'graph'
+        run: |
+          curl -sSf https://install.surrealdb.com | sh -s -- --version v2.3.7
+          "$HOME/.surrealdb/surreal" start --user root --pass root --bind 127.0.0.1:8790 memory &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8790/health && break
+            sleep 1
+          done
+          echo "SURREAL_EMBEDDED=false" >> "$GITHUB_ENV"
+          echo "SURREAL_URL=http://127.0.0.1:8790/rpc" >> "$GITHUB_ENV"
+
       - name: Seed database
         run: pnpm --filter @nxus/core-app db:seed
 

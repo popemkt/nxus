@@ -35,6 +35,18 @@ module.exports = async function globalSetup() {
   }
   await warm()
 
+  // Graph mode has no SQLite lazy auto-seed to await: demo data comes from
+  // the explicit `ARCHITECTURE_TYPE=graph db:seed` run before the suite
+  // (ci.yml seeds unconditionally; local graph runs must do the same), and
+  // the embedded surrealkv file can't be safely opened read-only here while
+  // the app servers hold it. Warm-up above still triggers each app's
+  // bootstrap; seed presence is the seeder's contract in this mode.
+  if (process.env.ARCHITECTURE_TYPE === 'graph') {
+    console.log('[global-setup] graph mode — skipping SQLite demo-seed poll')
+    await browser.close().catch(() => {})
+    return
+  }
+
   const Database = require('better-sqlite3')
   try {
     while (Date.now() < deadline) {

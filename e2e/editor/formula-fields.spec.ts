@@ -4,11 +4,14 @@ import { test, expect } from '../fixtures/base.fixture.js'
 import type { FieldSystemId } from '../../libs/nxus-db/src/server.js'
 
 const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 test.describe('Formula Fields', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('formula field computes from two number fields and updates after reload', async ({ page }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     const { nodeId, quantityFieldSystemId } = await seedFormulaStory()
 
     await page.goto(`/editor?node=${nodeId}`)
@@ -27,6 +30,8 @@ test.describe('Formula Fields', () => {
   })
 
   test('multi-parent supertag inheritance shows fields from both parent supertags', async ({ page }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     const { nodeId } = await seedMultiParentStory()
 
     await page.goto(`/editor?node=${nodeId}`)

@@ -3,17 +3,15 @@ import { test, expect } from '../fixtures/base.fixture.js'
 test.describe('Core Settings Page', () => {
   test('C9 — Navigate to Settings and verify layout', async ({ page }) => {
     await page.goto('/core')
-    await page.waitForLoadState('networkidle')
 
     // Click Settings link in HUD
     await page.getByRole('link', { name: 'Settings' }).click()
     await page.waitForURL('**/core/settings')
-    await page.waitForLoadState('networkidle')
 
     // Verify Settings heading
     await expect(
       page.getByRole('heading', { name: 'Settings', level: 1 })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 20_000 })
 
     // Verify sidebar sections are present
     await expect(page.getByRole('button', { name: 'General' })).toBeVisible()
@@ -46,10 +44,9 @@ test.describe('Core Settings Page', () => {
 
   test('C10 — Theme toggle between light and dark', async ({ page }) => {
     await page.goto('/core/settings')
-    await page.waitForLoadState('networkidle')
 
     // Wait for General section to load (default active section)
-    await expect(page.getByText('Appearance')).toBeVisible()
+    await expect(page.getByText('Appearance')).toBeVisible({ timeout: 20_000 })
 
     // Verify theme chooser is visible in General section
     await expect(page.getByText('Color Mode')).toBeVisible()
@@ -59,6 +56,8 @@ test.describe('Core Settings Page', () => {
     const darkBtn = page.getByRole('button', { name: 'Dark' })
     await expect(lightBtn).toBeVisible()
     await expect(darkBtn).toBeVisible()
+    await expect(lightBtn).toBeEnabled()
+    await expect(darkBtn).toBeEnabled()
 
     // Click Dark mode
     await darkBtn.click()

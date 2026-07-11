@@ -4,6 +4,7 @@ import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
 
 const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 async function gotoEditorWithRetry(page: Page, path = '/editor') {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -26,6 +27,8 @@ test.describe('Outline lazy tree loading', () => {
   test('loads a depth-bounded workspace tree and fetches children on expand', async ({
     page,
   }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     await gotoEditorWithRetry(page)
     const chain = await seedDeepChain()
 
@@ -52,6 +55,8 @@ test.describe('Outline lazy tree loading', () => {
   test('fetches an unloaded subtree when zooming directly to a boundary node', async ({
     page,
   }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     await gotoEditorWithRetry(page)
     const chain = await seedDeepChain()
 

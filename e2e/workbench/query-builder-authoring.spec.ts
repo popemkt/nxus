@@ -15,6 +15,7 @@ import type { FieldSystemId } from '../../libs/nxus-db/src/server.js'
  */
 
 const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
+const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
 
 /**
  * Switch the workbench sidebar to the Query Builder view, retrying on a cold
@@ -144,6 +145,8 @@ test.describe('Workbench Query Builder — nested groups & path filters', () => 
     page,
     navigateToApp,
   }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     // Warm the workbench server BEFORE seeding: initDatabaseWithBootstrap only
     // auto-seeds demo data while the DB has zero non-system nodes
     // (learnings/e2e-autoseed-suppression.md) — seeding first would starve
@@ -211,6 +214,8 @@ test.describe('Workbench Query Builder — nested groups & path filters', () => 
     page,
     navigateToApp,
   }) => {
+    test.skip(isGraphMode, 'Direct-DB fixture seeding is SQLite-only; graph-mode app reads SurrealDB')
+
     await navigateToApp('workbench')
     await waitForServerBootstrap(page)
 
