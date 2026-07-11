@@ -39,10 +39,17 @@ back to SQLite for the paths that mattered (the drift the parity work closed).
 - Any multi-process topology (dev servers, e2e, CI graph leg) MUST use a
   SurrealDB server: `SURREAL_EMBEDDED=false` + `SURREAL_URL`, server started
   with the `memory` engine for throwaway runs. Pin the server major to the
-  SDK's dialect (SDK `^2.0.0-alpha.18` ⇄ server 2.x; a 3.2.1 server rejects
-  the repo's `DEFINE FIELD ... FLEXIBLE TYPE` DDL with "FLEXIBLE must be
-  specified after TYPE").
-- Local binary: `~/.surrealdb/surreal` (installed 2026-07-11, v2.3.7 via
-  `curl -sSf https://install.surrealdb.com | sh -s -- --version v2.3.7`).
+  SDK's dialect — since the 2026-07-11 v3 upgrade that is server 3.x
+  (`surrealdb@^2.0.4` + `@surrealdb/node@^3.0.3`); v3 requires
+  `DEFINE FIELD ... TYPE ... FLEXIBLE` ordering (2.x accepted
+  `FLEXIBLE TYPE ...`).
+- v3 embedded caveat: `@surrealdb/node@3.0.3` HANGS on same-process
+  close→reopen of a surrealkv file. Process-restart reopen is fine (that's
+  the app-boot invariant, guarded by `surreal-reopen.test.ts` via child
+  processes). Never close-and-reopen an embedded file handle inside one
+  process.
+- Local binaries: `~/.surrealdb/surreal3` (v3.2.1, the repo's dialect) and
+  `~/.surrealdb/surreal` (v2.3.7, kept for pre-upgrade branches). Installer:
+  `curl -sSf https://install.surrealdb.com | sh -s -- --version v3.2.1`.
 - CI graph leg does exactly this (`.github/workflows/ci.yml`, "Start SurrealDB
   server" step).

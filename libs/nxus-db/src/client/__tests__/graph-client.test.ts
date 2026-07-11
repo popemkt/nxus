@@ -66,10 +66,9 @@ describe('Embedded connection', () => {
 
     try {
       // Without schema init, system supertags should not exist
-      const [supertags] = await bare.query<[Array<Record<string, unknown>>]>(
-        `SELECT * FROM supertag`,
+      await expect(bare.query(`SELECT * FROM supertag`)).rejects.toThrow(
+        "The table 'supertag' does not exist",
       )
-      expect(supertags).toHaveLength(0)
     } finally {
       await bare.close()
     }

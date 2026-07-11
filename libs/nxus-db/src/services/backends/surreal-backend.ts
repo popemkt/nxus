@@ -123,6 +123,13 @@ interface SurrealStatement {
   params?: Record<string, unknown>
 }
 
+function normalizeTransactionResult(result: unknown): unknown {
+  if (Array.isArray(result) && result.length === 1) {
+    return result[0]
+  }
+  return result
+}
+
 /**
  * Execute one or more write statements as a single atomic SurrealQL
  * transaction (`BEGIN TRANSACTION; ...; COMMIT TRANSACTION;`).
@@ -150,7 +157,10 @@ async function runSurrealTransaction(
     .join('\n    ')
 
   const fullQuery = `BEGIN TRANSACTION;\n    ${body}\n    COMMIT TRANSACTION;`
-  return db.query(fullQuery, mergedParams)
+  const results = await db.query(fullQuery, mergedParams)
+  return results
+    .filter((result) => result !== undefined)
+    .map(normalizeTransactionResult)
 }
 
 // Stack of in-flight event buffers. Non-empty while a mutation's batched
@@ -525,7 +535,8 @@ export class SurrealBackend implements NodeBackend {
 
       statements.push({ query: 'RETURN $newNode[0].id' })
 
-      const [nodeIdResult] = await runSurrealTransaction(db, statements)
+      const transactionResults = await runSurrealTransaction(db, statements)
+      const nodeIdResult = transactionResults.at(-1)
       const nodeId = rid(nodeIdResult)
 
       emitMutation({

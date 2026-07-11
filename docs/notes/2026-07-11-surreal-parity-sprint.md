@@ -23,7 +23,7 @@ Goal: make `ARCHITECTURE_TYPE=graph` real — the canonical-target backend was "
 ## Findings worth remembering
 
 - The old graph CI leg passed **because of** the bug it should have caught: graph mode wrongly seeded SQLite, which satisfied global-setup's SQLite poll. Honest dispatch immediately broke the harness — good.
-- Embedded surrealkv is single-process; six app servers sharing one file corrupt it (`Invalid revision … DefineTableStatement`) and run 20x slower. Server mode: 31.6min → 1.4min. CI graph leg now boots `surreal v2.3.7 memory`.
+- Embedded surrealkv is single-process; six app servers sharing one file corrupt it (`Invalid revision … DefineTableStatement`) and run 20x slower. Server mode: 31.6min → 1.4min. CI graph leg now boots `surreal v3.2.1 memory` (v2.3.7 initially; upgraded same day).
 - Codex misdiagnosed twice under review: claimed a boot-time `DEFINE TABLE OVERWRITE` data wipe (refuted with `surreal-reopen.test.ts` — likely a src/dist dual-module path mixup) and blanket-skipped the whole outline-editor suite where per-test skips + server mode preserved 32 tests of coverage. Lane review continues to pay.
 - Lane collision: parallel codex lanes clobbered each other's in-flight edits once (lane B `git`-restored lane A's files). Sequential lanes or disjoint file sets from here.
 
@@ -31,4 +31,4 @@ Goal: make `ARCHITECTURE_TYPE=graph` real — the canonical-target backend was "
 
 - 17 graph-mode e2e skips: direct-SQLite fixtures (7), graph feature gaps (5: inbox reactive queries, backlink grouping ×2, empty-node child creation, multi-select root count), seed shape gaps (5: no app-card/inbox demo items in graph seed).
 - Reactive layer is SQLite-hard-wired (last DRIFT in persistence.md §5).
-- SurrealDB v3 upgrade queued (task #11, user-requested): SDK `2.0.0-alpha.18` → 3.x, engine bump, DDL dialect (`FLEXIBLE` position), server pin.
+- SurrealDB v3 upgrade: DONE same evening — `surrealdb@2.0.4` + `@surrealdb/node@3.0.3` + server 3.2.1, DDL dialect fixed, all gates re-green. New caveat: v3 embedded surrealkv hangs on same-process close→reopen (learnings updated).

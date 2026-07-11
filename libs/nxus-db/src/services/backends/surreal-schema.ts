@@ -111,7 +111,7 @@ export async function initFieldSchema(db: Surreal): Promise<void> {
     DEFINE FIELD OVERWRITE content ON field TYPE string;
     DEFINE FIELD OVERWRITE system_id ON field TYPE string;
     DEFINE FIELD OVERWRITE value_type ON field TYPE option<string>;
-    DEFINE FIELD OVERWRITE default_value ON field FLEXIBLE TYPE option<object>;
+    DEFINE FIELD OVERWRITE default_value ON field TYPE option<object> FLEXIBLE;
     DEFINE FIELD OVERWRITE created_at ON field TYPE datetime DEFAULT time::now();
 
     DEFINE INDEX OVERWRITE idx_field_system_id ON field FIELDS system_id UNIQUE;

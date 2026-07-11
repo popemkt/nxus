@@ -123,6 +123,12 @@ async function doInitGraphDatabase(): Promise<Surreal> {
         password: SURREAL_CONFIG.password,
       })
 
+      await db.query(`
+        DEFINE NAMESPACE IF NOT EXISTS ${SURREAL_CONFIG.namespace};
+        USE NS ${SURREAL_CONFIG.namespace};
+        DEFINE DATABASE IF NOT EXISTS ${SURREAL_CONFIG.database};
+      `)
+
       await db.use({
         namespace: SURREAL_CONFIG.namespace,
         database: SURREAL_CONFIG.database,
@@ -136,8 +142,9 @@ async function doInitGraphDatabase(): Promise<Surreal> {
     console.log('[GraphDB] Connected successfully')
 
     return db
-  } catch (error: any) {
-    console.error('[GraphDB] Failed to connect:', error?.message || error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[GraphDB] Failed to connect:', message)
     if (SURREAL_CONFIG.memory || SURREAL_CONFIG.embedded) {
       console.error(`[GraphDB] ${SURREAL_CONFIG.memory ? 'In-memory' : 'Embedded'} mode failed. Check that @surrealdb/node is installed.`)
     } else {
@@ -145,7 +152,7 @@ async function doInitGraphDatabase(): Promise<Surreal> {
       console.error('[GraphDB]   surreal start --user root --pass root memory')
     }
     throw new Error(
-      `SurrealDB connection failed: ${error?.message || error}`,
+      `SurrealDB connection failed: ${message}`,
     )
   }
 }
@@ -288,7 +295,7 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
     DEFINE FIELD OVERWRITE deleted_at ON node TYPE option<datetime>;
 
     -- Flexible properties (schemaless within this field)
-    DEFINE FIELD OVERWRITE props ON node FLEXIBLE TYPE option<object>;
+    DEFINE FIELD OVERWRITE props ON node TYPE option<object> FLEXIBLE;
 
     -- Indexes
     DEFINE INDEX OVERWRITE idx_system_id ON node FIELDS system_id UNIQUE;
@@ -309,7 +316,8 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
     DEFINE FIELD OVERWRITE created_at ON supertag TYPE datetime DEFAULT time::now();
 
     -- Schema definition for fields this supertag adds
-    DEFINE FIELD OVERWRITE field_schema ON supertag FLEXIBLE TYPE option<array>;
+    DEFINE FIELD OVERWRITE field_schema ON supertag TYPE option<array<object>> FLEXIBLE;
+    DEFINE FIELD OVERWRITE field_schema[*] ON supertag TYPE object FLEXIBLE;
 
     DEFINE INDEX OVERWRITE idx_supertag_system ON supertag FIELDS system_id UNIQUE;
     DEFINE INDEX OVERWRITE idx_supertag_name ON supertag FIELDS name;

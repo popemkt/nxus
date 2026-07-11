@@ -846,8 +846,8 @@ importers:
         specifier: ^0.45.1
         version: 0.45.1(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.0)(sql.js@1.13.0)
       surrealdb:
-        specifier: ^2.0.0-alpha.18
-        version: 2.0.0-alpha.18(tslib@2.8.1)(typescript@5.9.3)
+        specifier: ^2.0.4
+        version: 2.0.4(tslib@2.8.1)(typescript@5.9.3)
       uuidv7:
         specifier: ^1.1.0
         version: 1.1.0
@@ -856,8 +856,8 @@ importers:
         version: 4.2.1
     devDependencies:
       '@surrealdb/node':
-        specifier: ^2.6.1
-        version: 2.6.1(surrealdb@2.0.0-alpha.18(tslib@2.8.1)(typescript@5.9.3))
+        specifier: ^3.0.3
+        version: 3.0.3(surrealdb@2.0.4(tslib@2.8.1)(typescript@5.9.3))
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -3768,6 +3768,17 @@ packages:
     resolution: {integrity: sha512-7oL5Af0GTlO7fawshF6SlzYpjI21Cn2x5cyvKUGDip9LV+4tqJZzgkPNJxOzhKXP5wdyf7ukmvlR8tF6JLlVNw==}
     peerDependencies:
       surrealdb: ^2.0.0-0
+
+  '@surrealdb/node@3.0.3':
+    resolution: {integrity: sha512-A8g/dktGBz1eZs5lWFKAsx22A376v7g+o7jkdvsmlxj/uta9t4sUPkTIFjcG4JjJW8dzwt8JTiMl8+FuFuiRnw==}
+    peerDependencies:
+      surrealdb: ^2.0.1
+
+  '@surrealdb/sqon@0.1.0':
+    resolution: {integrity: sha512-pooKLZ0W6mN8XHzJQavGOdfZOZksycmIjhwFwvG0kdCAt4I5U6KKPHcXQwFkTDNKFKFKdufczLRnzHapPIslQw==}
+    peerDependencies:
+      tslib: ^2.6.3
+      typescript: ^5.0.0
 
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0':
     resolution: {integrity: sha512-b9MIk7yhdS1pMCZM8VeNfUlSKVRhsHZNMl5O9SfaX0l0t5wjdgu4IDzGB8bpnGBBOjGST3rRFVsaaEtI4W6f7g==}
@@ -8529,6 +8540,12 @@ packages:
       tslib: ^2.6.3
       typescript: ^5.0.0
 
+  surrealdb@2.0.4:
+    resolution: {integrity: sha512-tCmMzcsLB/CVDZtxsj/xOWY6NWy9MrX2abMuwnVpAI5xj7kvnq9noRtc1nhjuDihei/Njfkxe/NYMxy7ZLLl4g==}
+    peerDependencies:
+      tslib: ^2.6.3
+      typescript: ^5.0.0 || ^6.0.0
+
   svg-parser@2.0.4:
     resolution: {integrity: sha512-e4hG1hRwoOdRb37cIMSgzNsxyzKfayW6VOflrwvR+/bzrkyxY/31WkbgnQpgtrNp1SdpJvpUAGTa/ZoiPNDuRQ==}
 
@@ -12390,6 +12407,17 @@ snapshots:
   '@surrealdb/node@2.6.1(surrealdb@2.0.0-alpha.18(tslib@2.8.1)(typescript@5.9.3))':
     dependencies:
       surrealdb: 2.0.0-alpha.18(tslib@2.8.1)(typescript@5.9.3)
+
+  '@surrealdb/node@3.0.3(surrealdb@2.0.4(tslib@2.8.1)(typescript@5.9.3))':
+    dependencies:
+      surrealdb: 2.0.4(tslib@2.8.1)(typescript@5.9.3)
+
+  '@surrealdb/sqon@0.1.0(tslib@2.8.1)(typescript@5.9.3)':
+    dependencies:
+      '@surrealdb/cbor': 2.0.0-alpha.4
+      tslib: 2.8.1
+      typescript: 5.9.3
+      uuidv7: 1.1.0
 
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0(@babel/core@7.28.5)':
     dependencies:
@@ -18063,6 +18091,12 @@ snapshots:
       tslib: 2.8.1
       typescript: 5.9.3
       uuidv7: 1.1.0
+
+  surrealdb@2.0.4(tslib@2.8.1)(typescript@5.9.3):
+    dependencies:
+      '@surrealdb/sqon': 0.1.0(tslib@2.8.1)(typescript@5.9.3)
+      tslib: 2.8.1
+      typescript: 5.9.3
 
   svg-parser@2.0.4: {}
 

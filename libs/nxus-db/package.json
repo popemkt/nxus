@@ -32,7 +32,7 @@
   "dependencies": {
     "better-sqlite3": "^12.6.0",
     "drizzle-orm": "^0.45.1",
-    "surrealdb": "^2.0.0-alpha.18",
+    "surrealdb": "^2.0.4",
     "uuidv7": "^1.1.0",
     "zod": "^4.2.1"
   },
@@ -40,7 +40,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
-    "@surrealdb/node": "^2.6.1",
+    "@surrealdb/node": "^3.0.3",
     "vitest": "^3.0.5"
   }
 }
