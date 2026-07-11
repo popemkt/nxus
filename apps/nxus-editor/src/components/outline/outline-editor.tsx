@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { X } from '@phosphor-icons/react'
+import { useTheme } from '@nxus/ui/theme'
 import { useOutlineStore } from '@/stores/outline.store'
 import { useOutlineSync } from '@/hooks/use-outline-sync'
 import { Breadcrumbs } from './breadcrumbs'
@@ -28,7 +29,7 @@ import {
   FIELD_DEFINITION_SYSTEM_ID,
 } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
-import { getSupertagColor } from '@/lib/supertag-colors'
+import { getSupertagColor, getSupertagColorPair } from '@/lib/supertag-colors'
 
 export function OutlineEditor() {
   const { node: urlNodeId } = useSearch({ from: '/' })
@@ -563,10 +564,13 @@ export function OutlineEditor() {
 function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootNodeId: string }) {
   const navigateToNode = useNavigateToNode()
   const { removeSupertag } = useOutlineSync()
+  const colorMode = useTheme((state) => state.colorMode)
 
   // Use last supertag's color for the background gradient (resolve via getSupertagColor fallback)
   const lastTag = rootNode.supertags.length > 0 ? rootNode.supertags[rootNode.supertags.length - 1]! : null
-  const gradientColor = lastTag ? (lastTag.color ?? getSupertagColor(lastTag.id)) : null
+  const gradientColor = lastTag
+    ? getSupertagColorPair(lastTag.color ?? getSupertagColor(lastTag.id))[colorMode]
+    : null
 
   return (
     <div className="px-2 pb-2">
@@ -580,7 +584,7 @@ function RootNodeHeader({ rootNode, rootNodeId }: { rootNode: OutlineNode; rootN
               left: '-60px',
               right: '-60px',
               bottom: '-30px',
-              background: `radial-gradient(ellipse 60% 70% at 50% 35%, ${gradientColor}0c 0%, ${gradientColor}05 40%, transparent 80%)`,
+              background: `radial-gradient(ellipse 60% 70% at 50% 35%, color-mix(in srgb, ${gradientColor.fg} 5%, transparent) 0%, color-mix(in srgb, ${gradientColor.fg} 2%, transparent) 40%, transparent 80%)`,
             }}
           />
         )}

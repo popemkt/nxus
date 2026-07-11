@@ -1,4 +1,5 @@
 import { cn } from '@nxus/ui'
+import { useTheme } from '@nxus/ui/theme'
 import {
   TextT,
   Hash,
@@ -15,6 +16,7 @@ import {
   ApproximateEquals,
 } from '@phosphor-icons/react'
 import type { FieldType } from '@/types/outline'
+import { getSupertagColorPair } from '@/lib/supertag-colors'
 
 interface BulletProps {
   hasChildren: boolean
@@ -37,6 +39,9 @@ export function Bullet({
   isReference,
   onClick,
 }: BulletProps) {
+  const colorMode = useTheme((state) => state.colorMode)
+  const themeColor = tagColor ? getSupertagColorPair(tagColor)[colorMode] : null
+
   return (
     <button
       type="button"
@@ -61,7 +66,7 @@ export function Bullet({
       {hasChildren && collapsed && (
         <span
           className="absolute inset-[3px] rounded-full bg-foreground/8"
-          style={tagColor ? { backgroundColor: `${tagColor}20` } : undefined}
+          style={themeColor ? { backgroundColor: themeColor.bg } : undefined}
         />
       )}
 
@@ -76,7 +81,7 @@ export function Bullet({
               !collapsed &&
               'group-hover/bullet:text-foreground/70',
           )}
-          style={tagColor ? { color: tagColor } : undefined}
+          style={themeColor ? { color: themeColor.fg } : undefined}
         >
           #
         </span>
@@ -87,7 +92,7 @@ export function Bullet({
           className={cn(
             !tagColor && 'text-foreground/45',
           )}
-          style={tagColor ? { color: tagColor } : undefined}
+          style={themeColor ? { color: themeColor.fg } : undefined}
         />
       ) : isReference ? (
         /* Referenced node — dashed circle, filled inner dot when has children */
@@ -97,7 +102,7 @@ export function Bullet({
             'h-[18px] w-[18px] border border-dashed',
             !tagColor && 'border-foreground/20',
           )}
-          style={tagColor ? { borderColor: `${tagColor}40` } : undefined}
+          style={themeColor ? { borderColor: themeColor.fg } : undefined}
         >
           <span
             className={cn(
@@ -106,7 +111,7 @@ export function Bullet({
               !tagColor && 'bg-foreground/40',
               !tagColor && hasChildren && 'bg-foreground/55',
             )}
-            style={tagColor ? { backgroundColor: tagColor } : undefined}
+            style={themeColor ? { backgroundColor: themeColor.fg } : undefined}
           />
         </span>
       ) : (
@@ -120,7 +125,7 @@ export function Bullet({
               !collapsed &&
               'group-hover/bullet:bg-foreground/60',
           )}
-          style={tagColor ? { backgroundColor: tagColor } : undefined}
+          style={themeColor ? { backgroundColor: themeColor.fg } : undefined}
         />
       )}
 

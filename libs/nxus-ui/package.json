@@ -16,6 +16,7 @@
       "import": "./src/theme/theme.tsx",
       "default": "./src/theme/theme.tsx"
     },
+    "./theme/tokens.css": "./src/theme/tokens.css",
     "./package.json": "./package.json"
   },
   "dependencies": {

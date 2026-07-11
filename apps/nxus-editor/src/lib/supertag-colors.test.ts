@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getSupertagColor } from './supertag-colors'
+import { getSupertagColor, getSupertagColorPair } from './supertag-colors'
 
 describe('getSupertagColor', () => {
   it('returns a hex color string', () => {
@@ -33,5 +33,24 @@ describe('getSupertagColor', () => {
   it('handles UUID-like strings', () => {
     const color = getSupertagColor('550e8400-e29b-41d4-a716-446655440000')
     expect(color).toMatch(/^#[0-9a-f]{6}$/i)
+  })
+})
+
+describe('getSupertagColorPair', () => {
+  it('derives distinct light and dark renderings from one hue', () => {
+    const pair = getSupertagColorPair(210)
+
+    expect(pair.light.fg).toMatch(/^hsl\(210 /)
+    expect(pair.dark.fg).toMatch(/^hsl\(210 /)
+    expect(pair.light).not.toEqual(pair.dark)
+  })
+
+  it('accepts a stored hex color and is stable across calls', () => {
+    const first = getSupertagColorPair('#3b82f6')
+    const second = getSupertagColorPair('#3b82f6')
+
+    expect(first).toEqual(second)
+    expect(first.light.bg).not.toBe(first.dark.bg)
+    expect(first.light.fg).not.toBe(first.dark.fg)
   })
 })

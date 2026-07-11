@@ -1,6 +1,7 @@
 import { Hash } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
-import { getSupertagColor } from '@/lib/supertag-colors'
+import { useTheme } from '@nxus/ui/theme'
+import { getSupertagColor, getSupertagColorPair } from '@/lib/supertag-colors'
 
 interface SupertagPillProps {
   tag: {
@@ -30,7 +31,8 @@ export function SupertagPill({
   onClick,
   className,
 }: SupertagPillProps) {
-  const color = tag.color ?? getSupertagColor(tag.id)
+  const colorMode = useTheme((state) => state.colorMode)
+  const color = getSupertagColorPair(tag.color ?? getSupertagColor(tag.id))[colorMode]
   const label = tag.name ?? tag.content ?? ''
 
   const sizeClasses = size === 'sm'
@@ -47,8 +49,8 @@ export function SupertagPill({
         className,
       )}
       style={{
-        backgroundColor: `${color}18`,
-        color,
+        backgroundColor: color.bg,
+        color: color.fg,
       }}
       onClick={onClick}
     >

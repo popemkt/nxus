@@ -7,7 +7,8 @@ import { useOutlineStore } from '@/stores/outline.store'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { getCaretRect } from '@/lib/caret-utils'
 import { splitContentIntoMentionSegments } from '@/lib/mentions'
-import { getSupertagColor } from '@/lib/supertag-colors'
+import { getSupertagColor, getSupertagColorPair } from '@/lib/supertag-colors'
+import { useTheme } from '@nxus/ui/theme'
 import { MentionAutocomplete } from './mention-autocomplete'
 import { SupertagAutocomplete } from './supertag-autocomplete'
 import { SupertagConfigPanel } from './supertag-config-panel'
@@ -359,7 +360,10 @@ function renderNodeContent(content: string): ReactNode {
 }
 
 function MentionChip({ nodeId }: { nodeId: string }) {
-  const node = useOutlineStore((s) => s.nodes.get(nodeId))
+  const canonicalNodeId = useOutlineStore((s) =>
+    s.nodes.has(nodeId) ? nodeId : s.nodes.has(`node:${nodeId}`) ? `node:${nodeId}` : nodeId,
+  )
+  const node = useOutlineStore((s) => s.nodes.get(canonicalNodeId))
   const navigateToNode = useNavigateToNode()
   const label = node ? node.content || 'Untitled' : nodeId.slice(0, 8)
 
@@ -374,7 +378,7 @@ function MentionChip({ nodeId }: { nodeId: string }) {
       )}
       onClick={(e) => {
         e.stopPropagation()
-        navigateToNode(nodeId)
+        navigateToNode(canonicalNodeId)
       }}
       title={`Go to: ${label}`}
       role="button"
@@ -382,7 +386,7 @@ function MentionChip({ nodeId }: { nodeId: string }) {
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.stopPropagation()
-          navigateToNode(nodeId)
+          navigateToNode(canonicalNodeId)
         }
       }}
     >
@@ -407,6 +411,7 @@ function SupertagBadges({
   onRemove?: (supertagId: string, supertagSystemId: string | null) => void
 }) {
   const navigateToNode = useNavigateToNode()
+  const colorMode = useTheme((state) => state.colorMode)
   const [configTarget, setConfigTarget] = useState<{
     supertagId: string
     anchorRect: { top: number; left: number; width: number; height: number }
@@ -415,7 +420,7 @@ function SupertagBadges({
   return (
     <div className="flex h-6 items-center gap-0.5">
       {supertags.map((tag) => {
-        const color = tag.color ?? getSupertagColor(tag.id)
+        const color = getSupertagColorPair(tag.color ?? getSupertagColor(tag.id))[colorMode]
         return (
           <span
             key={tag.id}
@@ -427,8 +432,8 @@ function SupertagBadges({
               'cursor-pointer transition-opacity hover:opacity-70',
             )}
             style={{
-              backgroundColor: `${color}18`,
-              color,
+              backgroundColor: color.bg,
+              color: color.fg,
             }}
             onClick={(e) => {
               e.stopPropagation()

@@ -2,12 +2,13 @@ import { memo, useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowClockwise } from '@phosphor-icons/react'
 import { cn } from '@nxus/ui'
+import { useTheme } from '@nxus/ui/theme'
 import { QueryBuilder } from '@nxus/workbench'
 import type { QueryDefinition } from '@nxus/db'
 import { evaluateQueryServerFn, updateQueryDefinitionServerFn } from '@/services/outline.server'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
 import { useOutlineStore } from '@/stores/outline.store'
-import { getSupertagColor } from '@/lib/supertag-colors'
+import { getSupertagColor, getSupertagColorPair } from '@/lib/supertag-colors'
 import { outlineQueryKeys, safeStringify, isQueryDefinition } from './query-helpers'
 import { SupertagPill } from './supertag-pill'
 
@@ -170,8 +171,9 @@ function QueryResultRow({
   depth: number
   onClick: () => void
 }) {
+  const colorMode = useTheme((state) => state.colorMode)
   const primaryColor = node.supertags[0]
-    ? getSupertagColor(node.supertags[0].id)
+    ? getSupertagColorPair(getSupertagColor(node.supertags[0].id))[colorMode]
     : null
 
   return (
@@ -193,14 +195,14 @@ function QueryResultRow({
             'h-[18px] w-[18px] border border-dashed',
             !primaryColor && 'border-foreground/20',
           )}
-          style={primaryColor ? { borderColor: `${primaryColor}40` } : undefined}
+          style={primaryColor ? { borderColor: primaryColor.fg } : undefined}
         >
           <span
             className={cn(
               'block h-[4px] w-[4px] rounded-full',
               !primaryColor && 'bg-foreground/40',
             )}
-            style={primaryColor ? { backgroundColor: primaryColor } : undefined}
+            style={primaryColor ? { backgroundColor: primaryColor.fg } : undefined}
           />
         </span>
       </span>

@@ -21,10 +21,11 @@ import {
   SelectValue,
   cn,
 } from '@nxus/ui'
+import { useTheme } from '@nxus/ui/theme'
 import type { BaseType } from '@nxus/db'
 import type { FieldType, HideWhen, SupertagBadge, OutlineNode } from '@/types/outline'
 import { useNavigateToNode } from '@/hooks/use-navigate-to-node'
-import { getSupertagColor } from '@/lib/supertag-colors'
+import { getSupertagColor, getSupertagColorPair } from '@/lib/supertag-colors'
 import { SupertagPill } from './supertag-pill'
 import { BacklinksSection } from './backlinks-section'
 
@@ -104,6 +105,7 @@ const BASE_TYPE_OPTIONS: { value: BaseType; label: string }[] = [
  * Shows name, color, fields config, settings — like Tana's supertag page.
  */
 export function SupertagDetailView({ node }: SupertagDetailViewProps) {
+  const colorMode = useTheme((state) => state.colorMode)
   const [config, setConfig] = useState<SupertagConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'fields' | 'settings'>('fields')
@@ -123,7 +125,8 @@ export function SupertagDetailView({ node }: SupertagDetailViewProps) {
     })
   }, [node.id])
 
-  const color = config?.color ?? getSupertagColor(node.id)
+  const storedColor = config?.color ?? getSupertagColor(node.id)
+  const color = getSupertagColorPair(storedColor)[colorMode]
 
   if (loading) {
     return (
@@ -146,7 +149,7 @@ export function SupertagDetailView({ node }: SupertagDetailViewProps) {
       {/* Header */}
       <div className="px-7 pb-4">
         <div className="flex items-center gap-2 mb-1">
-          <Hash size={18} weight="bold" style={{ color }} className="opacity-70" />
+          <Hash size={18} weight="bold" style={{ color: color.fg }} className="opacity-70" />
           <h1 className="text-xl font-semibold text-foreground/90">
             {config.name || 'Untitled Supertag'}
           </h1>
@@ -201,7 +204,7 @@ export function SupertagDetailView({ node }: SupertagDetailViewProps) {
         {activeTab === 'fields' ? (
           <FieldsTab config={config} setConfig={setConfig} />
         ) : (
-          <SettingsTab config={config} setConfig={setConfig} color={color} />
+          <SettingsTab config={config} setConfig={setConfig} color={storedColor} />
         )}
       </div>
 
