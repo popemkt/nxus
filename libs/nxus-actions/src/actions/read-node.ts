@@ -9,7 +9,7 @@ export const readNodeAction = defineAction({
   output: ReadNodeOutputSchema,
   handler: async (input) => {
     const nodeFacade = await getFacade()
-    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId))
+    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId), input.nodeId)
     const childrenResult = await nodeFacade.evaluateQuery({
       filters: [
         { type: 'relation', relationType: 'childOf', targetNodeId: input.nodeId },

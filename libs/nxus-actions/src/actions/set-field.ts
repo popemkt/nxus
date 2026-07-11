@@ -9,9 +9,9 @@ export const setFieldAction = defineAction({
   output: SetFieldOutputSchema,
   handler: async (input) => {
     const nodeFacade = await getFacade()
-    ensureLiveNode(await nodeFacade.findNodeById(input.nodeId))
+    ensureLiveNode(await nodeFacade.findNodeById(input.nodeId), input.nodeId)
     await nodeFacade.setProperty(input.nodeId, toFieldSystemId(input.fieldId), input.value)
-    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId))
+    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId), input.nodeId)
     return { node: compactNode(node) }
   },
 })

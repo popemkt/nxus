@@ -27,9 +27,9 @@ export function compactNode(node: AssembledNode): CompactNodeSummary {
   }
 }
 
-export function ensureLiveNode(node: AssembledNode | null): AssembledNode {
+export function ensureLiveNode(node: AssembledNode | null, nodeId?: string): AssembledNode {
   if (!node || node.deletedAt !== null) {
-    throw new Error('Node not found')
+    throw new Error(nodeId ? `Node not found: ${nodeId}` : 'Node not found')
   }
   return node
 }
@@ -41,11 +41,16 @@ export function nodeOrder(node: AssembledNode): number {
 }
 
 export async function resolveSupertagSystemId(input: string): Promise<string> {
+  const nodeFacade = await getFacade()
+
   if (input.startsWith('supertag:')) {
+    const tag = await nodeFacade.findNodeBySystemId(input)
+    if (!tag || tag.deletedAt !== null) {
+      throw new Error(`Supertag not found: ${input}`)
+    }
     return input
   }
 
-  const nodeFacade = await getFacade()
   const { SYSTEM_SUPERTAGS } = await import('@nxus/db/server')
   const tags = await nodeFacade.getNodesBySupertagWithInheritance(
     SYSTEM_SUPERTAGS.SUPERTAG,

@@ -18,6 +18,12 @@ Nxus capabilities exposed outside app UI live in a plain typed action registry. 
 
 The registry boundary MUST parse input before calling the implementation handler and MUST parse the handler result before returning it. Input or output schema violations throw errors; adapters MAY translate thrown errors into their protocol's error envelope, but they MUST NOT silently coerce, drop, or default invalid data.
 
+Error contract (2026-07-11, guarded by `libs/nxus-mcp/src/edge-cases.test.ts` and `libs/nxus-actions/src/edge-cases.test.ts`):
+- Input schemas are `.strict()` — unknown keys are rejected, never ignored; required string refs reject empty strings.
+- Reference failures name the reference: `Node not found: <id>`, `Supertag not found: <id>` — an agent must be able to tell *which* input was wrong from the message alone.
+- `tag_node`/`untag_node` verify a `supertag:*` system id exists before writing; `export_subtree` verifies `rootNodeId`; `import_tif` rejects malformed JSON (`Invalid TIF JSON: …`) and unsupported versions (`Unsupported TIF version: …`) before delegating.
+- Through MCP, every handler failure surfaces as `isError: true` with non-empty text; no action may swallow an exception into a success envelope.
+
 The registry package MUST NOT depend on an exposure framework. It may depend on domain libraries such as `@nxus/db` and `@nxus/node-api`; adapters depend on the registry, not the other way around. New agent/API capabilities land as actions first; MCP, REST, or agent-native surfaces adapt the registry.
 
 Current materialization: `libs/nxus-actions/src/define-action.ts`, `libs/nxus-actions/src/registry.ts`, and one action module under `libs/nxus-actions/src/actions/` per capability.

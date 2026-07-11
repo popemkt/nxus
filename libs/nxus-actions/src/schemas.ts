@@ -49,7 +49,7 @@ export const AssembledNodeSchema = z.object({
 export const SearchNodesInputSchema = z.object({
   query: QueryDefinitionSchema,
   limit: z.number().int().positive().max(1000).optional(),
-})
+}).strict()
 
 export const SearchNodesOutputSchema = z.object({
   nodes: z.array(CompactNodeSchema),
@@ -59,7 +59,7 @@ export const SearchNodesOutputSchema = z.object({
 
 export const ReadNodeInputSchema = z.object({
   nodeId: z.string().min(1),
-})
+}).strict()
 
 export const ReadNodeOutputSchema = z.object({
   node: AssembledNodeSchema,
@@ -67,11 +67,11 @@ export const ReadNodeOutputSchema = z.object({
 })
 
 export const CreateNodeInputSchema = z.object({
-  content: z.string(),
-  parentId: z.string().optional(),
-  supertag: z.string().optional(),
+  content: z.string().min(1),
+  parentId: z.string().min(1).optional(),
+  supertag: z.string().min(1).optional(),
   fields: z.record(z.string(), JsonValueSchema).optional(),
-})
+}).strict()
 
 export const CreateNodeOutputSchema = z.object({
   nodeId: z.string(),
@@ -82,7 +82,7 @@ export const SetFieldInputSchema = z.object({
   nodeId: z.string().min(1),
   fieldId: z.string().min(1),
   value: JsonValueSchema,
-})
+}).strict()
 
 export const SetFieldOutputSchema = z.object({
   node: CompactNodeSchema,
@@ -91,7 +91,7 @@ export const SetFieldOutputSchema = z.object({
 export const TagNodeInputSchema = z.object({
   nodeId: z.string().min(1),
   supertag: z.string().min(1),
-})
+}).strict()
 
 export const TagNodeOutputSchema = z.object({
   added: z.boolean(),
@@ -103,7 +103,7 @@ export const UntagNodeOutputSchema = z.object({
   node: CompactNodeSchema,
 })
 
-export const ListTagsInputSchema = z.object({})
+export const ListTagsInputSchema = z.object({}).strict()
 
 export const ListTagsOutputSchema = z.object({
   tags: z.array(z.object({
@@ -116,7 +116,7 @@ export const ListTagsOutputSchema = z.object({
 
 export const GetTagSchemaInputSchema = z.object({
   tag: z.string().min(1),
-})
+}).strict()
 
 export const GetTagSchemaOutputSchema = z.object({
   tag: z.object({
@@ -143,7 +143,7 @@ export const GetTagSchemaOutputSchema = z.object({
 
 export const ImportTifInputSchema = z.object({
   json: z.string().min(1),
-})
+}).strict()
 
 export const ImportTifOutputSchema = z.object({
   summary: z.object({
@@ -175,8 +175,8 @@ const TifNodeSchema: z.ZodType<TifNodeOutput> = z.lazy(() =>
 )
 
 export const ExportSubtreeInputSchema = z.object({
-  rootNodeId: z.string().optional(),
-})
+  rootNodeId: z.string().min(1).optional(),
+}).strict()
 
 export const ExportSubtreeOutputSchema = z.object({
   tif: z.object({
@@ -191,7 +191,7 @@ export const ExportSubtreeOutputSchema = z.object({
 
 export const GetDayNodeInputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD required'),
-})
+}).strict()
 
 export const GetDayNodeOutputSchema = z.object({
   success: z.literal(true),

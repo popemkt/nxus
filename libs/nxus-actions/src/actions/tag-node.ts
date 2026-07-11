@@ -14,12 +14,12 @@ export const tagNodeAction = defineAction({
   output: TagNodeOutputSchema,
   handler: async (input) => {
     const nodeFacade = await getFacade()
-    ensureLiveNode(await nodeFacade.findNodeById(input.nodeId))
+    ensureLiveNode(await nodeFacade.findNodeById(input.nodeId), input.nodeId)
     const added = await nodeFacade.addNodeSupertag(
       input.nodeId,
       await resolveSupertagSystemId(input.supertag),
     )
-    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId))
+    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId), input.nodeId)
     return { added, node: compactNode(node) }
   },
 })

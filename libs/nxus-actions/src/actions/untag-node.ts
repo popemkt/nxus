@@ -14,12 +14,12 @@ export const untagNodeAction = defineAction({
   output: UntagNodeOutputSchema,
   handler: async (input) => {
     const nodeFacade = await getFacade()
-    ensureLiveNode(await nodeFacade.findNodeById(input.nodeId))
+    ensureLiveNode(await nodeFacade.findNodeById(input.nodeId), input.nodeId)
     const removed = await nodeFacade.removeNodeSupertag(
       input.nodeId,
       await resolveSupertagSystemId(input.supertag),
     )
-    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId))
+    const node = ensureLiveNode(await nodeFacade.assembleNode(input.nodeId), input.nodeId)
     return { removed, node: compactNode(node) }
   },
 })
