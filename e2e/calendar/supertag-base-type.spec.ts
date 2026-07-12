@@ -1,10 +1,6 @@
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { test, expect } from '../fixtures/base.fixture.js'
 import type { Page } from '@playwright/test'
-
-const E2E_DB_PATH = join(tmpdir(), 'nxus-e2e.db')
-const isGraphMode = process.env.ARCHITECTURE_TYPE === 'graph'
+import { openSeedBackend } from '../helpers/seed-backend.js'
 
 async function gotoEditorWithRetry(page: Page, path: string) {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -26,7 +22,6 @@ async function waitForCalendarReady(page: Page) {
 }
 
 test.describe.serial('Supertag base type calendar behavior', () => {
-  test.skip(isGraphMode, 'Calendar base-type resolution is implemented for node-mode storage')
   test.setTimeout(120_000)
 
   test('BT1 - user supertag configured as Event appears on calendar', async ({ page }) => {
@@ -34,7 +29,12 @@ test.describe.serial('Supertag base type calendar behavior', () => {
     const story = await seedBaseTypeCalendarStory()
 
     await gotoEditorWithRetry(page, `/editor?node=${story.zoomNodeId}`)
-    const badge = page.locator(`[data-supertag-badge="${story.supertagId}"]`).first()
+    // Locate by rendered tag name, not id: in graph mode the badge carries
+    // the supertag CATALOG id while the seed returns the definition-node id.
+    const badge = page
+      .locator('[data-supertag-badge]')
+      .filter({ hasText: story.tagName })
+      .first()
     await expect(badge).toBeVisible({ timeout: 10_000 })
     await badge.hover()
     await badge.getByRole('button', { name: 'Configure supertag' }).click()
@@ -57,46 +57,38 @@ test.describe.serial('Supertag base type calendar behavior', () => {
 
 async function seedBaseTypeCalendarStory(): Promise<{
   zoomNodeId: string
-  supertagId: string
+  tagName: string
   title: string
 }> {
-  process.env.NXUS_DB_PATH = E2E_DB_PATH
-  const {
-    initDatabaseWithBootstrap,
-    createNode,
-    addNodeSupertag,
-    setProperty,
-    SYSTEM_FIELDS,
-    SYSTEM_SUPERTAGS,
-    sql,
-  } = await import('../../libs/nxus-db/src/server.js')
+  // Mode-aware backend (node → shared SQLite file, graph → SurrealDB the
+  // app servers read) — replaces the direct SQLite import + raw SQL poll.
+  const backend = await openSeedBackend()
+  const { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } = backend
 
-  const db = await initDatabaseWithBootstrap()
+  // Wait for the server's demo auto-seed (backend-agnostic readiness check)
   const deadline = Date.now() + 30_000
   while (Date.now() < deadline) {
-    const row = db.get<{ count: number }>(
-      sql`SELECT COUNT(*) as count FROM nodes WHERE system_id LIKE 'item:%'`,
-    )
-    if ((row?.count ?? 0) > 0) break
+    const items = await backend.getNodesBySupertags([SYSTEM_SUPERTAGS.ITEM])
+    if (items.length > 0) break
     await new Promise((resolve) => setTimeout(resolve, 500))
   }
 
   const suffix = Date.now().toString(36)
   const supertagSystemId = `supertag:calendar_marker_${suffix}`
-  const supertagId = createNode(db, {
+  const supertagId = await backend.createNode({
     content: `#CalendarMarker${suffix}`,
     systemId: supertagSystemId,
   })
-  addNodeSupertag(db, supertagId, SYSTEM_SUPERTAGS.SUPERTAG)
+  await backend.addNodeSupertag(supertagId, SYSTEM_SUPERTAGS.SUPERTAG)
 
   const title = `Base type calendar story ${suffix}`
   // The tagged node needs a parent: supertag badges render on node ROWS, and a
   // zoomed node's own badges don't appear in the zoomed header — the test
   // zooms the parent and interacts with the child row's badge.
-  const parentId = createNode(db, { content: `Base type story parent ${suffix}` })
-  const nodeId = createNode(db, { content: title, ownerId: parentId, supertagId: supertagSystemId })
-  setProperty(db, nodeId, SYSTEM_FIELDS.START_DATE, new Date().toISOString())
-  setProperty(db, nodeId, SYSTEM_FIELDS.END_DATE, new Date(Date.now() + 60 * 60 * 1000).toISOString())
+  const parentId = await backend.createNode({ content: `Base type story parent ${suffix}` })
+  const nodeId = await backend.createNode({ content: title, ownerId: parentId, supertagId: supertagSystemId })
+  await backend.setProperty(nodeId, SYSTEM_FIELDS.START_DATE, new Date().toISOString())
+  await backend.setProperty(nodeId, SYSTEM_FIELDS.END_DATE, new Date(Date.now() + 60 * 60 * 1000).toISOString())
 
-  return { zoomNodeId: parentId, supertagId, title }
+  return { zoomNodeId: parentId, tagName: `CalendarMarker${suffix}`, title }
 }

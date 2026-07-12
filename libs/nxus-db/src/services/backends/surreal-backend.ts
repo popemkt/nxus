@@ -457,6 +457,19 @@ export class SurrealBackend implements NodeBackend {
    * for fields.
    */
   private async resolveSupertagId(supertagSystemId: string): Promise<string | null> {
+    // Callers may pass a definition NODE id (assembled tag.id — SQLite
+    // parity form). Translate to the node's system_id first.
+    if (!supertagSystemId.startsWith('supertag:')) {
+      const db = this.ensureInitialized()
+      const [rows] = await db.query<[Array<{ system_id: string | null }>]>(
+        'SELECT system_id FROM $nodeId',
+        { nodeId: nodeRecordId(supertagSystemId) },
+      )
+      const systemId = rows?.[0]?.system_id
+      if (!systemId || !systemId.startsWith('supertag:')) return null
+      supertagSystemId = systemId
+    }
+
     if (this.supertagIdCache.has(supertagSystemId)) {
       return this.supertagIdCache.get(supertagSystemId)!
     }
@@ -1050,13 +1063,53 @@ export class SurrealBackend implements NodeBackend {
       else supertagEdgesByNode.set(key, [edge])
     }
 
+    // Assembled supertag ids must be the DEFINITION NODE ids (SQLite parity:
+    // a supertag "is" its node) — not the internal catalog row ids the edges
+    // point at. Batch-resolve distinct system_ids → node ids, cached.
+    const definitionIdBySystemId = await this.resolveSupertagDefinitionNodeIds([
+      ...new Set(
+        (supertagEdges || [])
+          .map((edge) => edge.system_id)
+          .filter((sid): sid is string => !!sid),
+      ),
+    ])
+
     return records.map((record) =>
       this.buildAssembledNode(
         record,
         fieldEdgesByNode.get(rid(record.id)) ?? [],
         supertagEdgesByNode.get(rid(record.id)) ?? [],
+        definitionIdBySystemId,
       ),
     )
+  }
+
+  private supertagDefinitionNodeIdCache = new Map<string, string>()
+
+  /** system_id → definition NODE id for supertags (cached; misses omitted). */
+  private async resolveSupertagDefinitionNodeIds(
+    systemIds: string[],
+  ): Promise<Map<string, string>> {
+    const result = new Map<string, string>()
+    const missing: string[] = []
+    for (const sid of systemIds) {
+      const cached = this.supertagDefinitionNodeIdCache.get(sid)
+      if (cached) result.set(sid, cached)
+      else missing.push(sid)
+    }
+    if (missing.length > 0) {
+      const db = this.ensureInitialized()
+      const [rows] = await db.query<[Array<{ id: RecordId; system_id: string }>]>(
+        'SELECT id, system_id FROM node WHERE system_id IN $systemIds AND deleted_at IS NONE',
+        { systemIds: missing },
+      )
+      for (const row of rows ?? []) {
+        const nodeId = rid(row.id)
+        this.supertagDefinitionNodeIdCache.set(row.system_id, nodeId)
+        result.set(row.system_id, nodeId)
+      }
+    }
+    return result
   }
 
   /** Bulk fetch + batched assembly for a set of node ids (order preserved, missing ids dropped). */
@@ -1084,6 +1137,7 @@ export class SurrealBackend implements NodeBackend {
     record: SurrealNode,
     fieldEdges: FieldEdge[],
     supertagEdges: SupertagEdge[],
+    supertagDefinitionIds?: Map<string, string>,
   ): AssembledNode {
     const nodeId = rid(record.id)
 
@@ -1119,9 +1173,12 @@ export class SurrealBackend implements NodeBackend {
       properties[fieldName].push(pv)
     }
 
-    // Build supertags array
+    // Build supertags array — id is the definition NODE id when one exists
+    // (SQLite parity); the catalog row id is an internal edge target only.
     const supertags: AssembledNode['supertags'] = (supertagEdges || []).map((st) => ({
-      id: rid(st.supertag_record),
+      id:
+        (st.system_id ? supertagDefinitionIds?.get(st.system_id) : undefined) ??
+        rid(st.supertag_record),
       content: st.name || '',
       systemId: st.system_id || null,
     }))

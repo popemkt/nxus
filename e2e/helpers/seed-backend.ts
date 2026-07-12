@@ -17,6 +17,8 @@ export interface SeedBackend {
     fieldId: FieldSystemId,
     value: unknown,
   ): Promise<void>
+  /** Read-only: ids of nodes carrying any of the given supertags (seed-readiness polling). */
+  getNodesBySupertags(supertagSystemIds: string[]): Promise<Array<{ id: string }>>
   SYSTEM_FIELDS: typeof import('../../libs/nxus-db/src/server.js')['SYSTEM_FIELDS']
   SYSTEM_SUPERTAGS: typeof import('../../libs/nxus-db/src/server.js')['SYSTEM_SUPERTAGS']
 }
@@ -74,6 +76,8 @@ export function openSeedBackend(): Promise<SeedBackend> {
         retryTransient(() => mod.nodeFacade.setProperty(nodeId, fieldId, value, order)),
       addPropertyValue: (nodeId, fieldId, value) =>
         retryTransient(() => mod.nodeFacade.addPropertyValue(nodeId, fieldId, value)),
+      getNodesBySupertags: (supertagSystemIds) =>
+        retryTransient(() => mod.nodeFacade.getNodesBySupertags(supertagSystemIds)),
       SYSTEM_FIELDS: mod.SYSTEM_FIELDS,
       SYSTEM_SUPERTAGS: mod.SYSTEM_SUPERTAGS,
     }
