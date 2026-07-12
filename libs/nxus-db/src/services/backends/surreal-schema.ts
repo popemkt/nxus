@@ -160,38 +160,61 @@ export async function bootstrapSurrealFields(db: Surreal): Promise<void> {
 }
 
 /**
- * Calendar entity supertags that must exist as first-class `node` records
+ * System entity supertags that must exist as first-class `node` records
  * (not just `supertag` catalog rows) — mirrors bootstrap.ts's
- * `entitySupertags` list (SQLite side) for #Task/#Event/#Day. These
- * supertags are "independent from Item" (SQLite comment) and carry a
- * `field:base_type` value so `getNodesBySupertagBaseType` can find them.
+ * `entitySupertags` list (SQLite side). Calendar entries additionally
+ * carry a `field:base_type` value so `getNodesBySupertagBaseType` can
+ * find them.
  *
  * Without a `node` row here, `resolveSupertagId`'s self-heal fallback has
- * nothing to mirror into the `supertag` catalog table, and calendar
- * CRUD (which resolves supertag:task/event by system_id) silently no-ops.
+ * nothing to mirror into the `supertag` catalog table, and any create
+ * that references the supertag by system id fails fast (STAG-B2) — which
+ * is how the missing #Inbox row aborted the graph seed on 2026-07-12.
+ *
+ * Not yet mirrored from SQLite: the `extends` chains (tool/repo/concept →
+ * item). Graph `extends` edges relate supertag CATALOG rows; wiring them
+ * here needs catalog-row resolution first — tracked in persistence.md
+ * (graph bootstrap parity).
  */
-const CALENDAR_ENTITY_SUPERTAGS: Array<{
+const SYSTEM_ENTITY_SUPERTAGS: Array<{
   systemId: string
   content: string
-  baseType: string
+  baseType?: string
 }> = [
+  { systemId: SYSTEM_SUPERTAGS.ITEM, content: '#Item' },
+  { systemId: SYSTEM_SUPERTAGS.TOOL, content: '#Tool' },
+  { systemId: SYSTEM_SUPERTAGS.REPO, content: '#Repo' },
+  { systemId: SYSTEM_SUPERTAGS.CONCEPT, content: '#Concept' },
+  { systemId: SYSTEM_SUPERTAGS.TAG, content: '#Tag' },
+  { systemId: SYSTEM_SUPERTAGS.COMMAND, content: '#Command' },
+  { systemId: SYSTEM_SUPERTAGS.WORKSPACE, content: '#Workspace' },
+  { systemId: SYSTEM_SUPERTAGS.INBOX, content: '#Inbox' },
+  { systemId: SYSTEM_SUPERTAGS.QUERY, content: '#Query' },
+  { systemId: SYSTEM_SUPERTAGS.AUTOMATION, content: '#Automation' },
+  { systemId: SYSTEM_SUPERTAGS.COMPUTED_FIELD, content: '#ComputedField' },
   { systemId: SYSTEM_SUPERTAGS.TASK, content: '#Task', baseType: 'task' },
   { systemId: SYSTEM_SUPERTAGS.EVENT, content: '#Event', baseType: 'event' },
   { systemId: SYSTEM_SUPERTAGS.DAY, content: '#Day', baseType: 'day' },
+  { systemId: SYSTEM_SUPERTAGS.RECALL_TOPIC, content: '#RecallTopic' },
+  { systemId: SYSTEM_SUPERTAGS.RECALL_CONCEPT, content: '#RecallConcept' },
+  { systemId: SYSTEM_SUPERTAGS.RECALL_REVIEW_LOG, content: '#RecallReviewLog' },
+  { systemId: SYSTEM_SUPERTAGS.RECALL_BLOOM_LEVEL, content: '#BloomLevel' },
+  { systemId: SYSTEM_SUPERTAGS.RECALL_SESSION, content: '#RecallSession' },
 ]
 
 /**
- * Bootstrap calendar entity supertag definitions as `node` records with a
- * `field:base_type` edge. Must run AFTER `initFieldSchema` +
- * `bootstrapSurrealFields` (needs `field:base_type` to already exist).
- * Idempotent — UPSERT for the node row, DELETE+RELATE for the has_field edge.
+ * Bootstrap system entity supertag definitions as `node` records (plus a
+ * `field:base_type` edge where the definition carries one). Must run AFTER
+ * `initFieldSchema` + `bootstrapSurrealFields` (needs `field:base_type` to
+ * already exist). Idempotent — UPSERT for the node row, DELETE+RELATE for
+ * the has_field edge.
  */
-export async function bootstrapCalendarEntitySupertags(db: Surreal): Promise<void> {
+export async function bootstrapSystemEntitySupertags(db: Surreal): Promise<void> {
   const baseTypeFieldRecordKey = SYSTEM_FIELDS.BASE_TYPE.replace(':', '_')
   const baseTypeFieldRecordId = `field:${baseTypeFieldRecordKey}`
 
-  for (const def of CALENDAR_ENTITY_SUPERTAGS) {
-    const recordKey = def.systemId.replace(':', '_')
+  for (const def of SYSTEM_ENTITY_SUPERTAGS) {
+    const recordKey = def.systemId.replace(/[:-]/g, '_')
     const nodeRecordId = `node:${recordKey}`
 
     await db.query(
@@ -209,6 +232,8 @@ export async function bootstrapCalendarEntitySupertags(db: Surreal): Promise<voi
       },
     )
 
+    if (!def.baseType) continue
+
     // DELETE + RELATE keeps this idempotent across repeated bootstrap runs
     // (RELATE always inserts a new edge; UPSERT semantics don't apply to
     // relation tables the same way they do to normal tables).
@@ -224,4 +249,4 @@ export async function bootstrapCalendarEntitySupertags(db: Surreal): Promise<voi
 }
 
 /** Exported for testing and reuse */
-export { SURREAL_FIELD_DEFINITIONS, CALENDAR_ENTITY_SUPERTAGS }
+export { SURREAL_FIELD_DEFINITIONS, SYSTEM_ENTITY_SUPERTAGS }

@@ -531,11 +531,8 @@ describe('Supertag inheritance', () => {
   it('should merge inherited field defaults via assembleNodeWithInheritance', async () => {
     await createChildSupertag('Tool', 'supertag:tool', 'supertag:item')
 
-    // Create a node for the #Item supertag with the same system_id,
-    // so we can set field definitions on it via has_field edges
-    await db.query(
-      `CREATE node SET content = '#Item', system_id = 'supertag:item', content_plain = '#item', props = {}, created_at = time::now(), updated_at = time::now()`,
-    )
+    // The #Item supertag definition node is created by the system-supertag
+    // bootstrap (system_id is unique); the has_field edges below attach to it.
 
     // Set a default description on the #Item supertag node
     const [descFieldRes] = await db.query<[Array<{ id: RecordId }>]>(
@@ -572,10 +569,8 @@ describe('Supertag inheritance', () => {
   it('should not override existing property with inherited default', async () => {
     await createChildSupertag('Tool', 'supertag:tool', 'supertag:item')
 
-    // Create node for #Item supertag
-    await db.query(
-      `CREATE node SET content = '#Item', system_id = 'supertag:item', content_plain = '#item', props = {}, created_at = time::now(), updated_at = time::now()`,
-    )
+    // The #Item supertag definition node is created by the system-supertag
+    // bootstrap (system_id is unique); the has_field edges below attach to it.
 
     // Set default description on #Item
     const [descFieldRes] = await db.query<[Array<{ id: RecordId }>]>(
