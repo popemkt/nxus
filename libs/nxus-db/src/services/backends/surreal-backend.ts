@@ -60,6 +60,7 @@ interface SurrealNode {
 }
 
 interface FieldEdge {
+  node_ref: RecordId // the `in` RecordId (owning node) — batch grouping key
   value: unknown
   order: number
   field_content: string
@@ -68,6 +69,7 @@ interface FieldEdge {
 }
 
 interface SupertagEdge {
+  node_ref: RecordId // the `in` RecordId (owning node) — batch grouping key
   name: string
   system_id: string | null
   supertag_record: RecordId // the `out` RecordId of the supertag
@@ -938,9 +940,7 @@ export class SurrealBackend implements NodeBackend {
       { parentIds: uniqueParentIds },
     )
 
-    const assembledChildren = await Promise.all(
-      (childRows ?? []).map((row) => this.assembleFromRecord(row)),
-    )
+    const assembledChildren = await this.assembleFromRecords(childRows ?? [])
     for (const child of assembledChildren) {
       if (child.deletedAt || !child.ownerId) continue
       const siblings = childrenByParent.get(child.ownerId)
@@ -991,26 +991,86 @@ export class SurrealBackend implements NodeBackend {
    * Queries has_field edges and has_supertag edges to build the full AssembledNode.
    */
   private async assembleFromRecord(record: SurrealNode): Promise<AssembledNode> {
+    const [assembled] = await this.assembleFromRecords([record])
+    return assembled!
+  }
+
+  /**
+   * Batched assembly: TWO edge queries for the whole record set instead of
+   * two per node. getChildrenByParents, the getNodesBySupertag family, and
+   * evaluateQuery assemble result sets this way — the per-node form was the
+   * dominant cost in the backend-parity benchmark (children-batch 16.3×
+   * SQLite @1k nodes, growing with N).
+   */
+  private async assembleFromRecords(records: SurrealNode[]): Promise<AssembledNode[]> {
+    if (records.length === 0) return []
     const db = this.ensureInitialized()
-    const nodeId = rid(record.id)
+    const nodeIds = records.map((record) => nodeRecordId(rid(record.id)))
 
-    // Fetch all has_field edges with field metadata
-    // Note: `value` and `order` are reserved words — backtick-escape them
+    // Fetch all has_field edges with field metadata, for all nodes at once.
+    // Note: `value` and `order` are reserved words — backtick-escape them.
     const [fieldEdges] = await db.query<[FieldEdge[]]>(
-      'SELECT `value`, `order`, out.content AS field_content, out.system_id AS field_system_id, out AS field_record FROM has_field WHERE in = $nodeId ORDER BY out.content, `order`',
-      { nodeId: nodeRecordId(nodeId) },
+      'SELECT in AS node_ref, `value`, `order`, out.content AS field_content, out.system_id AS field_system_id, out AS field_record FROM has_field WHERE in IN $nodeIds ORDER BY out.content, `order`',
+      { nodeIds },
     )
 
-    // Fetch all has_supertag edges with supertag metadata
+    // Fetch all has_supertag edges with supertag metadata, for all nodes at once
     const [supertagEdges] = await db.query<[SupertagEdge[]]>(
-      'SELECT out.name AS name, out.system_id AS system_id, out AS supertag_record, `order` FROM has_supertag WHERE in = $nodeId ORDER BY `order`',
-      { nodeId: nodeRecordId(nodeId) },
+      'SELECT in AS node_ref, out.name AS name, out.system_id AS system_id, out AS supertag_record, `order` FROM has_supertag WHERE in IN $nodeIds ORDER BY `order`',
+      { nodeIds },
     )
+
+    const fieldEdgesByNode = new Map<string, FieldEdge[]>()
+    for (const edge of fieldEdges || []) {
+      const key = rid(edge.node_ref)
+      const list = fieldEdgesByNode.get(key)
+      if (list) list.push(edge)
+      else fieldEdgesByNode.set(key, [edge])
+    }
+    const supertagEdgesByNode = new Map<string, SupertagEdge[]>()
+    for (const edge of supertagEdges || []) {
+      const key = rid(edge.node_ref)
+      const list = supertagEdgesByNode.get(key)
+      if (list) list.push(edge)
+      else supertagEdgesByNode.set(key, [edge])
+    }
+
+    return records.map((record) =>
+      this.buildAssembledNode(
+        record,
+        fieldEdgesByNode.get(rid(record.id)) ?? [],
+        supertagEdgesByNode.get(rid(record.id)) ?? [],
+      ),
+    )
+  }
+
+  /** Bulk fetch + batched assembly for a set of node ids (order preserved, missing ids dropped). */
+  private async assembleByIds(nodeIds: string[]): Promise<AssembledNode[]> {
+    if (nodeIds.length === 0) return []
+    const db = this.ensureInitialized()
+    const [rows] = await db.query<[SurrealNode[]]>(
+      'SELECT * FROM node WHERE id IN $nodeIds AND deleted_at IS NONE',
+      { nodeIds: nodeIds.map((id) => nodeRecordId(id)) },
+    )
+    const byId = new Map<string, SurrealNode>()
+    for (const row of rows ?? []) byId.set(rid(row.id), row)
+    const ordered = nodeIds
+      .map((id) => byId.get(normalizeSurrealRecordId('node', id)))
+      .filter((row): row is SurrealNode => row !== undefined)
+    return this.assembleFromRecords(ordered)
+  }
+
+  private buildAssembledNode(
+    record: SurrealNode,
+    fieldEdges: FieldEdge[],
+    supertagEdges: SupertagEdge[],
+  ): AssembledNode {
+    const nodeId = rid(record.id)
 
     // Build properties map
     const properties: Record<FieldContentName, PropertyValue[]> = {} as Record<FieldContentName, PropertyValue[]>
 
-    for (const edge of (fieldEdges || [])) {
+    for (const edge of fieldEdges) {
       const fieldName = (edge.field_content || '') as FieldContentName
       const fieldId = rid(edge.field_record)
 
@@ -1500,11 +1560,8 @@ export class SurrealBackend implements NodeBackend {
       }
     }
 
-    // Assemble nodes in parallel (filter out deleted)
-    const assembleResults = await Promise.all(
-      matchingNodeIds.map((nid) => this.assembleNode(nid)),
-    )
-    return assembleResults.filter((n): n is AssembledNode => n !== null)
+    // Batched assembly (missing/deleted ids drop out)
+    return this.assembleByIds(matchingNodeIds)
   }
 
   // ---------------------------------------------------------------------------
@@ -1514,14 +1571,11 @@ export class SurrealBackend implements NodeBackend {
   async getNodesBySupertagWithInheritance(
     supertagId: string,
   ): Promise<AssembledNode[]> {
-    // Reuse the ID-only method, then assemble in parallel
+    // Reuse the ID-only method, then batch-assemble
     const nodeIdSet = await this.getNodeIdsBySupertagWithInheritance(supertagId)
     if (nodeIdSet.size === 0) return []
 
-    const assembleResults = await Promise.all(
-      [...nodeIdSet].map((nid) => this.assembleNode(nid)),
-    )
-    return assembleResults.filter((n): n is AssembledNode => n !== null)
+    return this.assembleByIds([...nodeIdSet])
   }
 
   async getNodesBySupertagBaseType(baseType: BaseType): Promise<AssembledNode[]> {
@@ -1545,10 +1599,7 @@ export class SurrealBackend implements NodeBackend {
       }
     }
 
-    const assembleResults = await Promise.all(
-      [...nodeIds].map((nodeId) => this.assembleNode(nodeId)),
-    )
-    return assembleResults.filter((node): node is AssembledNode => node !== null)
+    return this.assembleByIds([...nodeIds])
   }
 
   private async getSupertagRecordIdsByBaseType(
@@ -1751,11 +1802,8 @@ export class SurrealBackend implements NodeBackend {
     const limit = definition.limit ?? 500
     const idsToAssemble = [...candidateIds].slice(0, limit)
 
-    // Assemble nodes in parallel (capped by limit)
-    const assembleResults = await Promise.all(
-      idsToAssemble.map((nid) => this.assembleNode(nid)),
-    )
-    let assembledNodes = assembleResults.filter((n): n is AssembledNode => n !== null)
+    // Batched assembly (capped by limit)
+    let assembledNodes = await this.assembleByIds(idsToAssemble)
 
     // Apply sorting
     if (definition.sort) {
