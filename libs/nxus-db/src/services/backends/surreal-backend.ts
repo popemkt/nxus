@@ -1199,7 +1199,7 @@ export class SurrealBackend implements NodeBackend {
         beforeValue,
         afterValue: value,
       })
-    })
+    }).then(() => this.mirrorExtendsEdgeIfNeeded(fieldId, nodeId, value))
   }
 
   async addPropertyValue(
@@ -1242,7 +1242,59 @@ export class SurrealBackend implements NodeBackend {
         fieldSystemId: fieldId as string,
         afterValue: value,
       })
+    }).then(() => this.mirrorExtendsEdgeIfNeeded(fieldId, nodeId, value))
+  }
+
+  /**
+   * The `extends` RELATION table (supertag catalog rows) is a derived
+   * index of node-space `field:extends` properties — the inheritance walk
+   * reads edges, but writers (seed helpers, supertag config) write the
+   * property. Mirror on write, same philosophy as the resolveSupertagId
+   * catalog self-heal. No-op for any other field or non-node value.
+   */
+  private async mirrorExtendsEdgeIfNeeded(
+    fieldId: FieldSystemId,
+    childNodeId: string,
+    value: unknown,
+  ): Promise<void> {
+    if ((fieldId as string) !== (SYSTEM_FIELDS.EXTENDS as string)) return
+    if (typeof value !== 'string' || value.length === 0) return
+    const db = this.ensureInitialized()
+
+    const systemIdOf = async (nodeId: string): Promise<string | null> => {
+      const [rows] = await db.query<[Array<{ system_id: string | null }>]>(
+        'SELECT system_id FROM $nodeId',
+        { nodeId: nodeRecordId(nodeId) },
+      )
+      return rows?.[0]?.system_id ?? null
+    }
+
+    const [childSystemId, parentSystemId] = await Promise.all([
+      systemIdOf(childNodeId),
+      systemIdOf(value),
+    ])
+    if (!childSystemId || !parentSystemId) return
+    if (!childSystemId.startsWith('supertag:') || !parentSystemId.startsWith('supertag:')) return
+
+    // resolveSupertagId self-heals catalog rows for both endpoints
+    const [childCatalogId, parentCatalogId] = await Promise.all([
+      this.resolveSupertagId(childSystemId),
+      this.resolveSupertagId(parentSystemId),
+    ])
+    if (!childCatalogId || !parentCatalogId) return
+
+    // DELETE + RELATE keeps the mirror idempotent
+    await db.query('DELETE extends WHERE in = $from AND out = $to', {
+      from: new StringRecordId(childCatalogId),
+      to: new StringRecordId(parentCatalogId),
     })
+    await db.query(
+      'RELATE $from->extends->$to SET created_at = time::now()',
+      {
+        from: new StringRecordId(childCatalogId),
+        to: new StringRecordId(parentCatalogId),
+      },
+    )
   }
 
   async clearProperty(
@@ -1693,25 +1745,28 @@ export class SurrealBackend implements NodeBackend {
     maxDepth: number = 10,
   ): Promise<string[]> {
     const db = this.ensureInitialized()
+    // BFS over ALL extends parents — multi-parent inheritance is canonical
+    // (spec/product/editor.md §6); the previous walk took LIMIT 1 and
+    // silently dropped every parent after the first.
     const ancestors: string[] = []
-    const visited = new Set<string>()
-    let currentId = supertagRecordId
+    const visited = new Set<string>([supertagRecordId])
+    let frontier = [supertagRecordId]
 
-    for (let depth = 0; depth < maxDepth; depth++) {
-      if (visited.has(currentId)) break
-      visited.add(currentId)
-
-      // Find extends edge from current supertag → parent
+    for (let depth = 0; depth < maxDepth && frontier.length > 0; depth++) {
       const [results] = await db.query<[Array<{ parent_ref: RecordId }>]>(
-        'SELECT out AS parent_ref FROM extends WHERE in = $stId LIMIT 1',
-        { stId: new StringRecordId(currentId) },
+        'SELECT out AS parent_ref FROM extends WHERE in IN $stIds',
+        { stIds: frontier.map((id) => new StringRecordId(id)) },
       )
 
-      if (!results || results.length === 0) break
-
-      const parentId = rid(results[0].parent_ref)
-      ancestors.push(parentId)
-      currentId = parentId
+      const next: string[] = []
+      for (const row of results || []) {
+        const parentId = rid(row.parent_ref)
+        if (visited.has(parentId)) continue
+        visited.add(parentId)
+        ancestors.push(parentId)
+        next.push(parentId)
+      }
+      frontier = next
     }
 
     return ancestors

@@ -516,6 +516,52 @@ describe('Supertag inheritance', () => {
     expect(ancestors[1]).toBe(supertagRecordId('item'))
   })
 
+  it('EXT-B1: mirrors field:extends property writes into extends catalog edges', async () => {
+    // Writers (seed helpers, supertag config) express inheritance as a
+    // field:extends PROPERTY between definition nodes; the walk reads
+    // catalog EDGES. The write path must keep the derived index current.
+    const parentTag = await backend.createNode({
+      content: '#MirrorParent',
+      systemId: 'supertag:mirror_parent',
+    })
+    const childTag = await backend.createNode({
+      content: '#MirrorChild',
+      systemId: 'supertag:mirror_child',
+    })
+    await backend.addPropertyValue(childTag, SYSTEM_FIELDS.EXTENDS, parentTag)
+
+    const ancestors = await backend.getAncestorSupertags('supertag:mirror_child')
+    expect(ancestors).toHaveLength(1)
+
+    // and inherited membership works end to end
+    const nodeId = await backend.createNode({
+      content: 'child-tagged',
+      supertagId: 'supertag:mirror_child',
+    })
+    const viaParent = await backend.getNodesBySupertagWithInheritance('supertag:mirror_parent')
+    expect(viaParent.map((n) => n.id)).toContain(nodeId)
+  })
+
+  it('EXT-B2: walks ALL extends parents (multi-parent inheritance)', async () => {
+    const alpha = await backend.createNode({
+      content: '#MpAlpha',
+      systemId: 'supertag:mp_alpha',
+    })
+    const beta = await backend.createNode({
+      content: '#MpBeta',
+      systemId: 'supertag:mp_beta',
+    })
+    const child = await backend.createNode({
+      content: '#MpChild',
+      systemId: 'supertag:mp_child',
+    })
+    await backend.addPropertyValue(child, SYSTEM_FIELDS.EXTENDS, alpha)
+    await backend.addPropertyValue(child, SYSTEM_FIELDS.EXTENDS, beta)
+
+    const ancestors = await backend.getAncestorSupertags('supertag:mp_child')
+    expect(ancestors).toHaveLength(2)
+  })
+
   it('should include nodes with inherited supertags via getNodesBySupertagWithInheritance', async () => {
     await createChildSupertag('Tool', 'supertag:tool', 'supertag:item')
 

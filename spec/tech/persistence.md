@@ -102,8 +102,16 @@ DRIFT: bootstrap check-then-insert races across processes
 
   **Supertag catalog (graph mode, 2026-07-12).** SurrealQL RELATION typing forces a dual representation: a lean `supertag` catalog table (targets of `has_supertag` edges) beside the supertag's ordinary `node:` record (which carries `base_type`, `color`, `extends` like any node). The catalog is a derived index, never hand-maintained: `resolveSupertagId` self-heals it on miss by looking up the definition node by `system_id` and mirroring a catalog row (same pattern as `resolveFieldId` for fields), so user-created supertags work without bootstrap enumeration. Graph bootstrap seeds the calendar entity supertags (#Task/#Event/#Day with `base_type`) for parity with `bootstrap.ts` `entitySupertags`.
 
+  DRIFT: graph-formula-evaluation
+  - canonical: formula fields compute identically in both modes — assembly evaluates `field:formula` expressions against sibling property values.
+  - current: evaluation lives only in the sync SQLite assembly path (`node.service.ts` → `formula-evaluator.js`); `SurrealBackend` assembly returns formula fields unevaluated. Fixtures seed backend-agnostically since 2026-07-12 — the two `e2e/editor/formula-fields.spec.ts` graph skips now name exactly this gap.
+  - impact: formula and multi-parent-inherited formula fields render empty in graph mode.
+  - closes: port formula evaluation into Surreal assembly (or hoist it above the backend split — it is backend-agnostic math over assembled properties).
+
   Behavior clauses (guarded by same-code test titles in `backends/surreal-backend.test.ts`):
 
+  - **EXT-B1** — Given supertag inheritance expressed as a `field:extends` property between definition nodes, when the property is written, then the write path MUST mirror it into the `extends` catalog edge the inheritance walk reads (derived index, like the supertag catalog).
+  - **EXT-B2** — Given a supertag extending multiple parents, when ancestors are walked, then ALL parents MUST be visited (multi-parent inheritance is canonical, [../product/editor.md](../product/editor.md) §6).
   - **STAG-B1** — Given a supertag that exists only as a definition node (no catalog row), when a node is created with or tagged by it, then resolution MUST mirror a catalog row and the tag MUST be applied — never a silent no-op.
   - **STAG-B2** — Given a `supertagId` that resolves to nothing even after self-heal, when `createNode` runs, then it MUST throw `Supertag not found: <id>` — a node is never silently created untagged.
 - **`table` — REMOVED.** There is no table mode. `feature-flags.ts:8` states it explicitly; `isTableArchitecture()` does not exist. **Any document, rule file, or code comment claiming a `table` mode or mandating tri-mode support is wrong.** The only remnants are the dead legacy tables in §2.

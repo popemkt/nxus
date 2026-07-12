@@ -507,19 +507,22 @@ describe('Schema initialization', () => {
   // System supertags
   // ---------------------------------------------------------------------------
 
-  it('should bootstrap exactly 4 system supertags', async () => {
+  it('should bootstrap the system supertag catalog rows', async () => {
     const supertags = await getSystemSupertags(db)
 
-    expect(supertags.length).toBe(4)
+    // 4 legacy rows + the #Supertag meta row (definition nodes are tagged
+    // with it so tag pickers list them — bootstrapSystemEntitySupertags)
+    expect(supertags.length).toBe(5)
 
     const names = supertags.map((s) => s.name).sort()
-    expect(names).toEqual(['Command', 'Field', 'Item', 'Tag'])
+    expect(names).toEqual(['#Supertag', 'Command', 'Field', 'Item', 'Tag'])
 
     const systemIds = supertags.map((s) => s.system_id).sort()
     expect(systemIds).toEqual([
       'supertag:command',
       'supertag:field',
       'supertag:item',
+      'supertag:supertag',
       'supertag:tag',
     ])
   })
@@ -541,15 +544,15 @@ describe('Schema initialization', () => {
   it('should use UPSERT for system supertags (idempotent re-init)', async () => {
     // Get initial supertags
     const before = await getSystemSupertags(db)
-    expect(before).toHaveLength(4)
+    expect(before).toHaveLength(5)
 
     // Re-initialize schema (simulates server restart)
     const { initGraphSchema } = await import('../graph-client.js')
     await initGraphSchema(db)
 
-    // Should still have exactly 4 — not duplicated
+    // Should still have exactly 5 — not duplicated
     const after = await getSystemSupertags(db)
-    expect(after).toHaveLength(4)
+    expect(after).toHaveLength(5)
   })
 
   it('system supertags should have stable record IDs', async () => {

@@ -12,6 +12,7 @@
 
 import type { Surreal } from 'surrealdb'
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
+import { SYSTEM_FIELD_DEFINITIONS } from '../../schemas/system-field-definitions.js'
 
 /**
  * All common fields that should be bootstrapped in SurrealDB.
@@ -24,77 +25,20 @@ const SURREAL_FIELD_DEFINITIONS: Array<{
   content: string
   valueType: string
 }> = [
-  // Core system fields
+  // Meta fields — SQLite bootstraps these in an earlier special-cased step;
+  // here they are ordinary field rows.
   { systemId: SYSTEM_FIELDS.SUPERTAG, content: 'supertag', valueType: 'nodes' },
   { systemId: SYSTEM_FIELDS.EXTENDS, content: 'extends', valueType: 'node' },
   { systemId: SYSTEM_FIELDS.FIELD_TYPE, content: 'fieldType', valueType: 'select' },
-  { systemId: SYSTEM_FIELDS.BASE_TYPE, content: 'baseType', valueType: 'select' },
-
-  // Common entity fields
-  { systemId: SYSTEM_FIELDS.TYPE, content: 'type', valueType: 'select' },
-  { systemId: SYSTEM_FIELDS.PATH, content: 'path', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.HOMEPAGE, content: 'homepage', valueType: 'url' },
-  { systemId: SYSTEM_FIELDS.DESCRIPTION, content: 'description', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.COLOR, content: 'color', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.ICON, content: 'icon', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.LEGACY_ID, content: 'legacyId', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.CATEGORY, content: 'category', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.PLATFORM, content: 'platform', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.DOCS, content: 'docs', valueType: 'json' },
-
-  // Relation fields
-  { systemId: SYSTEM_FIELDS.DEPENDENCIES, content: 'dependencies', valueType: 'nodes' },
-  { systemId: SYSTEM_FIELDS.TAGS, content: 'tags', valueType: 'nodes' },
-  { systemId: SYSTEM_FIELDS.COMMANDS, content: 'commands', valueType: 'nodes' },
-  { systemId: SYSTEM_FIELDS.PARENT, content: 'parent', valueType: 'node' },
-  { systemId: SYSTEM_FIELDS.ORDER, content: 'order', valueType: 'number' },
-  { systemId: SYSTEM_FIELDS.MENTIONS, content: 'mentions', valueType: 'nodes' },
-
-  // Tool-specific
-  { systemId: SYSTEM_FIELDS.CHECK_COMMAND, content: 'checkCommand', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.INSTALL_INSTRUCTIONS, content: 'installInstructions', valueType: 'text' },
-
-  // Command-specific
-  { systemId: SYSTEM_FIELDS.COMMAND, content: 'command', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.COMMAND_ID, content: 'commandId', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.MODE, content: 'mode', valueType: 'select' },
-  { systemId: SYSTEM_FIELDS.TARGET, content: 'target', valueType: 'select' },
-  { systemId: SYSTEM_FIELDS.SCRIPT_SOURCE, content: 'scriptSource', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.CWD, content: 'cwd', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.PLATFORMS, content: 'platforms', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.REQUIRES, content: 'requires', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.OPTIONS, content: 'options', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.PARAMS, content: 'params', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.REQUIREMENTS, content: 'requirements', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.WORKFLOW, content: 'workflow', valueType: 'json' },
-
-  // Inbox-specific
-  { systemId: SYSTEM_FIELDS.STATUS, content: 'status', valueType: 'select' },
-  { systemId: SYSTEM_FIELDS.NOTES, content: 'notes', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.TITLE, content: 'title', valueType: 'text' },
-
-  // Query-specific
-  { systemId: SYSTEM_FIELDS.QUERY_DEFINITION, content: 'queryDefinition', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.QUERY_SORT, content: 'querySort', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.QUERY_LIMIT, content: 'queryLimit', valueType: 'number' },
-  { systemId: SYSTEM_FIELDS.QUERY_RESULT_CACHE, content: 'queryResultCache', valueType: 'json' },
-  { systemId: SYSTEM_FIELDS.QUERY_EVALUATED_AT, content: 'queryEvaluatedAt', valueType: 'text' },
-
-  // Calendar-specific
-  { systemId: SYSTEM_FIELDS.START_DATE, content: 'start_date', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.END_DATE, content: 'end_date', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.ALL_DAY, content: 'all_day', valueType: 'boolean' },
-  { systemId: SYSTEM_FIELDS.RRULE, content: 'rrule', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.GCAL_EVENT_ID, content: 'gcal_event_id', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.GCAL_SYNCED_AT, content: 'gcal_synced_at', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.REMINDER, content: 'reminder', valueType: 'number' },
-
-  // Google Calendar OAuth fields
-  { systemId: SYSTEM_FIELDS.GCAL_ACCESS_TOKEN, content: 'gcal_access_token', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.GCAL_REFRESH_TOKEN, content: 'gcal_refresh_token', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.GCAL_TOKEN_EXPIRY, content: 'gcal_token_expiry', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.GCAL_USER_EMAIL, content: 'gcal_user_email', valueType: 'text' },
-  { systemId: SYSTEM_FIELDS.GCAL_CALENDAR_ID, content: 'gcal_calendar_id', valueType: 'text' },
+  { systemId: SYSTEM_FIELDS.FORMULA, content: 'formula', valueType: 'text' },
+  { systemId: SYSTEM_FIELDS.TODO_STATE, content: 'todoState', valueType: 'select' },
+  // Everything else derives from the shared SSOT list (drifted 47 fields
+  // apart when the two lists were hand-maintained separately).
+  ...SYSTEM_FIELD_DEFINITIONS.map((def) => ({
+    systemId: def.systemId,
+    content: def.content,
+    valueType: def.fieldType,
+  })),
 ]
 
 /**
@@ -181,6 +125,9 @@ const SYSTEM_ENTITY_SUPERTAGS: Array<{
   content: string
   baseType?: string
 }> = [
+  { systemId: SYSTEM_SUPERTAGS.SUPERTAG, content: '#Supertag' },
+  { systemId: SYSTEM_SUPERTAGS.FIELD, content: '#Field' },
+  { systemId: SYSTEM_SUPERTAGS.SYSTEM, content: '#System' },
   { systemId: SYSTEM_SUPERTAGS.ITEM, content: '#Item' },
   { systemId: SYSTEM_SUPERTAGS.TOOL, content: '#Tool' },
   { systemId: SYSTEM_SUPERTAGS.REPO, content: '#Repo' },
@@ -213,6 +160,16 @@ export async function bootstrapSystemEntitySupertags(db: Surreal): Promise<void>
   const baseTypeFieldRecordKey = SYSTEM_FIELDS.BASE_TYPE.replace(':', '_')
   const baseTypeFieldRecordId = `field:${baseTypeFieldRecordKey}`
 
+  // The #Supertag meta-tag's catalog row — every definition node below is
+  // tagged with it (has_supertag edge), which is what makes them appear
+  // anywhere the UI lists supertags (tag pickers, query builder). SQLite's
+  // bootstrap does the same via assignSupertag.
+  const metaCatalogId = 'supertag:supertag'
+  await db.query(
+    `UPSERT ${metaCatalogId} SET name = $name, system_id = $systemId, created_at = time::now()`,
+    { name: '#Supertag', systemId: SYSTEM_SUPERTAGS.SUPERTAG },
+  )
+
   for (const def of SYSTEM_ENTITY_SUPERTAGS) {
     const recordKey = def.systemId.replace(/[:-]/g, '_')
     const nodeRecordId = `node:${recordKey}`
@@ -230,6 +187,14 @@ export async function bootstrapSystemEntitySupertags(db: Surreal): Promise<void>
         contentPlain: def.content.toLowerCase(),
         systemId: def.systemId,
       },
+    )
+
+    // Tag the definition node #Supertag (idempotent DELETE+RELATE)
+    await db.query(
+      `DELETE has_supertag WHERE in = ${nodeRecordId} AND out = ${metaCatalogId}`,
+    )
+    await db.query(
+      `RELATE ${nodeRecordId}->has_supertag->${metaCatalogId} SET \`order\` = 0, created_at = time::now()`,
     )
 
     if (!def.baseType) continue

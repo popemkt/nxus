@@ -144,7 +144,6 @@ test.describe('Workbench Query Builder — nested groups & path filters', () => 
     page,
     navigateToApp,
   }) => {
-    test.skip(isGraphMode, 'SurrealBackend cannot create custom supertag records through NodeBackend; query fixture requires an isolated supertag')
     // Warm the workbench server BEFORE seeding: initDatabaseWithBootstrap only
     // auto-seeds demo data while the DB has zero non-system nodes
     // (learnings/e2e-autoseed-suppression.md) — seeding first would starve
@@ -212,7 +211,6 @@ test.describe('Workbench Query Builder — nested groups & path filters', () => 
     page,
     navigateToApp,
   }) => {
-    test.skip(isGraphMode, 'SurrealBackend cannot create custom supertag records through NodeBackend; path-query fixture requires an isolated supertag')
     await navigateToApp('workbench')
     await waitForServerBootstrap(page)
 

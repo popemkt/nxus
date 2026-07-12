@@ -455,6 +455,13 @@ describe('SQLite-to-SurrealDB Migration', () => {
   // -----------------------------------------------------------------------
 
   it('should have correct edge counts in SurrealDB', async () => {
+    // The graph bootstrap pre-tags system supertag definition nodes with
+    // #Supertag — count the migration's contribution as a delta.
+    const [preCount] = await surrealDb.query<[Array<{ count: number }>]>(
+      `SELECT count() AS count FROM has_supertag GROUP ALL`,
+    )
+    const bootstrapEdges = preCount?.[0]?.count ?? 0
+
     const result = await migrateSqliteToSurreal(sqliteDb, surrealDb)
 
     // Count has_field edges
@@ -469,7 +476,7 @@ describe('SQLite-to-SurrealDB Migration', () => {
     const [hasSupertagCount] = await surrealDb.query<[Array<{ count: number }>]>(
       `SELECT count() AS count FROM has_supertag GROUP ALL`,
     )
-    expect(hasSupertagCount[0].count).toBe(result.supertagsCount)
+    expect(hasSupertagCount[0].count).toBe(result.supertagsCount + bootstrapEdges)
 
     // Count extends edges
     const [extendsCount] = await surrealDb.query<[Array<{ count: number }>]>(
