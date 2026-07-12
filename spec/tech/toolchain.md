@@ -6,12 +6,17 @@ Scope: dev entrypoints, the command registry, task-runner shape, typecheck/lint/
 
 ## 1. Dev entrypoints — the ONLY sanctioned ways to run
 
-There are exactly two sanctioned ways to start nxus. Agents and humans MUST use these and MUST NOT invoke `vite dev` inside an app directory, spawn servers on ad-hoc ports, or add parallel entrypoints:
+Every launch configuration is a named root script. Agents and humans MUST use these and MUST NOT invoke `vite dev` inside an app directory, spawn servers on ad-hoc ports, export mode env vars by hand, or add parallel entrypoints:
 
 | command | effect | evidence |
 |---|---|---|
-| `pnpm dev` | all 6 apps in parallel via `nx run-many --target=dev` | `package.json:11` |
-| `pnpm dev:<app>` | one app; `<app>` ∈ `gateway\|core\|workbench\|calendar\|recall\|editor` → `nx run @nxus/<name>:dev` | `package.json:12-17` |
+| `pnpm dev` | all 6 apps, node mode (SQLite) — the zero-config default | `package.json` |
+| `pnpm dev:<app>` | one app; `<app>` ∈ `gateway\|core\|workbench\|calendar\|recall\|editor` → `nx run @nxus/<name>:dev` | `package.json` |
+| `pnpm dev:graph` | all 6 apps in graph mode: loads `envs/graph.env`, starts (or reuses) the local SurrealDB server on :8790, then `pnpm dev` | `scripts/with-graph-env.mjs` |
+| `pnpm e2e` | full Playwright suite, node mode | `package.json` |
+| `pnpm e2e:graph` | full suite in graph mode: `--fresh` kills any stale SurrealDB on the port and starts a clean in-memory one (stale servers have poisoned verification runs), then `pnpm e2e` | `scripts/with-graph-env.mjs` |
+
+**Launch configurations** live in `envs/*.env` — deliberately ONE file (`envs/graph.env`): node mode is the default and needs no file, and every additional configuration is surface that can drift. A new configuration requires a new root script in the same commit ([dev-entrypoints rule](../rules/dev-entrypoints.md)). `.env.example` stays the per-variable reference; `envs/` are composable per-mode sets consumed by launchers.
 
 Each app's inferred `dev` target is a plain `vite dev --port 300X` package script (`apps/*/package.json:6`); the port assignments are the registry in [architecture.md](./architecture.md). E2E and CI reuse `pnpm dev` verbatim (`playwright.config.ts:26`), which is why it MUST remain the single boot path: anything the apps need at runtime must be reachable from that one command.
 
