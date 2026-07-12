@@ -19,6 +19,7 @@ Non-normative session record. Follow-up to the reliability sprint (same day, ear
 | `d1a7ffc` | **Calendar in graph mode** — supertag catalog self-heal (STAG-B1) + fail-fast createNode (STAG-B2); 4 more skips removed |
 | `2792b9c` | `.env.example` + stale nested lockfile deleted |
 | `f46f0ec` | **Graph bootstrap parity** — all 19 system entity supertag definition nodes (STAG-B2's fail-fast exposed the seed aborting on the missing #Inbox row — the old silent-skip had been shipping untagged inbox items) |
+| `(morning)` | **Backend-parity perf budgets** — env-gated benchmark running the same four API ops through both backends; first cross-backend numbers: @1k nodes surreal/sqlite = seed 5.2×, query 17.7×, assemble 5.9×, children-batch 16.3× — Surreal read paths scale worse than SQLite's (tracked) |
 
 ## Delegation record
 
