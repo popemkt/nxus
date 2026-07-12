@@ -305,6 +305,7 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
     DEFINE INDEX OVERWRITE idx_system_id ON node FIELDS system_id UNIQUE;
     DEFINE INDEX OVERWRITE idx_content_plain ON node FIELDS content_plain;
     DEFINE INDEX OVERWRITE idx_deleted ON node FIELDS deleted_at;
+    DEFINE INDEX OVERWRITE idx_node_owner ON node FIELDS owner_id;
   `)
 
   // ============================================================================
@@ -336,12 +337,18 @@ export async function initGraphSchema(db: Surreal): Promise<void> {
     DEFINE TABLE OVERWRITE has_supertag SCHEMAFULL TYPE RELATION IN node OUT supertag;
     DEFINE FIELD OVERWRITE order ON has_supertag TYPE option<int> DEFAULT 0;
     DEFINE FIELD OVERWRITE created_at ON has_supertag TYPE datetime DEFAULT time::now();
+
+    DEFINE INDEX OVERWRITE idx_has_supertag_in ON has_supertag FIELDS in;
+    DEFINE INDEX OVERWRITE idx_has_supertag_out ON has_supertag FIELDS out;
   `)
 
   // extends: Supertag -> Supertag (inheritance)
   await db.query(`
     DEFINE TABLE OVERWRITE extends SCHEMAFULL TYPE RELATION IN supertag OUT supertag;
     DEFINE FIELD OVERWRITE created_at ON extends TYPE datetime DEFAULT time::now();
+
+    DEFINE INDEX OVERWRITE idx_extends_in ON extends FIELDS in;
+    DEFINE INDEX OVERWRITE idx_extends_out ON extends FIELDS out;
   `)
 
   // ============================================================================

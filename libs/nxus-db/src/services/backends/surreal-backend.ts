@@ -41,6 +41,7 @@ import type { MutationEvent } from '../../reactive/types.js'
 import { eventBus } from '../../reactive/event-bus.js'
 import { formatOrderKey } from '../../types/order.js'
 import { extractMentionedNodeIds } from '../mentions.js'
+import { findRequiredSupertagFilter } from '../query-seed.js'
 import { uuidv7 } from 'uuidv7'
 
 // ---------------------------------------------------------------------------
@@ -1007,22 +1008,35 @@ export class SurrealBackend implements NodeBackend {
     const db = this.ensureInitialized()
     const nodeIds = records.map((record) => nodeRecordId(rid(record.id)))
 
-    // Fetch all has_field edges with field metadata, for all nodes at once.
+    // For large batches, `IN $hugeArray` predicates degrade badly (not
+    // index-driven, and the array marshals per query) — scan each edge
+    // table once and filter client-side instead. Threshold from the
+    // backend-parity benchmark.
+    const scanAll = nodeIds.length > 200
+    const inClause = scanAll ? '' : 'WHERE in IN $nodeIds '
+    const params = scanAll ? {} : { nodeIds }
+
+    // Fetch has_field edges with field metadata.
     // Note: `value` and `order` are reserved words — backtick-escape them.
     const [fieldEdges] = await db.query<[FieldEdge[]]>(
-      'SELECT in AS node_ref, `value`, `order`, out.content AS field_content, out.system_id AS field_system_id, out AS field_record FROM has_field WHERE in IN $nodeIds ORDER BY out.content, `order`',
-      { nodeIds },
+      `SELECT in AS node_ref, \`value\`, \`order\`, out.content AS field_content, out.system_id AS field_system_id, out AS field_record FROM has_field ${inClause}ORDER BY out.content, \`order\``,
+      params,
     )
 
-    // Fetch all has_supertag edges with supertag metadata, for all nodes at once
+    // Fetch has_supertag edges with supertag metadata
     const [supertagEdges] = await db.query<[SupertagEdge[]]>(
-      'SELECT in AS node_ref, out.name AS name, out.system_id AS system_id, out AS supertag_record, `order` FROM has_supertag WHERE in IN $nodeIds ORDER BY `order`',
-      { nodeIds },
+      `SELECT in AS node_ref, out.name AS name, out.system_id AS system_id, out AS supertag_record, \`order\` FROM has_supertag ${inClause}ORDER BY \`order\``,
+      params,
     )
+
+    const wantedIds = scanAll
+      ? new Set(records.map((record) => rid(record.id)))
+      : null
 
     const fieldEdgesByNode = new Map<string, FieldEdge[]>()
     for (const edge of fieldEdges || []) {
       const key = rid(edge.node_ref)
+      if (wantedIds && !wantedIds.has(key)) continue
       const list = fieldEdgesByNode.get(key)
       if (list) list.push(edge)
       else fieldEdgesByNode.set(key, [edge])
@@ -1030,6 +1044,7 @@ export class SurrealBackend implements NodeBackend {
     const supertagEdgesByNode = new Map<string, SupertagEdge[]>()
     for (const edge of supertagEdges || []) {
       const key = rid(edge.node_ref)
+      if (wantedIds && !wantedIds.has(key)) continue
       const list = supertagEdgesByNode.get(key)
       if (list) list.push(edge)
       else supertagEdgesByNode.set(key, [edge])
@@ -1048,10 +1063,15 @@ export class SurrealBackend implements NodeBackend {
   private async assembleByIds(nodeIds: string[]): Promise<AssembledNode[]> {
     if (nodeIds.length === 0) return []
     const db = this.ensureInitialized()
-    const [rows] = await db.query<[SurrealNode[]]>(
-      'SELECT * FROM node WHERE id IN $nodeIds AND deleted_at IS NONE',
-      { nodeIds: nodeIds.map((id) => nodeRecordId(id)) },
-    )
+    // Same large-batch heuristic as assembleFromRecords: one full scan
+    // beats a giant non-index-driven IN array.
+    const scanAll = nodeIds.length > 200
+    const [rows] = scanAll
+      ? await db.query<[SurrealNode[]]>('SELECT * FROM node WHERE deleted_at IS NONE')
+      : await db.query<[SurrealNode[]]>(
+          'SELECT * FROM node WHERE id IN $nodeIds AND deleted_at IS NONE',
+          { nodeIds: nodeIds.map((id) => nodeRecordId(id)) },
+        )
     const byId = new Map<string, SurrealNode>()
     for (const row of rows ?? []) byId.set(rid(row.id), row)
     const ordered = nodeIds
@@ -1781,12 +1801,23 @@ export class SurrealBackend implements NodeBackend {
     const db = this.ensureInitialized()
     const evaluatedAt = new Date()
 
-    // Start with all non-deleted node IDs
-    const [allNodes] = await db.query<[Array<{ id: RecordId }>]>(
-      'SELECT id FROM node WHERE deleted_at IS NONE',
-    )
-
-    let candidateIds = new Set<string>((allNodes || []).map((n) => rid(n.id)))
+    // Seed per spec/tech/persistence.md §10: a required top-level supertag
+    // filter seeds candidates from that supertag's (non-deleted) members
+    // instead of scanning every node id into JS — the previous full-table
+    // seed dominated query cost in the backend-parity benchmark and scaled
+    // with graph size, not result size. The original filter tree still
+    // runs afterwards; the seed is only an optimization.
+    const requiredSupertag = findRequiredSupertagFilter(definition.filters)
+    let candidateIds: Set<string>
+    if (requiredSupertag) {
+      candidateIds = await this.seedFromSupertagFilter(requiredSupertag)
+    } else {
+      // Fall back to all non-deleted node IDs (sound for every filter shape)
+      const [allNodes] = await db.query<[Array<{ id: RecordId }>]>(
+        'SELECT id FROM node WHERE deleted_at IS NONE',
+      )
+      candidateIds = new Set<string>((allNodes || []).map((n) => rid(n.id)))
+    }
 
     // Apply each filter
     for (const filter of definition.filters) {
@@ -1847,6 +1878,55 @@ export class SurrealBackend implements NodeBackend {
       default:
         return candidateIds
     }
+  }
+
+  /**
+   * Seed candidate ids from a required supertag filter (spec §10): the
+   * supertag's direct members — plus inherited members when the filter
+   * includes inheritance — restricted to non-deleted nodes (the seed
+   * replaces the all-non-deleted universe, so it must carry that
+   * restriction itself).
+   */
+  private async seedFromSupertagFilter(
+    filter: SupertagFilter,
+  ): Promise<Set<string>> {
+    const db = this.ensureInitialized()
+    const targetRecordId = await this.resolveSupertagId(filter.supertagId)
+    if (!targetRecordId) return new Set()
+
+    const supertagIds = new Set<string>([targetRecordId])
+    if (filter.includeInherited !== false) {
+      // BFS transitive children over extends edges
+      const queue = [targetRecordId]
+      while (queue.length > 0) {
+        const currentId = queue.shift()!
+        const [children] = await db.query<[Array<{ child_ref: RecordId }>]>(
+          'SELECT in AS child_ref FROM extends WHERE out = $stId',
+          { stId: new StringRecordId(currentId) },
+        )
+        for (const child of children || []) {
+          const childId = rid(child.child_ref)
+          if (!supertagIds.has(childId)) {
+            supertagIds.add(childId)
+            queue.push(childId)
+          }
+        }
+      }
+    }
+
+    const edgeResults = await Promise.all(
+      [...supertagIds].map((stId) =>
+        db.query<[Array<{ node_ref: RecordId }>]>(
+          'SELECT in AS node_ref FROM has_supertag WHERE out = $stId AND in.deleted_at IS NONE',
+          { stId: new StringRecordId(stId) },
+        ),
+      ),
+    )
+    const nodeIdSet = new Set<string>()
+    for (const [edges] of edgeResults) {
+      for (const edge of edges || []) nodeIdSet.add(rid(edge.node_ref))
+    }
+    return nodeIdSet
   }
 
   /**

@@ -34,6 +34,7 @@ import type {
   SupertagFilter,
   TemporalFilter,
 } from '../types/query.js'
+import { findRequiredSupertagFilter } from './query-seed.js'
 import { UUID_REGEX } from '../types/common.js'
 import {
   assembleNodes,
@@ -1337,28 +1338,3 @@ function getMemoizedSupertagMembership(
   return matchingIds
 }
 
-function findRequiredSupertagFilter(filters: QueryFilter[]): SupertagFilter | null {
-  for (const filter of filters) {
-    const required = findRequiredSupertagInConjunction(filter)
-    if (required) return required
-  }
-
-  return null
-}
-
-function findRequiredSupertagInConjunction(filter: QueryFilter): SupertagFilter | null {
-  if (filter.type === 'supertag') {
-    return filter
-  }
-
-  if (filter.type !== 'and') {
-    return null
-  }
-
-  for (const subFilter of filter.filters) {
-    const required = findRequiredSupertagInConjunction(subFilter)
-    if (required) return required
-  }
-
-  return null
-}
