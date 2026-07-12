@@ -99,7 +99,7 @@ Resolved note: ARCHITECTURE_TYPE=graph matrix leg (verified 2026-07-11)
 
 (Closed 2026-07-07: the "CI typecheck is disabled" DRIFT — every app now has a real `tsc --noEmit` target and the workspace is green, so the job is live; and the "agent:check not wired into CI" DRIFT — the check runs in the lint job, and `.mcp.json`'s playwright server now flows from `agent-hub/mcp/servers.json` instead of a hand edit.)
 
-Known non-gates, for completeness: tests unlinted (DRIFT §4), no Nx caching so every job pays full cost (§3), and a stale nested `apps/nxus-core/pnpm-lock.yaml` that contradicts single-lockfile workspace semantics and SHOULD be deleted.
+Known non-gates, for completeness: tests unlinted (DRIFT §4), no Nx caching so every job pays full cost (§3). The stale nested `apps/nxus-core/pnpm-lock.yaml` was deleted 2026-07-12 (single-lockfile workspace semantics restored). Env vars are enumerated in `.env.example` (repo root, added 2026-07-12); prose here stays canonical for semantics.
 
 ## 8. Codebase-memory graph artifact
 
