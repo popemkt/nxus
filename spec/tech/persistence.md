@@ -105,7 +105,7 @@ DRIFT: bootstrap check-then-insert races across processes
   Resolved note: graph-formula-evaluation (closed 2026-07-15)
   - previous: formula evaluation lived only in the sync SQLite assembly path; `SurrealBackend` assembly returned formula fields unevaluated, so formula fields rendered empty in graph mode.
   - fixed: the pure evaluation step is hoisted into `services/formula-application.ts` (`applyFormulaFieldsToAssembled`) — backend-agnostic math over an assembled node's property values. Both backends consume it: SQLite's `applyFormulaFields` delegates to it; `SurrealBackend.assembleNode`/`assembleNodeWithInheritance` discover formula field defs (walk supertag field defs → resolve each field's definition node by system_id → read its `field:field_type`/`field:formula`) and apply. Guarded by FORMULA-B1 in the backend-equivalence suite (both backends compute `{Price} * {Quantity}` = 30).
-  - remaining: inherited field-DEFINITION visibility — a valueless field declared on an ancestor supertag does not render as an empty row in graph assembly (SQLite surfaces it). Separate from evaluation; the second `formula-fields.spec.ts` graph skip names it.
+  - inherited field-DEFINITION visibility (closed 2026-07-15): the editor surfaces inherited empty fields via `getSupertagFieldDefinitions` + `getAncestorSupertags`; `getAncestorSupertags` returns catalog RECORD ids, but `resolveSupertagId` treated any `supertag:`-prefixed arg as a system_id and missed them. It now tries record-id resolution first. Multi-parent inherited fields render in graph mode; both `formula-fields.spec.ts` tests pass in graph.
 
   Behavior clauses (guarded by same-code test titles in `backends/surreal-backend.test.ts` unless noted):
 

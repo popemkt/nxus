@@ -476,6 +476,21 @@ export class SurrealBackend implements NodeBackend {
     }
 
     const db = this.ensureInitialized()
+
+    // The arg may ALREADY be a catalog record id (e.g. getAncestorSupertags
+    // returns resolved record ids) — indistinguishable from a system_id by
+    // prefix alone. If a catalog row with this exact id exists, it's already
+    // resolved; return it. Otherwise fall through to system_id lookup.
+    const [asRecord] = await db.query<[Array<{ id: RecordId }>]>(
+      'SELECT id FROM $recordId',
+      { recordId: new StringRecordId(supertagSystemId) },
+    )
+    if (asRecord && asRecord.length > 0) {
+      const resolved = rid(asRecord[0].id)
+      this.supertagIdCache.set(supertagSystemId, resolved)
+      return resolved
+    }
+
     const [results] = await db.query<[Array<{ id: RecordId }>]>(
       `SELECT id FROM supertag WHERE system_id = $systemId LIMIT 1`,
       { systemId: supertagSystemId },

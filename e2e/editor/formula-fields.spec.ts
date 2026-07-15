@@ -26,8 +26,6 @@ test.describe('Formula Fields', () => {
   })
 
   test('multi-parent supertag inheritance shows fields from both parent supertags', async ({ page }) => {
-    test.skip(isGraphMode, 'Formula EVALUATION now works in graph mode; this separate gap is inherited field-DEFINITION visibility — empty (valueless) fields declared on ancestor supertags do not render as rows in graph assembly. Tracked: graph inherited-field-definition visibility.')
-
     const { nodeId } = await seedMultiParentStory()
 
     await page.goto(`/editor?node=${nodeId}`)
