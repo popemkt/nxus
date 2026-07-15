@@ -895,8 +895,6 @@ test.describe('Outline Editor', () => {
 
   test.describe('Empty Node — Press Enter to Write', () => {
     test('pressing Enter on empty node creates first child', async ({ page }) => {
-      test.skip(isGraphMode, 'Passes on warm servers, but each graph run still logs ONE Node-not-found delete: a bare-uuid id that never existed server-side reaches deleteNodeServerFn — NOT a duplicate delete (disproven by tracing 2026-07-12); suspect a create path outside persistCreate; needs client-side network trace (task #26)')
-
       await page.getByText('Loading').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {})
       await page.locator('.node-block').first().waitFor({ state: 'visible', timeout: 10_000 })
 

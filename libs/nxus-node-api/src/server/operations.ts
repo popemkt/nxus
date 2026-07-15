@@ -411,141 +411,117 @@ export async function getChildNodes(
 export async function createOutlineNode(
   input: CreateOutlineNodeInput,
 ): Promise<CreateOutlineNodeResult> {
-  const {
-    addNodeSupertag,
-    assembleNode,
-    createNode: createDbNode,
-    getAncestorSupertags,
-    getProperty,
-    getSupertagFieldDefinitions,
-    initDatabaseWithBootstrap,
-    setProperty,
-    withNodeMutationTransaction,
-    FIELD_NAMES,
-    SYSTEM_FIELDS,
-  } = await import('@nxus/db/server')
+  // Facade-routed (backend-agnostic): the previous implementation used the
+  // sync SQLite `withNodeMutationTransaction`/`createDbNode` path, so in
+  // graph mode editor-created nodes landed in SQLite while reads/deletes went
+  // to SurrealDB — split-brain (a create's node was "not found" on delete;
+  // task #26). All steps now go through nodeFacade. Atomicity across the
+  // multi-step apply is relaxed vs the old single tx; each facade write
+  // auto-persists, matching every other facade-routed server fn.
+  const { getProperty, FIELD_NAMES, SYSTEM_FIELDS } = await import('@nxus/db/server')
+  const nodeFacade = await getFacade()
   const hiddenFieldSystemIds = new Set(input.hiddenFieldSystemIds ?? [])
-  const db = await initDatabaseWithBootstrap()
 
-  return withNodeMutationTransaction(db, (tx) => {
-    const nodeId = createDbNode(tx, {
-      content: input.content,
-      ownerId: input.parentId ?? undefined,
-    })
+  const nodeId = await nodeFacade.createNode({
+    content: input.content,
+    ownerId: input.parentId ?? undefined,
+  })
 
-    if (input.order !== undefined) {
-      setProperty(tx, nodeId, SYSTEM_FIELDS.ORDER, input.order)
+  if (input.order !== undefined) {
+    await nodeFacade.setProperty(nodeId, SYSTEM_FIELDS.ORDER, input.order)
+  }
+
+  let appliedSupertag: OutlineAppliedSupertag | null = null
+  const appliedFields: OutlineAppliedField[] = []
+
+  if (!input.parentId) {
+    return { nodeId, appliedSupertag, appliedFields }
+  }
+
+  const parentAssembled = await nodeFacade.assembleNode(input.parentId)
+  if (!parentAssembled) {
+    return { nodeId, appliedSupertag, appliedFields }
+  }
+
+  for (const parentTag of parentAssembled.supertags) {
+    const tagAssembled = await nodeFacade.assembleNode(parentTag.id)
+    if (!tagAssembled) continue
+
+    const defaultChildRef = getProperty(tagAssembled, FIELD_NAMES.DEFAULT_CHILD_SUPERTAG)
+    if (typeof defaultChildRef !== 'string') continue
+
+    const childTagNode = await nodeFacade.assembleNode(defaultChildRef)
+    if (!childTagNode?.systemId) continue
+
+    const added = await nodeFacade.addNodeSupertag(nodeId, childTagNode.systemId)
+    if (!added) break
+
+    const dbColor = getProperty(childTagNode, FIELD_NAMES.COLOR)
+    appliedSupertag = {
+      id: childTagNode.id,
+      name: childTagNode.content ?? '',
+      systemId: childTagNode.systemId,
+      color: typeof dbColor === 'string' ? dbColor : null,
     }
 
-    let appliedSupertag: OutlineAppliedSupertag | null = null
-    const appliedFields: OutlineAppliedField[] = []
-
-    if (!input.parentId) {
-      return { nodeId, appliedSupertag, appliedFields }
+    const fieldDefs = await nodeFacade.getSupertagFieldDefinitions(childTagNode.id)
+    const ancestors = await nodeFacade.getAncestorSupertags(childTagNode.id)
+    for (const ancestorId of ancestors) {
+      const ancestorDefs = await nodeFacade.getSupertagFieldDefinitions(ancestorId)
+      for (const [key, value] of ancestorDefs) {
+        if (!fieldDefs.has(key)) fieldDefs.set(key, value)
+      }
     }
 
-    const parentAssembled = assembleNode(tx, input.parentId)
-    if (!parentAssembled) {
-      return { nodeId, appliedSupertag, appliedFields }
+    for (const [systemId, definition] of fieldDefs) {
+      if (hiddenFieldSystemIds.has(systemId)) continue
+
+      const fieldNode = await nodeFacade.assembleNode(definition.fieldNodeId)
+      const fieldType = fieldNode ? getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE) : undefined
+
+      appliedFields.push({
+        fieldId: systemId,
+        fieldName: definition.fieldName,
+        fieldNodeId: definition.fieldNodeId,
+        fieldSystemId: systemId,
+        fieldType: typeof fieldType === 'string' ? fieldType : 'text',
+        values: [],
+      })
     }
 
-    for (const parentTag of parentAssembled.supertags) {
-      const tagAssembled = assembleNode(tx, parentTag.id)
-      if (!tagAssembled) {
-        continue
-      }
-
-      const defaultChildRef = getProperty(
-        tagAssembled,
-        FIELD_NAMES.DEFAULT_CHILD_SUPERTAG,
-      )
-      if (typeof defaultChildRef !== 'string') {
-        continue
-      }
-
-      const childTagNode = assembleNode(tx, defaultChildRef)
-      if (!childTagNode?.systemId) {
-        continue
-      }
-
-      const added = addNodeSupertag(tx, nodeId, childTagNode.systemId)
-      if (!added) {
-        break
-      }
-
-      const dbColor = getProperty(childTagNode, FIELD_NAMES.COLOR)
-      appliedSupertag = {
-        id: childTagNode.id,
-        name: childTagNode.content ?? '',
-        systemId: childTagNode.systemId,
-        color: typeof dbColor === 'string' ? dbColor : null,
-      }
-
-      const fieldDefs = getSupertagFieldDefinitions(tx, childTagNode.id)
-      const ancestors = getAncestorSupertags(tx, childTagNode.id)
-      for (const ancestorId of ancestors) {
-        const ancestorDefs = getSupertagFieldDefinitions(tx, ancestorId)
-        for (const [key, value] of ancestorDefs) {
-          if (!fieldDefs.has(key)) {
-            fieldDefs.set(key, value)
-          }
-        }
-      }
-
-      for (const [systemId, definition] of fieldDefs) {
-        if (hiddenFieldSystemIds.has(systemId)) {
-          continue
-        }
-
-        const fieldNode = assembleNode(tx, definition.fieldNodeId)
-        const fieldType = fieldNode
-          ? getProperty(fieldNode, FIELD_NAMES.FIELD_TYPE)
-          : undefined
-
-        appliedFields.push({
-          fieldId: systemId,
-          fieldName: definition.fieldName,
-          fieldNodeId: definition.fieldNodeId,
-          fieldSystemId: systemId,
-          fieldType: typeof fieldType === 'string' ? fieldType : 'text',
-          values: [],
-        })
-      }
-
-      const templateRaw = getProperty(childTagNode, FIELD_NAMES.CONTENT_TEMPLATE)
-      if (typeof templateRaw === 'string') {
-        try {
-          const parsedTemplate: unknown = JSON.parse(templateRaw)
-          if (
-            parsedTemplate &&
-            typeof parsedTemplate === 'object' &&
-            'children' in parsedTemplate &&
-            Array.isArray(parsedTemplate.children)
-          ) {
-            for (const childDefinition of parsedTemplate.children) {
-              if (
-                childDefinition &&
-                typeof childDefinition === 'object' &&
-                'content' in childDefinition &&
-                typeof childDefinition.content === 'string'
-              ) {
-                createDbNode(tx, {
-                  content: childDefinition.content,
-                  ownerId: nodeId,
-                })
-              }
+    const templateRaw = getProperty(childTagNode, FIELD_NAMES.CONTENT_TEMPLATE)
+    if (typeof templateRaw === 'string') {
+      try {
+        const parsedTemplate: unknown = JSON.parse(templateRaw)
+        if (
+          parsedTemplate &&
+          typeof parsedTemplate === 'object' &&
+          'children' in parsedTemplate &&
+          Array.isArray(parsedTemplate.children)
+        ) {
+          for (const childDefinition of parsedTemplate.children) {
+            if (
+              childDefinition &&
+              typeof childDefinition === 'object' &&
+              'content' in childDefinition &&
+              typeof childDefinition.content === 'string'
+            ) {
+              await nodeFacade.createNode({
+                content: childDefinition.content,
+                ownerId: nodeId,
+              })
             }
           }
-        } catch {
-          // Invalid templates are ignored to preserve existing editor behavior.
         }
+      } catch {
+        // Invalid templates are ignored to preserve existing editor behavior.
       }
-
-      break
     }
 
-    return { nodeId, appliedSupertag, appliedFields }
-  })
+    break
+  }
+
+  return { nodeId, appliedSupertag, appliedFields }
 }
 
 export async function swapOrder(input: SwapOrderInput): Promise<SwapOrderResult> {
