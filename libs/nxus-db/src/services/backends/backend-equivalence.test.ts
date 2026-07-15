@@ -13,6 +13,7 @@ import {
   SYSTEM_SUPERTAGS,
   FIELD_NAMES,
 } from '../../schemas/node-schema.js'
+import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
 import type { NodeBackend } from './types.js'
 import {
   createTestSqliteBackend,
@@ -397,6 +398,44 @@ describe.each(['sqlite', 'surreal'] as const)(
         const child = await backend.assembleNode(childId)
         expect(child!.properties[FIELD_NAMES.PARENT]).toBeDefined()
         expect(child!.properties[FIELD_NAMES.PARENT][0].value).toBe(parentId)
+      })
+
+      it('FORMULA-B1: computes a formula field from sibling number fields in assembly', async () => {
+        // A supertag with Price(number), Quantity(number), Total(formula).
+        const suffix = backendType
+        const tagSystemId = `supertag:formula_product_${suffix}`
+        const priceSystemId = `field:formula_price_${suffix}` as FieldSystemId
+        const qtySystemId = `field:formula_qty_${suffix}` as FieldSystemId
+        const totalSystemId = `field:formula_total_${suffix}` as FieldSystemId
+
+        const tag = await backend.createNode({ content: `#FormulaProduct${suffix}`, systemId: tagSystemId })
+        await backend.addNodeSupertag(tag, SYSTEM_SUPERTAGS.SUPERTAG)
+
+        const priceField = await backend.createNode({ content: 'Price', systemId: priceSystemId })
+        await backend.addNodeSupertag(priceField, SYSTEM_SUPERTAGS.FIELD)
+        await backend.setProperty(priceField, SYSTEM_FIELDS.FIELD_TYPE, 'number')
+
+        const qtyField = await backend.createNode({ content: 'Quantity', systemId: qtySystemId })
+        await backend.addNodeSupertag(qtyField, SYSTEM_SUPERTAGS.FIELD)
+        await backend.setProperty(qtyField, SYSTEM_FIELDS.FIELD_TYPE, 'number')
+
+        const totalField = await backend.createNode({ content: 'Total', systemId: totalSystemId })
+        await backend.addNodeSupertag(totalField, SYSTEM_SUPERTAGS.FIELD)
+        await backend.setProperty(totalField, SYSTEM_FIELDS.FIELD_TYPE, 'formula')
+        await backend.setProperty(totalField, SYSTEM_FIELDS.FORMULA, '{Price} * {Quantity}')
+
+        // Declare the fields on the supertag.
+        await backend.setProperty(tag, priceSystemId, null)
+        await backend.setProperty(tag, qtySystemId, null)
+        await backend.setProperty(tag, totalSystemId, null)
+
+        const nodeId = await backend.createNode({ content: 'Widget' })
+        await backend.addNodeSupertag(nodeId, tagSystemId)
+        await backend.setProperty(nodeId, priceSystemId, 10)
+        await backend.setProperty(nodeId, qtySystemId, 3)
+
+        const assembled = await backend.assembleNode(nodeId)
+        expect(assembled!.properties['Total' as FieldContentName]?.[0]?.value).toBe(30)
       })
     })
 

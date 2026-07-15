@@ -22,7 +22,7 @@ import {
 } from '../schemas/node-schema.js'
 import { itemTypes, type AppType } from '../schemas/item-schema.js'
 import { eventBus } from '../reactive/event-bus.js'
-import { evaluateFormulaExpression } from './formula-evaluator.js'
+import { applyFormulaFieldsToAssembled } from './formula-application.js'
 import { formatOrderKey } from '../types/order.js'
 import { extractMentionedNodeIds } from './mentions.js'
 
@@ -776,33 +776,8 @@ function applyFormulaFields(
   cache?: AssemblyCache,
 ): void {
   const formulaDefs = getFormulaFieldDefinitionsForNode(db, assembled, cache)
-  if (formulaDefs.length === 0) return
-
-  const formulaFieldNames = new Set(formulaDefs.map((def) => def.fieldName))
-  const values = new Map<string, JsonValue>()
-  for (const [fieldName, propValues] of Object.entries(assembled.properties)) {
-    if (formulaFieldNames.has(fieldName)) continue
-    const sorted = [...propValues].sort((a, b) => a.order - b.order)
-    const first = sorted[0]
-    if (first) values.set(fieldName, first.value)
-  }
-
-  for (const def of formulaDefs) {
-    const result = evaluateFormulaExpression(def.expression, {
-      values,
-      formulaFieldNames,
-    })
-    const pv: PropertyValue = {
-      value: result,
-      rawValue: JSON.stringify(result),
-      fieldNodeId: def.fieldNodeId,
-      fieldName: def.fieldName,
-      fieldSystemId: def.fieldSystemId,
-      order: 0,
-    }
-    const key = def.fieldName as FieldContentName
-    assembled.properties[key] = [pv]
-  }
+  // Shared backend-agnostic application (SSOT with SurrealBackend).
+  applyFormulaFieldsToAssembled(assembled, formulaDefs)
 }
 
 function getFormulaFieldDefinitionsForNode(

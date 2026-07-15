@@ -102,13 +102,14 @@ DRIFT: bootstrap check-then-insert races across processes
 
   **Supertag catalog (graph mode, 2026-07-12).** SurrealQL RELATION typing forces a dual representation: a lean `supertag` catalog table (targets of `has_supertag` edges) beside the supertag's ordinary `node:` record (which carries `base_type`, `color`, `extends` like any node). The catalog is a derived index, never hand-maintained: `resolveSupertagId` self-heals it on miss by looking up the definition node by `system_id` and mirroring a catalog row (same pattern as `resolveFieldId` for fields), so user-created supertags work without bootstrap enumeration. Graph bootstrap seeds the calendar entity supertags (#Task/#Event/#Day with `base_type`) for parity with `bootstrap.ts` `entitySupertags`.
 
-  DRIFT: graph-formula-evaluation
-  - canonical: formula fields compute identically in both modes — assembly evaluates `field:formula` expressions against sibling property values.
-  - current: evaluation lives only in the sync SQLite assembly path (`node.service.ts` → `formula-evaluator.js`); `SurrealBackend` assembly returns formula fields unevaluated. Fixtures seed backend-agnostically since 2026-07-12 — the two `e2e/editor/formula-fields.spec.ts` graph skips now name exactly this gap.
-  - impact: formula and multi-parent-inherited formula fields render empty in graph mode.
-  - closes: port formula evaluation into Surreal assembly (or hoist it above the backend split — it is backend-agnostic math over assembled properties).
+  Resolved note: graph-formula-evaluation (closed 2026-07-15)
+  - previous: formula evaluation lived only in the sync SQLite assembly path; `SurrealBackend` assembly returned formula fields unevaluated, so formula fields rendered empty in graph mode.
+  - fixed: the pure evaluation step is hoisted into `services/formula-application.ts` (`applyFormulaFieldsToAssembled`) — backend-agnostic math over an assembled node's property values. Both backends consume it: SQLite's `applyFormulaFields` delegates to it; `SurrealBackend.assembleNode`/`assembleNodeWithInheritance` discover formula field defs (walk supertag field defs → resolve each field's definition node by system_id → read its `field:field_type`/`field:formula`) and apply. Guarded by FORMULA-B1 in the backend-equivalence suite (both backends compute `{Price} * {Quantity}` = 30).
+  - remaining: inherited field-DEFINITION visibility — a valueless field declared on an ancestor supertag does not render as an empty row in graph assembly (SQLite surfaces it). Separate from evaluation; the second `formula-fields.spec.ts` graph skip names it.
 
-  Behavior clauses (guarded by same-code test titles in `backends/surreal-backend.test.ts`):
+  Behavior clauses (guarded by same-code test titles in `backends/surreal-backend.test.ts` unless noted):
+
+  - **FORMULA-B1** — Given a supertag with a `formula`-typed field over sibling number fields, when a tagged node is assembled, then the formula value MUST be computed identically by both backends (guarded in `backend-equivalence.test.ts`).
 
   - **EXT-B1** — Given supertag inheritance expressed as a `field:extends` property between definition nodes, when the property is written, then the write path MUST mirror it into the `extends` catalog edge the inheritance walk reads (derived index, like the supertag catalog).
   - **EXT-B2** — Given a supertag extending multiple parents, when ancestors are walked, then ALL parents MUST be visited (multi-parent inheritance is canonical, [../product/editor.md](../product/editor.md) §6).

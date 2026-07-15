@@ -42,6 +42,7 @@ import { eventBus } from '../../reactive/event-bus.js'
 import { formatOrderKey } from '../../types/order.js'
 import { extractMentionedNodeIds } from '../mentions.js'
 import { findRequiredSupertagFilter } from '../query-seed.js'
+import { applyFormulaFieldsToAssembled, type FormulaFieldSpec } from '../formula-application.js'
 import { uuidv7 } from 'uuidv7'
 
 // ---------------------------------------------------------------------------
@@ -879,7 +880,83 @@ export class SurrealBackend implements NodeBackend {
     )
 
     if (!nodeResults || nodeResults.length === 0) return null
-    return this.assembleFromRecord(nodeResults[0])
+    const assembled = await this.assembleFromRecord(nodeResults[0])
+    await this.applyFormulaFields(assembled)
+    return assembled
+  }
+
+  /**
+   * Compute formula fields on an assembled node (backend-agnostic math via
+   * formula-application.ts). Discovers formula field definitions by walking
+   * the node's supertag field defs and reading each field def node's own
+   * `field:field_type`/`field:formula` properties. Closes DRIFT:
+   * graph-formula-evaluation.
+   */
+  private async applyFormulaFields(assembled: AssembledNode): Promise<void> {
+    if (assembled.supertags.length === 0) return
+    const db = this.ensureInitialized()
+
+    // Collect the field system-ids this node's supertags declare, across the
+    // inheritance chain. (The supertag's has_field edge points at the field
+    // CATALOG row; the field's type/formula live on its definition NODE,
+    // keyed by the same system_id — so we resolve through system_id.)
+    const fieldNameBySystemId = new Map<string, string>()
+    for (const supertag of assembled.supertags) {
+      const supertagRecordId = supertag.systemId
+        ? await this.resolveSupertagId(supertag.systemId)
+        : await this.resolveSupertagId(supertag.id)
+      if (!supertagRecordId) continue
+      const chain = [supertagRecordId, ...(await this.getAncestorSupertagRecordIds(supertagRecordId))]
+      for (const stId of chain) {
+        const defs = await this.getSupertagFieldDefsInternal(stId)
+        for (const [fieldSystemId, def] of defs) {
+          fieldNameBySystemId.set(fieldSystemId, def.fieldName)
+        }
+      }
+    }
+    if (fieldNameBySystemId.size === 0) return
+
+    // Resolve each field's DEFINITION node (system_id match), then read its
+    // own field:field_type / field:formula edges — one query each.
+    const fieldSystemIds = [...fieldNameBySystemId.keys()]
+    const [defNodeRows] = await db.query<[Array<{ id: RecordId; system_id: string }>]>(
+      'SELECT id, system_id FROM node WHERE system_id IN $systemIds AND deleted_at IS NONE',
+      { systemIds: fieldSystemIds },
+    )
+    const defNodeIdBySystemId = new Map<string, string>()
+    for (const row of defNodeRows || []) defNodeIdBySystemId.set(row.system_id, rid(row.id))
+    if (defNodeIdBySystemId.size === 0) return
+
+    const [metaRows] = await db.query<[Array<{ node_ref: RecordId; field_system_id: string; value: unknown }>]>(
+      'SELECT in AS node_ref, out.system_id AS field_system_id, `value` FROM has_field WHERE in IN $defNodes AND out.system_id IN $metaFields',
+      {
+        defNodes: [...defNodeIdBySystemId.values()].map((id) => nodeRecordId(id)),
+        metaFields: [SYSTEM_FIELDS.FIELD_TYPE as string, SYSTEM_FIELDS.FORMULA as string],
+      },
+    )
+    const typeByDefNode = new Map<string, string>()
+    const formulaByDefNode = new Map<string, string>()
+    for (const row of metaRows || []) {
+      const defId = rid(row.node_ref)
+      if (row.field_system_id === (SYSTEM_FIELDS.FIELD_TYPE as string)) {
+        if (typeof row.value === 'string') typeByDefNode.set(defId, row.value)
+      } else if (row.field_system_id === (SYSTEM_FIELDS.FORMULA as string)) {
+        if (typeof row.value === 'string') formulaByDefNode.set(defId, row.value)
+      }
+    }
+
+    const specs: FormulaFieldSpec[] = []
+    for (const [fieldSystemId, fieldName] of fieldNameBySystemId) {
+      const defNodeId = defNodeIdBySystemId.get(fieldSystemId)
+      if (!defNodeId || typeByDefNode.get(defNodeId) !== 'formula') continue
+      specs.push({
+        fieldSystemId,
+        fieldNodeId: defNodeId,
+        fieldName,
+        expression: formulaByDefNode.get(defNodeId) ?? '',
+      })
+    }
+    applyFormulaFieldsToAssembled(assembled, specs)
   }
 
   async assembleNodeWithInheritance(nodeId: string): Promise<AssembledNode | null> {
@@ -936,6 +1013,10 @@ export class SurrealBackend implements NodeBackend {
         }
       }
     }
+
+    // Re-compute formulas after inheritance merge: a formula may reference an
+    // inherited default that was not present when assembleNode first ran.
+    await this.applyFormulaFields(node)
 
     return node
   }

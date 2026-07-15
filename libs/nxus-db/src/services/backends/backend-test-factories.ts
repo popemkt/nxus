@@ -70,6 +70,7 @@ export async function createTestSqliteBackend(): Promise<TestBackendContext> {
     { id: 'field-order', systemId: 'field:order', content: 'order' },
     { id: 'field-base-type', systemId: 'field:base_type', content: 'baseType' },
     { id: 'field-mentions', systemId: SYSTEM_FIELDS.MENTIONS, content: 'mentions' },
+    { id: 'field-formula', systemId: SYSTEM_FIELDS.FORMULA, content: 'formula' },
   ]
 
   for (const field of systemFields) {
@@ -80,6 +81,8 @@ export async function createTestSqliteBackend(): Promise<TestBackendContext> {
   }
 
   const systemSupertags = [
+    { id: 'supertag-supertag', systemId: SYSTEM_SUPERTAGS.SUPERTAG, content: '#Supertag' },
+    { id: 'supertag-field', systemId: SYSTEM_SUPERTAGS.FIELD, content: '#Field' },
     { id: 'supertag-item', systemId: SYSTEM_SUPERTAGS.ITEM, content: '#Item' },
     { id: 'supertag-command', systemId: SYSTEM_SUPERTAGS.COMMAND, content: '#Command' },
     { id: 'supertag-tag', systemId: SYSTEM_SUPERTAGS.TAG, content: '#Tag' },

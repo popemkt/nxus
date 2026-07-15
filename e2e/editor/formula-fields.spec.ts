@@ -8,8 +8,6 @@ test.describe('Formula Fields', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('formula field computes from two number fields and updates after reload', async ({ page }) => {
-    test.skip(isGraphMode, 'Formula EVALUATION is not implemented in SurrealBackend assembly — fixtures now seed backend-agnostically; see spec/tech/persistence.md DRIFT: graph-formula-evaluation')
-
     const { nodeId, quantityFieldSystemId } = await seedFormulaStory()
 
     await page.goto(`/editor?node=${nodeId}`)
@@ -28,7 +26,7 @@ test.describe('Formula Fields', () => {
   })
 
   test('multi-parent supertag inheritance shows fields from both parent supertags', async ({ page }) => {
-    test.skip(isGraphMode, 'Formula EVALUATION is not implemented in SurrealBackend assembly — fixtures now seed backend-agnostically; see spec/tech/persistence.md DRIFT: graph-formula-evaluation')
+    test.skip(isGraphMode, 'Formula EVALUATION now works in graph mode; this separate gap is inherited field-DEFINITION visibility — empty (valueless) fields declared on ancestor supertags do not render as rows in graph assembly. Tracked: graph inherited-field-definition visibility.')
 
     const { nodeId } = await seedMultiParentStory()
 
