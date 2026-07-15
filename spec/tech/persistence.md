@@ -142,6 +142,16 @@ Resolved note: graph seed write-model drift
 - fixed: `seed-graph.ts` now seeds through `nodeFacade`/`NodeBackend` public methods (`createNode`, `setProperty`, `linkNodes`, `addNodeSupertag`, `reparentNode`), so graph seed writes use the same model the facade reads (`apps/nxus-core/scripts/seed-graph.ts:1`).
 - impact: fresh graph seed data is visible through facade assembly and workspace hierarchy instead of being structurally invisible.
 
+Resolved note: editor create-path facade routing (closed 2026-07-15)
+- previous: `createOutlineNode` (`libs/nxus-node-api/src/server/operations.ts`) — the editor's only create path — used the sync SQLite `withNodeMutationTransaction`/`createDbNode` stack while reads/deletes went through `nodeFacade`. Under graph mode, editor-created nodes landed in SQLite and vanished from Surreal reads/deletes (the swallowed `Node not found` on undo, and disappear-on-reload).
+- fixed: `createOutlineNode` routes every step through `nodeFacade` (single-tx atomicity relaxed to per-call auto-persist, matching every other facade server fn).
+
+DRIFT: tif-sqlite-only
+- canonical: TIF import/export work in both modes (the action registry's `import_tif`/`export_subtree` are backend-agnostic).
+- current: `importTanaIntermediateFile`/`exportSubtreeToTif` (`services/tif/*.ts`) are multi-pass sync tree-walks over raw drizzle — SQLite only. `operations.ts` `importTif`/`exportSubtree` now **fail fast** under `ARCHITECTURE_TYPE=graph` (`assertTifSupported`) rather than silently writing to / reading from the wrong DB.
+- impact: TIF round-trip is unavailable in graph mode (loud error, not silent data loss).
+- closes: port the importer/exporter onto `NodeBackend` (ideally over a bulk-write primitive — see the write-throughput perf item, so a large import isn't one-transaction-per-node), then drop the guard.
+
 ## 6. Decision record: modes and the facade
 
 Decided (do not relitigate without a new decision):
