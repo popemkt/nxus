@@ -41,3 +41,20 @@ Codex lanes (gpt-5.6-sol/terra) delivered the graph-skip burndown, REST adapter,
 - Production plan P1–P5 not started beyond quick wins (.env.example, lockfile).
 - Full local e2e legs unverifiable at push time: the machine entered active daytime use (load 22–58), inflating runs 20× with pure-timeout failures (zero error-signature lines). Unit estate (736 db + 141 editor), tsc ×5, both checkers, and focused graph calendar/core runs are green locally; the CI node×graph matrix is the authoritative full-leg verdict for this push.
 - Theming T3 (component migration onto `--nx-*` roles) and T4 (panels, quick-capture, onboarding) enumerated in the synthesis note.
+
+## Follow-up close-out — 2026-07-15
+
+Residue tasks driven to done (or to a correct fail-fast where the full port is a separate effort):
+
+| Commit | What |
+|---|---|
+| `51f41e5` | **#30 formula evaluation** — hoisted into shared `formula-application.ts`; both backends compute formulas identically (FORMULA-B1). |
+| `1ffd92e` | **#26 create/delete split-brain** — `createOutlineNode` was the last sync-SQLite create path while reads/deletes used the facade; ported to facade. Was the true cause of the graph "Node not found" (not a phantom/duplicate delete). empty-child graph skip removed. |
+| `f0f9cc2` | **#31 inherited field-definition visibility** — `resolveSupertagId` now resolves catalog record ids (getAncestorSupertags returns those), so multi-parent inherited fields render in graph. Last formula-fields graph skip removed. |
+| `7f6f6da` | **#32 TIF graph correctness** — importTif/exportSubtree fail fast under graph mode (were silently reading/writing the wrong DB). Full importer/exporter facade port deferred (DRIFT: tif-sqlite-only), bundled with #29. |
+
+Graph-mode e2e skips: **20 → 2** (both principled: reactive-layer inbox invalidation, and a virtualization count-assertion artifact — neither a product gap).
+
+Deliberately deferred perf refinements (guarded, not silent-broken):
+- **#29** Surreal write throughput (~9× SQLite @3k, one tx per createNode) — seed/bulk-import only; the backend-parity benchmark guards regression. The bulk-write primitive is the shared prerequisite for the TIF port (#32).
+- **#4** per-query convergence invalidation — superseded in practice by trailing convergence; client-cache refinement.
