@@ -1,79 +1,21 @@
 /**
  * tif.test.ts - Tests for Tana Intermediate Format import/export.
  *
- * Uses the real bootstrap (`bootstrapSystemNodesSync`) against an in-memory
- * SQLite DB, same pattern as bootstrap-parity.test.ts, since the importer
- * relies on real system fields/supertags (field:supertag, field:field_type,
- * field:view_as, ...) being present.
+ * Backend-parameterized: the importer/exporter run through NodeBackend, so
+ * the same suite proves both SQLite and SurrealDB behavior (TIF-B* clauses).
  */
 
-import Database from 'better-sqlite3'
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { and, eq, isNull } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import * as schema from '../../schemas/item-schema.js'
-import { nodes as nodesTable, FIELD_NAMES, type FieldContentName } from '../../schemas/node-schema.js'
-import { assembleNodes, clearSystemNodeCache, createNode, findNodeById, getProperty, getPropertyValues } from '../node.service.js'
-import { bootstrapSystemNodesSync } from '../bootstrap.js'
+import { FIELD_NAMES, type FieldContentName } from '../../schemas/node-schema.js'
+import { getProperty, getPropertyValues } from '../node.service.js'
+import type { NodeBackend } from '../backends/types.js'
+import {
+  createTestSqliteBackend,
+  createTestSurrealBackend,
+} from '../backends/backend-test-factories.js'
 import { importTanaIntermediateFile } from './tif-import.js'
 import { exportSubtreeToTif } from './tif-export.js'
 import type { TanaIntermediateFile, TanaIntermediateNode } from './tif-types.js'
-
-type TestDb = BetterSQLite3Database<typeof schema>
-
-interface TestDatabase {
-  sqlite: Database.Database
-  db: TestDb
-}
-
-function createTestDatabase(): TestDatabase {
-  const sqlite = new Database(':memory:')
-  const db = drizzle(sqlite, { schema })
-
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS nodes (
-      id TEXT PRIMARY KEY,
-      content TEXT,
-      content_plain TEXT,
-      system_id TEXT UNIQUE,
-      owner_id TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      deleted_at INTEGER
-    );
-    CREATE INDEX IF NOT EXISTS idx_nodes_system_id ON nodes(system_id);
-    CREATE INDEX IF NOT EXISTS idx_nodes_owner_id ON nodes(owner_id);
-    CREATE TABLE IF NOT EXISTS node_properties (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      node_id TEXT NOT NULL,
-      field_node_id TEXT NOT NULL,
-      value TEXT,
-      "order" INTEGER DEFAULT 0,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_node_properties_node_id ON node_properties(node_id);
-    CREATE INDEX IF NOT EXISTS idx_node_properties_field_node_id ON node_properties(field_node_id);
-    CREATE INDEX IF NOT EXISTS idx_node_properties_value ON node_properties(value);
-  `)
-
-  clearSystemNodeCache()
-  bootstrapSystemNodesSync(db)
-  return { sqlite, db }
-}
-
-function childrenOf(db: TestDb, ownerId: string) {
-  const rows = db
-    .select({ id: nodesTable.id })
-    .from(nodesTable)
-    .where(and(eq(nodesTable.ownerId, ownerId), isNull(nodesTable.deletedAt)))
-    .all()
-  return assembleNodes(db, rows.map((r) => r.id))
-}
-
-function nodeCount(db: TestDb): number {
-  return db.select({ id: nodesTable.id }).from(nodesTable).all().length
-}
 
 const NOW = 1_700_000_000_000
 
@@ -136,28 +78,38 @@ function buildFixture(): TanaIntermediateFile {
       }),
       node({ uid: linkedUid, name: 'Linked Reference Node', type: 'node' }),
       node({ uid: dateUid, name: '2024-01-15', type: 'date' }),
-      node({ uid: codeUid, name: 'console.log(1)', type: 'codeblock', codeLanguage: 'javascript' }),
+      node({ uid: codeUid, name: 'console.log(1)', type: 'codeblock' , codeLanguage: 'javascript' }),
     ],
   }
 }
 
-describe('TIF import', () => {
-  let ctx: TestDatabase
-  let baselineNodeCount: number
+describe.each([
+  ['sqlite', createTestSqliteBackend],
+  ['surreal', createTestSurrealBackend],
+] as const)('TIF import (%s)', (_name, factory) => {
+  let backend: NodeBackend
+  let cleanup: () => Promise<void>
+  let baselineRootCount: number
 
-  beforeEach(() => {
-    ctx = createTestDatabase()
-    baselineNodeCount = nodeCount(ctx.db)
+  async function childrenOf(ownerId: string) {
+    const byParent = await backend.getChildrenByParents([ownerId])
+    return byParent.get(ownerId) ?? []
+  }
+
+  beforeEach(async () => {
+    const ctx = await factory()
+    backend = ctx.backend
+    cleanup = ctx.cleanup
+    baselineRootCount = (await backend.getRootNodes()).length
   })
 
-  afterEach(() => {
-    ctx.sqlite.close()
-    clearSystemNodeCache()
+  afterEach(async () => {
+    await cleanup()
   })
 
-  it('imports nested children, supertags, fields (each dataType), refs, todo, date, codeblock', () => {
+  it('TIF-B1: imports nested children, supertags, fields (each dataType), refs, todo, date, codeblock', async () => {
     const fixture = buildFixture()
-    const summary = importTanaIntermediateFile(ctx.db, fixture)
+    const summary = await importTanaIntermediateFile(backend, fixture)
 
     expect(summary.brokenRefs).toBe(0)
     expect(summary.skipped).toEqual([])
@@ -168,12 +120,17 @@ describe('TIF import', () => {
     expect(summary.topLevelNodeIds).toHaveLength(4)
 
     const [rootId, linkedId, dateId, codeId] = summary.topLevelNodeIds
+    // Content tokens always carry the bare uuid, even where the backend's
+    // canonical id form is prefixed ('node:<uuid>' on Surreal).
+    const bareLinkedId = linkedId.replace(/^node:/, '')
 
-    const root = findNodeById(ctx.db, rootId)
+    const root = await backend.findNodeById(rootId)
     expect(root).not.toBeNull()
-    expect(root?.content).toBe(`Project Alpha [[node:${linkedId}]]`)
+    expect(root?.content).toBe(`Project Alpha [[node:${bareLinkedId}]]`)
     expect(root?.supertags.map((st) => st.systemId)).toEqual(['supertag:tif_task'])
-    expect(getPropertyValues<string>(root!, 'mentions' as FieldContentName)).toEqual([linkedId])
+    const mentionValues = getPropertyValues<string>(root!, 'mentions' as FieldContentName)
+    expect(mentionValues).toHaveLength(1)
+    expect(String(mentionValues[0])).toContain(bareLinkedId)
 
     expect(getProperty(root!, 'Status' as FieldContentName)).toBe('active')
     expect(getProperty(root!, 'Website' as FieldContentName)).toBe('https://example.com')
@@ -183,42 +140,40 @@ describe('TIF import', () => {
     expect(getProperty(root!, 'Urgent' as FieldContentName)).toBe(true)
 
     // Field carriers collapse into properties — root has exactly one real outline child.
-    const rootChildren = childrenOf(ctx.db, rootId)
+    const rootChildren = await childrenOf(root!.id)
     expect(rootChildren).toHaveLength(1)
     const childNode = rootChildren[0]
-    expect(childNode.content).toBe(`See also [[node:${linkedId}]]`)
+    expect(childNode.content).toBe(`See also [[node:${bareLinkedId}]]`)
     expect(getProperty(childNode, FIELD_NAMES.TODO_STATE)).toBe('todo')
 
-    const grandchildren = childrenOf(ctx.db, childNode.id)
+    const grandchildren = await childrenOf(childNode.id)
     expect(grandchildren).toHaveLength(1)
     expect(grandchildren[0].content).toBe('Nested detail')
 
-    const dateNode = findNodeById(ctx.db, dateId)
+    const dateNode = await backend.findNodeById(dateId)
     expect(dateNode?.content).toBe('2024-01-15')
     expect(getProperty(dateNode!, 'TIF node type' as FieldContentName)).toBe('date')
 
-    const codeNode = findNodeById(ctx.db, codeId)
+    const codeNode = await backend.findNodeById(codeId)
     expect(codeNode?.content).toBe('console.log(1)')
     expect(getProperty(codeNode!, 'TIF node type' as FieldContentName)).toBe('codeblock')
     expect(getProperty(codeNode!, 'TIF code language' as FieldContentName)).toBe('javascript')
   })
 
-  it('round-trips: export what was imported, re-import into a fresh DB, structurally equal (uids differ)', () => {
-    // Bootstrap seeds its own system field/supertag definition nodes at
-    // root level (ownerId null) — exporting `null` would sweep those in
-    // too. Import under a wrapper node so the exported subtree is exactly
-    // our fixture data.
-    const wrapperId = createNode(ctx.db, { content: 'Import root' })
+  it('TIF-B2: round-trips — export what was imported, re-import into a fresh backend, structurally equal (uids differ)', async () => {
+    // System nodes live at root level — import under a wrapper node so the
+    // exported subtree is exactly our fixture data.
+    const wrapperId = await backend.createNode({ content: 'Import root' })
     const fixture = buildFixture()
-    importTanaIntermediateFile(ctx.db, fixture, { ownerId: wrapperId })
-    const exported = exportSubtreeToTif(ctx.db, wrapperId)
+    await importTanaIntermediateFile(backend, fixture, { ownerId: wrapperId })
+    const exported = await exportSubtreeToTif(backend, wrapperId)
 
-    const dbA = createTestDatabase()
+    const fresh = await factory()
     try {
-      const summary2 = importTanaIntermediateFile(dbA.db, exported)
+      const summary2 = await importTanaIntermediateFile(fresh.backend, exported)
       expect(summary2.brokenRefs).toBe(0)
       expect(summary2.topLevelNodeIds).toHaveLength(1)
-      const reExported = exportSubtreeToTif(dbA.db, summary2.topLevelNodeIds[0])
+      const reExported = await exportSubtreeToTif(fresh.backend, summary2.topLevelNodeIds[0])
 
       // uids are real DB ids and MUST differ across the two databases.
       expect(reExported.nodes[0].uid).not.toBe(exported.nodes[0].uid)
@@ -228,17 +183,17 @@ describe('TIF import', () => {
       expect(normalizeFile(reExported)).toEqual(normalizeFile(exported))
       expect(reExported.summary).toEqual(exported.summary)
     } finally {
-      dbA.sqlite.close()
+      await fresh.cleanup()
     }
   })
 
-  it('rejects a malformed file (Zod) and leaves the database untouched', () => {
+  it('TIF-B3: rejects a malformed file (Zod) and leaves the database untouched', async () => {
     const malformed = { version: 'not-a-tif-version', nodes: [] }
-    expect(() => importTanaIntermediateFile(ctx.db, malformed)).toThrow()
-    expect(nodeCount(ctx.db)).toBe(baselineNodeCount)
+    await expect(importTanaIntermediateFile(backend, malformed)).rejects.toThrow()
+    expect((await backend.getRootNodes()).length).toBe(baselineRootCount)
   })
 
-  it('rolls back the whole transaction on a duplicate uid (proves I6 atomicity, not just pre-tx Zod rejection)', () => {
+  it('TIF-B4: rejects a duplicate uid before anything is written', async () => {
     const dup: TanaIntermediateFile = {
       version: 'TanaIntermediateFile V0.1',
       summary: { leafNodes: 0, topLevelNodes: 2, totalNodes: 2, calendarNodes: 0, fields: 0, brokenRefs: 0 },
@@ -248,14 +203,13 @@ describe('TIF import', () => {
       ],
     }
 
-    expect(() => importTanaIntermediateFile(ctx.db, dup)).toThrow(/duplicate uid/)
-    // The first node's insert happened inside the transaction before the
-    // throw — this proves the whole transaction rolled back, not just that
-    // nothing was attempted.
-    expect(nodeCount(ctx.db)).toBe(baselineNodeCount)
+    await expect(importTanaIntermediateFile(backend, dup)).rejects.toThrow(/duplicate uid/)
+    // Id preallocation means the duplicate check runs before the bulk write —
+    // nothing lands in the database, on either backend.
+    expect((await backend.getRootNodes()).length).toBe(baselineRootCount)
   })
 
-  it('counts an unknown supertag uid as broken but still imports the node', () => {
+  it('TIF-B5: counts an unknown supertag uid as broken but still imports the node', async () => {
     const tifWithUnknownTag: TanaIntermediateFile = {
       version: 'TanaIntermediateFile V0.1',
       summary: { leafNodes: 1, topLevelNodes: 1, totalNodes: 1, calendarNodes: 0, fields: 0, brokenRefs: 1 },
@@ -271,12 +225,12 @@ describe('TIF import', () => {
       ],
     }
 
-    const summary = importTanaIntermediateFile(ctx.db, tifWithUnknownTag)
+    const summary = await importTanaIntermediateFile(backend, tifWithUnknownTag)
     expect(summary.brokenRefs).toBe(1)
     expect(summary.skipped.some((s) => s.uid === 'ghost-uid')).toBe(true)
     expect(summary.nodesImported).toBe(1)
 
-    const node = findNodeById(ctx.db, summary.topLevelNodeIds[0])
+    const node = await backend.findNodeById(summary.topLevelNodeIds[0])
     expect(node?.supertags).toHaveLength(0)
   })
 })

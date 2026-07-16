@@ -37,7 +37,7 @@ export type {
 export { isSystemId } from '../schemas/node-schema.js'
 
 // Import types for use in this file
-import type { AssembledNode, PropertyValue, CreateNodeOptions } from '../types/node.js'
+import type { AssembledNode, PropertyValue, CreateNodeOptions, BulkNodeSpec } from '../types/node.js'
 import type { JsonValue } from '../types/common.js'
 import type { MutationEvent } from '../reactive/types.js'
 import type { BaseType } from '../types/base-type.js'
@@ -1090,6 +1090,99 @@ export function createNode(
   })
 }
 
+/** Allocate a node id for BulkNodeSpec authoring (same uuidv7 scheme createNode uses). */
+export function generateNodeId(): string {
+  return uuidv7()
+}
+
+/**
+ * Create many nodes in ONE transaction — the bulk-write primitive behind
+ * NodeBackend.createNodesBulk (seeds, TIF import).
+ *
+ * Two passes inside the transaction: all node rows are inserted first, so
+ * specs may reference each other (ownerId, supertag/field systemIds, mention
+ * tokens) regardless of position in the batch.
+ */
+export function createNodesBulk(
+  db: NodeDatabase,
+  specs: BulkNodeSpec[],
+): string[] {
+  if (specs.length === 0) return []
+  return runMutationTransaction(db, (tx) => {
+    const now = new Date()
+
+    for (const spec of specs) {
+      tx.insert(nodes)
+        .values({
+          id: spec.id,
+          content: spec.content,
+          contentPlain: spec.content.toLowerCase(),
+          systemId: spec.systemId,
+          ownerId: spec.ownerId,
+          createdAt: spec.createdAt ?? now,
+          updatedAt: spec.updatedAt ?? now,
+        })
+        .run()
+    }
+    // New system nodes (supertag/field defs) are now queryable by systemId.
+    clearSystemNodeCache()
+
+    for (const spec of specs) {
+      emitMutation({
+        type: 'node:created',
+        timestamp: now,
+        nodeId: spec.id,
+        afterValue: {
+          id: spec.id,
+          content: spec.content,
+          ownerId: spec.ownerId,
+        },
+      })
+
+      for (const supertagSystemId of spec.supertagSystemIds ?? []) {
+        addNodeSupertag(tx, spec.id, supertagSystemId)
+      }
+
+      let fallbackOrder = 0
+      for (const prop of spec.properties ?? []) {
+        const field = getFieldOrSupertagNode(tx, prop.fieldSystemId as FieldSystemId)
+        if (!field) throw new Error(`Field not found: ${prop.fieldSystemId}`)
+        tx.insert(nodeProperties)
+          .values({
+            nodeId: spec.id,
+            fieldNodeId: field.id,
+            value: JSON.stringify(prop.value),
+            order: prop.order ?? fallbackOrder++,
+            createdAt: spec.createdAt ?? now,
+            updatedAt: spec.updatedAt ?? now,
+          })
+          .run()
+        emitMutation({
+          type: 'property:set',
+          timestamp: now,
+          nodeId: spec.id,
+          fieldId: field.id,
+          fieldSystemId: prop.fieldSystemId as FieldSystemId,
+          afterValue: prop.value,
+        })
+      }
+
+      reconcileMentions(tx, spec.id, spec.content)
+
+      // addNodeSupertag/property writes bump updatedAt to `now`; restore the
+      // spec's timestamps so imports keep original edit times.
+      if (spec.createdAt || spec.updatedAt) {
+        tx.update(nodes)
+          .set({ updatedAt: spec.updatedAt ?? spec.createdAt ?? now })
+          .where(eq(nodes.id, spec.id))
+          .run()
+      }
+    }
+
+    return specs.map((spec) => spec.id)
+  })
+}
+
 /**
  * Update node content
  */
@@ -1222,6 +1315,16 @@ export function getWorkspaceRoots(db: NodeDatabase): string[] {
     .get()
 
   return fallback ? [fallback.id] : []
+}
+
+/** All live root-level nodes (no owner), assembled — the whole-graph export entry. */
+export function getRootNodes(db: NodeDatabase): AssembledNode[] {
+  const rows = db
+    .select({ id: nodes.id })
+    .from(nodes)
+    .where(and(isNull(nodes.ownerId), isNull(nodes.deletedAt)))
+    .all()
+  return assembleNodes(db, rows.map((row) => row.id))
 }
 
 export function reparentNode(

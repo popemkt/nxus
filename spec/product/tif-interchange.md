@@ -8,18 +8,20 @@ Implementation: `libs/nxus-db/src/services/tif/` (`tif-types.ts`, `tif-import.ts
 
 Supports the JSON wire format produced/consumed by `tanainc/tana-import-tools` (`TanaIntermediateFile V0.1`) only. **Tana Paste (the plain-text outline format) is NOT parsed** — only the structured JSON `TanaIntermediateFile` shape.
 
-- `importTanaIntermediateFile(db, tif, options?)` — parses (Zod, fail-fast) and materializes a TIF file as real nodes in one transaction.
-- `exportSubtreeToTif(db, rootNodeId | null)` — walks a node's subtree (or the whole root-level graph when `rootNodeId` is `null`) and assembles a TIF file.
+- `importTanaIntermediateFile(backend, tif, options?)` — parses (Zod, fail-fast) and materializes a TIF file as real nodes in one bulk write.
+- `exportSubtreeToTif(backend, rootNodeId | null)` — walks a node's subtree (or the whole root-level graph when `rootNodeId` is `null`) and assembles a TIF file.
+
+Both run through the `NodeBackend` facade, so **TIF works in both `node` (SQLite) and `graph` (SurrealDB) modes** (previously SQLite-only with a graph fail-fast guard; ported 2026-07-17). The same behavior is proven on both backends by the parameterized TIF-B1–B9 clauses.
 
 ## Import semantics
 
-**Two-pass, one transaction.** Pass 1 creates every non-`type:'field'` TIF node depth-first (preserving TIF child order via `field:order`), building the `uid → new node id` map. `type:'field'` nodes are field-value carriers per TIF semantics — they never become outline nodes; they are deferred. Pass 2 (after the uid map is complete, so forward references anywhere in the file resolve) rewrites inline `[[uid]]` tokens to `[[node:<id>]]`, applies `refs[]` as additional mention tokens, sets type-specific properties, and materializes deferred field carriers as properties on their owner node. The whole import runs inside `withNodeMutationTransaction` — a thrown error (Zod rejection, or a duplicate `uid` detected mid-walk) leaves the database exactly as it was.
+**Three passes, one bulk write.** Because node ids are allocated up front (`generateNodeId()`), the whole `uid → new id` map exists before anything is written, so the import is pure spec-building followed by one `createNodesBulk` call. Pass 1 walks the tree depth-first, allocating an id for every non-`type:'field'` node (preserving TIF child order via `field:order`) and building the uid map; `type:'field'` nodes are field-value carriers per TIF semantics — never outline nodes, deferred here. Pass 2 builds one `BulkNodeSpec` per walked node with final content (inline `[[uid]]` rewritten to `[[node:<id>]]`, `refs[]` appended as extra mention tokens, type-specific properties set). Pass 3 materializes deferred field carriers as properties on their owner spec. A thrown error (Zod rejection, or a duplicate `uid` detected during the walk) happens before the write, so the database is untouched; the write itself is atomic on SQLite and chunk-atomic on SurrealDB (`createNodesBulk` contract, persistence.md §5).
 
-**uid remapping.** TIF `uid` strings are never reused as node ids — every imported node gets a fresh `uuidv7`. `field:mentions` (data-model.md §3.5) is re-derived automatically from the rewritten content, same as any other content write.
+**uid remapping.** TIF `uid` strings are never reused as node ids — every imported node gets a fresh `uuidv7`. On export, a node's `uid` is its DB id in bare form (Surreal's `node:` prefix stripped); `[[node:<id>]]` content tokens likewise carry the bare uuid on both backends, so import→export→re-import is structurally stable modulo the necessarily-fresh ids. `field:mentions` (data-model.md §3.5) is re-derived automatically from the rewritten content, same as any other content write.
 
 **Supertags/fields become real nodes**, tagged/typed the same way `bootstrap.ts` seeds system ones: a `TanaIntermediateSupertag` becomes a node tagged `#Supertag` with systemId `supertag:tif_<slug>`; a TIF attribute becomes a node tagged `#Field` with systemId `field:tif_<slug>` and `field:field_type` set from the dataType map below. Both are **reused across imports into the same database** (looked up by the deterministic systemId before creating) and disambiguated with a numeric suffix only for a genuine within-file slug collision between two differently-named attributes/supertags.
 
-**dataType → FieldType**: `any→text`, `url→url`, `email→email`, `number→number`, `date→date`, `checkbox→boolean`. Field values are always written with `addPropertyValue` (never `setProperty`) — TIF fields can legitimately carry more than one value, and this sidesteps the known `setProperty`-clobbers-order-0 bug (data-model.md DRIFT register) entirely rather than trying to guess single- vs multi-valued up front.
+**dataType → FieldType**: `any→text`, `url→url`, `email→email`, `number→number`, `date→date`, `checkbox→boolean`. Field values become `BulkPropertySpec` entries with an explicit per-`(owner, field)` `order`, so a multi-valued TIF field lands as an ordered multi-value property in one write — this sidesteps the known `setProperty`-clobbers-order-0 bug (data-model.md DRIFT register) entirely rather than guessing single- vs multi-valued up front. `number` values are coerced to JS numbers and `checkbox` to booleans on the way in.
 
 **`viewType`** maps onto the existing engine field `field:view_as` (`list→outline`, `table→table`) instead of a redundant TIF-only field — this is the one TIF construct that plugs directly into an existing nxus concept.
 
@@ -45,3 +47,17 @@ Supports the JSON wire format produced/consumed by `tanainc/tana-import-tools` (
 ## Round-trip guarantee
 
 Import → export → re-import into a fresh database → export again produces the same node/field/supertag/type/todoState/viewType/flags shape (uids necessarily differ — see `libs/nxus-db/src/services/tif/tif.test.ts`, the round-trip test). Timestamps (`createdAt`/`editedAt`) are also round-trip stable: import overwrites the row's `createdAt`/`updatedAt` with the TIF file's own values rather than "now", so a re-export reports the original timestamps, not import time.
+
+## Behavior clauses
+
+Guarded by same-code test titles in `libs/nxus-db/src/services/tif/tif.test.ts` and `tif-edge-cases.test.ts`, each run against BOTH backends (`describe.each(['sqlite','surreal'])`):
+
+- **TIF-B1** — Given a TIF file with nested children, a supertag, one attribute per dataType, an inline+`refs` link, a todo, a date and a codeblock, when imported, then every fact materializes correctly (children nested, supertag `supertag:tif_<slug>`, each typed field coerced, mention resolved, todo/date/codeblock markers set).
+- **TIF-B2** — Given an imported subtree, when exported, re-imported into a fresh backend and re-exported, then the two exports are structurally equal and the uids differ (real DB ids).
+- **TIF-B3** — Given a malformed file, when imported, then it MUST throw (Zod) and leave the database untouched.
+- **TIF-B4** — Given a duplicate `uid`, when imported, then it MUST throw before any write (id preallocation ⇒ nothing lands).
+- **TIF-B5** — Given a node tagged with an unknown supertag uid, when imported, then the node is still created (untagged) and the unknown tag is counted as a broken ref.
+- **TIF-B6** — Given `todoState: 'done'`, when imported, then `field:todo_state` is set to `'done'` (via the engine's canonical checkbox field, not a TIF-only field).
+- **TIF-B7** — Given `todoState: 'done'`, when exported, then it reproduces as `todoState` and is NOT also emitted as a duplicate generic field-carrier for the same fact.
+- **TIF-B8** — Given a `refs[]` entry pointing at a `type:'field'` carrier uid (never a real node), when imported, then it counts as a broken ref but the import still succeeds.
+- **TIF-B9** — Given a depth-10 child chain ending in a 3-way sibling group, when imported, then per-sibling-group `field:order` values are monotonic and preserve the original fixture order.

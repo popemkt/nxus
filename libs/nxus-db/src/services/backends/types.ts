@@ -9,7 +9,7 @@
  * module-level functions in node.service.ts.
  */
 
-import type { AssembledNode, CreateNodeOptions } from '../../types/node.js'
+import type { AssembledNode, BulkNodeSpec, CreateNodeOptions } from '../../types/node.js'
 import type { FieldSystemId } from '../../schemas/node-schema.js'
 import type { QueryDefinition } from '../../types/query.js'
 import type { BaseType } from '../../types/base-type.js'
@@ -18,6 +18,8 @@ import type { QueryEvaluationResult } from '../query-evaluator.service.js'
 
 // Re-export from the canonical definition in query-evaluator.service
 export type { QueryEvaluationResult } from '../query-evaluator.service.js'
+// Re-export from the canonical definition in types/node
+export type { BulkNodeSpec, BulkPropertySpec } from '../../types/node.js'
 
 export interface FieldUsageStats {
   nodeCount: number
@@ -52,6 +54,13 @@ export interface NodeBackend {
   /** Create a new node and return its ID */
   createNode(options: CreateNodeOptions): Promise<string>
 
+  /**
+   * Create many nodes (with supertags, properties, mentions) in one batched
+   * write. Atomic on SQLite; chunk-atomic on SurrealDB (each chunk of specs
+   * commits as one transaction). Returns created ids in spec order.
+   */
+  createNodesBulk(specs: BulkNodeSpec[]): Promise<string[]>
+
   /** Update the content (display text) of a node */
   updateNodeContent(nodeId: string, content: string): Promise<void>
 
@@ -73,6 +82,9 @@ export interface NodeBackend {
 
   /** Get live workspace roots, falling back to any live user node */
   getWorkspaceRoots(): Promise<string[]>
+
+  /** Get all live root-level nodes (no owner), assembled */
+  getRootNodes(): Promise<AssembledNode[]>
 
   // ---------------------------------------------------------------------------
   // Node Assembly

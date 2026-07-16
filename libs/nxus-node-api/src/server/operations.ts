@@ -694,34 +694,15 @@ export async function getOrCreateDayNode(
   return { success: true, nodeId, created: true }
 }
 
-// TIF import/export are the last SQLite-only paths: the importer/exporter are
-// multi-pass sync tree-walks over raw drizzle, not yet ported to the facade.
-// Under ARCHITECTURE_TYPE=graph they would read/write the SQLite file the
-// selected backend never touches — silent data loss (import lands in SQLite,
-// invisible to Surreal reads; export reads an empty SQLite). Fail fast until
-// the port lands, matching the reactive-layer graph guard. Tracked: TIF
-// facade port (spec/tech/persistence.md DRIFT: tif-sqlite-only).
-function assertTifSupported(): void {
-  if (process.env.ARCHITECTURE_TYPE === 'graph') {
-    throw new Error(
-      'TIF import/export is SQLite-only; unsupported under ARCHITECTURE_TYPE=graph (see spec/tech/persistence.md DRIFT: tif-sqlite-only)',
-    )
-  }
-}
-
 export async function importTif(input: ImportTifInput) {
-  assertTifSupported()
   const parsed: unknown = JSON.parse(input.json)
-  const { importTanaIntermediateFile, initDatabaseWithBootstrap } =
-    await import('@nxus/db/server')
-  const db = await initDatabaseWithBootstrap()
-  return importTanaIntermediateFile(db, parsed, { ownerId: input.ownerId })
+  const { importTanaIntermediateFile } = await import('@nxus/db/server')
+  const facade = await getFacade()
+  return importTanaIntermediateFile(facade, parsed, { ownerId: input.ownerId })
 }
 
 export async function exportSubtree(input: ExportSubtreeInput) {
-  assertTifSupported()
-  const { exportSubtreeToTif, initDatabaseWithBootstrap } =
-    await import('@nxus/db/server')
-  const db = await initDatabaseWithBootstrap()
-  return exportSubtreeToTif(db, input.rootNodeId ?? null)
+  const { exportSubtreeToTif } = await import('@nxus/db/server')
+  const facade = await getFacade()
+  return exportSubtreeToTif(facade, input.rootNodeId ?? null)
 }

@@ -10,7 +10,7 @@
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type * as itemSchema from '../../schemas/item-schema.js'
 import type { FieldSystemId } from '../../schemas/node-schema.js'
-import type { AssembledNode, CreateNodeOptions } from '../../types/node.js'
+import type { AssembledNode, BulkNodeSpec, CreateNodeOptions } from '../../types/node.js'
 import type { QueryDefinition } from '../../types/query.js'
 import type { BaseType } from '../../types/base-type.js'
 import type {
@@ -75,6 +75,11 @@ export class SqliteBackend implements NodeBackend {
     return nodeService.createNode(db, options)
   }
 
+  async createNodesBulk(specs: BulkNodeSpec[]): Promise<string[]> {
+    const db = this.ensureInitialized()
+    return nodeService.createNodesBulk(db, specs)
+  }
+
   async updateNodeContent(nodeId: string, content: string): Promise<void> {
     const db = this.ensureInitialized()
     nodeService.updateNodeContent(db, nodeId, content)
@@ -107,6 +112,11 @@ export class SqliteBackend implements NodeBackend {
   async getWorkspaceRoots(): Promise<string[]> {
     const db = this.ensureInitialized()
     return nodeService.getWorkspaceRoots(db)
+  }
+
+  async getRootNodes(): Promise<AssembledNode[]> {
+    const db = this.ensureInitialized()
+    return nodeService.getRootNodes(db)
   }
 
   // ---------------------------------------------------------------------------

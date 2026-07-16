@@ -1,44 +1,35 @@
 /**
  * tif-import.ts - Import a Tana Intermediate Format (TIF) v0.1 file into the
- * node graph.
+ * node graph, through the NodeBackend facade (works on both backends).
  *
- * Two-pass strategy:
- *   Pass 1 (`walkCreate`) walks the TIF node tree depth-first, creating one
- *   real node per non-`field` TIF node (preserving sibling order via
- *   `field:order`) and building the `uid -> new node id` map. `type:'field'`
- *   nodes are NOT outline nodes — per TIF semantics they are field-value
- *   carriers, so they are collected into `deferredFields` instead of being
- *   materialized as children.
- *   Pass 2 resolves everything that needs the COMPLETE uid map (which can
- *   only exist once every node has been created): inline `[[uid]]` tokens in
- *   content/description, the top-level `refs[]` array, and the deferred
- *   field values (which may themselves reference nodes anywhere in the file).
+ * Strategy: because BulkNodeSpec ids are caller-allocated (generateNodeId),
+ * the ENTIRE uid -> new-id map exists before anything is written. The import
+ * is therefore pure spec-building — inline `[[uid]]` tokens, the top-level
+ * `refs[]` array, and deferred `type:'field'` carriers are all resolved while
+ * assembling specs — followed by ONE createNodesBulk call.
  *
- * The whole import runs inside one transaction (`withNodeMutationTransaction`)
- * so a failure anywhere (a Zod rejection happens even earlier, before the
- * transaction opens) leaves the database exactly as it was.
+ * `type:'field'` TIF nodes are NOT outline nodes — per TIF semantics they are
+ * field-value carriers, so they materialize as properties on their owner spec
+ * instead of children.
+ *
+ * Atomicity: the Zod parse and the duplicate-uid check happen before any
+ * write. The bulk write itself is one transaction on SQLite; on SurrealDB it
+ * commits in chunks (see createNodesBulk) — persistence.md records this.
  */
 
-import { eq } from 'drizzle-orm'
-import { nodes, SYSTEM_FIELDS, SYSTEM_SUPERTAGS, type FieldSystemId, type FieldType } from '../../schemas/node-schema.js'
-import type { getDatabase } from '../../client/master-client.js'
 import {
-  addNodeSupertag,
-  addPropertyValue,
-  createNode,
-  getSystemNode,
-  setProperty,
-  updateNodeContent,
-  withNodeMutationTransaction,
-} from '../node.service.js'
+  SYSTEM_FIELDS,
+  SYSTEM_SUPERTAGS,
+  type FieldType,
+} from '../../schemas/node-schema.js'
+import { generateNodeId } from '../node.service.js'
+import type { BulkNodeSpec, BulkPropertySpec, NodeBackend } from '../backends/types.js'
 import {
   TanaIntermediateFileSchema,
   type TanaIntermediateNode,
   type TanaIntermediateSupertag,
   type TifAttributeDataType,
 } from './tif-types.js'
-
-type Db = ReturnType<typeof getDatabase>
 
 // ============================================================================
 // Public types
@@ -123,12 +114,6 @@ function appendResolvedRefTokens(
   return `${rewrittenContent} ${extras.join(' ')}`.trim()
 }
 
-function applyOriginalTimestamps(tx: Db, nodeId: string, createdAtMs: number, editedAtMs: number): void {
-  const createdAt = Number.isFinite(createdAtMs) ? new Date(createdAtMs) : new Date()
-  const updatedAt = Number.isFinite(editedAtMs) ? new Date(editedAtMs) : createdAt
-  tx.update(nodes).set({ createdAt, updatedAt }).where(eq(nodes.id, nodeId)).run()
-}
-
 function mapDataTypeToFieldType(dataType: TifAttributeDataType | undefined): FieldType {
   switch (dataType) {
     case 'url':
@@ -158,98 +143,113 @@ function coerceFieldValue(raw: string, dataType: TifAttributeDataType | undefine
   return raw
 }
 
-/**
- * Ensure a system field node exists for a fixed, engine-internal marker
- * systemId (e.g. `field:tif_node_type`), reusing one created by a previous
- * import into the same database rather than colliding on the unique
- * `systemId` constraint.
- */
-function ensureMarkerField(
-  tx: Db,
-  cache: Map<string, FieldSystemId>,
-  systemId: string,
-  content: string,
-  fieldType: FieldType,
-): FieldSystemId {
-  const cached = cache.get(systemId)
-  if (cached) return cached
-  if (!getSystemNode(tx, systemId)) {
-    const fieldNodeId = createNode(tx, { content, systemId })
-    addNodeSupertag(tx, fieldNodeId, SYSTEM_SUPERTAGS.FIELD)
-    setProperty(tx, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, fieldType)
-  }
-  const fieldSystemId = systemId as FieldSystemId
-  cache.set(systemId, fieldSystemId)
-  return fieldSystemId
-}
-
-/**
- * Resolve (creating if needed) the field-definition node backing a TIF
- * attribute name. Reuses a field created by a previous import with the same
- * generated systemId; disambiguates within-file slug collisions between
- * distinct attribute names with a numeric suffix.
- */
-function getOrCreateAttributeField(
-  tx: Db,
-  registry: Map<string, string>,
-  usedSystemIds: Set<string>,
-  attributeName: string,
-  dataType: TifAttributeDataType | undefined,
-): string {
-  const cached = registry.get(attributeName)
-  if (cached) return cached
-
-  const slug = slugify(attributeName) || 'field'
-  let systemId = `field:tif_${slug}`
-  const existing = getSystemNode(tx, systemId)
-
-  if (!existing && usedSystemIds.has(systemId)) {
-    let n = 2
-    while (usedSystemIds.has(`${systemId}_${n}`)) n++
-    systemId = `${systemId}_${n}`
-  }
-  usedSystemIds.add(systemId)
-
-  if (!existing) {
-    const fieldNodeId = createNode(tx, { content: attributeName, systemId })
-    addNodeSupertag(tx, fieldNodeId, SYSTEM_SUPERTAGS.FIELD)
-    setProperty(tx, fieldNodeId, SYSTEM_FIELDS.FIELD_TYPE, mapDataTypeToFieldType(dataType))
-  }
-
-  registry.set(attributeName, systemId)
-  return systemId
-}
-
-/**
- * Resolve (creating if needed) the supertag node backing a TIF supertag
- * entry. Returns the systemId (not the node UUID) since callers hand it
- * straight to `addNodeSupertag`.
- */
-function ensureTifSupertag(tx: Db, usedSystemIds: Set<string>, tag: TanaIntermediateSupertag): string {
-  const slug = slugify(tag.name) || 'tag'
-  let systemId = `supertag:tif_${slug}`
-  const existing = getSystemNode(tx, systemId)
-
-  if (!existing && usedSystemIds.has(systemId)) {
-    let n = 2
-    while (usedSystemIds.has(`${systemId}_${n}`)) n++
-    systemId = `${systemId}_${n}`
-  }
-  usedSystemIds.add(systemId)
-
-  if (!existing) {
-    createNode(tx, { content: `#${tag.name}`, systemId, supertagId: SYSTEM_SUPERTAGS.SUPERTAG })
-  }
-  return systemId
+function toDateOr(fallback: Date, ms: number): Date {
+  return Number.isFinite(ms) ? new Date(ms) : fallback
 }
 
 // ============================================================================
-// Import context (mutable accumulator threaded through both passes)
+// Definition registry — dedups supertag/field definition specs, reusing
+// nodes a previous import already created in the same database.
 // ============================================================================
 
-interface PendingNode {
+/**
+ * Tracks systemIds claimed during THIS import (for slug-collision suffixing)
+ * and the definition specs to prepend to the batch.
+ */
+class DefinitionRegistry {
+  readonly defSpecs: BulkNodeSpec[] = []
+  private readonly usedSystemIds = new Set<string>()
+  private readonly existsCache = new Map<string, boolean>()
+
+  constructor(private readonly backend: NodeBackend) {}
+
+  private async exists(systemId: string): Promise<boolean> {
+    const cached = this.existsCache.get(systemId)
+    if (cached !== undefined) return cached
+    const node = await this.backend.findNodeBySystemId(systemId)
+    const result = node !== null
+    this.existsCache.set(systemId, result)
+    return result
+  }
+
+  /** Resolve a systemId candidate, suffixing on within-file slug collisions. */
+  private async claimSystemId(candidate: string): Promise<{ systemId: string; existed: boolean }> {
+    const existed = await this.exists(candidate)
+    let systemId = candidate
+    if (!existed && this.usedSystemIds.has(candidate)) {
+      let n = 2
+      while (this.usedSystemIds.has(`${candidate}_${n}`)) n++
+      systemId = `${candidate}_${n}`
+    }
+    this.usedSystemIds.add(systemId)
+    return { systemId, existed: existed && systemId === candidate }
+  }
+
+  /** Supertag definition backing a TIF supertag entry. Returns its systemId. */
+  async ensureSupertag(tag: TanaIntermediateSupertag): Promise<string> {
+    const slug = slugify(tag.name) || 'tag'
+    const { systemId, existed } = await this.claimSystemId(`supertag:tif_${slug}`)
+    if (!existed) {
+      this.defSpecs.push({
+        id: generateNodeId(),
+        content: `#${tag.name}`,
+        systemId,
+        supertagSystemIds: [SYSTEM_SUPERTAGS.SUPERTAG],
+      })
+    }
+    return systemId
+  }
+
+  /** Field definition backing a TIF attribute name. Returns its systemId. */
+  async ensureAttributeField(
+    attributeName: string,
+    dataType: TifAttributeDataType | undefined,
+  ): Promise<string> {
+    const slug = slugify(attributeName) || 'field'
+    const { systemId, existed } = await this.claimSystemId(`field:tif_${slug}`)
+    if (!existed) {
+      this.defSpecs.push({
+        id: generateNodeId(),
+        content: attributeName,
+        systemId,
+        supertagSystemIds: [SYSTEM_SUPERTAGS.FIELD],
+        properties: [
+          { fieldSystemId: SYSTEM_FIELDS.FIELD_TYPE as string, value: mapDataTypeToFieldType(dataType) },
+        ],
+      })
+    }
+    return systemId
+  }
+
+  /** Engine-internal marker field with a FIXED systemId (never suffixed). */
+  async ensureMarkerField(systemId: string, content: string, fieldType: FieldType): Promise<string> {
+    if (this.usedSystemIds.has(systemId)) return systemId
+    const existed = await this.exists(systemId)
+    this.usedSystemIds.add(systemId)
+    if (!existed) {
+      this.defSpecs.push({
+        id: generateNodeId(),
+        content,
+        systemId,
+        supertagSystemIds: [SYSTEM_SUPERTAGS.FIELD],
+        properties: [
+          { fieldSystemId: SYSTEM_FIELDS.FIELD_TYPE as string, value: fieldType },
+        ],
+      })
+    }
+    return systemId
+  }
+}
+
+// ============================================================================
+// Walk state
+// ============================================================================
+
+interface WalkedNode {
   tifNode: TanaIntermediateNode
   newId: string
+  ownerNewId: string | undefined
+  siblingOrder: number
 }
 
 interface DeferredField {
@@ -259,7 +259,7 @@ interface DeferredField {
 
 interface ImportContext {
   uidMap: Map<string, string>
-  pendingNodes: PendingNode[]
+  walked: WalkedNode[]
   deferredFields: DeferredField[]
   skipped: ImportTifSkipped[]
   brokenRefs: number
@@ -267,17 +267,12 @@ interface ImportContext {
   fieldsImported: number
 }
 
-// ============================================================================
-// Pass 1 — structure + uid mapping
-// ============================================================================
-
-function walkCreate(
-  tx: Db,
+/** Pass 1 — walk the tree, allocate ids, build the complete uid map. */
+function walkAllocate(
   tifNode: TanaIntermediateNode,
   ownerNewId: string | undefined,
   siblingOrder: number,
   ctx: ImportContext,
-  supertagUidMap: Map<string, string>,
 ): void {
   if (tifNode.type === 'field') {
     if (ownerNewId === undefined) {
@@ -292,25 +287,14 @@ function walkCreate(
     throw new Error(`tif-import: duplicate uid '${tifNode.uid}' in TanaIntermediateFile`)
   }
 
-  const newId = createNode(tx, { content: tifNode.name, ownerId: ownerNewId })
+  const newId = generateNodeId()
   ctx.uidMap.set(tifNode.uid, newId)
-  ctx.pendingNodes.push({ tifNode, newId })
-  setProperty(tx, newId, SYSTEM_FIELDS.ORDER, siblingOrder)
-
-  for (const supertagUid of tifNode.supertags ?? []) {
-    const supertagSystemId = supertagUidMap.get(supertagUid)
-    if (!supertagSystemId) {
-      ctx.brokenRefs++
-      ctx.skipped.push({ uid: supertagUid, reason: `unknown supertag uid referenced by node '${tifNode.uid}'` })
-      continue
-    }
-    addNodeSupertag(tx, newId, supertagSystemId)
-  }
+  ctx.walked.push({ tifNode, newId, ownerNewId, siblingOrder })
 
   let childOrder = 0
   for (const child of tifNode.children ?? []) {
     const isField = child.type === 'field'
-    walkCreate(tx, child, newId, childOrder, ctx, supertagUidMap)
+    walkAllocate(child, newId, childOrder, ctx)
     if (!isField) childOrder++
   }
 }
@@ -319,136 +303,185 @@ function walkCreate(
 // Public entry point
 // ============================================================================
 
-export function importTanaIntermediateFile(
-  db: Db,
+export async function importTanaIntermediateFile(
+  backend: NodeBackend,
   input: unknown,
   options: ImportTifOptions = {},
-): ImportTifSummary {
-  // Parse BEFORE opening a transaction — an invalid file must never touch the DB.
+): Promise<ImportTifSummary> {
+  // Parse BEFORE anything else — an invalid file must never touch the DB.
   const tif = TanaIntermediateFileSchema.parse(input)
 
-  return withNodeMutationTransaction(db, (tx) => {
-    const ctx: ImportContext = {
-      uidMap: new Map(),
-      pendingNodes: [],
-      deferredFields: [],
-      skipped: [],
-      brokenRefs: 0,
-      refsResolved: 0,
-      fieldsImported: 0,
+  const ctx: ImportContext = {
+    uidMap: new Map(),
+    walked: [],
+    deferredFields: [],
+    skipped: [],
+    brokenRefs: 0,
+    refsResolved: 0,
+    fieldsImported: 0,
+  }
+
+  const registry = new DefinitionRegistry(backend)
+
+  const supertagUidMap = new Map<string, string>()
+  for (const tag of tif.supertags ?? []) {
+    supertagUidMap.set(tag.uid, await registry.ensureSupertag(tag))
+  }
+
+  // Pass 1 — allocate ids + complete the uid map (duplicate uids throw here,
+  // before any write exists to roll back).
+  const topLevelNodeIds: string[] = []
+  let topLevelOrder = 0
+  for (const topNode of tif.nodes) {
+    const isField = topNode.type === 'field'
+    walkAllocate(topNode, options.ownerId, topLevelOrder, ctx)
+    if (!isField) {
+      topLevelOrder++
+      const newId = ctx.uidMap.get(topNode.uid)
+      if (newId) topLevelNodeIds.push(newId)
+    }
+  }
+
+  // Pass 2 — build one spec per walked node with FINAL content (refs resolved
+  // against the complete uid map) and all properties.
+  const nodeSpecs = new Map<string, BulkNodeSpec>()
+
+  for (const { tifNode, newId, ownerNewId, siblingOrder } of ctx.walked) {
+    const rawText = `${tifNode.name}\n${tifNode.description ?? ''}`
+    const rewrittenName = rewriteInlineRefs(tifNode.name, ctx.uidMap, () => ctx.brokenRefs++)
+    const content = appendResolvedRefTokens(
+      rewrittenName,
+      rawText,
+      tifNode.refs,
+      ctx.uidMap,
+      () => ctx.brokenRefs++,
+      () => ctx.refsResolved++,
+    )
+
+    const createdAt = toDateOr(new Date(), tifNode.createdAt)
+    const properties: BulkPropertySpec[] = [
+      { fieldSystemId: SYSTEM_FIELDS.ORDER as string, value: siblingOrder },
+    ]
+
+    if (tifNode.description) {
+      properties.push({
+        fieldSystemId: SYSTEM_FIELDS.DESCRIPTION as string,
+        value: rewriteInlineRefs(tifNode.description, ctx.uidMap, () => ctx.brokenRefs++),
+      })
     }
 
-    const usedSystemIds = new Set<string>()
-    const supertagUidMap = new Map<string, string>()
-    for (const tag of tif.supertags ?? []) {
-      supertagUidMap.set(tag.uid, ensureTifSupertag(tx, usedSystemIds, tag))
+    // `type:'node'` is the overwhelming common case — no marker needed for it.
+    if (tifNode.type !== 'node') {
+      const marker = await registry.ensureMarkerField('field:tif_node_type', 'TIF node type', 'text')
+      properties.push({ fieldSystemId: marker, value: tifNode.type })
+    }
+    if (tifNode.type === 'image') {
+      const marker = await registry.ensureMarkerField('field:tif_media_url', 'TIF media URL', 'url')
+      properties.push({ fieldSystemId: marker, value: tifNode.mediaUrl ?? '' })
+    }
+    if (tifNode.type === 'codeblock') {
+      const marker = await registry.ensureMarkerField('field:tif_code_language', 'TIF code language', 'text')
+      properties.push({ fieldSystemId: marker, value: tifNode.codeLanguage ?? '' })
+    }
+    // TIF todoState maps onto the engine's canonical checkbox field
+    // (field:todo_state, 'todo' | 'done' — spec/product/data-model.md).
+    if (tifNode.todoState) {
+      properties.push({ fieldSystemId: SYSTEM_FIELDS.TODO_STATE as string, value: tifNode.todoState })
+    }
+    if (tifNode.flags && tifNode.flags.length > 0) {
+      const marker = await registry.ensureMarkerField('field:tif_flags', 'TIF flags', 'json')
+      properties.push({ fieldSystemId: marker, value: tifNode.flags })
+    }
+    // viewType maps onto the existing engine concept (`field:view_as`)
+    // instead of a redundant TIF-only field.
+    if (tifNode.viewType) {
+      properties.push({
+        fieldSystemId: SYSTEM_FIELDS.VIEW_AS as string,
+        value: tifNode.viewType === 'table' ? 'table' : 'outline',
+      })
     }
 
-    const topLevelNodeIds: string[] = []
-    let topLevelOrder = 0
-    for (const topNode of tif.nodes) {
-      const isField = topNode.type === 'field'
-      const beforeLen = ctx.pendingNodes.length
-      walkCreate(tx, topNode, options.ownerId, topLevelOrder, ctx, supertagUidMap)
-      if (!isField) {
-        topLevelOrder++
-        // `walkCreate` pushes the top node's own PendingNode entry before
-        // recursing into its children, so this index is always the top node.
-        const created = ctx.pendingNodes[beforeLen]
-        if (created) topLevelNodeIds.push(created.newId)
-      }
-    }
-
-    // ---- Pass 2a: content/description ref resolution, timestamps, type-specific fields ----
-    const markerFieldCache = new Map<string, FieldSystemId>()
-
-    for (const { tifNode, newId } of ctx.pendingNodes) {
-      const rawText = `${tifNode.name}\n${tifNode.description ?? ''}`
-      const rewrittenName = rewriteInlineRefs(tifNode.name, ctx.uidMap, () => ctx.brokenRefs++)
-      const finalContent = appendResolvedRefTokens(
-        rewrittenName,
-        rawText,
-        tifNode.refs,
-        ctx.uidMap,
-        () => ctx.brokenRefs++,
-        () => ctx.refsResolved++,
-      )
-      if (finalContent !== tifNode.name) {
-        updateNodeContent(tx, newId, finalContent)
-      }
-
-      if (tifNode.description) {
-        const rewrittenDesc = rewriteInlineRefs(tifNode.description, ctx.uidMap, () => ctx.brokenRefs++)
-        setProperty(tx, newId, SYSTEM_FIELDS.DESCRIPTION, rewrittenDesc)
-      }
-
-      applyOriginalTimestamps(tx, newId, tifNode.createdAt, tifNode.editedAt)
-
-      // `type:'node'` is the overwhelming common case — no marker needed for it.
-      if (tifNode.type !== 'node') {
-        const nodeTypeField = ensureMarkerField(tx, markerFieldCache, 'field:tif_node_type', 'TIF node type', 'text')
-        setProperty(tx, newId, nodeTypeField, tifNode.type)
-      }
-      if (tifNode.type === 'image') {
-        const mediaField = ensureMarkerField(tx, markerFieldCache, 'field:tif_media_url', 'TIF media URL', 'url')
-        setProperty(tx, newId, mediaField, tifNode.mediaUrl ?? '')
-      }
-      if (tifNode.type === 'codeblock') {
-        const codeField = ensureMarkerField(tx, markerFieldCache, 'field:tif_code_language', 'TIF code language', 'text')
-        setProperty(tx, newId, codeField, tifNode.codeLanguage ?? '')
-      }
-      // TIF todoState maps onto the engine's canonical checkbox field
-      // (field:todo_state, 'todo' | 'done' — spec/product/data-model.md).
-      if (tifNode.todoState) {
-        setProperty(tx, newId, SYSTEM_FIELDS.TODO_STATE, tifNode.todoState)
-      }
-      if (tifNode.flags && tifNode.flags.length > 0) {
-        const flagsField = ensureMarkerField(tx, markerFieldCache, 'field:tif_flags', 'TIF flags', 'json')
-        setProperty(tx, newId, flagsField, tifNode.flags)
-      }
-      // viewType maps onto the existing engine concept (`field:view_as`)
-      // instead of a redundant TIF-only field.
-      if (tifNode.viewType) {
-        setProperty(tx, newId, SYSTEM_FIELDS.VIEW_AS, tifNode.viewType === 'table' ? 'table' : 'outline')
-      }
-    }
-
-    // ---- Pass 2b: materialize deferred `type:'field'` carriers as properties ----
-    const attributesByName = new Map((tif.attributes ?? []).map((a) => [a.name, a] as const))
-    const fieldRegistry = new Map<string, string>()
-
-    for (const { ownerNewId, tifNode } of ctx.deferredFields) {
-      const attributeName = tifNode.name
-      if (!attributeName) {
-        ctx.skipped.push({ uid: tifNode.uid, reason: 'field carrier has an empty attribute name' })
+    const supertagSystemIds: string[] = []
+    for (const supertagUid of tifNode.supertags ?? []) {
+      const supertagSystemId = supertagUidMap.get(supertagUid)
+      if (!supertagSystemId) {
+        ctx.brokenRefs++
+        ctx.skipped.push({ uid: supertagUid, reason: `unknown supertag uid referenced by node '${tifNode.uid}'` })
         continue
       }
-      const declared = attributesByName.get(attributeName)
-      const fieldSystemId = getOrCreateAttributeField(tx, fieldRegistry, usedSystemIds, attributeName, declared?.dataType)
-      ctx.fieldsImported++
-
-      for (const valueChild of tifNode.children ?? []) {
-        if (valueChild.type === 'field') {
-          ctx.skipped.push({ uid: valueChild.uid, reason: 'nested field carrier under a field carrier is not supported' })
-          continue
-        }
-        const rewritten = rewriteInlineRefs(valueChild.name, ctx.uidMap, () => ctx.brokenRefs++)
-        const coerced = coerceFieldValue(rewritten, declared?.dataType)
-        addPropertyValue(tx, ownerNewId, fieldSystemId as FieldSystemId, coerced)
-      }
+      supertagSystemIds.push(supertagSystemId)
     }
 
-    const topLevelNodesImported = tif.nodes.filter((n) => n.type !== 'field').length
+    nodeSpecs.set(newId, {
+      id: newId,
+      content,
+      ownerId: ownerNewId,
+      supertagSystemIds,
+      properties,
+      createdAt,
+      updatedAt: toDateOr(createdAt, tifNode.editedAt),
+    })
+  }
 
-    return {
-      nodesImported: ctx.pendingNodes.length,
-      topLevelNodesImported,
-      supertagsImported: supertagUidMap.size,
-      fieldsImported: ctx.fieldsImported,
-      refsResolved: ctx.refsResolved,
-      brokenRefs: ctx.brokenRefs,
-      skipped: ctx.skipped,
-      topLevelNodeIds,
-    } satisfies ImportTifSummary
-  })
+  // Pass 3 — materialize deferred `type:'field'` carriers as properties on
+  // their owner's spec. Multi-value ordering counts per (owner, field).
+  const attributesByName = new Map((tif.attributes ?? []).map((a) => [a.name, a] as const))
+  const attributeFieldRegistry = new Map<string, string>()
+  const valueOrderCounters = new Map<string, number>()
+
+  for (const { ownerNewId, tifNode } of ctx.deferredFields) {
+    const attributeName = tifNode.name
+    if (!attributeName) {
+      ctx.skipped.push({ uid: tifNode.uid, reason: 'field carrier has an empty attribute name' })
+      continue
+    }
+    const declared = attributesByName.get(attributeName)
+    let fieldSystemId = attributeFieldRegistry.get(attributeName)
+    if (!fieldSystemId) {
+      fieldSystemId = await registry.ensureAttributeField(attributeName, declared?.dataType)
+      attributeFieldRegistry.set(attributeName, fieldSystemId)
+    }
+    ctx.fieldsImported++
+
+    const ownerSpec = nodeSpecs.get(ownerNewId)
+    if (!ownerSpec) continue // owner was skipped — nothing to attach to
+
+    for (const valueChild of tifNode.children ?? []) {
+      if (valueChild.type === 'field') {
+        ctx.skipped.push({ uid: valueChild.uid, reason: 'nested field carrier under a field carrier is not supported' })
+        continue
+      }
+      const rewritten = rewriteInlineRefs(valueChild.name, ctx.uidMap, () => ctx.brokenRefs++)
+      const coerced = coerceFieldValue(rewritten, declared?.dataType)
+      const counterKey = `${ownerNewId}::${fieldSystemId}`
+      const order = valueOrderCounters.get(counterKey) ?? 0
+      valueOrderCounters.set(counterKey, order + 1)
+      ownerSpec.properties = ownerSpec.properties ?? []
+      ownerSpec.properties.push({ fieldSystemId, value: coerced, order })
+    }
+  }
+
+  // The single write: definitions first, then nodes in walk order.
+  const orderedSpecs = [
+    ...registry.defSpecs,
+    ...ctx.walked.map(({ newId }) => nodeSpecs.get(newId)!),
+  ]
+  const canonicalIds = await backend.createNodesBulk(orderedSpecs)
+
+  // The backend may canonicalize ids (Surreal: 'node:<uuid>') — report ids
+  // in the form the backend's own read methods expect.
+  const canonicalById = new Map(orderedSpecs.map((spec, i) => [spec.id, canonicalIds[i]] as const))
+
+  const topLevelNodesImported = tif.nodes.filter((n) => n.type !== 'field').length
+
+  return {
+    nodesImported: ctx.walked.length,
+    topLevelNodesImported,
+    supertagsImported: supertagUidMap.size,
+    fieldsImported: ctx.fieldsImported,
+    refsResolved: ctx.refsResolved,
+    brokenRefs: ctx.brokenRefs,
+    skipped: ctx.skipped,
+    topLevelNodeIds: topLevelNodeIds.map((id) => canonicalById.get(id) ?? id),
+  } satisfies ImportTifSummary
 }

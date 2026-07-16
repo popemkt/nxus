@@ -11,7 +11,7 @@
  *   const node = await nodeFacade.assembleNode(nodeId)
  */
 
-import type { AssembledNode, CreateNodeOptions } from '../types/node.js'
+import type { AssembledNode, BulkNodeSpec, CreateNodeOptions } from '../types/node.js'
 import type { FieldSystemId } from '../schemas/node-schema.js'
 import type { QueryDefinition } from '../types/query.js'
 import type { BaseType } from '../types/base-type.js'
@@ -91,6 +91,10 @@ export class NodeFacade implements NodeBackend {
     return this.ensureInitialized().createNode(options)
   }
 
+  async createNodesBulk(specs: BulkNodeSpec[]): Promise<string[]> {
+    return this.ensureInitialized().createNodesBulk(specs)
+  }
+
   async updateNodeContent(nodeId: string, content: string): Promise<void> {
     return this.ensureInitialized().updateNodeContent(nodeId, content)
   }
@@ -117,6 +121,10 @@ export class NodeFacade implements NodeBackend {
 
   async getWorkspaceRoots(): Promise<string[]> {
     return this.ensureInitialized().getWorkspaceRoots()
+  }
+
+  async getRootNodes(): Promise<AssembledNode[]> {
+    return this.ensureInitialized().getRootNodes()
   }
 
   // ---------------------------------------------------------------------------

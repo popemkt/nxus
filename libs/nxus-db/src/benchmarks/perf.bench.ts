@@ -18,6 +18,7 @@ import { exportSubtreeToTif } from '../services/tif/tif-export.js'
 import { importTanaIntermediateFile } from '../services/tif/tif-import.js'
 import type { QueryDefinition } from '../types/query.js'
 import type { TanaIntermediateFile, TanaIntermediateNode } from '../services/tif/tif-types.js'
+import { SqliteBackend } from '../services/backends/sqlite-backend.js'
 import { seedGraph, type SeededGraph } from './seed-graph.js'
 import { readTreeBFS } from './tree-read.js'
 
@@ -31,6 +32,10 @@ const textFieldNodeId = textField.id
 const sampleIds = (await readTreeBFS(graph.db, rootId, 2)).nodes.slice(0, 100).map((node) => node.id)
 const mutationNodeId = sampleIds[sampleIds.length - 1] ?? rootId
 const importDoc = makeImportDoc(1_000)
+
+// TIF import/export run through NodeBackend — wrap the benchmark db.
+const tifBackend = new SqliteBackend()
+tifBackend.initWithDb(graph.db)
 let cleanupDone = false
 function cleanupBenchmarkGraph(): void {
   if (cleanupDone) return
@@ -146,12 +151,12 @@ describe(`@nxus/db API performance (${scale.toLocaleString()} nodes)`, () => {
     restoreNode(graph.db, mutationNodeId)
   }, { iterations: 20, warmupIterations: 2 })
 
-  bench('TIF export full workspace', () => {
-    exportSubtreeToTif(graph.db, rootId)
+  bench('TIF export full workspace', async () => {
+    await exportSubtreeToTif(tifBackend, rootId)
   }, { iterations: 3, warmupIterations: 1 })
 
-  bench('TIF import 1k-node document', () => {
-    importTanaIntermediateFile(graph.db, importDoc, { ownerId: rootId })
+  bench('TIF import 1k-node document', async () => {
+    await importTanaIntermediateFile(tifBackend, importDoc, { ownerId: rootId })
   }, { iterations: 3, warmupIterations: 1 })
 
   bench('getFieldUsageStats', () => {

@@ -15,6 +15,7 @@ import {
 } from '../../schemas/node-schema.js'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
 import type { NodeBackend } from './types.js'
+import { generateNodeId } from '../node.service.js'
 import {
   createTestSqliteBackend,
   createTestSurrealBackend,
@@ -567,6 +568,116 @@ describe.each(['sqlite', 'surreal'] as const)(
         expect(childPresence.get(parentB)).toBe(true)
         expect(childPresence.get(lateChild)).toBe(false)
         expect(childPresence.get(deletedChild)).toBe(false)
+      })
+    })
+
+    // -----------------------------------------------------------------------
+    // createNodesBulk — batched writes (BULK-B*)
+    // -----------------------------------------------------------------------
+
+    describe('createNodesBulk', () => {
+      it('BULK-B1: one bulk call creates nodes, supertags, properties, and in-batch mentions equivalent to per-op writes', async () => {
+        const tagDefId = generateNodeId()
+        const parentId = generateNodeId()
+        const childId = generateNodeId()
+        const mentionerId = generateNodeId()
+
+        const ids = await backend.createNodesBulk([
+          {
+            id: tagDefId,
+            content: '#BulkTag',
+            systemId: 'supertag:bulk_tag',
+            supertagSystemIds: [SYSTEM_SUPERTAGS.SUPERTAG],
+          },
+          {
+            id: parentId,
+            content: 'Bulk parent',
+            supertagSystemIds: ['supertag:bulk_tag'],
+            properties: [
+              { fieldSystemId: SYSTEM_FIELDS.STATUS as string, value: 'active' },
+              { fieldSystemId: SYSTEM_FIELDS.ORDER as string, value: 0 },
+            ],
+          },
+          {
+            id: childId,
+            content: 'Bulk child',
+            ownerId: parentId,
+            properties: [{ fieldSystemId: SYSTEM_FIELDS.ORDER as string, value: 0 }],
+          },
+          {
+            id: mentionerId,
+            content: `Mentions the parent [[node:${parentId}]]`,
+          },
+        ])
+        // Returned ids are backend-canonical (SQLite: bare uuid; Surreal:
+        // 'node:<uuid>') — each must contain the caller-allocated uuid.
+        expect(ids).toHaveLength(4)
+        const [, canonicalParentId, canonicalChildId] = ids
+        ;[tagDefId, parentId, childId, mentionerId].forEach((tempId, idx) => {
+          expect(ids[idx]).toContain(tempId)
+        })
+
+        const parent = await backend.assembleNode(parentId)
+        expect(parent).not.toBeNull()
+        expect(parent!.content).toBe('Bulk parent')
+        expect(parent!.supertags.map((st) => st.content)).toContain('#BulkTag')
+        expect(parent!.properties[FIELD_NAMES.STATUS][0].value).toBe('active')
+
+        const childrenByParent = await backend.getChildrenByParents([canonicalParentId])
+        expect((childrenByParent.get(canonicalParentId) ?? []).map((c) => c.id)).toEqual([
+          canonicalChildId,
+        ])
+
+        const mentioner = await backend.assembleNode(mentionerId)
+        const mentionValues = (mentioner!.properties[FIELD_NAMES.MENTIONS] ?? []).map(
+          (pv) => String(pv.value),
+        )
+        expect(mentionValues.some((v) => v.includes(parentId))).toBe(true)
+
+        // The in-batch tag def is a real, queryable supertag afterwards
+        const tagged = await backend.getNodesBySupertags(['supertag:bulk_tag'])
+        expect(tagged.map((n) => n.id)).toEqual([canonicalParentId])
+      })
+
+      it('BULK-B2: bulk specs preserve caller-supplied timestamps (import fidelity)', async () => {
+        const created = new Date('2021-03-04T05:06:07.000Z')
+        const edited = new Date('2022-08-09T10:11:12.000Z')
+        const nodeId = generateNodeId()
+
+        await backend.createNodesBulk([
+          {
+            id: nodeId,
+            content: 'Timestamped',
+            createdAt: created,
+            updatedAt: edited,
+            properties: [{ fieldSystemId: SYSTEM_FIELDS.STATUS as string, value: 'done' }],
+          },
+        ])
+
+        const node = await backend.assembleNode(nodeId)
+        expect(node!.createdAt.getTime()).toBe(created.getTime())
+        expect(node!.updatedAt.getTime()).toBe(edited.getTime())
+      })
+    })
+
+    // -----------------------------------------------------------------------
+    // getRootNodes
+    // -----------------------------------------------------------------------
+
+    describe('getRootNodes', () => {
+      it('BULK-B3: returns live ownerless nodes and excludes children and deleted roots', async () => {
+        const rootA = await backend.createNode({ content: 'Root A' })
+        const rootB = await backend.createNode({ content: 'Root B' })
+        await backend.createNode({ content: 'Child', ownerId: rootA })
+        const deleted = await backend.createNode({ content: 'Deleted root' })
+        await backend.deleteNode(deleted)
+
+        const roots = await backend.getRootNodes()
+        const ids = roots.map((n) => n.id)
+        expect(ids).toContain(rootA)
+        expect(ids).toContain(rootB)
+        expect(ids).not.toContain(deleted)
+        expect(roots.every((n) => !n.ownerId)).toBe(true)
       })
     })
 

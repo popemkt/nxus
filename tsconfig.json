@@ -26,6 +26,9 @@
     },
     {
       "path": "./libs/nxus-mcp"
+    },
+    {
+      "path": "./libs/nxus-rest"
     }
   ]
 }

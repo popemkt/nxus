@@ -17,6 +17,8 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../schemas/node-schema.js'
+import { generateNodeId } from '../services/node.service.js'
+import type { BulkNodeSpec } from '../types/node.js'
 import {
   createTestSqliteBackend,
   createTestSurrealBackend,
@@ -33,43 +35,63 @@ const BUDGET = {
   queryMs: 5_000,
   assembleSampleMs: 15_000,
   childrenBatchMs: 5_000,
+  // 100 sampled per-op createNode calls (interactive write path).
+  writeSampleMs: 30_000,
 }
 
 interface SeededBackend {
   ctx: TestBackendContext
   rootIds: string[]
   allIds: string[]
+  /** N-node fixture via ONE createNodesBulk call — the sanctioned bulk-write path. */
   seedMs: number
+  /** 100 per-op createNode calls — the interactive write path, sampled. */
+  writeSampleMs: number
 }
 
 async function seedBackend(ctx: TestBackendContext): Promise<SeededBackend> {
   const { backend } = ctx
   const rootIds: string[] = []
-  const allIds: string[] = []
+  const specs: BulkNodeSpec[] = []
 
-  const start = performance.now()
   const rootCount = Math.max(1, Math.floor(N / 50))
   for (let r = 0; r < rootCount; r++) {
-    const rootId = await backend.createNode({ content: `bench-root-${r}` })
-    rootIds.push(rootId)
-    allIds.push(rootId)
+    const id = generateNodeId()
+    rootIds.push(id)
+    specs.push({ id, content: `bench-root-${r}` })
   }
-  for (let i = allIds.length; i < N; i++) {
+  for (let i = specs.length; i < N; i++) {
     const ownerId = rootIds[i % rootIds.length]!
-    const nodeId = await backend.createNode({
+    specs.push({
+      id: generateNodeId(),
       content: `bench-node-${i}`,
       ownerId,
       // every 5th node carries the #Item supertag (query target)
-      ...(i % 5 === 0 ? { supertagId: SYSTEM_SUPERTAGS.ITEM } : {}),
+      ...(i % 5 === 0 ? { supertagSystemIds: [SYSTEM_SUPERTAGS.ITEM] } : {}),
+      ...(i % 3 === 0
+        ? { properties: [{ fieldSystemId: SYSTEM_FIELDS.STATUS as string, value: 'active' }] }
+        : {}),
     })
-    if (i % 3 === 0) {
-      await backend.setProperty(nodeId, SYSTEM_FIELDS.STATUS, 'active')
-    }
-    allIds.push(nodeId)
   }
-  const seedMs = performance.now() - start
 
-  return { ctx, rootIds, allIds, seedMs }
+  const start = performance.now()
+  const allIds = await backend.createNodesBulk(specs)
+  const seedMs = performance.now() - start
+  const canonicalRootIds = allIds.slice(0, rootCount)
+
+  // Per-op write path still gets its own observation — bulk seeding must not
+  // hide a regression in single createNode cost.
+  const writeStart = performance.now()
+  const WRITE_SAMPLE = 100
+  for (let i = 0; i < WRITE_SAMPLE; i++) {
+    await backend.createNode({
+      content: `bench-write-sample-${i}`,
+      ownerId: canonicalRootIds[i % canonicalRootIds.length]!,
+    })
+  }
+  const writeSampleMs = performance.now() - writeStart
+
+  return { ctx, rootIds: canonicalRootIds, allIds, seedMs, writeSampleMs }
 }
 
 async function measureMs(run: () => Promise<unknown>): Promise<number> {
@@ -80,6 +102,7 @@ async function measureMs(run: () => Promise<unknown>): Promise<number> {
 
 type BenchRow = {
   seedMs: number
+  writeSampleMs: number
   queryMs: number
   assembleMs: number
   childrenMs: number
@@ -129,24 +152,34 @@ describe.skipIf(process.env.NXUS_PERF !== '1')(
           backend.getChildrenByParents(seeded.rootIds),
         )
 
-        results.set(name, { seedMs: seeded.seedMs, queryMs, assembleMs, childrenMs })
+        results.set(name, {
+          seedMs: seeded.seedMs,
+          writeSampleMs: seeded.writeSampleMs,
+          queryMs,
+          assembleMs,
+          childrenMs,
+        })
         console.log(
-          `[bench:${name}] N=${N} seed=${seeded.seedMs.toFixed(0)}ms ` +
+          `[bench:${name}] N=${N} seed(bulk)=${seeded.seedMs.toFixed(0)}ms ` +
+            `write(100 per-op)=${seeded.writeSampleMs.toFixed(0)}ms ` +
             `query=${queryMs.toFixed(0)}ms assemble(${sampleIds.length})=${assembleMs.toFixed(0)}ms ` +
             `childrenBatch=${childrenMs.toFixed(0)}ms`,
         )
         const other = results.get(name === 'sqlite' ? 'surreal' : 'sqlite')
         if (other) {
           const mine = results.get(name)!
+          const s = name === 'surreal' ? mine : other
+          const q = name === 'surreal' ? other : mine
           console.log(
             `[bench:ratio surreal/sqlite] ` +
-              (name === 'surreal'
-                ? `seed=${(mine.seedMs / other.seedMs).toFixed(1)}x query=${(mine.queryMs / other.queryMs).toFixed(1)}x assemble=${(mine.assembleMs / other.assembleMs).toFixed(1)}x children=${(mine.childrenMs / other.childrenMs).toFixed(1)}x`
-                : `seed=${(other.seedMs / mine.seedMs).toFixed(1)}x query=${(other.queryMs / mine.queryMs).toFixed(1)}x assemble=${(other.assembleMs / mine.assembleMs).toFixed(1)}x children=${(other.childrenMs / mine.childrenMs).toFixed(1)}x`),
+              `seed=${(s.seedMs / q.seedMs).toFixed(1)}x write=${(s.writeSampleMs / q.writeSampleMs).toFixed(1)}x ` +
+              `query=${(s.queryMs / q.queryMs).toFixed(1)}x assemble=${(s.assembleMs / q.assembleMs).toFixed(1)}x ` +
+              `children=${(s.childrenMs / q.childrenMs).toFixed(1)}x`,
           )
         }
 
         expect(seeded.seedMs).toBeLessThan((BUDGET.seedMsPer1k * N) / 1000)
+        expect(seeded.writeSampleMs).toBeLessThan(BUDGET.writeSampleMs)
         expect(queryMs).toBeLessThan(BUDGET.queryMs)
         expect(assembleMs).toBeLessThan(BUDGET.assembleSampleMs)
         expect(childrenMs).toBeLessThan(BUDGET.childrenBatchMs)

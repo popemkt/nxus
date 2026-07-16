@@ -71,6 +71,8 @@ export async function createTestSqliteBackend(): Promise<TestBackendContext> {
     { id: 'field-base-type', systemId: 'field:base_type', content: 'baseType' },
     { id: 'field-mentions', systemId: SYSTEM_FIELDS.MENTIONS, content: 'mentions' },
     { id: 'field-formula', systemId: SYSTEM_FIELDS.FORMULA, content: 'formula' },
+    { id: 'field-todo-state', systemId: SYSTEM_FIELDS.TODO_STATE, content: 'todoState' },
+    { id: 'field-view-as', systemId: SYSTEM_FIELDS.VIEW_AS, content: 'viewAs' },
   ]
 
   for (const field of systemFields) {

@@ -19,7 +19,7 @@ import type { Surreal } from 'surrealdb'
 import { RecordId, StringRecordId } from 'surrealdb'
 import type { FieldSystemId, FieldContentName } from '../../schemas/node-schema.js'
 import { FIELD_NAMES, SYSTEM_FIELDS, SYSTEM_SUPERTAGS } from '../../schemas/node-schema.js'
-import type { AssembledNode, CreateNodeOptions, PropertyValue } from '../../types/node.js'
+import type { AssembledNode, BulkNodeSpec, CreateNodeOptions, PropertyValue } from '../../types/node.js'
 import type { JsonValue } from '../../types/common.js'
 import type { BaseType } from '../../types/base-type.js'
 import type {
@@ -662,6 +662,217 @@ export class SurrealBackend implements NodeBackend {
     })
   }
 
+  async createNodesBulk(specs: BulkNodeSpec[]): Promise<string[]> {
+    if (specs.length === 0) return []
+    const db = this.ensureInitialized()
+    const now = new Date()
+
+    // Specs may DEFINE supertags/fields consumed later in the same batch
+    // (import: a '#Person' def plus tagged nodes in one call). Those can't
+    // resolve from the db yet, so catalog rows for in-batch definitions are
+    // UPSERTed inside the first chunk's transaction and registered locally,
+    // mirroring resolveSupertagId/resolveFieldId's self-heal record shape.
+    const supertagRecordIds = new Map<string, string>()
+    const fieldRecordIds = new Map<string, string>()
+    const catalogStatements: SurrealStatement[] = []
+    let catalogIndex = 0
+
+    for (const spec of specs) {
+      if (!spec.systemId) continue
+      const tags = spec.supertagSystemIds ?? []
+      const recordKey = spec.id.replace(/^node:/, '').replace(/[^A-Za-z0-9_]/g, '_')
+      if (tags.includes(SYSTEM_SUPERTAGS.SUPERTAG) && !supertagRecordIds.has(spec.systemId)) {
+        const catalogId = `supertag:${recordKey}`
+        catalogStatements.push({
+          query: `UPSERT $catalogId${catalogIndex} SET name = $catalogName${catalogIndex}, system_id = $catalogSystemId${catalogIndex}, created_at = time::now()`,
+          params: {
+            [`catalogId${catalogIndex}`]: new StringRecordId(catalogId),
+            [`catalogName${catalogIndex}`]: spec.content,
+            [`catalogSystemId${catalogIndex}`]: spec.systemId,
+          },
+        })
+        catalogIndex++
+        supertagRecordIds.set(spec.systemId, catalogId)
+        this.supertagIdCache.set(spec.systemId, catalogId)
+      }
+      if (tags.includes(SYSTEM_SUPERTAGS.FIELD) && !fieldRecordIds.has(spec.systemId)) {
+        const catalogId = `field:${recordKey}`
+        const fieldType = spec.properties?.find(
+          (prop) => prop.fieldSystemId === (SYSTEM_FIELDS.FIELD_TYPE as string),
+        )?.value
+        catalogStatements.push({
+          query: `UPSERT $catalogId${catalogIndex} SET content = $catalogName${catalogIndex}, system_id = $catalogSystemId${catalogIndex}, value_type = $catalogValueType${catalogIndex}, created_at = time::now()`,
+          params: {
+            [`catalogId${catalogIndex}`]: new StringRecordId(catalogId),
+            [`catalogName${catalogIndex}`]: spec.content,
+            [`catalogSystemId${catalogIndex}`]: spec.systemId,
+            [`catalogValueType${catalogIndex}`]: typeof fieldType === 'string' ? fieldType : 'text',
+          },
+        })
+        catalogIndex++
+        fieldRecordIds.set(spec.systemId, catalogId)
+        this.fieldIdCache.set(spec.systemId, catalogId)
+      }
+    }
+
+    // Pre-resolve everything referenced but not defined in-batch. Unknown
+    // supertags fail fast — same contract as createNode/addNodeSupertag.
+    for (const spec of specs) {
+      for (const supertagSystemId of spec.supertagSystemIds ?? []) {
+        if (supertagRecordIds.has(supertagSystemId)) continue
+        const resolved = await this.resolveSupertagId(supertagSystemId)
+        if (!resolved) throw new Error(`Supertag not found: ${supertagSystemId}`)
+        supertagRecordIds.set(supertagSystemId, resolved)
+      }
+      for (const prop of spec.properties ?? []) {
+        if (fieldRecordIds.has(prop.fieldSystemId)) continue
+        fieldRecordIds.set(prop.fieldSystemId, await this.resolveFieldId(prop.fieldSystemId))
+      }
+    }
+    const mentionsFieldId =
+      fieldRecordIds.get(SYSTEM_FIELDS.MENTIONS as string) ??
+      (await this.resolveFieldId(SYSTEM_FIELDS.MENTIONS))
+
+    // Each chunk commits as ONE BEGIN/COMMIT transaction: node CREATEs first,
+    // then decorations, so specs may reference each other regardless of
+    // position within a chunk. Catalog UPSERTs ride in the first chunk so
+    // later chunks' RELATEs can reference them.
+    const CHUNK_SIZE = 200
+    const extendsProps: Array<{ nodeId: string; value: unknown }> = []
+
+    for (let chunkStart = 0; chunkStart < specs.length; chunkStart += CHUNK_SIZE) {
+      const chunk = specs.slice(chunkStart, chunkStart + CHUNK_SIZE)
+      const statements: SurrealStatement[] = chunkStart === 0 ? [...catalogStatements] : []
+
+      chunk.forEach((spec, i) => {
+        const setClauses = [
+          `content = $c${i}`,
+          `content_plain = $cp${i}`,
+          'props = {}',
+          `created_at = $ca${i}`,
+          `updated_at = $ua${i}`,
+        ]
+        const params: Record<string, unknown> = {
+          // spec ids are bare uuids (generateNodeId); the record key strips
+          // any 'node:' prefix a caller-supplied id might carry.
+          [`n${i}`]: new RecordId('node', spec.id.replace(/^node:/, '')),
+          [`c${i}`]: spec.content,
+          [`cp${i}`]: spec.content.toLowerCase(),
+          [`ca${i}`]: spec.createdAt ?? now,
+          [`ua${i}`]: spec.updatedAt ?? spec.createdAt ?? now,
+        }
+        if (spec.systemId) {
+          setClauses.push(`system_id = $s${i}`)
+          params[`s${i}`] = spec.systemId
+        }
+        if (spec.ownerId) {
+          setClauses.push(`owner_id = $ow${i}`)
+          // owner_id is stored in the backend's canonical 'node:<uuid>' string
+          // form — what createNode callers pass in graph mode.
+          params[`ow${i}`] = normalizeSurrealRecordId('node', spec.ownerId)
+        }
+        statements.push({ query: `CREATE $n${i} SET ${setClauses.join(', ')}`, params })
+      })
+
+      chunk.forEach((spec, i) => {
+        ;(spec.supertagSystemIds ?? []).forEach((supertagSystemId, j) => {
+          statements.push({
+            query: `RELATE $n${i}->has_supertag->$st${i}_${j} SET \`order\` = ${j}, created_at = time::now()`,
+            params: {
+              [`st${i}_${j}`]: new StringRecordId(supertagRecordIds.get(supertagSystemId)!),
+            },
+          })
+        })
+
+        let fallbackOrder = 0
+        ;(spec.properties ?? []).forEach((prop, k) => {
+          statements.push({
+            query: `RELATE $n${i}->has_field->$f${i}_${k} SET \`value\` = $v${i}_${k}, \`order\` = $o${i}_${k}, created_at = $ca${i}, updated_at = $ua${i}`,
+            params: {
+              [`f${i}_${k}`]: new StringRecordId(fieldRecordIds.get(prop.fieldSystemId)!),
+              [`v${i}_${k}`]: prop.value,
+              [`o${i}_${k}`]: prop.order ?? fallbackOrder++,
+            },
+          })
+          if (prop.fieldSystemId === (SYSTEM_FIELDS.EXTENDS as string)) {
+            extendsProps.push({
+              nodeId: normalizeSurrealRecordId('node', spec.id),
+              value: prop.value,
+            })
+          }
+        })
+
+        const mentionTargets = [
+          ...new Set(
+            extractMentionedNodeIds(spec.content).map((id) =>
+              normalizeSurrealRecordId('node', id),
+            ),
+          ),
+        ]
+        mentionTargets.forEach((target, m) => {
+          statements.push({
+            query: `RELATE $n${i}->has_field->$mFld SET \`value\` = $mv${i}_${m}, \`order\` = ${m}, created_at = time::now(), updated_at = time::now()`,
+            params: {
+              mFld: new StringRecordId(mentionsFieldId),
+              [`mv${i}_${m}`]: target,
+            },
+          })
+        })
+      })
+
+      await runMutationTransaction(async () => {
+        await runSurrealTransaction(db, statements)
+
+        for (const spec of chunk) {
+          const canonicalId = normalizeSurrealRecordId('node', spec.id)
+          emitMutation({
+            type: 'node:created',
+            timestamp: now,
+            nodeId: canonicalId,
+            afterValue: {
+              id: canonicalId,
+              content: spec.content,
+              ownerId: spec.ownerId
+                ? normalizeSurrealRecordId('node', spec.ownerId)
+                : undefined,
+            },
+          })
+          for (const supertagSystemId of spec.supertagSystemIds ?? []) {
+            emitMutation({
+              type: 'supertag:added',
+              timestamp: now,
+              nodeId: canonicalId,
+              supertagId: supertagRecordIds.get(supertagSystemId)!,
+            })
+          }
+          for (const prop of spec.properties ?? []) {
+            emitMutation({
+              type: 'property:set',
+              timestamp: now,
+              nodeId: canonicalId,
+              fieldId: fieldRecordIds.get(prop.fieldSystemId)!,
+              fieldSystemId: prop.fieldSystemId,
+              afterValue: prop.value,
+            })
+          }
+        }
+      })
+    }
+
+    // Derived `extends` RELATION edges (supertag catalog) mirror the
+    // node-space property, matching setProperty's write path.
+    for (const entry of extendsProps) {
+      await this.mirrorExtendsEdgeIfNeeded(
+        SYSTEM_FIELDS.EXTENDS,
+        entry.nodeId,
+        entry.value,
+      )
+    }
+
+    // Canonical id form for this backend, matching createNode's return shape.
+    return specs.map((spec) => normalizeSurrealRecordId('node', spec.id))
+  }
+
   async updateNodeContent(nodeId: string, content: string): Promise<void> {
     const db = this.ensureInitialized()
 
@@ -879,6 +1090,19 @@ export class SurrealBackend implements NodeBackend {
     )
 
     return fallbackRows[0] ? [rid(fallbackRows[0].id)] : []
+  }
+
+  async getRootNodes(): Promise<AssembledNode[]> {
+    const db = this.ensureInitialized()
+    // owner_id may be absent (NONE) or null depending on the writer — filter
+    // in JS like getWorkspaceRoots does. Unlike getWorkspaceRoots, system
+    // nodes ARE included: root-level = everything without an owner (SQLite
+    // getRootNodes parity).
+    const [liveRows] = await db.query<[Array<SurrealNode>]>(
+      'SELECT * FROM node WHERE deleted_at IS NONE',
+    )
+    const rootRows = (liveRows ?? []).filter((row) => !row.owner_id)
+    return this.assembleFromRecords(rootRows)
   }
 
   // ---------------------------------------------------------------------------

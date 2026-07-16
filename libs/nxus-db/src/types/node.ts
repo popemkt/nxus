@@ -53,4 +53,41 @@ export interface CreateNodeOptions {
   supertagId?: string // Supertag id (UUID) or systemId (e.g., 'supertag:note', 'supertag:task')
 }
 
+/**
+ * One property entry in a BulkNodeSpec. Repeating the same fieldSystemId
+ * with distinct `order` values produces a multi-value property.
+ */
+export interface BulkPropertySpec {
+  fieldSystemId: string
+  value: unknown
+  order?: number
+}
+
+/**
+ * Declarative node spec for NodeBackend.createNodesBulk().
+ *
+ * The caller allocates `id` up front (generateNodeId()), so specs can
+ * reference each other freely before any write happens: `ownerId` may name
+ * another spec's id, and `content` may carry `[[node:<id>]]` mention tokens
+ * pointing at nodes created in the same batch.
+ *
+ * Ordering contract: a spec that DEFINES a supertag or field (systemId +
+ * the #Supertag/#Field meta tag) must appear before any spec that consumes
+ * that systemId in `supertagSystemIds`/`properties`.
+ */
+export interface BulkNodeSpec {
+  /** Caller-allocated node UUID (generateNodeId()). */
+  id: string
+  content: string
+  systemId?: string
+  /** Parent node id — an existing node or another spec's id in this batch. */
+  ownerId?: string
+  /** Supertags to attach, by systemId. */
+  supertagSystemIds?: string[]
+  properties?: BulkPropertySpec[]
+  /** Original timestamps (imports). Defaults to write time. */
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 // SavedQuery is defined in query.ts — re-exported through the barrel
